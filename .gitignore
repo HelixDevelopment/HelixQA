@@ -1,0 +1,37 @@
+# Binaries
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+helixqa
+
+# Test binary
+*.test
+
+# Output of go coverage
+*.out
+coverage.html
+
+# Build output
+/bin/
+/dist/
+
+# Results and evidence
+/qa-results/
+/results/
+/evidence/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Vendor (optional)
+/vendor/

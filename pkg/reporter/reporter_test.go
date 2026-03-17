@@ -1,0 +1,451 @@
+// SPDX-FileCopyrightText: 2026 Milos Vasic
+// SPDX-License-Identifier: Apache-2.0
+
+package reporter
+
+import (
+	"os"
+	"path/filepath"
+	"testing"
+	"time"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
+	"digital.vasic.challenges/pkg/challenge"
+
+	"digital.vasic.helixqa/pkg/config"
+	"digital.vasic.helixqa/pkg/validator"
+)
+
+// --- Constructor tests ---
+
+func TestNew_Defaults(t *testing.T) {
+	r := New()
+	assert.NotNil(t, r)
+	assert.Equal(t, "qa-results", r.outputDir)
+	assert.Equal(t, config.ReportMarkdown, r.reportFormat)
+	assert.NotNil(t, r.challengeReporter)
+}
+
+func TestNew_WithOptions(t *testing.T) {
+	r := New(
+		WithOutputDir("/tmp/output"),
+		WithReportFormat(config.ReportJSON),
+	)
+	assert.Equal(t, "/tmp/output", r.outputDir)
+	assert.Equal(t, config.ReportJSON, r.reportFormat)
+}
+
+// --- GenerateQAReport tests ---
+
+func TestGenerateQAReport_Empty(t *testing.T) {
+	r := New()
+	qa, err := r.GenerateQAReport(nil)
+	require.NoError(t, err)
+	assert.Equal(t, "HelixQA Test Report", qa.Title)
+	assert.Equal(t, 0, qa.TotalChallenges)
+	assert.Equal(t, 0, qa.PassedChallenges)
+	assert.Equal(t, 0, qa.FailedChallenges)
+	assert.Equal(t, 0, qa.TotalCrashes)
+	assert.Equal(t, 0, qa.TotalANRs)
+}
+
+func TestGenerateQAReport_SinglePlatform(t *testing.T) {
+	r := New()
+	results := []*PlatformResult{
+		{
+			Platform: config.PlatformAndroid,
+			ChallengeResults: []*challenge.Result{
+				{
+					ChallengeID:   "test-1",
+					ChallengeName: "Test 1",
+					Status:        challenge.StatusPassed,
+					Duration:      5 * time.Second,
+				},
+				{
+					ChallengeID:   "test-2",
+					ChallengeName: "Test 2",
+					Status:        challenge.StatusFailed,
+					Duration:      3 * time.Second,
+				},
+			},
+			CrashCount: 1,
+			ANRCount:   0,
+			Duration:   10 * time.Second,
+		},
+	}
+
+	qa, err := r.GenerateQAReport(results)
+	require.NoError(t, err)
+	assert.Equal(t, 2, qa.TotalChallenges)
+	assert.Equal(t, 1, qa.PassedChallenges)
+	assert.Equal(t, 1, qa.FailedChallenges)
+	assert.Equal(t, 1, qa.TotalCrashes)
+	assert.Equal(t, 0, qa.TotalANRs)
+	assert.Equal(t, 10*time.Second, qa.TotalDuration)
+}
+
+func TestGenerateQAReport_MultiplePlatforms(t *testing.T) {
+	r := New()
+	results := []*PlatformResult{
+		{
+			Platform:   config.PlatformAndroid,
+			CrashCount: 2,
+			ANRCount:   1,
+			Duration:   15 * time.Second,
+			ChallengeResults: []*challenge.Result{
+				{Status: challenge.StatusPassed},
+				{Status: challenge.StatusFailed},
+			},
+		},
+		{
+			Platform:   config.PlatformWeb,
+			CrashCount: 0,
+			ANRCount:   0,
+			Duration:   10 * time.Second,
+			ChallengeResults: []*challenge.Result{
+				{Status: challenge.StatusPassed},
+				{Status: challenge.StatusPassed},
+			},
+		},
+		{
+			Platform:   config.PlatformDesktop,
+			CrashCount: 1,
+			ANRCount:   0,
+			Duration:   8 * time.Second,
+			ChallengeResults: []*challenge.Result{
+				{Status: challenge.StatusError},
+			},
+		},
+	}
+
+	qa, err := r.GenerateQAReport(results)
+	require.NoError(t, err)
+	assert.Equal(t, 5, qa.TotalChallenges)
+	assert.Equal(t, 3, qa.PassedChallenges)
+	assert.Equal(t, 2, qa.FailedChallenges)
+	assert.Equal(t, 3, qa.TotalCrashes)
+	assert.Equal(t, 1, qa.TotalANRs)
+	assert.Equal(t, 33*time.Second, qa.TotalDuration)
+	assert.Len(t, qa.PlatformResults, 3)
+}
+
+func TestGenerateQAReport_AllStatuses(t *testing.T) {
+	r := New()
+	results := []*PlatformResult{
+		{
+			Platform: config.PlatformDesktop,
+			ChallengeResults: []*challenge.Result{
+				{Status: challenge.StatusPassed},
+				{Status: challenge.StatusFailed},
+				{Status: challenge.StatusError},
+				{Status: challenge.StatusTimedOut},
+				{Status: challenge.StatusStuck},
+				{Status: challenge.StatusSkipped},
+				{Status: challenge.StatusPending},
+			},
+		},
+	}
+
+	qa, err := r.GenerateQAReport(results)
+	require.NoError(t, err)
+	assert.Equal(t, 7, qa.TotalChallenges)
+	assert.Equal(t, 1, qa.PassedChallenges)
+	assert.Equal(t, 4, qa.FailedChallenges) // failed + error + timed_out + stuck
+}
+
+// --- WriteMarkdown tests ---
+
+func TestWriteMarkdown(t *testing.T) {
+	dir := t.TempDir()
+	r := New(WithOutputDir(dir))
+
+	qa := &QAReport{
+		Title:            "Test Report",
+		GeneratedAt:      time.Now(),
+		TotalChallenges:  5,
+		PassedChallenges: 4,
+		FailedChallenges: 1,
+		TotalCrashes:     0,
+		TotalANRs:        0,
+		TotalDuration:    30 * time.Second,
+		PlatformResults: []*PlatformResult{
+			{
+				Platform: config.PlatformDesktop,
+				Duration: 30 * time.Second,
+				ChallengeResults: []*challenge.Result{
+					{
+						ChallengeName: "Test",
+						Status:        challenge.StatusPassed,
+						Duration:      5 * time.Second,
+					},
+				},
+			},
+		},
+	}
+
+	path := filepath.Join(dir, "report.md")
+	err := r.WriteMarkdown(qa, path)
+	require.NoError(t, err)
+
+	data, err := os.ReadFile(path)
+	require.NoError(t, err)
+	content := string(data)
+
+	assert.Contains(t, content, "HelixQA Test Report")
+	assert.Contains(t, content, "Total Challenges")
+	assert.Contains(t, content, "DESKTOP")
+	assert.Contains(t, content, "Generated by HelixQA")
+}
+
+func TestWriteMarkdown_WithStepResults(t *testing.T) {
+	dir := t.TempDir()
+	r := New(WithOutputDir(dir))
+
+	qa := &QAReport{
+		Title:       "Test Report",
+		GeneratedAt: time.Now(),
+		PlatformResults: []*PlatformResult{
+			{
+				Platform: config.PlatformAndroid,
+				StepResults: []*validator.StepResult{
+					{
+						StepName:  "launch",
+						Status:    validator.StepPassed,
+						StartTime: time.Now(),
+						EndTime:   time.Now(),
+						Duration:  1 * time.Second,
+					},
+					{
+						StepName:  "click-menu",
+						Status:    validator.StepFailed,
+						StartTime: time.Now(),
+						EndTime:   time.Now(),
+						Duration:  2 * time.Second,
+						Error:     "crash detected",
+					},
+				},
+			},
+		},
+	}
+
+	path := filepath.Join(dir, "report.md")
+	err := r.WriteMarkdown(qa, path)
+	require.NoError(t, err)
+
+	data, err := os.ReadFile(path)
+	require.NoError(t, err)
+	content := string(data)
+
+	assert.Contains(t, content, "Step Validation")
+	assert.Contains(t, content, "launch")
+	assert.Contains(t, content, "click-menu")
+	assert.Contains(t, content, "crash detected")
+}
+
+// --- WriteJSON tests ---
+
+func TestWriteJSON(t *testing.T) {
+	dir := t.TempDir()
+	r := New(WithOutputDir(dir))
+
+	qa := &QAReport{
+		Title:            "Test Report",
+		GeneratedAt:      time.Now(),
+		TotalChallenges:  3,
+		PassedChallenges: 2,
+		FailedChallenges: 1,
+	}
+
+	path := filepath.Join(dir, "report.json")
+	err := r.WriteJSON(qa, path)
+	require.NoError(t, err)
+
+	data, err := os.ReadFile(path)
+	require.NoError(t, err)
+	content := string(data)
+
+	assert.Contains(t, content, "\"title\"")
+	assert.Contains(t, content, "\"total_challenges\"")
+	assert.Contains(t, content, "Test Report")
+}
+
+// --- WriteReport format dispatch tests ---
+
+func TestWriteReport_Markdown(t *testing.T) {
+	dir := t.TempDir()
+	r := New(
+		WithOutputDir(dir),
+		WithReportFormat(config.ReportMarkdown),
+	)
+
+	qa := &QAReport{
+		Title:       "Test",
+		GeneratedAt: time.Now(),
+	}
+
+	path, err := r.WriteReport(qa, dir)
+	require.NoError(t, err)
+	assert.Equal(t,
+		filepath.Join(dir, "qa-report.md"), path,
+	)
+	assert.FileExists(t, path)
+}
+
+func TestWriteReport_JSON(t *testing.T) {
+	dir := t.TempDir()
+	r := New(
+		WithOutputDir(dir),
+		WithReportFormat(config.ReportJSON),
+	)
+
+	qa := &QAReport{
+		Title:       "Test",
+		GeneratedAt: time.Now(),
+	}
+
+	path, err := r.WriteReport(qa, dir)
+	require.NoError(t, err)
+	assert.Equal(t,
+		filepath.Join(dir, "qa-report.json"), path,
+	)
+	assert.FileExists(t, path)
+}
+
+func TestWriteReport_HTML(t *testing.T) {
+	dir := t.TempDir()
+	r := New(
+		WithOutputDir(dir),
+		WithReportFormat(config.ReportHTML),
+	)
+
+	qa := &QAReport{
+		Title:            "Test",
+		GeneratedAt:      time.Now(),
+		TotalChallenges:  5,
+		PassedChallenges: 4,
+		FailedChallenges: 1,
+	}
+
+	path, err := r.WriteReport(qa, dir)
+	require.NoError(t, err)
+	assert.Equal(t,
+		filepath.Join(dir, "qa-report.html"), path,
+	)
+	assert.FileExists(t, path)
+
+	data, err := os.ReadFile(path)
+	require.NoError(t, err)
+	content := string(data)
+	assert.Contains(t, content, "<!DOCTYPE html>")
+	assert.Contains(t, content, "HelixQA Test Report")
+}
+
+// --- GenerateChallengeReport tests ---
+
+func TestGenerateChallengeReport(t *testing.T) {
+	r := New()
+	result := &challenge.Result{
+		ChallengeID:   "test-1",
+		ChallengeName: "Test Challenge",
+		Status:        challenge.StatusPassed,
+		StartTime:     time.Now().Add(-5 * time.Second),
+		EndTime:       time.Now(),
+		Duration:      5 * time.Second,
+	}
+
+	data, err := r.GenerateChallengeReport(result)
+	require.NoError(t, err)
+	assert.NotEmpty(t, data)
+	assert.Contains(t, string(data), "Test Challenge")
+}
+
+// --- PlatformResult tests ---
+
+func TestPlatformResult_Fields(t *testing.T) {
+	pr := &PlatformResult{
+		Platform:   config.PlatformAndroid,
+		CrashCount: 2,
+		ANRCount:   1,
+		StartTime:  time.Now(),
+		EndTime:    time.Now().Add(10 * time.Second),
+		Duration:   10 * time.Second,
+	}
+	assert.Equal(t, config.PlatformAndroid, pr.Platform)
+	assert.Equal(t, 2, pr.CrashCount)
+	assert.Equal(t, 1, pr.ANRCount)
+}
+
+// --- QAReport tests ---
+
+func TestQAReport_Fields(t *testing.T) {
+	qa := &QAReport{
+		Title:            "Test",
+		GeneratedAt:      time.Now(),
+		TotalChallenges:  10,
+		PassedChallenges: 8,
+		FailedChallenges: 2,
+		TotalCrashes:     1,
+		TotalANRs:        0,
+		OutputDir:        "/tmp/output",
+	}
+	assert.Equal(t, 10, qa.TotalChallenges)
+	assert.Equal(t, 8, qa.PassedChallenges)
+	assert.Equal(t, 2, qa.FailedChallenges)
+	assert.Equal(t, "/tmp/output", qa.OutputDir)
+}
+
+func TestWriteMarkdown_CreatesDirIfMissing(t *testing.T) {
+	dir := t.TempDir()
+	nested := filepath.Join(dir, "sub", "dir")
+	r := New()
+
+	qa := &QAReport{
+		Title:       "Test",
+		GeneratedAt: time.Now(),
+	}
+
+	path := filepath.Join(nested, "report.md")
+	err := r.WriteMarkdown(qa, path)
+	require.NoError(t, err)
+	assert.FileExists(t, path)
+}
+
+func TestWriteJSON_CreatesDirIfMissing(t *testing.T) {
+	dir := t.TempDir()
+	nested := filepath.Join(dir, "sub", "dir")
+	r := New()
+
+	qa := &QAReport{
+		Title:       "Test",
+		GeneratedAt: time.Now(),
+	}
+
+	path := filepath.Join(nested, "report.json")
+	err := r.WriteJSON(qa, path)
+	require.NoError(t, err)
+	assert.FileExists(t, path)
+}
+
+func TestWriteMarkdown_PassRate(t *testing.T) {
+	dir := t.TempDir()
+	r := New()
+
+	qa := &QAReport{
+		Title:            "Test",
+		GeneratedAt:      time.Now(),
+		TotalChallenges:  4,
+		PassedChallenges: 3,
+		FailedChallenges: 1,
+	}
+
+	path := filepath.Join(dir, "report.md")
+	err := r.WriteMarkdown(qa, path)
+	require.NoError(t, err)
+
+	data, err := os.ReadFile(path)
+	require.NoError(t, err)
+	assert.Contains(t, string(data), "Pass Rate")
+	assert.Contains(t, string(data), "75%")
+}
