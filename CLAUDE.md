@@ -35,11 +35,14 @@ make help                # Show all targets
 | Package | Purpose |
 |---------|---------|
 | `pkg/config` | Configuration types (platforms, speed, report format) |
+| `pkg/testbank` | YAML test bank management with platform/priority filtering |
 | `pkg/detector` | Real-time crash/ANR detection (Android ADB, Web, Desktop) |
 | `pkg/validator` | Step-by-step validation with evidence collection |
+| `pkg/evidence` | Centralized evidence collection (screenshots, video, logs) |
+| `pkg/ticket` | Markdown ticket generation for AI fix pipelines |
 | `pkg/reporter` | QA report generation (reuses `challenges/pkg/report`) |
 | `pkg/orchestrator` | Main QA brain tying everything together |
-| `cmd/helixqa` | CLI entry point |
+| `cmd/helixqa` | CLI entry point (subcommands: run, list, report, version) |
 
 ## Key Interfaces
 

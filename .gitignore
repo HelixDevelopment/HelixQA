@@ -4,7 +4,8 @@
 *.dll
 *.so
 *.dylib
-helixqa
+/helixqa
+/bin/helixqa
 
 # Test binary
 *.test
@@ -18,9 +19,9 @@ coverage.html
 /dist/
 
 # Results and evidence
-qa-results/
-results/
-evidence/
+/qa-results/
+/results/
+/evidence/
 
 # IDE
 .idea/

@@ -1,6 +1,6 @@
 # HelixQA
 
-QA orchestration framework for cross-platform testing with real-time crash detection, step validation, and evidence-based reporting.
+QA orchestration framework for cross-platform testing with real-time crash detection, step validation, evidence collection, and automated ticket generation.
 
 Built on [digital.vasic.challenges](../Challenges) and [digital.vasic.containers](../Containers).
 
@@ -9,7 +9,9 @@ Built on [digital.vasic.challenges](../Challenges) and [digital.vasic.containers
 - **Cross-platform testing**: Android, Web, and Desktop
 - **Real-time crash detection**: ADB-based Android crash/ANR detection, browser and JVM process monitoring
 - **Step-by-step validation**: Evidence collection at each test step to prevent false positives
-- **Evidence-based reporting**: Screenshots, logs, and stack traces attached to failures
+- **YAML test banks**: QA-specific test case definitions with platform targeting, priority, and documentation references
+- **Evidence collection**: Screenshots, logcat, video recording, stack traces — all centralized
+- **Markdown ticket generation**: Auto-generated issue tickets with full evidence for AI fix pipelines
 - **Multiple report formats**: Markdown, HTML, JSON
 - **Speed modes**: Slow (debugging), Normal, Fast (CI)
 - **Composable architecture**: Reuses Challenges framework for test execution and reporting
@@ -37,54 +39,70 @@ make build
 ## Usage
 
 ```bash
-# Run all platforms against a test bank
-helixqa --banks tests/banks/format-tests.json --platform all
+# Run QA pipeline
+helixqa run --banks tests/banks/ --platform all
 
 # Android-specific with device
-helixqa --banks tests/ --platform android \
+helixqa run --banks tests/ --platform android \
   --device emulator-5554 \
   --package com.example.app
 
-# Web platform with fast mode
-helixqa --banks tests/web-bank.json --platform web --speed fast
+# List test cases from banks
+helixqa list --banks tests/banks/ --platform android
 
-# Desktop with JSON report
-helixqa --banks tests/ --platform desktop --report json
+# Generate report from existing results
+helixqa report --input qa-results --format html
 
-# All options
-helixqa \
-  --banks tests/bank1.json,tests/bank2.json \
-  --platform android,web,desktop \
-  --device emulator-5554 \
-  --package com.example.app \
-  --output qa-results \
-  --speed normal \
-  --report markdown \
-  --validate \
-  --record \
-  --verbose \
-  --timeout 30m
+# Version info
+helixqa version
+```
+
+## Test Bank Format (YAML)
+
+```yaml
+version: "1.0"
+name: "Yole Core Tests"
+test_cases:
+  - id: TC-001
+    name: "Create new document"
+    category: functional
+    priority: critical
+    platforms: [android, web, desktop]
+    steps:
+      - name: "Open app"
+        action: "Launch application"
+        expected: "Main editor screen visible"
+    tags: [core, smoke]
+    documentation_refs:
+      - type: user_guide
+        section: "3.1"
+        path: "docs/USER_MANUAL.md"
 ```
 
 ## Architecture
 
 ```
-cmd/helixqa/          CLI entry point
+cmd/helixqa/          CLI entry point (subcommands: run, list, report, version)
 pkg/
   config/             Configuration types and validation
+  testbank/           YAML test bank management with platform/priority filtering
   detector/           Platform-specific crash/ANR detection
     android.go        ADB-based detection (pidof, logcat, screencap)
     web.go            Browser process monitoring (pgrep)
     desktop.go        JVM/process monitoring (pgrep, kill)
   validator/          Step-by-step validation with evidence
+  evidence/           Centralized evidence collection (screenshots, video, logs)
+  ticket/             Markdown ticket generation for AI fix pipelines
   reporter/           QA report generation (reuses challenges/pkg/report)
   orchestrator/       Main QA pipeline coordinator
 ```
 
+See [ARCHITECTURE.md](ARCHITECTURE.md) and [API_REFERENCE.md](API_REFERENCE.md) for details.
+
 ## Testing
 
 ```bash
-make test       # Run all tests
+make test       # Run all tests (235 tests)
 make test-race  # With race detection
 make test-cover # With coverage report
 make vet        # Static analysis
