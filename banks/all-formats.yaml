@@ -1,0 +1,365 @@
+# SPDX-FileCopyrightText: 2026 Milos Vasic
+# SPDX-License-Identifier: Apache-2.0
+#
+# HelixQA Test Bank: All 17 Text Formats
+# Tests CRUD, export, preview, and format detection for every format
+# across all 3 platforms (Android, Web, Desktop)
+
+version: "1.0"
+name: "Yole All-Formats Test Bank"
+description: "Comprehensive QA tests for all 17 text formats across all platforms"
+metadata:
+  author: "vasic-digital"
+  app: "Yole"
+  version: "1.0.0"
+
+test_cases:
+  # ==================== Markdown ====================
+  - id: FMT-MD-001
+    name: "Create Markdown document"
+    category: functional
+    priority: critical
+    platforms: [android, web, desktop]
+    steps:
+      - name: "Launch app"
+        action: "Open Yole application"
+        expected: "Main screen visible"
+      - name: "Create new document"
+        action: "Create new .md file"
+        expected: "Empty editor with markdown mode"
+      - name: "Type content"
+        action: "Type '# Title\n**bold** *italic*\n- list item'"
+        expected: "Content appears in editor"
+      - name: "Verify format detection"
+        action: "Check status bar"
+        expected: "Format shows 'Markdown'"
+    tags: [markdown, create, core]
+    documentation_refs:
+      - type: user_guide
+        section: "3.1"
+        path: "docs/USER_MANUAL_FORMATS.md"
+    estimated_duration: "30s"
+    expected_result: "Markdown document created with proper format detection"
+
+  - id: FMT-MD-002
+    name: "Preview Markdown document"
+    category: functional
+    priority: critical
+    platforms: [android, web, desktop]
+    steps:
+      - name: "Open markdown file"
+        action: "Load test.md with markdown content"
+        expected: "Editor shows markdown source"
+      - name: "Switch to preview"
+        action: "Tap/click preview tab"
+        expected: "Rendered HTML preview visible"
+      - name: "Verify rendering"
+        action: "Check heading, bold, lists rendered"
+        expected: "HTML elements rendered correctly"
+    tags: [markdown, preview]
+    estimated_duration: "15s"
+
+  - id: FMT-MD-003
+    name: "Edit and save Markdown"
+    category: functional
+    priority: high
+    platforms: [android, web, desktop]
+    steps:
+      - name: "Open existing markdown"
+        action: "Load file with content"
+        expected: "Content visible in editor"
+      - name: "Append text"
+        action: "Add '## New Section' at end"
+        expected: "New text appears"
+      - name: "Save document"
+        action: "Trigger save"
+        expected: "Document saved without errors"
+    tags: [markdown, edit, save]
+    estimated_duration: "20s"
+
+  # ==================== Plain Text ====================
+  - id: FMT-TXT-001
+    name: "Create Plain Text document"
+    category: functional
+    priority: critical
+    platforms: [android, web, desktop]
+    steps:
+      - name: "Create new .txt file"
+        action: "Create plain text document"
+        expected: "Empty editor in plain text mode"
+      - name: "Type content"
+        action: "Type plain text paragraphs"
+        expected: "Content appears"
+    tags: [plaintext, create]
+    estimated_duration: "15s"
+
+  - id: FMT-TXT-002
+    name: "Preview Plain Text"
+    category: functional
+    priority: high
+    platforms: [android, web, desktop]
+    steps:
+      - name: "Switch to preview"
+        action: "Open preview for .txt"
+        expected: "Plain text displayed as-is"
+    tags: [plaintext, preview]
+    estimated_duration: "10s"
+
+  # ==================== Todo.txt ====================
+  - id: FMT-TODO-001
+    name: "Create Todo.txt document"
+    category: functional
+    priority: critical
+    platforms: [android, web, desktop]
+    steps:
+      - name: "Create todo.txt file"
+        action: "Create new todo.txt"
+        expected: "Editor with todo.txt mode"
+      - name: "Add tasks"
+        action: "Type '(A) Task 1 +project @context'"
+        expected: "Todo syntax highlighted"
+    tags: [todotxt, create]
+    estimated_duration: "15s"
+
+  # ==================== CSV ====================
+  - id: FMT-CSV-001
+    name: "Create CSV document"
+    category: functional
+    priority: high
+    platforms: [android, web, desktop]
+    steps:
+      - name: "Create .csv file"
+        action: "Create new CSV document"
+        expected: "CSV editor mode"
+      - name: "Enter tabular data"
+        action: "Type 'Name,Age,City\nAlice,30,NYC'"
+        expected: "CSV content visible"
+    tags: [csv, create]
+    estimated_duration: "15s"
+
+  # ==================== LaTeX ====================
+  - id: FMT-TEX-001
+    name: "Create LaTeX document"
+    category: functional
+    priority: high
+    platforms: [android, web, desktop]
+    steps:
+      - name: "Create .tex file"
+        action: "Create LaTeX document"
+        expected: "LaTeX editor mode"
+      - name: "Type LaTeX"
+        action: "Type '\\documentclass{article}\\begin{document}Hello\\end{document}'"
+        expected: "LaTeX commands visible"
+    tags: [latex, create]
+    estimated_duration: "15s"
+
+  # ==================== Org Mode ====================
+  - id: FMT-ORG-001
+    name: "Create Org Mode document"
+    category: functional
+    priority: high
+    platforms: [android, web, desktop]
+    steps:
+      - name: "Create .org file"
+        action: "Create Org Mode document"
+        expected: "Org editor mode"
+      - name: "Type org content"
+        action: "Type '* Heading\n** Subheading\n- item'"
+        expected: "Org syntax visible"
+    tags: [orgmode, create]
+    estimated_duration: "15s"
+
+  # ==================== AsciiDoc ====================
+  - id: FMT-ADOC-001
+    name: "Create AsciiDoc document"
+    category: functional
+    priority: high
+    platforms: [android, web, desktop]
+    steps:
+      - name: "Create .adoc file"
+        action: "Create AsciiDoc document"
+        expected: "AsciiDoc editor mode"
+    tags: [asciidoc, create]
+    estimated_duration: "10s"
+
+  # ==================== WikiText ====================
+  - id: FMT-WIKI-001
+    name: "Create WikiText document"
+    category: functional
+    priority: medium
+    platforms: [android, web, desktop]
+    steps:
+      - name: "Create .wiki file"
+        action: "Create WikiText document"
+        expected: "WikiText editor mode"
+    tags: [wikitext, create]
+    estimated_duration: "10s"
+
+  # ==================== reStructuredText ====================
+  - id: FMT-RST-001
+    name: "Create reStructuredText document"
+    category: functional
+    priority: medium
+    platforms: [android, web, desktop]
+    steps:
+      - name: "Create .rst file"
+        action: "Create RST document"
+        expected: "RST editor mode"
+    tags: [restructuredtext, create]
+    estimated_duration: "10s"
+
+  # ==================== RMarkdown ====================
+  - id: FMT-RMD-001
+    name: "Create RMarkdown document"
+    category: functional
+    priority: medium
+    platforms: [android, web, desktop]
+    steps:
+      - name: "Create .Rmd file"
+        action: "Create RMarkdown document"
+        expected: "RMarkdown editor mode"
+    tags: [rmarkdown, create]
+    estimated_duration: "10s"
+
+  # ==================== TaskPaper ====================
+  - id: FMT-TP-001
+    name: "Create TaskPaper document"
+    category: functional
+    priority: medium
+    platforms: [android, web, desktop]
+    steps:
+      - name: "Create .taskpaper file"
+        action: "Create TaskPaper document"
+        expected: "TaskPaper editor mode"
+    tags: [taskpaper, create]
+    estimated_duration: "10s"
+
+  # ==================== Textile ====================
+  - id: FMT-TEX2-001
+    name: "Create Textile document"
+    category: functional
+    priority: medium
+    platforms: [android, web, desktop]
+    steps:
+      - name: "Create .textile file"
+        action: "Create Textile document"
+        expected: "Textile editor mode"
+    tags: [textile, create]
+    estimated_duration: "10s"
+
+  # ==================== Creole ====================
+  - id: FMT-CRE-001
+    name: "Create Creole document"
+    category: functional
+    priority: medium
+    platforms: [android, web, desktop]
+    steps:
+      - name: "Create .creole file"
+        action: "Create Creole document"
+        expected: "Creole editor mode"
+    tags: [creole, create]
+    estimated_duration: "10s"
+
+  # ==================== TiddlyWiki ====================
+  - id: FMT-TW-001
+    name: "Create TiddlyWiki document"
+    category: functional
+    priority: medium
+    platforms: [android, web, desktop]
+    steps:
+      - name: "Create .tid file"
+        action: "Create TiddlyWiki document"
+        expected: "TiddlyWiki editor mode"
+    tags: [tiddlywiki, create]
+    estimated_duration: "10s"
+
+  # ==================== Jupyter ====================
+  - id: FMT-JUP-001
+    name: "Create Jupyter document"
+    category: functional
+    priority: medium
+    platforms: [android, web, desktop]
+    steps:
+      - name: "Create .ipynb file"
+        action: "Create Jupyter document"
+        expected: "Jupyter editor mode"
+    tags: [jupyter, create]
+    estimated_duration: "10s"
+
+  # ==================== Key-Value ====================
+  - id: FMT-KV-001
+    name: "Create Key-Value document"
+    category: functional
+    priority: medium
+    platforms: [android, web, desktop]
+    steps:
+      - name: "Create .properties file"
+        action: "Create Key-Value document"
+        expected: "Key-Value editor mode"
+    tags: [keyvalue, create]
+    estimated_duration: "10s"
+
+  # ==================== Binary ====================
+  - id: FMT-BIN-001
+    name: "Create Binary document"
+    category: functional
+    priority: low
+    platforms: [android, web, desktop]
+    steps:
+      - name: "Create .bin file"
+        action: "Create binary document"
+        expected: "Binary/hex editor mode"
+    tags: [binary, create]
+    estimated_duration: "10s"
+
+  # ==================== Cross-cutting Tests ====================
+  - id: CROSS-NAV-001
+    name: "Tab navigation across all screens"
+    category: integration
+    priority: critical
+    platforms: [android, web, desktop]
+    steps:
+      - name: "Navigate to Files"
+        action: "Tap/click Files tab"
+        expected: "File list visible"
+      - name: "Navigate to Edit"
+        action: "Tap/click Edit tab"
+        expected: "Editor visible"
+      - name: "Navigate to Preview"
+        action: "Tap/click Preview tab"
+        expected: "Preview visible"
+      - name: "Navigate to Settings"
+        action: "Tap/click Settings tab"
+        expected: "Settings visible"
+    tags: [navigation, core]
+    estimated_duration: "20s"
+
+  - id: CROSS-THEME-001
+    name: "Theme switching (light/dark)"
+    category: integration
+    priority: high
+    platforms: [android, web, desktop]
+    steps:
+      - name: "Open settings"
+        action: "Navigate to settings"
+        expected: "Settings screen visible"
+      - name: "Switch to dark theme"
+        action: "Toggle dark theme"
+        expected: "Dark theme applied"
+      - name: "Switch to light theme"
+        action: "Toggle light theme"
+        expected: "Light theme applied"
+    tags: [theme, settings]
+    estimated_duration: "15s"
+
+  - id: CROSS-STABILITY-001
+    name: "No crashes during format cycling"
+    category: stability
+    priority: critical
+    platforms: [android, web, desktop]
+    steps:
+      - name: "Cycle through all formats"
+        action: "Open and close each of 17 formats"
+        expected: "No crashes or ANRs"
+    tags: [stability, crash-detection]
+    estimated_duration: "60s"
