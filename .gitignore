@@ -19,9 +19,9 @@ coverage.html
 /dist/
 
 # Results and evidence
-/qa-results/
+qa-results/
 /results/
-/evidence/
+evidence/
 
 # IDE
 .idea/
