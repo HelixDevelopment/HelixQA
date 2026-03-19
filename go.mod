@@ -4,6 +4,9 @@ go 1.24.0
 
 require (
 	digital.vasic.challenges v0.0.0
+	digital.vasic.docprocessor v0.0.0-00010101000000-000000000000
+	digital.vasic.llmorchestrator v0.0.0-00010101000000-000000000000
+	digital.vasic.visionengine v0.0.0-00010101000000-000000000000
 	github.com/stretchr/testify v1.11.1
 	gopkg.in/yaml.v3 v3.0.1
 )
@@ -17,4 +20,7 @@ require (
 replace (
 	digital.vasic.challenges => ../Challenges
 	digital.vasic.containers => ../Containers
+	digital.vasic.docprocessor => ../../DocProcessor
+	digital.vasic.llmorchestrator => ../../LLMOrchestrator
+	digital.vasic.visionengine => ../../VisionEngine
 )
