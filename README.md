@@ -82,7 +82,7 @@ test_cases:
 ## Architecture
 
 ```
-cmd/helixqa/          CLI entry point (subcommands: run, list, report, version)
+cmd/helixqa/          CLI entry point (subcommands: run, list, report, autonomous, version)
 pkg/
   config/             Configuration types and validation
   testbank/           YAML test bank management with platform/priority filtering
@@ -95,9 +95,92 @@ pkg/
   ticket/             Markdown ticket generation for AI fix pipelines
   reporter/           QA report generation (reuses challenges/pkg/report)
   orchestrator/       Main QA pipeline coordinator
+  autonomous/         SessionCoordinator, PlatformWorker, PhaseManager
+  navigator/          NavigationEngine, ActionExecutor (ADB, Playwright, X11)
+  issuedetector/      LLM-powered bug detection (visual, UX, accessibility, functional)
+  session/            SessionRecorder, Timeline, VideoManager
 ```
 
 See [ARCHITECTURE.md](ARCHITECTURE.md) and [API_REFERENCE.md](API_REFERENCE.md) for details.
+
+## Autonomous QA Session
+
+HelixQA includes an **Autonomous QA Session** mode that uses LLM-powered agents and computer vision to autonomously navigate applications, verify documented features, discover bugs, and generate comprehensive QA reports with video evidence.
+
+### What It Does
+
+The autonomous session runs in 4 phases:
+
+1. **Setup** -- Select LLMs via LLMsVerifier, build a feature map from project docs via DocProcessor, spawn CLI agents via LLMOrchestrator, and initialize VisionEngine.
+2. **Doc-Driven Verification** -- Platform workers verify every documented feature against the running app, capturing screenshots and video evidence at each step.
+3. **Curiosity-Driven Exploration** -- Workers explore undiscovered areas of the app, testing edge cases, empty inputs, rapid interactions, and undocumented behaviors.
+4. **Report & Cleanup** -- Aggregate coverage, tickets, and navigation maps into a QA report (Markdown, HTML, JSON) with linked video timestamps.
+
+### New Packages
+
+| Package | Purpose |
+|---------|---------|
+| `pkg/autonomous` | SessionCoordinator, PlatformWorker, PhaseManager |
+| `pkg/navigator` | NavigationEngine with platform-specific ActionExecutors (ADB, Playwright, X11) |
+| `pkg/issuedetector` | LLM-powered bug detection across visual, UX, accessibility, and functional categories |
+| `pkg/session` | SessionRecorder with video management and timeline event tracking |
+
+### External Modules
+
+The autonomous session integrates 4 external Go modules (consumed as Git submodules):
+
+| Module | Purpose |
+|--------|---------|
+| LLMsVerifier | Strategy-based LLM selection and scoring |
+| LLMOrchestrator | Headless CLI agent management (opencode, claude-code, gemini, junie, qwen-code) |
+| VisionEngine | GoCV mechanical vision + LLM Vision API analysis |
+| DocProcessor | Documentation loading, feature map building, coverage tracking |
+
+### CLI Subcommand
+
+```bash
+helixqa autonomous --project /path/to/Yole \
+  --platforms android,desktop,web \
+  --env .env \
+  --timeout 2h \
+  --coverage-target 0.9 \
+  --output qa-results/ \
+  --report markdown,html,json
+```
+
+### Configuration
+
+All settings are managed via a `.env` file. Copy `.env.example` to `.env` and fill in your API keys and platform-specific paths. Key configuration groups:
+
+- **Master switch**: Enable/disable, platform selection, timeout, coverage target
+- **LLMsVerifier**: Strategy, score thresholds, caching
+- **API keys**: OpenAI, Anthropic, Google, Groq, Mistral, DeepSeek, xAI, Together, Qwen, Junie
+- **CLI agents**: Enabled agents, binary paths, pool size, retry config
+- **Vision**: Provider selection, OpenCV toggle, SSIM threshold
+- **Recording**: Video/screenshot capture, ffmpeg path, quality
+- **Platforms**: Android device, web URL/browser, desktop process/display
+
+### Quick Start
+
+```bash
+# 1. Copy and edit the configuration
+cp .env.example .env
+# Edit .env — set at least one API key and platform settings
+
+# 2. Run an autonomous session against a project
+helixqa autonomous --project /path/to/Yole \
+  --platforms desktop \
+  --env .env \
+  --timeout 30m \
+  --output qa-results/
+
+# 3. View the results
+cat qa-results/qa-report.md
+ls qa-results/tickets/
+ls qa-results/videos/
+```
+
+See [USER_GUIDE_AUTONOMOUS.md](USER_GUIDE_AUTONOMOUS.md) and [VIDEO_COURSE_AUTONOMOUS.md](VIDEO_COURSE_AUTONOMOUS.md) for detailed tutorials.
 
 ## Testing
 
