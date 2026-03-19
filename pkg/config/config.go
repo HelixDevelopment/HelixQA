@@ -99,6 +99,129 @@ type Config struct {
 	// DesktopPID is the process ID for desktop testing. If set,
 	// it takes precedence over DesktopProcess.
 	DesktopPID int `yaml:"desktop_pid" json:"desktop_pid"`
+
+	// Autonomous holds configuration for autonomous QA sessions.
+	Autonomous AutonomousConfig `yaml:"autonomous" json:"autonomous"`
+}
+
+// AutonomousConfig holds configuration for autonomous QA
+// sessions driven by LLM agents and computer vision.
+type AutonomousConfig struct {
+	// Enabled activates autonomous QA mode.
+	Enabled bool `yaml:"enabled" json:"enabled"`
+
+	// CoverageTarget is the desired feature coverage (0-1).
+	CoverageTarget float64 `yaml:"coverage_target" json:"coverage_target"`
+
+	// CuriosityEnabled enables the curiosity-driven phase.
+	CuriosityEnabled bool `yaml:"curiosity_enabled" json:"curiosity_enabled"`
+
+	// CuriosityTimeout limits the curiosity phase.
+	CuriosityTimeout time.Duration `yaml:"curiosity_timeout" json:"curiosity_timeout"`
+
+	// AgentsEnabled lists which CLI agents to use.
+	AgentsEnabled []string `yaml:"agents_enabled" json:"agents_enabled"`
+
+	// AgentPoolSize is the number of agents in the pool.
+	AgentPoolSize int `yaml:"agent_pool_size" json:"agent_pool_size"`
+
+	// AgentTimeout is the timeout for agent operations.
+	AgentTimeout time.Duration `yaml:"agent_timeout" json:"agent_timeout"`
+
+	// AgentMaxRetries is the max retries per LLM call.
+	AgentMaxRetries int `yaml:"agent_max_retries" json:"agent_max_retries"`
+
+	// VisionProvider selects the vision provider ("auto",
+	// "openai", "anthropic", "gemini", "qwen").
+	VisionProvider string `yaml:"vision_provider" json:"vision_provider"`
+
+	// VisionOpenCVEnabled enables OpenCV-based analysis.
+	VisionOpenCVEnabled bool `yaml:"vision_opencv_enabled" json:"vision_opencv_enabled"`
+
+	// VisionSSIMThreshold is the SSIM similarity threshold.
+	VisionSSIMThreshold float64 `yaml:"vision_ssim_threshold" json:"vision_ssim_threshold"`
+
+	// DocsRoot is the path to project documentation.
+	DocsRoot string `yaml:"docs_root" json:"docs_root"`
+
+	// DocsAutoDiscover enables automatic doc discovery.
+	DocsAutoDiscover bool `yaml:"docs_auto_discover" json:"docs_auto_discover"`
+
+	// DocsFormats lists supported documentation formats.
+	DocsFormats []string `yaml:"docs_formats" json:"docs_formats"`
+
+	// RecordingVideo enables video recording.
+	RecordingVideo bool `yaml:"recording_video" json:"recording_video"`
+
+	// RecordingScreenshots enables screenshot capture.
+	RecordingScreenshots bool `yaml:"recording_screenshots" json:"recording_screenshots"`
+
+	// RecordingVideoQuality sets video quality (low/medium/high).
+	RecordingVideoQuality string `yaml:"recording_video_quality" json:"recording_video_quality"`
+
+	// RecordingScreenshotFormat sets screenshot format (png/jpg).
+	RecordingScreenshotFormat string `yaml:"recording_screenshot_format" json:"recording_screenshot_format"`
+
+	// RecordingFFmpegPath is the path to ffmpeg binary.
+	RecordingFFmpegPath string `yaml:"recording_ffmpeg_path" json:"recording_ffmpeg_path"`
+
+	// AndroidDevice is the ADB device/emulator ID.
+	AndroidDevice string `yaml:"android_device" json:"android_device"`
+
+	// AndroidPackage is the Android app package name.
+	AndroidPackage string `yaml:"android_package" json:"android_package"`
+
+	// WebURL is the URL for web testing.
+	WebURL string `yaml:"web_url" json:"web_url"`
+
+	// WebBrowser selects the browser (chromium/chrome/firefox).
+	WebBrowser string `yaml:"web_browser" json:"web_browser"`
+
+	// DesktopProcess is the desktop process name.
+	DesktopProcess string `yaml:"desktop_process" json:"desktop_process"`
+
+	// DesktopDisplay is the X11 display.
+	DesktopDisplay string `yaml:"desktop_display" json:"desktop_display"`
+
+	// ReportFormats lists output report formats.
+	ReportFormats []string `yaml:"report_formats" json:"report_formats"`
+
+	// TicketsEnabled enables ticket generation.
+	TicketsEnabled bool `yaml:"tickets_enabled" json:"tickets_enabled"`
+
+	// TicketsMinSeverity is the minimum severity for tickets.
+	TicketsMinSeverity string `yaml:"tickets_min_severity" json:"tickets_min_severity"`
+}
+
+// DefaultAutonomousConfig returns sensible defaults for
+// autonomous QA configuration.
+func DefaultAutonomousConfig() AutonomousConfig {
+	return AutonomousConfig{
+		Enabled:               true,
+		CoverageTarget:        0.90,
+		CuriosityEnabled:      true,
+		CuriosityTimeout:      30 * time.Minute,
+		AgentsEnabled:         []string{"opencode", "claude-code", "gemini"},
+		AgentPoolSize:         3,
+		AgentTimeout:          60 * time.Second,
+		AgentMaxRetries:       3,
+		VisionProvider:        "auto",
+		VisionOpenCVEnabled:   true,
+		VisionSSIMThreshold:   0.95,
+		DocsRoot:              "./docs",
+		DocsAutoDiscover:      true,
+		DocsFormats:           []string{"md", "yaml", "html", "adoc", "rst"},
+		RecordingVideo:        true,
+		RecordingScreenshots:  true,
+		RecordingVideoQuality: "medium",
+		RecordingScreenshotFormat: "png",
+		RecordingFFmpegPath:   "/usr/bin/ffmpeg",
+		WebBrowser:            "chromium",
+		DesktopDisplay:        ":0",
+		ReportFormats:         []string{"markdown", "html", "json"},
+		TicketsEnabled:        true,
+		TicketsMinSeverity:    "low",
+	}
 }
 
 // DefaultConfig returns a Config with sensible defaults.

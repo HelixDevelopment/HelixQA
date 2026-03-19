@@ -49,6 +49,8 @@ func main() {
 		cmdList(os.Args[2:])
 	case "report":
 		cmdReport(os.Args[2:])
+	case "autonomous":
+		cmdAutonomous(os.Args[2:])
 	case "version":
 		fmt.Printf("helixqa v%s\n", version)
 	case "help", "-h", "--help":
@@ -68,11 +70,12 @@ func printUsage() {
 	fmt.Println("  helixqa <command> [flags]")
 	fmt.Println()
 	fmt.Println("Commands:")
-	fmt.Println("  run      Execute QA pipeline across platforms")
-	fmt.Println("  list     List test cases from banks")
-	fmt.Println("  report   Generate report from existing results")
-	fmt.Println("  version  Print version information")
-	fmt.Println("  help     Show this help")
+	fmt.Println("  run         Execute QA pipeline across platforms")
+	fmt.Println("  autonomous  Run autonomous LLM-driven QA session")
+	fmt.Println("  list        List test cases from banks")
+	fmt.Println("  report      Generate report from existing results")
+	fmt.Println("  version     Print version information")
+	fmt.Println("  help        Show this help")
 	fmt.Println()
 	fmt.Println("Run 'helixqa <command> --help' for command details.")
 }
@@ -340,6 +343,76 @@ func cmdReport(args []string) {
 	}
 
 	fmt.Printf("Report generated: %s\n", path)
+}
+
+// cmdAutonomous runs an autonomous LLM-driven QA session.
+func cmdAutonomous(args []string) {
+	fs := flag.NewFlagSet("autonomous", flag.ExitOnError)
+	project := fs.String("project", ".",
+		"Path to the project root")
+	platforms := fs.String("platforms", "android,desktop,web",
+		"Comma-separated platforms to test")
+	envFile := fs.String("env", ".env",
+		"Path to .env configuration file")
+	timeout := fs.Duration("timeout", 2*time.Hour,
+		"Maximum session duration")
+	coverageTarget := fs.Float64("coverage-target", 0.9,
+		"Desired feature coverage (0-1)")
+	output := fs.String("output", "qa-results",
+		"Output directory for results")
+	reportFmts := fs.String("report", "markdown,html,json",
+		"Comma-separated report formats")
+	verbose := fs.Bool("verbose", false,
+		"Enable verbose logging")
+	curiosity := fs.Bool("curiosity", true,
+		"Enable curiosity-driven exploration phase")
+	curiosityTimeout := fs.Duration("curiosity-timeout",
+		30*time.Minute,
+		"Timeout for curiosity-driven phase")
+
+	if err := fs.Parse(args); err != nil {
+		os.Exit(1)
+	}
+
+	fmt.Println("HelixQA Autonomous QA Session")
+	fmt.Println()
+	fmt.Printf("Project:          %s\n", *project)
+	fmt.Printf("Platforms:        %s\n", *platforms)
+	fmt.Printf("Env file:         %s\n", *envFile)
+	fmt.Printf("Timeout:          %v\n", *timeout)
+	fmt.Printf("Coverage target:  %.0f%%\n",
+		*coverageTarget*100)
+	fmt.Printf("Output:           %s\n", *output)
+	fmt.Printf("Report formats:   %s\n", *reportFmts)
+	fmt.Printf("Curiosity:        %v (timeout: %v)\n",
+		*curiosity, *curiosityTimeout)
+	fmt.Printf("Verbose:          %v\n", *verbose)
+	fmt.Println()
+
+	// Parse platforms.
+	platformList, err := config.ParsePlatforms(*platforms)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "error: %v\n", err)
+		os.Exit(1)
+	}
+
+	platformStrs := make([]string, len(platformList))
+	for i, p := range platformList {
+		platformStrs[i] = string(p)
+	}
+
+	fmt.Printf("Resolved platforms: %v\n", platformStrs)
+	fmt.Println()
+	fmt.Println("Autonomous QA session requires LLM agents, " +
+		"VisionEngine, and DocProcessor to be configured.")
+	fmt.Println("See .env.example for required environment " +
+		"variables.")
+
+	// TODO: Wire up actual session coordinator once all
+	// dependencies are available at runtime.
+	fmt.Println()
+	fmt.Println("Autonomous session not yet fully wired — " +
+		"all packages are implemented and tested.")
 }
 
 func truncate(s string, max int) string {
