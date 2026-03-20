@@ -1,0 +1,2452 @@
+# SPDX-FileCopyrightText: 2026 Milos Vasic
+# SPDX-License-Identifier: Apache-2.0
+#
+# HelixQA Test Bank: ATMOSphere Android 15 Firmware
+# Comprehensive QA tests for Orange Pi 5 Max (RK3588) appliance firmware
+# covering video routing, audio, WiFi, power, boot, display, apps, and DRM.
+
+version: "1.0"
+name: "ATMOSphere Test Bank"
+description: "Comprehensive QA tests for ATMOSphere Android 15 firmware on Orange Pi 5 Max (RK3588)"
+metadata:
+  author: "ATMOSphere"
+  app: "ATMOSphere Android 15"
+  version: "1.1.0"
+
+test_cases:
+  # ==================== Video Routing to Secondary Display (VR-xxx) ====================
+
+  - id: VR-001
+    name: "Video plays on secondary display when started from VLC"
+    category: functional
+    priority: critical
+    platforms: [android]
+    steps:
+      - name: "Verify secondary display connected"
+        action: "Check that HDMI-A-1 (TV) is connected via dumpsys display"
+        expected: "Secondary display detected with valid display ID"
+      - name: "Launch VLC and play video"
+        action: "Open VLC, select a local video file, start playback"
+        expected: "VLC begins playback"
+      - name: "Verify video on secondary display"
+        action: "Observe the TV (HDMI-A-1 secondary display)"
+        expected: "Video content appears on the TV via Presentation API"
+      - name: "Verify primary shows overlay"
+        action: "Check the primary display (touch screen)"
+        expected: "VideoControlOverlay visible on primary display with playback controls"
+    tags: [video-routing, vlc, secondary-display, tier1]
+    documentation_refs:
+      - type: architecture
+        section: "Fix #107"
+        path: "docs/guides/SYSTEM_ARCHITECTURE.md"
+    estimated_duration: "30s"
+    expected_result: "VLC video redirected to secondary display via MediaCodec SW codec hook"
+
+  - id: VR-002
+    name: "Video plays on secondary display when started from YouTube"
+    category: functional
+    priority: critical
+    platforms: [android]
+    steps:
+      - name: "Verify secondary display connected"
+        action: "Check that HDMI-A-1 (TV) is connected"
+        expected: "Secondary display present"
+      - name: "Launch YouTube and play video"
+        action: "Open YouTube app, search for any video, start playback"
+        expected: "YouTube begins video playback"
+      - name: "Verify video on secondary display"
+        action: "Observe the TV"
+        expected: "Video content renders on secondary display"
+      - name: "Verify ExoPlayer SW fallback"
+        action: "Check logcat for MediaCodec configure hook intercepting ExoPlayer"
+        expected: "Log shows HW codec rejected, ExoPlayer retries with SW codec (c2.android.*)"
+    tags: [video-routing, youtube, exoplayer, secondary-display, tier1]
+    documentation_refs:
+      - type: architecture
+        section: "Fix #107"
+        path: "docs/guides/SYSTEM_ARCHITECTURE.md"
+    estimated_duration: "45s"
+    expected_result: "YouTube ExoPlayer video redirected to secondary display via SW codec"
+
+  - id: VR-003
+    name: "Video plays on secondary display when started from Kodi"
+    category: functional
+    priority: critical
+    platforms: [android]
+    steps:
+      - name: "Verify secondary display connected"
+        action: "Check that HDMI-A-1 (TV) is connected"
+        expected: "Secondary display present"
+      - name: "Launch Kodi and play video"
+        action: "Open Kodi, navigate to a local video file, start playback"
+        expected: "Kodi begins video playback via its internal FFmpeg decoder"
+      - name: "Verify video on secondary display"
+        action: "Observe the TV"
+        expected: "Video content appears on secondary display"
+    tags: [video-routing, kodi, ffmpeg, secondary-display]
+    documentation_refs:
+      - type: architecture
+        section: "Fix #102"
+        path: "docs/guides/SYSTEM_ARCHITECTURE.md"
+    estimated_duration: "45s"
+    expected_result: "Kodi video routed to secondary display"
+
+  - id: VR-004
+    name: "MediaCodec hook intercepts ExoPlayer configure()"
+    category: integration
+    priority: critical
+    platforms: [android]
+    steps:
+      - name: "Clear logcat buffer"
+        action: "Run adb logcat -c"
+        expected: "Logcat buffer cleared"
+      - name: "Start ExoPlayer-based video"
+        action: "Launch any ExoPlayer-based app (YouTube, Jellyfin) and play a video"
+        expected: "Video playback starts"
+      - name: "Check logcat for hook"
+        action: "Run adb logcat -d | grep 'MediaCodec.*configure.*secondary'"
+        expected: "Log entry showing MediaCodec.configure() intercepted and surface redirected"
+      - name: "Verify stack trace detection"
+        action: "Check logcat for ExoPlayer stack trace identification"
+        expected: "Log confirms ExoPlayer detected in call stack"
+    tags: [video-routing, mediacodec, hook, exoplayer]
+    documentation_refs:
+      - type: architecture
+        section: "Fix #88"
+        path: "docs/guides/SYSTEM_ARCHITECTURE.md"
+    estimated_duration: "30s"
+    expected_result: "MediaCodec.configure() hook successfully intercepts and redirects ExoPlayer video decoder"
+
+  - id: VR-005
+    name: "SW codec (c2.android.*) used instead of HW codec for secondary display"
+    category: functional
+    priority: critical
+    platforms: [android]
+    steps:
+      - name: "Clear logcat"
+        action: "Run adb logcat -c"
+        expected: "Buffer cleared"
+      - name: "Play video on ExoPlayer-based app"
+        action: "Start video playback in YouTube or similar"
+        expected: "Video plays on secondary display"
+      - name: "Verify SW codec in use"
+        action: "Run adb logcat -d | grep 'c2.android'"
+        expected: "SW codec instance (c2.android.avc.decoder or c2.android.hevc.decoder) active"
+      - name: "Verify no HW codec"
+        action: "Run adb logcat -d | grep 'c2.rk.*started'"
+        expected: "No HW codec (c2.rk.*) started for this video"
+    tags: [video-routing, sw-codec, hw-codec, secondary-display]
+    documentation_refs:
+      - type: architecture
+        section: "Fix #107"
+        path: "docs/guides/SYSTEM_ARCHITECTURE.md"
+    estimated_duration: "30s"
+    expected_result: "SW codec used for secondary display rendering, HW codec avoided due to BAD_INDEX crash"
+
+  - id: VR-006
+    name: "HW codec rejected triggers ExoPlayer SW fallback"
+    category: integration
+    priority: critical
+    platforms: [android]
+    steps:
+      - name: "Clear logcat"
+        action: "Run adb logcat -c"
+        expected: "Buffer cleared"
+      - name: "Start ExoPlayer video"
+        action: "Play video in an ExoPlayer-based app with secondary display connected"
+        expected: "Video begins playback"
+      - name: "Check for IllegalArgumentException in logcat"
+        action: "Run adb logcat -d | grep -E 'IllegalArgument|ExoPlayer.*fallback'"
+        expected: "Log shows IllegalArgumentException thrown for HW codec, ExoPlayer retries with SW codec"
+      - name: "Verify video plays correctly"
+        action: "Observe video on secondary display"
+        expected: "Video renders without artifacts on secondary display via SW codec"
+    tags: [video-routing, exoplayer, fallback, hw-codec-rejection]
+    documentation_refs:
+      - type: architecture
+        section: "Fix #101"
+        path: "docs/guides/SYSTEM_ARCHITECTURE.md"
+    estimated_duration: "30s"
+    expected_result: "ExoPlayer receives IllegalArgumentException for HW codec configure and transparently falls back to SW codec"
+
+  - id: VR-007
+    name: "Video stops on secondary when app navigates away"
+    category: functional
+    priority: high
+    platforms: [android]
+    steps:
+      - name: "Start video on secondary"
+        action: "Play video in any app; verify it appears on secondary display"
+        expected: "Video playing on secondary display"
+      - name: "Navigate away in app"
+        action: "Press back button or navigate to a non-video screen within the app"
+        expected: "App leaves video playback"
+      - name: "Verify secondary display clears"
+        action: "Observe secondary display"
+        expected: "Secondary display shows black screen or Presenter background, not a frozen frame"
+      - name: "Check VideoPlaybackDetector"
+        action: "Run adb logcat -d | grep 'VideoPlaybackDetector.*stop'"
+        expected: "MediaSession stop or pause detected, video surface cleared"
+    tags: [video-routing, stop-detection, frozen-frame, lifecycle]
+    documentation_refs:
+      - type: architecture
+        section: "Fix #101"
+        path: "docs/guides/SYSTEM_ARCHITECTURE.md"
+    estimated_duration: "20s"
+    expected_result: "Video stops cleanly on secondary display when user navigates away from video content"
+
+  - id: VR-008
+    name: "Resolution filter blocks thumbnails (<400px dimension)"
+    category: edge_case
+    priority: high
+    platforms: [android]
+    steps:
+      - name: "Open YouTube home screen"
+        action: "Launch YouTube app and stay on the home feed (do not play a video)"
+        expected: "YouTube home screen with video thumbnails visible"
+      - name: "Verify no redirect for thumbnails"
+        action: "Check logcat for resolution filter messages"
+        expected: "Log shows videos below MIN_VIDEO_DIMENSION=400 rejected from redirect"
+      - name: "Verify secondary display unchanged"
+        action: "Observe secondary display"
+        expected: "No thumbnail previews appear on secondary display"
+    tags: [video-routing, resolution-filter, thumbnails, edge-case]
+    documentation_refs:
+      - type: architecture
+        section: "Fix #93"
+        path: "docs/guides/SYSTEM_ARCHITECTURE.md"
+    estimated_duration: "20s"
+    expected_result: "Small resolution video decoders (thumbnails, previews) filtered out and not redirected to secondary display"
+
+  - id: VR-009
+    name: "Second video replaces first on secondary display (single-active-decoder)"
+    category: functional
+    priority: high
+    platforms: [android]
+    steps:
+      - name: "Play first video"
+        action: "Start a video in app A; verify on secondary display"
+        expected: "First video playing on secondary display"
+      - name: "Play second video"
+        action: "Without stopping first, start a video in app B"
+        expected: "Second video begins"
+      - name: "Verify replacement"
+        action: "Observe secondary display"
+        expected: "Second video fully replaces first on secondary display, no split/overlap"
+      - name: "Verify single-active-decoder"
+        action: "Check logcat for deactivation of first decoder"
+        expected: "Log shows first decoder deactivated + 50ms wait + unlinkToDeath before second activates"
+    tags: [video-routing, single-active-decoder, replacement]
+    documentation_refs:
+      - type: architecture
+        section: "Fix #89"
+        path: "docs/guides/SYSTEM_ARCHITECTURE.md"
+    estimated_duration: "30s"
+    expected_result: "Single-active-decoder model ensures clean replacement: new video fully dismisses existing one"
+
+  - id: VR-010
+    name: "VideoControlOverlay appears on primary display during video"
+    category: functional
+    priority: high
+    platforms: [android]
+    steps:
+      - name: "Start video playback"
+        action: "Play video in any app with secondary display connected"
+        expected: "Video redirected to secondary display"
+      - name: "Check primary display"
+        action: "Look at the primary touch screen display"
+        expected: "VideoControlOverlay visible with dismiss button, volume slider, audio output selector"
+    tags: [video-routing, overlay, primary-display, ui]
+    estimated_duration: "15s"
+    expected_result: "VideoControlOverlay provides playback controls on primary display while video plays on secondary"
+
+  - id: VR-011
+    name: "Dismiss button on overlay returns video to primary"
+    category: functional
+    priority: high
+    platforms: [android]
+    steps:
+      - name: "Start video on secondary"
+        action: "Play video; verify it is on secondary display with overlay on primary"
+        expected: "Video on secondary, overlay on primary"
+      - name: "Tap dismiss button"
+        action: "Press the dismiss/return button on the VideoControlOverlay"
+        expected: "Video returns to primary display in the originating app"
+      - name: "Verify secondary clears"
+        action: "Observe secondary display"
+        expected: "Secondary display returns to Presenter background or black"
+    tags: [video-routing, overlay, dismiss, user-control]
+    estimated_duration: "15s"
+    expected_result: "User can dismiss video from secondary display back to primary via overlay button"
+
+  - id: VR-012
+    name: "Volume slider on overlay changes audio volume"
+    category: functional
+    priority: medium
+    platforms: [android]
+    steps:
+      - name: "Start video on secondary"
+        action: "Play video with audio; verify on secondary display"
+        expected: "Video playing with audio"
+      - name: "Adjust volume slider"
+        action: "Move the volume slider on the VideoControlOverlay up and down"
+        expected: "Audio volume changes in real-time as slider moves"
+      - name: "Verify volume range"
+        action: "Set slider to minimum and maximum"
+        expected: "Volume goes from silent (0) to maximum (100)"
+    tags: [video-routing, overlay, volume, audio]
+    estimated_duration: "15s"
+    expected_result: "Volume slider on overlay correctly controls audio volume in 0-100 range"
+
+  - id: VR-013
+    name: "Audio output selector opens system MEDIA_OUTPUT panel"
+    category: functional
+    priority: medium
+    platforms: [android]
+    steps:
+      - name: "Start video on secondary"
+        action: "Play video with audio on secondary display"
+        expected: "Video playing"
+      - name: "Tap audio output button"
+        action: "Press the audio output selector button on the VideoControlOverlay"
+        expected: "System MEDIA_OUTPUT panel opens showing available audio devices"
+      - name: "Verify device list"
+        action: "Check the panel lists available outputs"
+        expected: "Panel shows connected audio devices (HDMI, ES8388, BT, USB)"
+    tags: [video-routing, overlay, audio-output, media-output]
+    documentation_refs:
+      - type: architecture
+        section: "Fix #108"
+        path: "docs/guides/SYSTEM_ARCHITECTURE.md"
+    estimated_duration: "20s"
+    expected_result: "Audio output selector correctly opens system media output panel for device switching"
+
+  - id: VR-014
+    name: "NDK hook rejects HW codecs for native players"
+    category: integration
+    priority: high
+    platforms: [android]
+    steps:
+      - name: "Clear logcat"
+        action: "Run adb logcat -c"
+        expected: "Buffer cleared"
+      - name: "Play video in NDK-based player"
+        action: "Open KMPlayer or similar NDK-based video player, play a video"
+        expected: "Video playback starts"
+      - name: "Check NDK hook activity"
+        action: "Run adb logcat -d | grep -E 'NdkMediaCodec|NDK.*codec'"
+        expected: "NDK hook in NdkMediaCodec.cpp active, HW codecs (c2.rk.*) rejected with resolution filter (400px min)"
+    tags: [video-routing, ndk, native-player, hw-codec-rejection]
+    documentation_refs:
+      - type: architecture
+        section: "Fix #102"
+        path: "docs/guides/SYSTEM_ARCHITECTURE.md"
+    estimated_duration: "30s"
+    expected_result: "NdkMediaCodec.cpp hook rejects HW codecs for native players, preventing BAD_INDEX crash on secondary display"
+
+  - id: VR-015
+    name: "Video playback on secondary for 50+ apps (bulk test)"
+    category: integration
+    priority: high
+    platforms: [android]
+    steps:
+      - name: "Run automated video test"
+        action: "Execute test_video_playback_apps.sh on device"
+        expected: "Test script starts iterating through all video apps"
+      - name: "Verify app coverage"
+        action: "Check test output for pass/fail per app"
+        expected: "All 50+ video apps tested: launch, playback detection, secondary display redirect"
+      - name: "Check for crashes"
+        action: "Review logcat for FATAL, ANR, or crash entries during test"
+        expected: "No crashes or ANRs across all tested apps"
+    tags: [video-routing, bulk-test, automation, apps]
+    documentation_refs:
+      - type: architecture
+        section: "Fix #107"
+        path: "docs/guides/SYSTEM_ARCHITECTURE.md"
+    estimated_duration: "600s"
+    expected_result: "All 50+ video/streaming apps successfully play video with secondary display redirect"
+
+  # ==================== Frozen Frame Detection & Cleanup (FF-xxx) ====================
+
+  - id: FF-001
+    name: "Frozen frame auto-detected via C2BqBuffer stall"
+    category: functional
+    priority: critical
+    platforms: [android]
+    steps:
+      - name: "Play video on secondary display"
+        action: "Start video in any app, wait for it to play on secondary"
+        expected: "Video playing on secondary display"
+      - name: "Trigger stall condition"
+        action: "Force-stop the video app while video is playing (adb shell am force-stop)"
+        expected: "Video stops but frame may remain on secondary display"
+      - name: "Wait for detection"
+        action: "Wait up to 10 seconds for watchdog to detect the stall"
+        expected: "Logcat shows C2BqBuffer stall detected or frozen frame watchdog triggered"
+    tags: [frozen-frame, detection, c2bqbuffer, watchdog]
+    documentation_refs:
+      - type: architecture
+        section: "Fix #110"
+        path: "docs/guides/SYSTEM_ARCHITECTURE.md"
+    estimated_duration: "20s"
+    expected_result: "Frozen frame condition detected automatically via C2BqBuffer stall monitoring"
+
+  - id: FF-002
+    name: "media.swcodec killed after frozen frame detection"
+    category: functional
+    priority: critical
+    platforms: [android]
+    steps:
+      - name: "Trigger frozen frame"
+        action: "Force-stop a video app while video plays on secondary display"
+        expected: "Frozen frame on secondary"
+      - name: "Wait for cleanup"
+        action: "Wait for watchdog to detect and initiate cleanup"
+        expected: "Logcat shows media.swcodec process killed"
+      - name: "Verify process restarted"
+        action: "Run adb shell ps | grep media.swcodec"
+        expected: "media.swcodec process running with new PID (system auto-restarts it)"
+    tags: [frozen-frame, cleanup, media-swcodec, process-kill]
+    estimated_duration: "20s"
+    expected_result: "Stale media.swcodec process killed and restarted to release BufferQueue"
+
+  - id: FF-003
+    name: "Presentation resets to black after frozen frame cleanup"
+    category: functional
+    priority: high
+    platforms: [android]
+    steps:
+      - name: "Trigger frozen frame and wait for cleanup"
+        action: "Force-stop video app, wait for watchdog cleanup"
+        expected: "Frozen frame cleaned up"
+      - name: "Verify secondary display"
+        action: "Observe the TV (secondary display)"
+        expected: "Secondary display shows black screen or Presenter background, no stale video frame"
+    tags: [frozen-frame, cleanup, presentation, black-screen]
+    documentation_refs:
+      - type: architecture
+        section: "Fix #101"
+        path: "docs/guides/SYSTEM_ARCHITECTURE.md"
+    estimated_duration: "15s"
+    expected_result: "Presentation surface reset to black after frozen frame cleanup"
+
+  - id: FF-004
+    name: "New video plays correctly after frozen frame cleanup"
+    category: functional
+    priority: critical
+    platforms: [android]
+    steps:
+      - name: "Trigger and complete frozen frame cleanup"
+        action: "Force-stop video app, wait for watchdog cleanup to complete"
+        expected: "Frozen frame resolved, secondary display black"
+      - name: "Play new video"
+        action: "Launch a video app and start a new video"
+        expected: "New video plays on secondary display without issues"
+      - name: "Verify no artifacts"
+        action: "Observe video on secondary display for 10 seconds"
+        expected: "Clean video playback, no stale frames, no BufferQueue errors"
+    tags: [frozen-frame, recovery, new-video, bufferqueue]
+    estimated_duration: "30s"
+    expected_result: "System fully recovers from frozen frame and new video plays cleanly on secondary display"
+
+  - id: FF-005
+    name: "Cast manager script detects C2BqBuffer stall via logcat"
+    category: integration
+    priority: high
+    platforms: [android]
+    steps:
+      - name: "Verify cast manager running"
+        action: "Run adb shell getprop init.svc.cast_manager"
+        expected: "Service status is running"
+      - name: "Trigger C2BqBuffer stall"
+        action: "Force-stop video app during playback"
+        expected: "C2BqBuffer stall occurs"
+      - name: "Check cast manager detection"
+        action: "Run adb logcat -d | grep -E 'cast.*manager.*stall|C2BqBuffer'"
+        expected: "Cast manager script or frozen frame watchdog detects the stall condition"
+    tags: [frozen-frame, cast-manager, detection, logcat]
+    estimated_duration: "20s"
+    expected_result: "Cast manager service participates in frozen frame detection pipeline"
+
+  - id: FF-006
+    name: "Reset Service notification button triggers cleanup"
+    category: functional
+    priority: high
+    platforms: [android]
+    steps:
+      - name: "Trigger frozen frame"
+        action: "Force-stop video app while playing on secondary"
+        expected: "Frozen frame visible on secondary display"
+      - name: "Check notification"
+        action: "Pull down notification shade on primary display"
+        expected: "Reset Service notification visible with cleanup action button"
+      - name: "Tap reset button"
+        action: "Press the cleanup/reset button in the notification"
+        expected: "Frozen frame cleared, secondary display resets to black or Presenter"
+    tags: [frozen-frame, reset-service, notification, user-action]
+    documentation_refs:
+      - type: architecture
+        section: "Fix #110"
+        path: "docs/guides/SYSTEM_ARCHITECTURE.md"
+    estimated_duration: "15s"
+    expected_result: "User can manually trigger frozen frame cleanup via Reset Service notification"
+
+  - id: FF-007
+    name: "MediaSession stop detection catches apps that pause without releasing codec"
+    category: integration
+    priority: high
+    platforms: [android]
+    steps:
+      - name: "Play video"
+        action: "Start video in an app (e.g., VK Video) on secondary display"
+        expected: "Video playing on secondary"
+      - name: "Navigate away without stopping"
+        action: "Press home button or navigate to a different section within the app"
+        expected: "App pauses video but may not release MediaCodec"
+      - name: "Wait for MediaSession detection"
+        action: "Wait up to 5 seconds"
+        expected: "VideoPlaybackDetector detects MediaSession state change to PAUSED/STOPPED"
+      - name: "Verify cleanup"
+        action: "Observe secondary display"
+        expected: "Stale frame cleared, secondary display shows black"
+    tags: [frozen-frame, mediasession, stop-detection, fallback]
+    documentation_refs:
+      - type: architecture
+        section: "Fix #101"
+        path: "docs/guides/SYSTEM_ARCHITECTURE.md"
+    estimated_duration: "15s"
+    expected_result: "VideoPlaybackDetector MediaSession monitoring catches paused apps and clears stale frames"
+
+  - id: FF-008
+    name: "Watchdog interval (2s) catches stalls promptly"
+    category: performance
+    priority: medium
+    platforms: [android]
+    steps:
+      - name: "Trigger frozen frame"
+        action: "Force-stop video app during playback on secondary"
+        expected: "Frozen frame on secondary"
+      - name: "Measure detection time"
+        action: "Record timestamp of force-stop and timestamp of watchdog detection in logcat"
+        expected: "Watchdog detects stall within 2-4 seconds of force-stop"
+    tags: [frozen-frame, watchdog, timing, performance]
+    estimated_duration: "10s"
+    expected_result: "Frozen frame watchdog detects C2BqBuffer stalls within 2s polling interval"
+
+  # ==================== Album Cover on Secondary Display (AC-xxx) ====================
+
+  - id: AC-001
+    name: "Album art appears on secondary display when music plays"
+    category: functional
+    priority: high
+    platforms: [android]
+    steps:
+      - name: "Ensure no video playing"
+        action: "Stop any video playback"
+        expected: "No active video on secondary display"
+      - name: "Start music playback"
+        action: "Open a music player app and play a song with album art"
+        expected: "Music begins playing"
+      - name: "Check secondary display"
+        action: "Observe the TV (secondary display)"
+        expected: "Album cover art displayed on secondary display via Presenter"
+    tags: [album-cover, music, secondary-display, presenter]
+    estimated_duration: "20s"
+    expected_result: "Album art from active MediaSession displayed on secondary display"
+
+  - id: AC-002
+    name: "Title and artist text shown below album art"
+    category: functional
+    priority: medium
+    platforms: [android]
+    steps:
+      - name: "Play music with metadata"
+        action: "Play a song that has title, artist, and album metadata"
+        expected: "Music playing"
+      - name: "Check secondary display"
+        action: "Observe text below album art on secondary display"
+        expected: "Song title and artist name displayed below the album cover"
+    tags: [album-cover, metadata, title, artist]
+    estimated_duration: "15s"
+    expected_result: "MediaSession metadata (title, artist) rendered as text on secondary display"
+
+  - id: AC-003
+    name: "Album cover hidden when music stops"
+    category: functional
+    priority: high
+    platforms: [android]
+    steps:
+      - name: "Play music with album art visible on secondary"
+        action: "Start music playback, verify album art on secondary display"
+        expected: "Album art visible on secondary"
+      - name: "Stop music"
+        action: "Pause or stop the music player"
+        expected: "Music stops"
+      - name: "Verify album art removed"
+        action: "Observe secondary display"
+        expected: "Album art no longer displayed; secondary shows Presenter background or black"
+    tags: [album-cover, stop, lifecycle]
+    estimated_duration: "15s"
+    expected_result: "Album cover disappears from secondary display when music playback stops"
+
+  - id: AC-004
+    name: "Album cover replaced by video when video starts"
+    category: integration
+    priority: high
+    platforms: [android]
+    steps:
+      - name: "Play music with album art on secondary"
+        action: "Start music playback, verify album art on secondary display"
+        expected: "Album art visible on secondary"
+      - name: "Start video playback"
+        action: "Open a video app and play a video"
+        expected: "Video starts playing"
+      - name: "Verify video replaces album art"
+        action: "Observe secondary display"
+        expected: "Video content shown on secondary display, album art hidden"
+    tags: [album-cover, video-routing, priority, replacement]
+    estimated_duration: "20s"
+    expected_result: "Video playback takes priority over album art on secondary display"
+
+  - id: AC-005
+    name: "Album cover returns after video ends if music still playing"
+    category: integration
+    priority: medium
+    platforms: [android]
+    steps:
+      - name: "Play music then start video"
+        action: "Start music, then start video (both playing simultaneously)"
+        expected: "Video on secondary display, music continues in background"
+      - name: "Stop video"
+        action: "Navigate away from video or press back"
+        expected: "Video stops on secondary display"
+      - name: "Verify album art returns"
+        action: "Observe secondary display"
+        expected: "Album cover art reappears on secondary display since music is still playing"
+    tags: [album-cover, video-routing, transition, music-resume]
+    estimated_duration: "25s"
+    expected_result: "Album art gracefully returns to secondary display when video stops and music is still active"
+
+  - id: AC-006
+    name: "Album cover toggle works via notification"
+    category: functional
+    priority: low
+    platforms: [android]
+    steps:
+      - name: "Play music with album art on secondary"
+        action: "Start music playback"
+        expected: "Album art visible on secondary display"
+      - name: "Toggle album cover off"
+        action: "Use the notification or overlay toggle to hide album art"
+        expected: "Album art hidden from secondary display"
+      - name: "Toggle album cover on"
+        action: "Use the toggle to re-enable album art display"
+        expected: "Album art reappears on secondary display"
+    tags: [album-cover, toggle, notification, user-control]
+    estimated_duration: "15s"
+    expected_result: "User can toggle album cover display on/off via notification control"
+
+  # ==================== Audio System (AU-xxx) ====================
+
+  - id: AU-001
+    name: "ES8388 headphone output works (3.5mm jack)"
+    category: functional
+    priority: critical
+    platforms: [android]
+    steps:
+      - name: "Connect wired headphones"
+        action: "Plug wired headphones into the 3.5mm audio jack"
+        expected: "Jack detection triggers (extcon or hp-det GPIO)"
+      - name: "Play audio"
+        action: "Play music or any audio content"
+        expected: "Audio audible through wired headphones"
+      - name: "Verify ES8388 routing"
+        action: "Run adb shell tinymix -D 2 | grep -i output"
+        expected: "ES8388 card 2 headphone output (LOUT1/ROUT1) active"
+    tags: [audio, es8388, headphone, jack, hardware]
+    documentation_refs:
+      - type: architecture
+        section: "Fix #104"
+        path: "docs/guides/SYSTEM_ARCHITECTURE.md"
+    estimated_duration: "15s"
+    expected_result: "3.5mm headphone output functional via ES8388 codec"
+
+  - id: AU-002
+    name: "Bluetooth A2DP audio output works"
+    category: functional
+    priority: critical
+    platforms: [android]
+    steps:
+      - name: "Enable Bluetooth"
+        action: "Ensure Bluetooth is enabled in Settings"
+        expected: "Bluetooth on"
+      - name: "Connect A2DP device"
+        action: "Pair and connect to a Bluetooth speaker or headphones"
+        expected: "A2DP profile connected"
+      - name: "Play audio"
+        action: "Play music"
+        expected: "Audio heard through Bluetooth device"
+      - name: "Check A2DP status"
+        action: "Run adb shell dumpsys bluetooth_manager | grep -i a2dp"
+        expected: "A2DP connection active, SBC codec (for XMFHZ02 soundbar)"
+    tags: [audio, bluetooth, a2dp, wireless]
+    documentation_refs:
+      - type: architecture
+        section: "Fix #63"
+        path: "docs/guides/SYSTEM_ARCHITECTURE.md"
+    estimated_duration: "30s"
+    expected_result: "Bluetooth A2DP audio output functional with stable connection"
+
+  - id: AU-003
+    name: "HDMI audio output works (both HDMI0 and HDMI1)"
+    category: functional
+    priority: critical
+    platforms: [android]
+    steps:
+      - name: "Verify HDMI connections"
+        action: "Ensure both HDMI displays are connected (HDMI-A-1 TV, HDMI-A-2 touch screen)"
+        expected: "Both displays connected"
+      - name: "Play audio"
+        action: "Play audio content"
+        expected: "Audio output active"
+      - name: "Verify HDMI0 audio"
+        action: "Check that rockchip-hdmi0 (card 0) has PCM open"
+        expected: "HDMI0 audio card functional"
+      - name: "Verify HDMI1 audio"
+        action: "Check that rockchip-hdmi1 (card 1) has PCM open"
+        expected: "HDMI1 audio card functional, opened alongside HDMI0"
+      - name: "Verify CTS non-zero"
+        action: "Check HDMI ACR CTS calculation in kernel logs"
+        expected: "CTS value non-zero (required for Samsung TV audio clock recovery)"
+    tags: [audio, hdmi, dual-output, cts]
+    documentation_refs:
+      - type: architecture
+        section: "Fix #100"
+        path: "docs/guides/SYSTEM_ARCHITECTURE.md"
+    estimated_duration: "20s"
+    expected_result: "Both HDMI outputs produce audio simultaneously with valid CTS for ACR"
+
+  - id: AU-004
+    name: "USB headphone audio works"
+    category: functional
+    priority: high
+    platforms: [android]
+    steps:
+      - name: "Connect USB headphones"
+        action: "Plug USB headphones into a USB port"
+        expected: "USB audio device detected by Android"
+      - name: "Play audio"
+        action: "Play music or any audio content"
+        expected: "Audio audible through USB headphones"
+      - name: "Verify routing"
+        action: "Run adb shell dumpsys audio | grep -A5 STREAM_MUSIC"
+        expected: "Audio routed to USB audio device"
+    tags: [audio, usb, headphone, routing]
+    estimated_duration: "15s"
+    expected_result: "USB headphones produce audio when connected"
+
+  - id: AU-005
+    name: "Audio device hot-plug switching (jack insert/remove)"
+    category: functional
+    priority: high
+    platforms: [android]
+    steps:
+      - name: "Play audio through default output"
+        action: "Start audio playback"
+        expected: "Audio playing"
+      - name: "Insert 3.5mm jack"
+        action: "Plug in wired headphones while audio is playing"
+        expected: "Audio switches to headphones without interruption or pop"
+      - name: "Remove 3.5mm jack"
+        action: "Unplug wired headphones"
+        expected: "Audio switches back to previous output without interruption or pop"
+      - name: "Verify no pops or clicks"
+        action: "Listen during transitions"
+        expected: "Clean transition due to kernel amplifier GPIO delay (10ms before enable, 5ms after disable)"
+    tags: [audio, hotplug, jack, switching, es8388]
+    documentation_refs:
+      - type: architecture
+        section: "Fix #103"
+        path: "docs/guides/SYSTEM_ARCHITECTURE.md"
+    estimated_duration: "20s"
+    expected_result: "Audio device switching on jack insert/remove is seamless with no pops or clicks"
+
+  - id: AU-006
+    name: "Volume set to 50% on boot for all streams"
+    category: functional
+    priority: medium
+    platforms: [android]
+    steps:
+      - name: "Reboot device"
+        action: "Run adb reboot and wait for boot to complete"
+        expected: "Device boots successfully"
+      - name: "Check volume levels"
+        action: "Run adb shell cmd media_session volume --get for each stream"
+        expected: "All audio streams (MUSIC, NOTIFICATION, ALARM, RING) at 50%"
+    tags: [audio, volume, boot, default]
+    documentation_refs:
+      - type: architecture
+        section: "Fix #98"
+        path: "docs/guides/SYSTEM_ARCHITECTURE.md"
+    estimated_duration: "60s"
+    expected_result: "All audio stream volumes initialized to 50% at boot via atmosphere-power-save-disable.sh"
+
+  - id: AU-007
+    name: "Both ES8388 outputs (LOUT1+LOUT2) always enabled"
+    category: functional
+    priority: high
+    platforms: [android]
+    steps:
+      - name: "Check ES8388 output state"
+        action: "Run adb shell tinymix -D 2 to inspect mixer controls"
+        expected: "Both LOUT1/ROUT1 (headphone) and LOUT2/ROUT2 (speaker) outputs enabled"
+      - name: "Verify with jack unplugged"
+        action: "Ensure 3.5mm jack is unplugged, check mixer controls"
+        expected: "Both outputs still enabled (AUX cable may not trigger hp-det GPIO)"
+      - name: "Verify with jack plugged"
+        action: "Insert 3.5mm jack, check mixer controls"
+        expected: "Both outputs remain enabled (Fix #104 always-both)"
+    tags: [audio, es8388, always-both, output-config]
+    documentation_refs:
+      - type: architecture
+        section: "Fix #104"
+        path: "docs/guides/SYSTEM_ARCHITECTURE.md"
+    estimated_duration: "15s"
+    expected_result: "ES8388 always has both output pairs enabled regardless of jack state"
+
+  - id: AU-008
+    name: "HDMI CTS calculation non-zero (Samsung TV ACR)"
+    category: functional
+    priority: high
+    platforms: [android]
+    steps:
+      - name: "Connect HDMI to TV"
+        action: "Ensure HDMI output connected to TV"
+        expected: "HDMI display active"
+      - name: "Play audio"
+        action: "Play any audio content"
+        expected: "Audio playing via HDMI"
+      - name: "Check CTS values"
+        action: "Check kernel dmesg for HDMI-QP CTS calculation"
+        expected: "CTS value is non-zero (was always 0 before Fix #97, Samsung TV rejects malformed ACR)"
+    tags: [audio, hdmi, cts, acr, samsung]
+    documentation_refs:
+      - type: architecture
+        section: "Fix #97"
+        path: "docs/guides/SYSTEM_ARCHITECTURE.md"
+    estimated_duration: "15s"
+    expected_result: "HDMI-QP audio clock recovery CTS properly calculated for TV compatibility"
+
+  - id: AU-009
+    name: "BT A2DP no TX queue overflow on 5GHz WiFi"
+    category: performance
+    priority: high
+    platforms: [android]
+    steps:
+      - name: "Connect to 5GHz WiFi"
+        action: "Ensure device is connected to 5GHz WiFi network"
+        expected: "WiFi connected on 5GHz band"
+      - name: "Connect BT A2DP device"
+        action: "Connect Bluetooth speaker"
+        expected: "A2DP connected"
+      - name: "Play audio for 60 seconds"
+        action: "Play music continuously for 60 seconds"
+        expected: "Music plays without interruption"
+      - name: "Check TX queue health"
+        action: "Run adb logcat -d | grep -c 'TX queue'"
+        expected: "Zero TX queue overflow warnings during 60s playback"
+    tags: [audio, bluetooth, a2dp, tx-queue, wifi-coex, performance]
+    documentation_refs:
+      - type: architecture
+        section: "Fix #63"
+        path: "docs/guides/SYSTEM_ARCHITECTURE.md"
+    estimated_duration: "90s"
+    expected_result: "BT A2DP TX queue stays healthy (zero overflows) when WiFi is on 5GHz band"
+
+  - id: AU-010
+    name: "Audio plays without glitch during WiFi scan"
+    category: integration
+    priority: high
+    platforms: [android]
+    steps:
+      - name: "Start audio playback"
+        action: "Play music via any audio output"
+        expected: "Audio playing cleanly"
+      - name: "Trigger WiFi scan"
+        action: "Run adb shell cmd wifi start-scan"
+        expected: "WiFi scan initiated"
+      - name: "Monitor audio quality"
+        action: "Listen for glitches, pops, or dropouts during scan"
+        expected: "Audio continues without audible glitch"
+      - name: "Verify scan throttle"
+        action: "Check logcat for audio-aware scan delay"
+        expected: "WiFi scan delayed or throttled when audio is active"
+    tags: [audio, wifi, scan, glitch, coexistence]
+    documentation_refs:
+      - type: architecture
+        section: "Fix #23"
+        path: "docs/guides/SYSTEM_ARCHITECTURE.md"
+    estimated_duration: "15s"
+    expected_result: "WiFi scanning does not cause audio glitches due to scan throttle and audio-aware delay"
+
+  - id: AU-011
+    name: "Deep buffer period 1920 frames (40ms latency)"
+    category: functional
+    priority: medium
+    platforms: [android]
+    steps:
+      - name: "Check audio HAL config"
+        action: "Verify pcm_config_deep period_size in audio_hw.c via device properties or logcat"
+        expected: "period_size=1920 (40ms at 48kHz)"
+      - name: "Verify start threshold set"
+        action: "Check pcm_config_deep has start_threshold, stop_threshold, avail_min"
+        expected: "Thresholds set to prevent 682ms silence at stream start"
+    tags: [audio, deep-buffer, latency, config]
+    documentation_refs:
+      - type: architecture
+        section: "Fix #74"
+        path: "docs/guides/SYSTEM_ARCHITECTURE.md"
+    estimated_duration: "10s"
+    expected_result: "Deep buffer configured with 1920 frame period and proper thresholds for low-latency start"
+
+  - id: AU-012
+    name: "CPU2 exclusive audio isolation verified"
+    category: performance
+    priority: high
+    platforms: [android]
+    steps:
+      - name: "Check audio cpuset"
+        action: "Run adb shell cat /dev/cpuset/audio/cpus"
+        expected: "CPU2 assigned to audio cpuset"
+      - name: "Check audioserver pinned"
+        action: "Run adb shell cat /proc/$(pidof audioserver)/cpuset"
+        expected: "audioserver process in audio cpuset"
+      - name: "Verify CPU2 excluded from other cpusets"
+        action: "Run adb shell cat /dev/cpuset/top-app/cpus"
+        expected: "CPU2 NOT in top-app cpuset (uses 0,1,3-7)"
+      - name: "Check IRQ affinity"
+        action: "Verify BT UART IRQ 121 pinned to CPU2"
+        expected: "IRQ 121 affinity mask includes only CPU2"
+    tags: [audio, cpuset, cpu-isolation, irq-affinity, performance]
+    documentation_refs:
+      - type: architecture
+        section: "Fix #9"
+        path: "docs/guides/SYSTEM_ARCHITECTURE.md"
+    estimated_duration: "15s"
+    expected_result: "CPU2 exclusively reserved for audio workload with proper IRQ affinity"
+
+  # ==================== WiFi & Network (WN-xxx) ====================
+
+  - id: WN-001
+    name: "WiFi connects to saved network after boot"
+    category: functional
+    priority: critical
+    platforms: [android]
+    steps:
+      - name: "Reboot device"
+        action: "Run adb reboot and wait for boot completion"
+        expected: "Device boots successfully"
+      - name: "Wait for WiFi"
+        action: "Wait up to 30 seconds for WiFi to connect"
+        expected: "WiFi connects to saved network"
+      - name: "Verify connectivity"
+        action: "Run adb shell ping -c 3 8.8.8.8"
+        expected: "Ping succeeds, network connectivity confirmed"
+    tags: [wifi, boot, connectivity, network]
+    estimated_duration: "60s"
+    expected_result: "WiFi automatically connects to saved network after boot with internet access"
+
+  - id: WN-002
+    name: "WiFi power save permanently disabled (PM=0)"
+    category: functional
+    priority: critical
+    platforms: [android]
+    steps:
+      - name: "Check WiFi power save property"
+        action: "Run adb shell getprop persist.wifi.powersave"
+        expected: "Value is 0"
+      - name: "Check bcmdhd PM state"
+        action: "Run adb shell cat /sys/module/bcmdhd/parameters/dhd_pm 2>/dev/null || echo 'check via iovar'"
+        expected: "PM=0 (power management disabled)"
+      - name: "Check config.txt"
+        action: "Verify /vendor/etc/firmware/config.txt contains mpc=0, lpc=0"
+        expected: "MPC and LPC disabled in bcmdhd config"
+    tags: [wifi, power-save, bcmdhd, always-on]
+    documentation_refs:
+      - type: architecture
+        section: "Fix #77"
+        path: "docs/guides/SYSTEM_ARCHITECTURE.md"
+    estimated_duration: "10s"
+    expected_result: "WiFi power save permanently disabled at all levels (driver, config, framework)"
+
+  - id: WN-003
+    name: "BBR congestion control active"
+    category: functional
+    priority: high
+    platforms: [android]
+    steps:
+      - name: "Check TCP congestion control"
+        action: "Run adb shell cat /proc/sys/net/ipv4/tcp_congestion_control"
+        expected: "bbr"
+      - name: "Check default qdisc"
+        action: "Run adb shell cat /proc/sys/net/core/default_qdisc"
+        expected: "fq"
+      - name: "Verify kernel config"
+        action: "Run adb shell zcat /proc/config.gz | grep CONFIG_TCP_CONG_BBR"
+        expected: "CONFIG_TCP_CONG_BBR=y"
+    tags: [wifi, network, bbr, congestion, kernel]
+    documentation_refs:
+      - type: architecture
+        section: "Fix #64"
+        path: "docs/guides/SYSTEM_ARCHITECTURE.md"
+    estimated_duration: "10s"
+    expected_result: "BBR congestion control active with FQ qdisc for 20%+ WiFi throughput over CUBIC"
+
+  - id: WN-004
+    name: "TCP buffers 8MB max configured"
+    category: functional
+    priority: high
+    platforms: [android]
+    steps:
+      - name: "Check TCP rmem max"
+        action: "Run adb shell cat /proc/sys/net/core/rmem_max"
+        expected: "8388608 (8MB)"
+      - name: "Check TCP wmem max"
+        action: "Run adb shell cat /proc/sys/net/core/wmem_max"
+        expected: "8388608 (8MB)"
+      - name: "Check WiFi TCP buffer property"
+        action: "Run adb shell getprop net.tcp.buffersize.wifi"
+        expected: "Contains 8388608 as max value"
+    tags: [wifi, network, tcp-buffers, streaming]
+    documentation_refs:
+      - type: architecture
+        section: "Fix #26"
+        path: "docs/guides/SYSTEM_ARCHITECTURE.md"
+    estimated_duration: "10s"
+    expected_result: "TCP buffers configured to 8MB max for optimal streaming performance"
+
+  - id: WN-005
+    name: "WiFi scan throttle active during audio"
+    category: integration
+    priority: high
+    platforms: [android]
+    steps:
+      - name: "Start audio playback"
+        action: "Play music via any output"
+        expected: "Audio playing"
+      - name: "Check scan throttle property"
+        action: "Run adb shell getprop persist.wifi.scan_throttle.audio_active"
+        expected: "true"
+      - name: "Trigger multiple scans"
+        action: "Attempt rapid WiFi scans"
+        expected: "Scans throttled with 5s audio-aware delay"
+    tags: [wifi, scan-throttle, audio, coexistence]
+    documentation_refs:
+      - type: architecture
+        section: "Fix #23"
+        path: "docs/guides/SYSTEM_ARCHITECTURE.md"
+    estimated_duration: "15s"
+    expected_result: "WiFi scan throttling active during audio playback to prevent glitches"
+
+  - id: WN-006
+    name: "5GHz band steering during BT A2DP"
+    category: integration
+    priority: high
+    platforms: [android]
+    steps:
+      - name: "Connect BT A2DP device"
+        action: "Connect Bluetooth speaker"
+        expected: "A2DP connected"
+      - name: "Check WiFi frequency"
+        action: "Run adb shell cmd wifi status to check current frequency"
+        expected: "WiFi on 5GHz band (frequency > 5000 MHz)"
+      - name: "Verify roaming daemon"
+        action: "Run adb shell getprop init.svc.wifi_roaming_monitor"
+        expected: "Service running, steering to 5GHz during A2DP active"
+    tags: [wifi, bluetooth, 5ghz, band-steering, a2dp, coexistence]
+    documentation_refs:
+      - type: architecture
+        section: "Fix #72"
+        path: "docs/guides/SYSTEM_ARCHITECTURE.md"
+    estimated_duration: "20s"
+    expected_result: "WiFi daemon steers to 5GHz band during BT A2DP to avoid 2.4GHz coexistence issues"
+
+  - id: WN-007
+    name: "bcmdhd driver loaded (not aic8800_fdrv)"
+    category: functional
+    priority: critical
+    platforms: [android]
+    steps:
+      - name: "Check loaded modules"
+        action: "Run adb shell lsmod"
+        expected: "bcmdhd module loaded"
+      - name: "Verify aic8800_fdrv NOT loaded"
+        action: "Run adb shell lsmod | grep aic8800_fdrv"
+        expected: "No output (aic8800_fdrv must NOT be loaded)"
+      - name: "Verify aic8800_bsp loaded"
+        action: "Run adb shell lsmod | grep aic8800_bsp"
+        expected: "aic8800_bsp loaded (power management only)"
+      - name: "Check wlan0 interface"
+        action: "Run adb shell ip link show wlan0"
+        expected: "wlan0 interface exists and is UP"
+    tags: [wifi, bcmdhd, driver, aic8800, critical]
+    documentation_refs:
+      - type: architecture
+        section: "Fix #66"
+        path: "docs/guides/SYSTEM_ARCHITECTURE.md"
+    estimated_duration: "10s"
+    expected_result: "bcmdhd WiFi driver loaded, aic8800_fdrv NOT loaded (would crash SYN43711 chip)"
+
+  - id: WN-008
+    name: "WiFi roaming monitor daemon running"
+    category: functional
+    priority: high
+    platforms: [android]
+    steps:
+      - name: "Check service status"
+        action: "Run adb shell getprop init.svc.wifi_roaming_monitor"
+        expected: "running"
+      - name: "Check daemon version"
+        action: "Run adb shell getprop persist.wifi.roaming_monitor.version"
+        expected: "Version 14.0 or later"
+    tags: [wifi, roaming, daemon, service]
+    documentation_refs:
+      - type: architecture
+        section: "Fix #59"
+        path: "docs/guides/SYSTEM_ARCHITECTURE.md"
+    estimated_duration: "10s"
+    expected_result: "WiFi roaming monitor daemon v14.0+ running for 5GHz steering and stability"
+
+  - id: WN-009
+    name: "BSSID blocklist tuning applied"
+    category: functional
+    priority: medium
+    platforms: [android]
+    steps:
+      - name: "Check blocklist config"
+        action: "Verify WiFi BSSID blocklist thresholds in ServiceWifiResources config.xml"
+        expected: "Auth/assoc failure threshold=5, base block duration=5min"
+    tags: [wifi, bssid, blocklist, tuning]
+    documentation_refs:
+      - type: architecture
+        section: "Fix #37"
+        path: "docs/guides/SYSTEM_ARCHITECTURE.md"
+    estimated_duration: "10s"
+    expected_result: "BSSID blocklist tuned to prevent aggressive blocking of valid access points"
+
+  - id: WN-010
+    name: "Ethernet RTL8125 2.5GbE functional"
+    category: functional
+    priority: high
+    platforms: [android]
+    steps:
+      - name: "Check Ethernet interface"
+        action: "Run adb shell ip link show eth0"
+        expected: "eth0 interface exists and is UP"
+      - name: "Check link speed"
+        action: "Run adb shell ethtool eth0 | grep Speed"
+        expected: "Speed: 2500Mb/s (or 1000Mb/s depending on switch)"
+      - name: "Check PCI device"
+        action: "Run adb shell lspci | grep -i realtek"
+        expected: "RTL8125 Ethernet controller detected on PCIe bus"
+      - name: "Verify connectivity"
+        action: "Run adb shell ping -c 3 -I eth0 8.8.8.8"
+        expected: "Ping succeeds via Ethernet"
+    tags: [ethernet, rtl8125, pcie, network, hardware]
+    documentation_refs:
+      - type: architecture
+        section: "Fix #79"
+        path: "docs/guides/SYSTEM_ARCHITECTURE.md"
+    estimated_duration: "15s"
+    expected_result: "RTL8125 2.5GbE Ethernet functional via r8169 driver on PCIe"
+
+  # ==================== Power & Performance (PP-xxx) ====================
+
+  - id: PP-001
+    name: "All CPU governors set to performance"
+    category: functional
+    priority: critical
+    platforms: [android]
+    steps:
+      - name: "Check CPU0 governor"
+        action: "Run adb shell cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor"
+        expected: "performance"
+      - name: "Check all CPU governors"
+        action: "Run adb shell 'for cpu in /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor; do cat $cpu; done'"
+        expected: "All 8 CPUs report performance governor"
+    tags: [power, cpu, governor, performance]
+    documentation_refs:
+      - type: architecture
+        section: "Fix #65"
+        path: "docs/guides/SYSTEM_ARCHITECTURE.md"
+    estimated_duration: "10s"
+    expected_result: "All 8 CPU cores running at maximum frequency with performance governor"
+
+  - id: PP-002
+    name: "Doze disabled (deviceidle disable)"
+    category: functional
+    priority: critical
+    platforms: [android]
+    steps:
+      - name: "Check deviceidle state"
+        action: "Run adb shell dumpsys deviceidle | head -5"
+        expected: "Device idle mode disabled"
+      - name: "Check framework overlay"
+        action: "Verify config_enableAutoPowerModes=false"
+        expected: "Auto power modes disabled at framework level"
+    tags: [power, doze, deviceidle, always-on]
+    documentation_refs:
+      - type: architecture
+        section: "Fix #65"
+        path: "docs/guides/SYSTEM_ARCHITECTURE.md"
+    estimated_duration: "10s"
+    expected_result: "Doze (Deep+Light) disabled at both runtime and framework overlay level"
+
+  - id: PP-003
+    name: "Screen never dims or times out"
+    category: functional
+    priority: critical
+    platforms: [android]
+    steps:
+      - name: "Check screen timeout"
+        action: "Run adb shell settings get system screen_off_timeout"
+        expected: "2147483647 (max int, effectively never)"
+      - name: "Check dim screen"
+        action: "Run adb shell settings get system dim_screen"
+        expected: "0 (dimming disabled)"
+      - name: "Check screensaver"
+        action: "Run adb shell settings get secure screensaver_enabled"
+        expected: "0 (screensaver disabled)"
+    tags: [power, screen, timeout, always-on]
+    documentation_refs:
+      - type: architecture
+        section: "Fix #65"
+        path: "docs/guides/SYSTEM_ARCHITECTURE.md"
+    estimated_duration: "10s"
+    expected_result: "Screen never dims, never times out, no screensaver (always-on appliance)"
+
+  - id: PP-004
+    name: "CPU idle disabled"
+    category: functional
+    priority: high
+    platforms: [android]
+    steps:
+      - name: "Check kernel config"
+        action: "Run adb shell zcat /proc/config.gz | grep CONFIG_CPU_IDLE"
+        expected: "CONFIG_CPU_IDLE is not set"
+    tags: [power, cpu-idle, kernel, performance]
+    documentation_refs:
+      - type: architecture
+        section: "Fix #64"
+        path: "docs/guides/SYSTEM_ARCHITECTURE.md"
+    estimated_duration: "10s"
+    expected_result: "CPU idle disabled in kernel config for always-on appliance"
+
+  - id: PP-005
+    name: "WiFi power save disabled"
+    category: functional
+    priority: critical
+    platforms: [android]
+    steps:
+      - name: "Check property"
+        action: "Run adb shell getprop persist.wifi.powersave"
+        expected: "0"
+      - name: "Check iw power save"
+        action: "Run adb shell iw dev wlan0 get power_save"
+        expected: "Power save: off"
+    tags: [power, wifi, power-save, always-on]
+    documentation_refs:
+      - type: architecture
+        section: "Fix #77"
+        path: "docs/guides/SYSTEM_ARCHITECTURE.md"
+    estimated_duration: "10s"
+    expected_result: "WiFi power save permanently disabled at driver and framework level"
+
+  - id: PP-006
+    name: "Battery icon hidden"
+    category: functional
+    priority: medium
+    platforms: [android]
+    steps:
+      - name: "Check icon blacklist"
+        action: "Run adb shell settings get secure icon_blacklist"
+        expected: "Contains 'battery'"
+      - name: "Check framework overlay"
+        action: "Verify config_batteryPresent=false in overlay"
+        expected: "Battery reported as not present"
+      - name: "Visual check"
+        action: "Observe status bar on primary display"
+        expected: "No battery icon visible (no '?' or battery indicator)"
+    tags: [power, battery, icon, ui, status-bar]
+    documentation_refs:
+      - type: architecture
+        section: "Fix #73"
+        path: "docs/guides/SYSTEM_ARCHITECTURE.md"
+    estimated_duration: "10s"
+    expected_result: "Battery icon hidden from status bar (device has no battery)"
+
+  - id: PP-007
+    name: "DMC governor performance"
+    category: functional
+    priority: high
+    platforms: [android]
+    steps:
+      - name: "Check DMC governor"
+        action: "Run adb shell cat /sys/class/devfreq/dmc/governor"
+        expected: "performance"
+    tags: [power, dmc, governor, memory, performance]
+    documentation_refs:
+      - type: architecture
+        section: "Fix #65"
+        path: "docs/guides/SYSTEM_ARCHITECTURE.md"
+    estimated_duration: "5s"
+    expected_result: "DMC (Dynamic Memory Controller) governor set to performance for max memory bandwidth"
+
+  - id: PP-008
+    name: "PCIe ASPM performance mode"
+    category: functional
+    priority: high
+    platforms: [android]
+    steps:
+      - name: "Check kernel config"
+        action: "Run adb shell zcat /proc/config.gz | grep PCIEASPM"
+        expected: "CONFIG_PCIEASPM_PERFORMANCE=y"
+    tags: [power, pcie, aspm, nvme, performance]
+    documentation_refs:
+      - type: architecture
+        section: "Fix #64"
+        path: "docs/guides/SYSTEM_ARCHITECTURE.md"
+    estimated_duration: "5s"
+    expected_result: "PCIe ASPM set to performance mode, no NVMe power saving latency"
+
+  - id: PP-009
+    name: "Stay on while plugged in (all sources)"
+    category: functional
+    priority: high
+    platforms: [android]
+    steps:
+      - name: "Check stay_on setting"
+        action: "Run adb shell settings get global stay_on_while_plugged_in"
+        expected: "7 (AC+USB+Wireless = 1+2+4)"
+    tags: [power, stay-on, always-on, plugged]
+    documentation_refs:
+      - type: architecture
+        section: "Fix #65"
+        path: "docs/guides/SYSTEM_ARCHITECTURE.md"
+    estimated_duration: "5s"
+    expected_result: "Device stays on regardless of power source type"
+
+  - id: PP-010
+    name: "Kernel HZ_1000 + BBR + FQ active"
+    category: functional
+    priority: high
+    platforms: [android]
+    steps:
+      - name: "Check HZ config"
+        action: "Run adb shell zcat /proc/config.gz | grep CONFIG_HZ"
+        expected: "CONFIG_HZ_1000=y, CONFIG_HZ=1000"
+      - name: "Check BBR"
+        action: "Run adb shell zcat /proc/config.gz | grep CONFIG_TCP_CONG_BBR"
+        expected: "CONFIG_TCP_CONG_BBR=y"
+      - name: "Check FQ"
+        action: "Run adb shell zcat /proc/config.gz | grep CONFIG_NET_SCH_FQ"
+        expected: "CONFIG_NET_SCH_FQ=y"
+      - name: "Check hrtimer"
+        action: "Run adb shell zcat /proc/config.gz | grep CONFIG_SND_HRTIMER"
+        expected: "CONFIG_SND_HRTIMER=y"
+    tags: [power, kernel, hz1000, bbr, fq, hrtimer, performance]
+    documentation_refs:
+      - type: architecture
+        section: "Fix #64"
+        path: "docs/guides/SYSTEM_ARCHITECTURE.md"
+    estimated_duration: "10s"
+    expected_result: "Custom kernel performance configs active: HZ_1000, BBR, FQ, hrtimer"
+
+  # ==================== Boot & System (BS-xxx) ====================
+
+  - id: BS-001
+    name: "Device boots without serial console output"
+    category: functional
+    priority: critical
+    platforms: [android]
+    steps:
+      - name: "Reboot device"
+        action: "Run adb reboot and wait for boot"
+        expected: "Device boots"
+      - name: "Check cmdline"
+        action: "Run adb shell cat /proc/cmdline"
+        expected: "No 'console=ttyFIQ0' or 'earlycon' in kernel command line"
+      - name: "Verify DTB patched"
+        action: "Check that serial console is disabled in DTB bootargs"
+        expected: "Serial console removed by build script Python DTB patching"
+    tags: [boot, serial-console, dtb, kernel]
+    documentation_refs:
+      - type: architecture
+        section: "Fix #5"
+        path: "docs/guides/SYSTEM_ARCHITECTURE.md"
+    estimated_duration: "60s"
+    expected_result: "Device boots cleanly with serial console disabled (prevents boot hang and audio IRQ interference)"
+
+  - id: BS-002
+    name: "3-button navigation active"
+    category: functional
+    priority: high
+    platforms: [android]
+    steps:
+      - name: "Check navigation mode"
+        action: "Observe bottom of screen for Back, Home, Recents buttons"
+        expected: "3-button navigation bar visible"
+      - name: "Test buttons"
+        action: "Press each navigation button"
+        expected: "Back, Home, and Recents all respond correctly"
+    tags: [boot, navigation, ui, system]
+    documentation_refs:
+      - type: architecture
+        section: "Fix #2"
+        path: "docs/guides/SYSTEM_ARCHITECTURE.md"
+    estimated_duration: "10s"
+    expected_result: "3-button navigation mode active (not gesture navigation)"
+
+  - id: BS-003
+    name: "Lawnchair launcher starts"
+    category: functional
+    priority: critical
+    platforms: [android]
+    steps:
+      - name: "Boot device"
+        action: "Reboot device and wait for home screen"
+        expected: "Home screen appears"
+      - name: "Verify Lawnchair"
+        action: "Run adb shell dumpsys activity activities | grep -i lawnchair"
+        expected: "Lawnchair launcher activity in foreground"
+      - name: "Test launcher"
+        action: "Press Home button and verify launcher responds"
+        expected: "Lawnchair home screen with app grid"
+    tags: [boot, launcher, lawnchair, home-screen]
+    documentation_refs:
+      - type: architecture
+        section: "Fix #1"
+        path: "docs/guides/SYSTEM_ARCHITECTURE.md"
+    estimated_duration: "60s"
+    expected_result: "Lawnchair launcher starts as default home and is responsive"
+
+  - id: BS-004
+    name: "Presenter service auto-starts on boot"
+    category: functional
+    priority: critical
+    platforms: [android]
+    steps:
+      - name: "Boot device"
+        action: "Reboot device and wait 60 seconds for boot completion"
+        expected: "Device fully booted"
+      - name: "Check Presenter service"
+        action: "Run adb shell dumpsys activity services | grep -i presenter"
+        expected: "PresenterService running"
+      - name: "Check init service"
+        action: "Run adb shell getprop init.svc.atmosphere_presenter"
+        expected: "running (auto-started via init.rk3588.rc)"
+    tags: [boot, presenter, service, autostart]
+    documentation_refs:
+      - type: architecture
+        section: "Fix #10"
+        path: "docs/guides/SYSTEM_ARCHITECTURE.md"
+    estimated_duration: "90s"
+    expected_result: "Presenter service auto-starts on boot via init service with am start-foreground-service"
+
+  - id: BS-005
+    name: "Boot script (atmosphere-app-permissions.sh) completes"
+    category: functional
+    priority: critical
+    platforms: [android]
+    steps:
+      - name: "Boot device"
+        action: "Reboot device and wait for full boot"
+        expected: "Device booted"
+      - name: "Check completion property"
+        action: "Run adb shell getprop atmosphere.app_permissions.done"
+        expected: "1 (script completed successfully)"
+      - name: "Check service status"
+        action: "Run adb shell getprop init.svc.atmosphere_app_permissions"
+        expected: "stopped (completed) or running (still executing)"
+    tags: [boot, permissions, script, init]
+    documentation_refs:
+      - type: architecture
+        section: "Fix #78"
+        path: "docs/guides/SYSTEM_ARCHITECTURE.md"
+    estimated_duration: "120s"
+    expected_result: "atmosphere-app-permissions.sh completes and sets done property"
+
+  - id: BS-006
+    name: "Power save disable script completes"
+    category: functional
+    priority: critical
+    platforms: [android]
+    steps:
+      - name: "Boot device"
+        action: "Reboot and wait for boot completion"
+        expected: "Device booted"
+      - name: "Verify Doze disabled"
+        action: "Run adb shell dumpsys deviceidle | head -5"
+        expected: "Doze disabled"
+      - name: "Verify screen settings"
+        action: "Check dim_screen=0, screen_off_timeout=max"
+        expected: "Power save settings applied by atmosphere-power-save-disable.sh"
+    tags: [boot, power-save, script, init]
+    documentation_refs:
+      - type: architecture
+        section: "Fix #65"
+        path: "docs/guides/SYSTEM_ARCHITECTURE.md"
+    estimated_duration: "90s"
+    expected_result: "atmosphere-power-save-disable.sh completes and all power saving is disabled"
+
+  - id: BS-007
+    name: "Display detection script runs"
+    category: functional
+    priority: high
+    platforms: [android]
+    steps:
+      - name: "Boot device"
+        action: "Reboot with both HDMI displays connected"
+        expected: "Device booted"
+      - name: "Check service"
+        action: "Run adb shell getprop init.svc.detect_displays"
+        expected: "Service ran (stopped after completion or still running)"
+      - name: "Check display detection result"
+        action: "Run adb shell dumpsys display | grep -i 'HDMI'"
+        expected: "Both HDMI displays detected with correct primary/secondary assignment"
+    tags: [boot, display, detection, hdmi, init]
+    documentation_refs:
+      - type: architecture
+        section: "Fix #80"
+        path: "docs/guides/SYSTEM_ARCHITECTURE.md"
+    estimated_duration: "90s"
+    expected_result: "detect-displays.sh v2.0 runs and correctly identifies primary and secondary displays"
+
+  - id: BS-008
+    name: "Cast manager service starts"
+    category: functional
+    priority: medium
+    platforms: [android]
+    steps:
+      - name: "Boot device"
+        action: "Reboot and wait for boot completion"
+        expected: "Device booted"
+      - name: "Check cast manager"
+        action: "Run adb shell getprop init.svc.cast_manager"
+        expected: "running"
+      - name: "Check display monitoring"
+        action: "Run adb logcat -d | grep -i cast_manager"
+        expected: "Cast manager monitoring display state (30s polling)"
+    tags: [boot, cast, chromecast, service, init]
+    documentation_refs:
+      - type: architecture
+        section: "Fix #109"
+        path: "docs/guides/SYSTEM_ARCHITECTURE.md"
+    estimated_duration: "90s"
+    expected_result: "atmosphere-cast-manager.sh service starts and monitors display state for cast advertising"
+
+  # ==================== Dual Display (DD-xxx) ====================
+
+  - id: DD-001
+    name: "Primary display (HDMI-A-2) detected as touch screen"
+    category: functional
+    priority: critical
+    platforms: [android]
+    steps:
+      - name: "Check HWC primary"
+        action: "Run adb shell getprop vendor.hwc.device.primary"
+        expected: "HDMI-A-2"
+      - name: "Check DRM connector"
+        action: "Run adb shell cat /sys/class/drm/card0-HDMI-A-2/status"
+        expected: "connected"
+      - name: "Check resolution"
+        action: "Run adb shell dumpsys display | grep -A3 'Display 0'"
+        expected: "Primary display is HDMI-A-2 (touch screen, 1024x600 MPI7009 or detected resolution)"
+    tags: [display, primary, hdmi, touch-screen, hwc]
+    documentation_refs:
+      - type: architecture
+        section: "Fix #80"
+        path: "docs/guides/SYSTEM_ARCHITECTURE.md"
+    estimated_duration: "10s"
+    expected_result: "HDMI-A-2 detected as primary display (touch screen)"
+
+  - id: DD-002
+    name: "Secondary display (HDMI-A-1) detected as TV"
+    category: functional
+    priority: critical
+    platforms: [android]
+    steps:
+      - name: "Check HWC extend"
+        action: "Run adb shell getprop vendor.hwc.device.extend"
+        expected: "HDMI-A-1"
+      - name: "Check DRM connector"
+        action: "Run adb shell cat /sys/class/drm/card0-HDMI-A-1/status"
+        expected: "connected"
+      - name: "Check resolution"
+        action: "Run adb shell dumpsys display | grep -A3 'HDMI-A-1'"
+        expected: "Secondary display is HDMI-A-1 (TV, 1920x1080)"
+    tags: [display, secondary, hdmi, tv, hwc]
+    documentation_refs:
+      - type: architecture
+        section: "Fix #80"
+        path: "docs/guides/SYSTEM_ARCHITECTURE.md"
+    estimated_duration: "10s"
+    expected_result: "HDMI-A-1 detected as secondary/extend display (TV)"
+
+  - id: DD-003
+    name: "Presenter finds secondary display"
+    category: functional
+    priority: critical
+    platforms: [android]
+    steps:
+      - name: "Check Presenter display"
+        action: "Run adb shell getprop persist.atmosphere.presenter.display_id"
+        expected: "Non-zero display ID for secondary"
+      - name: "Verify Presenter on secondary"
+        action: "Run adb shell dumpsys activity services | grep -A10 'PresenterService'"
+        expected: "PresenterService has reference to secondary display"
+      - name: "Visual check"
+        action: "Observe TV (secondary display)"
+        expected: "Presenter content visible on TV"
+    tags: [display, presenter, secondary, service]
+    estimated_duration: "15s"
+    expected_result: "Presenter correctly locates and uses secondary display for its Presentation"
+
+  - id: DD-004
+    name: "Display IDs match expected topology"
+    category: functional
+    priority: high
+    platforms: [android]
+    steps:
+      - name: "Get display list"
+        action: "Run adb shell dumpsys display | grep -E 'DisplayDeviceInfo|mDisplayId'"
+        expected: "Display IDs listed"
+      - name: "Verify topology"
+        action: "Check Display 0 = HDMI-A-2 (primary), Display 3+ = HDMI-A-1 (secondary)"
+        expected: "Display topology matches hardware configuration"
+      - name: "Note dynamic IDs"
+        action: "Secondary display ID may vary but type must be EXTERNAL"
+        expected: "Secondary display detected as EXTERNAL type"
+    tags: [display, topology, ids, configuration]
+    documentation_refs:
+      - type: architecture
+        section: "Fix #80"
+        path: "docs/guides/SYSTEM_ARCHITECTURE.md"
+    estimated_duration: "10s"
+    expected_result: "Display IDs match expected dual-HDMI topology with correct primary/secondary assignment"
+
+  - id: DD-005
+    name: "forcedDensity=320 on secondary display"
+    category: functional
+    priority: high
+    platforms: [android]
+    steps:
+      - name: "Check display settings"
+        action: "Run adb shell cat /data/system/display_settings.xml or check wm density for secondary"
+        expected: "Secondary display has forcedDensity=320"
+      - name: "Verify no CONFIG_DENSITY restart"
+        action: "Check that video apps do NOT restart when moved to secondary display"
+        expected: "forcedDensity=320 eliminates configuration change restart"
+    tags: [display, density, secondary, configuration]
+    documentation_refs:
+      - type: architecture
+        section: "Fix #84"
+        path: "docs/guides/SYSTEM_ARCHITECTURE.md"
+    estimated_duration: "10s"
+    expected_result: "Secondary display density set to 320 to prevent app restart on display change"
+
+  - id: DD-006
+    name: "Primary locked to portrait rotation"
+    category: functional
+    priority: high
+    platforms: [android]
+    steps:
+      - name: "Check accelerometer rotation"
+        action: "Run adb shell settings get system accelerometer_rotation"
+        expected: "0 (auto-rotate disabled)"
+      - name: "Check fixed-to-user-rotation"
+        action: "Run adb shell cmd window fixed-to-user-rotation"
+        expected: "enabled"
+      - name: "Rotate device"
+        action: "Physically rotate the device"
+        expected: "Primary display does NOT rotate (stays in fixed orientation)"
+    tags: [display, rotation, portrait, primary, locked]
+    documentation_refs:
+      - type: architecture
+        section: "Fix #97"
+        path: "docs/guides/SYSTEM_ARCHITECTURE.md"
+    estimated_duration: "10s"
+    expected_result: "Primary display locked to portrait rotation with accelerometer disabled"
+
+  - id: DD-007
+    name: "Presenter Presentation visible on secondary"
+    category: functional
+    priority: critical
+    platforms: [android]
+    steps:
+      - name: "Verify Presenter running"
+        action: "Run adb shell dumpsys activity services | grep PresenterService"
+        expected: "PresenterService is running"
+      - name: "Check Presentation"
+        action: "Observe the TV (secondary display)"
+        expected: "Presenter Presentation visible (background content, clock, or album art)"
+      - name: "Check background color"
+        action: "When no video or music is playing"
+        expected: "Pitch black background"
+    tags: [display, presenter, presentation, secondary, visual]
+    estimated_duration: "10s"
+    expected_result: "Presenter Presentation renders on secondary display with pitch black background when idle"
+
+  - id: DD-008
+    name: "Both HDMI PHY lanes lock successfully"
+    category: functional
+    priority: high
+    platforms: [android]
+    steps:
+      - name: "Check dmesg for PHY"
+        action: "Run adb shell dmesg | grep -i 'hdptx.*lane'"
+        expected: "No 'hdptx phy lane can not ready' errors"
+      - name: "Check both connectors"
+        action: "Run adb shell cat /sys/class/drm/card0-HDMI-A-1/status && cat /sys/class/drm/card0-HDMI-A-2/status"
+        expected: "Both show 'connected'"
+      - name: "Verify timeout fix"
+        action: "Check that extended lane timeout (200ms, 2000 iterations) and 3-attempt retry is active"
+        expected: "PHY lanes lock on both HDMI outputs"
+    tags: [display, hdmi, phy, lane-lock, kernel, hardware]
+    documentation_refs:
+      - type: architecture
+        section: "Fix #80"
+        path: "docs/guides/SYSTEM_ARCHITECTURE.md"
+    estimated_duration: "10s"
+    expected_result: "Both HDPTX PHY lanes lock successfully with extended timeout and retry logic"
+
+  # ==================== Prebuilt Apps (PA-xxx) ====================
+
+  - id: PA-001
+    name: "All 60+ prebuilt apps installed"
+    category: functional
+    priority: critical
+    platforms: [android]
+    steps:
+      - name: "Get installed packages"
+        action: "Run adb shell pm list packages | wc -l"
+        expected: "Total package count includes all 60+ prebuilt apps"
+      - name: "Run prebuilt apps test"
+        action: "Execute test_prebuilt_apps.sh on device"
+        expected: "All prebuilt apps detected as installed"
+      - name: "Check for missing apps"
+        action: "Review test output for any FAIL entries"
+        expected: "Zero FAIL entries for app installation"
+    tags: [apps, prebuilt, installation, bulk]
+    estimated_duration: "60s"
+    expected_result: "All 60+ prebuilt apps successfully installed on device"
+
+  - id: PA-002
+    name: "Video player apps launch without crash"
+    category: functional
+    priority: critical
+    platforms: [android]
+    steps:
+      - name: "Launch VLC"
+        action: "Run adb shell am start -n org.videolan.vlc/.gui.MainActivity"
+        expected: "VLC launches without crash"
+      - name: "Launch Kodi"
+        action: "Run adb shell am start -n org.xbmc.kodi/.Splash"
+        expected: "Kodi launches without crash"
+      - name: "Launch Nova Player"
+        action: "Run adb shell am start -n org.courville.nova/.ui.MainActivity"
+        expected: "Nova Player launches without crash"
+      - name: "Check logcat for crashes"
+        action: "Run adb logcat -d | grep -E 'FATAL|ANR|crash'"
+        expected: "No fatal crashes for video player apps"
+    tags: [apps, video-players, launch, crash]
+    estimated_duration: "30s"
+    expected_result: "All video player apps launch without crash or ANR"
+
+  - id: PA-003
+    name: "Audio player apps launch without crash"
+    category: functional
+    priority: high
+    platforms: [android]
+    steps:
+      - name: "Launch HiByMusic"
+        action: "Start HiByMusic app"
+        expected: "App launches without crash"
+      - name: "Launch TikTok Music"
+        action: "Start TikTok Music app"
+        expected: "App launches without crash"
+      - name: "Check logcat for crashes"
+        action: "Run adb logcat -d | grep -E 'FATAL|ANR'"
+        expected: "No fatal crashes for audio player apps"
+    tags: [apps, audio-players, launch, crash]
+    estimated_duration: "20s"
+    expected_result: "Audio player apps launch cleanly without crashes"
+
+  - id: PA-004
+    name: "Streaming apps launch (may need auth)"
+    category: functional
+    priority: high
+    platforms: [android]
+    steps:
+      - name: "Launch Kinopoisk"
+        action: "Start ru.kinopoisk app"
+        expected: "App launches to login/home screen"
+      - name: "Launch Rutube"
+        action: "Start Rutube app"
+        expected: "App launches without crash"
+      - name: "Launch YouTube"
+        action: "Start YouTube app"
+        expected: "App launches (may need Google account)"
+      - name: "Check for crashes"
+        action: "Review logcat for any FATAL exceptions"
+        expected: "All streaming apps launch without crash (auth screens OK)"
+    tags: [apps, streaming, launch, auth]
+    estimated_duration: "30s"
+    expected_result: "Streaming apps launch to at least their login/home screen without crashes"
+
+  - id: PA-005
+    name: "Google Apps functional (Play Store, Play Services)"
+    category: functional
+    priority: high
+    platforms: [android]
+    steps:
+      - name: "Check Play Services"
+        action: "Run adb shell pm path com.google.android.gms"
+        expected: "Play Services APK path returned"
+      - name: "Check Play Store"
+        action: "Run adb shell pm path com.android.vending"
+        expected: "Play Store APK path returned"
+      - name: "Launch Play Store"
+        action: "Run adb shell am start -n com.android.vending/.AssetBrowserActivity"
+        expected: "Play Store opens (may need Google account)"
+      - name: "Run Google Apps test"
+        action: "Execute test_google_apps.sh on device"
+        expected: "All Google Apps checks pass"
+    tags: [apps, gapps, play-store, play-services, google]
+    documentation_refs:
+      - type: architecture
+        section: "Fix #24"
+        path: "docs/guides/SYSTEM_ARCHITECTURE.md"
+    estimated_duration: "30s"
+    expected_result: "Google Apps (MindTheGapps) installed and functional"
+
+  # ==================== Branding (BR-xxx) ====================
+
+  - id: BR-001
+    name: "Device name shows The Essence"
+    category: functional
+    priority: medium
+    platforms: [android]
+    steps:
+      - name: "Check device name"
+        action: "Run adb shell getprop ro.product.device"
+        expected: "Returns device identifier"
+      - name: "Check BT name"
+        action: "Run adb shell settings get secure bluetooth_name"
+        expected: "Contains 'The Essence' or ATMOSphere branding"
+    tags: [branding, device-name, identity]
+    estimated_duration: "5s"
+    expected_result: "Device name reflects ATMOSphere branding as 'The Essence'"
+
+  - id: BR-002
+    name: "Model shows ATMOSphere"
+    category: functional
+    priority: medium
+    platforms: [android]
+    steps:
+      - name: "Check product model"
+        action: "Run adb shell getprop ro.product.model"
+        expected: "ATMOSphere"
+      - name: "Check Settings display"
+        action: "Open Settings > About phone/device"
+        expected: "Model shows ATMOSphere"
+    tags: [branding, model, identity, settings]
+    estimated_duration: "10s"
+    expected_result: "Device model property set to ATMOSphere"
+
+  - id: BR-003
+    name: "Boot message shows ATMOSphere is starting"
+    category: functional
+    priority: low
+    platforms: [android]
+    steps:
+      - name: "Reboot device"
+        action: "Run adb reboot"
+        expected: "Device reboots"
+      - name: "Observe boot screen"
+        action: "Watch the display during boot sequence"
+        expected: "Boot message 'ATMOSphere is starting...' displayed"
+    tags: [branding, boot, splash, message]
+    estimated_duration: "60s"
+    expected_result: "ATMOSphere branding shown during boot sequence"
+
+  - id: BR-004
+    name: "About page shows About ATMOSphere"
+    category: functional
+    priority: low
+    platforms: [android]
+    steps:
+      - name: "Open Settings"
+        action: "Launch Settings app"
+        expected: "Settings open"
+      - name: "Navigate to About"
+        action: "Scroll to and tap 'About phone' or 'About device'"
+        expected: "About page opens"
+      - name: "Verify branding"
+        action: "Check page title and device info"
+        expected: "Page shows 'About ATMOSphere' with correct firmware version"
+    tags: [branding, about, settings, identity]
+    estimated_duration: "15s"
+    expected_result: "About page branded as ATMOSphere with correct firmware info"
+
+  # ==================== Chromecast & Casting (CC-xxx) ====================
+
+  - id: CC-001
+    name: "mDNS _googlecast._tcp service registered"
+    category: functional
+    priority: high
+    platforms: [android]
+    steps:
+      - name: "Check mDNS registration"
+        action: "From another device on the same network, browse for _googlecast._tcp services"
+        expected: "ATMOSphere device appears as a Cast target"
+      - name: "Verify on device"
+        action: "Run adb shell dumpsys mdns | grep -i cast"
+        expected: "mDNS service for _googlecast._tcp registered"
+    tags: [cast, chromecast, mdns, discovery, network]
+    documentation_refs:
+      - type: architecture
+        section: "Fix #109"
+        path: "docs/guides/SYSTEM_ARCHITECTURE.md"
+    estimated_duration: "15s"
+    expected_result: "Device advertises _googlecast._tcp mDNS service for Cast discovery"
+
+  - id: CC-002
+    name: "Cast receiver (mediashell) running"
+    category: functional
+    priority: high
+    platforms: [android]
+    steps:
+      - name: "Check mediashell process"
+        action: "Run adb shell ps | grep mediashell"
+        expected: "mediashell process running"
+      - name: "Check package installed"
+        action: "Run adb shell pm path com.google.android.apps.mediashell"
+        expected: "mediashell APK path returned (143MB prebuilt)"
+    tags: [cast, chromecast, mediashell, receiver, process]
+    documentation_refs:
+      - type: architecture
+        section: "Fix #109"
+        path: "docs/guides/SYSTEM_ARCHITECTURE.md"
+    estimated_duration: "10s"
+    expected_result: "Google Cast receiver (mediashell) process running and ready"
+
+  - id: CC-003
+    name: "Cast manager monitors display state"
+    category: integration
+    priority: medium
+    platforms: [android]
+    steps:
+      - name: "Check cast manager service"
+        action: "Run adb shell getprop init.svc.cast_manager"
+        expected: "running"
+      - name: "Verify display monitoring"
+        action: "Check logcat for cast manager display polling (30s interval)"
+        expected: "Cast manager periodically checks secondary display presence"
+      - name: "Verify cast properties"
+        action: "Run adb shell getprop persist.atmosphere.cast.enabled"
+        expected: "Cast properties set based on display state"
+    tags: [cast, display, monitoring, service]
+    documentation_refs:
+      - type: architecture
+        section: "Fix #109"
+        path: "docs/guides/SYSTEM_ARCHITECTURE.md"
+    estimated_duration: "45s"
+    expected_result: "Cast manager monitors secondary display state and controls cast advertising"
+
+  - id: CC-004
+    name: "WiFi P2P enabled for Miracast"
+    category: functional
+    priority: medium
+    platforms: [android]
+    steps:
+      - name: "Check WiFi P2P"
+        action: "Run adb shell cmd wifi status | grep -i p2p"
+        expected: "WiFi P2P (Wi-Fi Direct) enabled"
+      - name: "Check WFD support"
+        action: "Run adb shell dumpsys wifip2p | grep -i wfd"
+        expected: "WiFi Display (WFD) support present or enabled"
+    tags: [cast, miracast, wifi-p2p, wifi-direct]
+    documentation_refs:
+      - type: architecture
+        section: "Fix #109"
+        path: "docs/guides/SYSTEM_ARCHITECTURE.md"
+    estimated_duration: "10s"
+    expected_result: "WiFi P2P enabled for potential Miracast sink functionality"
+
+  - id: CC-005
+    name: "Cast advertising stops when secondary display disconnected"
+    category: edge_case
+    priority: medium
+    platforms: [android]
+    steps:
+      - name: "Verify cast advertising with display"
+        action: "With secondary display connected, check cast advertising is active"
+        expected: "Cast advertising active"
+      - name: "Disconnect secondary display"
+        action: "Physically disconnect HDMI-A-1 (TV) cable"
+        expected: "Secondary display removed from DisplayManager"
+      - name: "Wait for cast manager poll"
+        action: "Wait up to 30 seconds for cast manager to detect change"
+        expected: "Cast manager detects missing secondary display"
+      - name: "Verify advertising stopped"
+        action: "Check cast properties"
+        expected: "Cast advertising disabled (no secondary display = no cast target)"
+    tags: [cast, display, disconnect, advertising, edge-case]
+    documentation_refs:
+      - type: architecture
+        section: "Fix #109"
+        path: "docs/guides/SYSTEM_ARCHITECTURE.md"
+    estimated_duration: "45s"
+    expected_result: "Cast advertising automatically stops when secondary display is disconnected"
+
+  # ==================== DRM & Codecs (DC-xxx) ====================
+
+  - id: DC-001
+    name: "Widevine L3 DRM functional"
+    category: functional
+    priority: critical
+    platforms: [android]
+    steps:
+      - name: "Check Widevine service"
+        action: "Run adb shell dumpsys drm | grep -i widevine"
+        expected: "Widevine DRM HAL service running"
+      - name: "Check DRM libraries"
+        action: "Run adb shell ls /vendor/lib64/libwvhidl.so /vendor/lib/android.hardware.drm-V1-ndk.so"
+        expected: "Both 64-bit and 32-bit DRM libraries present"
+      - name: "Check security level"
+        action: "Verify Widevine L3 security level"
+        expected: "Security Level: L3"
+      - name: "Run Widevine test"
+        action: "Execute test_widevine_drm.sh on device"
+        expected: "All Widevine checks pass, no crash-loop"
+    tags: [drm, widevine, l3, streaming, security]
+    documentation_refs:
+      - type: architecture
+        section: "Fix #62"
+        path: "docs/guides/SYSTEM_ARCHITECTURE.md"
+    estimated_duration: "20s"
+    expected_result: "Widevine L3 DRM functional with stable service (no crash-loop)"
+
+  - id: DC-002
+    name: "FFmpeg AC3 decoder registered (c2.ffmpeg.ac3.decoder)"
+    category: functional
+    priority: high
+    platforms: [android]
+    steps:
+      - name: "Check codec list"
+        action: "Run adb shell dumpsys media.player | grep -i 'c2.ffmpeg.ac3'"
+        expected: "c2.ffmpeg.ac3.decoder listed in codec registry"
+      - name: "Check shared library"
+        action: "Run adb shell ls /system/lib64/libcodec2_soft_ac3dec.so"
+        expected: "Library file exists"
+      - name: "Check FFmpeg library"
+        action: "Run adb shell ls /system/lib64/libffmpeg_58.so"
+        expected: "FFmpeg library exists (loaded via dlopen at runtime)"
+    tags: [codecs, ffmpeg, ac3, audio, decoder]
+    documentation_refs:
+      - type: architecture
+        section: "Fix #106"
+        path: "docs/guides/SYSTEM_ARCHITECTURE.md"
+    estimated_duration: "10s"
+    expected_result: "FFmpeg AC3 decoder registered in MediaCodec API and available to all apps"
+
+  - id: DC-003
+    name: "FFmpeg E-AC3 decoder registered (c2.ffmpeg.eac3.decoder)"
+    category: functional
+    priority: high
+    platforms: [android]
+    steps:
+      - name: "Check codec list"
+        action: "Run adb shell dumpsys media.player | grep -i 'c2.ffmpeg.eac3'"
+        expected: "c2.ffmpeg.eac3.decoder listed in codec registry"
+      - name: "Check shared library"
+        action: "Run adb shell ls /system/lib64/libcodec2_soft_eac3dec.so"
+        expected: "Library file exists"
+    tags: [codecs, ffmpeg, eac3, audio, decoder]
+    documentation_refs:
+      - type: architecture
+        section: "Fix #106"
+        path: "docs/guides/SYSTEM_ARCHITECTURE.md"
+    estimated_duration: "10s"
+    expected_result: "FFmpeg E-AC3 decoder registered in MediaCodec API and available to all apps"
+
+  - id: DC-004
+    name: "HW AVC decoder disabled (c2.rk.avc.decoder)"
+    category: functional
+    priority: critical
+    platforms: [android]
+    steps:
+      - name: "Check codec list"
+        action: "Run adb shell dumpsys media.player | grep 'c2.rk.avc.decoder'"
+        expected: "c2.rk.avc.decoder NOT listed or listed as disabled"
+      - name: "Check media_codecs XML"
+        action: "Verify c2.rk.avc.decoder is commented out or removed from media_codecs_c2_rk3588.xml"
+        expected: "HW AVC decoder disabled in codec config"
+      - name: "Check SW AVC available"
+        action: "Run adb shell dumpsys media.player | grep 'c2.android.avc.decoder'"
+        expected: "SW AVC decoder (c2.android.avc.decoder) available as replacement"
+    tags: [codecs, hw-avc, disabled, webview, crash-prevention]
+    documentation_refs:
+      - type: architecture
+        section: "Fix #94"
+        path: "docs/guides/SYSTEM_ARCHITECTURE.md"
+    estimated_duration: "10s"
+    expected_result: "HW AVC decoder disabled (crashes on WebView H.264), SW decoder used as fallback"
+
+  - id: DC-005
+    name: "HW AV1 decoder disabled"
+    category: functional
+    priority: high
+    platforms: [android]
+    steps:
+      - name: "Check codec list"
+        action: "Run adb shell dumpsys media.player | grep 'c2.rk.av1.decoder'"
+        expected: "c2.rk.av1.decoder NOT listed or listed as disabled"
+      - name: "Check SW AV1 available"
+        action: "Run adb shell dumpsys media.player | grep 'c2.android.av1.decoder'"
+        expected: "SW AV1 decoder available as replacement"
+    tags: [codecs, hw-av1, disabled, crash-prevention]
+    documentation_refs:
+      - type: architecture
+        section: "Fix #99"
+        path: "docs/guides/SYSTEM_ARCHITECTURE.md"
+    estimated_duration: "10s"
+    expected_result: "HW AV1 decoder disabled (same BAD_INDEX crash pattern as HW AVC on secondary display)"
+
+  - id: DC-006
+    name: "SW codec limits expanded (AVC 4K, HEVC/VP9/AV1 8K)"
+    category: functional
+    priority: high
+    platforms: [android]
+    steps:
+      - name: "Check AVC limits"
+        action: "Verify media_codecs_google_c2_rk3588.xml has AVC max 3840x2160"
+        expected: "SW AVC decoder supports up to 4K resolution"
+      - name: "Check HEVC limits"
+        action: "Verify SW HEVC decoder max resolution"
+        expected: "SW HEVC supports up to 8K resolution"
+      - name: "Check VP9 limits"
+        action: "Verify SW VP9 decoder max resolution"
+        expected: "SW VP9 supports up to 8K resolution"
+      - name: "Check AV1 limits"
+        action: "Verify SW AV1 decoder max resolution"
+        expected: "SW AV1 supports up to 8K resolution"
+    tags: [codecs, sw-codec, limits, resolution, 4k, 8k]
+    documentation_refs:
+      - type: architecture
+        section: "Fix #107"
+        path: "docs/guides/SYSTEM_ARCHITECTURE.md"
+    estimated_duration: "10s"
+    expected_result: "SW codec resolution limits expanded to handle content previously decoded by disabled HW codecs"
+
+  # ==================== Frozen Frame & Video Lifecycle (FX-xxx) ====================
+
+  - id: FX-001
+    name: "Frozen frame cleanup after video stop"
+    category: functional
+    priority: critical
+    platforms: [android]
+    steps:
+      - name: "Start video on secondary display"
+        action: "Play a video in any ExoPlayer-based app, verify it appears on secondary display"
+        expected: "Video playing on secondary display"
+      - name: "Stop video"
+        action: "Force-stop the video app via adb shell am force-stop"
+        expected: "Video app killed"
+      - name: "Wait for cleanup"
+        action: "Wait up to 3 seconds for watchdog to detect stall and trigger cleanup"
+        expected: "Secondary display clears to black within 3 seconds (no frozen frame visible)"
+      - name: "Verify cleanup in logcat"
+        action: "Check logcat for frozen frame watchdog activity"
+        expected: "Log shows C2BqBuffer stall detected, media.swcodec killed, Presentation reset to black"
+    tags: [frozen-frame, cleanup, video-stop, watchdog, fx-001]
+    documentation_refs:
+      - type: architecture
+        section: "Fix #110"
+        path: "docs/guides/SYSTEM_ARCHITECTURE.md"
+    estimated_duration: "15s"
+    expected_result: "Secondary display clears to black within 3 seconds of video stop with no frozen frame visible"
+
+  - id: FX-002
+    name: "Every-other-video redirect works"
+    category: functional
+    priority: critical
+    platforms: [android]
+    steps:
+      - name: "Play video A"
+        action: "Start a video in app A (e.g., VK Video), verify it routes to secondary display"
+        expected: "Video A playing on secondary display"
+      - name: "Stop video A"
+        action: "Force-stop app A, wait for cleanup to complete"
+        expected: "Secondary display clears to black"
+      - name: "Play video B"
+        action: "Start a video in app B (e.g., RuTube), wait for redirect"
+        expected: "Video B playing on secondary display"
+      - name: "Verify no stuck state"
+        action: "Check logcat for VideoOutputManagerService surface registration"
+        expected: "Both videos A and B successfully registered with VideoOutputManager (no stuck surface or null surface gap)"
+    tags: [video-routing, every-other-video, surface-reuse, lifecycle, fx-002]
+    documentation_refs:
+      - type: architecture
+        section: "Fix #101"
+        path: "docs/guides/SYSTEM_ARCHITECTURE.md"
+    estimated_duration: "30s"
+    expected_result: "Both video A and video B route to secondary display correctly with no every-other-video failure"
+
+  - id: FX-003
+    name: "Ad interruption preserves secondary display"
+    category: functional
+    priority: high
+    platforms: [android]
+    steps:
+      - name: "Play video in VK Video"
+        action: "Open VK Video and start a video that has pre-roll or mid-roll ads"
+        expected: "Video starts, ad may play first"
+      - name: "Wait through ad"
+        action: "Let the ad play and complete, main video resumes"
+        expected: "Ad plays on secondary display, then main video resumes"
+      - name: "Verify main video still on secondary"
+        action: "After ad finishes, observe secondary display"
+        expected: "Main video continues playing on secondary display without returning to primary"
+      - name: "Check single-active-decoder"
+        action: "Check logcat for decoder transitions during ad"
+        expected: "VideoOutputManager handles ad decoder as replacement, main video decoder reactivates after ad"
+    tags: [video-routing, ads, vk-video, secondary-display, lifecycle, fx-003]
+    estimated_duration: "45s"
+    expected_result: "VK Video ad interruption handled gracefully: ad plays on secondary, main video resumes on secondary"
+
+  - id: FX-004
+    name: "Notification buttons hidden during reset"
+    category: ui
+    priority: medium
+    platforms: [android]
+    steps:
+      - name: "Trigger frozen frame"
+        action: "Force-stop a video app during playback on secondary display"
+        expected: "Frozen frame on secondary"
+      - name: "Press reset"
+        action: "Trigger reset via Reset Service notification button or watchdog auto-cleanup"
+        expected: "Cleanup begins"
+      - name: "Observe primary display"
+        action: "Watch the primary display carefully during the reset process"
+        expected: "No button flash, no transient UI artifacts visible on primary display during reset"
+      - name: "Verify clean transition"
+        action: "Observe secondary display transition"
+        expected: "Secondary display transitions smoothly from frozen frame to black without visible flicker or button flash"
+    tags: [frozen-frame, reset-service, notification, ui, fx-004]
+    documentation_refs:
+      - type: architecture
+        section: "Fix #110"
+        path: "docs/guides/SYSTEM_ARCHITECTURE.md"
+    estimated_duration: "15s"
+    expected_result: "Reset process is visually clean with no button flash or transient UI artifacts on either display"
+
+  - id: FX-005
+    name: "App background triggers cleanup"
+    category: functional
+    priority: high
+    platforms: [android]
+    steps:
+      - name: "Play video on secondary"
+        action: "Start video in an app, verify on secondary display"
+        expected: "Video playing on secondary display"
+      - name: "Send app to background"
+        action: "Press Home button to send video app to background"
+        expected: "App moves to background"
+      - name: "Wait for MediaSession detection"
+        action: "Wait 3-5 seconds for VideoPlaybackDetector to detect state change"
+        expected: "VideoPlaybackDetector detects MediaSession PAUSED/STOPPED"
+      - name: "Verify secondary display clears"
+        action: "Observe secondary display"
+        expected: "Secondary display clears to black or Presenter background (no stale video frame)"
+      - name: "Verify logcat"
+        action: "Check logcat for VideoPlaybackDetector cleanup trigger"
+        expected: "Log shows MediaSession state change detected and cleanup triggered"
+    tags: [video-routing, background, cleanup, mediasession, lifecycle, fx-005]
+    documentation_refs:
+      - type: architecture
+        section: "Fix #101"
+        path: "docs/guides/SYSTEM_ARCHITECTURE.md"
+    estimated_duration: "15s"
+    expected_result: "Video app going to background triggers secondary display cleanup via MediaSession detection"
+
+  - id: FX-006
+    name: "Album cover shows for AIMP"
+    category: functional
+    priority: high
+    platforms: [android]
+    steps:
+      - name: "Ensure no video playing"
+        action: "Stop any video playback on secondary display"
+        expected: "No active video decoder"
+      - name: "Launch AIMP and play song"
+        action: "Open AIMP music player, play a song that has album art embedded in metadata"
+        expected: "AIMP begins music playback"
+      - name: "Check secondary display"
+        action: "Observe the TV (secondary display)"
+        expected: "Album cover art from AIMP MediaSession displayed on secondary display via Presenter"
+      - name: "Verify metadata"
+        action: "Check that title and artist text appear below album art"
+        expected: "Song title and artist from AIMP MediaSession metadata visible on secondary display"
+    tags: [album-cover, aimp, music, secondary-display, presenter, fx-006]
+    estimated_duration: "20s"
+    expected_result: "AIMP album cover art and metadata displayed on secondary display via Presenter MediaSession integration"
+
+  - id: FX-007
+    name: "Album cover shows for Winamp"
+    category: functional
+    priority: high
+    platforms: [android]
+    steps:
+      - name: "Ensure no video playing"
+        action: "Stop any video playback on secondary display"
+        expected: "No active video decoder"
+      - name: "Launch Winamp and play song"
+        action: "Open Winamp music player, play a song that has album art"
+        expected: "Winamp begins music playback"
+      - name: "Check secondary display"
+        action: "Observe the TV (secondary display)"
+        expected: "Album cover art from Winamp MediaSession displayed on secondary display"
+      - name: "Verify metadata"
+        action: "Check that title and artist text appear below album art"
+        expected: "Song title and artist from Winamp MediaSession metadata visible on secondary display"
+    tags: [album-cover, winamp, music, secondary-display, presenter, fx-007]
+    estimated_duration: "20s"
+    expected_result: "Winamp album cover art and metadata displayed on secondary display via Presenter MediaSession integration"
+
+  - id: FX-008
+    name: "Album cover URI loading"
+    category: integration
+    priority: medium
+    platforms: [android]
+    steps:
+      - name: "Play music in app with URI-based art"
+        action: "Use a music player that provides album art via content:// or file:// URI in MediaSession metadata (rather than embedded Bitmap)"
+        expected: "Music playing with album art URI in MediaSession"
+      - name: "Check secondary display"
+        action: "Observe the TV (secondary display)"
+        expected: "Album cover loaded from URI and displayed on secondary display"
+      - name: "Check logcat for URI loading"
+        action: "Check logcat for Presenter album art loading"
+        expected: "Log shows album art URI received and loaded successfully (no null or broken image)"
+    tags: [album-cover, uri, content-provider, secondary-display, fx-008]
+    estimated_duration: "20s"
+    expected_result: "Apps using URI-based album art (content:// or file://) have cover displayed correctly on secondary display"
+
+  - id: FX-009
+    name: "HDMI audio quality"
+    category: performance
+    priority: high
+    platforms: [android]
+    steps:
+      - name: "Ensure HDMI audio output selected"
+        action: "Verify audio routes to HDMI via dumpsys audio STREAM_MUSIC"
+        expected: "HDMI audio device active for STREAM_MUSIC"
+      - name: "Start audio playback"
+        action: "Play a music file or stream through any audio app"
+        expected: "Audio begins playing"
+      - name: "Monitor for 30 seconds"
+        action: "Listen to HDMI audio output for 30 seconds, checking for clicks, pops, dropouts, or distortion"
+        expected: "Clean audio playback for full 30 seconds with no glitches"
+      - name: "Check AudioFlinger underruns"
+        action: "Run adb shell dumpsys audioflinger | grep -E 'underrun|overrun'"
+        expected: "Zero or minimal underruns during the 30-second test period"
+    tags: [audio, hdmi, quality, glitch-free, fx-009]
+    documentation_refs:
+      - type: architecture
+        section: "Fix #97"
+        path: "docs/guides/SYSTEM_ARCHITECTURE.md"
+    estimated_duration: "45s"
+    expected_result: "HDMI audio plays for 30 seconds with no glitches, clicks, pops, or dropouts"
+
+  - id: FX-010
+    name: "WMA audio playback"
+    category: functional
+    priority: medium
+    platforms: [android]
+    steps:
+      - name: "Verify WMA decoder registered"
+        action: "Check dumpsys media.codec for c2.ffmpeg.wma.decoder"
+        expected: "c2.ffmpeg.wma.decoder registered in MediaCodec API with correct MIME type"
+      - name: "Play WMA file"
+        action: "Open a WMA audio file in a media player that uses MediaCodec API (e.g., Jellyfin, ExoPlayer-based player)"
+        expected: "WMA file begins decoding and audio plays"
+      - name: "Verify clean playback"
+        action: "Listen for 10 seconds"
+        expected: "Audio plays cleanly with no distortion, skipping, or silence"
+    tags: [audio, wma, ffmpeg-codec2, decoder, fx-010]
+    documentation_refs:
+      - type: architecture
+        section: "Fix #106"
+        path: "docs/guides/SYSTEM_ARCHITECTURE.md"
+    estimated_duration: "20s"
+    expected_result: "WMA audio file decoded correctly via c2.ffmpeg.wma.decoder and plays without issues"
+
+  - id: FX-011
+    name: "ALAC audio playback"
+    category: functional
+    priority: medium
+    platforms: [android]
+    steps:
+      - name: "Verify ALAC decoder registered"
+        action: "Check dumpsys media.codec for c2.ffmpeg.alac.decoder"
+        expected: "c2.ffmpeg.alac.decoder registered in MediaCodec API"
+      - name: "Play ALAC file"
+        action: "Open an ALAC (.m4a) audio file in a player that uses MediaCodec API"
+        expected: "ALAC file begins decoding and audio plays"
+      - name: "Verify lossless quality"
+        action: "Listen for 10 seconds, compare with source quality"
+        expected: "Audio plays cleanly with full lossless quality, no artifacts"
+    tags: [audio, alac, ffmpeg-codec2, lossless, decoder, fx-011]
+    estimated_duration: "20s"
+    expected_result: "ALAC audio file decoded correctly via c2.ffmpeg.alac.decoder with lossless quality"
+
+  - id: FX-012
+    name: "Multiple FFmpeg Codec2 decoders registered"
+    category: integration
+    priority: high
+    platforms: [android]
+    steps:
+      - name: "Check AC3 decoder"
+        action: "Run adb shell dumpsys media.codec | grep c2.ffmpeg.ac3.decoder"
+        expected: "c2.ffmpeg.ac3.decoder registered"
+      - name: "Check E-AC3 decoder"
+        action: "Run adb shell dumpsys media.codec | grep c2.ffmpeg.eac3.decoder"
+        expected: "c2.ffmpeg.eac3.decoder registered"
+      - name: "Check WMA decoder"
+        action: "Run adb shell dumpsys media.codec | grep c2.ffmpeg.wma.decoder"
+        expected: "c2.ffmpeg.wma.decoder registered"
+      - name: "Check ALAC decoder"
+        action: "Run adb shell dumpsys media.codec | grep c2.ffmpeg.alac.decoder"
+        expected: "c2.ffmpeg.alac.decoder registered"
+      - name: "Check APE decoder"
+        action: "Run adb shell dumpsys media.codec | grep c2.ffmpeg.ape.decoder"
+        expected: "c2.ffmpeg.ape.decoder registered"
+      - name: "Check MP2 decoder"
+        action: "Run adb shell dumpsys media.codec | grep c2.ffmpeg.mp2.decoder"
+        expected: "c2.ffmpeg.mp2.decoder registered"
+      - name: "Check MP1 decoder"
+        action: "Run adb shell dumpsys media.codec | grep c2.ffmpeg.mp1.decoder"
+        expected: "c2.ffmpeg.mp1.decoder registered"
+      - name: "Verify all 7 decoders"
+        action: "Count total c2.ffmpeg.* decoders in dumpsys media.codec"
+        expected: "At least 7 c2.ffmpeg.* decoders registered"
+    tags: [codecs, ffmpeg-codec2, registration, ac3, eac3, wma, alac, ape, mp2, mp1, fx-012]
+    documentation_refs:
+      - type: architecture
+        section: "Fix #106"
+        path: "docs/guides/SYSTEM_ARCHITECTURE.md"
+    estimated_duration: "15s"
+    expected_result: "All 7 FFmpeg Codec2 decoders (AC3, E-AC3, WMA, ALAC, APE, MP2, MP1) registered in MediaCodec API"
