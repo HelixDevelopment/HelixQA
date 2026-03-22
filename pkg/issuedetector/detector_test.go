@@ -15,7 +15,6 @@ import (
 	"digital.vasic.visionengine/pkg/graph"
 
 	"digital.vasic.helixqa/pkg/session"
-	"digital.vasic.helixqa/pkg/ticket"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -39,8 +38,8 @@ func newMockAgent(responses ...agent.Response) *mockAgent {
 	}
 }
 
-func (m *mockAgent) ID() string   { return m.id }
-func (m *mockAgent) Name() string { return m.name }
+func (m *mockAgent) ID() string                    { return m.id }
+func (m *mockAgent) Name() string                  { return m.name }
 func (m *mockAgent) Start(_ context.Context) error { return nil }
 func (m *mockAgent) Stop(_ context.Context) error  { return nil }
 func (m *mockAgent) IsRunning() bool               { return true }
@@ -190,10 +189,9 @@ func TestSeverityConstants(t *testing.T) {
 func TestNewIssueDetector(t *testing.T) {
 	ag := newMockAgent()
 	az := &mockAnalyzer{}
-	tg := ticket.New()
 	sess := session.NewSessionRecorder("test", "/tmp")
 
-	det := NewIssueDetector(ag, az, tg, sess)
+	det := NewIssueDetector(ag, az, sess)
 	assert.NotNil(t, det)
 	assert.Equal(t, 0, det.IssueCount())
 	assert.Empty(t, det.Issues())
@@ -202,10 +200,9 @@ func TestNewIssueDetector(t *testing.T) {
 func TestIssueDetector_AnalyzeAction_NoIssues(t *testing.T) {
 	ag := newMockAgent(agent.Response{Content: "[]"})
 	az := &mockAnalyzer{}
-	tg := ticket.New()
 	sess := session.NewSessionRecorder("test", "/tmp")
 
-	det := NewIssueDetector(ag, az, tg, sess)
+	det := NewIssueDetector(ag, az, sess)
 
 	before := analyzer.ScreenAnalysis{
 		Title:    "Before",
@@ -228,10 +225,9 @@ func TestIssueDetector_AnalyzeAction_WithIssues(t *testing.T) {
 	jsonResp := `[{"category":"visual","severity":"medium","title":"Button truncated","description":"The save button text is cut off","suggestion":"Use wrap_content"}]`
 	ag := newMockAgent(agent.Response{Content: jsonResp})
 	az := &mockAnalyzer{}
-	tg := ticket.New()
 	sess := session.NewSessionRecorder("test", "/tmp")
 
-	det := NewIssueDetector(ag, az, tg, sess)
+	det := NewIssueDetector(ag, az, sess)
 
 	before := analyzer.ScreenAnalysis{Title: "Settings"}
 	after := analyzer.ScreenAnalysis{
@@ -256,7 +252,7 @@ func TestIssueDetector_AnalyzeAction_AgentError(t *testing.T) {
 	ag := newMockAgent()
 	ag.failErr = fmt.Errorf("agent timeout")
 	az := &mockAnalyzer{}
-	det := NewIssueDetector(ag, az, nil, nil)
+	det := NewIssueDetector(ag, az, nil)
 
 	_, err := det.AnalyzeAction(
 		context.Background(),
@@ -271,7 +267,7 @@ func TestIssueDetector_AnalyzeAction_AgentError(t *testing.T) {
 func TestIssueDetector_AnalyzeUX(t *testing.T) {
 	jsonResp := `[{"category":"ux","severity":"high","title":"Dead end screen","description":"Settings has no back navigation"}]`
 	ag := newMockAgent(agent.Response{Content: jsonResp})
-	det := NewIssueDetector(ag, &mockAnalyzer{}, nil, nil)
+	det := NewIssueDetector(ag, &mockAnalyzer{}, nil)
 
 	g := graph.NewNavigationGraph()
 	g.AddScreen(analyzer.ScreenIdentity{ID: "screen-a", Name: "A"})
@@ -288,7 +284,7 @@ func TestIssueDetector_AnalyzeUX(t *testing.T) {
 func TestIssueDetector_AnalyzeUX_AgentError(t *testing.T) {
 	ag := newMockAgent()
 	ag.failErr = fmt.Errorf("timeout")
-	det := NewIssueDetector(ag, &mockAnalyzer{}, nil, nil)
+	det := NewIssueDetector(ag, &mockAnalyzer{}, nil)
 
 	g := graph.NewNavigationGraph()
 	_, err := det.AnalyzeUX(context.Background(), g)
@@ -298,7 +294,7 @@ func TestIssueDetector_AnalyzeUX_AgentError(t *testing.T) {
 func TestIssueDetector_AnalyzeAccessibility(t *testing.T) {
 	jsonResp := `[{"category":"accessibility","severity":"high","title":"Low contrast","description":"Header text has 2.1:1 contrast ratio"}]`
 	ag := newMockAgent(agent.Response{Content: jsonResp})
-	det := NewIssueDetector(ag, &mockAnalyzer{}, nil, nil)
+	det := NewIssueDetector(ag, &mockAnalyzer{}, nil)
 
 	screen := analyzer.ScreenAnalysis{
 		ScreenID: "screen-main",
@@ -321,67 +317,13 @@ func TestIssueDetector_AnalyzeAccessibility(t *testing.T) {
 func TestIssueDetector_AnalyzeAccessibility_AgentError(t *testing.T) {
 	ag := newMockAgent()
 	ag.failErr = fmt.Errorf("timeout")
-	det := NewIssueDetector(ag, &mockAnalyzer{}, nil, nil)
+	det := NewIssueDetector(ag, &mockAnalyzer{}, nil)
 
 	_, err := det.AnalyzeAccessibility(
 		context.Background(),
 		analyzer.ScreenAnalysis{},
 	)
 	assert.Error(t, err)
-}
-
-func TestIssueDetector_CreateTicket(t *testing.T) {
-	ag := newMockAgent()
-	tg := ticket.New(ticket.WithOutputDir(t.TempDir()))
-	sess := session.NewSessionRecorder("test", "/tmp")
-
-	det := NewIssueDetector(ag, &mockAnalyzer{}, tg, sess)
-
-	issue := Issue{
-		ID:          "ISS-0001",
-		Category:    CategoryVisual,
-		Severity:    SeverityMedium,
-		Title:       "Truncated text",
-		Description: "Button text is cut off",
-		Platform:    "android",
-		ScreenID:    "screen-settings",
-		Evidence:    []string{"/tmp/ss.png"},
-	}
-
-	tkt, err := det.CreateTicket(context.Background(), issue)
-	require.NoError(t, err)
-	assert.NotNil(t, tkt)
-	assert.Equal(t, "ISS-0001", tkt.ID)
-	assert.Equal(t, "Truncated text", tkt.Title)
-	assert.Equal(t, ticket.SeverityMedium, tkt.Severity)
-	assert.Contains(t, tkt.Labels, "visual")
-	assert.Contains(t, tkt.Labels, "android")
-}
-
-func TestIssueDetector_CreateTicket_RecordsTimeline(t *testing.T) {
-	ag := newMockAgent()
-	sess := session.NewSessionRecorder("test", "/tmp")
-
-	det := NewIssueDetector(ag, &mockAnalyzer{}, nil, sess)
-
-	issue := Issue{
-		ID:       "ISS-0001",
-		Title:    "Bug",
-		Platform: "android",
-	}
-
-	_, err := det.CreateTicket(context.Background(), issue)
-	require.NoError(t, err)
-
-	events := sess.ExportTimeline()
-	found := false
-	for _, e := range events {
-		if e.IssueID == "ISS-0001" {
-			found = true
-			break
-		}
-	}
-	assert.True(t, found, "timeline should contain issue event")
 }
 
 func TestIssueDetector_IssuesByCategory(t *testing.T) {
@@ -391,7 +333,7 @@ func TestIssueDetector_IssuesByCategory(t *testing.T) {
 		{"category":"visual","severity":"high","title":"C"}
 	]`
 	ag := newMockAgent(agent.Response{Content: jsonResp})
-	det := NewIssueDetector(ag, &mockAnalyzer{}, nil, nil)
+	det := NewIssueDetector(ag, &mockAnalyzer{}, nil)
 
 	_, err := det.AnalyzeAction(
 		context.Background(),
@@ -415,7 +357,7 @@ func TestIssueDetector_IssuesBySeverity(t *testing.T) {
 		{"category":"visual","severity":"low","title":"C"}
 	]`
 	ag := newMockAgent(agent.Response{Content: jsonResp})
-	det := NewIssueDetector(ag, &mockAnalyzer{}, nil, nil)
+	det := NewIssueDetector(ag, &mockAnalyzer{}, nil)
 
 	_, err := det.AnalyzeAction(
 		context.Background(),
@@ -434,7 +376,7 @@ func TestIssueDetector_IssuesBySeverity(t *testing.T) {
 
 func TestIssueDetector_ParseIssues_InvalidJSON(t *testing.T) {
 	ag := newMockAgent(agent.Response{Content: "no json here"})
-	det := NewIssueDetector(ag, &mockAnalyzer{}, nil, nil)
+	det := NewIssueDetector(ag, &mockAnalyzer{}, nil)
 
 	issues, err := det.AnalyzeAction(
 		context.Background(),
@@ -449,7 +391,7 @@ func TestIssueDetector_ParseIssues_InvalidJSON(t *testing.T) {
 func TestIssueDetector_ParseIssues_InvalidCategory(t *testing.T) {
 	jsonResp := `[{"category":"unknown_cat","severity":"medium","title":"X"}]`
 	ag := newMockAgent(agent.Response{Content: jsonResp})
-	det := NewIssueDetector(ag, &mockAnalyzer{}, nil, nil)
+	det := NewIssueDetector(ag, &mockAnalyzer{}, nil)
 
 	issues, err := det.AnalyzeAction(
 		context.Background(),
@@ -466,7 +408,7 @@ func TestIssueDetector_ParseIssues_InvalidCategory(t *testing.T) {
 func TestIssueDetector_ParseIssues_InvalidSeverity(t *testing.T) {
 	jsonResp := `[{"category":"visual","severity":"extreme","title":"X"}]`
 	ag := newMockAgent(agent.Response{Content: jsonResp})
-	det := NewIssueDetector(ag, &mockAnalyzer{}, nil, nil)
+	det := NewIssueDetector(ag, &mockAnalyzer{}, nil)
 
 	issues, err := det.AnalyzeAction(
 		context.Background(),
@@ -482,7 +424,7 @@ func TestIssueDetector_ParseIssues_InvalidSeverity(t *testing.T) {
 func TestIssueDetector_ParseIssues_EmptyItems(t *testing.T) {
 	jsonResp := `[{"category":"visual","severity":"medium","title":"","description":""}]`
 	ag := newMockAgent(agent.Response{Content: jsonResp})
-	det := NewIssueDetector(ag, &mockAnalyzer{}, nil, nil)
+	det := NewIssueDetector(ag, &mockAnalyzer{}, nil)
 
 	issues, err := det.AnalyzeAction(
 		context.Background(),
@@ -499,7 +441,7 @@ func TestIssueDetector_ParseIssues_JSONInText(t *testing.T) {
 [{"category":"visual","severity":"low","title":"Misaligned icon","description":"The home icon is 2px off"}]
 That's all I see.`
 	ag := newMockAgent(agent.Response{Content: content})
-	det := NewIssueDetector(ag, &mockAnalyzer{}, nil, nil)
+	det := NewIssueDetector(ag, &mockAnalyzer{}, nil)
 
 	issues, err := det.AnalyzeAction(
 		context.Background(),
@@ -518,7 +460,7 @@ func TestIssueDetector_IDSequence(t *testing.T) {
 		agent.Response{Content: jsonResp},
 		agent.Response{Content: `[{"category":"crash","severity":"critical","title":"C"}]`},
 	)
-	det := NewIssueDetector(ag, &mockAnalyzer{}, nil, nil)
+	det := NewIssueDetector(ag, &mockAnalyzer{}, nil)
 
 	issues1, _ := det.AnalyzeAction(
 		context.Background(),
@@ -543,7 +485,7 @@ func TestIssueDetector_IDSequence(t *testing.T) {
 func TestIssueDetector_Issues_ReturnsCopy(t *testing.T) {
 	jsonResp := `[{"category":"visual","severity":"low","title":"X"}]`
 	ag := newMockAgent(agent.Response{Content: jsonResp})
-	det := NewIssueDetector(ag, &mockAnalyzer{}, nil, nil)
+	det := NewIssueDetector(ag, &mockAnalyzer{}, nil)
 
 	det.AnalyzeAction(
 		context.Background(),
@@ -577,7 +519,7 @@ func TestIssueDetector_Stress_ConcurrentAnalyze(t *testing.T) {
 		}
 	}
 	ag := newMockAgent(responses...)
-	det := NewIssueDetector(ag, &mockAnalyzer{}, nil, nil)
+	det := NewIssueDetector(ag, &mockAnalyzer{}, nil)
 
 	var wg sync.WaitGroup
 	wg.Add(goroutines)
