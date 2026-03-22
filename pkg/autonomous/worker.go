@@ -39,13 +39,13 @@ type PlatformWorker struct {
 // PlatformWorkerConfig holds configuration for creating a
 // PlatformWorker.
 type PlatformWorkerConfig struct {
-	Platform      string
-	Agent         agent.Agent
-	Analyzer      analyzer.Analyzer
-	Executor      navigator.ActionExecutor
-	Coverage      coverage.CoverageTracker
-	Session       *session.SessionRecorder
-	TicketGen     interface{} // *ticket.Generator
+	Platform  string
+	Agent     agent.Agent
+	Analyzer  analyzer.Analyzer
+	Executor  navigator.ActionExecutor
+	Coverage  coverage.CoverageTracker
+	Session   *session.SessionRecorder
+	TicketGen interface{} // *ticket.Generator
 }
 
 // NewPlatformWorker creates a PlatformWorker with all
@@ -56,7 +56,7 @@ func NewPlatformWorker(cfg PlatformWorkerConfig) *PlatformWorker {
 		cfg.Agent, cfg.Analyzer, cfg.Executor, g,
 	)
 	id := issuedetector.NewIssueDetector(
-		cfg.Agent, cfg.Analyzer, nil, cfg.Session,
+		cfg.Agent, cfg.Analyzer, cfg.Session,
 	)
 
 	return &PlatformWorker{
@@ -169,8 +169,8 @@ func (pw *PlatformWorker) RunCuriosityDriven(
 		}
 
 		results = append(results, StepResult{
-			Action:  "explore",
-			Success: true,
+			Action:   "explore",
+			Success:  true,
 			Duration: exploreResult.Duration,
 		})
 
