@@ -11,6 +11,13 @@ import (
 // execRunner implements CommandRunner using os/exec.
 type execRunner struct{}
 
+// NewExecRunner returns a CommandRunner that executes commands
+// via os/exec. This is the default runner used by the detector
+// and is suitable for production use with real system commands.
+func NewExecRunner() CommandRunner {
+	return &execRunner{}
+}
+
 // Run executes a command and returns its combined output.
 func (r *execRunner) Run(
 	ctx context.Context,

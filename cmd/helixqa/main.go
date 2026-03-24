@@ -27,6 +27,12 @@ import (
 
 	"digital.vasic.challenges/pkg/logging"
 
+	"digital.vasic.docprocessor/pkg/coverage"
+	"digital.vasic.docprocessor/pkg/feature"
+	"digital.vasic.llmorchestrator/pkg/agent"
+	"digital.vasic.visionengine/pkg/analyzer"
+
+	"digital.vasic.helixqa/pkg/autonomous"
 	"digital.vasic.helixqa/pkg/config"
 	"digital.vasic.helixqa/pkg/orchestrator"
 	"digital.vasic.helixqa/pkg/reporter"
@@ -369,10 +375,19 @@ func cmdAutonomous(args []string) {
 	curiosityTimeout := fs.Duration("curiosity-timeout",
 		30*time.Minute,
 		"Timeout for curiosity-driven phase")
+	device := fs.String("device", "",
+		"Android device/emulator ID (for android platform)")
+	browserURL := fs.String("browser-url", "",
+		"URL for web platform testing")
+	display := fs.String("display", ":0",
+		"X11 display for desktop platform testing")
 
 	if err := fs.Parse(args); err != nil {
 		os.Exit(1)
 	}
+
+	logger := logging.NewConsoleLogger(*verbose)
+	defer logger.Close()
 
 	fmt.Println("HelixQA Autonomous QA Session")
 	fmt.Println()
@@ -403,16 +418,136 @@ func cmdAutonomous(args []string) {
 
 	fmt.Printf("Resolved platforms: %v\n", platformStrs)
 	fmt.Println()
-	fmt.Println("Autonomous QA session requires LLM agents, " +
-		"VisionEngine, and DocProcessor to be configured.")
-	fmt.Println("See .env.example for required environment " +
-		"variables.")
 
-	// TODO: Wire up actual session coordinator once all
-	// dependencies are available at runtime.
+	// Expand "all" into concrete platform names.
+	expanded := expandPlatforms(platformList)
+
+	// Build the session configuration.
+	sessionCfg := &autonomous.SessionConfig{
+		SessionID: fmt.Sprintf(
+			"helix-%d", time.Now().Unix(),
+		),
+		OutputDir:        *output,
+		Platforms:        expanded,
+		Timeout:          *timeout,
+		CoverageTarget:   *coverageTarget,
+		CuriosityEnabled: *curiosity,
+		CuriosityTimeout: *curiosityTimeout,
+	}
+
+	// Create the executor factory with platform config.
+	execFactory := autonomous.NewDefaultExecutorFactory(
+		autonomous.ExecutorConfig{
+			AndroidDevice:  *device,
+			BrowserURL:     *browserURL,
+			DesktopDisplay: *display,
+		},
+	)
+
+	// Create the agent pool. In production, agents would be
+	// registered from configuration. For now, create an empty
+	// pool that will block on Acquire until context timeout
+	// if no agents are available.
+	pool := agent.NewPool()
+
+	// Create a stub vision analyzer. Replace with a real
+	// LLM-backed analyzer when API keys are configured.
+	viz := analyzer.NewStubAnalyzer()
+
+	// Create the feature map from the project documentation.
+	fm := feature.NewFeatureMap(*project)
+
+	// Create the coverage tracker.
+	cov := coverage.NewTracker()
+
+	// Assemble and run the session coordinator.
+	coordinator := autonomous.NewSessionCoordinator(
+		sessionCfg, pool, viz, fm, cov,
+		autonomous.WithExecutorFactory(execFactory),
+	)
+
+	// Set up context with timeout and signal handling.
+	ctx, cancel := context.WithTimeout(
+		context.Background(), *timeout,
+	)
+	defer cancel()
+
+	sigCh := make(chan os.Signal, 1)
+	signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
+	go func() {
+		select {
+		case <-sigCh:
+			fmt.Fprintln(os.Stderr,
+				"\nReceived interrupt, shutting down...")
+			cancel()
+		case <-ctx.Done():
+		}
+	}()
+
+	fmt.Println("Starting autonomous QA session...")
 	fmt.Println()
-	fmt.Println("Autonomous session not yet fully wired — " +
-		"all packages are implemented and tested.")
+
+	result, err := coordinator.Run(ctx)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "error: %v\n", err)
+		os.Exit(1)
+	}
+
+	// Print summary.
+	fmt.Println()
+	fmt.Printf("Session:    %s\n", result.SessionID)
+	fmt.Printf("Status:     %s\n", result.Status)
+	fmt.Printf("Duration:   %v\n", result.Duration)
+	fmt.Printf("Issues:     %d\n", len(result.Issues))
+	fmt.Printf("Coverage:   %.1f%%\n",
+		result.CoverageOverall*100)
+
+	for platform, pr := range result.PlatformResults {
+		fmt.Printf("\n  [%s] verified=%d failed=%d "+
+			"issues=%d screens=%d\n",
+			platform, pr.FeaturesVerified,
+			pr.FeaturesFailed, pr.IssuesFound,
+			pr.ScreensDiscovered,
+		)
+	}
+
+	// Write result as JSON.
+	if err := os.MkdirAll(*output, 0750); err != nil {
+		fmt.Fprintf(os.Stderr,
+			"warning: cannot create output dir: %v\n", err)
+	} else {
+		data, _ := json.MarshalIndent(result, "", "  ")
+		resultPath := fmt.Sprintf(
+			"%s/autonomous-result.json", *output,
+		)
+		if err := os.WriteFile(
+			resultPath, data, 0640,
+		); err != nil {
+			fmt.Fprintf(os.Stderr,
+				"warning: cannot write result: %v\n", err)
+		} else {
+			fmt.Printf("\nResult: %s\n", resultPath)
+		}
+	}
+
+	_ = *reportFmts // Reserved for future report generation.
+
+	if result.Status != autonomous.StatusComplete {
+		os.Exit(1)
+	}
+}
+
+// expandPlatforms converts config.Platform values to strings,
+// expanding PlatformAll into the three concrete platforms.
+func expandPlatforms(platforms []config.Platform) []string {
+	var result []string
+	for _, p := range platforms {
+		if p == config.PlatformAll {
+			return []string{"android", "desktop", "web"}
+		}
+		result = append(result, string(p))
+	}
+	return result
 }
 
 func truncate(s string, max int) string {
