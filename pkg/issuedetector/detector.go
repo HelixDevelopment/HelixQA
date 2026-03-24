@@ -9,42 +9,37 @@ import (
 	"fmt"
 	"strings"
 	"sync"
-	"time"
 
 	"digital.vasic.llmorchestrator/pkg/agent"
 	"digital.vasic.visionengine/pkg/analyzer"
 	"digital.vasic.visionengine/pkg/graph"
 
 	"digital.vasic.helixqa/pkg/session"
-	"digital.vasic.helixqa/pkg/ticket"
 )
 
 // IssueDetector uses LLM agents to detect bugs during
 // autonomous QA sessions. It analyzes screen transitions,
 // navigation patterns, and accessibility properties.
 type IssueDetector struct {
-	agent     agent.Agent
-	analyzer  analyzer.Analyzer
-	ticketGen *ticket.Generator
-	session   *session.SessionRecorder
-	issues    []Issue
-	counter   int
-	mu        sync.Mutex
+	agent    agent.Agent
+	analyzer analyzer.Analyzer
+	session  *session.SessionRecorder
+	issues   []Issue
+	counter  int
+	mu       sync.Mutex
 }
 
 // NewIssueDetector creates an IssueDetector with all dependencies.
 func NewIssueDetector(
 	ag agent.Agent,
 	az analyzer.Analyzer,
-	tg *ticket.Generator,
 	sess *session.SessionRecorder,
 ) *IssueDetector {
 	return &IssueDetector{
-		agent:     ag,
-		analyzer:  az,
-		ticketGen: tg,
-		session:   sess,
-		issues:    make([]Issue, 0, 16),
+		agent:    ag,
+		analyzer: az,
+		session:  sess,
+		issues:   make([]Issue, 0, 16),
 	}
 }
 
@@ -161,24 +156,10 @@ func (id *IssueDetector) AnalyzeAccessibility(
 	return issues, nil
 }
 
-// CreateTicket creates a ticket.Ticket from an Issue and
-// records it in the session timeline.
-func (id *IssueDetector) CreateTicket(
-	_ context.Context,
-	issue Issue,
-) (*ticket.Ticket, error) {
+// RecordIssue records an issue in the session timeline.
+func (id *IssueDetector) RecordIssue(issue Issue) {
 	id.mu.Lock()
 	defer id.mu.Unlock()
-
-	t := &ticket.Ticket{
-		ID:          issue.ID,
-		Title:       issue.Title,
-		Severity:    ticket.Severity(issue.Severity),
-		Description: issue.Description,
-		Screenshots: issue.Evidence,
-		Labels:      []string{string(issue.Category), issue.Platform},
-		CreatedAt:   time.Now(),
-	}
 
 	if id.session != nil {
 		id.session.RecordEvent(session.TimelineEvent{
@@ -189,8 +170,6 @@ func (id *IssueDetector) CreateTicket(
 			IssueID:     issue.ID,
 		})
 	}
-
-	return t, nil
 }
 
 // Issues returns a copy of all detected issues.

@@ -7,6 +7,8 @@
 // UX, accessibility, functional, performance, and crash issues.
 package issuedetector
 
+import "time"
+
 // IssueCategory classifies the type of issue detected.
 type IssueCategory string
 
@@ -106,4 +108,7 @@ type Issue struct {
 
 	// Confidence is the detection confidence (0-1).
 	Confidence float64 `json:"confidence"`
+
+	// Timestamp is when the issue was detected.
+	Timestamp time.Time `json:"timestamp"`
 }
