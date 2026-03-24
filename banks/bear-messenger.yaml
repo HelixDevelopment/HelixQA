@@ -1,0 +1,633 @@
+# SPDX-FileCopyrightText: 2026 Milos Vasic
+# SPDX-License-Identifier: Apache-2.0
+#
+# HelixQA Test Bank: Bear Messenger
+# Comprehensive QA tests covering all apps and services.
+
+version: "1.0"
+name: "Bear Messenger Test Bank"
+description: "Comprehensive QA tests for Bear Messenger - all platforms, all features"
+metadata:
+  author: "Bear Messenger QA"
+  app: "Bear Messenger"
+  version: "1.0.0"
+
+test_cases:
+  # ==================== Backend API (API-xxx) ====================
+
+  - id: API-001
+    name: "Health endpoint returns 200 with status ok"
+    category: smoke
+    priority: critical
+    platforms: [web]
+    steps:
+      - name: "Call health endpoint"
+        action: "GET /api/v1/health"
+        expected: "HTTP 200, JSON body with status: ok"
+
+  - id: API-002
+    name: "User registration with valid data"
+    category: functional
+    priority: critical
+    platforms: [web]
+    steps:
+      - name: "Register new user"
+        action: "POST /api/v1/auth/register with sip_username, sip_password, account_id"
+        expected: "HTTP 201, user object returned"
+      - name: "Verify user can login"
+        action: "POST /api/v1/auth/login with registered credentials"
+        expected: "HTTP 200, access token returned"
+
+  - id: API-003
+    name: "User login with invalid credentials"
+    category: security
+    priority: critical
+    platforms: [web]
+    steps:
+      - name: "Attempt login with wrong password"
+        action: "POST /api/v1/auth/login with wrong password"
+        expected: "HTTP 401, error message"
+      - name: "Attempt login with empty fields"
+        action: "POST /api/v1/auth/login with empty body"
+        expected: "HTTP 400, validation error"
+
+  - id: API-004
+    name: "Create chat between two users"
+    category: functional
+    priority: critical
+    platforms: [web]
+    steps:
+      - name: "Register two users"
+        action: "Register userA and userB via API"
+        expected: "Both users created successfully"
+      - name: "Login as userA"
+        action: "POST /api/v1/auth/login"
+        expected: "Access token obtained"
+      - name: "Create chat"
+        action: "POST /api/v1/chats with userB's account_id"
+        expected: "Chat object returned with valid ID"
+
+  - id: API-005
+    name: "Send and retrieve messages"
+    category: functional
+    priority: critical
+    platforms: [web]
+    steps:
+      - name: "Send message to chat"
+        action: "POST /api/v1/messages with chat_id and message text"
+        expected: "Message object returned with ID"
+      - name: "Retrieve messages"
+        action: "GET /api/v1/messages?chat_id=X"
+        expected: "Array containing the sent message"
+
+  - id: API-006
+    name: "Contact management flow"
+    category: functional
+    priority: high
+    platforms: [web]
+    steps:
+      - name: "Add contact"
+        action: "POST /api/v1/contacts with contact SIP"
+        expected: "Contact created"
+      - name: "List contacts"
+        action: "GET /api/v1/contacts"
+        expected: "Array with added contact"
+      - name: "Delete contact"
+        action: "DELETE /api/v1/contacts/:id"
+        expected: "Contact removed"
+
+  - id: API-007
+    name: "File upload and download"
+    category: functional
+    priority: high
+    platforms: [web]
+    steps:
+      - name: "Upload image file"
+        action: "POST /api/v1/files/upload multipart with image"
+        expected: "HTTP 200, fileshareid returned"
+      - name: "Download uploaded file"
+        action: "GET /api/v1/files/download/:fileShareId"
+        expected: "File binary returned with correct MIME type"
+
+  - id: API-008
+    name: "Profile update operations"
+    category: functional
+    priority: medium
+    platforms: [web]
+    steps:
+      - name: "Update presence"
+        action: "PUT /api/v1/profile/presence with online status"
+        expected: "HTTP 200"
+      - name: "Update name"
+        action: "PUT /api/v1/profile/name"
+        expected: "HTTP 200"
+      - name: "Update email"
+        action: "PUT /api/v1/profile/email"
+        expected: "HTTP 200"
+
+  - id: API-009
+    name: "Push notification token registration"
+    category: functional
+    priority: medium
+    platforms: [web]
+    steps:
+      - name: "Register FCM token"
+        action: "POST /api/v1/push/register with token and platform"
+        expected: "HTTP 200"
+
+  - id: API-010
+    name: "Scheduled calls CRUD"
+    category: functional
+    priority: medium
+    platforms: [web]
+    steps:
+      - name: "Get scheduled calls"
+        action: "GET /api/v1/scheduled-calls"
+        expected: "HTTP 200, array (may be empty)"
+      - name: "Get call history"
+        action: "GET /api/v1/calls/history"
+        expected: "HTTP 200, array (may be empty)"
+
+  - id: API-011
+    name: "Account search"
+    category: functional
+    priority: medium
+    platforms: [web]
+    steps:
+      - name: "Search for existing user"
+        action: "GET /api/v1/accounts/search?q=admin"
+        expected: "HTTP 200, results containing admin user"
+
+  - id: API-012
+    name: "Rate limiting enforced"
+    category: security
+    priority: high
+    platforms: [web]
+    steps:
+      - name: "Send 100+ rapid requests"
+        action: "Rapidly call an endpoint 100+ times"
+        expected: "Eventually receives HTTP 429 or rate limit headers"
+
+  - id: API-013
+    name: "Unauthorized access blocked"
+    category: security
+    priority: critical
+    platforms: [web]
+    steps:
+      - name: "Access protected endpoint without token"
+        action: "GET /api/v1/users without X-Access-Token"
+        expected: "HTTP 401"
+      - name: "Access with invalid token"
+        action: "GET /api/v1/users with fake token"
+        expected: "HTTP 401"
+
+  - id: API-014
+    name: "WebSocket connection and messaging"
+    category: functional
+    priority: high
+    platforms: [web]
+    steps:
+      - name: "Connect to WebSocket"
+        action: "Connect to /api/v1/ws?userId=testuser"
+        expected: "WebSocket connection established"
+      - name: "Send heartbeat"
+        action: "Send {type: heartbeat} message"
+        expected: "Connection stays alive"
+
+  - id: API-015
+    name: "Regions endpoint"
+    category: functional
+    priority: low
+    platforms: [web]
+    steps:
+      - name: "Get regions"
+        action: "GET /api/v1/regions"
+        expected: "HTTP 200, array of regions"
+
+  # ==================== Admin Console (ADM-xxx) ====================
+
+  - id: ADM-001
+    name: "Admin login flow"
+    category: smoke
+    priority: critical
+    platforms: [web]
+    steps:
+      - name: "Navigate to admin login page"
+        action: "Open http://localhost:3001"
+        expected: "Login form renders with username/password fields"
+      - name: "Login with admin credentials"
+        action: "Enter admin/admin and submit"
+        expected: "Redirect to dashboard"
+
+  - id: ADM-002
+    name: "Dashboard displays real statistics"
+    category: functional
+    priority: high
+    platforms: [web]
+    steps:
+      - name: "View dashboard after login"
+        action: "Navigate to dashboard"
+        expected: "Stat cards show user count, chat count, contact count"
+      - name: "Verify activity list"
+        action: "Check Recent Activity section"
+        expected: "Shows real activity items from system"
+
+  - id: ADM-003
+    name: "User management CRUD"
+    category: functional
+    priority: critical
+    platforms: [web]
+    steps:
+      - name: "Navigate to users page"
+        action: "Click Users in sidebar"
+        expected: "User list table renders"
+      - name: "Create new user"
+        action: "Click Create User, fill form, submit"
+        expected: "User appears in list"
+      - name: "Edit user"
+        action: "Click user row, modify name, save"
+        expected: "User name updated"
+      - name: "Delete user"
+        action: "Click delete button on user"
+        expected: "User removed from list"
+
+  - id: ADM-004
+    name: "Chat management"
+    category: functional
+    priority: high
+    platforms: [web]
+    steps:
+      - name: "View chats list"
+        action: "Navigate to chats page"
+        expected: "Chat list renders"
+      - name: "Create chat"
+        action: "Click create, select participants"
+        expected: "New chat created"
+
+  - id: ADM-005
+    name: "Message monitoring"
+    category: functional
+    priority: high
+    platforms: [web]
+    steps:
+      - name: "View messages"
+        action: "Navigate to messages page"
+        expected: "Message list renders"
+      - name: "Search messages"
+        action: "Use search field"
+        expected: "Filtered results shown"
+
+  - id: ADM-006
+    name: "Contact administration"
+    category: functional
+    priority: medium
+    platforms: [web]
+    steps:
+      - name: "View contacts"
+        action: "Navigate to contacts page"
+        expected: "Contact list renders"
+
+  - id: ADM-007
+    name: "Admin responsive layout"
+    category: ux
+    priority: medium
+    platforms: [web]
+    steps:
+      - name: "Desktop viewport (1920x1080)"
+        action: "View at full resolution"
+        expected: "Sidebar visible, content properly laid out"
+      - name: "Tablet viewport (768x1024)"
+        action: "Resize to tablet dimensions"
+        expected: "Layout adapts, no horizontal scroll"
+      - name: "Mobile viewport (375x812)"
+        action: "Resize to mobile dimensions"
+        expected: "Hamburger menu, content stacks vertically"
+
+  - id: ADM-008
+    name: "Admin logout"
+    category: functional
+    priority: high
+    platforms: [web]
+    steps:
+      - name: "Click logout"
+        action: "Find and click logout button"
+        expected: "Redirect to login page, token cleared"
+
+  # ==================== Web PWA (WEB-xxx) ====================
+
+  - id: WEB-001
+    name: "Web PWA login flow"
+    category: smoke
+    priority: critical
+    platforms: [web]
+    steps:
+      - name: "Navigate to web login"
+        action: "Open http://localhost:3002"
+        expected: "Login page renders"
+      - name: "Login with test credentials"
+        action: "Enter testuser@example.com / password"
+        expected: "Redirect to chats"
+
+  - id: WEB-002
+    name: "Chat list and navigation"
+    category: functional
+    priority: critical
+    platforms: [web]
+    steps:
+      - name: "View chat list"
+        action: "Navigate to /chats"
+        expected: "Chat list renders with existing chats"
+      - name: "Open chat detail"
+        action: "Click on a chat"
+        expected: "Chat messages area opens"
+
+  - id: WEB-003
+    name: "Send text message"
+    category: functional
+    priority: critical
+    platforms: [web]
+    steps:
+      - name: "Open a chat"
+        action: "Navigate to a chat with messages"
+        expected: "Message input visible"
+      - name: "Type and send message"
+        action: "Type text and press Enter/Send"
+        expected: "Message appears in chat"
+
+  - id: WEB-004
+    name: "Contact management"
+    category: functional
+    priority: high
+    platforms: [web]
+    steps:
+      - name: "View contacts"
+        action: "Navigate to /contacts"
+        expected: "Contact list renders"
+      - name: "Add contact"
+        action: "Click add, search, send request"
+        expected: "Contact request sent"
+
+  - id: WEB-005
+    name: "Profile settings"
+    category: functional
+    priority: medium
+    platforms: [web]
+    steps:
+      - name: "View profile"
+        action: "Navigate to /profile"
+        expected: "Profile page with user info"
+      - name: "Edit profile fields"
+        action: "Modify name, save"
+        expected: "Changes saved"
+
+  - id: WEB-006
+    name: "Web PWA responsive layout"
+    category: ux
+    priority: medium
+    platforms: [web]
+    steps:
+      - name: "Mobile viewport"
+        action: "View at 375x812"
+        expected: "Mobile-friendly layout"
+      - name: "Desktop viewport"
+        action: "View at 1920x1080"
+        expected: "Full desktop layout"
+
+  # ==================== Desktop Electron (DSK-xxx) ====================
+
+  - id: DSK-001
+    name: "Desktop app login"
+    category: smoke
+    priority: critical
+    platforms: [desktop]
+    steps:
+      - name: "Open desktop app"
+        action: "Launch Electron app"
+        expected: "Login page renders"
+      - name: "Login"
+        action: "Enter credentials and submit"
+        expected: "Redirect to dashboard"
+
+  - id: DSK-002
+    name: "Desktop dashboard"
+    category: functional
+    priority: high
+    platforms: [desktop]
+    steps:
+      - name: "View dashboard"
+        action: "Navigate to dashboard"
+        expected: "Stats cards and activity shown"
+
+  - id: DSK-003
+    name: "Desktop user management"
+    category: functional
+    priority: high
+    platforms: [desktop]
+    steps:
+      - name: "View users"
+        action: "Navigate to users"
+        expected: "User list table"
+      - name: "Create user"
+        action: "Create new user"
+        expected: "User added"
+
+  - id: DSK-004
+    name: "Desktop chat and messaging"
+    category: functional
+    priority: critical
+    platforms: [desktop]
+    steps:
+      - name: "View chats"
+        action: "Navigate to chats"
+        expected: "Chat list renders"
+      - name: "Open and view messages"
+        action: "Click a chat"
+        expected: "Messages displayed"
+
+  - id: DSK-005
+    name: "Desktop contacts"
+    category: functional
+    priority: medium
+    platforms: [desktop]
+    steps:
+      - name: "View contacts"
+        action: "Navigate to contacts"
+        expected: "Contact list renders"
+
+  # ==================== Mobile (MOB-xxx) ====================
+
+  - id: MOB-001
+    name: "Mobile app launch and login"
+    category: smoke
+    priority: critical
+    platforms: [android]
+    steps:
+      - name: "Launch mobile app"
+        action: "Start Bear Messenger app on Android"
+        expected: "Login screen renders"
+      - name: "Login"
+        action: "Enter credentials"
+        expected: "Navigate to main screen"
+
+  - id: MOB-002
+    name: "Mobile chat list"
+    category: functional
+    priority: critical
+    platforms: [android]
+    steps:
+      - name: "View chat list"
+        action: "Navigate to chats tab"
+        expected: "Chat list with scrollable content"
+
+  - id: MOB-003
+    name: "Mobile messaging"
+    category: functional
+    priority: critical
+    platforms: [android]
+    steps:
+      - name: "Send message"
+        action: "Open chat, type message, send"
+        expected: "Message delivered"
+
+  - id: MOB-004
+    name: "Mobile contacts"
+    category: functional
+    priority: high
+    platforms: [android]
+    steps:
+      - name: "View contacts"
+        action: "Navigate to contacts"
+        expected: "Contact list renders"
+
+  - id: MOB-005
+    name: "Mobile profile"
+    category: functional
+    priority: medium
+    platforms: [android]
+    steps:
+      - name: "View and edit profile"
+        action: "Navigate to profile"
+        expected: "Profile form visible and editable"
+
+  # ==================== Cross-Platform (XP-xxx) ====================
+
+  - id: XP-001
+    name: "Two-user registration and chat"
+    category: integration
+    priority: critical
+    platforms: [web]
+    steps:
+      - name: "Register User A"
+        action: "Register via API"
+        expected: "User A created"
+      - name: "Register User B"
+        action: "Register via API"
+        expected: "User B created"
+      - name: "A adds B as contact"
+        action: "POST /contacts"
+        expected: "Contact added"
+      - name: "A creates chat with B"
+        action: "POST /chats"
+        expected: "Chat created"
+      - name: "Message exchange"
+        action: "Both users send messages"
+        expected: "Messages visible to both"
+
+  - id: XP-002
+    name: "Media exchange between users"
+    category: integration
+    priority: high
+    platforms: [web]
+    steps:
+      - name: "User A sends image"
+        action: "Upload image, send file share"
+        expected: "Image reference in message"
+      - name: "User B sends video"
+        action: "Upload video, send file share"
+        expected: "Video reference in message"
+      - name: "Audio message exchange"
+        action: "Both send audio"
+        expected: "Audio references present"
+
+  - id: XP-003
+    name: "Extended conversation"
+    category: integration
+    priority: high
+    platforms: [web]
+    steps:
+      - name: "Exchange 30+ messages"
+        action: "Automated 5-minute conversation"
+        expected: "All messages delivered successfully"
+      - name: "Verify message history"
+        action: "Both users fetch messages"
+        expected: "Counts match, content verified"
+
+  # ==================== Performance (PERF-xxx) ====================
+
+  - id: PERF-001
+    name: "API response latency under 500ms"
+    category: performance
+    priority: high
+    platforms: [web]
+    steps:
+      - name: "Measure health endpoint"
+        action: "Time GET /health"
+        expected: "Response in under 100ms"
+      - name: "Measure login endpoint"
+        action: "Time POST /auth/login"
+        expected: "Response in under 500ms"
+
+  - id: PERF-002
+    name: "Concurrent request handling"
+    category: performance
+    priority: high
+    platforms: [web]
+    steps:
+      - name: "Send 50 concurrent requests"
+        action: "Parallel GET /health"
+        expected: "All return 200, no timeouts"
+
+  # ==================== Security (SEC-xxx) ====================
+
+  - id: SEC-001
+    name: "SQL injection prevention"
+    category: security
+    priority: critical
+    platforms: [web]
+    steps:
+      - name: "SQL injection in login"
+        action: "Send ' OR 1=1 -- as username"
+        expected: "Login fails, no SQL error"
+      - name: "SQL injection in search"
+        action: "Send SQL payload in search query"
+        expected: "No data leak, proper error"
+
+  - id: SEC-002
+    name: "XSS prevention in messages"
+    category: security
+    priority: critical
+    platforms: [web]
+    steps:
+      - name: "Send script tag in message"
+        action: "Send <script>alert(1)</script> as message"
+        expected: "Script not executed, sanitized"
+
+  - id: SEC-003
+    name: "CORS headers present"
+    category: security
+    priority: high
+    platforms: [web]
+    steps:
+      - name: "Check CORS headers"
+        action: "OPTIONS request to API"
+        expected: "Access-Control headers present"
+
+  - id: SEC-004
+    name: "Bcrypt password hashing"
+    category: security
+    priority: critical
+    platforms: [web]
+    steps:
+      - name: "Register user and check stored password"
+        action: "Register, then verify password is bcrypt hashed in DB"
+        expected: "Password starts with $2a$ or $2b$"

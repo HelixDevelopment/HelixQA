@@ -1,0 +1,1498 @@
+{
+  "version": "1.0",
+  "name": "Bear Messenger QA Bank",
+  "challenges": [
+    {
+      "id": "API-001",
+      "name": "Health endpoint returns 200 with status ok",
+      "description": "GET /api/v1/health -> HTTP 200, JSON body with status: ok",
+      "category": "smoke",
+      "dependencies": [],
+      "estimated_duration": "30s",
+      "inputs": [
+        {
+          "name": "platform",
+          "source": "config"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "result",
+          "format": "json"
+        }
+      ],
+      "assertions": [
+        {
+          "type": "not_empty",
+          "field": "result",
+          "message": "Health endpoint returns 200 with status ok must produce a result"
+        }
+      ],
+      "metrics": [
+        "duration",
+        "status"
+      ]
+    },
+    {
+      "id": "API-002",
+      "name": "User registration with valid data",
+      "description": "POST /api/v1/auth/register with sip_username, sip_password, account_id -> HTTP 201, user object returned | POST /api/v1/auth/login with registered credentials -> HTTP 200, access token returned",
+      "category": "functional",
+      "dependencies": [],
+      "estimated_duration": "30s",
+      "inputs": [
+        {
+          "name": "platform",
+          "source": "config"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "result",
+          "format": "json"
+        }
+      ],
+      "assertions": [
+        {
+          "type": "not_empty",
+          "field": "result",
+          "message": "User registration with valid data must produce a result"
+        }
+      ],
+      "metrics": [
+        "duration",
+        "status"
+      ]
+    },
+    {
+      "id": "API-003",
+      "name": "User login with invalid credentials",
+      "description": "POST /api/v1/auth/login with wrong password -> HTTP 401, error message | POST /api/v1/auth/login with empty body -> HTTP 400, validation error",
+      "category": "security",
+      "dependencies": [],
+      "estimated_duration": "30s",
+      "inputs": [
+        {
+          "name": "platform",
+          "source": "config"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "result",
+          "format": "json"
+        }
+      ],
+      "assertions": [
+        {
+          "type": "not_empty",
+          "field": "result",
+          "message": "User login with invalid credentials must produce a result"
+        }
+      ],
+      "metrics": [
+        "duration",
+        "status"
+      ]
+    },
+    {
+      "id": "API-004",
+      "name": "Create chat between two users",
+      "description": "Register userA and userB via API -> Both users created successfully | POST /api/v1/auth/login -> Access token obtained | POST /api/v1/chats with userB's account_id -> Chat object returned with valid ID",
+      "category": "functional",
+      "dependencies": [],
+      "estimated_duration": "30s",
+      "inputs": [
+        {
+          "name": "platform",
+          "source": "config"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "result",
+          "format": "json"
+        }
+      ],
+      "assertions": [
+        {
+          "type": "not_empty",
+          "field": "result",
+          "message": "Create chat between two users must produce a result"
+        }
+      ],
+      "metrics": [
+        "duration",
+        "status"
+      ]
+    },
+    {
+      "id": "API-005",
+      "name": "Send and retrieve messages",
+      "description": "POST /api/v1/messages with chat_id and message text -> Message object returned with ID | GET /api/v1/messages?chat_id=X -> Array containing the sent message",
+      "category": "functional",
+      "dependencies": [],
+      "estimated_duration": "30s",
+      "inputs": [
+        {
+          "name": "platform",
+          "source": "config"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "result",
+          "format": "json"
+        }
+      ],
+      "assertions": [
+        {
+          "type": "not_empty",
+          "field": "result",
+          "message": "Send and retrieve messages must produce a result"
+        }
+      ],
+      "metrics": [
+        "duration",
+        "status"
+      ]
+    },
+    {
+      "id": "API-006",
+      "name": "Contact management flow",
+      "description": "POST /api/v1/contacts with contact SIP -> Contact created | GET /api/v1/contacts -> Array with added contact | DELETE /api/v1/contacts/:id -> Contact removed",
+      "category": "functional",
+      "dependencies": [],
+      "estimated_duration": "30s",
+      "inputs": [
+        {
+          "name": "platform",
+          "source": "config"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "result",
+          "format": "json"
+        }
+      ],
+      "assertions": [
+        {
+          "type": "not_empty",
+          "field": "result",
+          "message": "Contact management flow must produce a result"
+        }
+      ],
+      "metrics": [
+        "duration",
+        "status"
+      ]
+    },
+    {
+      "id": "API-007",
+      "name": "File upload and download",
+      "description": "POST /api/v1/files/upload multipart with image -> HTTP 200, fileshareid returned | GET /api/v1/files/download/:fileShareId -> File binary returned with correct MIME type",
+      "category": "functional",
+      "dependencies": [],
+      "estimated_duration": "30s",
+      "inputs": [
+        {
+          "name": "platform",
+          "source": "config"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "result",
+          "format": "json"
+        }
+      ],
+      "assertions": [
+        {
+          "type": "not_empty",
+          "field": "result",
+          "message": "File upload and download must produce a result"
+        }
+      ],
+      "metrics": [
+        "duration",
+        "status"
+      ]
+    },
+    {
+      "id": "API-008",
+      "name": "Profile update operations",
+      "description": "PUT /api/v1/profile/presence with online status -> HTTP 200 | PUT /api/v1/profile/name -> HTTP 200 | PUT /api/v1/profile/email -> HTTP 200",
+      "category": "functional",
+      "dependencies": [],
+      "estimated_duration": "30s",
+      "inputs": [
+        {
+          "name": "platform",
+          "source": "config"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "result",
+          "format": "json"
+        }
+      ],
+      "assertions": [
+        {
+          "type": "not_empty",
+          "field": "result",
+          "message": "Profile update operations must produce a result"
+        }
+      ],
+      "metrics": [
+        "duration",
+        "status"
+      ]
+    },
+    {
+      "id": "API-009",
+      "name": "Push notification token registration",
+      "description": "POST /api/v1/push/register with token and platform -> HTTP 200",
+      "category": "functional",
+      "dependencies": [],
+      "estimated_duration": "30s",
+      "inputs": [
+        {
+          "name": "platform",
+          "source": "config"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "result",
+          "format": "json"
+        }
+      ],
+      "assertions": [
+        {
+          "type": "not_empty",
+          "field": "result",
+          "message": "Push notification token registration must produce a result"
+        }
+      ],
+      "metrics": [
+        "duration",
+        "status"
+      ]
+    },
+    {
+      "id": "API-010",
+      "name": "Scheduled calls CRUD",
+      "description": "GET /api/v1/scheduled-calls -> HTTP 200, array (may be empty) | GET /api/v1/calls/history -> HTTP 200, array (may be empty)",
+      "category": "functional",
+      "dependencies": [],
+      "estimated_duration": "30s",
+      "inputs": [
+        {
+          "name": "platform",
+          "source": "config"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "result",
+          "format": "json"
+        }
+      ],
+      "assertions": [
+        {
+          "type": "not_empty",
+          "field": "result",
+          "message": "Scheduled calls CRUD must produce a result"
+        }
+      ],
+      "metrics": [
+        "duration",
+        "status"
+      ]
+    },
+    {
+      "id": "API-011",
+      "name": "Account search",
+      "description": "GET /api/v1/accounts/search?q=admin -> HTTP 200, results containing admin user",
+      "category": "functional",
+      "dependencies": [],
+      "estimated_duration": "30s",
+      "inputs": [
+        {
+          "name": "platform",
+          "source": "config"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "result",
+          "format": "json"
+        }
+      ],
+      "assertions": [
+        {
+          "type": "not_empty",
+          "field": "result",
+          "message": "Account search must produce a result"
+        }
+      ],
+      "metrics": [
+        "duration",
+        "status"
+      ]
+    },
+    {
+      "id": "API-012",
+      "name": "Rate limiting enforced",
+      "description": "Rapidly call an endpoint 100+ times -> Eventually receives HTTP 429 or rate limit headers",
+      "category": "security",
+      "dependencies": [],
+      "estimated_duration": "30s",
+      "inputs": [
+        {
+          "name": "platform",
+          "source": "config"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "result",
+          "format": "json"
+        }
+      ],
+      "assertions": [
+        {
+          "type": "not_empty",
+          "field": "result",
+          "message": "Rate limiting enforced must produce a result"
+        }
+      ],
+      "metrics": [
+        "duration",
+        "status"
+      ]
+    },
+    {
+      "id": "API-013",
+      "name": "Unauthorized access blocked",
+      "description": "GET /api/v1/users without X-Access-Token -> HTTP 401 | GET /api/v1/users with fake token -> HTTP 401",
+      "category": "security",
+      "dependencies": [],
+      "estimated_duration": "30s",
+      "inputs": [
+        {
+          "name": "platform",
+          "source": "config"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "result",
+          "format": "json"
+        }
+      ],
+      "assertions": [
+        {
+          "type": "not_empty",
+          "field": "result",
+          "message": "Unauthorized access blocked must produce a result"
+        }
+      ],
+      "metrics": [
+        "duration",
+        "status"
+      ]
+    },
+    {
+      "id": "API-014",
+      "name": "WebSocket connection and messaging",
+      "description": "Connect to /api/v1/ws?userId=testuser -> WebSocket connection established | Send {type: heartbeat} message -> Connection stays alive",
+      "category": "functional",
+      "dependencies": [],
+      "estimated_duration": "30s",
+      "inputs": [
+        {
+          "name": "platform",
+          "source": "config"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "result",
+          "format": "json"
+        }
+      ],
+      "assertions": [
+        {
+          "type": "not_empty",
+          "field": "result",
+          "message": "WebSocket connection and messaging must produce a result"
+        }
+      ],
+      "metrics": [
+        "duration",
+        "status"
+      ]
+    },
+    {
+      "id": "API-015",
+      "name": "Regions endpoint",
+      "description": "GET /api/v1/regions -> HTTP 200, array of regions",
+      "category": "functional",
+      "dependencies": [],
+      "estimated_duration": "30s",
+      "inputs": [
+        {
+          "name": "platform",
+          "source": "config"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "result",
+          "format": "json"
+        }
+      ],
+      "assertions": [
+        {
+          "type": "not_empty",
+          "field": "result",
+          "message": "Regions endpoint must produce a result"
+        }
+      ],
+      "metrics": [
+        "duration",
+        "status"
+      ]
+    },
+    {
+      "id": "ADM-001",
+      "name": "Admin login flow",
+      "description": "Open http://localhost:3001 -> Login form renders with username/password fields | Enter admin/admin and submit -> Redirect to dashboard",
+      "category": "smoke",
+      "dependencies": [],
+      "estimated_duration": "30s",
+      "inputs": [
+        {
+          "name": "platform",
+          "source": "config"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "result",
+          "format": "json"
+        }
+      ],
+      "assertions": [
+        {
+          "type": "not_empty",
+          "field": "result",
+          "message": "Admin login flow must produce a result"
+        }
+      ],
+      "metrics": [
+        "duration",
+        "status"
+      ]
+    },
+    {
+      "id": "ADM-002",
+      "name": "Dashboard displays real statistics",
+      "description": "Navigate to dashboard -> Stat cards show user count, chat count, contact count | Check Recent Activity section -> Shows real activity items from system",
+      "category": "functional",
+      "dependencies": [],
+      "estimated_duration": "30s",
+      "inputs": [
+        {
+          "name": "platform",
+          "source": "config"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "result",
+          "format": "json"
+        }
+      ],
+      "assertions": [
+        {
+          "type": "not_empty",
+          "field": "result",
+          "message": "Dashboard displays real statistics must produce a result"
+        }
+      ],
+      "metrics": [
+        "duration",
+        "status"
+      ]
+    },
+    {
+      "id": "ADM-003",
+      "name": "User management CRUD",
+      "description": "Click Users in sidebar -> User list table renders | Click Create User, fill form, submit -> User appears in list | Click user row, modify name, save -> User name updated | Click delete button on user -> User removed from list",
+      "category": "functional",
+      "dependencies": [],
+      "estimated_duration": "30s",
+      "inputs": [
+        {
+          "name": "platform",
+          "source": "config"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "result",
+          "format": "json"
+        }
+      ],
+      "assertions": [
+        {
+          "type": "not_empty",
+          "field": "result",
+          "message": "User management CRUD must produce a result"
+        }
+      ],
+      "metrics": [
+        "duration",
+        "status"
+      ]
+    },
+    {
+      "id": "ADM-004",
+      "name": "Chat management",
+      "description": "Navigate to chats page -> Chat list renders | Click create, select participants -> New chat created",
+      "category": "functional",
+      "dependencies": [],
+      "estimated_duration": "30s",
+      "inputs": [
+        {
+          "name": "platform",
+          "source": "config"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "result",
+          "format": "json"
+        }
+      ],
+      "assertions": [
+        {
+          "type": "not_empty",
+          "field": "result",
+          "message": "Chat management must produce a result"
+        }
+      ],
+      "metrics": [
+        "duration",
+        "status"
+      ]
+    },
+    {
+      "id": "ADM-005",
+      "name": "Message monitoring",
+      "description": "Navigate to messages page -> Message list renders | Use search field -> Filtered results shown",
+      "category": "functional",
+      "dependencies": [],
+      "estimated_duration": "30s",
+      "inputs": [
+        {
+          "name": "platform",
+          "source": "config"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "result",
+          "format": "json"
+        }
+      ],
+      "assertions": [
+        {
+          "type": "not_empty",
+          "field": "result",
+          "message": "Message monitoring must produce a result"
+        }
+      ],
+      "metrics": [
+        "duration",
+        "status"
+      ]
+    },
+    {
+      "id": "ADM-006",
+      "name": "Contact administration",
+      "description": "Navigate to contacts page -> Contact list renders",
+      "category": "functional",
+      "dependencies": [],
+      "estimated_duration": "30s",
+      "inputs": [
+        {
+          "name": "platform",
+          "source": "config"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "result",
+          "format": "json"
+        }
+      ],
+      "assertions": [
+        {
+          "type": "not_empty",
+          "field": "result",
+          "message": "Contact administration must produce a result"
+        }
+      ],
+      "metrics": [
+        "duration",
+        "status"
+      ]
+    },
+    {
+      "id": "ADM-007",
+      "name": "Admin responsive layout",
+      "description": "View at full resolution -> Sidebar visible, content properly laid out | Resize to tablet dimensions -> Layout adapts, no horizontal scroll | Resize to mobile dimensions -> Hamburger menu, content stacks vertically",
+      "category": "ux",
+      "dependencies": [],
+      "estimated_duration": "30s",
+      "inputs": [
+        {
+          "name": "platform",
+          "source": "config"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "result",
+          "format": "json"
+        }
+      ],
+      "assertions": [
+        {
+          "type": "not_empty",
+          "field": "result",
+          "message": "Admin responsive layout must produce a result"
+        }
+      ],
+      "metrics": [
+        "duration",
+        "status"
+      ]
+    },
+    {
+      "id": "ADM-008",
+      "name": "Admin logout",
+      "description": "Find and click logout button -> Redirect to login page, token cleared",
+      "category": "functional",
+      "dependencies": [],
+      "estimated_duration": "30s",
+      "inputs": [
+        {
+          "name": "platform",
+          "source": "config"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "result",
+          "format": "json"
+        }
+      ],
+      "assertions": [
+        {
+          "type": "not_empty",
+          "field": "result",
+          "message": "Admin logout must produce a result"
+        }
+      ],
+      "metrics": [
+        "duration",
+        "status"
+      ]
+    },
+    {
+      "id": "WEB-001",
+      "name": "Web PWA login flow",
+      "description": "Open http://localhost:3002 -> Login page renders | Enter testuser@example.com / password -> Redirect to chats",
+      "category": "smoke",
+      "dependencies": [],
+      "estimated_duration": "30s",
+      "inputs": [
+        {
+          "name": "platform",
+          "source": "config"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "result",
+          "format": "json"
+        }
+      ],
+      "assertions": [
+        {
+          "type": "not_empty",
+          "field": "result",
+          "message": "Web PWA login flow must produce a result"
+        }
+      ],
+      "metrics": [
+        "duration",
+        "status"
+      ]
+    },
+    {
+      "id": "WEB-002",
+      "name": "Chat list and navigation",
+      "description": "Navigate to /chats -> Chat list renders with existing chats | Click on a chat -> Chat messages area opens",
+      "category": "functional",
+      "dependencies": [],
+      "estimated_duration": "30s",
+      "inputs": [
+        {
+          "name": "platform",
+          "source": "config"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "result",
+          "format": "json"
+        }
+      ],
+      "assertions": [
+        {
+          "type": "not_empty",
+          "field": "result",
+          "message": "Chat list and navigation must produce a result"
+        }
+      ],
+      "metrics": [
+        "duration",
+        "status"
+      ]
+    },
+    {
+      "id": "WEB-003",
+      "name": "Send text message",
+      "description": "Navigate to a chat with messages -> Message input visible | Type text and press Enter/Send -> Message appears in chat",
+      "category": "functional",
+      "dependencies": [],
+      "estimated_duration": "30s",
+      "inputs": [
+        {
+          "name": "platform",
+          "source": "config"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "result",
+          "format": "json"
+        }
+      ],
+      "assertions": [
+        {
+          "type": "not_empty",
+          "field": "result",
+          "message": "Send text message must produce a result"
+        }
+      ],
+      "metrics": [
+        "duration",
+        "status"
+      ]
+    },
+    {
+      "id": "WEB-004",
+      "name": "Contact management",
+      "description": "Navigate to /contacts -> Contact list renders | Click add, search, send request -> Contact request sent",
+      "category": "functional",
+      "dependencies": [],
+      "estimated_duration": "30s",
+      "inputs": [
+        {
+          "name": "platform",
+          "source": "config"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "result",
+          "format": "json"
+        }
+      ],
+      "assertions": [
+        {
+          "type": "not_empty",
+          "field": "result",
+          "message": "Contact management must produce a result"
+        }
+      ],
+      "metrics": [
+        "duration",
+        "status"
+      ]
+    },
+    {
+      "id": "WEB-005",
+      "name": "Profile settings",
+      "description": "Navigate to /profile -> Profile page with user info | Modify name, save -> Changes saved",
+      "category": "functional",
+      "dependencies": [],
+      "estimated_duration": "30s",
+      "inputs": [
+        {
+          "name": "platform",
+          "source": "config"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "result",
+          "format": "json"
+        }
+      ],
+      "assertions": [
+        {
+          "type": "not_empty",
+          "field": "result",
+          "message": "Profile settings must produce a result"
+        }
+      ],
+      "metrics": [
+        "duration",
+        "status"
+      ]
+    },
+    {
+      "id": "WEB-006",
+      "name": "Web PWA responsive layout",
+      "description": "View at 375x812 -> Mobile-friendly layout | View at 1920x1080 -> Full desktop layout",
+      "category": "ux",
+      "dependencies": [],
+      "estimated_duration": "30s",
+      "inputs": [
+        {
+          "name": "platform",
+          "source": "config"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "result",
+          "format": "json"
+        }
+      ],
+      "assertions": [
+        {
+          "type": "not_empty",
+          "field": "result",
+          "message": "Web PWA responsive layout must produce a result"
+        }
+      ],
+      "metrics": [
+        "duration",
+        "status"
+      ]
+    },
+    {
+      "id": "DSK-001",
+      "name": "Desktop app login",
+      "description": "Launch Electron app -> Login page renders | Enter credentials and submit -> Redirect to dashboard",
+      "category": "smoke",
+      "dependencies": [],
+      "estimated_duration": "30s",
+      "inputs": [
+        {
+          "name": "platform",
+          "source": "config"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "result",
+          "format": "json"
+        }
+      ],
+      "assertions": [
+        {
+          "type": "not_empty",
+          "field": "result",
+          "message": "Desktop app login must produce a result"
+        }
+      ],
+      "metrics": [
+        "duration",
+        "status"
+      ]
+    },
+    {
+      "id": "DSK-002",
+      "name": "Desktop dashboard",
+      "description": "Navigate to dashboard -> Stats cards and activity shown",
+      "category": "functional",
+      "dependencies": [],
+      "estimated_duration": "30s",
+      "inputs": [
+        {
+          "name": "platform",
+          "source": "config"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "result",
+          "format": "json"
+        }
+      ],
+      "assertions": [
+        {
+          "type": "not_empty",
+          "field": "result",
+          "message": "Desktop dashboard must produce a result"
+        }
+      ],
+      "metrics": [
+        "duration",
+        "status"
+      ]
+    },
+    {
+      "id": "DSK-003",
+      "name": "Desktop user management",
+      "description": "Navigate to users -> User list table | Create new user -> User added",
+      "category": "functional",
+      "dependencies": [],
+      "estimated_duration": "30s",
+      "inputs": [
+        {
+          "name": "platform",
+          "source": "config"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "result",
+          "format": "json"
+        }
+      ],
+      "assertions": [
+        {
+          "type": "not_empty",
+          "field": "result",
+          "message": "Desktop user management must produce a result"
+        }
+      ],
+      "metrics": [
+        "duration",
+        "status"
+      ]
+    },
+    {
+      "id": "DSK-004",
+      "name": "Desktop chat and messaging",
+      "description": "Navigate to chats -> Chat list renders | Click a chat -> Messages displayed",
+      "category": "functional",
+      "dependencies": [],
+      "estimated_duration": "30s",
+      "inputs": [
+        {
+          "name": "platform",
+          "source": "config"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "result",
+          "format": "json"
+        }
+      ],
+      "assertions": [
+        {
+          "type": "not_empty",
+          "field": "result",
+          "message": "Desktop chat and messaging must produce a result"
+        }
+      ],
+      "metrics": [
+        "duration",
+        "status"
+      ]
+    },
+    {
+      "id": "DSK-005",
+      "name": "Desktop contacts",
+      "description": "Navigate to contacts -> Contact list renders",
+      "category": "functional",
+      "dependencies": [],
+      "estimated_duration": "30s",
+      "inputs": [
+        {
+          "name": "platform",
+          "source": "config"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "result",
+          "format": "json"
+        }
+      ],
+      "assertions": [
+        {
+          "type": "not_empty",
+          "field": "result",
+          "message": "Desktop contacts must produce a result"
+        }
+      ],
+      "metrics": [
+        "duration",
+        "status"
+      ]
+    },
+    {
+      "id": "MOB-001",
+      "name": "Mobile app launch and login",
+      "description": "Start Bear Messenger app on Android -> Login screen renders | Enter credentials -> Navigate to main screen",
+      "category": "smoke",
+      "dependencies": [],
+      "estimated_duration": "30s",
+      "inputs": [
+        {
+          "name": "platform",
+          "source": "config"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "result",
+          "format": "json"
+        }
+      ],
+      "assertions": [
+        {
+          "type": "not_empty",
+          "field": "result",
+          "message": "Mobile app launch and login must produce a result"
+        }
+      ],
+      "metrics": [
+        "duration",
+        "status"
+      ]
+    },
+    {
+      "id": "MOB-002",
+      "name": "Mobile chat list",
+      "description": "Navigate to chats tab -> Chat list with scrollable content",
+      "category": "functional",
+      "dependencies": [],
+      "estimated_duration": "30s",
+      "inputs": [
+        {
+          "name": "platform",
+          "source": "config"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "result",
+          "format": "json"
+        }
+      ],
+      "assertions": [
+        {
+          "type": "not_empty",
+          "field": "result",
+          "message": "Mobile chat list must produce a result"
+        }
+      ],
+      "metrics": [
+        "duration",
+        "status"
+      ]
+    },
+    {
+      "id": "MOB-003",
+      "name": "Mobile messaging",
+      "description": "Open chat, type message, send -> Message delivered",
+      "category": "functional",
+      "dependencies": [],
+      "estimated_duration": "30s",
+      "inputs": [
+        {
+          "name": "platform",
+          "source": "config"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "result",
+          "format": "json"
+        }
+      ],
+      "assertions": [
+        {
+          "type": "not_empty",
+          "field": "result",
+          "message": "Mobile messaging must produce a result"
+        }
+      ],
+      "metrics": [
+        "duration",
+        "status"
+      ]
+    },
+    {
+      "id": "MOB-004",
+      "name": "Mobile contacts",
+      "description": "Navigate to contacts -> Contact list renders",
+      "category": "functional",
+      "dependencies": [],
+      "estimated_duration": "30s",
+      "inputs": [
+        {
+          "name": "platform",
+          "source": "config"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "result",
+          "format": "json"
+        }
+      ],
+      "assertions": [
+        {
+          "type": "not_empty",
+          "field": "result",
+          "message": "Mobile contacts must produce a result"
+        }
+      ],
+      "metrics": [
+        "duration",
+        "status"
+      ]
+    },
+    {
+      "id": "MOB-005",
+      "name": "Mobile profile",
+      "description": "Navigate to profile -> Profile form visible and editable",
+      "category": "functional",
+      "dependencies": [],
+      "estimated_duration": "30s",
+      "inputs": [
+        {
+          "name": "platform",
+          "source": "config"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "result",
+          "format": "json"
+        }
+      ],
+      "assertions": [
+        {
+          "type": "not_empty",
+          "field": "result",
+          "message": "Mobile profile must produce a result"
+        }
+      ],
+      "metrics": [
+        "duration",
+        "status"
+      ]
+    },
+    {
+      "id": "XP-001",
+      "name": "Two-user registration and chat",
+      "description": "Register via API -> User A created | Register via API -> User B created | POST /contacts -> Contact added | POST /chats -> Chat created | Both users send messages -> Messages visible to both",
+      "category": "integration",
+      "dependencies": [],
+      "estimated_duration": "30s",
+      "inputs": [
+        {
+          "name": "platform",
+          "source": "config"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "result",
+          "format": "json"
+        }
+      ],
+      "assertions": [
+        {
+          "type": "not_empty",
+          "field": "result",
+          "message": "Two-user registration and chat must produce a result"
+        }
+      ],
+      "metrics": [
+        "duration",
+        "status"
+      ]
+    },
+    {
+      "id": "XP-002",
+      "name": "Media exchange between users",
+      "description": "Upload image, send file share -> Image reference in message | Upload video, send file share -> Video reference in message | Both send audio -> Audio references present",
+      "category": "integration",
+      "dependencies": [],
+      "estimated_duration": "30s",
+      "inputs": [
+        {
+          "name": "platform",
+          "source": "config"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "result",
+          "format": "json"
+        }
+      ],
+      "assertions": [
+        {
+          "type": "not_empty",
+          "field": "result",
+          "message": "Media exchange between users must produce a result"
+        }
+      ],
+      "metrics": [
+        "duration",
+        "status"
+      ]
+    },
+    {
+      "id": "XP-003",
+      "name": "Extended conversation",
+      "description": "Automated 5-minute conversation -> All messages delivered successfully | Both users fetch messages -> Counts match, content verified",
+      "category": "integration",
+      "dependencies": [],
+      "estimated_duration": "30s",
+      "inputs": [
+        {
+          "name": "platform",
+          "source": "config"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "result",
+          "format": "json"
+        }
+      ],
+      "assertions": [
+        {
+          "type": "not_empty",
+          "field": "result",
+          "message": "Extended conversation must produce a result"
+        }
+      ],
+      "metrics": [
+        "duration",
+        "status"
+      ]
+    },
+    {
+      "id": "PERF-001",
+      "name": "API response latency under 500ms",
+      "description": "Time GET /health -> Response in under 100ms | Time POST /auth/login -> Response in under 500ms",
+      "category": "performance",
+      "dependencies": [],
+      "estimated_duration": "30s",
+      "inputs": [
+        {
+          "name": "platform",
+          "source": "config"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "result",
+          "format": "json"
+        }
+      ],
+      "assertions": [
+        {
+          "type": "not_empty",
+          "field": "result",
+          "message": "API response latency under 500ms must produce a result"
+        }
+      ],
+      "metrics": [
+        "duration",
+        "status"
+      ]
+    },
+    {
+      "id": "PERF-002",
+      "name": "Concurrent request handling",
+      "description": "Parallel GET /health -> All return 200, no timeouts",
+      "category": "performance",
+      "dependencies": [],
+      "estimated_duration": "30s",
+      "inputs": [
+        {
+          "name": "platform",
+          "source": "config"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "result",
+          "format": "json"
+        }
+      ],
+      "assertions": [
+        {
+          "type": "not_empty",
+          "field": "result",
+          "message": "Concurrent request handling must produce a result"
+        }
+      ],
+      "metrics": [
+        "duration",
+        "status"
+      ]
+    },
+    {
+      "id": "SEC-001",
+      "name": "SQL injection prevention",
+      "description": "Send ' OR 1=1 -- as username -> Login fails, no SQL error | Send SQL payload in search query -> No data leak, proper error",
+      "category": "security",
+      "dependencies": [],
+      "estimated_duration": "30s",
+      "inputs": [
+        {
+          "name": "platform",
+          "source": "config"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "result",
+          "format": "json"
+        }
+      ],
+      "assertions": [
+        {
+          "type": "not_empty",
+          "field": "result",
+          "message": "SQL injection prevention must produce a result"
+        }
+      ],
+      "metrics": [
+        "duration",
+        "status"
+      ]
+    },
+    {
+      "id": "SEC-002",
+      "name": "XSS prevention in messages",
+      "description": "Send <script>alert(1)</script> as message -> Script not executed, sanitized",
+      "category": "security",
+      "dependencies": [],
+      "estimated_duration": "30s",
+      "inputs": [
+        {
+          "name": "platform",
+          "source": "config"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "result",
+          "format": "json"
+        }
+      ],
+      "assertions": [
+        {
+          "type": "not_empty",
+          "field": "result",
+          "message": "XSS prevention in messages must produce a result"
+        }
+      ],
+      "metrics": [
+        "duration",
+        "status"
+      ]
+    },
+    {
+      "id": "SEC-003",
+      "name": "CORS headers present",
+      "description": "OPTIONS request to API -> Access-Control headers present",
+      "category": "security",
+      "dependencies": [],
+      "estimated_duration": "30s",
+      "inputs": [
+        {
+          "name": "platform",
+          "source": "config"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "result",
+          "format": "json"
+        }
+      ],
+      "assertions": [
+        {
+          "type": "not_empty",
+          "field": "result",
+          "message": "CORS headers present must produce a result"
+        }
+      ],
+      "metrics": [
+        "duration",
+        "status"
+      ]
+    },
+    {
+      "id": "SEC-004",
+      "name": "Bcrypt password hashing",
+      "description": "Register, then verify password is bcrypt hashed in DB -> Password starts with $2a$ or $2b$",
+      "category": "security",
+      "dependencies": [],
+      "estimated_duration": "30s",
+      "inputs": [
+        {
+          "name": "platform",
+          "source": "config"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "result",
+          "format": "json"
+        }
+      ],
+      "assertions": [
+        {
+          "type": "not_empty",
+          "field": "result",
+          "message": "Bcrypt password hashing must produce a result"
+        }
+      ],
+      "metrics": [
+        "duration",
+        "status"
+      ]
+    }
+  ],
+  "metadata": {
+    "app": "Bear Messenger",
+    "author": "QA"
+  }
+}
