@@ -162,6 +162,28 @@ type AutonomousConfig struct {
 	// RecordingScreenshotFormat sets screenshot format (png/jpg).
 	RecordingScreenshotFormat string `yaml:"recording_screenshot_format" json:"recording_screenshot_format"`
 
+	// RecordingAudio enables audio recording during test
+	// execution. Audio is captured as a separate high-quality
+	// track for analysis of audio reproduction problems
+	// (glitches, dropouts, distortion).
+	RecordingAudio bool `yaml:"recording_audio" json:"recording_audio"`
+
+	// RecordingAudioQuality sets audio recording quality.
+	// Supported: "standard" (44.1kHz/16bit), "high"
+	// (48kHz/24bit), "ultra" (96kHz/32bit). Default: "high".
+	RecordingAudioQuality string `yaml:"recording_audio_quality" json:"recording_audio_quality"`
+
+	// RecordingAudioFormat sets audio file format.
+	// Supported: "wav" (lossless), "flac" (lossless compressed).
+	// Default: "wav".
+	RecordingAudioFormat string `yaml:"recording_audio_format" json:"recording_audio_format"`
+
+	// RecordingAudioDevice is the audio input device for
+	// host-side recording. Use "default" for system default, or
+	// specify a PulseAudio/ALSA device name. For Android device
+	// recording, use "adb" to capture via adb shell.
+	RecordingAudioDevice string `yaml:"recording_audio_device" json:"recording_audio_device"`
+
 	// RecordingFFmpegPath is the path to ffmpeg binary.
 	RecordingFFmpegPath string `yaml:"recording_ffmpeg_path" json:"recording_ffmpeg_path"`
 
@@ -215,7 +237,11 @@ func DefaultAutonomousConfig() AutonomousConfig {
 		RecordingScreenshots:  true,
 		RecordingVideoQuality: "medium",
 		RecordingScreenshotFormat: "png",
-		RecordingFFmpegPath:   "/usr/bin/ffmpeg",
+		RecordingAudio:            false,
+		RecordingAudioQuality:     "high",
+		RecordingAudioFormat:      "wav",
+		RecordingAudioDevice:      "default",
+		RecordingFFmpegPath:       "/usr/bin/ffmpeg",
 		WebBrowser:            "chromium",
 		DesktopDisplay:        ":0",
 		ReportFormats:         []string{"markdown", "html", "json"},
