@@ -2450,3 +2450,637 @@ test_cases:
         path: "docs/guides/SYSTEM_ARCHITECTURE.md"
     estimated_duration: "15s"
     expected_result: "All 7 FFmpeg Codec2 decoders (AC3, E-AC3, WMA, ALAC, APE, MP2, MP1) registered in MediaCodec API"
+
+  # ==================== Private DNS Bypass (DNS-xxx) ====================
+
+  - id: DNS-001
+    name: "Private DNS mode set to hostname on boot"
+    category: functional
+    priority: high
+    platforms: [android]
+    steps:
+      - name: "Check private DNS mode setting"
+        action: "Run adb shell settings get global private_dns_mode"
+        expected: "Output is 'hostname'"
+      - name: "Verify setting persists across reboot"
+        action: "Reboot device and re-check settings get global private_dns_mode"
+        expected: "Setting remains 'hostname' after reboot"
+    tags: [dns, private-dns, dot, boot, network, dns-001]
+    documentation_refs:
+      - type: changelog
+        section: "Private DNS"
+        path: "docs/changelogs/"
+    estimated_duration: "15s"
+    expected_result: "Private DNS mode is set to 'hostname' on every boot via power-save disable script"
+
+  - id: DNS-002
+    name: "Private DNS specifier set to dns.google"
+    category: functional
+    priority: high
+    platforms: [android]
+    steps:
+      - name: "Check private DNS specifier"
+        action: "Run adb shell settings get global private_dns_specifier"
+        expected: "Output is 'dns.google'"
+      - name: "Verify DNS-over-TLS active"
+        action: "Check logcat for DnsResolver TLS connection to dns.google"
+        expected: "TLS handshake completed to dns.google (8.8.8.8 or 8.8.4.4)"
+    tags: [dns, private-dns, dot, dns-google, network, dns-002]
+    documentation_refs:
+      - type: changelog
+        section: "Private DNS"
+        path: "docs/changelogs/"
+    estimated_duration: "15s"
+    expected_result: "Private DNS specifier is 'dns.google' providing DNS-over-TLS for geolocation-independent DNS bypass"
+
+  - id: DNS-003
+    name: "YouTube hostname resolves successfully via DNS-over-TLS"
+    category: functional
+    priority: high
+    platforms: [android]
+    steps:
+      - name: "Resolve YouTube hostname"
+        action: "Run adb shell ping -c 1 www.youtube.com"
+        expected: "DNS resolution succeeds, ping shows resolved IP address"
+      - name: "Verify resolution via DoT"
+        action: "Check that resolution goes through dns.google DoT (not ISP DNS)"
+        expected: "Resolution uses private DNS provider, not ISP-provided DNS"
+    tags: [dns, private-dns, youtube, resolution, network, dns-003]
+    estimated_duration: "10s"
+    expected_result: "YouTube hostname resolves successfully via dns.google DNS-over-TLS, bypassing ISP DNS filtering"
+
+  - id: DNS-004
+    name: "Google services accessible via DNS-over-TLS"
+    category: functional
+    priority: medium
+    platforms: [android]
+    steps:
+      - name: "Ping Google"
+        action: "Run adb shell ping -c 1 www.google.com"
+        expected: "Ping succeeds with valid IP address"
+      - name: "Verify Play Store connectivity"
+        action: "Open Play Store app and confirm it loads content"
+        expected: "Play Store loads featured apps and updates"
+    tags: [dns, private-dns, google, connectivity, network, dns-004]
+    estimated_duration: "15s"
+    expected_result: "Google services are accessible via DNS-over-TLS DNS resolution"
+
+  - id: DNS-005
+    name: "VK Video services accessible via DNS-over-TLS"
+    category: functional
+    priority: medium
+    platforms: [android]
+    steps:
+      - name: "Resolve VK Video hostname"
+        action: "Run adb shell ping -c 1 vkvideo.ru"
+        expected: "DNS resolution succeeds, ping shows resolved IP address"
+      - name: "Verify VK Video app connectivity"
+        action: "Launch VK Video app and confirm video content loads"
+        expected: "VK Video loads video listings and thumbnails"
+    tags: [dns, private-dns, vkvideo, connectivity, network, dns-005]
+    estimated_duration: "15s"
+    expected_result: "VK Video services are accessible via DNS-over-TLS DNS resolution"
+
+  # ==================== VLC Clone Mode (VCM-xxx) ====================
+
+  - id: VCM-001
+    name: "VLC auto-enables clone mode when secondary display connected"
+    category: functional
+    priority: high
+    platforms: [android]
+    steps:
+      - name: "Verify secondary display connected"
+        action: "Check that HDMI-A-1 (TV) is connected via dumpsys display"
+        expected: "Secondary display detected with valid display ID"
+      - name: "Launch VLC and start video"
+        action: "Open VLC, play a local video file"
+        expected: "VLC begins playback"
+      - name: "Verify clone mode activated"
+        action: "Check VLC settings or logcat for clone/presentation mode activation"
+        expected: "VLC detects secondary display and auto-enables clone mode"
+    tags: [vlc, clone-mode, secondary-display, auto-detect, vcm-001]
+    documentation_refs:
+      - type: architecture
+        section: "Fix #107"
+        path: "docs/guides/SYSTEM_ARCHITECTURE.md"
+    estimated_duration: "30s"
+    expected_result: "VLC automatically enables clone mode when a secondary display is detected"
+
+  - id: VCM-002
+    name: "VLC video renders on secondary display via Presentation"
+    category: functional
+    priority: critical
+    platforms: [android]
+    steps:
+      - name: "Start VLC video playback"
+        action: "Play a video file in VLC with secondary display connected"
+        expected: "VLC begins playback in clone mode"
+      - name: "Verify video on TV"
+        action: "Observe the TV (HDMI-A-1 secondary display)"
+        expected: "Video content renders on the TV via VLC Presentation API"
+      - name: "Verify video quality"
+        action: "Check that video plays smoothly without stuttering or tearing"
+        expected: "Smooth playback on secondary display at native resolution"
+    tags: [vlc, clone-mode, secondary-display, presentation, video-output, vcm-002]
+    documentation_refs:
+      - type: architecture
+        section: "Fix #107"
+        path: "docs/guides/SYSTEM_ARCHITECTURE.md"
+    estimated_duration: "30s"
+    expected_result: "VLC video renders on the secondary display (TV) via Presentation API"
+
+  - id: VCM-003
+    name: "VLC shows remote control UI on primary display when clone active"
+    category: functional
+    priority: high
+    platforms: [android]
+    steps:
+      - name: "Start VLC clone mode playback"
+        action: "Play a video in VLC with clone mode active on secondary display"
+        expected: "Video playing on TV, VLC UI on primary"
+      - name: "Verify primary display UI"
+        action: "Check the primary display (touch screen)"
+        expected: "VLC shows playback controls (play/pause, seek bar, volume) on primary"
+      - name: "Test remote control functions"
+        action: "Tap pause on primary display, verify video pauses on TV"
+        expected: "Pause command from primary controls video on secondary display"
+    tags: [vlc, clone-mode, remote-control, primary-display, ui, vcm-003]
+    estimated_duration: "30s"
+    expected_result: "VLC shows remote control UI on primary display while video plays on secondary display"
+
+  - id: VCM-004
+    name: "VLC correctly falls back to primary when no secondary display"
+    category: functional
+    priority: medium
+    platforms: [android]
+    steps:
+      - name: "Disconnect secondary display"
+        action: "Unplug HDMI-A-1 (TV) cable"
+        expected: "Secondary display disconnected"
+      - name: "Launch VLC and play video"
+        action: "Open VLC and play a local video file"
+        expected: "VLC begins playback"
+      - name: "Verify video on primary"
+        action: "Check that video plays on the primary display (touch screen)"
+        expected: "Video renders on primary display without clone mode"
+      - name: "Verify no errors"
+        action: "Check logcat for any Presentation or clone mode errors"
+        expected: "No errors related to missing secondary display"
+    tags: [vlc, clone-mode, fallback, primary-display, single-display, vcm-004]
+    estimated_duration: "20s"
+    expected_result: "VLC falls back gracefully to primary display when no secondary display is connected"
+
+  # ==================== Native Player Presenter Integration (NPI-xxx) ====================
+
+  - id: NPI-001
+    name: "Nova Player sends VIDEO_START broadcast to Presenter on playback"
+    category: integration
+    priority: high
+    platforms: [android]
+    steps:
+      - name: "Launch Nova Player"
+        action: "Open Nova Player and select a local video file"
+        expected: "Nova Player loads video"
+      - name: "Start playback"
+        action: "Begin video playback in Nova Player"
+        expected: "Video starts playing"
+      - name: "Check broadcast"
+        action: "Monitor logcat for VIDEO_START broadcast from Nova Player to Presenter"
+        expected: "Broadcast intent com.atmosphere.VIDEO_START received by PresenterService"
+    tags: [nova-player, presenter, broadcast, video-start, native-player, npi-001]
+    documentation_refs:
+      - type: architecture
+        section: "Fix #107"
+        path: "docs/guides/SYSTEM_ARCHITECTURE.md"
+    estimated_duration: "20s"
+    expected_result: "Nova Player sends VIDEO_START broadcast to Presenter when video playback begins"
+
+  - id: NPI-002
+    name: "Nova Player sends VIDEO_STOP broadcast to Presenter on pause"
+    category: integration
+    priority: high
+    platforms: [android]
+    steps:
+      - name: "Start Nova Player video"
+        action: "Play a video in Nova Player"
+        expected: "Video playing"
+      - name: "Pause or stop playback"
+        action: "Pause or stop the video in Nova Player"
+        expected: "Playback paused/stopped"
+      - name: "Check broadcast"
+        action: "Monitor logcat for VIDEO_STOP broadcast from Nova Player to Presenter"
+        expected: "Broadcast intent com.atmosphere.VIDEO_STOP received by PresenterService"
+    tags: [nova-player, presenter, broadcast, video-stop, native-player, npi-002]
+    documentation_refs:
+      - type: architecture
+        section: "Fix #107"
+        path: "docs/guides/SYSTEM_ARCHITECTURE.md"
+    estimated_duration: "20s"
+    expected_result: "Nova Player sends VIDEO_STOP broadcast to Presenter when video playback pauses or stops"
+
+  - id: NPI-003
+    name: "MPV Player sends VIDEO_START broadcast to Presenter on playback"
+    category: integration
+    priority: high
+    platforms: [android]
+    steps:
+      - name: "Launch MPV Player"
+        action: "Open MPV Player and select a local video file"
+        expected: "MPV Player loads video"
+      - name: "Start playback"
+        action: "Begin video playback in MPV Player"
+        expected: "Video starts playing"
+      - name: "Check broadcast"
+        action: "Monitor logcat for VIDEO_START broadcast from MPV Player to Presenter"
+        expected: "Broadcast intent com.atmosphere.VIDEO_START received by PresenterService"
+    tags: [mpv-player, presenter, broadcast, video-start, native-player, npi-003]
+    documentation_refs:
+      - type: architecture
+        section: "Fix #107"
+        path: "docs/guides/SYSTEM_ARCHITECTURE.md"
+    estimated_duration: "20s"
+    expected_result: "MPV Player sends VIDEO_START broadcast to Presenter when video playback begins"
+
+  - id: NPI-004
+    name: "MPV Player sends VIDEO_STOP broadcast to Presenter on pause"
+    category: integration
+    priority: high
+    platforms: [android]
+    steps:
+      - name: "Start MPV Player video"
+        action: "Play a video in MPV Player"
+        expected: "Video playing"
+      - name: "Pause or stop playback"
+        action: "Pause or stop the video in MPV Player"
+        expected: "Playback paused/stopped"
+      - name: "Check broadcast"
+        action: "Monitor logcat for VIDEO_STOP broadcast from MPV Player to Presenter"
+        expected: "Broadcast intent com.atmosphere.VIDEO_STOP received by PresenterService"
+    tags: [mpv-player, presenter, broadcast, video-stop, native-player, npi-004]
+    documentation_refs:
+      - type: architecture
+        section: "Fix #107"
+        path: "docs/guides/SYSTEM_ARCHITECTURE.md"
+    estimated_duration: "20s"
+    expected_result: "MPV Player sends VIDEO_STOP broadcast to Presenter when video playback pauses or stops"
+
+  - id: NPI-005
+    name: "Presenter receives and processes native player broadcasts"
+    category: integration
+    priority: critical
+    platforms: [android]
+    steps:
+      - name: "Verify Presenter service running"
+        action: "Run adb shell dumpsys activity services | grep PresenterService"
+        expected: "PresenterService is running"
+      - name: "Send test VIDEO_START broadcast"
+        action: "Run adb shell am broadcast -a com.atmosphere.VIDEO_START --es package com.test.player"
+        expected: "Broadcast delivered successfully"
+      - name: "Verify Presenter processes broadcast"
+        action: "Check logcat for PresenterService handling the VIDEO_START broadcast"
+        expected: "PresenterService logs receipt and processing of native player broadcast"
+      - name: "Send test VIDEO_STOP broadcast"
+        action: "Run adb shell am broadcast -a com.atmosphere.VIDEO_STOP --es package com.test.player"
+        expected: "Broadcast delivered and Presenter returns to idle/album art state"
+    tags: [presenter, broadcast, receiver, native-player, service, npi-005]
+    documentation_refs:
+      - type: architecture
+        section: "Fix #107"
+        path: "docs/guides/SYSTEM_ARCHITECTURE.md"
+    estimated_duration: "15s"
+    expected_result: "PresenterService correctly receives and processes VIDEO_START and VIDEO_STOP broadcasts from native players"
+
+  - id: NPI-006
+    name: "Presenter overlay shows for native player video"
+    category: functional
+    priority: high
+    platforms: [android]
+    steps:
+      - name: "Start native player video"
+        action: "Play a video in Nova Player or MPV Player with secondary display connected"
+        expected: "Video playback starts and VIDEO_START broadcast sent"
+      - name: "Verify overlay on primary"
+        action: "Check the primary display (touch screen) for VideoControlOverlay"
+        expected: "VideoControlOverlay appears with playback controls and audio device switcher"
+      - name: "Test overlay controls"
+        action: "Tap the return-to-primary button on the overlay"
+        expected: "Video returns to primary display or overlay action triggers correctly"
+    tags: [presenter, overlay, native-player, video-control, ui, npi-006]
+    estimated_duration: "20s"
+    expected_result: "Presenter shows VideoControlOverlay on primary display for native player (Nova/MPV) video playback"
+
+  # ==================== HelixQA Audio Recording (HAR-xxx) ====================
+
+  - id: HAR-001
+    name: "Audio recording config defaults to disabled"
+    category: configuration
+    priority: medium
+    platforms: [android, linux, macos, windows]
+    steps:
+      - name: "Check default config"
+        action: "Load HelixQA config without HELIXQA_AUDIO_RECORDING env var"
+        expected: "Audio recording is disabled by default"
+      - name: "Verify no recording files created"
+        action: "Run a test without audio recording enabled and check evidence directory"
+        expected: "No WAV or audio files in evidence output directory"
+    tags: [helixqa, audio-recording, config, defaults, har-001]
+    estimated_duration: "10s"
+    expected_result: "Audio recording is disabled by default in HelixQA configuration"
+
+  - id: HAR-002
+    name: "Audio recording enabled for ATMOSphere project via .env"
+    category: configuration
+    priority: medium
+    platforms: [android]
+    steps:
+      - name: "Set environment variable"
+        action: "Set HELIXQA_AUDIO_RECORDING=true in .env or environment"
+        expected: "Environment variable accepted"
+      - name: "Load config"
+        action: "Initialize HelixQA with ATMOSphere project config"
+        expected: "Audio recording enabled in loaded configuration"
+      - name: "Run test with audio"
+        action: "Execute a test case that involves audio playback"
+        expected: "Audio recording starts and captures device audio output"
+    tags: [helixqa, audio-recording, config, env, atmosphere, har-002]
+    estimated_duration: "15s"
+    expected_result: "Audio recording is enabled for ATMOSphere project when configured via .env"
+
+  - id: HAR-003
+    name: "Audio quality mapping produces correct ffmpeg params"
+    category: unit
+    priority: medium
+    platforms: [android, linux, macos, windows]
+    steps:
+      - name: "Test standard quality"
+        action: "Set audio quality to 'standard' and check ffmpeg parameters"
+        expected: "ffmpeg params: -ar 22050 -ac 1 -acodec pcm_s16le"
+      - name: "Test high quality"
+        action: "Set audio quality to 'high' and check ffmpeg parameters"
+        expected: "ffmpeg params: -ar 44100 -ac 2 -acodec pcm_s16le"
+      - name: "Test ultra quality"
+        action: "Set audio quality to 'ultra' and check ffmpeg parameters"
+        expected: "ffmpeg params: -ar 48000 -ac 2 -acodec pcm_s24le"
+    tags: [helixqa, audio-recording, quality, ffmpeg, params, har-003]
+    estimated_duration: "5s"
+    expected_result: "Audio quality mappings (standard/high/ultra) produce correct ffmpeg encoding parameters"
+
+  - id: HAR-004
+    name: "Audio evidence collector creates proper WAV files"
+    category: integration
+    priority: medium
+    platforms: [android]
+    steps:
+      - name: "Enable audio recording"
+        action: "Configure HelixQA with audio recording enabled"
+        expected: "Audio recording active"
+      - name: "Run audio test"
+        action: "Execute a test case that plays audio on the device"
+        expected: "Test executes and audio plays"
+      - name: "Check evidence directory"
+        action: "Inspect the evidence output directory for WAV files"
+        expected: "WAV file created with correct format header (RIFF/WAVE)"
+      - name: "Verify WAV content"
+        action: "Check WAV file is non-empty and has valid audio data"
+        expected: "WAV file has non-zero size and valid PCM audio samples"
+    tags: [helixqa, audio-recording, evidence, wav, collector, har-004]
+    estimated_duration: "20s"
+    expected_result: "Audio evidence collector creates valid WAV files in the evidence directory during test execution"
+
+  - id: HAR-005
+    name: "Audio recording start/stop lifecycle works correctly"
+    category: integration
+    priority: medium
+    platforms: [android]
+    steps:
+      - name: "Start recording"
+        action: "Trigger audio recording start via evidence collector API"
+        expected: "Recording process starts, PID captured"
+      - name: "Verify recording active"
+        action: "Check that recording process is running and output file is growing"
+        expected: "Process running, file size increasing over time"
+      - name: "Stop recording"
+        action: "Trigger audio recording stop via evidence collector API"
+        expected: "Recording process terminates cleanly"
+      - name: "Verify final file"
+        action: "Check that the WAV file is finalized and readable"
+        expected: "WAV file header updated with correct data size, file is playable"
+    tags: [helixqa, audio-recording, lifecycle, start-stop, process, har-005]
+    estimated_duration: "15s"
+    expected_result: "Audio recording starts and stops cleanly with proper WAV file finalization"
+
+  # ==================== HW Codec Intentional Disable (HCD-xxx) ====================
+
+  - id: HCD-001
+    name: "All c2.rk.* HW decoders intentionally disabled"
+    category: functional
+    priority: critical
+    platforms: [android]
+    steps:
+      - name: "Check HW decoder registration"
+        action: "Run adb shell dumpsys media.codec | grep c2.rk"
+        expected: "No c2.rk.* decoders registered (all disabled in media_codecs_c2_rk3588.xml)"
+      - name: "Verify codec XML config"
+        action: "Check device/rockchip/rk3588/media_codecs_c2_rk3588.xml for commented-out HW decoders"
+        expected: "All c2.rk.*.decoder entries are commented out or removed"
+    tags: [codecs, hw-decoder, disabled, rk3588, c2-rk, hcd-001]
+    documentation_refs:
+      - type: architecture
+        section: "Fix #107"
+        path: "docs/guides/SYSTEM_ARCHITECTURE.md"
+    estimated_duration: "10s"
+    expected_result: "All RK3588 HW video decoders (c2.rk.*) are intentionally disabled due to BAD_INDEX crash on secondary SurfaceView"
+
+  - id: HCD-002
+    name: "SW decoders available for all video formats"
+    category: functional
+    priority: critical
+    platforms: [android]
+    steps:
+      - name: "Check SW AVC decoder"
+        action: "Run adb shell dumpsys media.codec | grep c2.android.avc.decoder"
+        expected: "c2.android.avc.decoder registered"
+      - name: "Check SW HEVC decoder"
+        action: "Run adb shell dumpsys media.codec | grep c2.android.hevc.decoder"
+        expected: "c2.android.hevc.decoder registered"
+      - name: "Check SW VP9 decoder"
+        action: "Run adb shell dumpsys media.codec | grep c2.android.vp9.decoder"
+        expected: "c2.android.vp9.decoder registered"
+      - name: "Check SW AV1 decoder"
+        action: "Run adb shell dumpsys media.codec | grep c2.android.av1.decoder"
+        expected: "c2.android.av1.decoder registered"
+      - name: "Check SW VP8 decoder"
+        action: "Run adb shell dumpsys media.codec | grep c2.android.vp8.decoder"
+        expected: "c2.android.vp8.decoder registered"
+    tags: [codecs, sw-decoder, android, c2-android, availability, hcd-002]
+    documentation_refs:
+      - type: architecture
+        section: "Fix #107"
+        path: "docs/guides/SYSTEM_ARCHITECTURE.md"
+    estimated_duration: "10s"
+    expected_result: "All SW video decoders (c2.android.*) are registered and available for AVC, HEVC, VP9, AV1, VP8"
+
+  - id: HCD-003
+    name: "ExoPlayer fallback to SW decoder works"
+    category: integration
+    priority: critical
+    platforms: [android]
+    steps:
+      - name: "Play video in ExoPlayer-based app"
+        action: "Start video playback in YouTube, VK Video, or another ExoPlayer app"
+        expected: "Video playback begins"
+      - name: "Check MediaCodec hook"
+        action: "Monitor logcat for MediaCodec.configure() hook intercepting ExoPlayer"
+        expected: "Log shows HW codec rejected with IllegalArgumentException"
+      - name: "Verify SW retry"
+        action: "Check logcat for ExoPlayer retrying with SW codec"
+        expected: "ExoPlayer retries configure() with c2.android.* SW codec and succeeds"
+      - name: "Verify playback quality"
+        action: "Watch video for 10 seconds"
+        expected: "Smooth playback without artifacts or stuttering"
+    tags: [codecs, exoplayer, sw-fallback, mediacodec-hook, secondary-display, hcd-003]
+    documentation_refs:
+      - type: architecture
+        section: "Fix #107"
+        path: "docs/guides/SYSTEM_ARCHITECTURE.md"
+    estimated_duration: "30s"
+    expected_result: "ExoPlayer correctly falls back to SW decoder when HW codec is rejected by MediaCodec.configure() hook"
+
+  - id: HCD-004
+    name: "SW AVC decoder supports up to 4K resolution"
+    category: functional
+    priority: high
+    platforms: [android]
+    steps:
+      - name: "Check SW AVC resolution limits"
+        action: "Check media_codecs_google_c2_rk3588.xml for c2.android.avc.decoder max resolution"
+        expected: "SW AVC decoder configured for up to 3840x2160 (4K)"
+      - name: "Play 4K AVC content"
+        action: "Play a 4K H.264/AVC video file"
+        expected: "Video decodes and plays (may have reduced framerate at 4K)"
+    tags: [codecs, sw-decoder, avc, 4k, resolution, hcd-004]
+    documentation_refs:
+      - type: architecture
+        section: "Fix #107"
+        path: "docs/guides/SYSTEM_ARCHITECTURE.md"
+    estimated_duration: "20s"
+    expected_result: "SW AVC decoder supports up to 4K (3840x2160) resolution as configured in codec XML"
+
+  - id: HCD-005
+    name: "SW VP9 decoder supports up to 8K resolution"
+    category: functional
+    priority: high
+    platforms: [android]
+    steps:
+      - name: "Check SW VP9 resolution limits"
+        action: "Check media_codecs_google_c2_rk3588.xml for c2.android.vp9.decoder max resolution"
+        expected: "SW VP9 decoder configured for up to 7680x4320 (8K)"
+      - name: "Play high-resolution VP9 content"
+        action: "Play a 4K VP9 video file to verify decoder works at high resolutions"
+        expected: "VP9 video decodes and plays successfully"
+    tags: [codecs, sw-decoder, vp9, 8k, resolution, hcd-005]
+    documentation_refs:
+      - type: architecture
+        section: "Fix #107"
+        path: "docs/guides/SYSTEM_ARCHITECTURE.md"
+    estimated_duration: "20s"
+    expected_result: "SW VP9 decoder supports up to 8K (7680x4320) resolution as configured in codec XML"
+
+  # ==================== Known Limitations Documentation (KLD-xxx) ====================
+
+  - id: KLD-001
+    name: "3.5mm jack outputs audio regardless of detection state"
+    category: functional
+    priority: medium
+    platforms: [android]
+    steps:
+      - name: "Check both outputs enabled"
+        action: "Run adb shell tinymix -D 2 and check headphone and speaker output states"
+        expected: "Both LOUT1/ROUT1 (headphone) and LOUT2/ROUT2 (speaker) outputs are enabled"
+      - name: "Plug in 3.5mm cable"
+        action: "Insert a 3.5mm AUX cable into the headphone jack"
+        expected: "Audio plays through the 3.5mm jack"
+      - name: "Verify with AUX cable (no hp-det trigger)"
+        action: "Use an AUX cable that does not trigger hp-det GPIO (e.g., plain AUX, not headphones)"
+        expected: "Audio still plays through 3.5mm jack because both outputs are always enabled (Fix #104)"
+    tags: [audio, es8388, headphone, jack, both-outputs, known-limitation, kld-001]
+    documentation_refs:
+      - type: architecture
+        section: "Fix #104"
+        path: "docs/guides/SYSTEM_ARCHITECTURE.md"
+    estimated_duration: "15s"
+    expected_result: "3.5mm jack always outputs audio regardless of hp-det GPIO state due to Fix #104 both-outputs design"
+
+  - id: KLD-002
+    name: "Mullvad VPN connection established for ISP DPI bypass"
+    category: functional
+    priority: medium
+    platforms: [android]
+    steps:
+      - name: "Launch Mullvad VPN"
+        action: "Open the Mullvad VPN app"
+        expected: "Mullvad VPN app launches"
+      - name: "Connect to VPN"
+        action: "Tap connect and select a server (auto or specific region)"
+        expected: "VPN connection established, VPN icon in status bar"
+      - name: "Verify ISP bypass"
+        action: "Access a site that is normally ISP-blocked (e.g., YouTube, Speedtest)"
+        expected: "Previously blocked content is accessible via VPN tunnel"
+    tags: [vpn, mullvad, isp-bypass, dpi, network, known-limitation, kld-002]
+    estimated_duration: "30s"
+    expected_result: "Mullvad VPN connects successfully and bypasses ISP DPI filtering"
+
+  - id: KLD-003
+    name: "Video routing verified on secondary display with VK Video"
+    category: functional
+    priority: high
+    platforms: [android]
+    steps:
+      - name: "Verify secondary display connected"
+        action: "Check that HDMI-A-1 (TV) is connected"
+        expected: "Secondary display present"
+      - name: "Launch VK Video"
+        action: "Open VK Video app and select a video to play"
+        expected: "VK Video begins playback"
+      - name: "Verify video on TV"
+        action: "Observe the TV (secondary display)"
+        expected: "Video content renders on the TV via MediaCodec SW codec redirect"
+      - name: "Verify no stale frames"
+        action: "Navigate away from video and check that secondary display clears"
+        expected: "Secondary display returns to Presenter idle state, no stuck frame"
+    tags: [video-routing, vk-video, secondary-display, verified, known-limitation, kld-003]
+    documentation_refs:
+      - type: architecture
+        section: "Fix #107"
+        path: "docs/guides/SYSTEM_ARCHITECTURE.md"
+    estimated_duration: "30s"
+    expected_result: "VK Video playback successfully routes to secondary display via SW codec redirect"
+
+  - id: KLD-004
+    name: "Video routing verified on secondary display with YouTube via VPN"
+    category: functional
+    priority: high
+    platforms: [android]
+    steps:
+      - name: "Connect Mullvad VPN"
+        action: "Enable Mullvad VPN to bypass ISP restrictions on YouTube"
+        expected: "VPN connected"
+      - name: "Verify secondary display connected"
+        action: "Check that HDMI-A-1 (TV) is connected"
+        expected: "Secondary display present"
+      - name: "Launch YouTube"
+        action: "Open YouTube app and play a video"
+        expected: "YouTube begins playback (requires VPN for ISP-restricted regions)"
+      - name: "Verify video on TV"
+        action: "Observe the TV (secondary display)"
+        expected: "Video content renders on the TV via ExoPlayer SW codec redirect"
+      - name: "Verify resolution filter"
+        action: "Check logcat for resolution filter accepting video (min dimension >= 400)"
+        expected: "Full video accepted (not filtered as thumbnail), redirected to secondary display"
+    tags: [video-routing, youtube, vpn, secondary-display, verified, known-limitation, kld-004]
+    documentation_refs:
+      - type: architecture
+        section: "Fix #107"
+        path: "docs/guides/SYSTEM_ARCHITECTURE.md"
+    estimated_duration: "45s"
+    expected_result: "YouTube video (via VPN) successfully routes to secondary display via ExoPlayer SW codec redirect"
