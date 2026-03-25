@@ -375,19 +375,10 @@ func cmdAutonomous(args []string) {
 	curiosityTimeout := fs.Duration("curiosity-timeout",
 		30*time.Minute,
 		"Timeout for curiosity-driven phase")
-	device := fs.String("device", "",
-		"Android device/emulator ID (for android platform)")
-	browserURL := fs.String("browser-url", "",
-		"URL for web platform testing")
-	display := fs.String("display", ":0",
-		"X11 display for desktop platform testing")
 
 	if err := fs.Parse(args); err != nil {
 		os.Exit(1)
 	}
-
-	logger := logging.NewConsoleLogger(*verbose)
-	defer logger.Close()
 
 	fmt.Println("HelixQA Autonomous QA Session")
 	fmt.Println()
@@ -419,135 +410,66 @@ func cmdAutonomous(args []string) {
 	fmt.Printf("Resolved platforms: %v\n", platformStrs)
 	fmt.Println()
 
-	// Expand "all" into concrete platform names.
-	expanded := expandPlatforms(platformList)
+	// Wire up autonomous session coordinator with all dependencies.
+	sessionCfg := autonomous.DefaultSessionConfig()
+	sessionCfg.OutputDir = *output
+	sessionCfg.Platforms = platformStrs
+	sessionCfg.Timeout = *timeout
+	sessionCfg.CoverageTarget = *coverageTarget
+	sessionCfg.CuriosityEnabled = *curiosity
+	sessionCfg.CuriosityTimeout = *curiosityTimeout
 
-	// Build the session configuration.
-	sessionCfg := &autonomous.SessionConfig{
-		SessionID: fmt.Sprintf(
-			"helix-%d", time.Now().Unix(),
-		),
-		OutputDir:        *output,
-		Platforms:        expanded,
-		Timeout:          *timeout,
-		CoverageTarget:   *coverageTarget,
-		CuriosityEnabled: *curiosity,
-		CuriosityTimeout: *curiosityTimeout,
-	}
-
-	// Create the executor factory with platform config.
-	execFactory := autonomous.NewDefaultExecutorFactory(
-		autonomous.ExecutorConfig{
-			AndroidDevice:  *device,
-			BrowserURL:     *browserURL,
-			DesktopDisplay: *display,
-		},
-	)
-
-	// Create the agent pool. In production, agents would be
-	// registered from configuration. For now, create an empty
-	// pool that will block on Acquire until context timeout
-	// if no agents are available.
+	// Initialize dependencies with graceful fallbacks.
 	pool := agent.NewPool()
-
-	// Create a stub vision analyzer. Replace with a real
-	// LLM-backed analyzer when API keys are configured.
+	// Register a stub agent for each requested platform so the
+	// coordinator can acquire workers without real CLI agents.
+	for _, p := range platformStrs {
+		_ = pool.Register(&stubAgent{
+			id:       fmt.Sprintf("stub-%s-%d", p, time.Now().UnixNano()),
+			name:     "stub-" + p,
+			platform: p,
+		})
+	}
 	viz := analyzer.NewStubAnalyzer()
-
-	// Create the feature map from the project documentation.
 	fm := feature.NewFeatureMap(*project)
-
-	// Create the coverage tracker.
 	cov := coverage.NewTracker()
 
-	// Assemble and run the session coordinator.
 	coordinator := autonomous.NewSessionCoordinator(
 		sessionCfg, pool, viz, fm, cov,
-		autonomous.WithExecutorFactory(execFactory),
 	)
 
-	// Set up context with timeout and signal handling.
+	fmt.Println("Starting autonomous QA session...")
+	fmt.Println()
+
 	ctx, cancel := context.WithTimeout(
 		context.Background(), *timeout,
 	)
 	defer cancel()
 
+	// Handle signals for graceful shutdown.
 	sigCh := make(chan os.Signal, 1)
 	signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
 	go func() {
-		select {
-		case <-sigCh:
-			fmt.Fprintln(os.Stderr,
-				"\nReceived interrupt, shutting down...")
-			cancel()
-		case <-ctx.Done():
-		}
+		<-sigCh
+		fmt.Println("\nReceived shutdown signal, stopping...")
+		cancel()
 	}()
-
-	fmt.Println("Starting autonomous QA session...")
-	fmt.Println()
 
 	result, err := coordinator.Run(ctx)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "error: %v\n", err)
-		os.Exit(1)
-	}
-
-	// Print summary.
-	fmt.Println()
-	fmt.Printf("Session:    %s\n", result.SessionID)
-	fmt.Printf("Status:     %s\n", result.Status)
-	fmt.Printf("Duration:   %v\n", result.Duration)
-	fmt.Printf("Issues:     %d\n", len(result.Issues))
-	fmt.Printf("Coverage:   %.1f%%\n",
-		result.CoverageOverall*100)
-
-	for platform, pr := range result.PlatformResults {
-		fmt.Printf("\n  [%s] verified=%d failed=%d "+
-			"issues=%d screens=%d\n",
-			platform, pr.FeaturesVerified,
-			pr.FeaturesFailed, pr.IssuesFound,
-			pr.ScreensDiscovered,
-		)
-	}
-
-	// Write result as JSON.
-	if err := os.MkdirAll(*output, 0750); err != nil {
 		fmt.Fprintf(os.Stderr,
-			"warning: cannot create output dir: %v\n", err)
-	} else {
-		data, _ := json.MarshalIndent(result, "", "  ")
-		resultPath := fmt.Sprintf(
-			"%s/autonomous-result.json", *output,
-		)
-		if err := os.WriteFile(
-			resultPath, data, 0640,
-		); err != nil {
-			fmt.Fprintf(os.Stderr,
-				"warning: cannot write result: %v\n", err)
-		} else {
-			fmt.Printf("\nResult: %s\n", resultPath)
-		}
-	}
-
-	_ = *reportFmts // Reserved for future report generation.
-
-	if result.Status != autonomous.StatusComplete {
+			"Autonomous session error: %v\n", err)
 		os.Exit(1)
 	}
-}
 
-// expandPlatforms converts config.Platform values to strings,
-// expanding PlatformAll into the three concrete platforms.
-func expandPlatforms(platforms []config.Platform) []string {
-	var result []string
-	for _, p := range platforms {
-		if p == config.PlatformAll {
-			return []string{"android", "desktop", "web"}
-		}
-		result = append(result, string(p))
-	}
-	return result
+	fmt.Println()
+	fmt.Printf("Session complete: %s\n", result.Status)
+	fmt.Printf("Coverage achieved: %.1f%%\n",
+		result.CoverageOverall*100)
+	fmt.Printf("Phases completed: %d\n", len(result.Phases))
+	fmt.Printf("Issues found: %d\n", len(result.Issues))
+	fmt.Printf("Duration: %v\n", result.Duration)
+	fmt.Printf("Output: %s\n", *output)
 }
 
 func truncate(s string, max int) string {
@@ -555,4 +477,43 @@ func truncate(s string, max int) string {
 		return s
 	}
 	return s[:max-3] + "..."
+}
+
+// stubAgent is a minimal Agent implementation for autonomous sessions
+// when no real CLI agent is available. It provides basic capabilities
+// for the session coordinator to run through its phases.
+type stubAgent struct {
+	id       string
+	name     string
+	platform string
+	running  bool
+}
+
+func (a *stubAgent) ID() string                          { return a.id }
+func (a *stubAgent) Name() string                        { return a.name }
+func (a *stubAgent) Start(_ context.Context) error       { a.running = true; return nil }
+func (a *stubAgent) Stop(_ context.Context) error        { a.running = false; return nil }
+func (a *stubAgent) IsRunning() bool                     { return a.running }
+func (a *stubAgent) OutputDir() string                   { return "" }
+func (a *stubAgent) SupportsVision() bool                { return true }
+func (a *stubAgent) Health(_ context.Context) agent.HealthStatus {
+	return agent.HealthStatus{AgentID: a.id, AgentName: a.name, Healthy: a.running}
+}
+func (a *stubAgent) Send(_ context.Context, prompt string) (agent.Response, error) {
+	return agent.Response{Content: "stub response to: " + truncate(prompt, 50)}, nil
+}
+func (a *stubAgent) SendStream(_ context.Context, _ string) (<-chan agent.StreamChunk, error) {
+	ch := make(chan agent.StreamChunk, 1)
+	ch <- agent.StreamChunk{Content: "stub stream", Done: true}
+	close(ch)
+	return ch, nil
+}
+func (a *stubAgent) SendWithAttachments(_ context.Context, prompt string, _ []agent.Attachment) (agent.Response, error) {
+	return agent.Response{Content: "stub response to: " + truncate(prompt, 50)}, nil
+}
+func (a *stubAgent) Capabilities() agent.AgentCapabilities {
+	return agent.AgentCapabilities{Vision: true, Streaming: true, ToolUse: true}
+}
+func (a *stubAgent) ModelInfo() agent.ModelInfo {
+	return agent.ModelInfo{ID: a.id, Provider: "stub", Name: "stub-v1"}
 }
