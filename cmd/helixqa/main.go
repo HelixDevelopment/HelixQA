@@ -486,8 +486,15 @@ func cmdAutonomous(args []string) {
 		BanksDir: filepath.Join(
 			*project, "challenges", "helixqa-banks",
 		),
-		Timeout:    *timeout,
-		PassNumber: passNumber,
+		Timeout:          *timeout,
+		PassNumber:       passNumber,
+		AndroidDevice:    os.Getenv("HELIX_ANDROID_DEVICE"),
+		AndroidPackage:   os.Getenv("HELIX_ANDROID_PACKAGE"),
+		WebURL:           os.Getenv("HELIX_WEB_URL"),
+		DesktopDisplay:   os.Getenv("HELIX_DESKTOP_DISPLAY"),
+		FFmpegPath:       os.Getenv("HELIX_FFMPEG_PATH"),
+		CuriosityEnabled: *curiosity,
+		CuriosityTimeout: *curiosityTimeout,
 	}
 	pipeline := autonomous.NewSessionPipeline(
 		cfg, provider, store,

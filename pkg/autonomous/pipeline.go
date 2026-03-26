@@ -16,7 +16,9 @@ import (
 	"digital.vasic.helixqa/pkg/learning"
 	"digital.vasic.helixqa/pkg/llm"
 	"digital.vasic.helixqa/pkg/memory"
+	"digital.vasic.helixqa/pkg/performance"
 	"digital.vasic.helixqa/pkg/planning"
+	"digital.vasic.helixqa/pkg/video"
 )
 
 // PipelineConfig holds the parameters for a SessionPipeline
@@ -50,6 +52,33 @@ type PipelineConfig struct {
 	// PassNumber identifies this QA pass for the memory
 	// store.
 	PassNumber int
+
+	// AndroidDevice is the ADB device/emulator serial
+	// (e.g. "emulator-5554" or "192.168.0.214:5555").
+	AndroidDevice string
+
+	// AndroidPackage is the Android application package
+	// name (e.g. "com.example.app").
+	AndroidPackage string
+
+	// WebURL is the URL for web platform testing.
+	WebURL string
+
+	// DesktopDisplay is the X11 display identifier
+	// (e.g. ":0").
+	DesktopDisplay string
+
+	// FFmpegPath is the path to the ffmpeg binary used
+	// for video post-processing.
+	FFmpegPath string
+
+	// CuriosityEnabled controls whether the curiosity-
+	// driven exploration phase is active.
+	CuriosityEnabled bool
+
+	// CuriosityTimeout is the maximum duration for the
+	// curiosity-driven exploration phase.
+	CuriosityTimeout time.Duration
 }
 
 // PipelineResult captures the outcome of a SessionPipeline
@@ -183,6 +212,71 @@ func (sp *SessionPipeline) Run(
 
 	// ── Phase 3: Execute ────────────────────────────────
 	fmt.Println("[pipeline] Phase 3/4: Execute")
+
+	// Create executor factory from config.
+	execFactory := NewRealExecutorFactory(RealExecutorConfig{
+		AndroidDevice:  sp.config.AndroidDevice,
+		AndroidPackage: sp.config.AndroidPackage,
+		WebURL:         sp.config.WebURL,
+		DesktopDisplay: sp.config.DesktopDisplay,
+	})
+
+	// Start video recording for Android platforms.
+	recorders := make(map[string]*video.ScrcpyRecorder)
+	for _, platform := range sp.config.Platforms {
+		if platform == "android" ||
+			platform == "androidtv" {
+			videoPath := filepath.Join(
+				sp.config.OutputDir, "videos",
+				platform+"-session.mp4",
+			)
+			_ = os.MkdirAll(
+				filepath.Dir(videoPath), 0o755,
+			)
+			rec := video.NewScrcpyRecorder(
+				sp.config.AndroidDevice, videoPath,
+				video.WithMethod(
+					video.MethodADBScreenrecord,
+				),
+			)
+			if err := rec.Start(ctx); err == nil {
+				recorders[platform] = rec
+			}
+		}
+	}
+
+	// Collect baseline performance metrics.
+	var perfTimelines []*performance.MetricsTimeline
+	for _, platform := range sp.config.Platforms {
+		if platform == "android" ||
+			platform == "androidtv" {
+			collector := performance.New(
+				sp.config.AndroidPackage, platform,
+			)
+			tl := &performance.MetricsTimeline{
+				Platform: platform,
+			}
+			if snap, err := collector.CollectMemory(
+				ctx,
+			); err == nil {
+				tl.Add(snap)
+			}
+			if snap, err := collector.CollectCPU(
+				ctx,
+			); err == nil {
+				tl.Add(snap)
+			}
+			perfTimelines = append(perfTimelines, tl)
+		}
+	}
+
+	// Iterate tests: take screenshots, record coverage.
+	screenshotDir := filepath.Join(
+		sp.config.OutputDir, "screenshots",
+	)
+	_ = os.MkdirAll(screenshotDir, 0o755)
+	var allScreenshots []string
+
 	testsRun := 0
 	for _, t := range plan.Tests {
 		select {
@@ -192,38 +286,159 @@ func (sp *SessionPipeline) Run(
 			result.TestsRun = testsRun
 			result.Duration = time.Since(start)
 			sp.updateSession(sessionID, result)
+			// Stop recorders before returning.
+			for _, rec := range recorders {
+				_ = rec.Stop()
+			}
 			return result, nil
 		default:
 		}
 
+		testsRun++
+		fmt.Printf(
+			"  [%d/%d] %s (%s)\n",
+			testsRun, len(plan.Tests),
+			t.Name, t.Category,
+		)
+
+		// Take screenshot for each platform this test
+		// targets.
+		for _, platform := range t.Platforms {
+			executor, err := execFactory.Create(
+				platform,
+			)
+			if err != nil {
+				continue
+			}
+			screenshot, err := executor.Screenshot(ctx)
+			if err == nil && len(screenshot) > 0 {
+				fname := filepath.Join(
+					screenshotDir,
+					fmt.Sprintf(
+						"%s-%03d-%s.png",
+						platform,
+						testsRun,
+						sanitizeFilename(t.Screen),
+					),
+				)
+				_ = os.WriteFile(
+					fname, screenshot, 0o644,
+				)
+				allScreenshots = append(
+					allScreenshots, fname,
+				)
+			}
+		}
+
+		// Record coverage.
 		screen := t.Screen
 		if screen == "" {
 			screen = t.Name
 		}
-		platform := "all"
-		if len(t.Platforms) > 0 {
-			platform = t.Platforms[0]
+		for _, p := range t.Platforms {
+			_ = sp.store.RecordCoverage(
+				screen, p, "executed",
+			)
 		}
-
-		_ = sp.store.RecordCoverage(
-			screen, platform, "executed",
-		)
-		testsRun++
 	}
 	result.TestsRun = testsRun
+
+	// Stop video recorders.
+	for _, rec := range recorders {
+		_ = rec.Stop()
+	}
+
+	// Collect final performance metrics.
+	for _, tl := range perfTimelines {
+		collector := performance.New(
+			sp.config.AndroidPackage, tl.Platform,
+		)
+		if snap, err := collector.CollectMemory(
+			ctx,
+		); err == nil {
+			tl.Add(snap)
+		}
+		if snap, err := collector.CollectCPU(
+			ctx,
+		); err == nil {
+			tl.Add(snap)
+		}
+	}
+
 	fmt.Printf(
 		"[pipeline]   %d tests executed\n", testsRun,
 	)
 
 	// ── Phase 4: Analyze ────────────────────────────────
 	fmt.Println("[pipeline] Phase 4/4: Analyze")
+	var allFindings []analysis.AnalysisFinding
 
-	// Placeholder: collect findings from execution.
-	var findings []analysis.AnalysisFinding
-	_ = findings
+	// Analyze screenshots with LLM vision.
+	if sp.provider.SupportsVision() &&
+		len(allScreenshots) > 0 {
+		visionAnalyzer := analysis.NewVisionAnalyzer(
+			sp.provider,
+		)
+		for _, ssPath := range allScreenshots {
+			imgData, err := os.ReadFile(ssPath)
+			if err != nil {
+				continue
+			}
+			base := filepath.Base(ssPath)
+			findings, err := visionAnalyzer.AnalyzeScreenshot(
+				ctx, imgData, base, "",
+			)
+			if err == nil {
+				allFindings = append(
+					allFindings, findings...,
+				)
+			}
+		}
+	}
 
-	result.IssuesFound = 0
-	result.TicketsCreated = 0
+	// Check for memory leaks.
+	for _, tl := range perfTimelines {
+		leak := tl.DetectMemoryLeak(10.0)
+		if leak != nil && leak.IsLeak {
+			allFindings = append(
+				allFindings,
+				analysis.AnalysisFinding{
+					Category: analysis.CategoryPerformance,
+					Severity: analysis.SeverityHigh,
+					Title: fmt.Sprintf(
+						"Memory leak detected on %s",
+						leak.Platform,
+					),
+					Description: fmt.Sprintf(
+						"Memory grew %.1f%% "+
+							"(%.0fKB -> %.0fKB) "+
+							"over %.0fs",
+						leak.GrowthPercent,
+						leak.StartKB,
+						leak.EndKB,
+						leak.DurationSecs,
+					),
+					Platform: leak.Platform,
+				},
+			)
+		}
+	}
+
+	result.IssuesFound = len(allFindings)
+
+	// Create tickets via FindingsBridge.
+	if len(allFindings) > 0 {
+		bridge := NewFindingsBridge(
+			sp.store, sp.config.IssuesDir, sessionID,
+		)
+		ids, _ := bridge.Process(allFindings)
+		result.TicketsCreated = len(ids)
+		fmt.Printf(
+			"  Created %d issue tickets\n",
+			len(ids),
+		)
+	}
+
 	fmt.Printf(
 		"[pipeline]   %d issues found\n",
 		result.IssuesFound,
@@ -302,6 +517,23 @@ func (sp *SessionPipeline) updateSession(
 		),
 	}
 	_ = sp.store.UpdateSession(id, u)
+}
+
+// sanitizeFilename converts a screen name or label into a
+// safe, lowercase filename component. Slashes and spaces
+// are replaced with hyphens, and the result is capped at
+// 40 characters.
+func sanitizeFilename(s string) string {
+	s = strings.ReplaceAll(s, "/", "-")
+	s = strings.ReplaceAll(s, " ", "-")
+	s = strings.ToLower(s)
+	if len(s) > 40 {
+		s = s[:40]
+	}
+	if s == "" {
+		s = "unknown"
+	}
+	return s
 }
 
 // joinStrings joins a string slice with commas.
