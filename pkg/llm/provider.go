@@ -15,11 +15,14 @@ import (
 
 // Provider name constants identify supported LLM backends.
 const (
-	ProviderAnthropic = "anthropic"
-	ProviderOpenAI    = "openai"
-	ProviderGoogle    = "google"
-	ProviderOllama    = "ollama"
-	ProviderUITars    = "ui-tars"
+	ProviderAnthropic  = "anthropic"
+	ProviderOpenAI     = "openai"
+	ProviderGoogle     = "google"
+	ProviderOllama     = "ollama"
+	ProviderUITars     = "ui-tars"
+	ProviderOpenRouter = "openrouter"
+	ProviderDeepSeek   = "deepseek"
+	ProviderGroq       = "groq"
 )
 
 // Role constants define the participant roles in a conversation.
@@ -120,7 +123,8 @@ func (c ProviderConfig) Validate() error {
 		return fmt.Errorf("llm: provider config name is required")
 	}
 	switch c.Name {
-	case ProviderAnthropic, ProviderOpenAI, ProviderGoogle:
+	case ProviderAnthropic, ProviderOpenAI, ProviderGoogle,
+		ProviderOpenRouter, ProviderDeepSeek, ProviderGroq:
 		if c.APIKey == "" {
 			return fmt.Errorf(
 				"llm: provider %q requires api_key", c.Name,

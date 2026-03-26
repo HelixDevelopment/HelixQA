@@ -42,6 +42,30 @@ func NewAdaptiveFromConfigs(
 			providers = append(providers, NewAnthropicProvider(cfg))
 		case ProviderOpenAI:
 			providers = append(providers, NewOpenAIProvider(cfg))
+		case ProviderOpenRouter:
+			if cfg.BaseURL == "" {
+				cfg.BaseURL = "https://openrouter.ai/api"
+			}
+			if cfg.Model == "" {
+				cfg.Model = "anthropic/claude-sonnet-4"
+			}
+			providers = append(providers, NewOpenAIProvider(cfg))
+		case ProviderDeepSeek:
+			if cfg.BaseURL == "" {
+				cfg.BaseURL = "https://api.deepseek.com"
+			}
+			if cfg.Model == "" {
+				cfg.Model = "deepseek-chat"
+			}
+			providers = append(providers, NewOpenAIProvider(cfg))
+		case ProviderGroq:
+			if cfg.BaseURL == "" {
+				cfg.BaseURL = "https://api.groq.com/openai"
+			}
+			if cfg.Model == "" {
+				cfg.Model = "llama-3.3-70b-versatile"
+			}
+			providers = append(providers, NewOpenAIProvider(cfg))
 		case ProviderOllama, ProviderUITars:
 			providers = append(providers, NewOllamaProvider(cfg))
 		default:

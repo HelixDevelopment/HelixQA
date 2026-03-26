@@ -432,12 +432,30 @@ func cmdAutonomous(args []string) {
 			Model:   model,
 		})
 	}
+	if key := os.Getenv("OPENROUTER_API_KEY"); key != "" {
+		providerConfigs = append(providerConfigs, llm.ProviderConfig{
+			Name:   llm.ProviderOpenRouter,
+			APIKey: key,
+		})
+	}
+	if key := os.Getenv("DEEPSEEK_API_KEY"); key != "" {
+		providerConfigs = append(providerConfigs, llm.ProviderConfig{
+			Name:   llm.ProviderDeepSeek,
+			APIKey: key,
+		})
+	}
+	if key := os.Getenv("GROQ_API_KEY"); key != "" {
+		providerConfigs = append(providerConfigs, llm.ProviderConfig{
+			Name:   llm.ProviderGroq,
+			APIKey: key,
+		})
+	}
 
 	if len(providerConfigs) == 0 {
 		fmt.Fprintln(os.Stderr,
 			"error: no LLM providers configured — set at least one "+
-				"of ANTHROPIC_API_KEY, OPENAI_API_KEY, or "+
-				"HELIX_OLLAMA_URL")
+				"of ANTHROPIC_API_KEY, OPENAI_API_KEY, OPENROUTER_API_KEY, "+
+				"DEEPSEEK_API_KEY, GROQ_API_KEY, or HELIX_OLLAMA_URL")
 		os.Exit(1)
 	}
 
