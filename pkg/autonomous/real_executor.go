@@ -34,8 +34,8 @@ type RealExecutorConfig struct {
 
 // RealExecutorFactory creates platform-specific ActionExecutor
 // instances for Android, Android TV, web, and desktop platforms.
-// Android and Android TV use ADBExecutor; web and desktop use
-// a noopExecutor placeholder until real implementations are wired.
+// Android and Android TV use ADBExecutor; web uses PlaywrightExecutor;
+// desktop uses X11Executor.
 type RealExecutorFactory struct {
 	config RealExecutorConfig
 }
@@ -58,8 +58,21 @@ func (f *RealExecutorFactory) Create(
 			detector.NewExecRunner(),
 		), nil
 
-	case "web", "desktop":
-		return &noopExecutor{}, nil
+	case "web":
+		return navigator.NewPlaywrightExecutor(
+			f.config.WebURL,
+			detector.NewExecRunner(),
+		), nil
+
+	case "desktop":
+		display := f.config.DesktopDisplay
+		if display == "" {
+			display = ":0"
+		}
+		return navigator.NewX11Executor(
+			display,
+			detector.NewExecRunner(),
+		), nil
 
 	default:
 		return nil, fmt.Errorf("unsupported platform: %q", platform)
