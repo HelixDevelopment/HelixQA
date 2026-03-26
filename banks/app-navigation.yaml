@@ -1,0 +1,423 @@
+# SPDX-FileCopyrightText: 2026 Milos Vasic
+# SPDX-License-Identifier: Apache-2.0
+#
+# HelixQA Test Bank: App Navigation Flows
+# Tests all main screens, sub-screens, navigation patterns, tab management,
+# deep links, settings persistence, and theme switching across all platforms.
+
+version: "1.0"
+name: "Yole App Navigation Test Bank"
+description: "Navigation flow tests for all screens, tabs, drawer, deep links, rotation, and theme switching"
+metadata:
+  author: "vasic-digital"
+  app: "Yole"
+  version: "1.0.0"
+
+test_cases:
+  # ==================== Main Screens ====================
+  - id: NAV-MAIN-001
+    name: "Navigate to Files screen"
+    category: functional
+    priority: critical
+    platforms: [android, web, desktop]
+    steps:
+      - name: "Launch app"
+        action: "Open Yole application"
+        expected: "App launches to default screen"
+      - name: "Tap Files tab"
+        action: "Tap/click 'Files' in bottom navigation bar or sidebar"
+        expected: "Files screen displayed with file browser or recent files"
+    tags: [navigation, main-screen, files]
+    documentation_refs:
+      - type: user_guide
+        section: "1.1"
+        path: "docs/USER_MANUAL_ANDROID.md"
+    estimated_duration: "10s"
+    expected_result: "Files screen accessible from main navigation"
+
+  - id: NAV-MAIN-002
+    name: "Navigate to Todo screen"
+    category: functional
+    priority: critical
+    platforms: [android, web, desktop]
+    steps:
+      - name: "Tap Todo tab"
+        action: "Tap/click 'Todo' in navigation bar"
+        expected: "Todo screen shown with todo.txt task list or empty state"
+    tags: [navigation, main-screen, todo]
+    estimated_duration: "10s"
+    expected_result: "Todo screen accessible from main navigation"
+
+  - id: NAV-MAIN-003
+    name: "Navigate to QuickNote screen"
+    category: functional
+    priority: critical
+    platforms: [android, web, desktop]
+    steps:
+      - name: "Tap QuickNote tab"
+        action: "Tap/click 'QuickNote' in navigation bar"
+        expected: "QuickNote editor screen displayed"
+      - name: "Verify quick note editor"
+        action: "Check that text input is immediately available"
+        expected: "Editor ready for input without extra taps"
+    tags: [navigation, main-screen, quicknote]
+    estimated_duration: "10s"
+    expected_result: "QuickNote screen accessible and editor ready"
+
+  - id: NAV-MAIN-004
+    name: "Navigate to More/Settings screen"
+    category: functional
+    priority: high
+    platforms: [android, web, desktop]
+    steps:
+      - name: "Tap More tab"
+        action: "Tap/click 'More' or overflow menu in navigation bar"
+        expected: "More screen or settings menu opens"
+      - name: "Verify menu items"
+        action: "Check visible menu options"
+        expected: "Settings, About, Storage, Theme options visible"
+    tags: [navigation, main-screen, more, settings]
+    estimated_duration: "10s"
+    expected_result: "More screen shows all top-level settings options"
+
+  # ==================== Sub-screens ====================
+  - id: NAV-SUB-001
+    name: "Open Editor from file browser"
+    category: functional
+    priority: critical
+    platforms: [android, web, desktop]
+    steps:
+      - name: "Browse to a text file"
+        action: "Navigate file browser to a .md file"
+        expected: "File listing visible"
+      - name: "Open file"
+        action: "Tap/click the file"
+        expected: "Editor screen opens with file content"
+      - name: "Verify back navigation"
+        action: "Press Back or close editor"
+        expected: "Returns to file browser at same location"
+    tags: [navigation, sub-screen, editor, file-browser]
+    estimated_duration: "20s"
+    expected_result: "Editor opens from browser and back navigation works"
+
+  - id: NAV-SUB-002
+    name: "Switch between Editor and Preview"
+    category: functional
+    priority: critical
+    platforms: [android, web, desktop]
+    steps:
+      - name: "Open a markdown file in editor"
+        action: "Open any .md file"
+        expected: "Editor showing markdown source"
+      - name: "Switch to Preview tab"
+        action: "Tap/click 'Preview' tab"
+        expected: "HTML preview rendered"
+      - name: "Switch back to Edit tab"
+        action: "Tap/click 'Edit' tab"
+        expected: "Source editor restored, cursor position preserved"
+    tags: [navigation, sub-screen, editor, preview]
+    estimated_duration: "20s"
+    expected_result: "Edit/Preview tab switching works without losing cursor position"
+
+  - id: NAV-SUB-003
+    name: "Open Settings screen"
+    category: functional
+    priority: high
+    platforms: [android, web, desktop]
+    steps:
+      - name: "Navigate to Settings"
+        action: "Go to More > Settings"
+        expected: "Settings screen opens"
+      - name: "Check settings categories"
+        action: "Scroll through settings list"
+        expected: "Categories: Editor, Appearance, Storage, About visible"
+      - name: "Return to previous screen"
+        action: "Press Back"
+        expected: "Returns to More screen"
+    tags: [navigation, sub-screen, settings]
+    estimated_duration: "20s"
+    expected_result: "Settings screen navigable with back return"
+
+  # ==================== Navigation Controls ====================
+  - id: NAV-CTRL-001
+    name: "Bottom navigation bar switches screens"
+    category: functional
+    priority: critical
+    platforms: [android, web]
+    steps:
+      - name: "Tap each tab in order"
+        action: "Tap Files, Todo, QuickNote, More in sequence"
+        expected: "Each screen displays correctly on each tap"
+      - name: "Re-tap current tab"
+        action: "While on Files screen, tap Files again"
+        expected: "Scrolls to top or refreshes list (no double-navigation)"
+    tags: [navigation, bottom-bar, tabs]
+    estimated_duration: "25s"
+    expected_result: "Bottom navigation bar works correctly for all tabs"
+
+  - id: NAV-CTRL-002
+    name: "Drawer menu navigation (Android)"
+    category: functional
+    priority: high
+    platforms: [android]
+    steps:
+      - name: "Open drawer"
+        action: "Swipe right from left edge or tap hamburger menu"
+        expected: "Navigation drawer slides open"
+      - name: "Select item from drawer"
+        action: "Tap a navigation destination in the drawer"
+        expected: "Correct screen opens, drawer closes"
+      - name: "Close drawer without navigating"
+        action: "Tap outside drawer or swipe left"
+        expected: "Drawer closes, current screen unchanged"
+    tags: [navigation, drawer, android]
+    estimated_duration: "25s"
+    expected_result: "Navigation drawer opens, navigates, and closes correctly"
+
+  - id: NAV-CTRL-003
+    name: "System back button navigation (Android)"
+    category: functional
+    priority: critical
+    platforms: [android]
+    steps:
+      - name: "Navigate into sub-screen"
+        action: "Open a file in the editor"
+        expected: "Editor screen visible"
+      - name: "Press system back"
+        action: "Press Android system back button"
+        expected: "Returns to file browser"
+      - name: "Press system back again"
+        action: "Press back from file browser"
+        expected: "Returns to main Files tab or minimizes app"
+    tags: [navigation, back-button, android, system]
+    estimated_duration: "20s"
+    expected_result: "System back navigates the back stack correctly"
+
+  - id: NAV-CTRL-004
+    name: "Sidebar navigation (Desktop)"
+    category: functional
+    priority: critical
+    platforms: [desktop]
+    steps:
+      - name: "Verify sidebar visible"
+        action: "Launch desktop app"
+        expected: "Left sidebar with navigation items visible"
+      - name: "Click sidebar items"
+        action: "Click Files, Todo, QuickNote in sidebar"
+        expected: "Each screen loads in main content area"
+      - name: "Collapse sidebar"
+        action: "Click sidebar toggle button"
+        expected: "Sidebar collapses to icon-only mode"
+      - name: "Expand sidebar"
+        action: "Click toggle again"
+        expected: "Sidebar expands with labels"
+    tags: [navigation, sidebar, desktop]
+    estimated_duration: "25s"
+    expected_result: "Desktop sidebar navigation works and collapses"
+
+  # ==================== Tab Management ====================
+  - id: NAV-TAB-001
+    name: "Open multiple files in tabs"
+    category: functional
+    priority: high
+    platforms: [android, web, desktop]
+    steps:
+      - name: "Open first file"
+        action: "Open file1.md in editor"
+        expected: "Tab 1 shows file1.md"
+      - name: "Open second file"
+        action: "Open file2.txt from file browser"
+        expected: "Tab 2 created, switches to file2.txt"
+      - name: "Open third file"
+        action: "Open file3.org"
+        expected: "Tab 3 created for file3.org"
+      - name: "Verify tab bar"
+        action: "Check tab bar has 3 tabs"
+        expected: "3 tabs visible with correct filenames"
+    tags: [navigation, tabs, multi-file]
+    estimated_duration: "35s"
+    expected_result: "Multiple files open in separate tabs"
+
+  - id: NAV-TAB-002
+    name: "Switch between open tabs"
+    category: functional
+    priority: high
+    platforms: [android, web, desktop]
+    steps:
+      - name: "Open two files in tabs"
+        action: "Open file1.md and file2.txt"
+        expected: "Both tabs present"
+      - name: "Switch to tab 1"
+        action: "Tap/click tab 1 (file1.md)"
+        expected: "file1.md content displayed"
+      - name: "Switch to tab 2"
+        action: "Tap/click tab 2 (file2.txt)"
+        expected: "file2.txt content displayed"
+    tags: [navigation, tabs, switching]
+    estimated_duration: "20s"
+    expected_result: "Tab switching preserves content of each open file"
+
+  - id: NAV-TAB-003
+    name: "Close a tab"
+    category: functional
+    priority: high
+    platforms: [android, web, desktop]
+    steps:
+      - name: "Open two files in tabs"
+        action: "Open file1.md and file2.txt"
+        expected: "2 tabs visible"
+      - name: "Close tab 1"
+        action: "Tap 'X' on tab 1 or swipe tab away"
+        expected: "Tab 1 closed, tab 2 becomes active"
+      - name: "Verify single tab remains"
+        action: "Check tab bar"
+        expected: "Only file2.txt tab remains"
+    tags: [navigation, tabs, close-tab]
+    estimated_duration: "20s"
+    expected_result: "Tab close works, remaining tabs unaffected"
+
+  - id: NAV-TAB-004
+    name: "Close unsaved tab prompts confirmation"
+    category: functional
+    priority: high
+    platforms: [android, web, desktop]
+    steps:
+      - name: "Open file and make unsaved changes"
+        action: "Open file.md and type new content without saving"
+        expected: "Unsaved indicator visible (dot or asterisk on tab)"
+      - name: "Close the unsaved tab"
+        action: "Attempt to close the tab"
+        expected: "Dialog: 'Unsaved changes — Save, Discard, Cancel?'"
+      - name: "Choose Discard"
+        action: "Tap 'Discard'"
+        expected: "Tab closed, changes lost"
+    tags: [navigation, tabs, unsaved, confirmation]
+    estimated_duration: "25s"
+    expected_result: "Unsaved changes prompt shown before closing tab"
+
+  # ==================== Screen Rotation ====================
+  - id: NAV-ROT-001
+    name: "Screen rotation preserves editor state (Android)"
+    category: functional
+    priority: high
+    platforms: [android]
+    steps:
+      - name: "Open file in editor"
+        action: "Open a markdown file, type some text"
+        expected: "Editor in portrait mode with content"
+      - name: "Rotate to landscape"
+        action: "Rotate device 90 degrees"
+        expected: "Editor redraws in landscape, content and cursor preserved"
+      - name: "Rotate back to portrait"
+        action: "Rotate device back"
+        expected: "Editor in portrait, scroll position preserved"
+    tags: [navigation, rotation, android, state-preservation]
+    estimated_duration: "25s"
+    expected_result: "Rotation preserves editor content and cursor position"
+
+  - id: NAV-ROT-002
+    name: "Screen rotation preserves file browser position (Android)"
+    category: functional
+    priority: medium
+    platforms: [android]
+    steps:
+      - name: "Browse to nested directory"
+        action: "Navigate 3 levels deep in file browser"
+        expected: "Nested directory shown"
+      - name: "Rotate device"
+        action: "Rotate to landscape"
+        expected: "Same directory shown in landscape layout"
+      - name: "Verify path preserved"
+        action: "Check breadcrumb"
+        expected: "Breadcrumb shows same path as before rotation"
+    tags: [navigation, rotation, android, file-browser]
+    estimated_duration: "20s"
+    expected_result: "File browser path preserved across rotation"
+
+  # ==================== Deep Links and Intents ====================
+  - id: NAV-DEEP-001
+    name: "Open text file via system file manager (Android)"
+    category: functional
+    priority: high
+    platforms: [android]
+    steps:
+      - name: "Open a .md file from Files app"
+        action: "In Android Files app, tap a .md file and choose Yole"
+        expected: "Yole opens with the selected file in editor"
+      - name: "Verify file content"
+        action: "Check editor shows correct content"
+        expected: "File loaded correctly via intent"
+    tags: [navigation, deep-link, intent, android]
+    estimated_duration: "20s"
+    expected_result: "Yole handles file open intents from other apps"
+
+  - id: NAV-DEEP-002
+    name: "Share text to Yole creates new note (Android)"
+    category: functional
+    priority: medium
+    platforms: [android]
+    steps:
+      - name: "Share text from another app"
+        action: "In browser, select text and share to Yole"
+        expected: "Yole opens with shared text pre-filled in QuickNote or new file"
+      - name: "Verify content"
+        action: "Check editor content"
+        expected: "Shared text visible in editor"
+    tags: [navigation, share-intent, android, quicknote]
+    estimated_duration: "25s"
+    expected_result: "Share intent populates new note with shared text"
+
+  # ==================== Settings and Theme ====================
+  - id: NAV-SETT-001
+    name: "Settings persist across app restart"
+    category: functional
+    priority: critical
+    platforms: [android, web, desktop]
+    steps:
+      - name: "Change a setting"
+        action: "Enable line numbers in Settings > Editor"
+        expected: "Line numbers appear in editor"
+      - name: "Restart app"
+        action: "Force-close and relaunch Yole"
+        expected: "App launches"
+      - name: "Verify setting persisted"
+        action: "Open any file in editor"
+        expected: "Line numbers still enabled"
+    tags: [navigation, settings, persistence, restart]
+    estimated_duration: "35s"
+    expected_result: "Settings changes survive app restart"
+
+  - id: NAV-THEME-001
+    name: "Switch to dark theme"
+    category: functional
+    priority: high
+    platforms: [android, web, desktop]
+    steps:
+      - name: "Open theme settings"
+        action: "Go to Settings > Appearance > Theme"
+        expected: "Theme picker visible: Light, Dark, System"
+      - name: "Select Dark"
+        action: "Tap/click 'Dark'"
+        expected: "App switches to dark theme immediately"
+      - name: "Verify dark theme"
+        action: "Check backgrounds and text colors"
+        expected: "Dark backgrounds, light text throughout the app"
+    tags: [navigation, theme, dark-mode, appearance]
+    estimated_duration: "20s"
+    expected_result: "Dark theme applied immediately to all screens"
+
+  - id: NAV-THEME-002
+    name: "System theme follows OS setting"
+    category: functional
+    priority: medium
+    platforms: [android, desktop]
+    steps:
+      - name: "Set theme to System"
+        action: "Select 'System' in theme settings"
+        expected: "Theme matches current OS dark/light mode"
+      - name: "Toggle OS dark mode"
+        action: "Switch OS to dark mode (or back to light)"
+        expected: "Yole switches theme to match OS setting"
+    tags: [navigation, theme, system-theme, os-integration]
+    estimated_duration: "25s"
+    expected_result: "System theme follows OS dark/light mode changes"

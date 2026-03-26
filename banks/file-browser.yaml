@@ -1,0 +1,433 @@
+# SPDX-FileCopyrightText: 2026 Milos Vasic
+# SPDX-License-Identifier: Apache-2.0
+#
+# HelixQA Test Bank: File Browser Functionality
+# Tests directory navigation, file opening, filtering, sorting, and edge
+# cases for the Yole file browser across Android, Desktop, and Web.
+
+version: "1.0"
+name: "Yole File Browser Test Bank"
+description: "File browser navigation, file opening, sorting, search, and edge case tests across all platforms"
+metadata:
+  author: "vasic-digital"
+  app: "Yole"
+  version: "1.0.0"
+
+test_cases:
+  # ==================== Directory Navigation ====================
+  - id: FB-NAV-001
+    name: "Browse Documents directory"
+    category: functional
+    priority: critical
+    platforms: [android, desktop, web]
+    steps:
+      - name: "Open file browser"
+        action: "Tap/click file browser icon or Files tab"
+        expected: "File browser opens showing root or last-used directory"
+      - name: "Navigate to Documents"
+        action: "Tap/click 'Documents' directory entry"
+        expected: "Documents directory contents listed"
+      - name: "Verify listing"
+        action: "Observe file list"
+        expected: "Files and subdirectories shown with name, size, date"
+    tags: [file-browser, navigation, documents]
+    documentation_refs:
+      - type: user_guide
+        section: "2.1"
+        path: "docs/USER_MANUAL_ANDROID.md"
+    estimated_duration: "15s"
+    expected_result: "Documents directory browsed successfully"
+
+  - id: FB-NAV-002
+    name: "Browse Downloads directory"
+    category: functional
+    priority: high
+    platforms: [android, desktop]
+    steps:
+      - name: "Open file browser"
+        action: "Open Files tab in Yole"
+        expected: "File browser visible"
+      - name: "Navigate to Downloads"
+        action: "Tap/click 'Downloads' shortcut or navigate manually"
+        expected: "Downloads directory contents shown"
+    tags: [file-browser, navigation, downloads]
+    estimated_duration: "15s"
+    expected_result: "Downloads directory accessible from browser"
+
+  - id: FB-NAV-003
+    name: "Browse Internal Storage (Android)"
+    category: functional
+    priority: high
+    platforms: [android]
+    steps:
+      - name: "Open file browser"
+        action: "Open Files tab"
+        expected: "File browser visible"
+      - name: "Select Internal Storage"
+        action: "Tap 'Internal Storage' in sidebar or breadcrumb"
+        expected: "Root of internal storage shown"
+      - name: "Verify top-level directories"
+        action: "Check listed directories"
+        expected: "DCIM, Documents, Downloads, Music, Pictures visible"
+    tags: [file-browser, navigation, internal-storage, android]
+    estimated_duration: "20s"
+    expected_result: "Internal storage root browseable"
+
+  - id: FB-NAV-004
+    name: "SAF directory picker (Android)"
+    category: functional
+    priority: high
+    platforms: [android]
+    steps:
+      - name: "Trigger SAF picker"
+        action: "Tap 'Open Folder' using Storage Access Framework"
+        expected: "System file picker opens"
+      - name: "Grant permission"
+        action: "Select a folder and tap 'Use this folder'"
+        expected: "Permission granted, folder added to Yole"
+      - name: "Verify access"
+        action: "Check file browser shows SAF-granted folder"
+        expected: "Folder contents visible in Yole file browser"
+    tags: [file-browser, saf, android, permissions]
+    estimated_duration: "30s"
+    expected_result: "SAF directory picker grants persistent folder access"
+
+  - id: FB-NAV-005
+    name: "Navigate into subdirectory"
+    category: functional
+    priority: critical
+    platforms: [android, desktop, web]
+    steps:
+      - name: "Open a directory"
+        action: "Navigate to a directory containing subdirectories"
+        expected: "Directory contents shown"
+      - name: "Enter subdirectory"
+        action: "Tap/click on a subdirectory"
+        expected: "Subdirectory contents displayed, breadcrumb updated"
+      - name: "Enter nested subdirectory"
+        action: "Tap/click another subdirectory level"
+        expected: "Nested contents shown, breadcrumb shows full path"
+    tags: [file-browser, navigation, subdirectory]
+    estimated_duration: "20s"
+    expected_result: "Multi-level directory navigation works correctly"
+
+  - id: FB-NAV-006
+    name: "Navigate up to parent directory"
+    category: functional
+    priority: critical
+    platforms: [android, desktop, web]
+    steps:
+      - name: "Navigate into a subdirectory"
+        action: "Enter a nested directory"
+        expected: "Subdirectory contents shown"
+      - name: "Navigate up"
+        action: "Tap/click '..' entry or back arrow or breadcrumb parent"
+        expected: "Parent directory contents displayed"
+      - name: "Navigate up again"
+        action: "Repeat up navigation"
+        expected: "Grandparent directory shown, breadcrumb shortened"
+    tags: [file-browser, navigation, parent-directory, back]
+    estimated_duration: "20s"
+    expected_result: "Up navigation works at all directory levels"
+
+  # ==================== File Opening ====================
+  - id: FB-OPEN-001
+    name: "Open Markdown file from browser"
+    category: functional
+    priority: critical
+    platforms: [android, desktop, web]
+    steps:
+      - name: "Browse to directory containing .md file"
+        action: "Navigate to directory with markdown files"
+        expected: "Directory listing shows .md files"
+      - name: "Open .md file"
+        action: "Tap/click the .md file"
+        expected: "Editor opens with markdown mode, content displayed"
+      - name: "Verify format detection"
+        action: "Check status bar or mode indicator"
+        expected: "Format shows 'Markdown'"
+    tags: [file-browser, open-file, markdown]
+    estimated_duration: "15s"
+    expected_result: "Markdown file opens in correct editor mode"
+
+  - id: FB-OPEN-002
+    name: "Open multiple text formats from browser"
+    category: functional
+    priority: high
+    platforms: [android, desktop, web]
+    steps:
+      - name: "Open .txt file"
+        action: "Tap .txt file in browser"
+        expected: "Plain text editor opens"
+      - name: "Return to browser"
+        action: "Navigate back to file browser"
+        expected: "File browser shown"
+      - name: "Open .csv file"
+        action: "Tap .csv file"
+        expected: "CSV editor mode opens"
+      - name: "Open .org file"
+        action: "Tap .org file"
+        expected: "Org Mode editor opens"
+    tags: [file-browser, open-file, multi-format]
+    estimated_duration: "45s"
+    expected_result: "Each text format opens in its correct editor mode"
+
+  - id: FB-OPEN-003
+    name: "Open file with encoding detection"
+    category: functional
+    priority: high
+    platforms: [android, desktop, web]
+    steps:
+      - name: "Open UTF-8 encoded file"
+        action: "Open a .txt file with UTF-8 BOM"
+        expected: "File opens, encoding detected as UTF-8"
+      - name: "Open Latin-1 encoded file"
+        action: "Open a .txt file with Latin-1 characters"
+        expected: "File opens with correct character display"
+      - name: "Open UTF-16 file"
+        action: "Open a .txt file encoded in UTF-16"
+        expected: "File opens without garbled characters"
+    tags: [file-browser, encoding, unicode, edge-case]
+    estimated_duration: "30s"
+    expected_result: "File encoding detected and content displayed correctly"
+
+  # ==================== Edge Cases ====================
+  - id: FB-EDGE-001
+    name: "Handle empty directory"
+    category: edge-case
+    priority: medium
+    platforms: [android, desktop, web]
+    steps:
+      - name: "Navigate to empty directory"
+        action: "Open a directory that contains no files or subdirectories"
+        expected: "Empty state: 'No files here' message or empty list"
+      - name: "Verify UI stability"
+        action: "Scroll, wait, interact with empty state"
+        expected: "No crash, no spinner stuck, back navigation works"
+    tags: [file-browser, empty-directory, edge-case]
+    estimated_duration: "15s"
+    expected_result: "Empty directory shown gracefully without errors"
+
+  - id: FB-EDGE-002
+    name: "Handle permission denied directory"
+    category: edge-case
+    priority: high
+    platforms: [android, desktop]
+    steps:
+      - name: "Attempt to open restricted directory"
+        action: "Navigate to a system directory without read permission"
+        expected: "Permission error shown: 'Access denied' or equivalent"
+      - name: "Verify no crash"
+        action: "Check app state after error"
+        expected: "App remains stable, user can navigate elsewhere"
+    tags: [file-browser, permissions, error-handling]
+    estimated_duration: "20s"
+    expected_result: "Permission denied handled gracefully"
+
+  - id: FB-EDGE-003
+    name: "Handle large directory (100+ files)"
+    category: stress
+    priority: medium
+    platforms: [android, desktop, web]
+    steps:
+      - name: "Navigate to directory with 100+ files"
+        action: "Open a directory containing at least 100 files"
+        expected: "Directory listing begins loading"
+      - name: "Measure load time"
+        action: "Wait for full listing to appear"
+        expected: "All files listed within 3 seconds"
+      - name: "Scroll through list"
+        action: "Scroll from top to bottom of file list"
+        expected: "Smooth scrolling, no dropped frames, no OOM"
+    tags: [file-browser, large-directory, performance, stress]
+    estimated_duration: "30s"
+    expected_result: "Large directory browsed without performance degradation"
+
+  - id: FB-EDGE-004
+    name: "Files with special characters in filenames"
+    category: edge-case
+    priority: medium
+    platforms: [android, desktop, web]
+    steps:
+      - name: "Browse directory with special filename chars"
+        action: "Open directory containing files named 'file (1).txt', 'note &amp; tasks.md', 'résumé.txt'"
+        expected: "All filenames displayed correctly"
+      - name: "Open special-character file"
+        action: "Tap/click 'résumé.txt'"
+        expected: "File opens normally, filename in title bar correct"
+    tags: [file-browser, special-characters, filenames, unicode]
+    estimated_duration: "20s"
+    expected_result: "Special characters in filenames displayed and handled correctly"
+
+  - id: FB-EDGE-005
+    name: "Very long file path handling"
+    category: edge-case
+    priority: medium
+    platforms: [android, desktop]
+    steps:
+      - name: "Navigate to deeply nested directory"
+        action: "Navigate 10 levels deep into subdirectories"
+        expected: "Each level opens correctly"
+      - name: "Verify breadcrumb truncation"
+        action: "Check breadcrumb bar display"
+        expected: "Breadcrumb truncates gracefully (e.g., '... > parent > current')"
+      - name: "Open file at deep path"
+        action: "Open a file at the deepest level"
+        expected: "File opens, full path accessible"
+    tags: [file-browser, long-path, breadcrumb, edge-case]
+    estimated_duration: "40s"
+    expected_result: "Deep paths navigated without truncation errors"
+
+  - id: FB-EDGE-006
+    name: "Hidden files visibility toggle"
+    category: functional
+    priority: low
+    platforms: [android, desktop]
+    steps:
+      - name: "Check default hidden file visibility"
+        action: "Navigate to directory with .hidden files"
+        expected: "Hidden files not shown by default"
+      - name: "Enable show hidden files"
+        action: "Toggle 'Show hidden files' in browser options"
+        expected: "Hidden files (starting with '.') now visible"
+      - name: "Disable show hidden files"
+        action: "Toggle off 'Show hidden files'"
+        expected: "Hidden files disappear from listing"
+    tags: [file-browser, hidden-files, settings]
+    estimated_duration: "25s"
+    expected_result: "Hidden file visibility toggled correctly"
+
+  # ==================== Sorting and Filtering ====================
+  - id: FB-SORT-001
+    name: "Sort files by name"
+    category: functional
+    priority: high
+    platforms: [android, desktop, web]
+    steps:
+      - name: "Open directory with mixed files"
+        action: "Navigate to a directory with several files"
+        expected: "Files listed"
+      - name: "Sort by name ascending"
+        action: "Select 'Sort by Name A-Z'"
+        expected: "Files sorted alphabetically A to Z"
+      - name: "Sort by name descending"
+        action: "Select 'Sort by Name Z-A'"
+        expected: "Files sorted alphabetically Z to A"
+    tags: [file-browser, sorting, name]
+    estimated_duration: "20s"
+    expected_result: "Name sorting works in both directions"
+
+  - id: FB-SORT-002
+    name: "Sort files by modification date"
+    category: functional
+    priority: medium
+    platforms: [android, desktop, web]
+    steps:
+      - name: "Sort by date newest first"
+        action: "Select 'Sort by Date Modified (Newest)'"
+        expected: "Most recently modified file at top"
+      - name: "Sort by date oldest first"
+        action: "Select 'Sort by Date Modified (Oldest)'"
+        expected: "Oldest file at top"
+    tags: [file-browser, sorting, date]
+    estimated_duration: "20s"
+    expected_result: "Date sorting works correctly"
+
+  - id: FB-SORT-003
+    name: "Sort files by size"
+    category: functional
+    priority: medium
+    platforms: [android, desktop]
+    steps:
+      - name: "Sort by size largest first"
+        action: "Select 'Sort by Size (Largest)'"
+        expected: "Largest file listed first"
+      - name: "Verify sort order"
+        action: "Compare sizes of top two files"
+        expected: "First file is larger than or equal to second"
+    tags: [file-browser, sorting, size]
+    estimated_duration: "15s"
+    expected_result: "File size sorting is accurate"
+
+  - id: FB-FILT-001
+    name: "Search/filter files by name"
+    category: functional
+    priority: high
+    platforms: [android, desktop, web]
+    steps:
+      - name: "Open search/filter in browser"
+        action: "Tap/click search icon in file browser toolbar"
+        expected: "Search input field appears"
+      - name: "Type search term"
+        action: "Type 'readme'"
+        expected: "File list filters to show only files with 'readme' in name"
+      - name: "Clear search"
+        action: "Clear the search field"
+        expected: "Full directory listing restored"
+    tags: [file-browser, search, filter]
+    estimated_duration: "20s"
+    expected_result: "File search filters listing in real-time"
+
+  - id: FB-FILT-002
+    name: "Filter by file extension"
+    category: functional
+    priority: medium
+    platforms: [android, desktop]
+    steps:
+      - name: "Enable extension filter"
+        action: "Select 'Show only: .md files' from filter options"
+        expected: "Only .md files shown in listing"
+      - name: "Change filter to .txt"
+        action: "Switch filter to .txt"
+        expected: "Only .txt files shown"
+      - name: "Clear filter"
+        action: "Remove extension filter"
+        expected: "All files shown again"
+    tags: [file-browser, filter, extension]
+    estimated_duration: "25s"
+    expected_result: "Extension filter shows only matching files"
+
+  # ==================== File Operations from Browser ====================
+  - id: FB-OPS-001
+    name: "Create new file from browser"
+    category: functional
+    priority: high
+    platforms: [android, desktop, web]
+    steps:
+      - name: "Open browser in target directory"
+        action: "Navigate to Documents directory"
+        expected: "Directory listing visible"
+      - name: "Create new file"
+        action: "Tap/click '+' or 'New File' button"
+        expected: "Dialog to enter filename appears"
+      - name: "Enter filename"
+        action: "Type 'new-note.md' and confirm"
+        expected: "New .md file created in current directory"
+      - name: "Verify file appears"
+        action: "Check directory listing"
+        expected: "new-note.md visible in list"
+    tags: [file-browser, create-file, new]
+    estimated_duration: "25s"
+    expected_result: "New file created from browser and appears in listing"
+
+  - id: FB-OPS-002
+    name: "Delete file from browser"
+    category: functional
+    priority: high
+    platforms: [android, desktop, web]
+    steps:
+      - name: "Select file to delete"
+        action: "Long-press or right-click a non-important test file"
+        expected: "Context menu or selection indicator appears"
+      - name: "Choose delete"
+        action: "Tap/click 'Delete'"
+        expected: "Confirmation dialog appears"
+      - name: "Confirm deletion"
+        action: "Confirm the deletion"
+        expected: "File removed from listing"
+      - name: "Verify removal"
+        action: "Check directory listing"
+        expected: "Deleted file no longer present"
+    tags: [file-browser, delete-file, destructive]
+    estimated_duration: "25s"
+    expected_result: "File deleted with confirmation, removed from listing"

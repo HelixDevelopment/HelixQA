@@ -1,0 +1,528 @@
+# SPDX-FileCopyrightText: 2026 Milos Vasic
+# SPDX-License-Identifier: Apache-2.0
+#
+# HelixQA Test Bank: Storage Protocol Configuration Flows
+# Tests configuration of all 8 storage protocols (WebDAV, FTP, SFTP, SMB,
+# Git, Dropbox, Google Drive, OneDrive) on Android and Desktop platforms.
+
+version: "1.0"
+name: "Yole Storage Configuration Test Bank"
+description: "Configuration flow tests for all 8 storage protocols: success, error handling, timeout, and cancel scenarios"
+metadata:
+  author: "vasic-digital"
+  app: "Yole"
+  version: "1.0.0"
+
+test_cases:
+  # ==================== WebDAV ====================
+  - id: STOR-WDV-001
+    name: "WebDAV: configure and connect successfully"
+    category: functional
+    priority: critical
+    platforms: [android, desktop]
+    steps:
+      - name: "Open storage settings"
+        action: "Navigate to Settings > Storage Protocols"
+        expected: "Storage configuration screen visible"
+      - name: "Select WebDAV"
+        action: "Tap/click 'Add WebDAV server'"
+        expected: "WebDAV configuration form displayed"
+      - name: "Enter server URL"
+        action: "Type 'https://dav.example.com/remote.php/dav/files/user/'"
+        expected: "URL field shows entered value"
+      - name: "Enter credentials"
+        action: "Enter username 'testuser' and password 'testpass123'"
+        expected: "Credentials accepted"
+      - name: "Test connection"
+        action: "Tap/click 'Test Connection' button"
+        expected: "Progress indicator shown, then green success indicator"
+      - name: "Save configuration"
+        action: "Tap/click 'Save'"
+        expected: "WebDAV server appears in storage list"
+    tags: [webdav, configuration, connection, success]
+    documentation_refs:
+      - type: user_guide
+        section: "5.1"
+        path: "docs/USER_MANUAL_DESKTOP.md"
+    estimated_duration: "45s"
+    expected_result: "WebDAV server configured and accessible in storage list"
+
+  - id: STOR-WDV-002
+    name: "WebDAV: invalid credentials show error"
+    category: functional
+    priority: high
+    platforms: [android, desktop]
+    steps:
+      - name: "Open WebDAV config form"
+        action: "Navigate to add WebDAV configuration"
+        expected: "Configuration form displayed"
+      - name: "Enter wrong credentials"
+        action: "Enter valid URL but wrong password 'wrongpass'"
+        expected: "Fields populated"
+      - name: "Test connection"
+        action: "Tap/click 'Test Connection'"
+        expected: "Error message: 'Authentication failed (401)' or equivalent"
+      - name: "Verify form not closed"
+        action: "Check that config form remains open"
+        expected: "Form still visible, no partial save"
+    tags: [webdav, configuration, error, auth-failure]
+    estimated_duration: "30s"
+    expected_result: "Clear authentication error shown, configuration not saved"
+
+  - id: STOR-WDV-003
+    name: "WebDAV: connection timeout handled gracefully"
+    category: functional
+    priority: high
+    platforms: [android, desktop]
+    steps:
+      - name: "Enter unreachable server"
+        action: "Type 'https://192.0.2.1/dav/' (non-routable address)"
+        expected: "URL accepted"
+      - name: "Test connection"
+        action: "Tap/click 'Test Connection'"
+        expected: "Progress indicator shown"
+      - name: "Wait for timeout"
+        action: "Wait up to 30 seconds"
+        expected: "Timeout error: 'Connection timed out' or similar"
+      - name: "App remains responsive"
+        action: "Scroll, tap other UI elements"
+        expected: "App UI fully responsive during and after timeout"
+    tags: [webdav, configuration, timeout, resilience]
+    estimated_duration: "40s"
+    expected_result: "Timeout error shown, app remains stable"
+
+  - id: STOR-WDV-004
+    name: "WebDAV: cancel configuration discards changes"
+    category: functional
+    priority: medium
+    platforms: [android, desktop]
+    steps:
+      - name: "Open WebDAV config form"
+        action: "Navigate to add WebDAV configuration"
+        expected: "Configuration form displayed"
+      - name: "Enter partial data"
+        action: "Enter URL and username only"
+        expected: "Fields partially filled"
+      - name: "Cancel"
+        action: "Tap/click 'Cancel' or press Back"
+        expected: "Form dismissed without saving"
+      - name: "Verify no entry created"
+        action: "Check storage list"
+        expected: "No new WebDAV entry in the list"
+    tags: [webdav, configuration, cancel]
+    estimated_duration: "20s"
+    expected_result: "Partial configuration discarded on cancel"
+
+  # ==================== FTP ====================
+  - id: STOR-FTP-001
+    name: "FTP: configure and connect successfully"
+    category: functional
+    priority: critical
+    platforms: [android, desktop]
+    steps:
+      - name: "Select FTP"
+        action: "Tap/click 'Add FTP server'"
+        expected: "FTP configuration form displayed"
+      - name: "Enter host and port"
+        action: "Enter host 'ftp.example.com' and port '21'"
+        expected: "Host and port fields populated"
+      - name: "Enter credentials"
+        action: "Enter username 'ftpuser' and password 'ftppass'"
+        expected: "Credentials entered"
+      - name: "Test connection"
+        action: "Tap/click 'Test Connection'"
+        expected: "Success indicator: 'Connected to ftp.example.com'"
+      - name: "Save"
+        action: "Tap/click 'Save'"
+        expected: "FTP server appears in storage list"
+    tags: [ftp, configuration, connection, success]
+    estimated_duration: "40s"
+    expected_result: "FTP server configured successfully"
+
+  - id: STOR-FTP-002
+    name: "FTP: invalid host shows connection error"
+    category: functional
+    priority: high
+    platforms: [android, desktop]
+    steps:
+      - name: "Enter invalid FTP host"
+        action: "Enter host 'notaftp.invalid' port '21'"
+        expected: "Fields populated"
+      - name: "Test connection"
+        action: "Tap/click 'Test Connection'"
+        expected: "Error: 'Host not found' or 'Connection refused'"
+    tags: [ftp, configuration, error, host-not-found]
+    estimated_duration: "25s"
+    expected_result: "DNS/connection error surfaced clearly to user"
+
+  - id: STOR-FTP-003
+    name: "FTP: non-standard port accepted"
+    category: functional
+    priority: medium
+    platforms: [android, desktop]
+    steps:
+      - name: "Enter FTP config with custom port"
+        action: "Enter host 'ftp.example.com' and port '2121'"
+        expected: "Port field accepts 2121"
+      - name: "Save configuration"
+        action: "Tap/click 'Save' without testing"
+        expected: "Configuration saved with port 2121"
+      - name: "Reopen config"
+        action: "Tap/click the saved FTP entry to edit"
+        expected: "Port field shows '2121'"
+    tags: [ftp, configuration, custom-port, persistence]
+    estimated_duration: "25s"
+    expected_result: "Custom FTP port persisted and round-trips correctly"
+
+  # ==================== SFTP ====================
+  - id: STOR-SFTP-001
+    name: "SFTP: configure with password authentication"
+    category: functional
+    priority: critical
+    platforms: [android, desktop]
+    steps:
+      - name: "Add SFTP server"
+        action: "Tap/click 'Add SFTP server'"
+        expected: "SFTP form displayed with SSH key option visible"
+      - name: "Enter host and port"
+        action: "Enter host 'sftp.example.com' port '22'"
+        expected: "Fields populated"
+      - name: "Choose password auth"
+        action: "Select 'Password' authentication mode"
+        expected: "Username and password fields active"
+      - name: "Enter credentials"
+        action: "Enter username 'sftpuser' password 'sftppass'"
+        expected: "Credentials entered"
+      - name: "Test and save"
+        action: "Test connection then Save"
+        expected: "SFTP server saved in storage list"
+    tags: [sftp, configuration, password-auth, success]
+    estimated_duration: "45s"
+    expected_result: "SFTP with password auth configured"
+
+  - id: STOR-SFTP-002
+    name: "SFTP: configure with SSH key authentication"
+    category: functional
+    priority: high
+    platforms: [android, desktop]
+    steps:
+      - name: "Add SFTP server"
+        action: "Tap/click 'Add SFTP server'"
+        expected: "SFTP form visible"
+      - name: "Select SSH key auth"
+        action: "Toggle 'SSH Key' authentication option"
+        expected: "Key picker or key path field appears"
+      - name: "Select SSH key file"
+        action: "Tap/click 'Browse' and select id_rsa private key"
+        expected: "Key path displayed in field"
+      - name: "Enter passphrase (if any)"
+        action: "Enter optional passphrase field"
+        expected: "Passphrase accepted"
+      - name: "Save configuration"
+        action: "Tap/click 'Save'"
+        expected: "SFTP entry saved with 'SSH Key' auth label"
+    tags: [sftp, configuration, ssh-key-auth]
+    estimated_duration: "40s"
+    expected_result: "SFTP SSH key configuration saved"
+
+  - id: STOR-SFTP-003
+    name: "SFTP: host key verification prompt"
+    category: functional
+    priority: high
+    platforms: [android, desktop]
+    steps:
+      - name: "Connect to new SFTP host"
+        action: "Test connection to a host not seen before"
+        expected: "Host key fingerprint dialog shown"
+      - name: "Accept host key"
+        action: "Tap/click 'Trust' or 'Accept'"
+        expected: "Connection proceeds, key stored"
+      - name: "Reconnect"
+        action: "Test connection again"
+        expected: "No second prompt; connection succeeds silently"
+    tags: [sftp, configuration, host-key, security]
+    estimated_duration: "35s"
+    expected_result: "Host key verification workflow works correctly"
+
+  # ==================== SMB ====================
+  - id: STOR-SMB-001
+    name: "SMB: configure share with domain credentials"
+    category: functional
+    priority: critical
+    platforms: [android, desktop]
+    steps:
+      - name: "Add SMB share"
+        action: "Tap/click 'Add SMB / Windows Share'"
+        expected: "SMB form with host, share, domain, username, password fields"
+      - name: "Enter host and share"
+        action: "Enter host '192.168.1.100' share 'Documents'"
+        expected: "Host and share fields populated"
+      - name: "Enter domain credentials"
+        action: "Enter domain 'WORKGROUP' username 'user' password 'pass'"
+        expected: "All fields filled"
+      - name: "Test connection"
+        action: "Tap/click 'Test Connection'"
+        expected: "Connection success to \\\\192.168.1.100\\Documents"
+      - name: "Save"
+        action: "Save the configuration"
+        expected: "SMB share visible in storage list"
+    tags: [smb, configuration, domain-auth, success]
+    estimated_duration: "45s"
+    expected_result: "SMB share with domain credentials configured"
+
+  - id: STOR-SMB-002
+    name: "SMB: guest/anonymous connection"
+    category: functional
+    priority: medium
+    platforms: [android, desktop]
+    steps:
+      - name: "Add SMB share"
+        action: "Open SMB configuration form"
+        expected: "SMB form visible"
+      - name: "Leave credentials blank"
+        action: "Enter host and share only, leave username/password empty"
+        expected: "Fields left blank, no validation error"
+      - name: "Test connection"
+        action: "Test connection to a guest-accessible share"
+        expected: "Connection succeeds (or error if share requires auth)"
+    tags: [smb, configuration, guest-access, edge-case]
+    estimated_duration: "30s"
+    expected_result: "Guest/anonymous SMB access attempted without crash"
+
+  # ==================== Git ====================
+  - id: STOR-GIT-001
+    name: "Git: configure repository with HTTPS credentials"
+    category: functional
+    priority: critical
+    platforms: [android, desktop]
+    steps:
+      - name: "Add Git repository"
+        action: "Tap/click 'Add Git Repository'"
+        expected: "Git config form: URL, branch, credentials fields"
+      - name: "Enter repository URL"
+        action: "Enter 'https://github.com/user/notes.git'"
+        expected: "URL field accepts HTTPS URL"
+      - name: "Enter branch"
+        action: "Enter branch name 'main'"
+        expected: "Branch field populated"
+      - name: "Enter credentials"
+        action: "Enter username and personal access token"
+        expected: "Credentials entered"
+      - name: "Test connection"
+        action: "Test connection to verify repo accessible"
+        expected: "Repo accessible confirmation"
+      - name: "Save"
+        action: "Save configuration"
+        expected: "Git repo in storage list"
+    tags: [git, configuration, https-auth, success]
+    estimated_duration: "50s"
+    expected_result: "Git repository configured over HTTPS"
+
+  - id: STOR-GIT-002
+    name: "Git: invalid repository URL error"
+    category: functional
+    priority: high
+    platforms: [android, desktop]
+    steps:
+      - name: "Enter malformed URL"
+        action: "Type 'not-a-valid-url' in repository URL field"
+        expected: "Inline validation error 'Invalid URL format'"
+      - name: "Attempt to save"
+        action: "Tap/click Save without correcting URL"
+        expected: "Save blocked, validation error highlighted"
+    tags: [git, configuration, validation, url-error]
+    estimated_duration: "20s"
+    expected_result: "URL validation prevents saving invalid Git config"
+
+  - id: STOR-GIT-003
+    name: "Git: configure with SSH key"
+    category: functional
+    priority: high
+    platforms: [android, desktop]
+    steps:
+      - name: "Add Git repository"
+        action: "Open Git configuration form"
+        expected: "Form visible"
+      - name: "Enter SSH repository URL"
+        action: "Enter 'git@github.com:user/notes.git'"
+        expected: "SSH URL accepted"
+      - name: "Select SSH key"
+        action: "Choose SSH private key file from picker"
+        expected: "Key path shown in config"
+      - name: "Save"
+        action: "Save the configuration"
+        expected: "Git SSH config saved"
+    tags: [git, configuration, ssh-key]
+    estimated_duration: "40s"
+    expected_result: "Git SSH configuration saved correctly"
+
+  # ==================== Dropbox ====================
+  - id: STOR-DBX-001
+    name: "Dropbox: configure with OAuth2 app key and secret"
+    category: functional
+    priority: critical
+    platforms: [android, desktop]
+    steps:
+      - name: "Open Dropbox configuration"
+        action: "Tap/click 'Add Dropbox'"
+        expected: "Dropbox OAuth2 config form with app key and secret fields"
+      - name: "Enter app key and secret"
+        action: "Enter app key 'testappkey' and app secret 'testappsecret'"
+        expected: "Fields populated"
+      - name: "Initiate OAuth2 flow"
+        action: "Tap/click 'Authorize with Dropbox'"
+        expected: "Browser or WebView opens with Dropbox authorization URL"
+      - name: "Complete authorization"
+        action: "Simulate OAuth2 callback with valid token"
+        expected: "Token stored, Dropbox connection confirmed"
+      - name: "Save"
+        action: "Save Dropbox configuration"
+        expected: "Dropbox entry in storage list with connected status"
+    tags: [dropbox, configuration, oauth2, success]
+    estimated_duration: "60s"
+    expected_result: "Dropbox OAuth2 flow completes and configuration saved"
+
+  - id: STOR-DBX-002
+    name: "Dropbox: OAuth2 flow cancelled by user"
+    category: functional
+    priority: high
+    platforms: [android, desktop]
+    steps:
+      - name: "Initiate Dropbox OAuth2"
+        action: "Begin Dropbox authorization flow"
+        expected: "Browser/WebView opens"
+      - name: "Cancel in browser"
+        action: "Close browser or tap 'Cancel' in auth screen"
+        expected: "App returns to config screen"
+      - name: "Verify no partial save"
+        action: "Check storage list"
+        expected: "No Dropbox entry added; config discarded"
+    tags: [dropbox, configuration, oauth2, cancel]
+    estimated_duration: "30s"
+    expected_result: "Cancelled OAuth2 leaves no partial Dropbox config"
+
+  # ==================== Google Drive ====================
+  - id: STOR-GDR-001
+    name: "Google Drive: configure with OAuth2 client credentials"
+    category: functional
+    priority: critical
+    platforms: [android, desktop]
+    steps:
+      - name: "Open Google Drive configuration"
+        action: "Tap/click 'Add Google Drive'"
+        expected: "Google Drive OAuth2 config form with client ID and secret fields"
+      - name: "Enter client credentials"
+        action: "Enter client ID 'client_id.apps.googleusercontent.com' and secret"
+        expected: "Fields populated"
+      - name: "Start OAuth2 flow"
+        action: "Tap/click 'Sign in with Google'"
+        expected: "Browser opens Google authorization URL"
+      - name: "Complete authorization"
+        action: "Simulate successful OAuth2 callback"
+        expected: "Google Drive connected, account email shown"
+      - name: "Save"
+        action: "Save configuration"
+        expected: "Google Drive entry in storage list"
+    tags: [googledrive, configuration, oauth2, success]
+    estimated_duration: "60s"
+    expected_result: "Google Drive configured via OAuth2"
+
+  - id: STOR-GDR-002
+    name: "Google Drive: invalid client ID format rejected"
+    category: functional
+    priority: medium
+    platforms: [android, desktop]
+    steps:
+      - name: "Enter malformed client ID"
+        action: "Type 'bad-id' in client ID field"
+        expected: "Field accepts input"
+      - name: "Attempt OAuth2 flow"
+        action: "Tap/click 'Sign in with Google'"
+        expected: "Error: 'Invalid client ID format' or OAuth2 error from Google"
+    tags: [googledrive, configuration, validation, error]
+    estimated_duration: "25s"
+    expected_result: "Invalid client ID produces clear error"
+
+  # ==================== OneDrive ====================
+  - id: STOR-OND-001
+    name: "OneDrive: configure with OAuth2 client credentials"
+    category: functional
+    priority: critical
+    platforms: [android, desktop]
+    steps:
+      - name: "Open OneDrive configuration"
+        action: "Tap/click 'Add OneDrive'"
+        expected: "OneDrive config form with client ID and secret fields"
+      - name: "Enter Azure app credentials"
+        action: "Enter client ID 'xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx' and secret"
+        expected: "Fields populated"
+      - name: "Start OAuth2 flow"
+        action: "Tap/click 'Sign in with Microsoft'"
+        expected: "Browser opens Microsoft authorization URL"
+      - name: "Complete authorization"
+        action: "Simulate successful OAuth2 callback with Microsoft token"
+        expected: "OneDrive connected, account shown"
+      - name: "Save"
+        action: "Save configuration"
+        expected: "OneDrive entry in storage list"
+    tags: [onedrive, configuration, oauth2, success]
+    estimated_duration: "60s"
+    expected_result: "OneDrive configured via Microsoft OAuth2"
+
+  - id: STOR-OND-002
+    name: "OneDrive: token expiry triggers re-auth prompt"
+    category: functional
+    priority: high
+    platforms: [android, desktop]
+    steps:
+      - name: "Simulate expired token"
+        action: "Set OAuth2 token expiry to past timestamp in test config"
+        expected: "Token flagged as expired"
+      - name: "Attempt file operation"
+        action: "Try to list OneDrive files"
+        expected: "Re-authentication dialog appears"
+      - name: "Re-authorize"
+        action: "Complete re-auth flow"
+        expected: "New token stored, file listing proceeds"
+    tags: [onedrive, configuration, token-refresh, oauth2]
+    estimated_duration: "40s"
+    expected_result: "Expired token triggers smooth re-auth without data loss"
+
+  # ==================== Cross-protocol ====================
+  - id: STOR-XPRO-001
+    name: "Multiple protocols configured simultaneously"
+    category: functional
+    priority: high
+    platforms: [android, desktop]
+    steps:
+      - name: "Configure two protocols"
+        action: "Add WebDAV and FTP configurations"
+        expected: "Both appear in storage list"
+      - name: "Switch between them"
+        action: "Select WebDAV storage, then FTP storage"
+        expected: "Each shows its own file tree"
+      - name: "Remove one"
+        action: "Delete the FTP configuration"
+        expected: "FTP removed, WebDAV still present"
+    tags: [multi-protocol, configuration, management]
+    estimated_duration: "90s"
+    expected_result: "Multiple protocols coexist and are independently manageable"
+
+  - id: STOR-XPRO-002
+    name: "Storage configuration persists across app restart"
+    category: functional
+    priority: critical
+    platforms: [android, desktop]
+    steps:
+      - name: "Configure WebDAV"
+        action: "Add and save a WebDAV configuration"
+        expected: "WebDAV in storage list"
+      - name: "Restart app"
+        action: "Force-close and relaunch Yole"
+        expected: "App launches normally"
+      - name: "Check storage list"
+        action: "Navigate to storage configuration screen"
+        expected: "WebDAV entry still present with all settings"
+    tags: [configuration, persistence, restart]
+    estimated_duration: "45s"
+    expected_result: "Storage configs survive app restart"

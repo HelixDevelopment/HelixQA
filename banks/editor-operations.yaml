@@ -1,0 +1,476 @@
+# SPDX-FileCopyrightText: 2026 Milos Vasic
+# SPDX-License-Identifier: Apache-2.0
+#
+# HelixQA Test Bank: Editor Operations
+# Tests text input, undo/redo, copy/paste, find/replace, auto-save, large
+# documents, unicode, format-specific features, and keyboard shortcuts.
+
+version: "1.0"
+name: "Yole Editor Operations Test Bank"
+description: "Editor functionality tests: input, undo/redo, copy/paste, find/replace, save, large docs, and format-specific features"
+metadata:
+  author: "vasic-digital"
+  app: "Yole"
+  version: "1.0.0"
+
+test_cases:
+  # ==================== Text Input ====================
+  - id: EDIT-INP-001
+    name: "Basic text input and display"
+    category: functional
+    priority: critical
+    platforms: [android, web, desktop]
+    steps:
+      - name: "Open new document"
+        action: "Create a new .txt file"
+        expected: "Empty editor ready for input"
+      - name: "Type text"
+        action: "Type 'Hello, Yole! This is a test note.'"
+        expected: "Text appears in editor as typed"
+      - name: "Verify cursor position"
+        action: "Check cursor is at end of typed text"
+        expected: "Cursor positioned after last character"
+    tags: [editor, input, basic, cursor]
+    documentation_refs:
+      - type: user_guide
+        section: "4.1"
+        path: "docs/USER_MANUAL_DESKTOP.md"
+    estimated_duration: "15s"
+    expected_result: "Text input works and cursor tracks correctly"
+
+  - id: EDIT-INP-002
+    name: "Multi-line text input"
+    category: functional
+    priority: critical
+    platforms: [android, web, desktop]
+    steps:
+      - name: "Open new document"
+        action: "Create a new .md file"
+        expected: "Empty editor"
+      - name: "Type multi-line content"
+        action: "Type '# Title', press Enter, type 'Paragraph one.', press Enter twice, type 'Paragraph two.'"
+        expected: "Three lines of text visible with correct line breaks"
+      - name: "Verify line count"
+        action: "Check line numbers (if enabled)"
+        expected: "4 lines shown (heading, paragraph, blank, paragraph)"
+    tags: [editor, input, multi-line, line-breaks]
+    estimated_duration: "20s"
+    expected_result: "Multi-line input with correct line breaks"
+
+  - id: EDIT-INP-003
+    name: "Unicode and emoji input"
+    category: functional
+    priority: high
+    platforms: [android, web, desktop]
+    steps:
+      - name: "Open new document"
+        action: "Create a new .txt file"
+        expected: "Empty editor"
+      - name: "Type Unicode content"
+        action: "Type 'Привет мир 日本語 العربية 🎉'"
+        expected: "All Unicode characters and emoji displayed correctly"
+      - name: "Save and reopen"
+        action: "Save file, close, reopen"
+        expected: "Unicode content preserved exactly"
+    tags: [editor, input, unicode, emoji, encoding]
+    estimated_duration: "25s"
+    expected_result: "Unicode and emoji survive save/reload round-trip"
+
+  # ==================== Undo / Redo ====================
+  - id: EDIT-UNDO-001
+    name: "Undo single edit"
+    category: functional
+    priority: critical
+    platforms: [android, web, desktop]
+    steps:
+      - name: "Open document and type text"
+        action: "Type 'original text' in editor"
+        expected: "Text visible"
+      - name: "Type additional text"
+        action: "Type ' added'"
+        expected: "Editor shows 'original text added'"
+      - name: "Undo"
+        action: "Press Ctrl+Z (desktop) or tap Undo button"
+        expected: "' added' removed, editor shows 'original text'"
+    tags: [editor, undo, history]
+    estimated_duration: "20s"
+    expected_result: "Single undo reverts last edit"
+
+  - id: EDIT-UNDO-002
+    name: "Multiple undo steps"
+    category: functional
+    priority: high
+    platforms: [android, web, desktop]
+    steps:
+      - name: "Type three distinct words"
+        action: "Type 'one', pause, type ' two', pause, type ' three'"
+        expected: "Editor shows 'one two three'"
+      - name: "Undo once"
+        action: "Press Ctrl+Z or Undo"
+        expected: "Editor shows 'one two'"
+      - name: "Undo twice"
+        action: "Press Ctrl+Z again"
+        expected: "Editor shows 'one'"
+      - name: "Undo to empty"
+        action: "Press Ctrl+Z again"
+        expected: "Editor is empty (or at initial state)"
+    tags: [editor, undo, multi-step, history]
+    estimated_duration: "30s"
+    expected_result: "Undo stack allows stepping back through all edits"
+
+  - id: EDIT-UNDO-003
+    name: "Redo after undo"
+    category: functional
+    priority: high
+    platforms: [android, web, desktop]
+    steps:
+      - name: "Type text"
+        action: "Type 'hello world'"
+        expected: "Text visible"
+      - name: "Undo"
+        action: "Undo last edit"
+        expected: "Text partially removed"
+      - name: "Redo"
+        action: "Press Ctrl+Y or Ctrl+Shift+Z (desktop) or Redo button"
+        expected: "Undone text restored"
+    tags: [editor, undo, redo, history]
+    estimated_duration: "20s"
+    expected_result: "Redo re-applies undone changes"
+
+  # ==================== Copy / Paste ====================
+  - id: EDIT-CLIP-001
+    name: "Copy and paste within editor"
+    category: functional
+    priority: critical
+    platforms: [android, web, desktop]
+    steps:
+      - name: "Type and select text"
+        action: "Type 'copy me', then select all the text"
+        expected: "Text selected (highlighted)"
+      - name: "Copy"
+        action: "Press Ctrl+C or tap Copy"
+        expected: "Text copied to clipboard"
+      - name: "Move cursor to end and paste"
+        action: "Tap at end of text, press Ctrl+V or tap Paste"
+        expected: "Text pasted: 'copy mecopy me'"
+    tags: [editor, clipboard, copy, paste]
+    estimated_duration: "20s"
+    expected_result: "Copy/paste within editor works correctly"
+
+  - id: EDIT-CLIP-002
+    name: "Paste from external clipboard"
+    category: functional
+    priority: high
+    platforms: [android, web, desktop]
+    steps:
+      - name: "Copy text from external source"
+        action: "Copy text 'external content' from browser or notes app"
+        expected: "Text in system clipboard"
+      - name: "Paste into Yole editor"
+        action: "Focus Yole editor and press Ctrl+V or tap Paste"
+        expected: "'external content' appears in editor"
+    tags: [editor, clipboard, paste, system-clipboard]
+    estimated_duration: "20s"
+    expected_result: "Text from system clipboard pastes correctly"
+
+  - id: EDIT-CLIP-003
+    name: "Cut operation removes selected text"
+    category: functional
+    priority: medium
+    platforms: [android, web, desktop]
+    steps:
+      - name: "Type and select a word"
+        action: "Type 'cut this word', select 'cut'"
+        expected: "'cut' highlighted"
+      - name: "Cut"
+        action: "Press Ctrl+X or tap Cut"
+        expected: "'cut' removed; editor shows ' this word'"
+      - name: "Paste cut text elsewhere"
+        action: "Move cursor to end and paste"
+        expected: "Editor shows ' this wordcut'"
+    tags: [editor, clipboard, cut, selection]
+    estimated_duration: "20s"
+    expected_result: "Cut removes selected text and places it in clipboard"
+
+  # ==================== Find and Replace ====================
+  - id: EDIT-FIND-001
+    name: "Find text in document"
+    category: functional
+    priority: high
+    platforms: [android, web, desktop]
+    steps:
+      - name: "Open document with known content"
+        action: "Open a file containing the word 'example' multiple times"
+        expected: "File open in editor"
+      - name: "Open find bar"
+        action: "Press Ctrl+F (desktop) or tap Find icon"
+        expected: "Find toolbar appears at top or bottom of editor"
+      - name: "Search for word"
+        action: "Type 'example' in find field"
+        expected: "All occurrences highlighted, first match selected"
+      - name: "Navigate matches"
+        action: "Press Enter or Next to go to next match"
+        expected: "Next occurrence selected"
+    tags: [editor, find, search]
+    estimated_duration: "25s"
+    expected_result: "Find highlights all matches and allows navigation"
+
+  - id: EDIT-FIND-002
+    name: "Find and replace all occurrences"
+    category: functional
+    priority: high
+    platforms: [android, web, desktop]
+    steps:
+      - name: "Open find and replace"
+        action: "Press Ctrl+H (desktop) or tap Replace icon"
+        expected: "Find and Replace toolbar with two fields"
+      - name: "Enter search and replacement"
+        action: "Find: 'old text', Replace: 'new text'"
+        expected: "Fields populated"
+      - name: "Replace all"
+        action: "Tap/click 'Replace All'"
+        expected: "All instances of 'old text' replaced with 'new text'"
+      - name: "Verify replacement count"
+        action: "Check status message"
+        expected: "Confirmation: 'Replaced N occurrences'"
+    tags: [editor, find, replace, bulk-replace]
+    estimated_duration: "30s"
+    expected_result: "Replace All replaces every occurrence with confirmation"
+
+  # ==================== Line Numbers ====================
+  - id: EDIT-LNUM-001
+    name: "Toggle line numbers display"
+    category: functional
+    priority: medium
+    platforms: [android, web, desktop]
+    steps:
+      - name: "Open a multi-line document"
+        action: "Open a file with 20+ lines"
+        expected: "Editor visible"
+      - name: "Enable line numbers"
+        action: "Go to Settings > Editor > Show Line Numbers, enable"
+        expected: "Line numbers appear in left gutter"
+      - name: "Disable line numbers"
+        action: "Toggle off Show Line Numbers"
+        expected: "Line numbers gutter disappears"
+    tags: [editor, line-numbers, settings, toggle]
+    estimated_duration: "20s"
+    expected_result: "Line numbers toggled on/off correctly"
+
+  # ==================== Auto-save and Manual Save ====================
+  - id: EDIT-SAVE-001
+    name: "Auto-save triggers after inactivity"
+    category: functional
+    priority: critical
+    platforms: [android, web, desktop]
+    steps:
+      - name: "Open file and make changes"
+        action: "Open a file, type new content"
+        expected: "Unsaved indicator shown (tab asterisk or dot)"
+      - name: "Wait for auto-save"
+        action: "Stop typing and wait for auto-save interval (default: 3-5s)"
+        expected: "Unsaved indicator disappears; file saved silently"
+      - name: "Verify on disk"
+        action: "Reopen file in external editor or re-navigate to it"
+        expected: "Changes present in saved file"
+    tags: [editor, auto-save, persistence]
+    estimated_duration: "30s"
+    expected_result: "Auto-save persists changes without user action"
+
+  - id: EDIT-SAVE-002
+    name: "Manual save with keyboard shortcut"
+    category: functional
+    priority: critical
+    platforms: [desktop, web]
+    steps:
+      - name: "Open file and make changes"
+        action: "Type new content in editor"
+        expected: "Unsaved changes visible"
+      - name: "Press Ctrl+S"
+        action: "Press Ctrl+S keyboard shortcut"
+        expected: "File saved immediately, unsaved indicator clears"
+    tags: [editor, save, keyboard-shortcut, manual-save]
+    estimated_duration: "15s"
+    expected_result: "Ctrl+S saves file immediately"
+
+  # ==================== Large Documents ====================
+  - id: EDIT-LARGE-001
+    name: "Open and scroll large document (10K+ lines)"
+    category: stress
+    priority: high
+    platforms: [android, web, desktop]
+    steps:
+      - name: "Open large document"
+        action: "Open a .txt file with 10,000+ lines"
+        expected: "File opens within 5 seconds"
+      - name: "Scroll to middle"
+        action: "Scroll to line 5000"
+        expected: "Smooth scrolling, content renders correctly"
+      - name: "Scroll to end"
+        action: "Jump to last line (Ctrl+End or equivalent)"
+        expected: "Last line visible, no crash or freeze"
+    tags: [editor, large-document, performance, stress]
+    estimated_duration: "45s"
+    expected_result: "10K-line document opens and scrolls without freezing"
+
+  - id: EDIT-LARGE-002
+    name: "Edit within large document without lag"
+    category: stress
+    priority: high
+    platforms: [android, web, desktop]
+    steps:
+      - name: "Open large document"
+        action: "Open a 10K-line .md file"
+        expected: "Document open"
+      - name: "Type at line 5000"
+        action: "Navigate to middle, insert text"
+        expected: "Text inserted without noticeable lag (<200ms)"
+      - name: "Undo the insertion"
+        action: "Press Ctrl+Z"
+        expected: "Undo completes quickly"
+    tags: [editor, large-document, input-latency, performance]
+    estimated_duration: "40s"
+    expected_result: "Editing in large documents remains responsive"
+
+  # ==================== Format-specific Features ====================
+  - id: EDIT-FMT-001
+    name: "Todo.txt task completion toggle"
+    category: functional
+    priority: high
+    platforms: [android, web, desktop]
+    steps:
+      - name: "Open todo.txt file"
+        action: "Open a file with tasks like '(A) Buy groceries'"
+        expected: "Todo.txt editor mode with task list"
+      - name: "Toggle task complete"
+        action: "Tap/click checkbox or task completion action"
+        expected: "Task marked as done: 'x 2026-03-26 Buy groceries'"
+      - name: "Toggle back to incomplete"
+        action: "Tap completed task to uncheck"
+        expected: "Task restored to incomplete state"
+    tags: [editor, todotxt, task-toggle, format-specific]
+    estimated_duration: "20s"
+    expected_result: "Todo.txt task completion toggling works"
+
+  - id: EDIT-FMT-002
+    name: "Markdown live preview updates on edit"
+    category: functional
+    priority: high
+    platforms: [android, web, desktop]
+    steps:
+      - name: "Open markdown file in split or preview mode"
+        action: "Open .md file with side-by-side or preview tab"
+        expected: "Editor and preview both visible"
+      - name: "Type in editor"
+        action: "Add '## New Section' to the markdown"
+        expected: "Preview updates to show the new heading"
+      - name: "Delete content"
+        action: "Remove the newly added line"
+        expected: "Preview removes the heading immediately"
+    tags: [editor, markdown, live-preview, format-specific]
+    estimated_duration: "25s"
+    expected_result: "Markdown preview reflects edits in near real-time"
+
+  # ==================== Keyboard Shortcuts (Desktop) ====================
+  - id: EDIT-KEY-001
+    name: "Select all text with Ctrl+A"
+    category: functional
+    priority: medium
+    platforms: [desktop, web]
+    steps:
+      - name: "Open document with content"
+        action: "Open a file with multiple paragraphs"
+        expected: "Content visible in editor"
+      - name: "Press Ctrl+A"
+        action: "Press Ctrl+A"
+        expected: "All text in the document selected (highlighted)"
+    tags: [editor, keyboard-shortcut, select-all, desktop]
+    estimated_duration: "10s"
+    expected_result: "Ctrl+A selects all editor content"
+
+  - id: EDIT-KEY-002
+    name: "Home/End keys navigate line"
+    category: functional
+    priority: medium
+    platforms: [desktop]
+    steps:
+      - name: "Place cursor in middle of a line"
+        action: "Click in middle of a long text line"
+        expected: "Cursor positioned in middle of line"
+      - name: "Press End key"
+        action: "Press End"
+        expected: "Cursor jumps to end of current line"
+      - name: "Press Home key"
+        action: "Press Home"
+        expected: "Cursor jumps to start of current line"
+    tags: [editor, keyboard-shortcut, navigation, desktop]
+    estimated_duration: "15s"
+    expected_result: "Home/End keys navigate to line boundaries"
+
+  # ==================== Edge Cases ====================
+  - id: EDIT-EDGE-001
+    name: "Open empty file"
+    category: edge-case
+    priority: medium
+    platforms: [android, web, desktop]
+    steps:
+      - name: "Open a zero-byte file"
+        action: "Open a file with no content"
+        expected: "Empty editor opens without error"
+      - name: "Type content in empty file"
+        action: "Type 'new content'"
+        expected: "Content appears and can be saved"
+    tags: [editor, edge-case, empty-file]
+    estimated_duration: "15s"
+    expected_result: "Empty file opens and accepts new content"
+
+  - id: EDIT-EDGE-002
+    name: "File with only whitespace"
+    category: edge-case
+    priority: low
+    platforms: [android, web, desktop]
+    steps:
+      - name: "Open whitespace-only file"
+        action: "Open a .txt file containing only spaces and newlines"
+        expected: "Editor opens showing whitespace (cursor visible)"
+      - name: "Verify no crash"
+        action: "Interact with editor"
+        expected: "Editor stable, undo/redo work"
+    tags: [editor, edge-case, whitespace]
+    estimated_duration: "15s"
+    expected_result: "Whitespace-only file handled without errors"
+
+  - id: EDIT-EDGE-003
+    name: "Binary content gracefully rejected"
+    category: edge-case
+    priority: medium
+    platforms: [android, web, desktop]
+    steps:
+      - name: "Attempt to open binary file"
+        action: "Open a .exe or .png file from file browser"
+        expected: "Error or warning: 'Cannot open binary file'"
+      - name: "Verify no crash"
+        action: "Check app state after rejection"
+        expected: "App remains stable, returns to browser"
+    tags: [editor, edge-case, binary-file, error-handling]
+    estimated_duration: "15s"
+    expected_result: "Binary files rejected with clear message, no crash"
+
+  - id: EDIT-EDGE-004
+    name: "Concurrent editing session integrity"
+    category: edge-case
+    priority: medium
+    platforms: [desktop, web]
+    steps:
+      - name: "Open same file in two tabs"
+        action: "Open file.md in tab 1 and tab 2"
+        expected: "Both tabs show same content"
+      - name: "Edit in tab 1"
+        action: "Add text in tab 1 and save"
+        expected: "Tab 1 saved"
+      - name: "Switch to tab 2"
+        action: "Click tab 2"
+        expected: "Tab 2 shows reload prompt or updated content"
+    tags: [editor, concurrent-editing, tabs, edge-case]
+    estimated_duration: "30s"
+    expected_result: "Concurrent editing of same file handled safely"
