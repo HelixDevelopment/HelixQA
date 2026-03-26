@@ -28,6 +28,7 @@ import (
 
 	"digital.vasic.challenges/pkg/logging"
 
+	"digital.vasic.helixqa/pkg/autonomous"
 	"digital.vasic.helixqa/pkg/config"
 	"digital.vasic.helixqa/pkg/llm"
 	"digital.vasic.helixqa/pkg/memory"
@@ -471,13 +472,41 @@ func cmdAutonomous(args []string) {
 	fmt.Printf("Platforms:        %v\n", platformStrs)
 	fmt.Printf("Memory DB:        %s\n", dbPath)
 	fmt.Println()
-	fmt.Println("Autonomous QA session requires LLM agents, " +
-		"VisionEngine, and DocProcessor to be configured.")
-	fmt.Println("See .env.example for required environment " +
-		"variables.")
-	fmt.Println()
-	fmt.Println("LLM provider and memory store wired successfully. " +
-		"Full session coordinator pending.")
+
+	cfg := &autonomous.PipelineConfig{
+		ProjectRoot: *project,
+		Platforms:   platformStrs,
+		OutputDir: filepath.Join(
+			*output,
+			fmt.Sprintf("session-%d", time.Now().Unix()),
+		),
+		IssuesDir: filepath.Join(
+			*project, "docs", "issues",
+		),
+		BanksDir: filepath.Join(
+			*project, "challenges", "helixqa-banks",
+		),
+		Timeout:    *timeout,
+		PassNumber: passNumber,
+	}
+	pipeline := autonomous.NewSessionPipeline(
+		cfg, provider, store,
+	)
+	result, err := pipeline.Run(context.Background())
+	if err != nil {
+		fmt.Fprintf(os.Stderr,
+			"error: pipeline failed: %v\n", err)
+		os.Exit(1)
+	}
+	if err := pipeline.WriteReport(result); err != nil {
+		fmt.Fprintf(os.Stderr,
+			"warning: could not write report: %v\n", err)
+	}
+	if result.Status == autonomous.StatusFailed {
+		fmt.Fprintf(os.Stderr,
+			"Session failed: %s\n", result.Error)
+		os.Exit(1)
+	}
 }
 
 func truncate(s string, max int) string {
