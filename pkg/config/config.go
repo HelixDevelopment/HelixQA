@@ -191,6 +191,32 @@ type AutonomousConfig struct {
 
 	// TicketsMinSeverity is the minimum severity for tickets.
 	TicketsMinSeverity string `yaml:"tickets_min_severity" json:"tickets_min_severity"`
+
+	// LLMProvider selects the preferred LLM provider name
+	// (e.g. "anthropic", "openai", "ollama"). Leave blank to
+	// let the AdaptiveProvider choose automatically.
+	LLMProvider string `yaml:"llm_provider" json:"llm_provider"`
+
+	// LLMAPIKey is the API key for cloud LLM providers.
+	// Overridden by the ANTHROPIC_API_KEY / OPENAI_API_KEY
+	// environment variables when those are set.
+	LLMAPIKey string `yaml:"llm_api_key" json:"llm_api_key"`
+
+	// LLMBaseURL is the base HTTP URL for self-hosted LLM
+	// providers such as Ollama. Overridden by HELIX_OLLAMA_URL.
+	LLMBaseURL string `yaml:"llm_base_url" json:"llm_base_url"`
+
+	// LLMModel is the model identifier used for LLM requests.
+	// Overridden by HELIX_OLLAMA_MODEL when set.
+	LLMModel string `yaml:"llm_model" json:"llm_model"`
+
+	// MemoryDBPath is the file path for the SQLite memory
+	// store. Defaults to <project-root>/HelixQA/data/memory.db.
+	MemoryDBPath string `yaml:"memory_db_path" json:"memory_db_path"`
+
+	// IssuesDir is the directory where generated issue
+	// markdown tickets are written.
+	IssuesDir string `yaml:"issues_dir" json:"issues_dir"`
 }
 
 // DefaultAutonomousConfig returns sensible defaults for

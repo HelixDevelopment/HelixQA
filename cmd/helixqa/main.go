@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"strings"
 	"syscall"
 	"time"
@@ -28,6 +29,8 @@ import (
 	"digital.vasic.challenges/pkg/logging"
 
 	"digital.vasic.helixqa/pkg/config"
+	"digital.vasic.helixqa/pkg/llm"
+	"digital.vasic.helixqa/pkg/memory"
 	"digital.vasic.helixqa/pkg/orchestrator"
 	"digital.vasic.helixqa/pkg/reporter"
 	"digital.vasic.helixqa/pkg/testbank"
@@ -403,16 +406,78 @@ func cmdAutonomous(args []string) {
 
 	fmt.Printf("Resolved platforms: %v\n", platformStrs)
 	fmt.Println()
+
+	// ── LLM provider setup ────────────────────────────────────────
+	// Build provider configs from environment variables.
+	var providerConfigs []llm.ProviderConfig
+
+	if key := os.Getenv("ANTHROPIC_API_KEY"); key != "" {
+		providerConfigs = append(providerConfigs, llm.ProviderConfig{
+			Name:   llm.ProviderAnthropic,
+			APIKey: key,
+		})
+	}
+	if key := os.Getenv("OPENAI_API_KEY"); key != "" {
+		providerConfigs = append(providerConfigs, llm.ProviderConfig{
+			Name:   llm.ProviderOpenAI,
+			APIKey: key,
+		})
+	}
+	if base := os.Getenv("HELIX_OLLAMA_URL"); base != "" {
+		model := os.Getenv("HELIX_OLLAMA_MODEL")
+		providerConfigs = append(providerConfigs, llm.ProviderConfig{
+			Name:    llm.ProviderOllama,
+			BaseURL: base,
+			Model:   model,
+		})
+	}
+
+	if len(providerConfigs) == 0 {
+		fmt.Fprintln(os.Stderr,
+			"error: no LLM providers configured — set at least one "+
+				"of ANTHROPIC_API_KEY, OPENAI_API_KEY, or "+
+				"HELIX_OLLAMA_URL")
+		os.Exit(1)
+	}
+
+	provider, err := llm.NewAdaptiveFromConfigs(providerConfigs)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "error: LLM setup: %v\n", err)
+		os.Exit(1)
+	}
+
+	// ── Memory store setup ────────────────────────────────────────
+	dbPath := filepath.Join(*project, "HelixQA", "data", "memory.db")
+
+	store, err := memory.NewStore(dbPath)
+	if err != nil {
+		fmt.Fprintf(os.Stderr,
+			"error: open memory store: %v\n", err)
+		os.Exit(1)
+	}
+	defer store.Close()
+
+	latestPass, err := store.LatestPassNumber()
+	if err != nil {
+		fmt.Fprintf(os.Stderr,
+			"error: query pass number: %v\n", err)
+		os.Exit(1)
+	}
+	passNumber := latestPass + 1
+
+	// ── Print session bootstrap info ─────────────────────────────
+	fmt.Printf("Pass number:      %d\n", passNumber)
+	fmt.Printf("LLM provider:     %s\n", provider.Name())
+	fmt.Printf("Platforms:        %v\n", platformStrs)
+	fmt.Printf("Memory DB:        %s\n", dbPath)
+	fmt.Println()
 	fmt.Println("Autonomous QA session requires LLM agents, " +
 		"VisionEngine, and DocProcessor to be configured.")
 	fmt.Println("See .env.example for required environment " +
 		"variables.")
-
-	// TODO: Wire up actual session coordinator once all
-	// dependencies are available at runtime.
 	fmt.Println()
-	fmt.Println("Autonomous session not yet fully wired — " +
-		"all packages are implemented and tested.")
+	fmt.Println("LLM provider and memory store wired successfully. " +
+		"Full session coordinator pending.")
 }
 
 func truncate(s string, max int) string {
