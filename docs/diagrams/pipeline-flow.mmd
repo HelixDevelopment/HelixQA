@@ -1,0 +1,52 @@
+sequenceDiagram
+    participant User
+    participant CLI
+    participant Pipeline
+    participant LLM
+    participant Memory
+    participant Executor
+    participant Analyzer
+
+    User->>CLI: helixqa autonomous --project . --platforms all
+    CLI->>Pipeline: NewSessionPipeline(config, provider, store)
+    CLI->>Pipeline: Run(ctx)
+
+    Note over Pipeline: Phase 1: LEARN
+    Pipeline->>Pipeline: BuildKnowledgeBase()
+    Pipeline->>Pipeline: Read docs, code, git, prior sessions
+    Pipeline->>Memory: Load prior findings, coverage
+
+    Note over Pipeline: Phase 2: PLAN
+    Pipeline->>LLM: Generate test plan from KnowledgeBase
+    LLM-->>Pipeline: 30 PlannedTests (JSON)
+    Pipeline->>Pipeline: Reconcile with existing banks
+    Pipeline->>Pipeline: Rank by priority
+
+    Note over Pipeline: Phase 3: EXECUTE
+    Pipeline->>Executor: Start video recording
+    loop For each test
+        Pipeline->>Executor: Screenshot(ctx)
+        Executor-->>Pipeline: PNG bytes
+        Pipeline->>Executor: Crash/ANR check
+        Pipeline->>Memory: RecordCoverage(screen, platform)
+    end
+    Pipeline->>Executor: Stop video, collect logcat
+
+    Note over Pipeline: Phase 3.5: CURIOSITY
+    loop 5 iterations per platform
+        Pipeline->>Executor: Random navigation
+        Pipeline->>Executor: Screenshot(ctx)
+    end
+
+    Note over Pipeline: Phase 4: ANALYZE
+    loop For each screenshot
+        Pipeline->>LLM: Vision analysis
+        LLM-->>Analyzer: AnalysisFindings (JSON)
+    end
+    Pipeline->>Pipeline: DetectMemoryLeak()
+    Pipeline->>Memory: FindingsBridge.Process()
+    Pipeline->>Pipeline: Write issue tickets to docs/issues/
+
+    Pipeline-->>CLI: PipelineResult
+    CLI->>Pipeline: WriteReport()
+    Pipeline-->>User: Session complete

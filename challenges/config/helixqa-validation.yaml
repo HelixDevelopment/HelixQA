@@ -1,0 +1,338 @@
+version: "1.0"
+name: "HelixQA Self-Validation Challenge Suite"
+description: "Validates that HelixQA itself works correctly across all capabilities"
+
+test_cases:
+  # ─── LLM Provider Challenges ───
+  - id: HQA-001
+    name: "LLM Provider — adaptive selection works"
+    category: functional
+    priority: critical
+    platforms: [all]
+    steps:
+      - name: "Configure multiple LLM providers"
+        action: "Set OPENROUTER_API_KEY and DEEPSEEK_API_KEY env vars"
+        expected: "Both providers registered in AdaptiveProvider"
+      - name: "Run autonomous session"
+        action: "helixqa autonomous --project /tmp/empty --timeout 30s"
+        expected: "Session starts with adaptive provider, selects first available"
+    tags: [llm, provider, core]
+
+  - id: HQA-002
+    name: "LLM Provider — fallback on failure"
+    category: functional
+    priority: critical
+    platforms: [all]
+    steps:
+      - name: "Configure with invalid first provider"
+        action: "Set ANTHROPIC_API_KEY=invalid and DEEPSEEK_API_KEY=valid"
+        expected: "First provider fails, second succeeds"
+    tags: [llm, fallback, resilience]
+
+  - id: HQA-003
+    name: "LLM Provider — no providers configured"
+    category: edge_case
+    priority: high
+    platforms: [all]
+    steps:
+      - name: "Run without any API keys"
+        action: "Unset all LLM env vars, run helixqa autonomous"
+        expected: "Clear error message listing supported providers"
+    tags: [llm, error-handling]
+
+  # ─── Memory Store Challenges ───
+  - id: HQA-010
+    name: "Memory — session persistence across runs"
+    category: functional
+    priority: critical
+    platforms: [all]
+    steps:
+      - name: "Run first session"
+        action: "helixqa autonomous --project . --timeout 30s"
+        expected: "Pass number = 1 in output"
+      - name: "Run second session"
+        action: "helixqa autonomous --project . --timeout 30s"
+        expected: "Pass number = 2, aware of previous session"
+    tags: [memory, persistence]
+
+  - id: HQA-011
+    name: "Memory — finding deduplication"
+    category: functional
+    priority: high
+    platforms: [all]
+    steps:
+      - name: "Run two sessions that find same issue"
+        action: "Run autonomous twice against same project"
+        expected: "Second session does not create duplicate HELIX tickets for same issue"
+    tags: [memory, dedup]
+
+  - id: HQA-012
+    name: "Memory — coverage tracking"
+    category: functional
+    priority: high
+    platforms: [all]
+    steps:
+      - name: "Run session and check coverage DB"
+        action: "Query memory.db coverage table after session"
+        expected: "Screens and platforms recorded with times_tested > 0"
+    tags: [memory, coverage]
+
+  # ─── Learning Engine Challenges ───
+  - id: HQA-020
+    name: "Learning — reads project documentation"
+    category: functional
+    priority: critical
+    platforms: [all]
+    steps:
+      - name: "Run against project with docs/ directory"
+        action: "Run autonomous with verbose, check Phase 1 output"
+        expected: "docs count > 0 in KnowledgeBase summary"
+    tags: [learning, docs]
+
+  - id: HQA-021
+    name: "Learning — extracts API endpoints from Go code"
+    category: functional
+    priority: high
+    platforms: [all]
+    steps:
+      - name: "Run against project with Gin router"
+        action: "Run autonomous against Catalogizer"
+        expected: "endpoints count > 100 in KnowledgeBase"
+    tags: [learning, codebase]
+
+  - id: HQA-022
+    name: "Learning — extracts web screens from React code"
+    category: functional
+    priority: high
+    platforms: [all]
+    steps:
+      - name: "Run against project with React Router"
+        action: "Run autonomous against Catalogizer"
+        expected: "screens count > 5 in KnowledgeBase"
+    tags: [learning, codebase]
+
+  - id: HQA-023
+    name: "Learning — reads git history"
+    category: functional
+    priority: medium
+    platforms: [all]
+    steps:
+      - name: "Run against git repository"
+        action: "Run autonomous, check changes count"
+        expected: "changes count = 20 (recent commits loaded)"
+    tags: [learning, git]
+
+  # ─── Planning Engine Challenges ───
+  - id: HQA-030
+    name: "Planning — LLM generates valid test plan"
+    category: functional
+    priority: critical
+    platforms: [all]
+    steps:
+      - name: "Run autonomous session"
+        action: "Check Phase 2 output for test count"
+        expected: "tests_planned > 0 in pipeline report"
+    tags: [planning, llm]
+
+  - id: HQA-031
+    name: "Planning — test bank reconciliation"
+    category: functional
+    priority: high
+    platforms: [all]
+    steps:
+      - name: "Run with existing test banks"
+        action: "Ensure challenges/helixqa-banks/ has YAML files"
+        expected: "Reconciler loads existing tests, marks matched as IsExisting"
+    tags: [planning, reconciliation]
+
+  - id: HQA-032
+    name: "Planning — priority ranking"
+    category: functional
+    priority: medium
+    platforms: [all]
+    steps:
+      - name: "Verify test ordering"
+        action: "Check that critical tests appear before low-priority"
+        expected: "Tests sorted by priority (1=critical first)"
+    tags: [planning, ranking]
+
+  # ─── Execution Challenges ───
+  - id: HQA-040
+    name: "Execution — ADB executor takes screenshots"
+    category: functional
+    priority: critical
+    platforms: [android]
+    steps:
+      - name: "Run with Android device connected"
+        action: "helixqa autonomous --platforms android"
+        expected: "Screenshots captured in output/screenshots/ directory"
+    tags: [execution, android, screenshot]
+
+  - id: HQA-041
+    name: "Execution — video recording on Android 9"
+    category: functional
+    priority: high
+    platforms: [android]
+    steps:
+      - name: "Run with Mi Box (SDK 28)"
+        action: "Set HELIX_ANDROID_DEVICE to Mi Box, run autonomous"
+        expected: "MP4 video file created in output/videos/"
+    tags: [execution, video, android]
+
+  - id: HQA-042
+    name: "Execution — crash detection during tests"
+    category: functional
+    priority: critical
+    platforms: [android]
+    steps:
+      - name: "Run against app that crashes"
+        action: "Force a crash, verify detection"
+        expected: "Critical severity finding created for crash"
+    tags: [execution, crash, detection]
+
+  - id: HQA-043
+    name: "Execution — performance metrics collected"
+    category: functional
+    priority: high
+    platforms: [android]
+    steps:
+      - name: "Run autonomous session"
+        action: "Check performance timeline after execution"
+        expected: "Memory and CPU snapshots recorded"
+    tags: [execution, performance]
+
+  - id: HQA-044
+    name: "Execution — Playwright web screenshots"
+    category: functional
+    priority: high
+    platforms: [web]
+    steps:
+      - name: "Run with web platform"
+        action: "helixqa autonomous --platforms web"
+        expected: "Web screenshots captured via Playwright"
+    tags: [execution, web, playwright]
+
+  # ─── Curiosity Challenges ───
+  - id: HQA-050
+    name: "Curiosity — additional screenshots captured"
+    category: functional
+    priority: high
+    platforms: [all]
+    steps:
+      - name: "Run with curiosity enabled"
+        action: "helixqa autonomous --curiosity=true --curiosity-timeout 1m"
+        expected: "Additional curiosity screenshots in output"
+    tags: [curiosity, exploration]
+
+  - id: HQA-051
+    name: "Curiosity — respects timeout"
+    category: functional
+    priority: medium
+    platforms: [all]
+    steps:
+      - name: "Set short curiosity timeout"
+        action: "Run with --curiosity-timeout 10s"
+        expected: "Curiosity phase completes within timeout"
+    tags: [curiosity, timeout]
+
+  # ─── Analysis Challenges ───
+  - id: HQA-060
+    name: "Analysis — LLM vision finds issues in screenshots"
+    category: functional
+    priority: critical
+    platforms: [all]
+    steps:
+      - name: "Run against app with known UI issues"
+        action: "Run autonomous, check issues_found in report"
+        expected: "issues_found > 0 when screenshots have visual problems"
+    tags: [analysis, vision, llm]
+
+  - id: HQA-061
+    name: "Analysis — memory leak detection"
+    category: functional
+    priority: high
+    platforms: [android]
+    steps:
+      - name: "Run with performance monitoring"
+        action: "Check for LeakIndicator in analysis output"
+        expected: "Leak detection runs, reports growth percentage"
+    tags: [analysis, leak, performance]
+
+  - id: HQA-062
+    name: "Analysis — issue tickets created in docs/issues/"
+    category: functional
+    priority: critical
+    platforms: [all]
+    steps:
+      - name: "Run full session that finds issues"
+        action: "Check docs/issues/ after session"
+        expected: "HELIX-NNN.md files created with YAML frontmatter"
+    tags: [analysis, tickets, output]
+
+  - id: HQA-063
+    name: "Analysis — ticket contains proper fields"
+    category: functional
+    priority: high
+    platforms: [all]
+    steps:
+      - name: "Inspect generated ticket"
+        action: "Read any HELIX-NNN.md file"
+        expected: "Contains id, severity, category, status, found_date in frontmatter"
+    tags: [analysis, tickets, format]
+
+  # ─── Pipeline Challenges ───
+  - id: HQA-070
+    name: "Pipeline — completes all 4 phases"
+    category: integration
+    priority: critical
+    platforms: [all]
+    steps:
+      - name: "Run full autonomous session"
+        action: "Check output for all phase messages"
+        expected: "Phase 1/4, 2/4, 3/4, 3.5, 4/4 all printed"
+    tags: [pipeline, integration]
+
+  - id: HQA-071
+    name: "Pipeline — report written to disk"
+    category: functional
+    priority: high
+    platforms: [all]
+    steps:
+      - name: "Check output directory after run"
+        action: "Look for pipeline-report.json"
+        expected: "Valid JSON with status, tests_planned, tests_run, issues_found"
+    tags: [pipeline, report]
+
+  - id: HQA-072
+    name: "Pipeline — handles timeout gracefully"
+    category: edge_case
+    priority: high
+    platforms: [all]
+    steps:
+      - name: "Run with very short timeout"
+        action: "helixqa autonomous --timeout 5s"
+        expected: "Session completes without crash, partial results saved"
+    tags: [pipeline, timeout, resilience]
+
+  # ─── Container Challenges ───
+  - id: HQA-080
+    name: "Container — Dockerfile builds successfully"
+    category: functional
+    priority: high
+    platforms: [all]
+    steps:
+      - name: "Build HelixQA container"
+        action: "podman build -f HelixQA/Dockerfile HelixQA/"
+        expected: "Image builds without errors"
+    tags: [container, docker]
+
+  - id: HQA-081
+    name: "Container — docker-compose starts"
+    category: functional
+    priority: medium
+    platforms: [all]
+    steps:
+      - name: "Start QA robot via compose"
+        action: "podman-compose -f docker-compose.qa-robot.yml config"
+        expected: "Valid compose configuration"
+    tags: [container, compose]

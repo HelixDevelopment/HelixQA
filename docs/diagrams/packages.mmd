@@ -1,0 +1,50 @@
+graph LR
+    subgraph Core["Core Packages"]
+        LLM["pkg/llm/<br/>40+ providers"]
+        MEM["pkg/memory/<br/>SQLite store"]
+        CFG["pkg/config/"]
+        TYPES["pkg/types/"]
+    end
+
+    subgraph Intelligence["Intelligence Layer"]
+        LEARN["pkg/learning/<br/>Knowledge ingestion"]
+        PLAN["pkg/planning/<br/>Test generation"]
+        ANALYSIS["pkg/analysis/<br/>Vision analysis"]
+        ISSUE["pkg/issuedetector/<br/>Bug detection"]
+    end
+
+    subgraph Execution["Execution Layer"]
+        NAV["pkg/navigator/<br/>ADB+Playwright+X11"]
+        DET["pkg/detector/<br/>Crash/ANR"]
+        PERF["pkg/performance/<br/>Metrics"]
+        VID["pkg/video/<br/>Recording"]
+        MAES["pkg/maestro/<br/>YAML flows"]
+        EVID["pkg/evidence/<br/>Collection"]
+    end
+
+    subgraph Orchestration["Orchestration Layer"]
+        AUTO["pkg/autonomous/<br/>Pipeline+Bridge"]
+        ORCH["pkg/orchestrator/"]
+        SESS["pkg/session/<br/>Timeline+Video"]
+        BANK["pkg/testbank/<br/>YAML management"]
+    end
+
+    subgraph Output["Output Layer"]
+        REP["pkg/reporter/<br/>MD+HTML+JSON"]
+        TIK["pkg/ticket/<br/>Issue tickets"]
+        VIS["pkg/visual/<br/>Comparison"]
+        VAL["pkg/validator/<br/>Step validation"]
+    end
+
+    AUTO --> LLM & MEM & LEARN & PLAN & ANALYSIS
+    AUTO --> NAV & DET & PERF & VID
+    PLAN --> LLM & LEARN
+    ANALYSIS --> LLM
+    NAV --> DET
+    ORCH --> BANK & DET & VAL & REP
+
+    style Core fill:#2d3436,color:#dfe6e9
+    style Intelligence fill:#0984e3,color:#fff
+    style Execution fill:#6c5ce7,color:#fff
+    style Orchestration fill:#00b894,color:#fff
+    style Output fill:#e17055,color:#fff

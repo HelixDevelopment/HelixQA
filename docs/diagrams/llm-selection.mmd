@@ -1,0 +1,29 @@
+flowchart TD
+    START["Environment Scan"] --> CHECK{"Scan env vars<br/>for API keys"}
+
+    CHECK -->|ANTHROPIC_API_KEY| ANTH["Anthropic Claude<br/>(native API)"]
+    CHECK -->|OPENAI_API_KEY| OAI["OpenAI GPT<br/>(native API)"]
+    CHECK -->|OPENROUTER_API_KEY| OR["OpenRouter<br/>(100+ models)"]
+    CHECK -->|DEEPSEEK_API_KEY| DS["DeepSeek<br/>(cheapest)"]
+    CHECK -->|GROQ_API_KEY| GRQ["Groq<br/>(fastest)"]
+    CHECK -->|HELIX_OLLAMA_URL| OLL["Ollama<br/>(self-hosted)"]
+    CHECK -->|"30+ other keys"| REG["Registry Lookup<br/>providers_registry.go"]
+
+    ANTH & OAI & OR & DS & GRQ & OLL & REG --> ADAPT["AdaptiveProvider"]
+
+    ADAPT --> TRY{"Try first<br/>provider"}
+    TRY -->|Success| USE["Use response"]
+    TRY -->|Failure| NEXT{"Try next<br/>provider"}
+    NEXT -->|Available| TRY
+    NEXT -->|"All failed"| ERR["Error:<br/>all providers failed"]
+
+    subgraph Vision["Vision Analysis"]
+        VCHECK{"SupportsVision?"}
+        VCHECK -->|Yes| VUSE["Use for screenshot<br/>analysis"]
+        VCHECK -->|No| VSKIP["Skip vision<br/>analysis"]
+    end
+
+    USE --> VCHECK
+
+    style ADAPT fill:#e74c3c,color:#fff
+    style Vision fill:#2ecc71,color:#fff

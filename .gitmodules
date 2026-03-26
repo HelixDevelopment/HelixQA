@@ -64,3 +64,6 @@
 [submodule "tools/opensource/appcrawler"]
 	path = tools/opensource/appcrawler
 	url = https://github.com/nicetester/AppCrawler.git
+[submodule "tools/test-apps/rest-demo"]
+	path = tools/test-apps/rest-demo
+	url = https://github.com/nicehash/rest-clients-demo.git

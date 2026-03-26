@@ -1,0 +1,65 @@
+graph TB
+    subgraph CLI["CLI Entry Point"]
+        CMD["helixqa autonomous<br/>--project --platforms --timeout"]
+    end
+
+    subgraph Pipeline["Session Pipeline"]
+        direction TB
+        P1["Phase 1: LEARN<br/>ProjectReader + GitAnalyzer<br/>+ CodebaseMapper"]
+        P2["Phase 2: PLAN<br/>TestPlanGenerator (LLM)<br/>+ BankReconciler + Ranker"]
+        P3["Phase 3: EXECUTE<br/>Platform Executors<br/>+ Video + Performance"]
+        P35["Phase 3.5: CURIOSITY<br/>Random Navigation<br/>+ Screenshot Discovery"]
+        P4["Phase 4: ANALYZE<br/>VisionAnalyzer (LLM)<br/>+ LeakDetect + FrameExtract"]
+        P1 --> P2 --> P3 --> P35 --> P4
+    end
+
+    subgraph Providers["LLM Providers (40+)"]
+        ADAPT["AdaptiveProvider"]
+        ANTH["Anthropic"] & OAI["OpenAI"] & OR["OpenRouter"]
+        DS["DeepSeek"] & GRQ["Groq"] & OLL["Ollama"]
+        ADAPT --> ANTH & OAI & OR & DS & GRQ & OLL
+    end
+
+    subgraph Executors["Platform Executors"]
+        ADB["ADBExecutor<br/>Android/TV"]
+        PW["PlaywrightExecutor<br/>Web"]
+        X11["X11Executor<br/>Desktop"]
+    end
+
+    subgraph Evidence["Evidence Collection"]
+        SS["Screenshots"]
+        VID["Video Recording<br/>scrcpy/screenrecord"]
+        LOG["Logcat/Console"]
+        PERF["Performance Metrics<br/>CPU/Memory/Network"]
+    end
+
+    subgraph Memory["Photographic Memory"]
+        DB["SQLite memory.db"]
+        SESS["Sessions"]
+        FIND["Findings"]
+        COV["Coverage"]
+        KNOW["Knowledge"]
+        DB --> SESS & FIND & COV & KNOW
+    end
+
+    subgraph Output["Output"]
+        TICKETS["docs/issues/<br/>HELIX-NNN.md"]
+        REPORT["pipeline-report.json"]
+        SCREENSHOTS["screenshots/"]
+        VIDEOS["videos/"]
+    end
+
+    CMD --> Pipeline
+    Pipeline --> Providers
+    P3 --> Executors
+    Executors --> Evidence
+    P4 --> TICKETS & REPORT
+    Pipeline --> Memory
+    Evidence --> SCREENSHOTS & VIDEOS
+
+    style Pipeline fill:#1a1a2e,color:#fff
+    style Providers fill:#16213e,color:#fff
+    style Executors fill:#0f3460,color:#fff
+    style Evidence fill:#533483,color:#fff
+    style Memory fill:#2c3e50,color:#fff
+    style Output fill:#e94560,color:#fff

@@ -1,0 +1,49 @@
+stateDiagram-v2
+    [*] --> Idle
+    Idle --> Learning: Run(ctx)
+    Learning --> Planning: KnowledgeBase built
+    Planning --> Executing: TestPlan generated
+    Executing --> Curiosity: Tests complete
+    Curiosity --> Analyzing: Exploration done
+    Curiosity --> Analyzing: CuriosityEnabled=false
+    Analyzing --> Complete: Findings processed
+    Analyzing --> Failed: Fatal error
+
+    Learning --> Failed: Error
+    Planning --> Failed: LLM error
+    Executing --> Failed: Timeout
+
+    Complete --> [*]
+    Failed --> [*]
+
+    state Learning {
+        [*] --> ReadDocs
+        ReadDocs --> ReadCode
+        ReadCode --> ReadGit
+        ReadGit --> LoadPrior
+        LoadPrior --> [*]
+    }
+
+    state Planning {
+        [*] --> LLMGenerate
+        LLMGenerate --> Reconcile
+        Reconcile --> Rank
+        Rank --> [*]
+    }
+
+    state Executing {
+        [*] --> StartVideo
+        StartVideo --> RunTests
+        RunTests --> CollectMetrics
+        CollectMetrics --> CrashCheck
+        CrashCheck --> StopVideo
+        StopVideo --> [*]
+    }
+
+    state Analyzing {
+        [*] --> VisionAnalysis
+        VisionAnalysis --> LeakDetection
+        LeakDetection --> FrameAnalysis
+        FrameAnalysis --> CreateTickets
+        CreateTickets --> [*]
+    }
