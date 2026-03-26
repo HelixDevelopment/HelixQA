@@ -1,0 +1,509 @@
+# SPDX-FileCopyrightText: 2026 Milos Vasic
+# SPDX-License-Identifier: Apache-2.0
+#
+# HelixQA Test Bank: Edge Cases and Stress Scenarios
+# Tests extreme conditions: many open tabs, large files, rapid operations,
+# memory pressure, network interruption, low storage, accessibility, and
+# Android-specific scenarios (rotation, background, split-screen).
+
+version: "1.0"
+name: "Yole Edge Cases and Stress Test Bank"
+description: "Edge case and stress tests: tabs, large files, rapid cycles, memory pressure, network loss, accessibility, and Android specifics"
+metadata:
+  author: "vasic-digital"
+  app: "Yole"
+  version: "1.0.0"
+
+test_cases:
+  # ==================== Many Tabs ====================
+  - id: EDGE-TAB-001
+    name: "Open 20 tabs simultaneously"
+    category: stress
+    priority: high
+    platforms: [android, web, desktop]
+    steps:
+      - name: "Open first 10 files"
+        action: "Open 10 different text files in separate tabs"
+        expected: "All 10 tabs visible in tab bar (may scroll)"
+      - name: "Open next 10 files"
+        action: "Open 10 more files"
+        expected: "20 tabs total; tab bar scrollable or overflow menu present"
+      - name: "Switch between tabs"
+        action: "Click/tap tabs 1, 10, 20 in sequence"
+        expected: "Each tab content loads within 500ms, no OOM crash"
+      - name: "Check memory"
+        action: "Monitor memory usage"
+        expected: "App memory stays within reasonable bounds (no OOM kill)"
+    tags: [stress, tabs, memory, many-tabs]
+    documentation_refs:
+      - type: user_guide
+        section: "4.5"
+        path: "docs/USER_MANUAL_DESKTOP.md"
+    estimated_duration: "120s"
+    expected_result: "20 open tabs navigable without crash or unacceptable memory growth"
+
+  - id: EDGE-TAB-002
+    name: "Close all tabs and verify clean state"
+    category: stress
+    priority: medium
+    platforms: [android, web, desktop]
+    steps:
+      - name: "Open 10 tabs"
+        action: "Open 10 files"
+        expected: "10 tabs present"
+      - name: "Close all tabs one by one"
+        action: "Close each tab in sequence"
+        expected: "Each close responds quickly; tab count decrements"
+      - name: "Verify empty state"
+        action: "Check app after last tab closed"
+        expected: "Empty state shown (welcome screen or file browser)"
+    tags: [stress, tabs, close-all, cleanup]
+    estimated_duration: "60s"
+    expected_result: "All tabs closeable; empty state displayed cleanly"
+
+  # ==================== Rapid Format Switching ====================
+  - id: EDGE-FMT-001
+    name: "Rapid format switching between 17 formats"
+    category: stress
+    priority: medium
+    platforms: [android, web, desktop]
+    steps:
+      - name: "Open a text file"
+        action: "Open a .txt file in editor"
+        expected: "Plain text editor mode"
+      - name: "Rapidly switch formats"
+        action: "Change format to Markdown, then Org, then CSV, then LaTeX, cycling through all 17 formats within 30s"
+        expected: "Each format switch applies correct syntax highlighting"
+      - name: "Verify no freeze"
+        action: "Check UI responsiveness throughout"
+        expected: "App remains responsive; no ANR or freeze"
+    tags: [stress, format-switching, rapid, all-formats]
+    estimated_duration: "45s"
+    expected_result: "Rapid format switching does not freeze or crash the app"
+
+  # ==================== Very Large Files ====================
+  - id: EDGE-LARGE-001
+    name: "Open 5MB text file"
+    category: stress
+    priority: high
+    platforms: [android, web, desktop]
+    steps:
+      - name: "Open a 5MB plain text file"
+        action: "Load a 5MB .txt file from local storage"
+        expected: "File begins loading; progress indicator shown"
+      - name: "Wait for load completion"
+        action: "Wait up to 10 seconds"
+        expected: "File opens in editor within 10 seconds"
+      - name: "Scroll to end"
+        action: "Jump to end of document"
+        expected: "End of file reached; final lines visible"
+      - name: "Type at end"
+        action: "Insert a character at end"
+        expected: "Input accepted within 200ms"
+    tags: [stress, large-file, 5mb, performance]
+    estimated_duration: "30s"
+    expected_result: "5MB file loads and remains editable within time limits"
+
+  - id: EDGE-LARGE-002
+    name: "Open file with 100K lines"
+    category: stress
+    priority: high
+    platforms: [android, web, desktop]
+    steps:
+      - name: "Open 100K-line file"
+        action: "Load a text file containing exactly 100,000 lines"
+        expected: "File opens; first lines visible"
+      - name: "Jump to line 50000"
+        action: "Use Go To Line to jump to line 50000"
+        expected: "Jumps to correct line within 1 second"
+      - name: "Edit at line 50000"
+        action: "Insert text at line 50000"
+        expected: "Edit accepted without UI freeze"
+      - name: "Undo the edit"
+        action: "Press Ctrl+Z or Undo"
+        expected: "Undo completes quickly"
+    tags: [stress, large-file, 100k-lines, performance]
+    estimated_duration: "45s"
+    expected_result: "100K-line file navigable and editable without unacceptable lag"
+
+  # ==================== Rapid Save / Load Cycles ====================
+  - id: EDGE-CYCLE-001
+    name: "Rapid save/load cycles (50 iterations)"
+    category: stress
+    priority: medium
+    platforms: [android, web, desktop]
+    steps:
+      - name: "Open a small text file"
+        action: "Open a 1KB .md file"
+        expected: "File in editor"
+      - name: "Perform 50 save/edit cycles"
+        action: "For each of 50 iterations: type one character, save, wait 100ms"
+        expected: "Each save completes within 500ms"
+      - name: "Verify final content"
+        action: "Check file content after 50 cycles"
+        expected: "All 50 characters present; no data corruption"
+    tags: [stress, save, load, rapid-cycles, data-integrity]
+    estimated_duration: "90s"
+    expected_result: "50 rapid save cycles complete without corruption or crash"
+
+  # ==================== Memory Pressure ====================
+  - id: EDGE-MEM-001
+    name: "Open many documents under memory pressure"
+    category: stress
+    priority: high
+    platforms: [android, desktop]
+    steps:
+      - name: "Open 15 medium-sized files"
+        action: "Open 15 files each around 100KB"
+        expected: "Files open; tabs accumulate"
+      - name: "Monitor memory"
+        action: "Check memory consumption"
+        expected: "Memory does not exceed 512MB heap (or platform limit)"
+      - name: "Switch rapidly between all tabs"
+        action: "Cycle through all 15 tabs"
+        expected: "Each tab renders without reloading from disk if recently viewed"
+      - name: "Close half the tabs"
+        action: "Close 7 tabs"
+        expected: "Memory released; no lingering references"
+    tags: [stress, memory, many-documents, heap]
+    estimated_duration: "120s"
+    expected_result: "Memory stays bounded under load; no OOM kill"
+
+  # ==================== Network Interruption ====================
+  - id: EDGE-NET-001
+    name: "Network interruption during cloud file list"
+    category: stress
+    priority: high
+    platforms: [android, desktop]
+    steps:
+      - name: "Begin listing a cloud directory"
+        action: "Open a large cloud directory (50+ files)"
+        expected: "Listing starts loading"
+      - name: "Cut network mid-listing"
+        action: "Disable network while listing is in progress"
+        expected: "Error notification: 'Connection lost'"
+      - name: "Restore network"
+        action: "Re-enable network"
+        expected: "Refresh button or auto-retry restores the listing"
+    tags: [stress, network, interruption, cloud, resilience]
+    estimated_duration: "45s"
+    expected_result: "Network interruption during listing shows error and recovers"
+
+  - id: EDGE-NET-002
+    name: "Repeated network flapping does not corrupt state"
+    category: stress
+    priority: medium
+    platforms: [android, desktop]
+    steps:
+      - name: "Enable/disable network 10 times rapidly"
+        action: "Toggle airplane mode on and off 10 times within 20 seconds"
+        expected: "App handles each transition"
+      - name: "Verify app stability"
+        action: "Check app is not crashed or frozen"
+        expected: "App responsive; no ANR; offline/online status correct"
+      - name: "Perform a cloud operation"
+        action: "List files from cloud after flapping stops"
+        expected: "Cloud operation succeeds normally"
+    tags: [stress, network, flapping, stability]
+    estimated_duration: "60s"
+    expected_result: "Network flapping does not crash or corrupt app state"
+
+  # ==================== App Backgrounding During Save (Android) ====================
+  - id: EDGE-BG-001
+    name: "Background app during save completes save"
+    category: functional
+    priority: critical
+    platforms: [android]
+    steps:
+      - name: "Open file and start editing"
+        action: "Open a cloud-backed file, make significant changes"
+        expected: "Unsaved changes present"
+      - name: "Trigger save then immediately background"
+        action: "Tap Save, then immediately press Home button"
+        expected: "App goes to background"
+      - name: "Return to app"
+        action: "Switch back to Yole"
+        expected: "Save completed; no unsaved indicator; content intact"
+    tags: [android, background, save, lifecycle]
+    estimated_duration: "25s"
+    expected_result: "Save completes correctly when app is backgrounded mid-save"
+
+  - id: EDGE-BG-002
+    name: "App killed in background preserves auto-saved content"
+    category: functional
+    priority: high
+    platforms: [android]
+    steps:
+      - name: "Open file, edit, wait for auto-save"
+        action: "Make changes and allow auto-save to trigger"
+        expected: "Auto-save completes"
+      - name: "Background and let system kill app"
+        action: "Open many apps to trigger low memory kill of Yole"
+        expected: "Yole process terminated by OS"
+      - name: "Relaunch Yole"
+        action: "Tap Yole icon"
+        expected: "Last auto-saved content restored"
+    tags: [android, background, kill, auto-save, state-restoration]
+    estimated_duration: "60s"
+    expected_result: "Auto-saved content restored after OS-initiated process kill"
+
+  # ==================== Low Storage Space ====================
+  - id: EDGE-STOR-001
+    name: "Save fails gracefully when storage is full"
+    category: edge-case
+    priority: high
+    platforms: [android, desktop]
+    steps:
+      - name: "Fill device storage to near-full"
+        action: "Reduce available storage to under 1MB"
+        expected: "Device storage near full"
+      - name: "Attempt to save a large file"
+        action: "Try to save a 500KB file"
+        expected: "Save fails with clear error: 'Not enough storage space'"
+      - name: "Verify original file intact"
+        action: "Check that previous version of file not corrupted"
+        expected: "Original file unchanged; no partial write"
+    tags: [edge-case, low-storage, save-failure, error-handling]
+    estimated_duration: "30s"
+    expected_result: "Storage full error shown clearly; no data corruption"
+
+  # ==================== Accessibility ====================
+  - id: EDGE-A11Y-001
+    name: "Screen reader navigates main screens"
+    category: accessibility
+    priority: high
+    platforms: [android, web]
+    steps:
+      - name: "Enable TalkBack (Android) or screen reader"
+        action: "Enable accessibility screen reader in OS settings"
+        expected: "Screen reader active"
+      - name: "Navigate to Files tab"
+        action: "Swipe to Files tab and double-tap to activate"
+        expected: "TalkBack announces 'Files tab' or equivalent"
+      - name: "Navigate file list"
+        action: "Swipe through file list items"
+        expected: "Each file name announced by screen reader"
+      - name: "Open a file"
+        action: "Double-tap a file"
+        expected: "File opens; screen reader announces editor opened"
+    tags: [accessibility, screen-reader, talkback, a11y]
+    estimated_duration: "60s"
+    expected_result: "Screen reader can navigate main app flows end-to-end"
+
+  - id: EDGE-A11Y-002
+    name: "Large text mode does not break layouts"
+    category: accessibility
+    priority: high
+    platforms: [android, web, desktop]
+    steps:
+      - name: "Set system font size to largest"
+        action: "Set OS font size to 200% or maximum accessibility size"
+        expected: "System font enlarged"
+      - name: "Launch Yole"
+        action: "Open Yole application"
+        expected: "App launches without crash"
+      - name: "Check main screens"
+        action: "Navigate through Files, Todo, QuickNote, Settings"
+        expected: "All text readable; no text clipped or overflowing beyond screen"
+      - name: "Open editor"
+        action: "Open a file in editor with large font"
+        expected: "Editor text readable; buttons and tabs not obscured"
+    tags: [accessibility, large-text, font-size, layout, a11y]
+    estimated_duration: "45s"
+    expected_result: "200% font size does not break any screen layout"
+
+  - id: EDGE-A11Y-003
+    name: "High contrast mode renders correctly"
+    category: accessibility
+    priority: medium
+    platforms: [android, web]
+    steps:
+      - name: "Enable high contrast or forced dark mode"
+        action: "Enable OS high contrast accessibility setting"
+        expected: "High contrast mode active"
+      - name: "Check app contrast ratios"
+        action: "Navigate through main screens and editor"
+        expected: "All text meets WCAG AA contrast ratio (4.5:1 minimum)"
+      - name: "Check interactive elements"
+        action: "Inspect buttons, tabs, and input fields"
+        expected: "All interactive elements clearly distinguishable"
+    tags: [accessibility, high-contrast, wcag, a11y]
+    estimated_duration: "30s"
+    expected_result: "High contrast mode maintains readable and distinguishable UI"
+
+  - id: EDGE-A11Y-004
+    name: "Keyboard-only navigation covers all actions (Desktop)"
+    category: accessibility
+    priority: high
+    platforms: [desktop, web]
+    steps:
+      - name: "Disable mouse/trackpad"
+        action: "Use keyboard only (Tab, Enter, arrow keys)"
+        expected: "Focus indicator visible on first interactive element"
+      - name: "Tab through main navigation"
+        action: "Press Tab to cycle through navigation items"
+        expected: "Focus moves to each nav item in logical order"
+      - name: "Open a file via keyboard"
+        action: "Navigate to a file and press Enter to open"
+        expected: "File opens in editor"
+      - name: "Edit and save via keyboard"
+        action: "Type content, press Ctrl+S"
+        expected: "Content saved; all actions keyboard-accessible"
+    tags: [accessibility, keyboard-navigation, desktop, a11y, wcag]
+    estimated_duration: "60s"
+    expected_result: "All primary app functions reachable via keyboard alone"
+
+  # ==================== Rotation During Editing (Android) ====================
+  - id: EDGE-ROT-001
+    name: "Rotation during active editing preserves all state"
+    category: functional
+    priority: high
+    platforms: [android]
+    steps:
+      - name: "Open file and type content"
+        action: "Open a .md file, type 'rotation test content', scroll to line 50"
+        expected: "Content and scroll position set"
+      - name: "Rotate to landscape mid-typing"
+        action: "Rotate device while typing"
+        expected: "Rotation completes; typed text present; cursor near last position"
+      - name: "Continue typing"
+        action: "Type more text in landscape"
+        expected: "Text accepted"
+      - name: "Rotate back"
+        action: "Rotate back to portrait"
+        expected: "All content intact; scroll position reasonable"
+    tags: [android, rotation, editor, state-preservation, edge-case]
+    estimated_duration: "30s"
+    expected_result: "Active editing state fully preserved across rotation"
+
+  - id: EDGE-ROT-002
+    name: "Rotation during cloud operation completes cleanly"
+    category: edge-case
+    priority: medium
+    platforms: [android]
+    steps:
+      - name: "Start a cloud file upload"
+        action: "Begin uploading a file to WebDAV"
+        expected: "Upload in progress"
+      - name: "Rotate device mid-upload"
+        action: "Rotate while upload is at ~30%"
+        expected: "Activity recreates; upload continues in background"
+      - name: "Verify upload completes"
+        action: "Wait for upload to finish post-rotation"
+        expected: "Upload completes; file appears in cloud listing"
+    tags: [android, rotation, upload, cloud, edge-case]
+    estimated_duration: "45s"
+    expected_result: "Rotation during upload does not cancel or corrupt the operation"
+
+  # ==================== Split Screen / Multi-Window (Android) ====================
+  - id: EDGE-SPLIT-001
+    name: "Yole usable in split-screen mode"
+    category: functional
+    priority: medium
+    platforms: [android]
+    steps:
+      - name: "Enter split-screen with Yole"
+        action: "Put Yole in split-screen alongside Files app"
+        expected: "Yole occupies half the screen"
+      - name: "Navigate and open a file"
+        action: "Open a file from file browser in split-screen"
+        expected: "Editor opens in constrained space; content readable"
+      - name: "Type in editor"
+        action: "Enter text in the narrow editor"
+        expected: "Typing works; keyboard does not cover editor fully"
+    tags: [android, split-screen, multi-window, edge-case]
+    estimated_duration: "30s"
+    expected_result: "Yole is functional and usable in Android split-screen mode"
+
+  - id: EDGE-SPLIT-002
+    name: "Drag file from Files app into Yole (multi-window)"
+    category: functional
+    priority: low
+    platforms: [android]
+    steps:
+      - name: "Open Yole and Files in split-screen"
+        action: "Launch both apps in split-screen"
+        expected: "Both apps visible simultaneously"
+      - name: "Drag a text file from Files into Yole"
+        action: "Long-press file in Files app and drag to Yole panel"
+        expected: "Yole opens the dragged file or shows a drop target"
+    tags: [android, split-screen, drag-drop, multi-window]
+    estimated_duration: "30s"
+    expected_result: "File drag from Files app into Yole opens the file"
+
+  # ==================== Misc Stress ====================
+  - id: EDGE-MISC-001
+    name: "App launch time within threshold"
+    category: stress
+    priority: critical
+    platforms: [android, web, desktop]
+    steps:
+      - name: "Cold launch the app"
+        action: "Force-close Yole, then launch from home screen/dock"
+        expected: "App begins rendering"
+      - name: "Measure time to interactive"
+        action: "Record time from tap to fully interactive main screen"
+        expected: "Time to interactive under 3s on mid-range device"
+    tags: [stress, performance, launch-time, cold-start]
+    estimated_duration: "15s"
+    expected_result: "Cold start completes within 3 seconds on target hardware"
+
+  - id: EDGE-MISC-002
+    name: "No memory leak after repeated open/close cycles"
+    category: stress
+    priority: high
+    platforms: [android, desktop]
+    steps:
+      - name: "Record baseline memory"
+        action: "Note app memory after fresh launch"
+        expected: "Baseline memory recorded"
+      - name: "Perform 30 open/close file cycles"
+        action: "Open a file, read it, close it — repeat 30 times"
+        expected: "Each cycle completes normally"
+      - name: "Check memory after cycles"
+        action: "Record memory after 30 cycles"
+        expected: "Memory within 20% of baseline (no significant leak)"
+    tags: [stress, memory-leak, cycles, stability]
+    estimated_duration: "120s"
+    expected_result: "Repeated open/close cycles do not cause detectable memory leak"
+
+  - id: EDGE-MISC-003
+    name: "App recovers from unexpected background kill"
+    category: edge-case
+    priority: high
+    platforms: [android]
+    steps:
+      - name: "Open several files with edits"
+        action: "Open 3 files, make edits in each, do not save manually"
+        expected: "3 tabs with unsaved changes"
+      - name: "Simulate process death"
+        action: "Use 'adb shell am kill' or low memory trigger to kill Yole"
+        expected: "Process terminated"
+      - name: "Relaunch Yole"
+        action: "Tap Yole icon"
+        expected: "App restores session state: same 3 tabs present"
+      - name: "Verify content"
+        action: "Check each tab content"
+        expected: "At minimum auto-saved content restored; no blank editors"
+    tags: [android, process-death, state-restoration, edge-case]
+    estimated_duration: "60s"
+    expected_result: "Session restored after unexpected process death"
+
+  - id: EDGE-MISC-004
+    name: "Simultaneous cloud sync and local edit"
+    category: stress
+    priority: medium
+    platforms: [android, desktop]
+    steps:
+      - name: "Open a cloud-backed file"
+        action: "Open a file stored on WebDAV"
+        expected: "File open in editor"
+      - name: "Trigger background sync while editing"
+        action: "Type rapidly while a background sync is in progress"
+        expected: "Typing continues uninterrupted"
+      - name: "Verify final state"
+        action: "After sync and typing complete, save and check content"
+        expected: "No data loss or duplication; last-write-wins or merge applied"
+    tags: [stress, cloud, sync, concurrent-edit, data-integrity]
+    estimated_duration: "45s"
+    expected_result: "Concurrent sync and local edit resolves without data loss"

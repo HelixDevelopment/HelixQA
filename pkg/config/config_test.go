@@ -296,6 +296,34 @@ func TestDefaultAutonomousConfig(t *testing.T) {
 	assert.Equal(t, "low", ac.TicketsMinSeverity)
 }
 
+func TestDefaultAutonomousConfig_AudioDefaults(t *testing.T) {
+	ac := DefaultAutonomousConfig()
+	assert.False(t, ac.RecordingAudio)
+	assert.Equal(t, "high", ac.RecordingAudioQuality)
+	assert.Equal(t, "wav", ac.RecordingAudioFormat)
+	assert.Equal(t, "default", ac.RecordingAudioDevice)
+}
+
+func TestConfig_AudioRecordingQualityValues(t *testing.T) {
+	validQualities := []string{"standard", "high", "ultra"}
+	ac := DefaultAutonomousConfig()
+	assert.Contains(t, validQualities, ac.RecordingAudioQuality)
+
+	// Verify each quality can be set.
+	for _, q := range validQualities {
+		ac.RecordingAudioQuality = q
+		assert.Equal(t, q, ac.RecordingAudioQuality)
+	}
+
+	// Verify formats.
+	validFormats := []string{"wav", "flac"}
+	assert.Contains(t, validFormats, ac.RecordingAudioFormat)
+	for _, f := range validFormats {
+		ac.RecordingAudioFormat = f
+		assert.Equal(t, f, ac.RecordingAudioFormat)
+	}
+}
+
 func TestAutonomousConfig_AgentsEnabled(t *testing.T) {
 	ac := DefaultAutonomousConfig()
 	assert.Contains(t, ac.AgentsEnabled, "opencode")

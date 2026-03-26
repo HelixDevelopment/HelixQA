@@ -1,0 +1,449 @@
+# SPDX-FileCopyrightText: 2026 Milos Vasic
+# SPDX-License-Identifier: Apache-2.0
+#
+# HelixQA Test Bank: Cloud Storage CRUD Operations
+# Tests list, upload, download, delete, rename, sync, offline mode,
+# connection loss, rate limiting, and circuit breaker for all 8 protocols.
+
+version: "1.0"
+name: "Yole Cloud Storage Operations Test Bank"
+description: "CRUD and resilience tests for all 8 storage protocols: WebDAV, FTP, SFTP, SMB, Git, Dropbox, GoogleDrive, OneDrive"
+metadata:
+  author: "vasic-digital"
+  app: "Yole"
+  version: "1.0.0"
+
+test_cases:
+  # ==================== List Files ====================
+  - id: CLOUD-LIST-001
+    name: "List files from WebDAV storage"
+    category: functional
+    priority: critical
+    platforms: [android, desktop]
+    steps:
+      - name: "Select configured WebDAV storage"
+        action: "Open storage selector, choose WebDAV server"
+        expected: "Connection established, root directory listed"
+      - name: "Verify file listing"
+        action: "Check file list contents"
+        expected: "Files and folders shown with names, sizes, and dates"
+      - name: "Navigate into subfolder"
+        action: "Tap/click a subfolder"
+        expected: "Subfolder contents loaded from WebDAV"
+    tags: [cloud, webdav, list, browse]
+    documentation_refs:
+      - type: user_guide
+        section: "5.2"
+        path: "docs/USER_MANUAL_DESKTOP.md"
+    estimated_duration: "20s"
+    expected_result: "WebDAV file listing works including subdirectory navigation"
+
+  - id: CLOUD-LIST-002
+    name: "List files from each configured protocol"
+    category: functional
+    priority: high
+    platforms: [android, desktop]
+    steps:
+      - name: "List FTP files"
+        action: "Switch to FTP storage and list root"
+        expected: "FTP directory listing shown"
+      - name: "List SFTP files"
+        action: "Switch to SFTP storage and list root"
+        expected: "SFTP directory listing shown"
+      - name: "List SMB files"
+        action: "Switch to SMB storage and list share root"
+        expected: "SMB share contents shown"
+      - name: "List Dropbox files"
+        action: "Switch to Dropbox storage"
+        expected: "Dropbox root files listed"
+      - name: "List Google Drive files"
+        action: "Switch to Google Drive storage"
+        expected: "Drive root files listed"
+      - name: "List OneDrive files"
+        action: "Switch to OneDrive storage"
+        expected: "OneDrive root files listed"
+    tags: [cloud, multi-protocol, list, all-protocols]
+    estimated_duration: "90s"
+    expected_result: "All 6 additional protocols list files from their root"
+
+  # ==================== Upload ====================
+  - id: CLOUD-UPL-001
+    name: "Upload file to WebDAV"
+    category: functional
+    priority: critical
+    platforms: [android, desktop]
+    steps:
+      - name: "Open WebDAV storage browser"
+        action: "Navigate to WebDAV storage"
+        expected: "WebDAV file listing visible"
+      - name: "Initiate upload"
+        action: "Tap/click 'Upload' or drag a local file"
+        expected: "File picker or drag target active"
+      - name: "Select local file"
+        action: "Choose a local .md file to upload"
+        expected: "Upload progress indicator shown"
+      - name: "Verify upload complete"
+        action: "Wait for upload to finish"
+        expected: "Uploaded file appears in WebDAV listing"
+    tags: [cloud, webdav, upload, crud]
+    estimated_duration: "30s"
+    expected_result: "File uploaded to WebDAV and visible in remote listing"
+
+  - id: CLOUD-UPL-002
+    name: "Upload file to Dropbox"
+    category: functional
+    priority: high
+    platforms: [android, desktop]
+    steps:
+      - name: "Navigate to Dropbox storage"
+        action: "Open Dropbox in storage browser"
+        expected: "Dropbox file listing"
+      - name: "Upload a file"
+        action: "Select a local .txt file for upload"
+        expected: "Progress shown"
+      - name: "Confirm appearance"
+        action: "Check Dropbox listing after upload"
+        expected: "Uploaded file visible with correct name and size"
+    tags: [cloud, dropbox, upload, crud]
+    estimated_duration: "30s"
+    expected_result: "File uploaded to Dropbox successfully"
+
+  - id: CLOUD-UPL-003
+    name: "Upload large file shows progress"
+    category: functional
+    priority: high
+    platforms: [android, desktop]
+    steps:
+      - name: "Select a large file (1MB+)"
+        action: "Choose a 1MB+ text file for upload to any protocol"
+        expected: "Upload begins"
+      - name: "Monitor progress bar"
+        action: "Observe progress indicator during upload"
+        expected: "Progress bar advances incrementally (0% to 100%)"
+      - name: "Verify completion"
+        action: "Wait for upload to finish"
+        expected: "Success message; file appears in remote listing"
+    tags: [cloud, upload, progress, large-file]
+    estimated_duration: "45s"
+    expected_result: "Large file upload shows incremental progress"
+
+  # ==================== Download ====================
+  - id: CLOUD-DWN-001
+    name: "Download file from SFTP"
+    category: functional
+    priority: critical
+    platforms: [android, desktop]
+    steps:
+      - name: "Browse SFTP storage"
+        action: "Open SFTP storage, navigate to a file"
+        expected: "File visible in SFTP listing"
+      - name: "Open/download file"
+        action: "Tap/click the file to open in Yole editor"
+        expected: "File downloaded and opened in editor"
+      - name: "Verify content"
+        action: "Check editor content matches expected"
+        expected: "File content correct"
+    tags: [cloud, sftp, download, open, crud]
+    estimated_duration: "25s"
+    expected_result: "File downloaded from SFTP and opened in editor"
+
+  - id: CLOUD-DWN-002
+    name: "Download file from Google Drive"
+    category: functional
+    priority: high
+    platforms: [android, desktop]
+    steps:
+      - name: "Browse Google Drive"
+        action: "Open Google Drive storage listing"
+        expected: "Drive files shown"
+      - name: "Open a document"
+        action: "Tap a .md file in Drive"
+        expected: "File downloaded and opened in Yole editor"
+    tags: [cloud, googledrive, download, crud]
+    estimated_duration: "25s"
+    expected_result: "Google Drive file opens in Yole editor"
+
+  # ==================== Delete ====================
+  - id: CLOUD-DEL-001
+    name: "Delete file from FTP with confirmation"
+    category: functional
+    priority: high
+    platforms: [android, desktop]
+    steps:
+      - name: "Browse FTP storage"
+        action: "Navigate to a test file on FTP"
+        expected: "File visible in listing"
+      - name: "Initiate delete"
+        action: "Long-press or right-click file, select 'Delete'"
+        expected: "Confirmation dialog shown"
+      - name: "Confirm delete"
+        action: "Tap/click 'Delete' in dialog"
+        expected: "File removed from FTP listing"
+      - name: "Verify gone"
+        action: "Refresh FTP listing"
+        expected: "Deleted file no longer present"
+    tags: [cloud, ftp, delete, crud, confirmation]
+    estimated_duration: "30s"
+    expected_result: "File deleted from FTP after confirmation"
+
+  - id: CLOUD-DEL-002
+    name: "Cancel delete leaves file intact"
+    category: functional
+    priority: medium
+    platforms: [android, desktop]
+    steps:
+      - name: "Initiate delete on a file"
+        action: "Select delete for a cloud file"
+        expected: "Confirmation dialog shown"
+      - name: "Cancel"
+        action: "Tap 'Cancel' in confirmation dialog"
+        expected: "Dialog dismissed, file remains in listing"
+    tags: [cloud, delete, cancel, safety]
+    estimated_duration: "15s"
+    expected_result: "Cancel delete leaves file unmodified"
+
+  # ==================== Rename / Move ====================
+  - id: CLOUD-REN-001
+    name: "Rename file on OneDrive"
+    category: functional
+    priority: high
+    platforms: [android, desktop]
+    steps:
+      - name: "Select file on OneDrive"
+        action: "Open OneDrive storage, long-press a file"
+        expected: "Context menu with Rename option"
+      - name: "Rename file"
+        action: "Enter new name 'renamed-note.md' and confirm"
+        expected: "File renamed in OneDrive listing"
+      - name: "Verify new name"
+        action: "Check listing"
+        expected: "File shows new name 'renamed-note.md'"
+    tags: [cloud, onedrive, rename, crud]
+    estimated_duration: "25s"
+    expected_result: "File renamed on OneDrive"
+
+  # ==================== Create Directory ====================
+  - id: CLOUD-DIR-001
+    name: "Create directory on SMB share"
+    category: functional
+    priority: medium
+    platforms: [android, desktop]
+    steps:
+      - name: "Browse SMB share"
+        action: "Open SMB storage"
+        expected: "SMB share contents shown"
+      - name: "Create new folder"
+        action: "Tap 'New Folder', enter name 'test-folder'"
+        expected: "Folder created and appears in listing"
+    tags: [cloud, smb, create-directory, crud]
+    estimated_duration: "20s"
+    expected_result: "Directory created on SMB share"
+
+  # ==================== Sync Status ====================
+  - id: CLOUD-SYNC-001
+    name: "Sync status indicators update correctly"
+    category: functional
+    priority: high
+    platforms: [android, desktop]
+    steps:
+      - name: "Open a cloud-backed file"
+        action: "Open a file from WebDAV storage in editor"
+        expected: "File opens; sync status shows 'Synced'"
+      - name: "Make changes"
+        action: "Edit the file content"
+        expected: "Sync status changes to 'Unsaved' or 'Modified'"
+      - name: "Save to cloud"
+        action: "Trigger save"
+        expected: "Upload progress shown, then status returns to 'Synced'"
+    tags: [cloud, sync, status-indicator, ui]
+    estimated_duration: "25s"
+    expected_result: "Sync status correctly reflects file state transitions"
+
+  # ==================== Offline Mode ====================
+  - id: CLOUD-OFFL-001
+    name: "Offline mode serves cached content"
+    category: functional
+    priority: critical
+    platforms: [android, desktop]
+    steps:
+      - name: "Open a cloud file while online"
+        action: "Open a WebDAV file to populate cache"
+        expected: "File opens normally"
+      - name: "Disable network"
+        action: "Turn off WiFi or enable airplane mode"
+        expected: "Network unavailable"
+      - name: "Reopen the same file"
+        action: "Close and reopen the cloud file"
+        expected: "File opens from cache with 'Offline' indicator"
+      - name: "Edit while offline"
+        action: "Make changes to the cached file"
+        expected: "Edits accepted; pending sync indicator shown"
+    tags: [cloud, offline, cache, resilience]
+    estimated_duration: "40s"
+    expected_result: "Offline mode serves cached content and queues changes"
+
+  - id: CLOUD-OFFL-002
+    name: "Pending changes sync when back online"
+    category: functional
+    priority: critical
+    platforms: [android, desktop]
+    steps:
+      - name: "Make offline edits"
+        action: "Edit a cloud file while offline"
+        expected: "Changes saved locally with pending sync flag"
+      - name: "Restore network"
+        action: "Re-enable WiFi or disable airplane mode"
+        expected: "App detects network availability"
+      - name: "Verify sync"
+        action: "Wait for automatic sync"
+        expected: "Pending changes uploaded; sync indicator clears"
+    tags: [cloud, offline, sync-on-reconnect, resilience]
+    estimated_duration: "45s"
+    expected_result: "Offline edits automatically synced when network restored"
+
+  # ==================== Connection Loss During Operation ====================
+  - id: CLOUD-LOSS-001
+    name: "Connection lost mid-upload handled gracefully"
+    category: functional
+    priority: high
+    platforms: [android, desktop]
+    steps:
+      - name: "Start uploading a large file"
+        action: "Begin uploading a 500KB file to any cloud protocol"
+        expected: "Upload progress started"
+      - name: "Interrupt connection mid-upload"
+        action: "Disable network at ~50% progress"
+        expected: "Upload fails with error notification"
+      - name: "Verify no corrupt file"
+        action: "Check cloud storage listing"
+        expected: "Partial upload not listed or marked as incomplete"
+      - name: "Re-enable network and retry"
+        action: "Restore network, retry upload"
+        expected: "Upload completes successfully on retry"
+    tags: [cloud, upload, connection-loss, resilience, error-handling]
+    estimated_duration: "60s"
+    expected_result: "Mid-upload connection loss handled; retry succeeds"
+
+  - id: CLOUD-LOSS-002
+    name: "Connection lost mid-download shows error and retry"
+    category: functional
+    priority: high
+    platforms: [android, desktop]
+    steps:
+      - name: "Begin downloading a cloud file"
+        action: "Open a large file from cloud storage"
+        expected: "Download starts"
+      - name: "Drop connection"
+        action: "Disable network during download"
+        expected: "Download fails with network error toast or dialog"
+      - name: "Retry"
+        action: "Tap 'Retry' or reopen file after restoring network"
+        expected: "File downloads and opens correctly"
+    tags: [cloud, download, connection-loss, retry, resilience]
+    estimated_duration: "45s"
+    expected_result: "Download failure shows retry option that works"
+
+  # ==================== Concurrent Operations ====================
+  - id: CLOUD-CONC-001
+    name: "Concurrent uploads to same protocol"
+    category: stress
+    priority: medium
+    platforms: [android, desktop]
+    steps:
+      - name: "Upload multiple files simultaneously"
+        action: "Select 3 files and upload all at once to WebDAV"
+        expected: "All 3 uploads start concurrently"
+      - name: "Monitor progress"
+        action: "Check that progress is shown for each file"
+        expected: "Individual progress indicators for each upload"
+      - name: "Verify completion"
+        action: "Wait for all uploads"
+        expected: "All 3 files appear in cloud listing"
+    tags: [cloud, concurrent, upload, stress, connection-limiter]
+    estimated_duration: "60s"
+    expected_result: "Concurrent uploads complete without errors or data corruption"
+
+  # ==================== Rate Limiting ====================
+  - id: CLOUD-RATE-001
+    name: "Rate limiter throttles excessive requests"
+    category: functional
+    priority: medium
+    platforms: [android, desktop]
+    steps:
+      - name: "Trigger rapid API calls"
+        action: "Rapidly refresh Dropbox listing 20 times in quick succession"
+        expected: "Initial requests succeed normally"
+      - name: "Observe throttling"
+        action: "Continue rapid requests"
+        expected: "Rate limit indicator shown; requests queued or delayed"
+      - name: "Wait for recovery"
+        action: "Stop triggering requests and wait 10 seconds"
+        expected: "Normal operation resumes without errors"
+    tags: [cloud, rate-limiting, resilience, dropbox]
+    estimated_duration: "45s"
+    expected_result: "Rate limiter prevents API flooding and self-recovers"
+
+  # ==================== Circuit Breaker ====================
+  - id: CLOUD-CIRC-001
+    name: "Circuit breaker opens after repeated failures"
+    category: functional
+    priority: high
+    platforms: [android, desktop]
+    steps:
+      - name: "Cause repeated connection failures"
+        action: "Configure WebDAV with unreachable server, attempt 5 operations"
+        expected: "First few attempts show connection errors"
+      - name: "Verify circuit breaker opens"
+        action: "Attempt another operation"
+        expected: "Circuit breaker open message: 'Service temporarily unavailable'"
+      - name: "Wait for half-open state"
+        action: "Wait 30 seconds"
+        expected: "Circuit breaker allows one probe request"
+      - name: "Restore server and probe"
+        action: "Fix server config, attempt operation"
+        expected: "Circuit breaker closes; normal operation resumes"
+    tags: [cloud, circuit-breaker, resilience, webdav]
+    estimated_duration: "90s"
+    expected_result: "Circuit breaker opens on failures and closes on recovery"
+
+  # ==================== Git-specific Operations ====================
+  - id: CLOUD-GIT-001
+    name: "Git: commit and push changes"
+    category: functional
+    priority: high
+    platforms: [android, desktop]
+    steps:
+      - name: "Open file from Git-backed storage"
+        action: "Open a file from configured Git repository"
+        expected: "File opens in editor"
+      - name: "Edit and save"
+        action: "Make changes and save"
+        expected: "File saved locally"
+      - name: "Commit and push"
+        action: "Tap 'Commit & Push' or trigger sync"
+        expected: "Commit dialog with message field"
+      - name: "Enter commit message and confirm"
+        action: "Enter 'Update note via Yole' and confirm"
+        expected: "Changes committed and pushed to remote"
+    tags: [cloud, git, commit, push, crud]
+    estimated_duration: "45s"
+    expected_result: "File changes committed and pushed to Git remote"
+
+  - id: CLOUD-GIT-002
+    name: "Git: pull remote changes updates local file"
+    category: functional
+    priority: high
+    platforms: [android, desktop]
+    steps:
+      - name: "Open Git storage with remote changes available"
+        action: "Ensure remote has commits not yet pulled"
+        expected: "Sync indicator shows 'behind remote'"
+      - name: "Pull changes"
+        action: "Tap/click 'Pull' or sync button"
+        expected: "Remote changes fetched and merged"
+      - name: "Verify updated content"
+        action: "Open a file that was changed remotely"
+        expected: "File shows latest remote content"
+    tags: [cloud, git, pull, sync, crud]
+    estimated_duration: "30s"
+    expected_result: "Git pull fetches remote changes and updates local files"

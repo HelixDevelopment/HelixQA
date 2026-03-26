@@ -10,6 +10,18 @@
 - All builds and tests are run manually or via Makefile targets
 - This rule is permanent and non-negotiable
 
+## MANDATORY: Everything Runs Inside Containers
+
+**ALL execution MUST happen inside Docker/Podman containers. No exceptions.**
+
+- All builds, tests, dev servers, QA campaigns, and any process execution MUST run inside containers
+- Client apps (admin, web, desktop) MUST be served from containers
+- Mobile testing MUST use Android emulators running inside containers (e.g., `budtmo/docker-android`)
+- HelixQA campaigns MUST execute inside containers with Playwright for browser automation
+- Video recording MUST happen inside containers using Playwright video capture or CDP screencast
+- Never run `go build`, `npm run dev`, or any tooling directly on the host machine
+- Resource limits MUST be enforced: max 35% of host CPU and RAM per CLAUDE.md constraints
+
 ## Architecture
 
 HelixQA is a thin orchestration layer over two foundational modules:

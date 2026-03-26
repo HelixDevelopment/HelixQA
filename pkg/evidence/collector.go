@@ -11,6 +11,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"sync"
 	"time"
@@ -28,6 +29,7 @@ const (
 	TypeLogcat     Type = "logcat"
 	TypeStackTrace Type = "stacktrace"
 	TypeConsoleLog Type = "console_log"
+	TypeAudio      Type = "audio"
 )
 
 // Item represents a single piece of collected evidence.
@@ -53,13 +55,16 @@ type Item struct {
 
 // Collector gathers evidence during QA test execution.
 type Collector struct {
-	mu          sync.Mutex
-	outputDir   string
-	platform    config.Platform
-	cmdRunner   detector.CommandRunner
-	items       []Item
-	recording   bool
-	recordingID string
+	mu               sync.Mutex
+	outputDir        string
+	platform         config.Platform
+	cmdRunner        detector.CommandRunner
+	items            []Item
+	recording        bool
+	recordingID      string
+	audioRecording   bool
+	audioRecordingID string
+	audioCmd         *exec.Cmd
 }
 
 // Option configures a Collector.
@@ -221,6 +226,161 @@ func (c *Collector) IsRecording() bool {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	return c.recording
+}
+
+// AudioQualityParams maps a quality name to sample rate and
+// sample format suitable for ffmpeg arguments.
+type AudioQualityParams struct {
+	SampleRate string
+	SampleFmt  string
+}
+
+// AudioQualityMap returns the ffmpeg parameters for the given
+// quality string. Returns high quality params if the quality
+// string is unrecognized.
+func AudioQualityMap(quality string) AudioQualityParams {
+	switch quality {
+	case "standard":
+		return AudioQualityParams{
+			SampleRate: "44100",
+			SampleFmt:  "s16",
+		}
+	case "high":
+		return AudioQualityParams{
+			SampleRate: "48000",
+			SampleFmt:  "s32",
+		}
+	case "ultra":
+		return AudioQualityParams{
+			SampleRate: "96000",
+			SampleFmt:  "s32",
+		}
+	default:
+		return AudioQualityParams{
+			SampleRate: "48000",
+			SampleFmt:  "s32",
+		}
+	}
+}
+
+// StartAudioRecording begins audio capture using ffmpeg. The
+// audio device, quality, and format are specified via config.
+// Call StopAudioRecording to finalize and get the evidence item.
+func (c *Collector) StartAudioRecording(
+	ctx context.Context,
+	name string,
+	quality string,
+	format string,
+	device string,
+) error {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	if c.audioRecording {
+		return fmt.Errorf("audio recording already in progress")
+	}
+
+	if err := c.ensureOutputDir(); err != nil {
+		return err
+	}
+
+	c.audioRecordingID = fmt.Sprintf(
+		"%s-%d", name, time.Now().UnixMilli(),
+	)
+
+	ext := format
+	if ext == "" {
+		ext = "wav"
+	}
+	outPath := filepath.Join(
+		c.outputDir, c.audioRecordingID+"."+ext,
+	)
+
+	params := AudioQualityMap(quality)
+
+	if device == "" {
+		device = "default"
+	}
+
+	// Build ffmpeg command for PulseAudio capture.
+	// Falls back to ALSA if pulse is not available.
+	args := []string{
+		"-f", "pulse",
+		"-i", device,
+		"-ac", "2",
+		"-ar", params.SampleRate,
+		"-sample_fmt", params.SampleFmt,
+		"-y",
+		outPath,
+	}
+
+	cmd := exec.CommandContext(ctx, "ffmpeg", args...)
+	cmd.Stdout = nil
+	cmd.Stderr = nil
+
+	if err := cmd.Start(); err != nil {
+		return fmt.Errorf("start audio recording: %w", err)
+	}
+
+	c.audioCmd = cmd
+	c.audioRecording = true
+	return nil
+}
+
+// StopAudioRecording stops the active audio capture and returns
+// the evidence item pointing to the recorded file.
+func (c *Collector) StopAudioRecording(
+	_ context.Context,
+) (*Item, error) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	if !c.audioRecording {
+		return nil, fmt.Errorf("no audio recording in progress")
+	}
+
+	// Send interrupt to ffmpeg for graceful shutdown.
+	if c.audioCmd != nil && c.audioCmd.Process != nil {
+		_ = c.audioCmd.Process.Signal(os.Interrupt)
+		_ = c.audioCmd.Wait()
+	}
+
+	// Determine file extension from the path.
+	ext := "wav"
+	if c.audioCmd != nil && len(c.audioCmd.Args) > 0 {
+		last := c.audioCmd.Args[len(c.audioCmd.Args)-1]
+		if e := filepath.Ext(last); e != "" {
+			ext = e[1:] // strip leading dot
+		}
+	}
+
+	path := filepath.Join(
+		c.outputDir,
+		c.audioRecordingID+"."+ext,
+	)
+
+	c.audioRecording = false
+	c.audioCmd = nil
+
+	item := Item{
+		Type:      TypeAudio,
+		Path:      path,
+		Platform:  c.platform,
+		Timestamp: time.Now(),
+	}
+	if info, err := os.Stat(path); err == nil {
+		item.Size = info.Size()
+	}
+	c.items = append(c.items, item)
+	c.audioRecordingID = ""
+	return &item, nil
+}
+
+// IsAudioRecording returns whether audio recording is active.
+func (c *Collector) IsAudioRecording() bool {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	return c.audioRecording
 }
 
 // Items returns all collected evidence items.

@@ -59,40 +59,61 @@ func DefaultSessionConfig() *SessionConfig {
 // SessionCoordinator manages the full lifecycle of an
 // autonomous QA session across multiple platforms.
 type SessionCoordinator struct {
-	config       *SessionConfig
-	orchestrator agent.AgentPool
-	visionEngine analyzer.Analyzer
-	featureMap   *feature.FeatureMap
-	workers      map[string]*PlatformWorker
-	phaseManager *PhaseManager
-	session      *session.SessionRecorder
-	coverage     coverage.CoverageTracker
-	status       SessionStatus
-	mu           sync.Mutex
+	config          *SessionConfig
+	orchestrator    agent.AgentPool
+	visionEngine    analyzer.Analyzer
+	featureMap      *feature.FeatureMap
+	executorFactory ExecutorFactory
+	workers         map[string]*PlatformWorker
+	phaseManager    *PhaseManager
+	session         *session.SessionRecorder
+	coverage        coverage.CoverageTracker
+	status          SessionStatus
+	mu              sync.Mutex
+}
+
+// SessionOption configures a SessionCoordinator.
+type SessionOption func(*SessionCoordinator)
+
+// WithExecutorFactory sets the executor factory used to create
+// platform-specific ActionExecutors during setup. If not set,
+// a NoopExecutorFactory is used (suitable for testing).
+func WithExecutorFactory(f ExecutorFactory) SessionOption {
+	return func(sc *SessionCoordinator) {
+		sc.executorFactory = f
+	}
 }
 
 // NewSessionCoordinator creates a SessionCoordinator with
-// the given configuration and dependencies.
+// the given configuration and dependencies. Use SessionOption
+// values to inject an ExecutorFactory for real platform
+// interaction.
 func NewSessionCoordinator(
 	cfg *SessionConfig,
 	pool agent.AgentPool,
 	viz analyzer.Analyzer,
 	fm *feature.FeatureMap,
 	cov coverage.CoverageTracker,
+	opts ...SessionOption,
 ) *SessionCoordinator {
-	return &SessionCoordinator{
-		config:       cfg,
-		orchestrator: pool,
-		visionEngine: viz,
-		featureMap:   fm,
-		workers:      make(map[string]*PlatformWorker),
-		phaseManager: NewPhaseManager(),
+	sc := &SessionCoordinator{
+		config:          cfg,
+		orchestrator:    pool,
+		visionEngine:    viz,
+		featureMap:      fm,
+		executorFactory: &NoopExecutorFactory{},
+		workers:         make(map[string]*PlatformWorker),
+		phaseManager:    NewPhaseManager(),
 		session: session.NewSessionRecorder(
 			cfg.SessionID, cfg.OutputDir,
 		),
 		coverage: cov,
 		status:   StatusIdle,
 	}
+	for _, opt := range opts {
+		opt(sc)
+	}
+	return sc
 }
 
 // Run executes the full session lifecycle through all 4 phases.
@@ -267,9 +288,14 @@ func (sc *SessionCoordinator) runSetup(
 			)
 		}
 
-		// Create a mock executor for now. In production, the
-		// caller would inject platform-specific executors.
-		exec := &noopExecutor{}
+		// Create platform-specific executor via the factory.
+		exec, err := sc.executorFactory.Create(platform)
+		if err != nil {
+			_ = sc.phaseManager.Fail("setup", err)
+			return fmt.Errorf(
+				"create executor for %s: %w", platform, err,
+			)
+		}
 
 		worker := NewPlatformWorker(PlatformWorkerConfig{
 			Platform: platform,
