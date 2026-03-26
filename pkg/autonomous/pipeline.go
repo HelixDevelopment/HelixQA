@@ -8,13 +8,17 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	osexec "os/exec"
 	"path/filepath"
 	"strings"
 	"time"
 
 	"digital.vasic.helixqa/pkg/analysis"
+	"digital.vasic.helixqa/pkg/config"
+	"digital.vasic.helixqa/pkg/detector"
 	"digital.vasic.helixqa/pkg/learning"
 	"digital.vasic.helixqa/pkg/llm"
+	"digital.vasic.helixqa/pkg/maestro"
 	"digital.vasic.helixqa/pkg/memory"
 	"digital.vasic.helixqa/pkg/performance"
 	"digital.vasic.helixqa/pkg/planning"
@@ -221,6 +225,20 @@ func (sp *SessionPipeline) Run(
 		DesktopDisplay: sp.config.DesktopDisplay,
 	})
 
+	// Clear logcat for clean baseline.
+	if sp.config.AndroidDevice != "" {
+		for _, platform := range sp.config.Platforms {
+			if platform == "android" ||
+				platform == "androidtv" {
+				_ = osexec.CommandContext(
+					ctx, "adb", "-s",
+					sp.config.AndroidDevice,
+					"logcat", "-c",
+				).Run()
+			}
+		}
+	}
+
 	// Start video recording for Android platforms.
 	recorders := make(map[string]*video.ScrcpyRecorder)
 	for _, platform := range sp.config.Platforms {
@@ -267,6 +285,67 @@ func (sp *SessionPipeline) Run(
 				tl.Add(snap)
 			}
 			perfTimelines = append(perfTimelines, tl)
+		}
+	}
+
+	// Run Maestro flows if available.
+	var allFindings []analysis.AnalysisFinding
+	maestroDir := filepath.Join(
+		sp.config.ProjectRoot,
+		"challenges", "helixqa-banks",
+	)
+	if entries, err := os.ReadDir(maestroDir); err == nil {
+		runner := maestro.NewFlowRunner()
+		for _, entry := range entries {
+			name := entry.Name()
+			if !strings.HasSuffix(name, ".yaml") &&
+				!strings.HasSuffix(name, ".yml") {
+				continue
+			}
+			flowPath := filepath.Join(
+				maestroDir, name,
+			)
+			content, err := os.ReadFile(flowPath)
+			if err != nil {
+				continue
+			}
+			cs := string(content)
+			if !strings.Contains(cs, "appId") &&
+				!strings.Contains(
+					cs, "- launchApp",
+				) {
+				continue
+			}
+
+			fmt.Printf(
+				"  Running Maestro flow: %s\n", name,
+			)
+			flowResult, _ := runner.RunFlow(
+				ctx, flowPath,
+				sp.config.AndroidDevice,
+			)
+			if flowResult != nil &&
+				!flowResult.Success {
+				allFindings = append(
+					allFindings,
+					analysis.AnalysisFinding{
+						Category: analysis.CategoryFunctional,
+						Severity: analysis.SeverityHigh,
+						Title: fmt.Sprintf(
+							"Maestro flow failed: %s",
+							name,
+						),
+						Description: fmt.Sprintf(
+							"Passed: %d, Failed: %d\n"+
+								"Output: %s",
+							flowResult.Passed,
+							flowResult.Failed,
+							flowResult.Output,
+						),
+						Platform: "android",
+					},
+				)
+			}
 		}
 	}
 
@@ -328,6 +407,49 @@ func (sp *SessionPipeline) Run(
 					allScreenshots, fname,
 				)
 			}
+
+			// Check for crashes on Android.
+			if (platform == "android" ||
+				platform == "androidtv") &&
+				sp.config.AndroidPackage != "" {
+				det := detector.New(
+					config.PlatformAndroid,
+					detector.WithCommandRunner(
+						detector.NewExecRunner(),
+					),
+					detector.WithPackageName(
+						sp.config.AndroidPackage,
+					),
+				)
+				dr, derr := det.Check(ctx)
+				if derr == nil && dr != nil &&
+					(dr.HasCrash || dr.HasANR) {
+					crashType := "crash"
+					if dr.HasANR {
+						crashType = "ANR"
+					}
+					allFindings = append(
+						allFindings,
+						analysis.AnalysisFinding{
+							Category: analysis.CategoryFunctional,
+							Severity: analysis.SeverityCritical,
+							Title: fmt.Sprintf(
+								"App %s detected "+
+									"during test: %s",
+								crashType, t.Name,
+							),
+							Description: fmt.Sprintf(
+								"Stack trace: %s\n"+
+									"Log entries: %v",
+								dr.StackTrace,
+								dr.LogEntries,
+							),
+							Platform: platform,
+							Screen:   t.Screen,
+						},
+					)
+				}
+			}
 		}
 
 		// Record coverage.
@@ -346,6 +468,32 @@ func (sp *SessionPipeline) Run(
 	// Stop video recorders.
 	for _, rec := range recorders {
 		_ = rec.Stop()
+	}
+
+	// Collect logcat.
+	if sp.config.AndroidDevice != "" {
+		for _, platform := range sp.config.Platforms {
+			if platform == "android" ||
+				platform == "androidtv" {
+				logcatPath := filepath.Join(
+					sp.config.OutputDir, "evidence",
+					platform+"-logcat.txt",
+				)
+				_ = os.MkdirAll(
+					filepath.Dir(logcatPath), 0o755,
+				)
+				out, err := osexec.CommandContext(
+					ctx, "adb", "-s",
+					sp.config.AndroidDevice,
+					"logcat", "-d",
+				).Output()
+				if err == nil {
+					_ = os.WriteFile(
+						logcatPath, out, 0o644,
+					)
+				}
+			}
+		}
 	}
 
 	// Collect final performance metrics.
@@ -369,9 +517,76 @@ func (sp *SessionPipeline) Run(
 		"[pipeline]   %d tests executed\n", testsRun,
 	)
 
+	// ── Phase 3.5: Curiosity-Driven Exploration ────────
+	if sp.config.CuriosityEnabled {
+		fmt.Println(
+			"[pipeline] Phase 3.5: " +
+				"Curiosity-driven exploration",
+		)
+		curiosityCtx, curiosityCancel :=
+			context.WithTimeout(
+				ctx, sp.config.CuriosityTimeout,
+			)
+		defer curiosityCancel()
+
+		preCuriosityCount := len(allScreenshots)
+		for _, platform := range sp.config.Platforms {
+			executor, err := execFactory.Create(
+				platform,
+			)
+			if err != nil {
+				continue
+			}
+
+			for i := 0; i < 5; i++ {
+				select {
+				case <-curiosityCtx.Done():
+					break
+				default:
+				}
+				if curiosityCtx.Err() != nil {
+					break
+				}
+				screenshot, err :=
+					executor.Screenshot(curiosityCtx)
+				if err == nil &&
+					len(screenshot) > 0 {
+					fname := filepath.Join(
+						screenshotDir,
+						fmt.Sprintf(
+							"%s-curiosity-%03d.png",
+							platform, i+1,
+						),
+					)
+					_ = os.WriteFile(
+						fname, screenshot, 0o644,
+					)
+					allScreenshots = append(
+						allScreenshots, fname,
+					)
+				}
+				// Navigate randomly.
+				_ = executor.KeyPress(
+					curiosityCtx,
+					"KEYCODE_DPAD_DOWN",
+				)
+				time.Sleep(2 * time.Second)
+				_ = executor.KeyPress(
+					curiosityCtx,
+					"KEYCODE_DPAD_CENTER",
+				)
+				time.Sleep(3 * time.Second)
+			}
+		}
+		fmt.Printf(
+			"  Curiosity: captured %d additional "+
+				"screenshots\n",
+			len(allScreenshots)-preCuriosityCount,
+		)
+	}
+
 	// ── Phase 4: Analyze ────────────────────────────────
 	fmt.Println("[pipeline] Phase 4/4: Analyze")
-	var allFindings []analysis.AnalysisFinding
 
 	// Analyze screenshots with LLM vision.
 	if sp.provider.SupportsVision() &&
@@ -393,6 +608,81 @@ func (sp *SessionPipeline) Run(
 					allFindings, findings...,
 				)
 			}
+		}
+	}
+
+	// Extract and analyze video frames.
+	ffmpegPath := sp.config.FFmpegPath
+	if ffmpegPath == "" {
+		ffmpegPath = "ffmpeg"
+	}
+	extractor := video.NewFrameExtractor(ffmpegPath)
+	videosDir := filepath.Join(
+		sp.config.OutputDir, "videos",
+	)
+	framesDir := filepath.Join(
+		sp.config.OutputDir, "frames",
+	)
+
+	if entries, err := os.ReadDir(videosDir); err == nil {
+		for _, entry := range entries {
+			if entry.IsDir() ||
+				!strings.HasSuffix(
+					entry.Name(), ".mp4",
+				) {
+				continue
+			}
+			videoPath := filepath.Join(
+				videosDir, entry.Name(),
+			)
+			videoFramesDir := filepath.Join(
+				framesDir,
+				strings.TrimSuffix(
+					entry.Name(), ".mp4",
+				),
+			)
+
+			frames, err := extractor.ExtractFPS(
+				ctx, videoPath, videoFramesDir, 1,
+			)
+			if err != nil {
+				continue
+			}
+
+			// Analyze up to 10 key frames per video.
+			limit := 10
+			if len(frames) < limit {
+				limit = len(frames)
+			}
+			if sp.provider.SupportsVision() {
+				va := analysis.NewVisionAnalyzer(
+					sp.provider,
+				)
+				for _, framePath := range frames[:limit] {
+					imgData, err := os.ReadFile(
+						framePath,
+					)
+					if err != nil {
+						continue
+					}
+					findings, err :=
+						va.AnalyzeScreenshot(
+							ctx, imgData,
+							filepath.Base(framePath),
+							"video-frame",
+						)
+					if err == nil {
+						allFindings = append(
+							allFindings,
+							findings...,
+						)
+					}
+				}
+			}
+			fmt.Printf(
+				"  Analyzed %d frames from %s\n",
+				limit, entry.Name(),
+			)
 		}
 	}
 
