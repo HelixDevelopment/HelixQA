@@ -1,0 +1,66 @@
+[submodule "tools/opensource/scrcpy"]
+	path = tools/opensource/scrcpy
+	url = https://github.com/Genymobile/scrcpy.git
+[submodule "tools/opensource/allure2"]
+	path = tools/opensource/allure2
+	url = https://github.com/allure-framework/allure2.git
+[submodule "tools/opensource/leakcanary"]
+	path = tools/opensource/leakcanary
+	url = https://github.com/square/leakcanary.git
+[submodule "tools/opensource/docker-android"]
+	path = tools/opensource/docker-android
+	url = https://github.com/budtmo/docker-android.git
+[submodule "tools/opensource/appium"]
+	path = tools/opensource/appium
+	url = https://github.com/appium/appium.git
+[submodule "tools/opensource/midscene"]
+	path = tools/opensource/midscene
+	url = https://github.com/web-infra-dev/midscene.git
+[submodule "tools/opensource/mem0"]
+	path = tools/opensource/mem0
+	url = https://github.com/mem0ai/mem0.git
+[submodule "tools/opensource/moondream"]
+	path = tools/opensource/moondream
+	url = https://github.com/vikhyat/moondream.git
+[submodule "tools/opensource/ui-tars"]
+	path = tools/opensource/ui-tars
+	url = https://github.com/bytedance/UI-TARS.git
+[submodule "tools/opensource/perfetto"]
+	path = tools/opensource/perfetto
+	url = https://github.com/google/perfetto.git
+[submodule "tools/opensource/chroma"]
+	path = tools/opensource/chroma
+	url = https://github.com/chroma-core/chroma.git
+[submodule "tools/opensource/shortest"]
+	path = tools/opensource/shortest
+	url = https://github.com/antiwork/shortest.git
+[submodule "tools/opensource/marker"]
+	path = tools/opensource/marker
+	url = https://github.com/VikParuchuri/marker.git
+[submodule "tools/opensource/kiwi-tcms"]
+	path = tools/opensource/kiwi-tcms
+	url = https://github.com/kiwitcms/Kiwi.git
+[submodule "tools/opensource/testdriverai"]
+	path = tools/opensource/testdriverai
+	url = https://github.com/testdriverai/testdriverai.git
+[submodule "tools/opensource/stagehand"]
+	path = tools/opensource/stagehand
+	url = https://github.com/browserbase/stagehand.git
+[submodule "tools/opensource/unstructured"]
+	path = tools/opensource/unstructured
+	url = https://github.com/Unstructured-IO/unstructured.git
+[submodule "tools/opensource/redroid"]
+	path = tools/opensource/redroid
+	url = https://github.com/remote-android/redroid-doc.git
+[submodule "tools/opensource/signoz"]
+	path = tools/opensource/signoz
+	url = https://github.com/SigNoz/signoz.git
+[submodule "tools/opensource/docling"]
+	path = tools/opensource/docling
+	url = https://github.com/DS4SD/docling.git
+[submodule "tools/opensource/llama-index"]
+	path = tools/opensource/llama-index
+	url = https://github.com/run-llama/llama_index.git
+[submodule "tools/opensource/appcrawler"]
+	path = tools/opensource/appcrawler
+	url = https://github.com/nicetester/AppCrawler.git

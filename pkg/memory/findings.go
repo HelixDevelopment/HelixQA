@@ -210,6 +210,9 @@ func (f *Finding) WriteToDir(dir string) (string, error) {
 		name = fmt.Sprintf("%s.md", f.ID)
 	}
 
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		return "", fmt.Errorf("memory: create issues dir %q: %w", dir, err)
+	}
 	path := filepath.Join(dir, name)
 	if err := os.WriteFile(path, []byte(f.ToMarkdown()), 0o644); err != nil {
 		return "", fmt.Errorf("memory: write finding %q to %q: %w", f.ID, dir, err)

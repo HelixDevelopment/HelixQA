@@ -56,9 +56,8 @@ func (b *FindingsBridge) Process(
 	for _, af := range findings {
 		id, err := b.store.NextFindingID()
 		if err != nil {
-			return ids, fmt.Errorf(
-				"findings_bridge: next finding id: %w", err,
-			)
+			fmt.Printf("  warning: could not generate finding ID: %v\n", err)
+			continue
 		}
 
 		mf := memory.Finding{
@@ -77,17 +76,14 @@ func (b *FindingsBridge) Process(
 		}
 
 		if err := b.store.CreateFinding(mf); err != nil {
-			return ids, fmt.Errorf(
-				"findings_bridge: create finding %q: %w", id, err,
-			)
+			// Log but continue — don't let one failed finding stop the rest
+			fmt.Printf("  warning: could not create finding %s: %v\n", id, err)
+			continue
 		}
 
 		if b.issuesDir != "" {
 			if _, err := mf.WriteToDir(b.issuesDir); err != nil {
-				return ids, fmt.Errorf(
-					"findings_bridge: write finding %q to dir: %w",
-					id, err,
-				)
+				fmt.Printf("  warning: could not write finding %s to disk: %v\n", id, err)
 			}
 		}
 
