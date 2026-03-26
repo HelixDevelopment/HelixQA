@@ -40,36 +40,22 @@ func NewAdaptiveFromConfigs(
 		switch cfg.Name {
 		case ProviderAnthropic:
 			providers = append(providers, NewAnthropicProvider(cfg))
-		case ProviderOpenAI:
-			providers = append(providers, NewOpenAIProvider(cfg))
-		case ProviderOpenRouter:
-			if cfg.BaseURL == "" {
-				cfg.BaseURL = "https://openrouter.ai/api"
-			}
-			if cfg.Model == "" {
-				cfg.Model = "anthropic/claude-sonnet-4"
-			}
-			providers = append(providers, NewOpenAIProvider(cfg))
-		case ProviderDeepSeek:
-			if cfg.BaseURL == "" {
-				cfg.BaseURL = "https://api.deepseek.com"
-			}
-			if cfg.Model == "" {
-				cfg.Model = "deepseek-chat"
-			}
-			providers = append(providers, NewOpenAIProvider(cfg))
-		case ProviderGroq:
-			if cfg.BaseURL == "" {
-				cfg.BaseURL = "https://api.groq.com/openai"
-			}
-			if cfg.Model == "" {
-				cfg.Model = "llama-3.3-70b-versatile"
-			}
-			providers = append(providers, NewOpenAIProvider(cfg))
 		case ProviderOllama, ProviderUITars:
 			providers = append(providers, NewOllamaProvider(cfg))
 		default:
-			// unknown provider type — skip silently
+			// Check registry for OpenAI-compatible providers
+			if defaults, ok := providerDefaults[cfg.Name]; ok {
+				if cfg.BaseURL == "" {
+					cfg.BaseURL = defaults.BaseURL
+				}
+				if cfg.Model == "" && defaults.Model != "" {
+					cfg.Model = defaults.Model
+				}
+				providers = append(providers, NewOpenAIProvider(cfg))
+			} else if cfg.Name == ProviderOpenAI {
+				providers = append(providers, NewOpenAIProvider(cfg))
+			}
+			// truly unknown — skip silently
 		}
 	}
 	if len(providers) == 0 {

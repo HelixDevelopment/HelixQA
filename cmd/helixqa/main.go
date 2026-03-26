@@ -412,50 +412,33 @@ func cmdAutonomous(args []string) {
 	// Build provider configs from environment variables.
 	var providerConfigs []llm.ProviderConfig
 
-	if key := os.Getenv("ANTHROPIC_API_KEY"); key != "" {
-		providerConfigs = append(providerConfigs, llm.ProviderConfig{
-			Name:   llm.ProviderAnthropic,
-			APIKey: key,
-		})
-	}
-	if key := os.Getenv("OPENAI_API_KEY"); key != "" {
-		providerConfigs = append(providerConfigs, llm.ProviderConfig{
-			Name:   llm.ProviderOpenAI,
-			APIKey: key,
-		})
-	}
-	if base := os.Getenv("HELIX_OLLAMA_URL"); base != "" {
-		model := os.Getenv("HELIX_OLLAMA_MODEL")
-		providerConfigs = append(providerConfigs, llm.ProviderConfig{
-			Name:    llm.ProviderOllama,
-			BaseURL: base,
-			Model:   model,
-		})
-	}
-	if key := os.Getenv("OPENROUTER_API_KEY"); key != "" {
-		providerConfigs = append(providerConfigs, llm.ProviderConfig{
-			Name:   llm.ProviderOpenRouter,
-			APIKey: key,
-		})
-	}
-	if key := os.Getenv("DEEPSEEK_API_KEY"); key != "" {
-		providerConfigs = append(providerConfigs, llm.ProviderConfig{
-			Name:   llm.ProviderDeepSeek,
-			APIKey: key,
-		})
-	}
-	if key := os.Getenv("GROQ_API_KEY"); key != "" {
-		providerConfigs = append(providerConfigs, llm.ProviderConfig{
-			Name:   llm.ProviderGroq,
-			APIKey: key,
-		})
+	// Auto-discover all LLM providers from environment variables.
+	// Supports 40+ providers via the registry in pkg/llm.
+	for providerName, envKey := range llm.ProviderEnvKeys {
+		val := os.Getenv(envKey)
+		if val == "" {
+			continue
+		}
+		if providerName == llm.ProviderOllama {
+			// Ollama uses URL, not API key
+			providerConfigs = append(providerConfigs, llm.ProviderConfig{
+				Name:    providerName,
+				BaseURL: val,
+				Model:   os.Getenv("HELIX_OLLAMA_MODEL"),
+			})
+		} else {
+			providerConfigs = append(providerConfigs, llm.ProviderConfig{
+				Name:   providerName,
+				APIKey: val,
+			})
+		}
 	}
 
 	if len(providerConfigs) == 0 {
 		fmt.Fprintln(os.Stderr,
 			"error: no LLM providers configured — set at least one "+
-				"of ANTHROPIC_API_KEY, OPENAI_API_KEY, OPENROUTER_API_KEY, "+
-				"DEEPSEEK_API_KEY, GROQ_API_KEY, or HELIX_OLLAMA_URL")
+				"API key env var (e.g., ANTHROPIC_API_KEY, OPENAI_API_KEY, "+
+				"OPENROUTER_API_KEY, DEEPSEEK_API_KEY, GROQ_API_KEY, etc.)")
 		os.Exit(1)
 	}
 

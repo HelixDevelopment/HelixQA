@@ -123,17 +123,17 @@ func (c ProviderConfig) Validate() error {
 		return fmt.Errorf("llm: provider config name is required")
 	}
 	switch c.Name {
-	case ProviderAnthropic, ProviderOpenAI, ProviderGoogle,
-		ProviderOpenRouter, ProviderDeepSeek, ProviderGroq:
-		if c.APIKey == "" {
-			return fmt.Errorf(
-				"llm: provider %q requires api_key", c.Name,
-			)
-		}
 	case ProviderOllama, ProviderUITars:
 		if c.BaseURL == "" {
 			return fmt.Errorf(
 				"llm: provider %q requires base_url", c.Name,
+			)
+		}
+	default:
+		// All other providers (cloud APIs) require an API key
+		if c.APIKey == "" {
+			return fmt.Errorf(
+				"llm: provider %q requires api_key", c.Name,
 			)
 		}
 	}
