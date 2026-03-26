@@ -4,6 +4,9 @@
 package learning_test
 
 import (
+	"os"
+	"os/exec"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -11,6 +14,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"digital.vasic.helixqa/pkg/learning"
+	"digital.vasic.helixqa/pkg/memory"
 )
 
 // TestKnowledgeBase_Empty verifies that a newly created KnowledgeBase has
@@ -112,4 +116,146 @@ func TestKnowledgeBase_AddEndpoint(t *testing.T) {
 	kb.AddEndpoint(ep) // duplicate
 
 	assert.Len(t, kb.APIEndpoints, 1, "duplicate endpoint should not be added")
+}
+
+// setupKBProject creates a temporary git-initialised project with:
+//   - docs/overview.md
+//   - CLAUDE.md with a Constraints section
+//   - catalog-api/main.go with one Gin route
+//
+// It returns the project root.
+func setupKBProject(t *testing.T) string {
+	t.Helper()
+
+	root := t.TempDir()
+
+	// Initialise git so GitAnalyzer.RecentCommits does not error.
+	gitRun := func(args ...string) {
+		t.Helper()
+		cmd := exec.Command(args[0], args[1:]...)
+		cmd.Dir = root
+		cmd.Env = append(os.Environ(),
+			"GIT_AUTHOR_NAME=Test",
+			"GIT_AUTHOR_EMAIL=test@test.com",
+			"GIT_COMMITTER_NAME=Test",
+			"GIT_COMMITTER_EMAIL=test@test.com",
+		)
+		out, err := cmd.CombinedOutput()
+		require.NoError(t, err, "git %v failed: %s", args, out)
+	}
+	gitRun("git", "init", "-b", "main")
+	gitRun("git", "config", "user.email", "test@test.com")
+	gitRun("git", "config", "user.name", "Test")
+
+	// docs/overview.md
+	docsDir := filepath.Join(root, "docs")
+	require.NoError(t, os.MkdirAll(docsDir, 0o755))
+	write(t, filepath.Join(docsDir, "overview.md"),
+		"# Overview\n\nProject overview.\n")
+
+	// CLAUDE.md with constraints
+	write(t, filepath.Join(root, "CLAUDE.md"), `# CLAUDE
+
+## Constraints
+
+- Use Podman, not Docker
+- All builds must be containerized
+`)
+
+	// catalog-api/main.go with one Gin route
+	apiDir := filepath.Join(root, "catalog-api")
+	require.NoError(t, os.MkdirAll(apiDir, 0o755))
+	write(t, filepath.Join(apiDir, "main.go"), `package main
+
+import "github.com/gin-gonic/gin"
+
+func main() {
+	router := gin.Default()
+	router.GET("/api/v1/health", healthHandler)
+}
+`)
+
+	// Initial commit
+	gitRun("git", "add", ".")
+	gitRun("git", "commit", "-m", "feat: initial project")
+
+	return root
+}
+
+// TestBuildKnowledgeBase verifies that BuildKnowledgeBase correctly populates
+// a KnowledgeBase from a fake project with docs, CLAUDE.md, and a Gin route.
+func TestBuildKnowledgeBase(t *testing.T) {
+	root := setupKBProject(t)
+
+	kb, err := learning.BuildKnowledgeBase(root, nil)
+	require.NoError(t, err)
+	require.NotNil(t, kb)
+
+	// ProjectName should equal the base directory name.
+	assert.Equal(t, filepath.Base(root), kb.ProjectName,
+		"ProjectName should be the base of root")
+
+	// ProjectRoot should be set.
+	assert.Equal(t, root, kb.ProjectRoot)
+
+	// Docs: at least the overview.md under docs/.
+	assert.GreaterOrEqual(t, len(kb.Docs), 1,
+		"should have at least 1 doc from docs/")
+
+	// Constraints extracted from CLAUDE.md.
+	assert.GreaterOrEqual(t, len(kb.Constraints), 1,
+		"should extract at least 1 constraint from CLAUDE.md")
+
+	// API endpoint extracted from catalog-api/main.go.
+	assert.GreaterOrEqual(t, len(kb.APIEndpoints), 1,
+		"should extract at least 1 API endpoint")
+
+	// Components: catalog-api should be discovered.
+	assert.Contains(t, kb.Components, "catalog-api",
+		"catalog-api should be in discovered components")
+
+	// RecentChanges: at least 1 commit.
+	assert.GreaterOrEqual(t, len(kb.RecentChanges), 1,
+		"should have at least 1 recent commit")
+}
+
+// TestBuildKnowledgeBase_WithMemory verifies that when a non-nil Store is
+// provided, open findings are included in KnownIssues.
+func TestBuildKnowledgeBase_WithMemory(t *testing.T) {
+	root := setupKBProject(t)
+
+	// Create an in-memory store with one open finding.
+	dbPath := filepath.Join(t.TempDir(), "helix_test.db")
+	store, err := memory.NewStore(dbPath)
+	require.NoError(t, err)
+	defer store.Close()
+
+	// Seed a session (required by findings FK).
+	_, execErr := store.DB().Exec(
+		`INSERT INTO sessions (id, started_at, total_tests, passed, failed, findings_count, pass_number)
+		 VALUES ('s1', '2026-01-01T00:00:00Z', 0, 0, 0, 0, 1)`)
+	require.NoError(t, execErr)
+
+	require.NoError(t, store.CreateFinding(memory.Finding{
+		ID:        "HELIX-001",
+		SessionID: "s1",
+		Severity:  "high",
+		Category:  "crash",
+		Title:     "App crashes on launch",
+		Status:    "open",
+	}))
+
+	kb, err := learning.BuildKnowledgeBase(root, store)
+	require.NoError(t, err)
+	require.NotNil(t, kb)
+
+	// KnownIssues should include the title of the open finding.
+	require.GreaterOrEqual(t, len(kb.KnownIssues), 1,
+		"should have at least 1 known issue from open findings")
+
+	combined := strings.Join(kb.KnownIssues, " ")
+	assert.True(t,
+		strings.Contains(combined, "App crashes on launch") ||
+			strings.Contains(combined, "HELIX-001"),
+		"known issues should reference the open finding; got: %v", kb.KnownIssues)
 }

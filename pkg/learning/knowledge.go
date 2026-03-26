@@ -6,7 +6,12 @@
 // recent git changes, component inventory, constraints, and known issues.
 package learning
 
-import "fmt"
+import (
+	"fmt"
+	"path/filepath"
+
+	"digital.vasic.helixqa/pkg/memory"
+)
 
 // Screen describes a single navigable screen or view across any platform.
 type Screen struct {
@@ -109,4 +114,88 @@ func (kb *KnowledgeBase) Summary() string {
 		len(kb.Constraints),
 		len(kb.KnownIssues),
 	)
+}
+
+// BuildKnowledgeBase constructs a fully-populated KnowledgeBase for the
+// project rooted at projectRoot. It composes ProjectReader, CodebaseMapper,
+// and GitAnalyzer to gather all available information. If store is non-nil,
+// open findings from the memory store are included in KnownIssues.
+//
+// Non-fatal errors (e.g. git not available, no android dirs) are silently
+// swallowed so the caller always receives a usable, partially-populated base.
+func BuildKnowledgeBase(projectRoot string, store *memory.Store) (*KnowledgeBase, error) {
+	kb := NewKnowledgeBase()
+	kb.ProjectName = filepath.Base(projectRoot)
+	kb.ProjectRoot = projectRoot
+
+	// ── docs ─────────────────────────────────────────────────────────────────
+	reader := NewProjectReader(projectRoot)
+
+	docs, err := reader.ReadDocs()
+	if err != nil {
+		return nil, fmt.Errorf("BuildKnowledgeBase: read docs: %w", err)
+	}
+	kb.Docs = append(kb.Docs, docs...)
+
+	// ── CLAUDE.md files → more docs + constraints ─────────────────────────
+	claudeDocs, err := reader.ReadClaudeMDs()
+	if err != nil {
+		return nil, fmt.Errorf("BuildKnowledgeBase: read CLAUDE.md files: %w", err)
+	}
+	kb.Docs = append(kb.Docs, claudeDocs...)
+	kb.Constraints = reader.ExtractConstraints(claudeDocs)
+
+	// ── API endpoints ────────────────────────────────────────────────────────
+	mapper := NewCodebaseMapper(projectRoot)
+
+	endpoints, err := mapper.ExtractAPIEndpoints()
+	if err != nil {
+		return nil, fmt.Errorf("BuildKnowledgeBase: extract API endpoints: %w", err)
+	}
+	for _, ep := range endpoints {
+		kb.AddEndpoint(ep)
+	}
+
+	// ── web screens ──────────────────────────────────────────────────────────
+	webScreens, err := mapper.ExtractWebScreens()
+	if err != nil {
+		return nil, fmt.Errorf("BuildKnowledgeBase: extract web screens: %w", err)
+	}
+	for _, s := range webScreens {
+		kb.AddScreen(s)
+	}
+
+	// ── android screens ──────────────────────────────────────────────────────
+	androidScreens, err := mapper.ExtractAndroidScreens()
+	if err != nil {
+		return nil, fmt.Errorf("BuildKnowledgeBase: extract android screens: %w", err)
+	}
+	for _, s := range androidScreens {
+		kb.AddScreen(s)
+	}
+
+	// ── components ───────────────────────────────────────────────────────────
+	kb.Components = mapper.DiscoverComponents()
+
+	// ── recent git history ───────────────────────────────────────────────────
+	git := NewGitAnalyzer(projectRoot)
+	changes, err := git.RecentCommits(20)
+	if err == nil {
+		kb.RecentChanges = changes
+	}
+	// git errors (non-repo, git not installed) are non-fatal — leave empty.
+
+	// ── open findings from memory store ─────────────────────────────────────
+	if store != nil {
+		findings, err := store.ListFindingsByStatus("open")
+		if err != nil {
+			return nil, fmt.Errorf("BuildKnowledgeBase: list open findings: %w", err)
+		}
+		for _, f := range findings {
+			kb.KnownIssues = append(kb.KnownIssues,
+				fmt.Sprintf("[%s] %s: %s", f.ID, f.Severity, f.Title))
+		}
+	}
+
+	return kb, nil
 }
