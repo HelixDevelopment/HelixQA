@@ -124,8 +124,9 @@ func NewSessionPipeline(
 // Run executes the four pipeline phases in order:
 //  1. Learn  — build a knowledge base from the project
 //  2. Plan   — generate, reconcile, and rank test cases
-//  3. Execute — iterate planned tests, record coverage
-//  4. Analyze — collect findings (placeholder)
+//  3. Execute — run tests with video recording, screenshots, crash detection, Maestro flows
+//  3.5 Curiosity — explore unknown areas via random navigation
+//  4. Analyze — LLM vision analysis, memory leak detection, video frame analysis, issue tickets
 //
 // It creates a session in the memory store at the start and
 // updates it when the pipeline completes.
