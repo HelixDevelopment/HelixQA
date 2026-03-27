@@ -42,6 +42,21 @@ export default defineConfig({
         ]
       },
       {
+        text: 'Guides',
+        items: [
+          { text: 'Autonomous QA', link: '/guides/autonomous-qa' },
+          { text: 'Test Banks', link: '/guides/test-banks' },
+        ]
+      },
+      {
+        text: 'Reference',
+        items: [
+          { text: 'CLI Reference', link: '/reference/cli' },
+          { text: 'Configuration', link: '/reference/config' },
+          { text: 'Test Bank Schema', link: '/reference/test-bank-schema' },
+        ]
+      },
+      {
         text: 'Advanced',
         items: [
           { text: 'Containerization', link: '/advanced/containers' },
