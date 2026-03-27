@@ -18,7 +18,7 @@ const (
 	anthropicDefaultBaseURL = "https://api.anthropic.com"
 	anthropicDefaultModel   = "claude-sonnet-4-20250514"
 	anthropicVersion        = "2023-06-01"
-	anthropicHTTPTimeout    = 120 * time.Second
+	anthropicHTTPTimeout    = 45 * time.Second
 )
 
 // anthropicProvider implements Provider for Anthropic Claude API.

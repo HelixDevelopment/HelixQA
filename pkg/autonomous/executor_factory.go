@@ -69,7 +69,7 @@ func (f *DefaultExecutorFactory) Create(
 	platform string,
 ) (navigator.ActionExecutor, error) {
 	switch platform {
-	case "android":
+	case "android", "androidtv":
 		if f.config.AndroidDevice == "" {
 			return nil, fmt.Errorf(
 				"android device ID is required; "+

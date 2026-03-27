@@ -122,6 +122,35 @@ func NewSessionPipeline(
 	}
 }
 
+// perTestTimeout is the maximum time a single test
+// iteration (screenshot + crash check per platform) is
+// allowed to take before being abandoned. This prevents a
+// hung ADB screencap or crash-check from blocking the
+// entire pipeline.
+const perTestTimeout = 2 * time.Minute
+
+// perMaestroFlowTimeout limits individual Maestro flow
+// runs so a single stuck flow cannot consume the session.
+const perMaestroFlowTimeout = 3 * time.Minute
+
+// maxVisionScreenshots caps how many screenshots are sent
+// to the LLM vision API during the analysis phase. Each
+// call can take 10-45 seconds; analysing all screenshots
+// from a 14-test run would blow the time budget.
+const maxVisionScreenshots = 8
+
+// maxVisionFrames caps how many video frames per video
+// are sent to vision analysis.
+const maxVisionFrames = 3
+
+// maxCuriositySteps limits exploration steps per platform
+// to keep the curiosity phase within ~3 minutes.
+const maxCuriositySteps = 5
+
+// logcatTimeout limits the logcat dump so a large log
+// buffer cannot stall the pipeline.
+const logcatTimeout = 15 * time.Second
+
 // Run executes the four pipeline phases in order:
 //  1. Learn  — build a knowledge base from the project
 //  2. Plan   — generate, reconcile, and rank test cases
@@ -167,6 +196,7 @@ func (sp *SessionPipeline) Run(
 	}
 
 	// ── Phase 1: Learn ──────────────────────────────────
+	phaseStart := time.Now()
 	fmt.Println("[pipeline] Phase 1/4: Learn")
 	kb, err := learning.BuildKnowledgeBase(
 		sp.config.ProjectRoot, sp.store,
@@ -179,6 +209,10 @@ func (sp *SessionPipeline) Run(
 		return result, nil
 	}
 	fmt.Printf("[pipeline]   %s\n", kb.Summary())
+	fmt.Printf(
+		"[pipeline]   Learn completed in %v\n",
+		time.Since(phaseStart).Round(time.Millisecond),
+	)
 
 	// Store learned knowledge in cognitive memory for future sessions
 	cogMem := memory.NewCognitiveMemory(sp.store, nil) // nil provider = SQLite-only
@@ -191,6 +225,7 @@ func (sp *SessionPipeline) Run(
 	})
 
 	// ── Phase 2: Plan ───────────────────────────────────
+	phaseStart = time.Now()
 	fmt.Println("[pipeline] Phase 2/4: Plan")
 	gen := planning.NewTestPlanGenerator(sp.provider)
 	plan, err := gen.Generate(
@@ -222,11 +257,13 @@ func (sp *SessionPipeline) Run(
 
 	result.TestsPlanned = len(plan.Tests)
 	fmt.Printf(
-		"[pipeline]   %d tests planned\n",
+		"[pipeline]   %d tests planned in %v\n",
 		result.TestsPlanned,
+		time.Since(phaseStart).Round(time.Millisecond),
 	)
 
 	// ── Phase 3: Execute ────────────────────────────────
+	phaseStart = time.Now()
 	fmt.Println("[pipeline] Phase 3/4: Execute")
 
 	// Create executor factory from config.
@@ -237,16 +274,24 @@ func (sp *SessionPipeline) Run(
 		DesktopDisplay: sp.config.DesktopDisplay,
 	})
 
-	// Clear logcat for clean baseline.
+	// Clear logcat for clean baseline (with timeout).
 	if sp.config.AndroidDevice != "" {
 		for _, platform := range sp.config.Platforms {
 			if platform == "android" ||
 				platform == "androidtv" {
+				logcatCtx, logcatCancel :=
+					context.WithTimeout(
+						ctx, logcatTimeout,
+					)
 				_ = osexec.CommandContext(
-					ctx, "adb", "-s",
+					logcatCtx, "adb", "-s",
 					sp.config.AndroidDevice,
 					"logcat", "-c",
 				).Run()
+				logcatCancel()
+				fmt.Println(
+					"  [exec] logcat cleared",
+				)
 			}
 		}
 	}
@@ -271,6 +316,17 @@ func (sp *SessionPipeline) Run(
 			)
 			if err := rec.Start(ctx); err == nil {
 				recorders[platform] = rec
+				fmt.Printf(
+					"  [exec] video recording "+
+						"started for %s\n",
+					platform,
+				)
+			} else {
+				fmt.Printf(
+					"  [exec] video recording "+
+						"failed for %s: %v\n",
+					platform, err,
+				)
 			}
 		}
 	}
@@ -300,7 +356,8 @@ func (sp *SessionPipeline) Run(
 		}
 	}
 
-	// Run Maestro flows if available.
+	// Run Maestro flows if available (with per-flow
+	// timeout).
 	var allFindings []analysis.AnalysisFinding
 	maestroDir := filepath.Join(
 		sp.config.ProjectRoot,
@@ -330,12 +387,25 @@ func (sp *SessionPipeline) Run(
 			}
 
 			fmt.Printf(
-				"  Running Maestro flow: %s\n", name,
+				"  [exec] Maestro flow: %s\n", name,
 			)
-			flowResult, _ := runner.RunFlow(
-				ctx, flowPath,
+			flowCtx, flowCancel :=
+				context.WithTimeout(
+					ctx, perMaestroFlowTimeout,
+				)
+			flowResult, flowErr := runner.RunFlow(
+				flowCtx, flowPath,
 				sp.config.AndroidDevice,
 			)
+			flowCancel()
+
+			if flowErr != nil {
+				fmt.Printf(
+					"  [exec] Maestro flow %s "+
+						"error: %v\n",
+					name, flowErr,
+				)
+			}
 			if flowResult != nil &&
 				!flowResult.Success {
 				allFindings = append(
@@ -362,6 +432,8 @@ func (sp *SessionPipeline) Run(
 	}
 
 	// Iterate tests: take screenshots, record coverage.
+	// Each test gets its own timeout so a hung ADB
+	// command cannot block the entire pipeline.
 	screenshotDir := filepath.Join(
 		sp.config.OutputDir, "screenshots",
 	)
@@ -369,11 +441,25 @@ func (sp *SessionPipeline) Run(
 	var allScreenshots []string
 
 	testsRun := 0
+	testsSkipped := 0
 	for _, t := range plan.Tests {
 		select {
 		case <-ctx.Done():
+			fmt.Printf(
+				"  [exec] pipeline context expired "+
+					"after %d/%d tests "+
+					"(elapsed %v)\n",
+				testsRun, len(plan.Tests),
+				time.Since(start).Round(
+					time.Millisecond,
+				),
+			)
 			result.Status = StatusFailed
-			result.Error = "context canceled during execution"
+			result.Error = fmt.Sprintf(
+				"context canceled during execution "+
+					"after %d/%d tests",
+				testsRun, len(plan.Tests),
+			)
 			result.TestsRun = testsRun
 			result.Duration = time.Since(start)
 			sp.updateSession(sessionID, result)
@@ -386,10 +472,16 @@ func (sp *SessionPipeline) Run(
 		}
 
 		testsRun++
+		testStart := time.Now()
 		fmt.Printf(
-			"  [%d/%d] %s (%s)\n",
+			"  [%d/%d] %s (%s) ...\n",
 			testsRun, len(plan.Tests),
 			t.Name, t.Category,
+		)
+
+		// Per-test timeout context.
+		testCtx, testCancel := context.WithTimeout(
+			ctx, perTestTimeout,
 		)
 
 		// Take screenshot for each platform this test
@@ -399,26 +491,61 @@ func (sp *SessionPipeline) Run(
 				platform,
 			)
 			if err != nil {
+				fmt.Printf(
+					"    [%s] executor error: %v\n",
+					platform, err,
+				)
 				continue
 			}
-			screenshot, err := executor.Screenshot(ctx)
-			if err == nil && len(screenshot) > 0 {
-				fname := filepath.Join(
-					screenshotDir,
-					fmt.Sprintf(
-						"%s-%03d-%s.png",
-						platform,
-						testsRun,
-						sanitizeFilename(t.Screen),
+
+			ssStart := time.Now()
+			screenshot, err :=
+				executor.Screenshot(testCtx)
+			ssDur := time.Since(ssStart)
+			if err != nil {
+				fmt.Printf(
+					"    [%s] screenshot failed "+
+						"(%v): %v\n",
+					platform, ssDur.Round(
+						time.Millisecond,
+					), err,
+				)
+				testsSkipped++
+				continue
+			}
+			if len(screenshot) == 0 {
+				fmt.Printf(
+					"    [%s] screenshot empty "+
+						"(%v)\n",
+					platform, ssDur.Round(
+						time.Millisecond,
 					),
 				)
-				_ = os.WriteFile(
-					fname, screenshot, 0o644,
-				)
-				allScreenshots = append(
-					allScreenshots, fname,
-				)
+				continue
 			}
+			fmt.Printf(
+				"    [%s] screenshot OK "+
+					"(%dKB, %v)\n",
+				platform,
+				len(screenshot)/1024,
+				ssDur.Round(time.Millisecond),
+			)
+
+			fname := filepath.Join(
+				screenshotDir,
+				fmt.Sprintf(
+					"%s-%03d-%s.png",
+					platform,
+					testsRun,
+					sanitizeFilename(t.Screen),
+				),
+			)
+			_ = os.WriteFile(
+				fname, screenshot, 0o644,
+			)
+			allScreenshots = append(
+				allScreenshots, fname,
+			)
 
 			// Check for crashes on Android.
 			if (platform == "android" ||
@@ -433,13 +560,17 @@ func (sp *SessionPipeline) Run(
 						sp.config.AndroidPackage,
 					),
 				)
-				dr, derr := det.Check(ctx)
+				dr, derr := det.Check(testCtx)
 				if derr == nil && dr != nil &&
 					(dr.HasCrash || dr.HasANR) {
 					crashType := "crash"
 					if dr.HasANR {
 						crashType = "ANR"
 					}
+					fmt.Printf(
+						"    [%s] %s detected!\n",
+						platform, crashType,
+					)
 					allFindings = append(
 						allFindings,
 						analysis.AnalysisFinding{
@@ -460,9 +591,17 @@ func (sp *SessionPipeline) Run(
 							Screen:   t.Screen,
 						},
 					)
+				} else if derr != nil {
+					fmt.Printf(
+						"    [%s] crash check "+
+							"error: %v\n",
+						platform, derr,
+					)
 				}
 			}
 		}
+
+		testCancel()
 
 		// Record coverage.
 		screen := t.Screen
@@ -474,15 +613,32 @@ func (sp *SessionPipeline) Run(
 				screen, p, "executed",
 			)
 		}
+
+		fmt.Printf(
+			"  [%d/%d] done in %v\n",
+			testsRun, len(plan.Tests),
+			time.Since(testStart).Round(
+				time.Millisecond,
+			),
+		)
 	}
 	result.TestsRun = testsRun
 
 	// Stop video recorders.
-	for _, rec := range recorders {
-		_ = rec.Stop()
+	for p, rec := range recorders {
+		if err := rec.Stop(); err != nil {
+			fmt.Printf(
+				"  [exec] video stop %s: %v\n",
+				p, err,
+			)
+		} else {
+			fmt.Printf(
+				"  [exec] video stopped for %s\n", p,
+			)
+		}
 	}
 
-	// Collect logcat.
+	// Collect logcat (with dedicated timeout).
 	if sp.config.AndroidDevice != "" {
 		for _, platform := range sp.config.Platforms {
 			if platform == "android" ||
@@ -494,14 +650,29 @@ func (sp *SessionPipeline) Run(
 				_ = os.MkdirAll(
 					filepath.Dir(logcatPath), 0o755,
 				)
+				lcCtx, lcCancel :=
+					context.WithTimeout(
+						ctx, logcatTimeout,
+					)
 				out, err := osexec.CommandContext(
-					ctx, "adb", "-s",
+					lcCtx, "adb", "-s",
 					sp.config.AndroidDevice,
 					"logcat", "-d",
 				).Output()
+				lcCancel()
 				if err == nil {
 					_ = os.WriteFile(
 						logcatPath, out, 0o644,
+					)
+					fmt.Printf(
+						"  [exec] logcat saved "+
+							"(%dKB)\n",
+						len(out)/1024,
+					)
+				} else {
+					fmt.Printf(
+						"  [exec] logcat failed: "+
+							"%v\n", err,
 					)
 				}
 			}
@@ -526,19 +697,29 @@ func (sp *SessionPipeline) Run(
 	}
 
 	fmt.Printf(
-		"[pipeline]   %d tests executed\n", testsRun,
+		"[pipeline]   %d tests executed, "+
+			"%d skipped, Execute took %v\n",
+		testsRun, testsSkipped,
+		time.Since(phaseStart).Round(time.Millisecond),
 	)
 
 	// ── Phase 3.5: Curiosity-Driven Exploration ────────
 	if sp.config.CuriosityEnabled {
-		fmt.Println(
-			"[pipeline] Phase 3.5: " +
-				"Curiosity-driven exploration",
+		phaseStart = time.Now()
+		curiosityBudget := sp.config.CuriosityTimeout
+		// Cap curiosity to 3 minutes to stay within the
+		// 15-minute pipeline target.
+		if curiosityBudget > 3*time.Minute {
+			curiosityBudget = 3 * time.Minute
+		}
+		fmt.Printf(
+			"[pipeline] Phase 3.5: "+
+				"Curiosity-driven exploration "+
+				"(budget %v)\n",
+			curiosityBudget,
 		)
 		curiosityCtx, curiosityCancel :=
-			context.WithTimeout(
-				ctx, sp.config.CuriosityTimeout,
-			)
+			context.WithTimeout(ctx, curiosityBudget)
 		defer curiosityCancel()
 
 		preCuriosityCount := len(allScreenshots)
@@ -550,18 +731,13 @@ func (sp *SessionPipeline) Run(
 				continue
 			}
 
-			maxSteps := 10
-			for i := 0; i < maxSteps; i++ {
-				select {
-				case <-curiosityCtx.Done():
-					break
-				default:
-				}
+			for i := 0; i < maxCuriositySteps; i++ {
 				if curiosityCtx.Err() != nil {
 					break
 				}
 
 				// Step 1: Take screenshot.
+				stepStart := time.Now()
 				screenshot, err :=
 					executor.Screenshot(curiosityCtx)
 				if err != nil || len(screenshot) == 0 {
@@ -575,7 +751,7 @@ func (sp *SessionPipeline) Run(
 						curiosityCtx,
 						"KEYCODE_DPAD_DOWN",
 					)
-					time.Sleep(2 * time.Second)
+					time.Sleep(1 * time.Second)
 					continue
 				}
 
@@ -593,40 +769,39 @@ func (sp *SessionPipeline) Run(
 					allScreenshots, fname,
 				)
 
-				// Step 2: Send screenshot to LLM for
-				// navigation guidance.
+				// Step 2: Send resized screenshot to
+				// LLM for navigation guidance.
 				if !sp.provider.SupportsVision() {
-					// No vision — fall back to blind
-					// D-pad navigation.
 					_ = executor.KeyPress(
 						curiosityCtx,
 						"KEYCODE_DPAD_DOWN",
 					)
-					time.Sleep(2 * time.Second)
+					time.Sleep(1 * time.Second)
 					_ = executor.KeyPress(
 						curiosityCtx,
 						"KEYCODE_DPAD_CENTER",
 					)
-					time.Sleep(3 * time.Second)
+					time.Sleep(2 * time.Second)
 					continue
 				}
 
+				// Resize before sending to LLM to
+				// reduce latency and token cost.
+				resized := resizeScreenshot(screenshot)
 				actions := sp.llmNavigate(
 					curiosityCtx,
-					screenshot,
+					resized,
 					platform,
 					i+1,
 				)
 
 				// Step 3: Execute LLM-suggested actions.
 				if len(actions) == 0 {
-					// LLM returned nothing usable —
-					// fall back to D-pad.
 					_ = executor.KeyPress(
 						curiosityCtx,
 						"KEYCODE_DPAD_DOWN",
 					)
-					time.Sleep(2 * time.Second)
+					time.Sleep(1 * time.Second)
 					continue
 				}
 
@@ -642,59 +817,111 @@ func (sp *SessionPipeline) Run(
 					if execErr != nil {
 						fmt.Printf(
 							"  [curiosity %s #%d] "+
-								"action %q failed: %v\n",
+								"action %q "+
+								"failed: %v\n",
 							platform, i+1,
 							action.Type, execErr,
 						)
 					} else {
 						fmt.Printf(
 							"  [curiosity %s #%d] "+
-								"executed: %s\n",
+								"executed: %s "+
+								"(%s)\n",
 							platform, i+1,
 							action.Type,
+							action.Reason,
 						)
 					}
 					// Brief pause between actions.
-					time.Sleep(
-						2 * time.Second,
-					)
+					time.Sleep(1 * time.Second)
 				}
+
+				fmt.Printf(
+					"  [curiosity %s #%d] "+
+						"step done in %v\n",
+					platform, i+1,
+					time.Since(stepStart).Round(
+						time.Millisecond,
+					),
+				)
 			}
 		}
 		fmt.Printf(
 			"  Curiosity: captured %d additional "+
-				"screenshots\n",
+				"screenshots in %v\n",
 			len(allScreenshots)-preCuriosityCount,
+			time.Since(phaseStart).Round(
+				time.Millisecond,
+			),
 		)
 	}
 
 	// ── Phase 4: Analyze ────────────────────────────────
+	phaseStart = time.Now()
 	fmt.Println("[pipeline] Phase 4/4: Analyze")
 
-	// Analyze screenshots with LLM vision.
+	// Analyze screenshots with LLM vision — bounded to
+	// maxVisionScreenshots to prevent timeout. We select
+	// evenly spaced screenshots for best coverage.
 	if sp.provider.SupportsVision() &&
 		len(allScreenshots) > 0 {
 		visionAnalyzer := analysis.NewVisionAnalyzer(
 			sp.provider,
 		)
-		for _, ssPath := range allScreenshots {
+		toAnalyze := selectEvenly(
+			allScreenshots, maxVisionScreenshots,
+		)
+		fmt.Printf(
+			"  [analyze] analysing %d/%d "+
+				"screenshots via LLM vision\n",
+			len(toAnalyze), len(allScreenshots),
+		)
+		for i, ssPath := range toAnalyze {
+			if ctx.Err() != nil {
+				fmt.Printf(
+					"  [analyze] context expired "+
+						"after %d screenshots\n",
+					i,
+				)
+				break
+			}
 			imgData, err := os.ReadFile(ssPath)
 			if err != nil {
 				continue
 			}
+			// Resize to reduce LLM latency.
+			imgData = resizeScreenshot(imgData)
 			base := filepath.Base(ssPath)
-			findings, err := visionAnalyzer.AnalyzeScreenshot(
-				ctx, imgData, base, "",
-			)
-			if err == nil {
-				allFindings = append(
-					allFindings, findings...,
+
+			vStart := time.Now()
+			findings, err :=
+				visionAnalyzer.AnalyzeScreenshot(
+					ctx, imgData, base, "",
 				)
+			vDur := time.Since(vStart)
+			if err != nil {
+				fmt.Printf(
+					"  [analyze] vision %s "+
+						"failed (%v): %v\n",
+					base, vDur.Round(
+						time.Millisecond,
+					), err,
+				)
+				continue
 			}
+			fmt.Printf(
+				"  [analyze] vision %s: "+
+					"%d findings (%v)\n",
+				base, len(findings),
+				vDur.Round(time.Millisecond),
+			)
+			allFindings = append(
+				allFindings, findings...,
+			)
 		}
 	}
 
-	// Extract and analyze video frames.
+	// Extract and analyze video frames — bounded.
 	ffmpegPath := sp.config.FFmpegPath
 	if ffmpegPath == "" {
 		ffmpegPath = "ffmpeg"
@@ -709,6 +936,9 @@ func (sp *SessionPipeline) Run(
 
 	if entries, err := os.ReadDir(videosDir); err == nil {
 		for _, entry := range entries {
+			if ctx.Err() != nil {
+				break
+			}
 			if entry.IsDir() ||
 				!strings.HasSuffix(
 					entry.Name(), ".mp4",
@@ -729,25 +959,33 @@ func (sp *SessionPipeline) Run(
 				ctx, videoPath, videoFramesDir, 1,
 			)
 			if err != nil {
+				fmt.Printf(
+					"  [analyze] frame extract "+
+						"failed for %s: %v\n",
+					entry.Name(), err,
+				)
 				continue
 			}
 
-			// Analyze up to 10 key frames per video.
-			limit := 10
+			limit := maxVisionFrames
 			if len(frames) < limit {
 				limit = len(frames)
 			}
-			if sp.provider.SupportsVision() {
+			if sp.provider.SupportsVision() && limit > 0 {
 				va := analysis.NewVisionAnalyzer(
 					sp.provider,
 				)
 				for _, framePath := range frames[:limit] {
+					if ctx.Err() != nil {
+						break
+					}
 					imgData, err := os.ReadFile(
 						framePath,
 					)
 					if err != nil {
 						continue
 					}
+					imgData = resizeScreenshot(imgData)
 					findings, err :=
 						va.AnalyzeScreenshot(
 							ctx, imgData,
@@ -763,7 +1001,7 @@ func (sp *SessionPipeline) Run(
 				}
 			}
 			fmt.Printf(
-				"  Analyzed %d frames from %s\n",
+				"  [analyze] %d frames from %s\n",
 				limit, entry.Name(),
 			)
 		}
@@ -813,8 +1051,10 @@ func (sp *SessionPipeline) Run(
 	}
 
 	fmt.Printf(
-		"[pipeline]   %d issues found\n",
+		"[pipeline]   %d issues found, "+
+			"Analyze took %v\n",
 		result.IssuesFound,
+		time.Since(phaseStart).Round(time.Millisecond),
 	)
 
 	// ── Finalize ────────────────────────────────────────
@@ -829,7 +1069,8 @@ func (sp *SessionPipeline) Run(
 	sp.updateSession(sessionID, result)
 
 	fmt.Printf(
-		"[pipeline] Complete: %d/%d tests, %.1f%% coverage, %v\n",
+		"[pipeline] Complete: %d/%d tests, "+
+			"%.1f%% coverage, %v total\n",
 		result.TestsRun,
 		result.TestsPlanned,
 		result.CoveragePct,
@@ -837,6 +1078,26 @@ func (sp *SessionPipeline) Run(
 	)
 
 	return result, nil
+}
+
+// selectEvenly returns up to max elements from the slice,
+// picking elements at evenly-spaced indices for
+// representative coverage. If the slice has fewer than max
+// elements, all are returned.
+func selectEvenly(items []string, max int) []string {
+	if len(items) <= max {
+		return items
+	}
+	step := float64(len(items)) / float64(max)
+	selected := make([]string, 0, max)
+	for i := 0; i < max; i++ {
+		idx := int(float64(i) * step)
+		if idx >= len(items) {
+			idx = len(items) - 1
+		}
+		selected = append(selected, items[idx])
+	}
+	return selected
 }
 
 // WriteReport writes the PipelineResult as JSON to
@@ -896,18 +1157,19 @@ func (sp *SessionPipeline) updateSession(
 // requesting navigation guidance from a screenshot.
 const navigationPrompt = `You are a QA tester navigating an Android TV application using a D-pad remote control.
 
-Analyze the screenshot and suggest navigation actions to explore the application. Return ONLY a JSON array of action objects. Each action must have:
-- "type": one of "dpad_up", "dpad_down", "dpad_left", "dpad_right", "dpad_center", "back", "home", "tap", "swipe_up", "swipe_down", "swipe_left", "swipe_right", "key"
-- "value": for "key" type, the Android keycode (e.g. "KEYCODE_MENU"); for "tap" type, "x,y" coordinates; otherwise omit
-- "reason": brief explanation of why this action explores new areas
+IMPORTANT Android TV rules:
+- Navigation is D-pad only (up/down/left/right/center). No touch input.
+- To type text into a field: first press DPAD_CENTER to open the on-screen keyboard, THEN use "key" actions with individual keycodes, OR use the "type" action which sends text via ADB input.
+- If you see a text input field, navigate to it with D-pad, press DPAD_CENTER to focus/open keyboard, then type.
+- uiautomator dump may return "null root node" during screen transitions — this is normal, retry after a brief wait.
 
-Focus on:
-1. Navigate to unexplored menu items or screens
-2. Open settings, profiles, or configuration screens
-3. Test edge cases (empty states, error handling)
-4. Interact with focusable elements that look untested
+Analyze the screenshot and suggest 1-3 navigation actions. Return ONLY a JSON array. Each action:
+- "type": one of "dpad_up", "dpad_down", "dpad_left", "dpad_right", "dpad_center", "back", "home", "key", "type"
+- "value": for "key" = Android keycode; for "type" = text to enter; otherwise omit
+- "reason": brief explanation
 
-Return 1-3 actions. Respond with only the JSON array, no other text.`
+Focus on unexplored menu items, settings, edge cases, and untested UI elements.
+Respond with ONLY the JSON array, no other text.`
 
 // llmAction is a single navigation action suggested by the LLM.
 type llmAction struct {
@@ -916,25 +1178,49 @@ type llmAction struct {
 	Reason string `json:"reason,omitempty"`
 }
 
-// llmNavigate sends a screenshot to the LLM vision endpoint
-// and parses the response into a list of actions to execute.
-// Returns nil on any error (graceful degradation).
+// llmNavigateTimeout caps a single LLM vision call during
+// curiosity navigation so one slow API response cannot
+// stall the exploration phase.
+const llmNavigateTimeout = 30 * time.Second
+
+// llmNavigate sends a (pre-resized) screenshot to the LLM
+// vision endpoint and parses the response into a list of
+// actions to execute. The screenshot should already be
+// resized by the caller. Returns nil on any error (graceful
+// degradation). A per-call timeout prevents slow API
+// responses from blocking the curiosity loop.
 func (sp *SessionPipeline) llmNavigate(
 	ctx context.Context,
 	screenshot []byte,
 	platform string,
 	step int,
 ) []llmAction {
-	resp, err := sp.provider.Vision(
-		ctx, screenshot, navigationPrompt,
+	// Apply a per-call timeout on top of the parent
+	// context.
+	callCtx, callCancel := context.WithTimeout(
+		ctx, llmNavigateTimeout,
 	)
+	defer callCancel()
+
+	visionStart := time.Now()
+	resp, err := sp.provider.Vision(
+		callCtx, screenshot, navigationPrompt,
+	)
+	visionDur := time.Since(visionStart)
 	if err != nil {
 		fmt.Printf(
-			"  [curiosity %s #%d] LLM vision error: %v\n",
-			platform, step, err,
+			"  [curiosity %s #%d] LLM vision "+
+				"error (%v): %v\n",
+			platform, step,
+			visionDur.Round(time.Millisecond), err,
 		)
 		return nil
 	}
+	fmt.Printf(
+		"  [curiosity %s #%d] LLM responded in %v\n",
+		platform, step,
+		visionDur.Round(time.Millisecond),
+	)
 
 	content := strings.TrimSpace(resp.Content)
 	if content == "" {
@@ -1011,6 +1297,11 @@ func executeAction(
 		return exec.Scroll(ctx, "left", 400)
 	case "swipe_right":
 		return exec.Scroll(ctx, "right", 400)
+	case "type":
+		if action.Value == "" {
+			return nil
+		}
+		return exec.Type(ctx, action.Value)
 	case "key":
 		keyCode := action.Value
 		if keyCode == "" {

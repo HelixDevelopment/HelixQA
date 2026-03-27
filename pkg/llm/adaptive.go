@@ -7,7 +7,14 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"time"
 )
+
+// adaptivePerProviderTimeout caps how long a single
+// provider is allowed per call during adaptive fallback.
+// This prevents N slow providers from compounding into
+// N * timeout total latency.
+const adaptivePerProviderTimeout = 30 * time.Second
 
 // AdaptiveProvider wraps a slice of Provider implementations and
 // tries them in order, falling back to the next on failure. It
@@ -86,7 +93,8 @@ func (a *AdaptiveProvider) SupportsVision() bool {
 
 // Chat tries each provider in order and returns the first successful
 // response. If every provider returns an error the combined errors
-// are returned in a single diagnostic message.
+// are returned in a single diagnostic message. Each provider call is
+// capped at adaptivePerProviderTimeout.
 func (a *AdaptiveProvider) Chat(
 	ctx context.Context,
 	messages []Message,
@@ -96,11 +104,18 @@ func (a *AdaptiveProvider) Chat(
 	}
 	var errs []string
 	for _, p := range a.providers {
-		resp, err := p.Chat(ctx, messages)
+		pCtx, pCancel := context.WithTimeout(
+			ctx, adaptivePerProviderTimeout,
+		)
+		resp, err := p.Chat(pCtx, messages)
+		pCancel()
 		if err == nil {
 			return resp, nil
 		}
 		errs = append(errs, fmt.Sprintf("%s: %v", p.Name(), err))
+		if ctx.Err() != nil {
+			break
+		}
 	}
 	return nil, fmt.Errorf(
 		"llm: all providers failed: %s",
@@ -112,6 +127,10 @@ func (a *AdaptiveProvider) Chat(
 // the first successful response. Providers that do not support
 // vision are skipped entirely. If no vision-capable provider is
 // registered a descriptive error is returned immediately.
+//
+// Each provider call is capped at adaptivePerProviderTimeout to
+// prevent N slow providers from compounding into N * timeout
+// total latency.
 func (a *AdaptiveProvider) Vision(
 	ctx context.Context,
 	image []byte,
@@ -128,11 +147,19 @@ func (a *AdaptiveProvider) Vision(
 	}
 	var errs []string
 	for _, p := range capable {
-		resp, err := p.Vision(ctx, image, prompt)
+		pCtx, pCancel := context.WithTimeout(
+			ctx, adaptivePerProviderTimeout,
+		)
+		resp, err := p.Vision(pCtx, image, prompt)
+		pCancel()
 		if err == nil {
 			return resp, nil
 		}
 		errs = append(errs, fmt.Sprintf("%s: %v", p.Name(), err))
+		// If the parent context is done, stop trying.
+		if ctx.Err() != nil {
+			break
+		}
 	}
 	return nil, fmt.Errorf(
 		"llm: all providers failed: %s",
