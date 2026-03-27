@@ -1,0 +1,1048 @@
+# SPDX-FileCopyrightText: 2026 Milos Vasic
+# SPDX-License-Identifier: Apache-2.0
+#
+# HelixQA Test Bank: Entity Management
+# Tests entity CRUD, hierarchy, search, duplicate detection, metadata,
+# browsing, filtering, pagination, and statistics across all media types.
+
+version: "1.0"
+name: "Catalogizer Entity Management Test Bank"
+description: "Entity management tests for CRUD, hierarchy, search, duplicates, metadata, browsing, filtering, and statistics"
+metadata:
+  author: "vasic-digital"
+  app: "Catalogizer"
+  version: "1.0.0"
+
+test_cases:
+  # ==================== Entity Creation by Media Type ====================
+  - id: ENT-001
+    name: "Create movie entity"
+    category: functional
+    priority: critical
+    platforms: [api, web, desktop]
+    steps:
+      - name: "Send create entity request"
+        action: "POST /api/v1/entities with type 'movie', title 'Test Movie', year 2025"
+        expected: "201 Created with entity ID in response body"
+      - name: "Verify entity exists"
+        action: "GET /api/v1/entities/{id}"
+        expected: "Entity returned with correct title, type, and year"
+    tags: [entity, create, movie, crud]
+    estimated_duration: "10s"
+    expected_result: "Movie entity created and retrievable"
+
+  - id: ENT-002
+    name: "Create TV show entity"
+    category: functional
+    priority: critical
+    platforms: [api, web, desktop]
+    steps:
+      - name: "Send create entity request"
+        action: "POST /api/v1/entities with type 'tv_show', title 'Test TV Show'"
+        expected: "201 Created with entity ID"
+      - name: "Verify entity type"
+        action: "GET /api/v1/entities/{id}"
+        expected: "Entity type is 'tv_show'"
+    tags: [entity, create, tv-show, crud]
+    estimated_duration: "10s"
+    expected_result: "TV show entity created successfully"
+
+  - id: ENT-003
+    name: "Create music album entity"
+    category: functional
+    priority: critical
+    platforms: [api, web, desktop]
+    steps:
+      - name: "Send create entity request"
+        action: "POST /api/v1/entities with type 'music_album', title 'Test Album', artist 'Test Artist'"
+        expected: "201 Created with entity ID"
+      - name: "Verify entity metadata"
+        action: "GET /api/v1/entities/{id}"
+        expected: "Entity has correct type and title"
+    tags: [entity, create, music-album, crud]
+    estimated_duration: "10s"
+    expected_result: "Music album entity created successfully"
+
+  - id: ENT-004
+    name: "Create game entity"
+    category: functional
+    priority: high
+    platforms: [api, web, desktop]
+    steps:
+      - name: "Send create entity request"
+        action: "POST /api/v1/entities with type 'game', title 'Test Game'"
+        expected: "201 Created with entity ID"
+      - name: "Verify entity"
+        action: "GET /api/v1/entities/{id}"
+        expected: "Entity type is 'game'"
+    tags: [entity, create, game, crud]
+    estimated_duration: "10s"
+    expected_result: "Game entity created successfully"
+
+  - id: ENT-005
+    name: "Create software entity"
+    category: functional
+    priority: high
+    platforms: [api, web, desktop]
+    steps:
+      - name: "Send create entity request"
+        action: "POST /api/v1/entities with type 'software', title 'Test Software v2.0'"
+        expected: "201 Created with entity ID"
+      - name: "Verify entity"
+        action: "GET /api/v1/entities/{id}"
+        expected: "Entity type is 'software', title matches"
+    tags: [entity, create, software, crud]
+    estimated_duration: "10s"
+    expected_result: "Software entity created successfully"
+
+  - id: ENT-006
+    name: "Create book entity"
+    category: functional
+    priority: high
+    platforms: [api, web, desktop]
+    steps:
+      - name: "Send create entity request"
+        action: "POST /api/v1/entities with type 'book', title 'Test Book', year 2024"
+        expected: "201 Created with entity ID"
+      - name: "Verify entity"
+        action: "GET /api/v1/entities/{id}"
+        expected: "Entity type is 'book' with correct year"
+    tags: [entity, create, book, crud]
+    estimated_duration: "10s"
+    expected_result: "Book entity created successfully"
+
+  - id: ENT-007
+    name: "Create comic entity"
+    category: functional
+    priority: medium
+    platforms: [api, web, desktop]
+    steps:
+      - name: "Send create entity request"
+        action: "POST /api/v1/entities with type 'comic', title 'Test Comic Issue 1'"
+        expected: "201 Created with entity ID"
+      - name: "Verify entity"
+        action: "GET /api/v1/entities/{id}"
+        expected: "Entity type is 'comic'"
+    tags: [entity, create, comic, crud]
+    estimated_duration: "10s"
+    expected_result: "Comic entity created successfully"
+
+  - id: ENT-008
+    name: "Create music artist entity"
+    category: functional
+    priority: high
+    platforms: [api, web, desktop]
+    steps:
+      - name: "Send create entity request"
+        action: "POST /api/v1/entities with type 'music_artist', title 'Test Artist'"
+        expected: "201 Created with entity ID"
+      - name: "Verify entity"
+        action: "GET /api/v1/entities/{id}"
+        expected: "Entity type is 'music_artist'"
+    tags: [entity, create, music-artist, crud]
+    estimated_duration: "10s"
+    expected_result: "Music artist entity created successfully"
+
+  - id: ENT-009
+    name: "Create song entity"
+    category: functional
+    priority: high
+    platforms: [api, web, desktop]
+    steps:
+      - name: "Send create entity request"
+        action: "POST /api/v1/entities with type 'song', title 'Test Song'"
+        expected: "201 Created with entity ID"
+      - name: "Verify entity"
+        action: "GET /api/v1/entities/{id}"
+        expected: "Entity type is 'song'"
+    tags: [entity, create, song, crud]
+    estimated_duration: "10s"
+    expected_result: "Song entity created successfully"
+
+  - id: ENT-010
+    name: "Create TV season entity"
+    category: functional
+    priority: high
+    platforms: [api, web, desktop]
+    steps:
+      - name: "Create parent TV show"
+        action: "POST /api/v1/entities with type 'tv_show', title 'Parent Show'"
+        expected: "201 Created with parent entity ID"
+      - name: "Create TV season"
+        action: "POST /api/v1/entities with type 'tv_season', title 'Season 1', parent_id set to TV show ID"
+        expected: "201 Created with season entity ID"
+      - name: "Verify parent link"
+        action: "GET /api/v1/entities/{season_id}"
+        expected: "Entity type is 'tv_season' with parent_id referencing the TV show"
+    tags: [entity, create, tv-season, hierarchy, crud]
+    estimated_duration: "15s"
+    expected_result: "TV season entity created with parent link"
+
+  - id: ENT-011
+    name: "Create TV episode entity"
+    category: functional
+    priority: high
+    platforms: [api, web, desktop]
+    steps:
+      - name: "Create parent TV season"
+        action: "POST /api/v1/entities with type 'tv_season', title 'Season 1'"
+        expected: "201 Created with season ID"
+      - name: "Create TV episode"
+        action: "POST /api/v1/entities with type 'tv_episode', title 'Pilot', parent_id set to season ID"
+        expected: "201 Created with episode entity ID"
+      - name: "Verify parent link"
+        action: "GET /api/v1/entities/{episode_id}"
+        expected: "Entity type is 'tv_episode' with parent_id referencing the season"
+    tags: [entity, create, tv-episode, hierarchy, crud]
+    estimated_duration: "15s"
+    expected_result: "TV episode entity created with parent link to season"
+
+  - id: ENT-012
+    name: "Reject entity creation with invalid media type"
+    category: functional
+    priority: high
+    platforms: [api, web]
+    steps:
+      - name: "Send create with unknown type"
+        action: "POST /api/v1/entities with type 'podcast', title 'Test'"
+        expected: "400 Bad Request with error describing invalid type"
+      - name: "Verify no entity created"
+        action: "GET /api/v1/entities?search=Test"
+        expected: "No entity with type 'podcast' in results"
+    tags: [entity, create, validation, error]
+    estimated_duration: "10s"
+    expected_result: "Invalid media type rejected with clear error"
+
+  - id: ENT-013
+    name: "Reject entity creation with missing title"
+    category: functional
+    priority: high
+    platforms: [api, web]
+    steps:
+      - name: "Send create without title"
+        action: "POST /api/v1/entities with type 'movie', title omitted"
+        expected: "400 Bad Request with validation error for missing title"
+    tags: [entity, create, validation, error, missing-field]
+    estimated_duration: "5s"
+    expected_result: "Missing title rejected with validation error"
+
+  # ==================== Entity Hierarchy ====================
+  - id: ENT-014
+    name: "Full TV show hierarchy: show to season to episode"
+    category: functional
+    priority: critical
+    platforms: [api, web, desktop]
+    steps:
+      - name: "Create TV show"
+        action: "POST /api/v1/entities with type 'tv_show', title 'Breaking Bad'"
+        expected: "201 Created"
+      - name: "Create Season 1"
+        action: "POST /api/v1/entities with type 'tv_season', title 'Season 1', parent_id = show ID"
+        expected: "201 Created"
+      - name: "Create Episode 1"
+        action: "POST /api/v1/entities with type 'tv_episode', title 'Pilot', parent_id = season ID"
+        expected: "201 Created"
+      - name: "Query hierarchy"
+        action: "GET /api/v1/entities/{show_id}/children"
+        expected: "Season 1 listed as child"
+      - name: "Query season children"
+        action: "GET /api/v1/entities/{season_id}/children"
+        expected: "Pilot episode listed as child"
+    tags: [entity, hierarchy, tv-show, season, episode]
+    estimated_duration: "25s"
+    expected_result: "Three-level TV hierarchy navigable via parent-child queries"
+
+  - id: ENT-015
+    name: "Music hierarchy: artist to album to song"
+    category: functional
+    priority: critical
+    platforms: [api, web, desktop]
+    steps:
+      - name: "Create music artist"
+        action: "POST /api/v1/entities with type 'music_artist', title 'The Beatles'"
+        expected: "201 Created"
+      - name: "Create album"
+        action: "POST /api/v1/entities with type 'music_album', title 'Abbey Road', parent_id = artist ID"
+        expected: "201 Created"
+      - name: "Create song"
+        action: "POST /api/v1/entities with type 'song', title 'Come Together', parent_id = album ID"
+        expected: "201 Created"
+      - name: "Traverse hierarchy"
+        action: "GET /api/v1/entities/{artist_id}/children then GET children of album"
+        expected: "Album under artist, song under album"
+    tags: [entity, hierarchy, music, artist, album, song]
+    estimated_duration: "25s"
+    expected_result: "Three-level music hierarchy navigable"
+
+  - id: ENT-016
+    name: "Query children of entity with no children"
+    category: functional
+    priority: medium
+    platforms: [api, web]
+    steps:
+      - name: "Create standalone movie"
+        action: "POST /api/v1/entities with type 'movie', title 'Standalone Film'"
+        expected: "201 Created"
+      - name: "Query children"
+        action: "GET /api/v1/entities/{id}/children"
+        expected: "Empty array returned, not an error"
+    tags: [entity, hierarchy, empty, edge-case]
+    estimated_duration: "10s"
+    expected_result: "Empty children list returned for leaf entities"
+
+  - id: ENT-017
+    name: "Multiple seasons under one TV show"
+    category: functional
+    priority: high
+    platforms: [api, web, desktop]
+    steps:
+      - name: "Create TV show"
+        action: "POST /api/v1/entities with type 'tv_show', title 'Multi-Season Show'"
+        expected: "201 Created"
+      - name: "Create Season 1"
+        action: "POST /api/v1/entities with type 'tv_season', title 'Season 1', parent_id = show ID"
+        expected: "201 Created"
+      - name: "Create Season 2"
+        action: "POST /api/v1/entities with type 'tv_season', title 'Season 2', parent_id = show ID"
+        expected: "201 Created"
+      - name: "Create Season 3"
+        action: "POST /api/v1/entities with type 'tv_season', title 'Season 3', parent_id = show ID"
+        expected: "201 Created"
+      - name: "Query show children"
+        action: "GET /api/v1/entities/{show_id}/children"
+        expected: "Three seasons returned in order"
+    tags: [entity, hierarchy, tv-show, multiple-children]
+    estimated_duration: "20s"
+    expected_result: "Multiple seasons listed under parent show"
+
+  - id: ENT-018
+    name: "Multiple episodes under one season"
+    category: functional
+    priority: high
+    platforms: [api, web, desktop]
+    steps:
+      - name: "Create TV show and season"
+        action: "Create show and Season 1 hierarchy"
+        expected: "Show and season created"
+      - name: "Create 5 episodes"
+        action: "POST 5 episodes with parent_id = season ID, titles Episode 1 through 5"
+        expected: "All 5 episodes created (201 for each)"
+      - name: "Query season children"
+        action: "GET /api/v1/entities/{season_id}/children"
+        expected: "5 episodes returned"
+    tags: [entity, hierarchy, tv-episode, bulk-create]
+    estimated_duration: "25s"
+    expected_result: "Multiple episodes listed under parent season"
+
+  # ==================== Entity Search ====================
+  - id: ENT-019
+    name: "Search entities by title"
+    category: functional
+    priority: critical
+    platforms: [api, web, desktop]
+    steps:
+      - name: "Create entities with known titles"
+        action: "Create movie 'The Matrix' and book 'The Matrix Comics'"
+        expected: "Both entities created"
+      - name: "Search by title"
+        action: "GET /api/v1/entities?search=Matrix"
+        expected: "Both entities returned in results"
+    tags: [entity, search, title, query]
+    estimated_duration: "15s"
+    expected_result: "Title search returns matching entities"
+
+  - id: ENT-020
+    name: "Search entities by type"
+    category: functional
+    priority: critical
+    platforms: [api, web, desktop]
+    steps:
+      - name: "Create mixed entities"
+        action: "Create 2 movies, 1 book, 1 game"
+        expected: "All entities created"
+      - name: "Filter by type movie"
+        action: "GET /api/v1/entities?type=movie"
+        expected: "Only movie entities returned"
+    tags: [entity, search, type-filter, query]
+    estimated_duration: "15s"
+    expected_result: "Type filter returns only matching entities"
+
+  - id: ENT-021
+    name: "Search entities by year"
+    category: functional
+    priority: high
+    platforms: [api, web, desktop]
+    steps:
+      - name: "Create entities with different years"
+        action: "Create movie year 2020, movie year 2025, book year 2020"
+        expected: "All entities created"
+      - name: "Filter by year 2020"
+        action: "GET /api/v1/entities?year=2020"
+        expected: "Two entities (movie and book from 2020) returned"
+    tags: [entity, search, year-filter, query]
+    estimated_duration: "15s"
+    expected_result: "Year filter returns matching entities"
+
+  - id: ENT-022
+    name: "Search with combined title and type filter"
+    category: functional
+    priority: high
+    platforms: [api, web, desktop]
+    steps:
+      - name: "Create entities"
+        action: "Create movie 'Inception', book 'Inception: The Art', game 'Inception'"
+        expected: "Three entities created"
+      - name: "Search title+type"
+        action: "GET /api/v1/entities?search=Inception&type=movie"
+        expected: "Only movie 'Inception' returned"
+    tags: [entity, search, combined-filter, query]
+    estimated_duration: "15s"
+    expected_result: "Combined search narrows results correctly"
+
+  - id: ENT-023
+    name: "Search returns empty for non-existent title"
+    category: functional
+    priority: medium
+    platforms: [api, web]
+    steps:
+      - name: "Search for non-existent title"
+        action: "GET /api/v1/entities?search=XYZNonexistentTitle123"
+        expected: "Empty result array, 200 OK"
+    tags: [entity, search, empty-result, edge-case]
+    estimated_duration: "5s"
+    expected_result: "Empty array returned, not an error"
+
+  - id: ENT-024
+    name: "Search is case-insensitive"
+    category: functional
+    priority: medium
+    platforms: [api, web]
+    steps:
+      - name: "Create entity with mixed case"
+        action: "Create movie 'The Dark Knight'"
+        expected: "Entity created"
+      - name: "Search lowercase"
+        action: "GET /api/v1/entities?search=the dark knight"
+        expected: "Entity found regardless of case"
+      - name: "Search uppercase"
+        action: "GET /api/v1/entities?search=THE DARK KNIGHT"
+        expected: "Same entity found"
+    tags: [entity, search, case-insensitive, query]
+    estimated_duration: "10s"
+    expected_result: "Search is case-insensitive"
+
+  # ==================== Entity Duplicate Detection ====================
+  - id: ENT-025
+    name: "Detect duplicate entity by title and type and year"
+    category: functional
+    priority: critical
+    platforms: [api, web, desktop]
+    steps:
+      - name: "Create first entity"
+        action: "POST /api/v1/entities with type 'movie', title 'Dune', year 2021"
+        expected: "201 Created"
+      - name: "Create duplicate"
+        action: "POST /api/v1/entities with type 'movie', title 'Dune', year 2021"
+        expected: "409 Conflict or warning indicating duplicate detected"
+    tags: [entity, duplicate, detection, validation]
+    estimated_duration: "10s"
+    expected_result: "Duplicate entity detected and flagged"
+
+  - id: ENT-026
+    name: "Same title different type is not a duplicate"
+    category: functional
+    priority: high
+    platforms: [api, web]
+    steps:
+      - name: "Create movie"
+        action: "POST /api/v1/entities with type 'movie', title 'Dune'"
+        expected: "201 Created"
+      - name: "Create book with same title"
+        action: "POST /api/v1/entities with type 'book', title 'Dune'"
+        expected: "201 Created (not a duplicate since different type)"
+    tags: [entity, duplicate, cross-type, validation]
+    estimated_duration: "10s"
+    expected_result: "Same title with different type allowed"
+
+  - id: ENT-027
+    name: "Same title different year is not a duplicate"
+    category: functional
+    priority: high
+    platforms: [api, web]
+    steps:
+      - name: "Create movie 1984"
+        action: "POST /api/v1/entities with type 'movie', title 'Dune', year 1984"
+        expected: "201 Created"
+      - name: "Create movie 2021"
+        action: "POST /api/v1/entities with type 'movie', title 'Dune', year 2021"
+        expected: "201 Created (different year, not a duplicate)"
+    tags: [entity, duplicate, different-year, validation]
+    estimated_duration: "10s"
+    expected_result: "Same title with different year allowed as separate entity"
+
+  # ==================== Entity Update ====================
+  - id: ENT-028
+    name: "Update entity title"
+    category: functional
+    priority: critical
+    platforms: [api, web, desktop]
+    steps:
+      - name: "Create entity"
+        action: "POST /api/v1/entities with type 'movie', title 'Old Title'"
+        expected: "201 Created"
+      - name: "Update title"
+        action: "PUT /api/v1/entities/{id} with title 'New Title'"
+        expected: "200 OK"
+      - name: "Verify update"
+        action: "GET /api/v1/entities/{id}"
+        expected: "Title is 'New Title'"
+    tags: [entity, update, title, crud]
+    estimated_duration: "10s"
+    expected_result: "Entity title updated successfully"
+
+  - id: ENT-029
+    name: "Update entity metadata"
+    category: functional
+    priority: high
+    platforms: [api, web, desktop]
+    steps:
+      - name: "Create entity"
+        action: "POST /api/v1/entities with type 'movie', title 'Metadata Test'"
+        expected: "201 Created"
+      - name: "Add metadata"
+        action: "PUT /api/v1/entities/{id}/metadata with genre 'Sci-Fi', rating '8.5'"
+        expected: "200 OK"
+      - name: "Verify metadata"
+        action: "GET /api/v1/entities/{id}"
+        expected: "Metadata fields present with correct values"
+    tags: [entity, update, metadata, crud]
+    estimated_duration: "15s"
+    expected_result: "Entity metadata updated and retrievable"
+
+  - id: ENT-030
+    name: "Update entity year"
+    category: functional
+    priority: medium
+    platforms: [api, web]
+    steps:
+      - name: "Create entity with year"
+        action: "POST /api/v1/entities with type 'movie', title 'Year Test', year 2020"
+        expected: "201 Created"
+      - name: "Update year"
+        action: "PUT /api/v1/entities/{id} with year 2021"
+        expected: "200 OK"
+      - name: "Verify year"
+        action: "GET /api/v1/entities/{id}"
+        expected: "Year is 2021"
+    tags: [entity, update, year, crud]
+    estimated_duration: "10s"
+    expected_result: "Entity year updated correctly"
+
+  - id: ENT-031
+    name: "Update non-existent entity returns 404"
+    category: functional
+    priority: medium
+    platforms: [api, web]
+    steps:
+      - name: "Update non-existent entity"
+        action: "PUT /api/v1/entities/99999 with title 'Ghost'"
+        expected: "404 Not Found"
+    tags: [entity, update, not-found, error]
+    estimated_duration: "5s"
+    expected_result: "404 returned for non-existent entity update"
+
+  # ==================== Entity Deletion ====================
+  - id: ENT-032
+    name: "Delete entity"
+    category: functional
+    priority: critical
+    platforms: [api, web, desktop]
+    steps:
+      - name: "Create entity"
+        action: "POST /api/v1/entities with type 'game', title 'Delete Me'"
+        expected: "201 Created"
+      - name: "Delete entity"
+        action: "DELETE /api/v1/entities/{id}"
+        expected: "200 OK or 204 No Content"
+      - name: "Verify deletion"
+        action: "GET /api/v1/entities/{id}"
+        expected: "404 Not Found"
+    tags: [entity, delete, crud]
+    estimated_duration: "10s"
+    expected_result: "Entity deleted and no longer retrievable"
+
+  - id: ENT-033
+    name: "Delete parent entity cascades or blocks"
+    category: functional
+    priority: high
+    platforms: [api, web]
+    steps:
+      - name: "Create TV show with season and episode"
+        action: "Create full hierarchy: show > season > episode"
+        expected: "All three entities created"
+      - name: "Delete parent show"
+        action: "DELETE /api/v1/entities/{show_id}"
+        expected: "Either cascade deletes children or 409 Conflict if children exist"
+      - name: "Verify outcome"
+        action: "GET /api/v1/entities/{show_id} and GET children"
+        expected: "Consistent state: all deleted or parent still present with error"
+    tags: [entity, delete, cascade, hierarchy]
+    estimated_duration: "20s"
+    expected_result: "Parent deletion handled consistently with hierarchy"
+
+  - id: ENT-034
+    name: "Delete non-existent entity returns 404"
+    category: functional
+    priority: medium
+    platforms: [api, web]
+    steps:
+      - name: "Delete non-existent entity"
+        action: "DELETE /api/v1/entities/99999"
+        expected: "404 Not Found"
+    tags: [entity, delete, not-found, error]
+    estimated_duration: "5s"
+    expected_result: "404 returned for non-existent entity deletion"
+
+  # ==================== Entity Browsing and Pagination ====================
+  - id: ENT-035
+    name: "Browse entities with default pagination"
+    category: functional
+    priority: critical
+    platforms: [api, web, desktop]
+    steps:
+      - name: "Create 30 entities"
+        action: "POST 30 movie entities with sequential titles"
+        expected: "All 30 created"
+      - name: "Browse first page"
+        action: "GET /api/v1/entities?page=1&per_page=10"
+        expected: "10 entities returned with pagination metadata"
+      - name: "Verify pagination metadata"
+        action: "Check response headers or body for total count and page info"
+        expected: "Total count >= 30, page 1 of 3+"
+    tags: [entity, browse, pagination, listing]
+    estimated_duration: "30s"
+    expected_result: "Paginated entity listing with correct counts"
+
+  - id: ENT-036
+    name: "Browse entities second page"
+    category: functional
+    priority: high
+    platforms: [api, web, desktop]
+    steps:
+      - name: "Ensure 30+ entities exist"
+        action: "Verify or create sufficient entities"
+        expected: "30+ entities in database"
+      - name: "Request page 2"
+        action: "GET /api/v1/entities?page=2&per_page=10"
+        expected: "10 different entities from page 1"
+      - name: "Verify no overlap with page 1"
+        action: "Compare IDs with page 1 results"
+        expected: "No duplicate IDs between pages"
+    tags: [entity, browse, pagination, page-two]
+    estimated_duration: "15s"
+    expected_result: "Second page returns different entities than first"
+
+  - id: ENT-037
+    name: "Browse beyond last page returns empty"
+    category: functional
+    priority: medium
+    platforms: [api, web]
+    steps:
+      - name: "Request page far beyond data"
+        action: "GET /api/v1/entities?page=9999&per_page=10"
+        expected: "Empty array returned, 200 OK"
+    tags: [entity, browse, pagination, empty-page, edge-case]
+    estimated_duration: "5s"
+    expected_result: "Empty result for page beyond data range"
+
+  - id: ENT-038
+    name: "Browse entities sorted by title"
+    category: functional
+    priority: medium
+    platforms: [api, web]
+    steps:
+      - name: "Create entities with varied titles"
+        action: "Create entities: 'Zebra', 'Alpha', 'Middle'"
+        expected: "All created"
+      - name: "Request sorted by title ascending"
+        action: "GET /api/v1/entities?sort=title&order=asc"
+        expected: "Alpha, Middle, Zebra order"
+    tags: [entity, browse, sorting, title]
+    estimated_duration: "15s"
+    expected_result: "Entities sorted alphabetically by title"
+
+  - id: ENT-039
+    name: "Browse entities sorted by creation date"
+    category: functional
+    priority: medium
+    platforms: [api, web]
+    steps:
+      - name: "Create entities sequentially"
+        action: "Create entity A, then B, then C with short delays"
+        expected: "All created with increasing timestamps"
+      - name: "Sort by created_at descending"
+        action: "GET /api/v1/entities?sort=created_at&order=desc"
+        expected: "C first, then B, then A"
+    tags: [entity, browse, sorting, date]
+    estimated_duration: "15s"
+    expected_result: "Entities sorted by creation date"
+
+  # ==================== Entity Filtering by Type ====================
+  - id: ENT-040
+    name: "Filter entities by type movie"
+    category: functional
+    priority: high
+    platforms: [api, web, desktop]
+    steps:
+      - name: "Create mixed entities"
+        action: "Create 3 movies, 2 books, 1 game"
+        expected: "6 entities created"
+      - name: "Filter by movie"
+        action: "GET /api/v1/entities?type=movie"
+        expected: "Exactly 3 movie entities returned"
+    tags: [entity, filter, type, movie]
+    estimated_duration: "15s"
+    expected_result: "Only movie entities returned when filtered"
+
+  - id: ENT-041
+    name: "Filter entities by type book"
+    category: functional
+    priority: high
+    platforms: [api, web, desktop]
+    steps:
+      - name: "Ensure mixed entities exist"
+        action: "Verify movies, books, games in database"
+        expected: "Multiple types present"
+      - name: "Filter by book"
+        action: "GET /api/v1/entities?type=book"
+        expected: "Only book entities returned"
+    tags: [entity, filter, type, book]
+    estimated_duration: "10s"
+    expected_result: "Only book entities returned when filtered"
+
+  - id: ENT-042
+    name: "Filter entities by type game"
+    category: functional
+    priority: medium
+    platforms: [api, web]
+    steps:
+      - name: "Filter by game"
+        action: "GET /api/v1/entities?type=game"
+        expected: "Only game entities returned"
+    tags: [entity, filter, type, game]
+    estimated_duration: "10s"
+    expected_result: "Only game entities returned when filtered"
+
+  - id: ENT-043
+    name: "Filter entities by type tv_show"
+    category: functional
+    priority: medium
+    platforms: [api, web]
+    steps:
+      - name: "Filter by tv_show"
+        action: "GET /api/v1/entities?type=tv_show"
+        expected: "Only tv_show entities returned (not seasons or episodes)"
+    tags: [entity, filter, type, tv-show]
+    estimated_duration: "10s"
+    expected_result: "Only top-level TV show entities returned"
+
+  - id: ENT-044
+    name: "Filter by invalid type returns empty"
+    category: functional
+    priority: low
+    platforms: [api, web]
+    steps:
+      - name: "Filter by non-existent type"
+        action: "GET /api/v1/entities?type=podcast"
+        expected: "Empty array or 400 Bad Request"
+    tags: [entity, filter, type, invalid, edge-case]
+    estimated_duration: "5s"
+    expected_result: "Invalid type filter handled gracefully"
+
+  # ==================== Entity Statistics ====================
+  - id: ENT-045
+    name: "Entity count by type"
+    category: functional
+    priority: high
+    platforms: [api, web, desktop]
+    steps:
+      - name: "Create known set of entities"
+        action: "Create 5 movies, 3 books, 2 games"
+        expected: "10 entities created"
+      - name: "Request statistics"
+        action: "GET /api/v1/entities/stats"
+        expected: "Breakdown by type: movie=5, book=3, game=2"
+    tags: [entity, statistics, count, type-breakdown]
+    estimated_duration: "15s"
+    expected_result: "Entity statistics show correct counts per type"
+
+  - id: ENT-046
+    name: "Total entity count"
+    category: functional
+    priority: high
+    platforms: [api, web, desktop]
+    steps:
+      - name: "Request entity count"
+        action: "GET /api/v1/entities/stats or GET /api/v1/entities?count_only=true"
+        expected: "Total entity count matches expected number"
+    tags: [entity, statistics, total-count]
+    estimated_duration: "10s"
+    expected_result: "Total count matches number of created entities"
+
+  - id: ENT-047
+    name: "Entity statistics with empty database"
+    category: functional
+    priority: medium
+    platforms: [api, web]
+    steps:
+      - name: "Request statistics on clean database"
+        action: "GET /api/v1/entities/stats before creating entities"
+        expected: "All counts zero, response 200 OK"
+    tags: [entity, statistics, empty, edge-case]
+    estimated_duration: "5s"
+    expected_result: "Zero counts returned for empty database"
+
+  # ==================== Entity File Association ====================
+  - id: ENT-048
+    name: "Associate scanned file with entity"
+    category: functional
+    priority: critical
+    platforms: [api, web]
+    steps:
+      - name: "Create movie entity"
+        action: "POST /api/v1/entities with type 'movie', title 'File Association Test'"
+        expected: "201 Created"
+      - name: "Link file to entity"
+        action: "POST /api/v1/entities/{id}/files with file_id from scanned file"
+        expected: "200 OK or 201 Created"
+      - name: "Verify association"
+        action: "GET /api/v1/entities/{id}/files"
+        expected: "Linked file appears in entity file list"
+    tags: [entity, file-association, media-files, junction]
+    estimated_duration: "15s"
+    expected_result: "File linked to entity and visible in file list"
+
+  - id: ENT-049
+    name: "Multiple files associated with one entity"
+    category: functional
+    priority: high
+    platforms: [api, web]
+    steps:
+      - name: "Create movie entity"
+        action: "POST /api/v1/entities with type 'movie', title 'Multi-File Movie'"
+        expected: "201 Created"
+      - name: "Link 3 files"
+        action: "POST 3 file associations (video, subtitle, poster)"
+        expected: "All 3 associations created"
+      - name: "Verify all files"
+        action: "GET /api/v1/entities/{id}/files"
+        expected: "3 files listed"
+    tags: [entity, file-association, multiple-files]
+    estimated_duration: "20s"
+    expected_result: "Multiple files linked to single entity"
+
+  - id: ENT-050
+    name: "Remove file association from entity"
+    category: functional
+    priority: medium
+    platforms: [api, web]
+    steps:
+      - name: "Create entity with file"
+        action: "Create entity and link a file"
+        expected: "Entity with one associated file"
+      - name: "Remove file association"
+        action: "DELETE /api/v1/entities/{id}/files/{file_id}"
+        expected: "200 OK or 204 No Content"
+      - name: "Verify removal"
+        action: "GET /api/v1/entities/{id}/files"
+        expected: "Empty file list"
+    tags: [entity, file-association, remove, crud]
+    estimated_duration: "15s"
+    expected_result: "File association removed from entity"
+
+  # ==================== Entity Collection ====================
+  - id: ENT-051
+    name: "Create entity collection"
+    category: functional
+    priority: high
+    platforms: [api, web, desktop]
+    steps:
+      - name: "Create collection"
+        action: "POST /api/v1/collections with name 'Sci-Fi Favorites'"
+        expected: "201 Created with collection ID"
+      - name: "Add entities to collection"
+        action: "POST 3 movie entities to the collection"
+        expected: "All 3 added successfully"
+      - name: "Query collection"
+        action: "GET /api/v1/collections/{id}/items"
+        expected: "3 entities listed in collection"
+    tags: [entity, collection, create, management]
+    estimated_duration: "20s"
+    expected_result: "Collection created with entities"
+
+  - id: ENT-052
+    name: "Remove entity from collection"
+    category: functional
+    priority: medium
+    platforms: [api, web]
+    steps:
+      - name: "Create collection with 3 entities"
+        action: "Create collection and add 3 movies"
+        expected: "Collection has 3 items"
+      - name: "Remove one entity"
+        action: "DELETE /api/v1/collections/{collection_id}/items/{entity_id}"
+        expected: "200 OK"
+      - name: "Verify removal"
+        action: "GET /api/v1/collections/{id}/items"
+        expected: "2 entities remaining"
+    tags: [entity, collection, remove, management]
+    estimated_duration: "15s"
+    expected_result: "Entity removed from collection"
+
+  # ==================== Entity Web UI ====================
+  - id: ENT-053
+    name: "Browse entities in web UI"
+    category: functional
+    priority: critical
+    platforms: [web, desktop]
+    steps:
+      - name: "Navigate to entity browser"
+        action: "Open /browse in web application"
+        expected: "Entity browser page loads with entity list"
+      - name: "Verify entity cards displayed"
+        action: "Check that entity cards show title, type, and thumbnail"
+        expected: "Cards rendered correctly"
+      - name: "Click an entity"
+        action: "Click on a movie entity card"
+        expected: "Entity detail page /entity/{id} opens"
+    tags: [entity, web-ui, browse, navigation]
+    estimated_duration: "15s"
+    expected_result: "Entity browser navigable in web UI"
+
+  - id: ENT-054
+    name: "Entity detail page shows full information"
+    category: functional
+    priority: high
+    platforms: [web, desktop]
+    steps:
+      - name: "Navigate to entity detail"
+        action: "Open /entity/{id} for a movie with metadata"
+        expected: "Detail page loads"
+      - name: "Verify title and type"
+        action: "Check title and type badge on page"
+        expected: "Correct title and type shown"
+      - name: "Verify metadata"
+        action: "Check metadata section (year, genre, rating)"
+        expected: "All metadata fields displayed"
+      - name: "Verify associated files"
+        action: "Check files section"
+        expected: "Associated files listed"
+    tags: [entity, web-ui, detail, information]
+    estimated_duration: "15s"
+    expected_result: "Entity detail page shows complete information"
+
+  - id: ENT-055
+    name: "Entity type filter in web UI"
+    category: functional
+    priority: high
+    platforms: [web, desktop]
+    steps:
+      - name: "Open entity browser"
+        action: "Navigate to /browse"
+        expected: "All entities displayed"
+      - name: "Select type filter"
+        action: "Click 'Movies' filter chip or dropdown"
+        expected: "Only movie entities shown"
+      - name: "Clear filter"
+        action: "Click 'All' or clear filter"
+        expected: "All entity types shown again"
+    tags: [entity, web-ui, filter, type]
+    estimated_duration: "15s"
+    expected_result: "Type filter works in web entity browser"
+
+  - id: ENT-056
+    name: "Entity search bar in web UI"
+    category: functional
+    priority: high
+    platforms: [web, desktop]
+    steps:
+      - name: "Open entity browser"
+        action: "Navigate to /browse"
+        expected: "Search bar visible"
+      - name: "Type search query"
+        action: "Type 'Matrix' in search bar"
+        expected: "Results filter in real-time or after submit"
+      - name: "Verify results"
+        action: "Check displayed entities"
+        expected: "Only entities matching 'Matrix' shown"
+    tags: [entity, web-ui, search, interactive]
+    estimated_duration: "15s"
+    expected_result: "Web UI search filters entities correctly"
+
+  # ==================== Aggregation Pipeline ====================
+  - id: ENT-057
+    name: "Post-scan aggregation creates entities from files"
+    category: functional
+    priority: critical
+    platforms: [api]
+    steps:
+      - name: "Trigger scan of storage root"
+        action: "POST /api/v1/scan with storage root containing media files"
+        expected: "Scan completes successfully"
+      - name: "Verify entities created"
+        action: "GET /api/v1/entities"
+        expected: "Entities automatically created from scanned file names"
+      - name: "Verify file associations"
+        action: "Check that scanned files are linked to entities"
+        expected: "Each scanned file associated with a recognized entity"
+    tags: [entity, aggregation, post-scan, pipeline]
+    estimated_duration: "60s"
+    expected_result: "Aggregation pipeline creates entities from scanned files"
+
+  - id: ENT-058
+    name: "Title parser extracts movie info from filename"
+    category: functional
+    priority: high
+    platforms: [api]
+    steps:
+      - name: "Scan file with standard naming"
+        action: "Scan directory containing 'The.Matrix.1999.1080p.BluRay.mp4'"
+        expected: "Scan completes"
+      - name: "Verify parsed entity"
+        action: "GET /api/v1/entities?search=Matrix"
+        expected: "Movie entity created with title 'The Matrix', year 1999"
+    tags: [entity, aggregation, title-parser, movie]
+    estimated_duration: "30s"
+    expected_result: "Title parser correctly extracts movie name and year"
+
+  - id: ENT-059
+    name: "Title parser extracts TV episode info from filename"
+    category: functional
+    priority: high
+    platforms: [api]
+    steps:
+      - name: "Scan file with TV naming"
+        action: "Scan directory containing 'Breaking.Bad.S01E01.Pilot.720p.mkv'"
+        expected: "Scan completes"
+      - name: "Verify hierarchy"
+        action: "GET /api/v1/entities?search=Breaking Bad"
+        expected: "TV show 'Breaking Bad' with Season 1 and Episode 1 in hierarchy"
+    tags: [entity, aggregation, title-parser, tv-episode]
+    estimated_duration: "30s"
+    expected_result: "Title parser builds TV hierarchy from filename"
+
+  - id: ENT-060
+    name: "Aggregation detects duplicates during scan"
+    category: functional
+    priority: high
+    platforms: [api]
+    steps:
+      - name: "Scan directory with duplicate movie files"
+        action: "Scan two files: 'The.Matrix.1999.1080p.mp4' and 'The.Matrix.1999.720p.mp4'"
+        expected: "Scan completes"
+      - name: "Verify single entity"
+        action: "GET /api/v1/entities?search=Matrix&type=movie"
+        expected: "One movie entity with two associated files"
+    tags: [entity, aggregation, duplicate-detection, scan]
+    estimated_duration: "30s"
+    expected_result: "Duplicate files consolidated under single entity"

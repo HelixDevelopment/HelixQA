@@ -1,0 +1,911 @@
+# SPDX-FileCopyrightText: 2026 Milos Vasic
+# SPDX-License-Identifier: Apache-2.0
+#
+# HelixQA Test Bank: Security Validation
+# Tests authentication, authorization, token handling, input sanitization,
+# injection prevention, rate limiting, CORS, session management, and
+# transport security across all platforms.
+
+version: "1.0"
+name: "Catalogizer Security Validation Test Bank"
+description: "Security tests for auth, tokens, injection prevention, rate limiting, CORS, sessions, and transport security"
+metadata:
+  author: "vasic-digital"
+  app: "Catalogizer"
+  version: "1.0.0"
+
+test_cases:
+  # ==================== Authentication Required ====================
+  - id: SEC-001
+    name: "Protected endpoint requires authentication"
+    category: security
+    priority: critical
+    platforms: [api, web, desktop, android]
+    steps:
+      - name: "Access protected endpoint without token"
+        action: "GET /api/v1/entities with no Authorization header"
+        expected: "401 Unauthorized"
+      - name: "Access with valid token"
+        action: "GET /api/v1/entities with valid JWT in Authorization header"
+        expected: "200 OK with entity data"
+    tags: [security, auth, protected-endpoint, jwt]
+    estimated_duration: "10s"
+    expected_result: "Protected endpoints reject unauthenticated requests"
+
+  - id: SEC-002
+    name: "All write endpoints require authentication"
+    category: security
+    priority: critical
+    platforms: [api]
+    steps:
+      - name: "POST without token"
+        action: "POST /api/v1/entities with valid body but no Authorization header"
+        expected: "401 Unauthorized"
+      - name: "PUT without token"
+        action: "PUT /api/v1/entities/1 with valid body but no Authorization header"
+        expected: "401 Unauthorized"
+      - name: "DELETE without token"
+        action: "DELETE /api/v1/entities/1 with no Authorization header"
+        expected: "401 Unauthorized"
+    tags: [security, auth, write-endpoints, jwt]
+    estimated_duration: "10s"
+    expected_result: "All write operations require authentication"
+
+  # ==================== JWT Token Handling ====================
+  - id: SEC-003
+    name: "Expired JWT token rejected"
+    category: security
+    priority: critical
+    platforms: [api, web, desktop, android]
+    steps:
+      - name: "Create expired token"
+        action: "Use a JWT token with exp claim in the past"
+        expected: "Token created"
+      - name: "Access protected endpoint"
+        action: "GET /api/v1/entities with expired token"
+        expected: "401 Unauthorized with 'token expired' error"
+    tags: [security, jwt, expiration, token]
+    estimated_duration: "10s"
+    expected_result: "Expired tokens rejected with clear error"
+
+  - id: SEC-004
+    name: "Invalid JWT signature rejected"
+    category: security
+    priority: critical
+    platforms: [api, web, desktop, android]
+    steps:
+      - name: "Craft token with wrong secret"
+        action: "Sign a JWT with a different secret key than server uses"
+        expected: "Token created with invalid signature"
+      - name: "Access protected endpoint"
+        action: "GET /api/v1/entities with invalid-signature token"
+        expected: "401 Unauthorized"
+    tags: [security, jwt, signature, invalid-token]
+    estimated_duration: "10s"
+    expected_result: "Tokens with invalid signatures rejected"
+
+  - id: SEC-005
+    name: "Malformed JWT token rejected"
+    category: security
+    priority: critical
+    platforms: [api]
+    steps:
+      - name: "Send malformed token"
+        action: "GET /api/v1/entities with Authorization: Bearer not.a.jwt.token"
+        expected: "401 Unauthorized"
+      - name: "Send empty bearer"
+        action: "GET /api/v1/entities with Authorization: Bearer (empty)"
+        expected: "401 Unauthorized"
+      - name: "Send random string"
+        action: "GET /api/v1/entities with Authorization: Bearer abc123xyz"
+        expected: "401 Unauthorized"
+    tags: [security, jwt, malformed, parsing]
+    estimated_duration: "10s"
+    expected_result: "Malformed tokens rejected without server error"
+
+  - id: SEC-006
+    name: "JWT token with none algorithm rejected"
+    category: security
+    priority: critical
+    platforms: [api]
+    steps:
+      - name: "Craft token with alg:none"
+        action: "Create JWT with header {\"alg\":\"none\"} and unsigned payload"
+        expected: "Token crafted"
+      - name: "Access protected endpoint"
+        action: "GET /api/v1/entities with alg:none token"
+        expected: "401 Unauthorized (none algorithm not accepted)"
+    tags: [security, jwt, algorithm-none, exploit]
+    estimated_duration: "10s"
+    expected_result: "None algorithm attack rejected"
+
+  - id: SEC-007
+    name: "JWT token refresh flow"
+    category: security
+    priority: high
+    platforms: [api, web, desktop, android]
+    steps:
+      - name: "Login and get token"
+        action: "POST /api/v1/auth/login"
+        expected: "200 OK with access token and refresh token"
+      - name: "Use refresh token"
+        action: "POST /api/v1/auth/refresh with refresh token"
+        expected: "200 OK with new access token"
+      - name: "Old token still valid until expiry"
+        action: "Use original access token"
+        expected: "200 OK (token not yet expired)"
+    tags: [security, jwt, refresh, token-lifecycle]
+    estimated_duration: "15s"
+    expected_result: "Token refresh provides new valid token"
+
+  # ==================== SQL Injection Prevention ====================
+  - id: SEC-008
+    name: "SQL injection in search parameter rejected"
+    category: security
+    priority: critical
+    platforms: [api, web]
+    steps:
+      - name: "Send classic SQL injection"
+        action: "GET /api/v1/entities?search=' OR '1'='1"
+        expected: "Empty results or 400 Bad Request (not a database dump)"
+      - name: "Verify no data leak"
+        action: "Check response does not contain all entities"
+        expected: "Only legitimately matching results (if any)"
+    tags: [security, sql-injection, search, input-sanitization]
+    estimated_duration: "10s"
+    expected_result: "SQL injection in search has no effect"
+
+  - id: SEC-009
+    name: "SQL injection in entity title rejected"
+    category: security
+    priority: critical
+    platforms: [api, web]
+    steps:
+      - name: "Create entity with SQL payload"
+        action: "POST /api/v1/entities with title \"'; DROP TABLE media_items; --\""
+        expected: "Entity created with literal title string (no SQL execution)"
+      - name: "Verify table intact"
+        action: "GET /api/v1/entities"
+        expected: "Entity list works normally, table not dropped"
+    tags: [security, sql-injection, title, parameterized-query]
+    estimated_duration: "10s"
+    expected_result: "SQL injection in title stored as literal text"
+
+  - id: SEC-010
+    name: "SQL injection in sort parameter rejected"
+    category: security
+    priority: high
+    platforms: [api]
+    steps:
+      - name: "Send injection in sort"
+        action: "GET /api/v1/entities?sort=title; DROP TABLE users;--"
+        expected: "400 Bad Request or sort ignored (not executed)"
+    tags: [security, sql-injection, sort, parameter]
+    estimated_duration: "10s"
+    expected_result: "SQL injection in sort parameter has no effect"
+
+  - id: SEC-011
+    name: "SQL injection with UNION SELECT rejected"
+    category: security
+    priority: critical
+    platforms: [api]
+    steps:
+      - name: "Send UNION injection"
+        action: "GET /api/v1/entities?search=' UNION SELECT username,password FROM users--"
+        expected: "Empty results or 400 Bad Request"
+      - name: "Verify no credential leak"
+        action: "Check response for any user credentials"
+        expected: "No credentials in response"
+    tags: [security, sql-injection, union-select, credential-leak]
+    estimated_duration: "10s"
+    expected_result: "UNION SELECT injection blocked"
+
+  # ==================== XSS Prevention ====================
+  - id: SEC-012
+    name: "XSS payload in entity title sanitized"
+    category: security
+    priority: critical
+    platforms: [api, web]
+    steps:
+      - name: "Create entity with script tag"
+        action: "POST /api/v1/entities with title '<script>alert(\"xss\")</script>'"
+        expected: "Entity created (title stored safely)"
+      - name: "Retrieve entity"
+        action: "GET /api/v1/entities/{id}"
+        expected: "Title returned with HTML entities escaped or stripped"
+      - name: "Render in web UI"
+        action: "View entity in browser"
+        expected: "Script tag not executed, shown as text"
+    tags: [security, xss, script-tag, sanitization]
+    estimated_duration: "15s"
+    expected_result: "XSS script tag neutralized in output"
+
+  - id: SEC-013
+    name: "XSS payload in search query sanitized"
+    category: security
+    priority: high
+    platforms: [api, web]
+    steps:
+      - name: "Search with script payload"
+        action: "GET /api/v1/entities?search=<img src=x onerror=alert('xss')>"
+        expected: "Search returns results normally, payload not reflected as HTML"
+    tags: [security, xss, search, reflected]
+    estimated_duration: "10s"
+    expected_result: "Reflected XSS in search prevented"
+
+  - id: SEC-014
+    name: "XSS via event handler attribute"
+    category: security
+    priority: high
+    platforms: [api, web]
+    steps:
+      - name: "Create entity with event handler"
+        action: "POST /api/v1/entities with title '\" onmouseover=\"alert(1)\"'"
+        expected: "Entity created"
+      - name: "View in web UI"
+        action: "Render entity card in browser"
+        expected: "Event handler not rendered as attribute, shown as text"
+    tags: [security, xss, event-handler, attribute-injection]
+    estimated_duration: "10s"
+    expected_result: "Event handler XSS payload neutralized"
+
+  - id: SEC-015
+    name: "XSS via SVG payload"
+    category: security
+    priority: medium
+    platforms: [api, web]
+    steps:
+      - name: "Submit SVG XSS"
+        action: "POST /api/v1/entities with title '<svg onload=alert(1)>'"
+        expected: "Entity created with sanitized title"
+      - name: "Verify in web UI"
+        action: "View entity in browser"
+        expected: "SVG tag not executed"
+    tags: [security, xss, svg, payload]
+    estimated_duration: "10s"
+    expected_result: "SVG-based XSS blocked"
+
+  # ==================== Path Traversal Prevention ====================
+  - id: SEC-016
+    name: "Path traversal in file path rejected"
+    category: security
+    priority: critical
+    platforms: [api, web]
+    steps:
+      - name: "Request file with traversal"
+        action: "GET /api/v1/files?path=../../etc/passwd"
+        expected: "400 Bad Request or 403 Forbidden"
+      - name: "Verify no file content returned"
+        action: "Check response body"
+        expected: "No system file content leaked"
+    tags: [security, path-traversal, file-access, lfi]
+    estimated_duration: "10s"
+    expected_result: "Path traversal blocked"
+
+  - id: SEC-017
+    name: "Path traversal with encoded slashes rejected"
+    category: security
+    priority: critical
+    platforms: [api]
+    steps:
+      - name: "Request with URL-encoded traversal"
+        action: "GET /api/v1/files?path=%2e%2e%2f%2e%2e%2fetc%2fpasswd"
+        expected: "400 Bad Request or 403 Forbidden"
+      - name: "Request with double-encoded traversal"
+        action: "GET /api/v1/files?path=%252e%252e%252f%252e%252e%252fetc%252fpasswd"
+        expected: "400 Bad Request or 403 Forbidden"
+    tags: [security, path-traversal, url-encoding, bypass]
+    estimated_duration: "10s"
+    expected_result: "Encoded path traversal attempts blocked"
+
+  - id: SEC-018
+    name: "Path traversal with null byte rejected"
+    category: security
+    priority: high
+    platforms: [api]
+    steps:
+      - name: "Request with null byte"
+        action: "GET /api/v1/files?path=../../../etc/passwd%00.jpg"
+        expected: "400 Bad Request or 403 Forbidden"
+    tags: [security, path-traversal, null-byte, bypass]
+    estimated_duration: "10s"
+    expected_result: "Null byte path traversal rejected"
+
+  # ==================== Rate Limiting ====================
+  - id: SEC-019
+    name: "Rate limiting on login endpoint"
+    category: security
+    priority: critical
+    platforms: [api, web, desktop, android]
+    steps:
+      - name: "Send rapid login attempts"
+        action: "POST /api/v1/auth/login 20 times in 10 seconds with wrong password"
+        expected: "After threshold, responses become 429 Too Many Requests"
+      - name: "Verify rate limit header"
+        action: "Check response headers for rate limit info"
+        expected: "X-RateLimit-Remaining or Retry-After header present"
+    tags: [security, rate-limiting, login, brute-force]
+    estimated_duration: "15s"
+    expected_result: "Login rate limiting prevents brute force"
+
+  - id: SEC-020
+    name: "Rate limiting on API endpoints"
+    category: security
+    priority: high
+    platforms: [api]
+    steps:
+      - name: "Send burst of requests"
+        action: "Send 100 GET /api/v1/entities requests in 5 seconds"
+        expected: "After rate limit threshold, some requests return 429"
+      - name: "Wait for rate limit reset"
+        action: "Wait for rate limit window to expire"
+        expected: "Subsequent requests succeed (200 OK)"
+    tags: [security, rate-limiting, api, burst]
+    estimated_duration: "30s"
+    expected_result: "API rate limiting enforced and resets after window"
+
+  - id: SEC-021
+    name: "Rate limiting per IP address"
+    category: security
+    priority: medium
+    platforms: [api]
+    steps:
+      - name: "Exhaust rate limit from one IP"
+        action: "Send requests until 429 from client A"
+        expected: "Client A rate limited"
+      - name: "Verify other IPs unaffected"
+        action: "Send request from client B"
+        expected: "Client B receives 200 OK (independent rate limit)"
+    tags: [security, rate-limiting, per-ip, isolation]
+    estimated_duration: "20s"
+    expected_result: "Rate limits applied per IP, not globally"
+
+  # ==================== CORS Validation ====================
+  - id: SEC-022
+    name: "CORS headers present on API responses"
+    category: security
+    priority: high
+    platforms: [api, web]
+    steps:
+      - name: "Send preflight OPTIONS request"
+        action: "OPTIONS /api/v1/entities with Origin: http://localhost:3000"
+        expected: "200 OK with Access-Control-Allow-Origin header"
+      - name: "Verify allowed methods"
+        action: "Check Access-Control-Allow-Methods header"
+        expected: "GET, POST, PUT, DELETE included"
+      - name: "Verify allowed headers"
+        action: "Check Access-Control-Allow-Headers header"
+        expected: "Authorization, Content-Type included"
+    tags: [security, cors, headers, preflight]
+    estimated_duration: "10s"
+    expected_result: "CORS headers correctly configured"
+
+  - id: SEC-023
+    name: "CORS rejects unauthorized origins"
+    category: security
+    priority: high
+    platforms: [api]
+    steps:
+      - name: "Send request from unauthorized origin"
+        action: "OPTIONS /api/v1/entities with Origin: http://evil.example.com"
+        expected: "No Access-Control-Allow-Origin header or origin not in allowed list"
+    tags: [security, cors, unauthorized-origin, rejection]
+    estimated_duration: "10s"
+    expected_result: "Unauthorized origins not reflected in CORS headers"
+
+  # ==================== Content-Type Validation ====================
+  - id: SEC-024
+    name: "JSON Content-Type required for POST requests"
+    category: security
+    priority: high
+    platforms: [api]
+    steps:
+      - name: "POST with wrong Content-Type"
+        action: "POST /api/v1/entities with Content-Type: text/plain and JSON body"
+        expected: "415 Unsupported Media Type or 400 Bad Request"
+      - name: "POST with correct Content-Type"
+        action: "POST /api/v1/entities with Content-Type: application/json"
+        expected: "Request processed normally"
+    tags: [security, content-type, validation, mime]
+    estimated_duration: "10s"
+    expected_result: "Incorrect Content-Type rejected"
+
+  - id: SEC-025
+    name: "Oversized request body rejected"
+    category: security
+    priority: high
+    platforms: [api]
+    steps:
+      - name: "Send oversized payload"
+        action: "POST /api/v1/entities with 50MB JSON body"
+        expected: "413 Request Entity Too Large or connection closed"
+    tags: [security, content-type, payload-size, dos]
+    estimated_duration: "10s"
+    expected_result: "Oversized request bodies rejected"
+
+  # ==================== Admin Endpoint Access Control ====================
+  - id: SEC-026
+    name: "Admin endpoints require admin role"
+    category: security
+    priority: critical
+    platforms: [api, web]
+    steps:
+      - name: "Access admin endpoint as user"
+        action: "GET /api/v1/admin/users with regular user JWT"
+        expected: "403 Forbidden"
+      - name: "Access admin endpoint as admin"
+        action: "GET /api/v1/admin/users with admin JWT"
+        expected: "200 OK"
+    tags: [security, rbac, admin, role-check]
+    estimated_duration: "10s"
+    expected_result: "Admin endpoints enforce role-based access"
+
+  - id: SEC-027
+    name: "Role escalation in JWT payload prevented"
+    category: security
+    priority: critical
+    platforms: [api]
+    steps:
+      - name: "Craft token with escalated role"
+        action: "Create JWT with role 'admin' but signed with user's context"
+        expected: "Token created"
+      - name: "Access admin endpoint"
+        action: "GET /api/v1/admin/users with crafted token"
+        expected: "401 Unauthorized or 403 Forbidden (server validates role from DB, not JWT claim alone)"
+    tags: [security, rbac, role-escalation, jwt-tampering]
+    estimated_duration: "10s"
+    expected_result: "Role escalation via JWT tampering prevented"
+
+  # ==================== Session and Logout ====================
+  - id: SEC-028
+    name: "Session invalidated after logout"
+    category: security
+    priority: critical
+    platforms: [api, web, desktop, android]
+    steps:
+      - name: "Login and get token"
+        action: "POST /api/v1/auth/login"
+        expected: "200 OK with JWT token"
+      - name: "Logout"
+        action: "POST /api/v1/auth/logout with token"
+        expected: "200 OK"
+      - name: "Use old token"
+        action: "GET /api/v1/entities with logged-out token"
+        expected: "401 Unauthorized (token blacklisted)"
+    tags: [security, session, logout, token-invalidation]
+    estimated_duration: "15s"
+    expected_result: "Logged-out tokens no longer accepted"
+
+  - id: SEC-029
+    name: "Concurrent sessions allowed"
+    category: security
+    priority: medium
+    platforms: [api, web]
+    steps:
+      - name: "Login from client A"
+        action: "POST /api/v1/auth/login"
+        expected: "Token A issued"
+      - name: "Login from client B"
+        action: "POST /api/v1/auth/login (same user)"
+        expected: "Token B issued"
+      - name: "Both tokens valid"
+        action: "Use Token A and Token B on separate requests"
+        expected: "Both return 200 OK"
+    tags: [security, session, concurrent, multi-device]
+    estimated_duration: "10s"
+    expected_result: "Multiple concurrent sessions supported"
+
+  # ==================== Password Security ====================
+  - id: SEC-030
+    name: "Password change requires current password"
+    category: security
+    priority: critical
+    platforms: [api, web, desktop, android]
+    steps:
+      - name: "Change password without current"
+        action: "PUT /api/v1/auth/password with new_password only"
+        expected: "400 Bad Request requiring current_password"
+      - name: "Change with wrong current password"
+        action: "PUT /api/v1/auth/password with wrong current_password"
+        expected: "401 Unauthorized or 403 Forbidden"
+      - name: "Change with correct current password"
+        action: "PUT /api/v1/auth/password with correct current_password and new_password"
+        expected: "200 OK"
+    tags: [security, password, change, verification]
+    estimated_duration: "15s"
+    expected_result: "Password change requires current password verification"
+
+  - id: SEC-031
+    name: "Weak password rejected"
+    category: security
+    priority: high
+    platforms: [api, web]
+    steps:
+      - name: "Set very short password"
+        action: "POST /api/v1/admin/users with password '123'"
+        expected: "400 Bad Request with password policy error"
+      - name: "Set password meeting policy"
+        action: "POST /api/v1/admin/users with password 'SecureP@ss123'"
+        expected: "201 Created"
+    tags: [security, password, policy, strength]
+    estimated_duration: "10s"
+    expected_result: "Weak passwords rejected by policy"
+
+  - id: SEC-032
+    name: "Passwords not returned in API responses"
+    category: security
+    priority: critical
+    platforms: [api]
+    steps:
+      - name: "List users"
+        action: "GET /api/v1/admin/users"
+        expected: "User objects do not contain password or password_hash fields"
+      - name: "Get single user"
+        action: "GET /api/v1/admin/users/{id}"
+        expected: "No password field in response"
+    tags: [security, password, exposure, api-response]
+    estimated_duration: "10s"
+    expected_result: "Password hashes never exposed in API responses"
+
+  # ==================== Transport Security ====================
+  - id: SEC-033
+    name: "HTTPS required for all API communication"
+    category: security
+    priority: critical
+    platforms: [api, web, desktop, android]
+    steps:
+      - name: "Access API over HTTPS"
+        action: "GET https://localhost/api/v1/health"
+        expected: "200 OK over TLS"
+      - name: "Access API over HTTP"
+        action: "GET http://localhost/api/v1/health"
+        expected: "Redirect to HTTPS or connection refused"
+    tags: [security, transport, https, tls]
+    estimated_duration: "10s"
+    expected_result: "API only accessible over HTTPS"
+
+  - id: SEC-034
+    name: "HTTP/3 QUIC connection supported"
+    category: security
+    priority: high
+    platforms: [api, web]
+    steps:
+      - name: "Connect via HTTP/3"
+        action: "Send QUIC connection to API server"
+        expected: "HTTP/3 connection established"
+      - name: "Verify Alt-Svc header"
+        action: "Check response headers for Alt-Svc: h3"
+        expected: "Alt-Svc header advertises HTTP/3"
+    tags: [security, transport, http3, quic]
+    estimated_duration: "10s"
+    expected_result: "HTTP/3 QUIC connections supported"
+
+  - id: SEC-035
+    name: "Brotli compression enabled"
+    category: security
+    priority: high
+    platforms: [api, web]
+    steps:
+      - name: "Request with Brotli accept"
+        action: "GET /api/v1/entities with Accept-Encoding: br"
+        expected: "Response has Content-Encoding: br"
+      - name: "Verify compressed size"
+        action: "Compare response size with uncompressed"
+        expected: "Compressed response is smaller"
+    tags: [security, transport, brotli, compression]
+    estimated_duration: "10s"
+    expected_result: "Brotli compression applied to responses"
+
+  # ==================== Header Security ====================
+  - id: SEC-036
+    name: "Security headers present on responses"
+    category: security
+    priority: high
+    platforms: [api, web]
+    steps:
+      - name: "Check response headers"
+        action: "GET /api/v1/health and inspect headers"
+        expected: "X-Content-Type-Options: nosniff present"
+      - name: "Check frame options"
+        action: "Inspect X-Frame-Options header"
+        expected: "X-Frame-Options: DENY or SAMEORIGIN"
+      - name: "Check XSS protection"
+        action: "Inspect X-XSS-Protection header"
+        expected: "X-XSS-Protection: 1; mode=block or CSP alternative"
+    tags: [security, headers, x-content-type, x-frame-options]
+    estimated_duration: "10s"
+    expected_result: "Security headers set on all responses"
+
+  - id: SEC-037
+    name: "Content Security Policy header present"
+    category: security
+    priority: medium
+    platforms: [web]
+    steps:
+      - name: "Load web application"
+        action: "GET / (web frontend)"
+        expected: "Content-Security-Policy header present"
+      - name: "Verify script-src"
+        action: "Check CSP script-src directive"
+        expected: "script-src restricts to self or specific hashes"
+    tags: [security, headers, csp, content-security-policy]
+    estimated_duration: "10s"
+    expected_result: "CSP header restricts script execution sources"
+
+  - id: SEC-038
+    name: "Server header does not leak version info"
+    category: security
+    priority: medium
+    platforms: [api, web]
+    steps:
+      - name: "Check Server header"
+        action: "GET /api/v1/health and inspect Server header"
+        expected: "No detailed server version info (no 'Go/1.24' or 'gin-gonic' version)"
+    tags: [security, headers, server, information-leak]
+    estimated_duration: "5s"
+    expected_result: "Server header does not expose technology stack details"
+
+  # ==================== Input Validation ====================
+  - id: SEC-039
+    name: "Extremely long input handled safely"
+    category: security
+    priority: high
+    platforms: [api]
+    steps:
+      - name: "Send very long title"
+        action: "POST /api/v1/entities with title of 100,000 characters"
+        expected: "400 Bad Request with length validation error or truncated safely"
+      - name: "Verify no crash"
+        action: "GET /api/v1/health"
+        expected: "200 OK (server still responsive)"
+    tags: [security, input-validation, length, buffer-overflow]
+    estimated_duration: "10s"
+    expected_result: "Extremely long input rejected or truncated safely"
+
+  - id: SEC-040
+    name: "Unicode and special characters handled safely"
+    category: security
+    priority: medium
+    platforms: [api, web]
+    steps:
+      - name: "Create entity with unicode"
+        action: "POST /api/v1/entities with title containing emoji, CJK, RTL characters"
+        expected: "Entity created with unicode preserved"
+      - name: "Retrieve and verify"
+        action: "GET /api/v1/entities/{id}"
+        expected: "Unicode characters returned correctly"
+    tags: [security, input-validation, unicode, special-characters]
+    estimated_duration: "10s"
+    expected_result: "Unicode input stored and retrieved correctly"
+
+  - id: SEC-041
+    name: "Null byte in input rejected"
+    category: security
+    priority: high
+    platforms: [api]
+    steps:
+      - name: "Send null byte in title"
+        action: "POST /api/v1/entities with title containing %00"
+        expected: "400 Bad Request or null byte stripped"
+    tags: [security, input-validation, null-byte, sanitization]
+    estimated_duration: "5s"
+    expected_result: "Null bytes in input rejected or stripped"
+
+  - id: SEC-042
+    name: "JSON injection in request body"
+    category: security
+    priority: high
+    platforms: [api]
+    steps:
+      - name: "Send nested JSON injection"
+        action: "POST /api/v1/entities with extra fields: {\"title\":\"Test\",\"role\":\"admin\",\"is_admin\":true}"
+        expected: "Extra fields ignored, only allowed fields processed"
+      - name: "Verify no privilege gain"
+        action: "Check created entity has no admin properties"
+        expected: "Entity created with only allowed fields"
+    tags: [security, input-validation, json-injection, mass-assignment]
+    estimated_duration: "10s"
+    expected_result: "Mass assignment via extra JSON fields prevented"
+
+  # ==================== Command Injection ====================
+  - id: SEC-043
+    name: "Command injection in file path rejected"
+    category: security
+    priority: critical
+    platforms: [api]
+    steps:
+      - name: "Send command injection"
+        action: "GET /api/v1/files?path=; rm -rf /; echo"
+        expected: "400 Bad Request or 403 Forbidden"
+      - name: "Verify no execution"
+        action: "Check server is still running normally"
+        expected: "Server operational, no command executed"
+    tags: [security, command-injection, file-path, os-command]
+    estimated_duration: "10s"
+    expected_result: "Command injection in file paths blocked"
+
+  - id: SEC-044
+    name: "Command injection with backticks rejected"
+    category: security
+    priority: critical
+    platforms: [api]
+    steps:
+      - name: "Send backtick injection"
+        action: "GET /api/v1/files?path=`whoami`"
+        expected: "400 Bad Request or path treated as literal"
+    tags: [security, command-injection, backtick, os-command]
+    estimated_duration: "5s"
+    expected_result: "Backtick command injection blocked"
+
+  # ==================== SSRF Prevention ====================
+  - id: SEC-045
+    name: "SSRF via storage URL rejected"
+    category: security
+    priority: high
+    platforms: [api]
+    steps:
+      - name: "Submit internal URL as storage"
+        action: "POST storage config with URL http://169.254.169.254/latest/meta-data/"
+        expected: "400 Bad Request or connection blocked"
+      - name: "Submit localhost URL"
+        action: "POST storage config with URL http://127.0.0.1:6379/"
+        expected: "400 Bad Request or connection blocked"
+    tags: [security, ssrf, internal-network, cloud-metadata]
+    estimated_duration: "10s"
+    expected_result: "SSRF attempts to internal services blocked"
+
+  # ==================== Error Information Leak ====================
+  - id: SEC-046
+    name: "Error responses do not leak stack traces"
+    category: security
+    priority: high
+    platforms: [api]
+    steps:
+      - name: "Trigger server error"
+        action: "Send malformed request designed to cause internal error"
+        expected: "500 Internal Server Error with generic message"
+      - name: "Check response body"
+        action: "Verify no Go stack trace, file paths, or line numbers in response"
+        expected: "Generic error message only"
+    tags: [security, error-handling, stack-trace, information-leak]
+    estimated_duration: "10s"
+    expected_result: "Stack traces not leaked in error responses"
+
+  - id: SEC-047
+    name: "404 responses do not reveal file system structure"
+    category: security
+    priority: medium
+    platforms: [api, web]
+    steps:
+      - name: "Request non-existent path"
+        action: "GET /api/v1/nonexistent/path"
+        expected: "404 Not Found with generic message"
+      - name: "Check response"
+        action: "Verify no file system paths in response"
+        expected: "No absolute paths or directory structure revealed"
+    tags: [security, error-handling, 404, information-leak]
+    estimated_duration: "5s"
+    expected_result: "404 responses do not reveal server internals"
+
+  # ==================== Timing Attack Prevention ====================
+  - id: SEC-048
+    name: "Login timing consistent for valid and invalid users"
+    category: security
+    priority: medium
+    platforms: [api]
+    steps:
+      - name: "Time login with valid username"
+        action: "POST /api/v1/auth/login with valid username, wrong password, measure response time"
+        expected: "Response time noted"
+      - name: "Time login with invalid username"
+        action: "POST /api/v1/auth/login with non-existent username, measure response time"
+        expected: "Response time similar to valid username case"
+      - name: "Compare timings"
+        action: "Verify difference is < 50ms across 10 attempts"
+        expected: "Consistent timing prevents username enumeration"
+    tags: [security, timing-attack, login, username-enumeration]
+    estimated_duration: "20s"
+    expected_result: "Login timing does not reveal valid usernames"
+
+  # ==================== File Upload Security ====================
+  - id: SEC-049
+    name: "Executable file upload rejected"
+    category: security
+    priority: critical
+    platforms: [api, web]
+    steps:
+      - name: "Upload executable"
+        action: "POST file upload with .exe or .sh file"
+        expected: "400 Bad Request with disallowed file type error"
+    tags: [security, file-upload, executable, rejection]
+    estimated_duration: "10s"
+    expected_result: "Executable file uploads blocked"
+
+  - id: SEC-050
+    name: "Double extension file upload rejected"
+    category: security
+    priority: high
+    platforms: [api, web]
+    steps:
+      - name: "Upload double extension file"
+        action: "POST file upload with name 'malware.jpg.exe'"
+        expected: "400 Bad Request or file type validated by content, not extension"
+    tags: [security, file-upload, double-extension, bypass]
+    estimated_duration: "10s"
+    expected_result: "Double extension bypass attempt blocked"
+
+  - id: SEC-051
+    name: "MIME type sniffing matches file content"
+    category: security
+    priority: medium
+    platforms: [api]
+    steps:
+      - name: "Upload file with mismatched MIME"
+        action: "POST file with Content-Type: image/jpeg but actual content is HTML"
+        expected: "Server validates actual content type, rejects mismatch"
+    tags: [security, file-upload, mime-sniffing, content-validation]
+    estimated_duration: "10s"
+    expected_result: "MIME type validated against actual file content"
+
+  # ==================== WebSocket Security ====================
+  - id: SEC-052
+    name: "WebSocket requires authentication"
+    category: security
+    priority: critical
+    platforms: [api, web]
+    steps:
+      - name: "Connect WebSocket without token"
+        action: "Attempt ws:// connection to /api/v1/ws without auth"
+        expected: "Connection rejected with 401"
+      - name: "Connect with valid token"
+        action: "Connect ws:// with valid JWT in query param or header"
+        expected: "Connection established"
+    tags: [security, websocket, auth, connection]
+    estimated_duration: "10s"
+    expected_result: "WebSocket connections require authentication"
+
+  - id: SEC-053
+    name: "WebSocket origin validation"
+    category: security
+    priority: high
+    platforms: [api, web]
+    steps:
+      - name: "Connect from unauthorized origin"
+        action: "WebSocket connection with Origin: http://evil.example.com"
+        expected: "Connection rejected"
+      - name: "Connect from authorized origin"
+        action: "WebSocket connection with Origin: http://localhost:3000"
+        expected: "Connection accepted"
+    tags: [security, websocket, origin, validation]
+    estimated_duration: "10s"
+    expected_result: "WebSocket origin validation enforced"
+
+  - id: SEC-054
+    name: "WebSocket message size limit enforced"
+    category: security
+    priority: medium
+    platforms: [api]
+    steps:
+      - name: "Send oversized WebSocket message"
+        action: "Send 10MB message over WebSocket connection"
+        expected: "Connection closed with message too large error"
+    tags: [security, websocket, message-size, dos]
+    estimated_duration: "10s"
+    expected_result: "Oversized WebSocket messages rejected"
+
+  # ==================== Cookie Security ====================
+  - id: SEC-055
+    name: "Session cookies have secure flags"
+    category: security
+    priority: high
+    platforms: [web]
+    steps:
+      - name: "Login via web UI"
+        action: "POST /api/v1/auth/login from browser"
+        expected: "Set-Cookie header present"
+      - name: "Check cookie flags"
+        action: "Inspect Set-Cookie header"
+        expected: "HttpOnly, Secure, SameSite=Strict or Lax flags set"
+    tags: [security, cookies, httponly, secure, samesite]
+    estimated_duration: "10s"
+    expected_result: "Session cookies have all security flags"

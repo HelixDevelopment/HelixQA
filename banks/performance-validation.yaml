@@ -1,0 +1,1000 @@
+# SPDX-FileCopyrightText: 2026 Milos Vasic
+# SPDX-License-Identifier: Apache-2.0
+#
+# HelixQA Test Bank: Performance Validation
+# Tests response times, throughput, concurrency handling, large payloads,
+# WebSocket latency, caching, compression, memory stability, database
+# performance, and static asset delivery.
+
+version: "1.0"
+name: "Catalogizer Performance Validation Test Bank"
+description: "Performance tests for response times, throughput, concurrency, large payloads, caching, compression, memory, and database"
+metadata:
+  author: "vasic-digital"
+  app: "Catalogizer"
+  version: "1.0.0"
+
+test_cases:
+  # ==================== Endpoint Response Times ====================
+  - id: PERF-001
+    name: "Health endpoint responds under 100ms"
+    category: performance
+    priority: critical
+    platforms: [api, web, desktop, android]
+    steps:
+      - name: "Warm up"
+        action: "Send 3 GET /api/v1/health requests to warm connection pool"
+        expected: "All return 200 OK"
+      - name: "Measure response time"
+        action: "Send 20 GET /api/v1/health requests and measure each"
+        expected: "p95 response time < 100ms"
+    tags: [performance, response-time, health, latency]
+    estimated_duration: "15s"
+    expected_result: "Health endpoint p95 < 100ms"
+
+  - id: PERF-002
+    name: "Entity search responds under 500ms"
+    category: performance
+    priority: critical
+    platforms: [api, web, desktop]
+    steps:
+      - name: "Populate test data"
+        action: "Ensure at least 500 entities in database"
+        expected: "Test data ready"
+      - name: "Measure search response"
+        action: "Send 20 GET /api/v1/entities?search=test requests"
+        expected: "p95 response time < 500ms"
+    tags: [performance, response-time, search, latency]
+    estimated_duration: "30s"
+    expected_result: "Search p95 < 500ms with 500+ entities"
+
+  - id: PERF-003
+    name: "Entity listing responds under 300ms"
+    category: performance
+    priority: critical
+    platforms: [api, web, desktop]
+    steps:
+      - name: "Populate test data"
+        action: "Ensure at least 200 entities in database"
+        expected: "Test data ready"
+      - name: "Measure listing response"
+        action: "Send 20 GET /api/v1/entities?per_page=20 requests"
+        expected: "p95 response time < 300ms"
+    tags: [performance, response-time, listing, latency]
+    estimated_duration: "20s"
+    expected_result: "Entity listing p95 < 300ms"
+
+  - id: PERF-004
+    name: "File listing with pagination responds under 500ms"
+    category: performance
+    priority: critical
+    platforms: [api, web, desktop]
+    steps:
+      - name: "Navigate to directory with many files"
+        action: "GET /api/v1/files?path=/large-dir&page=1&per_page=50"
+        expected: "200 OK"
+      - name: "Measure response time"
+        action: "Send 20 paginated file listing requests"
+        expected: "p95 response time < 500ms"
+    tags: [performance, response-time, file-listing, pagination]
+    estimated_duration: "30s"
+    expected_result: "File listing with pagination p95 < 500ms"
+
+  - id: PERF-005
+    name: "Single entity retrieval responds under 100ms"
+    category: performance
+    priority: high
+    platforms: [api, web, desktop]
+    steps:
+      - name: "Get entity by ID"
+        action: "Send 20 GET /api/v1/entities/{id} requests for known entity"
+        expected: "p95 response time < 100ms"
+    tags: [performance, response-time, entity-detail, latency]
+    estimated_duration: "15s"
+    expected_result: "Single entity retrieval p95 < 100ms"
+
+  - id: PERF-006
+    name: "Authentication endpoint responds under 200ms"
+    category: performance
+    priority: high
+    platforms: [api, web, desktop, android]
+    steps:
+      - name: "Measure login time"
+        action: "Send 10 POST /api/v1/auth/login with valid credentials"
+        expected: "p95 response time < 200ms"
+    tags: [performance, response-time, auth, login]
+    estimated_duration: "15s"
+    expected_result: "Login p95 < 200ms"
+
+  - id: PERF-007
+    name: "Admin system info responds under 200ms"
+    category: performance
+    priority: medium
+    platforms: [api, web]
+    steps:
+      - name: "Measure admin info response"
+        action: "Send 10 GET /api/v1/admin/system-info requests"
+        expected: "p95 response time < 200ms"
+    tags: [performance, response-time, admin, system-info]
+    estimated_duration: "15s"
+    expected_result: "Admin system info p95 < 200ms"
+
+  - id: PERF-008
+    name: "Entity statistics endpoint responds under 300ms"
+    category: performance
+    priority: medium
+    platforms: [api, web]
+    steps:
+      - name: "Measure stats response"
+        action: "Send 10 GET /api/v1/entities/stats requests"
+        expected: "p95 response time < 300ms"
+    tags: [performance, response-time, statistics, latency]
+    estimated_duration: "15s"
+    expected_result: "Entity statistics p95 < 300ms"
+
+  - id: PERF-009
+    name: "Metrics endpoint responds under 200ms"
+    category: performance
+    priority: medium
+    platforms: [api]
+    steps:
+      - name: "Measure metrics response"
+        action: "Send 10 GET /metrics requests"
+        expected: "p95 response time < 200ms"
+    tags: [performance, response-time, metrics, prometheus]
+    estimated_duration: "10s"
+    expected_result: "Metrics endpoint p95 < 200ms"
+
+  # ==================== Concurrency ====================
+  - id: PERF-010
+    name: "Handle 10 simultaneous requests"
+    category: performance
+    priority: critical
+    platforms: [api, web]
+    steps:
+      - name: "Send concurrent requests"
+        action: "Send 10 GET /api/v1/entities requests simultaneously"
+        expected: "All 10 responses received"
+      - name: "Verify all succeeded"
+        action: "Check all responses are 200 OK"
+        expected: "No 503 or timeout errors"
+      - name: "Check response times"
+        action: "Measure response time for each"
+        expected: "All complete within 2 seconds"
+    tags: [performance, concurrency, simultaneous, throughput]
+    estimated_duration: "15s"
+    expected_result: "10 concurrent requests all succeed within 2s"
+
+  - id: PERF-011
+    name: "Handle 25 simultaneous requests"
+    category: performance
+    priority: high
+    platforms: [api]
+    steps:
+      - name: "Send 25 concurrent requests"
+        action: "Send 25 GET /api/v1/entities requests simultaneously"
+        expected: "All responses received"
+      - name: "Verify success rate"
+        action: "Count successful responses"
+        expected: "At least 95% return 200 OK (some 429 acceptable)"
+    tags: [performance, concurrency, heavy-load, throughput]
+    estimated_duration: "20s"
+    expected_result: "25 concurrent requests handled with 95%+ success rate"
+
+  - id: PERF-012
+    name: "Handle 50 simultaneous requests"
+    category: performance
+    priority: high
+    platforms: [api]
+    steps:
+      - name: "Send 50 concurrent requests"
+        action: "Send 50 GET /api/v1/health requests simultaneously"
+        expected: "All responses received"
+      - name: "Verify no crashes"
+        action: "Check server health after burst"
+        expected: "Server still responsive (GET /api/v1/health returns 200)"
+      - name: "Measure success rate"
+        action: "Count 200 and 429 responses"
+        expected: "No 500 errors, all responses are 200 or 429"
+    tags: [performance, concurrency, stress, fifty-users]
+    estimated_duration: "30s"
+    expected_result: "50 concurrent requests handled without server crash"
+
+  - id: PERF-013
+    name: "Mixed read/write concurrent operations"
+    category: performance
+    priority: high
+    platforms: [api]
+    steps:
+      - name: "Run mixed workload"
+        action: "Simultaneously: 5 GET entity requests, 3 POST create requests, 2 PUT update requests"
+        expected: "All operations complete"
+      - name: "Verify data integrity"
+        action: "Check all created/updated entities have correct data"
+        expected: "No data corruption from concurrent writes"
+    tags: [performance, concurrency, mixed-workload, integrity]
+    estimated_duration: "20s"
+    expected_result: "Mixed concurrent operations maintain data integrity"
+
+  - id: PERF-014
+    name: "Concurrent search operations"
+    category: performance
+    priority: medium
+    platforms: [api]
+    steps:
+      - name: "Send 10 concurrent searches"
+        action: "Send 10 simultaneous GET /api/v1/entities?search=<different_terms>"
+        expected: "All return correct results"
+      - name: "Verify result correctness"
+        action: "Each search returns results matching its specific query"
+        expected: "No result bleed between concurrent queries"
+    tags: [performance, concurrency, search, isolation]
+    estimated_duration: "15s"
+    expected_result: "Concurrent searches return isolated correct results"
+
+  # ==================== Large Response Handling ====================
+  - id: PERF-015
+    name: "Handle response with 1000+ items"
+    category: performance
+    priority: critical
+    platforms: [api, web]
+    steps:
+      - name: "Populate large dataset"
+        action: "Ensure at least 1000 entities in database"
+        expected: "Test data ready"
+      - name: "Request large page"
+        action: "GET /api/v1/entities?per_page=1000"
+        expected: "Response received with 1000 entities"
+      - name: "Measure response time"
+        action: "Time the full response"
+        expected: "Response completes within 3 seconds"
+      - name: "Verify JSON validity"
+        action: "Parse the full JSON response"
+        expected: "Valid JSON with all 1000 entities"
+    tags: [performance, large-response, thousand-items, throughput]
+    estimated_duration: "30s"
+    expected_result: "1000+ item response delivered within 3s"
+
+  - id: PERF-016
+    name: "Large entity hierarchy traversal"
+    category: performance
+    priority: high
+    platforms: [api, web]
+    steps:
+      - name: "Create deep hierarchy"
+        action: "Create TV show with 10 seasons, each with 20 episodes"
+        expected: "210 entities in hierarchy"
+      - name: "Query full hierarchy"
+        action: "GET /api/v1/entities/{show_id}/children?recursive=true"
+        expected: "All 200+ entities returned"
+      - name: "Measure response time"
+        action: "Time the hierarchical query"
+        expected: "Response within 2 seconds"
+    tags: [performance, large-response, hierarchy, deep-query]
+    estimated_duration: "30s"
+    expected_result: "Large hierarchy query completes within 2s"
+
+  - id: PERF-017
+    name: "Paginated navigation through large dataset"
+    category: performance
+    priority: high
+    platforms: [api, web]
+    steps:
+      - name: "Ensure large dataset"
+        action: "Verify 1000+ entities in database"
+        expected: "Test data ready"
+      - name: "Navigate all pages sequentially"
+        action: "Request page 1, 2, 3, ... through all pages with per_page=50"
+        expected: "All pages load correctly"
+      - name: "Measure consistent page time"
+        action: "Compare response times across pages"
+        expected: "No page takes more than 2x the average (no degradation)"
+    tags: [performance, large-response, pagination, consistency]
+    estimated_duration: "60s"
+    expected_result: "Pagination performance consistent across all pages"
+
+  # ==================== WebSocket Performance ====================
+  - id: PERF-018
+    name: "WebSocket connection establishment under 200ms"
+    category: performance
+    priority: critical
+    platforms: [api, web, desktop]
+    steps:
+      - name: "Measure connection time"
+        action: "Establish 10 WebSocket connections to /api/v1/ws and measure each"
+        expected: "p95 connection establishment < 200ms"
+      - name: "Close connections"
+        action: "Close all test connections"
+        expected: "All connections closed cleanly"
+    tags: [performance, websocket, connection, latency]
+    estimated_duration: "15s"
+    expected_result: "WebSocket connection p95 < 200ms"
+
+  - id: PERF-019
+    name: "WebSocket message delivery latency under 100ms"
+    category: performance
+    priority: high
+    platforms: [api, web]
+    steps:
+      - name: "Establish connection"
+        action: "Connect WebSocket client"
+        expected: "Connected"
+      - name: "Measure message round-trip"
+        action: "Send 20 ping messages and measure server response time"
+        expected: "p95 message delivery < 100ms"
+    tags: [performance, websocket, message, latency]
+    estimated_duration: "15s"
+    expected_result: "WebSocket message delivery p95 < 100ms"
+
+  - id: PERF-020
+    name: "WebSocket handles 20 concurrent connections"
+    category: performance
+    priority: high
+    platforms: [api]
+    steps:
+      - name: "Open 20 connections"
+        action: "Establish 20 simultaneous WebSocket connections"
+        expected: "All connections established"
+      - name: "Broadcast message"
+        action: "Trigger event that broadcasts to all connected clients"
+        expected: "All 20 clients receive the message"
+      - name: "Verify server stability"
+        action: "GET /api/v1/health"
+        expected: "200 OK (server stable under WebSocket load)"
+    tags: [performance, websocket, concurrent, connections]
+    estimated_duration: "20s"
+    expected_result: "20 concurrent WebSocket connections handled"
+
+  - id: PERF-021
+    name: "WebSocket rapid message burst"
+    category: performance
+    priority: medium
+    platforms: [api]
+    steps:
+      - name: "Establish connection"
+        action: "Connect WebSocket client"
+        expected: "Connected"
+      - name: "Send message burst"
+        action: "Send 100 messages in 5 seconds"
+        expected: "All messages accepted or rate limited gracefully"
+      - name: "Verify connection stable"
+        action: "Send one more message after burst"
+        expected: "Connection still active, message delivered"
+    tags: [performance, websocket, burst, rapid-messages]
+    estimated_duration: "15s"
+    expected_result: "WebSocket survives rapid message burst"
+
+  # ==================== Static Asset and Cache Performance ====================
+  - id: PERF-022
+    name: "Static assets have cache headers"
+    category: performance
+    priority: high
+    platforms: [web]
+    steps:
+      - name: "Request JS bundle"
+        action: "GET /assets/vendor.js (or hashed variant)"
+        expected: "Cache-Control header with max-age >= 86400"
+      - name: "Request CSS"
+        action: "GET /assets/index.css"
+        expected: "Cache-Control header with max-age >= 86400"
+      - name: "Check ETag"
+        action: "Inspect ETag header on static assets"
+        expected: "ETag present for conditional request support"
+    tags: [performance, caching, static-assets, headers]
+    estimated_duration: "10s"
+    expected_result: "Static assets served with proper cache headers"
+
+  - id: PERF-023
+    name: "Conditional request returns 304 Not Modified"
+    category: performance
+    priority: high
+    platforms: [web]
+    steps:
+      - name: "First request"
+        action: "GET /assets/vendor.js and note ETag value"
+        expected: "200 OK with ETag header"
+      - name: "Conditional request"
+        action: "GET /assets/vendor.js with If-None-Match: <etag>"
+        expected: "304 Not Modified (no body transferred)"
+    tags: [performance, caching, conditional-request, 304]
+    estimated_duration: "10s"
+    expected_result: "304 Not Modified avoids redundant transfer"
+
+  - id: PERF-024
+    name: "API response caching for repeated queries"
+    category: performance
+    priority: medium
+    platforms: [api]
+    steps:
+      - name: "First request"
+        action: "GET /api/v1/entities?type=movie and measure time"
+        expected: "Response returned"
+      - name: "Second identical request"
+        action: "GET /api/v1/entities?type=movie immediately after"
+        expected: "Response time significantly faster (cache hit)"
+      - name: "Verify cache hit"
+        action: "Check for X-Cache-Status header or compare times"
+        expected: "Second request faster due to cache"
+    tags: [performance, caching, api, cache-hit]
+    estimated_duration: "15s"
+    expected_result: "Repeated API queries benefit from caching"
+
+  # ==================== Compression Performance ====================
+  - id: PERF-025
+    name: "Brotli compression reduces response size"
+    category: performance
+    priority: high
+    platforms: [api, web]
+    steps:
+      - name: "Request without compression"
+        action: "GET /api/v1/entities with Accept-Encoding: identity"
+        expected: "Uncompressed response, note size"
+      - name: "Request with Brotli"
+        action: "GET /api/v1/entities with Accept-Encoding: br"
+        expected: "Content-Encoding: br, smaller response"
+      - name: "Compare sizes"
+        action: "Calculate compression ratio"
+        expected: "Brotli response at least 30% smaller"
+    tags: [performance, compression, brotli, size-reduction]
+    estimated_duration: "15s"
+    expected_result: "Brotli compression reduces response by 30%+"
+
+  - id: PERF-026
+    name: "Gzip fallback when Brotli not supported"
+    category: performance
+    priority: high
+    platforms: [api, web]
+    steps:
+      - name: "Request with gzip only"
+        action: "GET /api/v1/entities with Accept-Encoding: gzip"
+        expected: "Content-Encoding: gzip"
+      - name: "Verify valid gzip"
+        action: "Decompress response body"
+        expected: "Valid JSON after decompression"
+    tags: [performance, compression, gzip, fallback]
+    estimated_duration: "10s"
+    expected_result: "Gzip fallback works when Brotli unavailable"
+
+  - id: PERF-027
+    name: "Compression does not add excessive latency"
+    category: performance
+    priority: medium
+    platforms: [api]
+    steps:
+      - name: "Measure uncompressed response time"
+        action: "Send 10 requests with Accept-Encoding: identity"
+        expected: "Baseline response times recorded"
+      - name: "Measure compressed response time"
+        action: "Send 10 requests with Accept-Encoding: br"
+        expected: "Compressed response times recorded"
+      - name: "Compare latencies"
+        action: "Verify compression overhead < 50ms for typical responses"
+        expected: "Compression adds minimal latency"
+    tags: [performance, compression, latency, overhead]
+    estimated_duration: "20s"
+    expected_result: "Compression overhead < 50ms"
+
+  # ==================== Memory Stability ====================
+  - id: PERF-028
+    name: "Memory usage stable under sustained load"
+    category: performance
+    priority: critical
+    platforms: [api]
+    steps:
+      - name: "Record baseline memory"
+        action: "Check server memory usage via /metrics or process stats"
+        expected: "Baseline memory recorded"
+      - name: "Run sustained load"
+        action: "Send 500 requests over 60 seconds (mix of reads and writes)"
+        expected: "All requests processed"
+      - name: "Check memory after load"
+        action: "Record memory usage after load test"
+        expected: "Memory increase < 50% of baseline (no unbounded growth)"
+      - name: "Wait for GC"
+        action: "Wait 30 seconds for garbage collection"
+        expected: "Memory returns close to baseline"
+    tags: [performance, memory, stability, sustained-load]
+    estimated_duration: "120s"
+    expected_result: "Memory stable under sustained load, no leak"
+
+  - id: PERF-029
+    name: "Memory stable with many WebSocket connections"
+    category: performance
+    priority: high
+    platforms: [api]
+    steps:
+      - name: "Record baseline memory"
+        action: "Note server memory before connections"
+        expected: "Baseline recorded"
+      - name: "Open 20 WebSocket connections"
+        action: "Establish 20 concurrent WebSocket connections"
+        expected: "All connected"
+      - name: "Hold connections for 60 seconds"
+        action: "Keep connections alive with periodic pings"
+        expected: "All connections stable"
+      - name: "Close all connections"
+        action: "Close all 20 WebSocket connections"
+        expected: "All closed"
+      - name: "Check memory recovery"
+        action: "Wait 30s then check memory usage"
+        expected: "Memory returns close to baseline"
+    tags: [performance, memory, websocket, connection-leak]
+    estimated_duration: "120s"
+    expected_result: "Memory recovered after WebSocket connections closed"
+
+  - id: PERF-030
+    name: "No goroutine leak under load"
+    category: performance
+    priority: high
+    platforms: [api]
+    steps:
+      - name: "Record baseline goroutine count"
+        action: "GET /metrics and note go_goroutines value"
+        expected: "Baseline goroutine count recorded"
+      - name: "Run 100 requests"
+        action: "Send 100 mixed API requests"
+        expected: "All requests complete"
+      - name: "Check goroutine count"
+        action: "GET /metrics and note go_goroutines"
+        expected: "Goroutine count within 10% of baseline (no leak)"
+    tags: [performance, memory, goroutine-leak, stability]
+    estimated_duration: "30s"
+    expected_result: "No goroutine leak after processing requests"
+
+  # ==================== Database Performance ====================
+  - id: PERF-031
+    name: "Database query performance with index"
+    category: performance
+    priority: high
+    platforms: [api]
+    steps:
+      - name: "Populate 5000 entities"
+        action: "Insert 5000 test entities"
+        expected: "Data inserted"
+      - name: "Search by indexed field"
+        action: "GET /api/v1/entities?type=movie (indexed)"
+        expected: "Response within 500ms"
+      - name: "Search by title"
+        action: "GET /api/v1/entities?search=Test"
+        expected: "Response within 500ms"
+    tags: [performance, database, index, query-speed]
+    estimated_duration: "30s"
+    expected_result: "Indexed queries complete within 500ms on 5000 records"
+
+  - id: PERF-032
+    name: "Database connection pool under pressure"
+    category: performance
+    priority: high
+    platforms: [api]
+    steps:
+      - name: "Send concurrent database-heavy requests"
+        action: "Send 25 concurrent requests that each perform multiple DB queries"
+        expected: "All requests complete (some may queue at pool)"
+      - name: "Verify no connection timeout"
+        action: "Check no 500 errors caused by pool exhaustion"
+        expected: "All requests succeed within 10 seconds"
+      - name: "Pool recovers"
+        action: "Send single request after burst"
+        expected: "Immediate response (pool not stuck)"
+    tags: [performance, database, connection-pool, pressure]
+    estimated_duration: "30s"
+    expected_result: "Connection pool handles pressure without timeouts"
+
+  - id: PERF-033
+    name: "Bulk insert performance"
+    category: performance
+    priority: medium
+    platforms: [api]
+    steps:
+      - name: "Insert 100 entities sequentially"
+        action: "POST 100 entity creation requests"
+        expected: "All created"
+      - name: "Measure total time"
+        action: "Time from first to last insert"
+        expected: "100 inserts complete within 30 seconds"
+    tags: [performance, database, bulk-insert, throughput]
+    estimated_duration: "45s"
+    expected_result: "100 inserts complete within 30s"
+
+  - id: PERF-034
+    name: "SQLite WAL mode improves concurrent read performance"
+    category: performance
+    priority: medium
+    platforms: [api]
+    steps:
+      - name: "Verify WAL mode active"
+        action: "Check PRAGMA journal_mode returns 'wal'"
+        expected: "WAL mode confirmed"
+      - name: "Concurrent reads during write"
+        action: "Start a write transaction and simultaneously send 10 read requests"
+        expected: "Read requests complete without blocking on write lock"
+    tags: [performance, database, sqlite, wal-mode]
+    estimated_duration: "20s"
+    expected_result: "WAL mode allows concurrent reads during writes"
+
+  # ==================== Scan Performance ====================
+  - id: PERF-035
+    name: "Scan performance on directory with 1000 files"
+    category: performance
+    priority: critical
+    platforms: [api]
+    steps:
+      - name: "Trigger scan"
+        action: "POST /api/v1/admin/scan on directory with 1000 files"
+        expected: "Scan starts"
+      - name: "Monitor progress"
+        action: "Poll scan status every 5 seconds"
+        expected: "Progress increasing"
+      - name: "Verify completion"
+        action: "Wait for scan completion"
+        expected: "Scan of 1000 files completes within 120 seconds"
+    tags: [performance, scan, throughput, large-directory]
+    estimated_duration: "150s"
+    expected_result: "1000-file scan completes within 2 minutes"
+
+  - id: PERF-036
+    name: "Scan does not block API responsiveness"
+    category: performance
+    priority: critical
+    platforms: [api]
+    steps:
+      - name: "Start scan"
+        action: "POST /api/v1/admin/scan on large directory"
+        expected: "Scan in progress"
+      - name: "Measure API response during scan"
+        action: "Send 20 GET /api/v1/health requests during active scan"
+        expected: "All return 200 OK within 500ms"
+      - name: "Measure entity queries during scan"
+        action: "Send GET /api/v1/entities during active scan"
+        expected: "Response within 1 second"
+    tags: [performance, scan, non-blocking, api-responsiveness]
+    estimated_duration: "60s"
+    expected_result: "API remains responsive during active scan"
+
+  # ==================== Aggregation Performance ====================
+  - id: PERF-037
+    name: "Post-scan aggregation performance"
+    category: performance
+    priority: high
+    platforms: [api]
+    steps:
+      - name: "Complete scan of 500 files"
+        action: "Scan directory with 500 media files"
+        expected: "Scan completes"
+      - name: "Measure aggregation time"
+        action: "Time from scan completion to all entities created"
+        expected: "Aggregation completes within 60 seconds"
+      - name: "Verify all entities created"
+        action: "GET /api/v1/entities and count"
+        expected: "Entities created for all recognized media files"
+    tags: [performance, aggregation, post-scan, throughput]
+    estimated_duration: "120s"
+    expected_result: "Post-scan aggregation of 500 files within 60s"
+
+  # ==================== Throughput Measurement ====================
+  - id: PERF-038
+    name: "Sustained throughput of 50 requests per second"
+    category: performance
+    priority: high
+    platforms: [api]
+    steps:
+      - name: "Run k6 load test"
+        action: "Execute k6 with 5 virtual users sending 10 req/s each for 30 seconds"
+        expected: "1500 total requests sent"
+      - name: "Verify success rate"
+        action: "Check k6 results"
+        expected: "Success rate >= 99%"
+      - name: "Verify p95 latency"
+        action: "Check p95 response time from k6 report"
+        expected: "p95 < 500ms"
+    tags: [performance, throughput, k6, sustained-load]
+    estimated_duration: "60s"
+    expected_result: "50 req/s sustained with 99%+ success and p95 < 500ms"
+
+  - id: PERF-039
+    name: "Throughput degrades gracefully under overload"
+    category: performance
+    priority: medium
+    platforms: [api]
+    steps:
+      - name: "Ramp to 100 req/s"
+        action: "Gradually increase request rate from 10 to 100 req/s"
+        expected: "Some requests may return 429"
+      - name: "Verify no 500 errors"
+        action: "Check for server errors in responses"
+        expected: "Zero 500 errors (only 200 and 429)"
+      - name: "Verify recovery"
+        action: "Reduce rate to 10 req/s"
+        expected: "All requests succeed at reduced rate"
+    tags: [performance, throughput, overload, graceful-degradation]
+    estimated_duration: "60s"
+    expected_result: "Server degrades gracefully under overload without crashes"
+
+  # ==================== Startup Performance ====================
+  - id: PERF-040
+    name: "Server startup time under 5 seconds"
+    category: performance
+    priority: high
+    platforms: [api]
+    steps:
+      - name: "Start server"
+        action: "Launch catalog-api and measure time to first successful health check"
+        expected: "Health check succeeds within 5 seconds of process start"
+    tags: [performance, startup, time, cold-start]
+    estimated_duration: "10s"
+    expected_result: "Server ready within 5 seconds"
+
+  - id: PERF-041
+    name: "Server startup with existing database"
+    category: performance
+    priority: medium
+    platforms: [api]
+    steps:
+      - name: "Ensure large database exists"
+        action: "Database with 5000+ entities"
+        expected: "Database file present"
+      - name: "Start server"
+        action: "Launch catalog-api"
+        expected: "Server starts and health check passes within 10 seconds"
+    tags: [performance, startup, existing-database, migration]
+    estimated_duration: "15s"
+    expected_result: "Server starts within 10s even with large existing database"
+
+  # ==================== Web Frontend Performance ====================
+  - id: PERF-042
+    name: "Web app initial load under 3 seconds"
+    category: performance
+    priority: critical
+    platforms: [web]
+    steps:
+      - name: "Clear browser cache"
+        action: "Clear all cached data"
+        expected: "Cache cleared"
+      - name: "Load web application"
+        action: "Navigate to http://localhost:3000"
+        expected: "Page loads"
+      - name: "Measure time to interactive"
+        action: "Record Time to Interactive (TTI) metric"
+        expected: "TTI < 3 seconds on broadband connection"
+    tags: [performance, web, tti, initial-load]
+    estimated_duration: "10s"
+    expected_result: "Web app TTI < 3 seconds"
+
+  - id: PERF-043
+    name: "Vendor chunk cached on subsequent loads"
+    category: performance
+    priority: high
+    platforms: [web]
+    steps:
+      - name: "First load"
+        action: "Load web app, note vendor chunk download"
+        expected: "Vendor chunk downloaded (~200-500KB)"
+      - name: "Second load"
+        action: "Reload page"
+        expected: "Vendor chunk served from cache (304 or disk cache)"
+      - name: "Measure load improvement"
+        action: "Compare total transfer size on second load"
+        expected: "Significantly less data transferred"
+    tags: [performance, web, caching, vendor-chunk]
+    estimated_duration: "15s"
+    expected_result: "Vendor chunk cached, subsequent loads faster"
+
+  - id: PERF-044
+    name: "Entity browser renders 100 cards smoothly"
+    category: performance
+    priority: high
+    platforms: [web, desktop]
+    steps:
+      - name: "Ensure 100+ entities"
+        action: "Verify database has 100+ entities"
+        expected: "Data ready"
+      - name: "Open entity browser"
+        action: "Navigate to /browse with per_page=100"
+        expected: "100 entity cards rendered"
+      - name: "Scroll performance"
+        action: "Scroll through all 100 cards"
+        expected: "Smooth scrolling, no jank (60fps)"
+    tags: [performance, web, rendering, scroll, entity-browser]
+    estimated_duration: "15s"
+    expected_result: "100 entity cards render and scroll smoothly"
+
+  - id: PERF-045
+    name: "Search debouncing reduces API calls"
+    category: performance
+    priority: medium
+    platforms: [web, desktop]
+    steps:
+      - name: "Open search"
+        action: "Focus search input on /browse"
+        expected: "Search bar active"
+      - name: "Type rapidly"
+        action: "Type 'the matrix' quickly (10 characters)"
+        expected: "API calls debounced"
+      - name: "Count API requests"
+        action: "Monitor network tab for search requests"
+        expected: "Fewer than 5 search API calls (not one per keystroke)"
+    tags: [performance, web, debounce, search, api-calls]
+    estimated_duration: "10s"
+    expected_result: "Search input debounced to reduce API calls"
+
+  # ==================== Resource Usage Limits ====================
+  - id: PERF-046
+    name: "CPU usage stays under 40% during normal load"
+    category: performance
+    priority: critical
+    platforms: [api]
+    steps:
+      - name: "Run normal workload"
+        action: "Send 10 req/s for 30 seconds (mix of reads)"
+        expected: "Requests processed"
+      - name: "Monitor CPU"
+        action: "Check CPU usage via podman stats or top"
+        expected: "catalog-api CPU usage < 40% of allocated cores"
+    tags: [performance, resource, cpu, limit]
+    estimated_duration: "45s"
+    expected_result: "CPU usage within 30-40% host resource limit"
+
+  - id: PERF-047
+    name: "Memory usage stays under container limit"
+    category: performance
+    priority: critical
+    platforms: [api]
+    steps:
+      - name: "Run load test"
+        action: "Send 500 requests over 60 seconds"
+        expected: "Requests processed"
+      - name: "Check container memory"
+        action: "podman stats --no-stream"
+        expected: "API container memory < 4GB limit"
+    tags: [performance, resource, memory, container-limit]
+    estimated_duration: "90s"
+    expected_result: "Memory usage within container limit"
+
+  - id: PERF-048
+    name: "Disk I/O does not spike during entity queries"
+    category: performance
+    priority: medium
+    platforms: [api]
+    steps:
+      - name: "Run cached queries"
+        action: "Send 50 identical entity listing requests"
+        expected: "All return successfully"
+      - name: "Check disk I/O"
+        action: "Monitor disk reads during cached queries"
+        expected: "Minimal disk I/O (cache serving most requests)"
+    tags: [performance, resource, disk-io, caching]
+    estimated_duration: "20s"
+    expected_result: "Cache reduces disk I/O for repeated queries"
+
+  # ==================== HTTP/3 Performance ====================
+  - id: PERF-049
+    name: "HTTP/3 connection reuse performance"
+    category: performance
+    priority: high
+    platforms: [api, web]
+    steps:
+      - name: "Establish HTTP/3 connection"
+        action: "Send first request via QUIC"
+        expected: "Connection established with QUIC handshake"
+      - name: "Send subsequent requests"
+        action: "Send 20 more requests on same QUIC connection"
+        expected: "Requests multiplexed on existing connection"
+      - name: "Measure latency reduction"
+        action: "Compare first request latency vs subsequent"
+        expected: "Subsequent requests faster (no new handshake)"
+    tags: [performance, http3, quic, connection-reuse]
+    estimated_duration: "15s"
+    expected_result: "HTTP/3 connection reuse reduces latency"
+
+  - id: PERF-050
+    name: "HTTP/2 fallback performance acceptable"
+    category: performance
+    priority: medium
+    platforms: [api, web]
+    steps:
+      - name: "Connect via HTTP/2"
+        action: "Send request with HTTP/2 only (no QUIC)"
+        expected: "HTTP/2 connection established"
+      - name: "Measure response time"
+        action: "Send 20 requests via HTTP/2"
+        expected: "p95 < 600ms (slightly higher than HTTP/3 is acceptable)"
+    tags: [performance, http2, fallback, latency]
+    estimated_duration: "15s"
+    expected_result: "HTTP/2 fallback maintains acceptable performance"
+
+  # ==================== Long-Running Stability ====================
+  - id: PERF-051
+    name: "30-minute soak test with stable memory"
+    category: performance
+    priority: critical
+    platforms: [api]
+    steps:
+      - name: "Record baseline"
+        action: "Note memory, goroutine count, open file descriptors"
+        expected: "Baseline metrics recorded"
+      - name: "Run soak test"
+        action: "Send 20 req/s for 30 minutes (k6 soak_test.js)"
+        expected: "All requests processed throughout"
+      - name: "Compare metrics"
+        action: "Record memory, goroutines, file descriptors after 30 min"
+        expected: "No metric has grown more than 20% from baseline"
+    tags: [performance, soak, stability, memory-leak]
+    estimated_duration: "1860s"
+    expected_result: "No resource leaks over 30-minute soak test"
+
+  - id: PERF-052
+    name: "Connection count stable over time"
+    category: performance
+    priority: high
+    platforms: [api]
+    steps:
+      - name: "Record baseline connections"
+        action: "Note database pool open connections and active goroutines"
+        expected: "Baseline recorded"
+      - name: "Run 500 requests with connection cycling"
+        action: "Send 500 requests, each from a new HTTP client"
+        expected: "All requests complete"
+      - name: "Verify connection cleanup"
+        action: "Wait 60s then check connection metrics"
+        expected: "Connections returned to near-baseline levels"
+    tags: [performance, connection, stability, cleanup]
+    estimated_duration: "120s"
+    expected_result: "Connections properly cleaned up after cycling"
+
+  # ==================== Cold Cache Performance ====================
+  - id: PERF-053
+    name: "Cold cache entity listing performance"
+    category: performance
+    priority: medium
+    platforms: [api]
+    steps:
+      - name: "Clear cache"
+        action: "POST /api/v1/admin/cache/clear"
+        expected: "Cache cleared"
+      - name: "Measure cold cache query"
+        action: "GET /api/v1/entities?per_page=50 immediately after cache clear"
+        expected: "Response within 1 second (cold cache)"
+      - name: "Measure warm cache query"
+        action: "GET /api/v1/entities?per_page=50 again"
+        expected: "Response faster than cold cache query"
+    tags: [performance, cache, cold-start, warm-up]
+    estimated_duration: "15s"
+    expected_result: "Cold cache query within 1s, warm cache significantly faster"
+
+  - id: PERF-054
+    name: "Cache eviction does not cause performance cliff"
+    category: performance
+    priority: medium
+    platforms: [api]
+    steps:
+      - name: "Fill cache with diverse queries"
+        action: "Send 200 unique search queries to fill cache"
+        expected: "Cache populated"
+      - name: "Trigger eviction"
+        action: "Continue sending unique queries to force eviction"
+        expected: "Older entries evicted"
+      - name: "Measure performance during eviction"
+        action: "Time requests during cache eviction phase"
+        expected: "No request takes more than 2x the warm cache time"
+    tags: [performance, cache, eviction, degradation]
+    estimated_duration: "30s"
+    expected_result: "Performance stable during cache eviction"
+
+  - id: PERF-055
+    name: "Stress test ramp to 300 users finds breaking point"
+    category: performance
+    priority: high
+    platforms: [api]
+    steps:
+      - name: "Run k6 stress test"
+        action: "Execute k6 stress_test.js ramping from 0 to 300 virtual users"
+        expected: "Test completes"
+      - name: "Identify breaking point"
+        action: "Find the VU count where error rate exceeds 5%"
+        expected: "Breaking point identified"
+      - name: "Verify recovery"
+        action: "After ramp-down, send single request"
+        expected: "Server recovered, 200 OK response"
+    tags: [performance, stress, k6, breaking-point, ramp]
+    estimated_duration: "120s"
+    expected_result: "Breaking point identified and server recovers after stress"
