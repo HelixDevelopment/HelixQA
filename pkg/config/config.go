@@ -19,10 +19,16 @@ type Platform string
 const (
 	// PlatformAndroid targets Android devices and emulators.
 	PlatformAndroid Platform = "android"
+	// PlatformAndroidTV targets Android TV devices.
+	PlatformAndroidTV Platform = "androidtv"
 	// PlatformWeb targets web browsers.
 	PlatformWeb Platform = "web"
 	// PlatformDesktop targets desktop (JVM) applications.
 	PlatformDesktop Platform = "desktop"
+	// PlatformCLI targets command-line interfaces.
+	PlatformCLI Platform = "cli"
+	// PlatformAPI targets REST API endpoints.
+	PlatformAPI Platform = "api"
 	// PlatformAll targets all supported platforms.
 	PlatformAll Platform = "all"
 )
@@ -326,6 +332,7 @@ func (c *Config) ExpandedPlatforms() []Platform {
 		if p == PlatformAll {
 			return []Platform{
 				PlatformAndroid,
+				PlatformAndroidTV,
 				PlatformWeb,
 				PlatformDesktop,
 			}
@@ -399,7 +406,8 @@ func (c *Config) isValidReportFormat() bool {
 
 func isValidPlatform(p Platform) bool {
 	switch p {
-	case PlatformAndroid, PlatformWeb, PlatformDesktop,
+	case PlatformAndroid, PlatformAndroidTV, PlatformWeb,
+		PlatformDesktop, PlatformCLI, PlatformAPI,
 		PlatformAll:
 		return true
 	}

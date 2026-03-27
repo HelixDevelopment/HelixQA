@@ -52,6 +52,7 @@ var providerDefaults = map[string]struct {
 var ProviderEnvKeys = map[string]string{
 	ProviderAnthropic:  "ANTHROPIC_API_KEY",
 	ProviderOpenAI:     "OPENAI_API_KEY",
+	ProviderGoogle:     "GEMINI_API_KEY",
 	ProviderOpenRouter: "OPENROUTER_API_KEY",
 	ProviderDeepSeek:   "DEEPSEEK_API_KEY",
 	ProviderGroq:       "GROQ_API_KEY",

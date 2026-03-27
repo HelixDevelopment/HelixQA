@@ -96,7 +96,8 @@ func TestConfig_ExpandedPlatforms_All(t *testing.T) {
 	cfg := DefaultConfig()
 	expanded := cfg.ExpandedPlatforms()
 	assert.Equal(t, []Platform{
-		PlatformAndroid, PlatformWeb, PlatformDesktop,
+		PlatformAndroid, PlatformAndroidTV,
+		PlatformWeb, PlatformDesktop,
 	}, expanded)
 }
 

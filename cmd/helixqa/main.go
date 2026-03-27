@@ -15,6 +15,7 @@
 package main
 
 import (
+	"bufio"
 	"context"
 	"encoding/json"
 	"flag"
@@ -378,6 +379,15 @@ func cmdAutonomous(args []string) {
 		os.Exit(1)
 	}
 
+	// Load .env file — sets environment variables for LLM
+	// API keys and platform configuration without requiring
+	// the caller to export them manually.
+	if err := loadEnvFile(*envFile); err != nil {
+		fmt.Fprintf(os.Stderr,
+			"warning: could not load env file %s: %v\n",
+			*envFile, err)
+	}
+
 	fmt.Println("HelixQA Autonomous QA Session")
 	fmt.Println()
 	fmt.Printf("Project:          %s\n", *project)
@@ -522,4 +532,45 @@ func truncate(s string, max int) string {
 		return s
 	}
 	return s[:max-3] + "..."
+}
+
+// loadEnvFile reads a .env file and sets environment variables
+// for any keys not already present in the environment. Lines
+// starting with # and blank lines are ignored. Supports
+// KEY=VALUE format with optional quoting.
+func loadEnvFile(path string) error {
+	f, err := os.Open(path)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	scanner := bufio.NewScanner(f)
+	for scanner.Scan() {
+		line := strings.TrimSpace(scanner.Text())
+		if line == "" || strings.HasPrefix(line, "#") {
+			continue
+		}
+		idx := strings.IndexByte(line, '=')
+		if idx < 1 {
+			continue
+		}
+		key := strings.TrimSpace(line[:idx])
+		val := strings.TrimSpace(line[idx+1:])
+
+		// Strip surrounding quotes if present.
+		if len(val) >= 2 {
+			if (val[0] == '"' && val[len(val)-1] == '"') ||
+				(val[0] == '\'' && val[len(val)-1] == '\'') {
+				val = val[1 : len(val)-1]
+			}
+		}
+
+		// Only set if not already in the environment so
+		// explicit exports take precedence.
+		if os.Getenv(key) == "" {
+			os.Setenv(key, val)
+		}
+	}
+	return scanner.Err()
 }

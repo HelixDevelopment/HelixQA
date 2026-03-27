@@ -94,8 +94,8 @@ func TestRun_AllPlatforms(t *testing.T) {
 
 	result, err := o.Run(context.Background())
 	require.NoError(t, err)
-	// All = android + web + desktop.
-	assert.Len(t, result.Report.PlatformResults, 3)
+	// All = android + androidtv + web + desktop.
+	assert.Len(t, result.Report.PlatformResults, 4)
 }
 
 func TestRun_WithTimeout(t *testing.T) {

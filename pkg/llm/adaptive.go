@@ -40,6 +40,8 @@ func NewAdaptiveFromConfigs(
 		switch cfg.Name {
 		case ProviderAnthropic:
 			providers = append(providers, NewAnthropicProvider(cfg))
+		case ProviderGoogle:
+			providers = append(providers, NewGoogleProvider(cfg))
 		case ProviderOllama, ProviderUITars:
 			providers = append(providers, NewOllamaProvider(cfg))
 		default:

@@ -20,6 +20,7 @@ import (
 	"digital.vasic.helixqa/pkg/llm"
 	"digital.vasic.helixqa/pkg/maestro"
 	"digital.vasic.helixqa/pkg/memory"
+	"digital.vasic.helixqa/pkg/navigator"
 	"digital.vasic.helixqa/pkg/performance"
 	"digital.vasic.helixqa/pkg/planning"
 	"digital.vasic.helixqa/pkg/video"
@@ -549,7 +550,8 @@ func (sp *SessionPipeline) Run(
 				continue
 			}
 
-			for i := 0; i < 5; i++ {
+			maxSteps := 10
+			for i := 0; i < maxSteps; i++ {
 				select {
 				case <-curiosityCtx.Done():
 					break
@@ -558,35 +560,105 @@ func (sp *SessionPipeline) Run(
 				if curiosityCtx.Err() != nil {
 					break
 				}
+
+				// Step 1: Take screenshot.
 				screenshot, err :=
 					executor.Screenshot(curiosityCtx)
-				if err == nil &&
-					len(screenshot) > 0 {
-					fname := filepath.Join(
-						screenshotDir,
-						fmt.Sprintf(
-							"%s-curiosity-%03d.png",
+				if err != nil || len(screenshot) == 0 {
+					fmt.Printf(
+						"  [curiosity %s #%d] "+
+							"screenshot failed: %v\n",
+						platform, i+1, err,
+					)
+					// Fall back to blind navigation.
+					_ = executor.KeyPress(
+						curiosityCtx,
+						"KEYCODE_DPAD_DOWN",
+					)
+					time.Sleep(2 * time.Second)
+					continue
+				}
+
+				fname := filepath.Join(
+					screenshotDir,
+					fmt.Sprintf(
+						"%s-curiosity-%03d.png",
+						platform, i+1,
+					),
+				)
+				_ = os.WriteFile(
+					fname, screenshot, 0o644,
+				)
+				allScreenshots = append(
+					allScreenshots, fname,
+				)
+
+				// Step 2: Send screenshot to LLM for
+				// navigation guidance.
+				if !sp.provider.SupportsVision() {
+					// No vision — fall back to blind
+					// D-pad navigation.
+					_ = executor.KeyPress(
+						curiosityCtx,
+						"KEYCODE_DPAD_DOWN",
+					)
+					time.Sleep(2 * time.Second)
+					_ = executor.KeyPress(
+						curiosityCtx,
+						"KEYCODE_DPAD_CENTER",
+					)
+					time.Sleep(3 * time.Second)
+					continue
+				}
+
+				actions := sp.llmNavigate(
+					curiosityCtx,
+					screenshot,
+					platform,
+					i+1,
+				)
+
+				// Step 3: Execute LLM-suggested actions.
+				if len(actions) == 0 {
+					// LLM returned nothing usable —
+					// fall back to D-pad.
+					_ = executor.KeyPress(
+						curiosityCtx,
+						"KEYCODE_DPAD_DOWN",
+					)
+					time.Sleep(2 * time.Second)
+					continue
+				}
+
+				for _, action := range actions {
+					if curiosityCtx.Err() != nil {
+						break
+					}
+					execErr := executeAction(
+						curiosityCtx,
+						executor,
+						action,
+					)
+					if execErr != nil {
+						fmt.Printf(
+							"  [curiosity %s #%d] "+
+								"action %q failed: %v\n",
 							platform, i+1,
-						),
-					)
-					_ = os.WriteFile(
-						fname, screenshot, 0o644,
-					)
-					allScreenshots = append(
-						allScreenshots, fname,
+							action.Type, execErr,
+						)
+					} else {
+						fmt.Printf(
+							"  [curiosity %s #%d] "+
+								"executed: %s\n",
+							platform, i+1,
+							action.Type,
+						)
+					}
+					// Brief pause between actions.
+					time.Sleep(
+						2 * time.Second,
 					)
 				}
-				// Navigate randomly.
-				_ = executor.KeyPress(
-					curiosityCtx,
-					"KEYCODE_DPAD_DOWN",
-				)
-				time.Sleep(2 * time.Second)
-				_ = executor.KeyPress(
-					curiosityCtx,
-					"KEYCODE_DPAD_CENTER",
-				)
-				time.Sleep(3 * time.Second)
 			}
 		}
 		fmt.Printf(
@@ -818,6 +890,153 @@ func (sp *SessionPipeline) updateSession(
 		),
 	}
 	_ = sp.store.UpdateSession(id, u)
+}
+
+// navigationPrompt is the system prompt sent to the LLM when
+// requesting navigation guidance from a screenshot.
+const navigationPrompt = `You are a QA tester navigating an Android TV application using a D-pad remote control.
+
+Analyze the screenshot and suggest navigation actions to explore the application. Return ONLY a JSON array of action objects. Each action must have:
+- "type": one of "dpad_up", "dpad_down", "dpad_left", "dpad_right", "dpad_center", "back", "home", "tap", "swipe_up", "swipe_down", "swipe_left", "swipe_right", "key"
+- "value": for "key" type, the Android keycode (e.g. "KEYCODE_MENU"); for "tap" type, "x,y" coordinates; otherwise omit
+- "reason": brief explanation of why this action explores new areas
+
+Focus on:
+1. Navigate to unexplored menu items or screens
+2. Open settings, profiles, or configuration screens
+3. Test edge cases (empty states, error handling)
+4. Interact with focusable elements that look untested
+
+Return 1-3 actions. Respond with only the JSON array, no other text.`
+
+// llmAction is a single navigation action suggested by the LLM.
+type llmAction struct {
+	Type   string `json:"type"`
+	Value  string `json:"value,omitempty"`
+	Reason string `json:"reason,omitempty"`
+}
+
+// llmNavigate sends a screenshot to the LLM vision endpoint
+// and parses the response into a list of actions to execute.
+// Returns nil on any error (graceful degradation).
+func (sp *SessionPipeline) llmNavigate(
+	ctx context.Context,
+	screenshot []byte,
+	platform string,
+	step int,
+) []llmAction {
+	resp, err := sp.provider.Vision(
+		ctx, screenshot, navigationPrompt,
+	)
+	if err != nil {
+		fmt.Printf(
+			"  [curiosity %s #%d] LLM vision error: %v\n",
+			platform, step, err,
+		)
+		return nil
+	}
+
+	content := strings.TrimSpace(resp.Content)
+	if content == "" {
+		return nil
+	}
+
+	// Strip markdown code fences.
+	content = stripCodeFence(content)
+
+	// Locate JSON array boundaries.
+	start := strings.Index(content, "[")
+	end := strings.LastIndex(content, "]")
+	if start == -1 || end == -1 || end < start {
+		fmt.Printf(
+			"  [curiosity %s #%d] LLM response "+
+				"not JSON array: %.80s\n",
+			platform, step, content,
+		)
+		return nil
+	}
+
+	var actions []llmAction
+	if err := json.Unmarshal(
+		[]byte(content[start:end+1]), &actions,
+	); err != nil {
+		fmt.Printf(
+			"  [curiosity %s #%d] LLM JSON parse "+
+				"error: %v\n",
+			platform, step, err,
+		)
+		return nil
+	}
+
+	return actions
+}
+
+// executeAction translates an llmAction into an
+// ActionExecutor method call.
+func executeAction(
+	ctx context.Context,
+	exec navigator.ActionExecutor,
+	action llmAction,
+) error {
+	switch action.Type {
+	case "dpad_up":
+		return exec.KeyPress(ctx, "KEYCODE_DPAD_UP")
+	case "dpad_down":
+		return exec.KeyPress(ctx, "KEYCODE_DPAD_DOWN")
+	case "dpad_left":
+		return exec.KeyPress(ctx, "KEYCODE_DPAD_LEFT")
+	case "dpad_right":
+		return exec.KeyPress(ctx, "KEYCODE_DPAD_RIGHT")
+	case "dpad_center", "select", "enter":
+		return exec.KeyPress(ctx, "KEYCODE_DPAD_CENTER")
+	case "back":
+		return exec.Back(ctx)
+	case "home":
+		return exec.Home(ctx)
+	case "tap", "click":
+		var x, y int
+		_, _ = fmt.Sscanf(action.Value, "%d,%d", &x, &y)
+		if x == 0 && y == 0 {
+			// Invalid coordinates — press center instead.
+			return exec.KeyPress(
+				ctx, "KEYCODE_DPAD_CENTER",
+			)
+		}
+		return exec.Click(ctx, x, y)
+	case "swipe_up":
+		return exec.Scroll(ctx, "up", 400)
+	case "swipe_down":
+		return exec.Scroll(ctx, "down", 400)
+	case "swipe_left":
+		return exec.Scroll(ctx, "left", 400)
+	case "swipe_right":
+		return exec.Scroll(ctx, "right", 400)
+	case "key":
+		keyCode := action.Value
+		if keyCode == "" {
+			keyCode = "KEYCODE_MENU"
+		}
+		return exec.KeyPress(ctx, keyCode)
+	default:
+		return fmt.Errorf("unknown action type: %s", action.Type)
+	}
+}
+
+// stripCodeFence removes leading/trailing markdown code-fence
+// markers from a string.
+func stripCodeFence(s string) string {
+	for _, prefix := range []string{"```json", "```"} {
+		if strings.HasPrefix(s, prefix) {
+			s = strings.TrimPrefix(s, prefix)
+			s = strings.TrimSpace(s)
+			break
+		}
+	}
+	if strings.HasSuffix(s, "```") {
+		s = strings.TrimSuffix(s, "```")
+		s = strings.TrimSpace(s)
+	}
+	return s
 }
 
 // sanitizeFilename converts a screen name or label into a
