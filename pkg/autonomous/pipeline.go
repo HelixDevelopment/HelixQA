@@ -179,6 +179,16 @@ func (sp *SessionPipeline) Run(
 	}
 	fmt.Printf("[pipeline]   %s\n", kb.Summary())
 
+	// Store learned knowledge in cognitive memory for future sessions
+	cogMem := memory.NewCognitiveMemory(sp.store, nil) // nil provider = SQLite-only
+	cogMem.Remember(ctx, memory.MemoryEntry{
+		ID:      fmt.Sprintf("learn-%s", sessionID),
+		Content: kb.Summary(),
+		Type:    "fact",
+		Source:  "learning-phase",
+		Session: sessionID,
+	})
+
 	// ── Phase 2: Plan ───────────────────────────────────
 	fmt.Println("[pipeline] Phase 2/4: Plan")
 	gen := planning.NewTestPlanGenerator(sp.provider)
