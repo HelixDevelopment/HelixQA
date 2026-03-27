@@ -46,6 +46,9 @@ export default defineConfig({
         items: [
           { text: 'Autonomous QA', link: '/guides/autonomous-qa' },
           { text: 'Test Banks', link: '/guides/test-banks' },
+          { text: 'Challenges', link: '/guides/challenges' },
+          { text: 'Evidence Collection', link: '/guides/evidence-collection' },
+          { text: 'CI Integration', link: '/guides/ci-integration' },
         ]
       },
       {
@@ -54,6 +57,15 @@ export default defineConfig({
           { text: 'CLI Reference', link: '/reference/cli' },
           { text: 'Configuration', link: '/reference/config' },
           { text: 'Test Bank Schema', link: '/reference/test-bank-schema' },
+          { text: 'API Reference', link: '/reference/api' },
+        ]
+      },
+      {
+        text: 'Developer',
+        items: [
+          { text: 'Architecture', link: '/developer/architecture' },
+          { text: 'Extending HelixQA', link: '/developer/extending' },
+          { text: 'LLM Providers', link: '/developer/llm-providers' },
         ]
       },
       {
