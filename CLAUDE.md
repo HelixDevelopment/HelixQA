@@ -10,6 +10,31 @@
 - All builds and tests are run manually or via Makefile targets
 - This rule is permanent and non-negotiable
 
+## MANDATORY: Screenshot and Video Validation
+
+**Every autonomous QA session MUST validate its own evidence. This is NON-NEGOTIABLE.**
+
+- After every login attempt, verify via UI dump that "Sign In" text is ABSENT. If present, login FAILED — do NOT proceed
+- After every phase transition, analyze the latest screenshot to confirm expected screen state
+- Compare screen content against API/database data — empty screens when data exists = BUG to report
+- Review video recordings for visual glitches, frozen frames, unexpected app exits
+- A session that reports "success" while the app never left the login screen is a **critical test infrastructure failure**
+- False positives are UNACCEPTABLE — every "PASS" must be backed by visual evidence
+- API keys and secrets MUST NEVER be committed to git
+
+## MANDATORY: No Hardcoded QA Flows
+
+**ALL QA testing MUST be driven by LLM vision — NEVER by hardcoded scripts. This is NON-NEGOTIABLE.**
+
+- **NEVER** write fixed tap coordinates, sleep timers, or keystroke sequences. These break on different devices and produce false positives
+- The `helixqa autonomous` command handles everything: device detection, screenshot→LLM→action loop, validation, reporting
+- If the autonomous pipeline doesn't work, **fix the Go code** — do NOT write bash workarounds
+- The LLM vision analyzes each screenshot, decides the next action (tap, type, swipe, DPAD), and validates the result
+- On Android TV: the LLM must know that DPAD_CENTER opens the keyboard before `input text` works
+- `uiautomator dump` failures ("null root node") are real bugs to fix, not to ignore
+- Every connected ADB device MUST be tested. Skipping devices = failure
+- **Stay in the fix-test loop** until the pipeline completes with verified screenshots showing ALL screens navigated with real data
+
 ## Overview
 
 `digital.vasic.helixqa` is a QA orchestration framework built on top of the `digital.vasic.challenges` and `digital.vasic.containers` Go modules. It provides real-time crash/ANR detection, step-by-step validation, and evidence-based reporting for cross-platform testing.
