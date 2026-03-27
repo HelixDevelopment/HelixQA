@@ -52,6 +52,42 @@ func TestRealExecutorFactory_CreateDesktop(t *testing.T) {
 	require.NotNil(t, exec)
 }
 
+func TestRealExecutorFactory_CreateCLI_Default(t *testing.T) {
+	factory := NewRealExecutorFactory(RealExecutorConfig{})
+
+	exec, err := factory.Create("cli")
+	require.NoError(t, err)
+	require.NotNil(t, exec)
+}
+
+func TestRealExecutorFactory_CreateCLI_CustomCommand(t *testing.T) {
+	factory := NewRealExecutorFactory(RealExecutorConfig{
+		CLICommand: "python3",
+	})
+
+	exec, err := factory.Create("cli")
+	require.NoError(t, err)
+	require.NotNil(t, exec)
+}
+
+func TestRealExecutorFactory_CreateAPI_Default(t *testing.T) {
+	factory := NewRealExecutorFactory(RealExecutorConfig{})
+
+	exec, err := factory.Create("api")
+	require.NoError(t, err)
+	require.NotNil(t, exec)
+}
+
+func TestRealExecutorFactory_CreateAPI_CustomURL(t *testing.T) {
+	factory := NewRealExecutorFactory(RealExecutorConfig{
+		APIURL: "http://localhost:9090",
+	})
+
+	exec, err := factory.Create("api")
+	require.NoError(t, err)
+	require.NotNil(t, exec)
+}
+
 func TestRealExecutorFactory_UnsupportedPlatform(t *testing.T) {
 	factory := NewRealExecutorFactory(RealExecutorConfig{})
 

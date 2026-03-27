@@ -30,6 +30,14 @@ type RealExecutorConfig struct {
 
 	// DesktopDisplay is the X11 display (e.g. ":0").
 	DesktopDisplay string
+
+	// CLICommand is the CLI command for the "cli" platform.
+	// Defaults to "bash" when empty.
+	CLICommand string
+
+	// APIURL is the base URL for the "api" platform executor.
+	// Defaults to "http://localhost:8080" when empty.
+	APIURL string
 }
 
 // RealExecutorFactory creates platform-specific ActionExecutor
@@ -72,6 +80,24 @@ func (f *RealExecutorFactory) Create(
 		return navigator.NewX11Executor(
 			display,
 			detector.NewExecRunner(),
+		), nil
+
+	case "cli":
+		cmd := f.config.CLICommand
+		if cmd == "" {
+			cmd = "bash"
+		}
+		return navigator.NewCLIExecutor(
+			cmd, nil, detector.NewExecRunner(),
+		), nil
+
+	case "api":
+		url := f.config.APIURL
+		if url == "" {
+			url = "http://localhost:8080"
+		}
+		return navigator.NewAPIExecutor(
+			url, detector.NewExecRunner(),
 		), nil
 
 	default:
