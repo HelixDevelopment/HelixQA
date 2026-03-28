@@ -4,9 +4,12 @@
 package autonomous
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
+	"net/http"
 	"os"
 	osexec "os/exec"
 	"path/filepath"
@@ -947,6 +950,18 @@ func (sp *SessionPipeline) Run(
 				time.Millisecond,
 			),
 		)
+
+		// Validate that on-screen data matches API data.
+		apiFindings := sp.validateAPIData(ctx)
+		if len(apiFindings) > 0 {
+			allFindings = append(
+				allFindings, apiFindings...,
+			)
+			fmt.Printf(
+				"  [data-validation] %d issues found\n",
+				len(apiFindings),
+			)
+		}
 	}
 
 	// ── Phase 4: Analyze ────────────────────────────────
@@ -1171,6 +1186,304 @@ func (sp *SessionPipeline) Run(
 	)
 
 	return result, nil
+}
+
+// apiDataTimeout limits individual HTTP requests during
+// API data validation so a slow or unreachable backend
+// does not stall the pipeline.
+const apiDataTimeout = 10 * time.Second
+
+// validateAPIData makes HTTP requests to the catalog-api
+// to verify that backend data is available and consistent
+// with what should appear on screen. It returns findings
+// for any errors or empty responses that indicate a data
+// mismatch between the API and the UI.
+func (sp *SessionPipeline) validateAPIData(
+	ctx context.Context,
+) []analysis.AnalysisFinding {
+	baseURL := "http://localhost:8080"
+	if sp.config.WebURL != "" {
+		baseURL = strings.TrimRight(
+			sp.config.WebURL, "/",
+		)
+	}
+
+	fmt.Printf(
+		"[data-validation] Validating API data "+
+			"at %s\n",
+		baseURL,
+	)
+
+	client := &http.Client{Timeout: apiDataTimeout}
+	var findings []analysis.AnalysisFinding
+
+	// ── 1. Entity stats ─────────────────────────────
+	statsURL := baseURL + "/api/v1/entities/stats"
+	statsReq, err := http.NewRequestWithContext(
+		ctx, http.MethodGet, statsURL, nil,
+	)
+	if err == nil {
+		resp, err := client.Do(statsReq)
+		if err != nil {
+			fmt.Printf(
+				"[data-validation] entities/stats "+
+					"request failed: %v\n",
+				err,
+			)
+			findings = append(findings,
+				analysis.AnalysisFinding{
+					Category: analysis.CategoryFunctional,
+					Severity: analysis.SeverityHigh,
+					Title: "API unreachable: " +
+						"entities/stats",
+					Description: fmt.Sprintf(
+						"GET %s failed: %v",
+						statsURL, err,
+					),
+					Platform: "api",
+				},
+			)
+		} else {
+			body, _ := io.ReadAll(resp.Body)
+			resp.Body.Close()
+
+			if resp.StatusCode != http.StatusOK {
+				fmt.Printf(
+					"[data-validation] entities/stats "+
+						"returned %d\n",
+					resp.StatusCode,
+				)
+				findings = append(findings,
+					analysis.AnalysisFinding{
+						Category: analysis.CategoryFunctional,
+						Severity: analysis.SeverityHigh,
+						Title: fmt.Sprintf(
+							"API error: entities/stats "+
+								"returned %d",
+							resp.StatusCode,
+						),
+						Description: string(body),
+						Platform:    "api",
+					},
+				)
+			} else {
+				var statsResp struct {
+					Total   int            `json:"total"`
+					ByType  map[string]int `json:"by_type"`
+				}
+				if jErr := json.Unmarshal(
+					body, &statsResp,
+				); jErr == nil {
+					fmt.Printf(
+						"[data-validation] API has "+
+							"%d entities",
+						statsResp.Total,
+					)
+					if len(statsResp.ByType) > 0 {
+						var parts []string
+						for k, v := range statsResp.ByType {
+							parts = append(parts,
+								fmt.Sprintf("%s=%d", k, v),
+							)
+						}
+						fmt.Printf(
+							" (%s)",
+							strings.Join(parts, ", "),
+						)
+					}
+					fmt.Println()
+
+					if statsResp.Total == 0 {
+						findings = append(findings,
+							analysis.AnalysisFinding{
+								Category: analysis.CategoryFunctional,
+								Severity: analysis.SeverityHigh,
+								Title: "API returned zero " +
+									"entities",
+								Description: "entities/stats " +
+									"reports total=0; the UI " +
+									"should show data if the " +
+									"backend has been populated",
+								Platform: "api",
+							},
+						)
+					}
+				} else {
+					fmt.Printf(
+						"[data-validation] entities/stats "+
+							"JSON parse failed: %v\n",
+						jErr,
+					)
+				}
+			}
+		}
+	}
+
+	// ── 2. Login verification ───────────────────────
+	loginURL := baseURL + "/api/v1/auth/login"
+	loginBody, _ := json.Marshal(map[string]string{
+		"username": "admin",
+		"password": "admin123",
+	})
+	loginReq, err := http.NewRequestWithContext(
+		ctx, http.MethodPost, loginURL,
+		bytes.NewReader(loginBody),
+	)
+	if err == nil {
+		loginReq.Header.Set(
+			"Content-Type", "application/json",
+		)
+		resp, err := client.Do(loginReq)
+		if err != nil {
+			fmt.Printf(
+				"[data-validation] login request "+
+					"failed: %v\n",
+				err,
+			)
+			findings = append(findings,
+				analysis.AnalysisFinding{
+					Category: analysis.CategoryFunctional,
+					Severity: analysis.SeverityHigh,
+					Title:    "API unreachable: auth/login",
+					Description: fmt.Sprintf(
+						"POST %s failed: %v",
+						loginURL, err,
+					),
+					Platform: "api",
+				},
+			)
+		} else {
+			body, _ := io.ReadAll(resp.Body)
+			resp.Body.Close()
+
+			if resp.StatusCode == http.StatusOK {
+				fmt.Println(
+					"[data-validation] login OK " +
+						"(admin/admin123)",
+				)
+			} else {
+				fmt.Printf(
+					"[data-validation] login failed "+
+						"with status %d\n",
+					resp.StatusCode,
+				)
+				findings = append(findings,
+					analysis.AnalysisFinding{
+						Category: analysis.CategoryFunctional,
+						Severity: analysis.SeverityHigh,
+						Title: fmt.Sprintf(
+							"API login failed with "+
+								"status %d",
+							resp.StatusCode,
+						),
+						Description: string(body),
+						Platform:    "api",
+					},
+				)
+			}
+		}
+	}
+
+	// ── 3. Media search ─────────────────────────────
+	searchURL := baseURL +
+		"/api/v1/media/search?limit=5"
+	searchReq, err := http.NewRequestWithContext(
+		ctx, http.MethodGet, searchURL, nil,
+	)
+	if err == nil {
+		resp, err := client.Do(searchReq)
+		if err != nil {
+			fmt.Printf(
+				"[data-validation] media/search "+
+					"request failed: %v\n",
+				err,
+			)
+			findings = append(findings,
+				analysis.AnalysisFinding{
+					Category: analysis.CategoryFunctional,
+					Severity: analysis.SeverityHigh,
+					Title: "API unreachable: " +
+						"media/search",
+					Description: fmt.Sprintf(
+						"GET %s failed: %v",
+						searchURL, err,
+					),
+					Platform: "api",
+				},
+			)
+		} else {
+			body, _ := io.ReadAll(resp.Body)
+			resp.Body.Close()
+
+			if resp.StatusCode != http.StatusOK {
+				fmt.Printf(
+					"[data-validation] media/search "+
+						"returned %d\n",
+					resp.StatusCode,
+				)
+				findings = append(findings,
+					analysis.AnalysisFinding{
+						Category: analysis.CategoryFunctional,
+						Severity: analysis.SeverityHigh,
+						Title: fmt.Sprintf(
+							"API error: media/search "+
+								"returned %d",
+							resp.StatusCode,
+						),
+						Description: string(body),
+						Platform:    "api",
+					},
+				)
+			} else {
+				var searchResp struct {
+					Items []json.RawMessage `json:"items"`
+					Total int               `json:"total"`
+				}
+				if jErr := json.Unmarshal(
+					body, &searchResp,
+				); jErr == nil {
+					fmt.Printf(
+						"[data-validation] search "+
+							"returned %d items "+
+							"(total %d)\n",
+						len(searchResp.Items),
+						searchResp.Total,
+					)
+					if len(searchResp.Items) == 0 &&
+						searchResp.Total == 0 {
+						findings = append(findings,
+							analysis.AnalysisFinding{
+								Category: analysis.CategoryFunctional,
+								Severity: analysis.SeverityHigh,
+								Title: "API search returned " +
+									"zero results",
+								Description: "media/search " +
+									"returned no items; if " +
+									"the backend is populated " +
+									"this indicates a data " +
+									"pipeline issue",
+								Platform: "api",
+							},
+						)
+					}
+				} else {
+					fmt.Printf(
+						"[data-validation] media/search "+
+							"JSON parse failed: %v\n",
+						jErr,
+					)
+				}
+			}
+		}
+	}
+
+	if len(findings) == 0 {
+		fmt.Println(
+			"[data-validation] all API checks passed",
+		)
+	}
+
+	return findings
 }
 
 // selectEvenly returns up to max elements from the slice,
