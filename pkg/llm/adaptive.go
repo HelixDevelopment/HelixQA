@@ -136,12 +136,23 @@ func (a *AdaptiveProvider) Vision(
 	image []byte,
 	prompt string,
 ) (*Response, error) {
+	// Prioritize providers with native multimodal support
+	// (Gemini, Anthropic) over OpenAI-compatible providers
+	// whose Vision() may not actually work.
 	var capable []Provider
+	var secondary []Provider
 	for _, p := range a.providers {
-		if p.SupportsVision() {
+		if !p.SupportsVision() {
+			continue
+		}
+		switch p.Name() {
+		case ProviderGoogle, ProviderAnthropic, ProviderOpenAI:
 			capable = append(capable, p)
+		default:
+			secondary = append(secondary, p)
 		}
 	}
+	capable = append(capable, secondary...)
 	if len(capable) == 0 {
 		return nil, fmt.Errorf("llm: no vision-capable providers available")
 	}

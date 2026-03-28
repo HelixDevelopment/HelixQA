@@ -134,18 +134,18 @@ const perTestTimeout = 2 * time.Minute
 const perMaestroFlowTimeout = 3 * time.Minute
 
 // maxVisionScreenshots caps how many screenshots are sent
-// to the LLM vision API during the analysis phase. Each
-// call can take 10-45 seconds; analysing all screenshots
-// from a 14-test run would blow the time budget.
-const maxVisionScreenshots = 8
+// to the LLM vision API during the analysis phase.
+const maxVisionScreenshots = 15
 
 // maxVisionFrames caps how many video frames per video
 // are sent to vision analysis.
 const maxVisionFrames = 3
 
-// maxCuriositySteps limits exploration steps per platform
-// to keep the curiosity phase within ~3 minutes.
-const maxCuriositySteps = 5
+// maxCuriositySteps limits exploration steps per platform.
+// 20 steps allow the agent to navigate through login,
+// browse content rails, open details, and test several
+// flows — like a real human QA session.
+const maxCuriositySteps = 20
 
 // logcatTimeout limits the logcat dump so a large log
 // buffer cannot stall the pipeline.
@@ -707,11 +707,6 @@ func (sp *SessionPipeline) Run(
 	if sp.config.CuriosityEnabled {
 		phaseStart = time.Now()
 		curiosityBudget := sp.config.CuriosityTimeout
-		// Cap curiosity to 3 minutes to stay within the
-		// 15-minute pipeline target.
-		if curiosityBudget > 3*time.Minute {
-			curiosityBudget = 3 * time.Minute
-		}
 		fmt.Printf(
 			"[pipeline] Phase 3.5: "+
 				"Curiosity-driven exploration "+
@@ -730,6 +725,10 @@ func (sp *SessionPipeline) Run(
 			if err != nil {
 				continue
 			}
+
+			// stepHistory tracks actions from previous
+			// steps so the LLM avoids repeating itself.
+			var stepHistory []string
 
 			for i := 0; i < maxCuriositySteps; i++ {
 				if curiosityCtx.Err() != nil {
@@ -793,6 +792,7 @@ func (sp *SessionPipeline) Run(
 					resized,
 					platform,
 					i+1,
+					stepHistory,
 				)
 
 				// Step 3: Execute LLM-suggested actions.
@@ -805,6 +805,7 @@ func (sp *SessionPipeline) Run(
 					continue
 				}
 
+				var stepActions []string
 				for _, action := range actions {
 					if curiosityCtx.Err() != nil {
 						break
@@ -832,9 +833,34 @@ func (sp *SessionPipeline) Run(
 							action.Reason,
 						)
 					}
-					// Brief pause between actions.
-					time.Sleep(1 * time.Second)
+					desc := action.Type
+					if action.Value != "" {
+						desc += "(" + action.Value + ")"
+					}
+					stepActions = append(
+						stepActions, desc,
+					)
+					// Pause between actions. Typing
+					// and keyboard dismiss need extra
+					// time on Android TV.
+					switch action.Type {
+					case "type":
+						time.Sleep(2 * time.Second)
+					case "back":
+						time.Sleep(2 * time.Second)
+					default:
+						time.Sleep(1 * time.Second)
+					}
 				}
+				// Record what was done for context.
+				stepHistory = append(
+					stepHistory,
+					fmt.Sprintf(
+						"Step %d: %s",
+						i+1,
+						strings.Join(stepActions, ", "),
+					),
+				)
 
 				fmt.Printf(
 					"  [curiosity %s #%d] "+
@@ -1153,22 +1179,57 @@ func (sp *SessionPipeline) updateSession(
 	_ = sp.store.UpdateSession(id, u)
 }
 
-// navigationPrompt is the system prompt sent to the LLM when
-// requesting navigation guidance from a screenshot.
-const navigationPrompt = `You are a QA tester navigating an Android TV application using a D-pad remote control.
+// navigationPromptTemplate is the system prompt sent to
+// the LLM when requesting navigation guidance from a
+// screenshot. It is formatted at runtime with app-specific
+// context from the Learn phase knowledge base.
+const navigationPromptTemplate = `You are an expert QA tester performing a FULL autonomous QA session on the Catalogizer Android TV application — a media collection manager. You must test EVERY feature like a real human QA tester would.
 
-IMPORTANT Android TV rules:
-- Navigation is D-pad only (up/down/left/right/center). No touch input.
-- To type text into a field: first press DPAD_CENTER to open the on-screen keyboard, THEN use "key" actions with individual keycodes, OR use the "type" action which sends text via ADB input.
-- If you see a text input field, navigate to it with D-pad, press DPAD_CENTER to focus/open keyboard, then type.
-- uiautomator dump may return "null root node" during screen transitions — this is normal, retry after a brief wait.
+APPLICATION CONTEXT:
+- App name: Catalogizer — Advanced Multi-Protocol Media Collection Management System
+- Login credentials: username "admin", password "admin123"
+- Server URL: The app connects to a catalog-api backend (already configured)
+- Key screens: Login, Home/Dashboard (content rails), Media Browser, Entity Details, Collections, Favorites, Settings, Search
+- The app uses Jetpack Compose with a dark theme on Android TV
 
-Analyze the screenshot and suggest 1-3 navigation actions. Return ONLY a JSON array. Each action:
-- "type": one of "dpad_up", "dpad_down", "dpad_left", "dpad_right", "dpad_center", "back", "home", "key", "type"
-- "value": for "key" = Android keycode; for "type" = text to enter; otherwise omit
-- "reason": brief explanation
+YOUR MISSION (in order):
+1. LOGIN SCREEN: Use this EXACT sequence (tested and verified):
+   a) dpad_up, dpad_up, dpad_up — navigate to Username field
+   b) dpad_center — ACTIVATE the text field (opens keyboard, REQUIRED before typing)
+   c) type "admin" — enters username
+   d) tab — moves focus AND text cursor to Password field, dismisses keyboard
+   e) dpad_center — ACTIVATE the password field
+   f) type "admin123" — enters password
+   g) tab — moves to Sign In button
+   h) dpad_center — submit login
+   CRITICAL RULES: You MUST press dpad_center to activate a text field BEFORE using "type".
+   Use "tab" (not back+dpad_down) to move between fields — tab moves the text input cursor.
+2. SERVER URL "localhost:8080" is correct. Do NOT change it.
+3. After login: browse ALL content rails on the home screen (scroll down, right)
+4. Open media items to view details
+5. Test favorites: add/remove items from favorites
+6. Test collections: browse existing collections
+7. Test search functionality
+8. Navigate to settings and explore all options
+9. Test edge cases: press back from various screens, try invalid navigation
+10. Look for UI bugs: misaligned elements, empty screens, broken layouts, missing data
 
-Focus on unexplored menu items, settings, edge cases, and untested UI elements.
+CRITICAL ANDROID TV RULES:
+- Navigation is D-pad ONLY. NO touch input.
+- You MUST press dpad_center to ACTIVATE a text field before "type" will work. Without activation, text goes nowhere.
+- "type" action sends text to the activated text field via ADB.
+- Use "tab" to move between form fields — it moves BOTH D-pad focus and text cursor, and dismisses the keyboard.
+- Do NOT use "back" + "dpad_down" to move between fields — that leaves the text cursor in the wrong field.
+- DPAD_CENTER on a non-text element = click/select it.
+- The login screen field order top-to-bottom: Username, Password, Sign In, Server URL, Discover, Connect.
+
+RESPONSE FORMAT:
+Return ONLY a JSON array of 1-5 actions. Each action:
+- "type": one of "dpad_up", "dpad_down", "dpad_left", "dpad_right", "dpad_center", "back", "home", "type", "tab", "key"
+- "value": for "type" = the text to enter; otherwise omit
+- "reason": brief explanation of what you expect this action to achieve
+
+Think step by step about what screen you see and what the NEXT logical QA action is.
 Respond with ONLY the JSON array, no other text.`
 
 // llmAction is a single navigation action suggested by the LLM.
@@ -1194,7 +1255,23 @@ func (sp *SessionPipeline) llmNavigate(
 	screenshot []byte,
 	platform string,
 	step int,
+	history []string,
 ) []llmAction {
+	// Build the prompt with step history so the LLM
+	// knows what it already did and can progress.
+	prompt := navigationPromptTemplate
+	if len(history) > 0 {
+		prompt += "\n\nPREVIOUS ACTIONS IN THIS SESSION " +
+			"(do NOT repeat these — move to the NEXT " +
+			"logical step):\n"
+		for _, h := range history {
+			prompt += "- " + h + "\n"
+		}
+		prompt += "\nBased on the screenshot and your " +
+			"previous actions, decide the NEXT step. " +
+			"Do NOT repeat what you already did."
+	}
+
 	// Apply a per-call timeout on top of the parent
 	// context.
 	callCtx, callCancel := context.WithTimeout(
@@ -1204,7 +1281,7 @@ func (sp *SessionPipeline) llmNavigate(
 
 	visionStart := time.Now()
 	resp, err := sp.provider.Vision(
-		callCtx, screenshot, navigationPrompt,
+		callCtx, screenshot, prompt,
 	)
 	visionDur := time.Since(visionStart)
 	if err != nil {
@@ -1275,6 +1352,8 @@ func executeAction(
 		return exec.KeyPress(ctx, "KEYCODE_DPAD_RIGHT")
 	case "dpad_center", "select", "enter":
 		return exec.KeyPress(ctx, "KEYCODE_DPAD_CENTER")
+	case "tab":
+		return exec.KeyPress(ctx, "KEYCODE_TAB")
 	case "back":
 		return exec.Back(ctx)
 	case "home":
