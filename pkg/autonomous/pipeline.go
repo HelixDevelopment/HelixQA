@@ -142,10 +142,11 @@ const maxVisionScreenshots = 15
 const maxVisionFrames = 3
 
 // maxCuriositySteps limits exploration steps per platform.
-// 20 steps allow the agent to navigate through login,
-// browse content rails, open details, and test several
-// flows — like a real human QA session.
-const maxCuriositySteps = 20
+// 50 steps allow the agent to navigate through login,
+// browse ALL content rails, open details, test favorites,
+// play media, explore settings, and test edge cases —
+// like a thorough human QA session.
+const maxCuriositySteps = 50
 
 // logcatTimeout limits the logcat dump so a large log
 // buffer cannot stall the pipeline.
@@ -305,9 +306,14 @@ func (sp *SessionPipeline) Run(
 				sp.config.OutputDir, "videos",
 				platform+"-session.mp4",
 			)
-			_ = os.MkdirAll(
+			if mkErr := os.MkdirAll(
 				filepath.Dir(videoPath), 0o755,
-			)
+			); mkErr != nil {
+				fmt.Printf(
+					"  [exec] mkdir for video failed: %v\n",
+					mkErr,
+				)
+			}
 			rec := video.NewScrcpyRecorder(
 				sp.config.AndroidDevice, videoPath,
 				video.WithMethod(
@@ -437,7 +443,9 @@ func (sp *SessionPipeline) Run(
 	screenshotDir := filepath.Join(
 		sp.config.OutputDir, "screenshots",
 	)
-	_ = os.MkdirAll(screenshotDir, 0o755)
+	if mkErr := os.MkdirAll(screenshotDir, 0o755); mkErr != nil {
+		fmt.Printf("  [exec] mkdir screenshots failed: %v\n", mkErr)
+	}
 	var allScreenshots []string
 
 	testsRun := 0
@@ -540,9 +548,14 @@ func (sp *SessionPipeline) Run(
 					sanitizeFilename(t.Screen),
 				),
 			)
-			_ = os.WriteFile(
+			if wErr := os.WriteFile(
 				fname, screenshot, 0o644,
-			)
+			); wErr != nil {
+				fmt.Printf(
+					"    [%s] write screenshot failed: %v\n",
+					platform, wErr,
+				)
+			}
 			allScreenshots = append(
 				allScreenshots, fname,
 			)
@@ -609,9 +622,14 @@ func (sp *SessionPipeline) Run(
 			screen = t.Name
 		}
 		for _, p := range t.Platforms {
-			_ = sp.store.RecordCoverage(
+			if covErr := sp.store.RecordCoverage(
 				screen, p, "executed",
-			)
+			); covErr != nil {
+				fmt.Printf(
+					"    [coverage] record failed: %v\n",
+					covErr,
+				)
+			}
 		}
 
 		fmt.Printf(
@@ -647,9 +665,14 @@ func (sp *SessionPipeline) Run(
 					sp.config.OutputDir, "evidence",
 					platform+"-logcat.txt",
 				)
-				_ = os.MkdirAll(
-					filepath.Dir(logcatPath), 0o755,
-				)
+				if mkErr := os.MkdirAll(
+						filepath.Dir(logcatPath), 0o755,
+					); mkErr != nil {
+						fmt.Printf(
+							"  [exec] mkdir logcat failed: %v\n",
+							mkErr,
+						)
+					}
 				lcCtx, lcCancel :=
 					context.WithTimeout(
 						ctx, logcatTimeout,
@@ -661,9 +684,14 @@ func (sp *SessionPipeline) Run(
 				).Output()
 				lcCancel()
 				if err == nil {
-					_ = os.WriteFile(
+					if wErr := os.WriteFile(
 						logcatPath, out, 0o644,
-					)
+					); wErr != nil {
+						fmt.Printf(
+							"  [exec] write logcat failed: %v\n",
+							wErr,
+						)
+					}
 					fmt.Printf(
 						"  [exec] logcat saved "+
 							"(%dKB)\n",
@@ -718,6 +746,37 @@ func (sp *SessionPipeline) Run(
 		defer curiosityCancel()
 
 		preCuriosityCount := len(allScreenshots)
+
+		// Launch the app on Android platforms before
+		// curiosity exploration to ensure it is in the
+		// foreground. This is essential for fire-and-forget
+		// reliability — the LLM must see the app, not the
+		// home screen or another app.
+		if sp.config.AndroidPackage != "" &&
+			sp.config.AndroidDevice != "" {
+			for _, platform := range sp.config.Platforms {
+				if platform == "android" ||
+					platform == "androidtv" {
+					launchCtx, launchCancel :=
+						context.WithTimeout(ctx, 10*time.Second)
+					_, _ = osexec.CommandContext(
+						launchCtx, "adb", "-s",
+						sp.config.AndroidDevice,
+						"shell", "monkey", "-p",
+						sp.config.AndroidPackage,
+						"-c", "android.intent.category.LEANBACK_LAUNCHER",
+						"1",
+					).CombinedOutput()
+					launchCancel()
+					time.Sleep(3 * time.Second)
+					fmt.Printf(
+						"  [curiosity] launched %s on %s\n",
+						sp.config.AndroidPackage, platform,
+					)
+				}
+			}
+		}
+
 		for _, platform := range sp.config.Platforms {
 			executor, err := execFactory.Create(
 				platform,
@@ -761,9 +820,14 @@ func (sp *SessionPipeline) Run(
 						platform, i+1,
 					),
 				)
-				_ = os.WriteFile(
+				if wErr := os.WriteFile(
 					fname, screenshot, 0o644,
-				)
+				); wErr != nil {
+					fmt.Printf(
+						"  [curiosity %s #%d] write screenshot failed: %v\n",
+						platform, i+1, wErr,
+					)
+				}
 				allScreenshots = append(
 					allScreenshots, fname,
 				)
@@ -771,16 +835,15 @@ func (sp *SessionPipeline) Run(
 				// Step 2: Send resized screenshot to
 				// LLM for navigation guidance.
 				if !sp.provider.SupportsVision() {
-					_ = executor.KeyPress(
-						curiosityCtx,
-						"KEYCODE_DPAD_DOWN",
-					)
-					time.Sleep(1 * time.Second)
-					_ = executor.KeyPress(
-						curiosityCtx,
-						"KEYCODE_DPAD_CENTER",
-					)
-					time.Sleep(2 * time.Second)
+					// Use structured fallback when no
+					// vision is available.
+					fbActions := fallbackActions(i)
+					for _, a := range fbActions {
+						_ = executeAction(
+							curiosityCtx, executor, a,
+						)
+						time.Sleep(1 * time.Second)
+					}
 					continue
 				}
 
@@ -796,13 +859,17 @@ func (sp *SessionPipeline) Run(
 				)
 
 				// Step 3: Execute LLM-suggested actions.
+				// If the LLM returned no actions (rate
+				// limit, parse error), use a structured
+				// fallback pattern that progresses through
+				// login and navigation like a real user.
 				if len(actions) == 0 {
-					_ = executor.KeyPress(
-						curiosityCtx,
-						"KEYCODE_DPAD_DOWN",
+					actions = fallbackActions(i)
+					fmt.Printf(
+						"  [curiosity %s #%d] using "+
+							"fallback navigation\n",
+						platform, i+1,
 					)
-					time.Sleep(1 * time.Second)
-					continue
 				}
 
 				var stepActions []string
@@ -1176,7 +1243,9 @@ func (sp *SessionPipeline) updateSession(
 			"status=%s", result.Status,
 		),
 	}
-	_ = sp.store.UpdateSession(id, u)
+	if err := sp.store.UpdateSession(id, u); err != nil {
+		fmt.Printf("[pipeline] update session failed: %v\n", err)
+	}
 }
 
 // navigationPromptTemplate is the system prompt sent to
@@ -1225,9 +1294,22 @@ CRITICAL ANDROID TV RULES:
 
 RESPONSE FORMAT:
 Return ONLY a JSON array of 1-5 actions. Each action:
-- "type": one of "dpad_up", "dpad_down", "dpad_left", "dpad_right", "dpad_center", "back", "home", "type", "tab", "key"
+- "type": one of "dpad_up", "dpad_down", "dpad_left", "dpad_right", "dpad_center", "back", "home", "type", "tab", "key", "wait"
 - "value": for "type" = the text to enter; otherwise omit
 - "reason": brief explanation of what you expect this action to achieve
+
+The "wait" action pauses for 3 seconds — use it after login submission or before checking screen transitions.
+
+IMPORTANT TESTING GOALS (cover ALL of these during the session):
+- Login successfully (follow the exact sequence above)
+- After login, wait for home screen to load, then browse ALL content rails (scroll down and right)
+- Open at least 2 media items to view their detail screens
+- Test favorites: select an item and toggle favorite on/off
+- Test media playback: open a media item and press play
+- Navigate to Settings and explore all options
+- Test Search: navigate to search, type a query, verify results
+- Press Back from various screens to test navigation stack
+- Look for bugs: empty screens, broken layouts, missing data, unresponsive elements
 
 Think step by step about what screen you see and what the NEXT logical QA action is.
 Respond with ONLY the JSON array, no other text.`
@@ -1242,7 +1324,10 @@ type llmAction struct {
 // llmNavigateTimeout caps a single LLM vision call during
 // curiosity navigation so one slow API response cannot
 // stall the exploration phase.
-const llmNavigateTimeout = 30 * time.Second
+// llmNavigateTimeout caps a single LLM vision call. Set to
+// 90s to allow Gemini's internal 5-retry backoff (up to ~75s)
+// to succeed before the call is abandoned.
+const llmNavigateTimeout = 90 * time.Second
 
 // llmNavigate sends a (pre-resized) screenshot to the LLM
 // vision endpoint and parses the response into a list of
@@ -1387,6 +1472,11 @@ func executeAction(
 			keyCode = "KEYCODE_MENU"
 		}
 		return exec.KeyPress(ctx, keyCode)
+	case "wait":
+		// Allow the LLM to insert deliberate pauses for
+		// screen transitions, login processing, etc.
+		time.Sleep(3 * time.Second)
+		return nil
 	default:
 		return fmt.Errorf("unknown action type: %s", action.Type)
 	}
@@ -1407,6 +1497,132 @@ func stripCodeFence(s string) string {
 		s = strings.TrimSpace(s)
 	}
 	return s
+}
+
+// fallbackActions returns a deterministic sequence of actions
+// based on the step number, simulating a real QA session when
+// the LLM vision provider is unavailable. The sequence covers:
+// login (steps 0-9), home browsing (10-24), detail views (25-34),
+// favorites (35-39), and settings (40-49).
+func fallbackActions(step int) []llmAction {
+	switch {
+	case step == 0:
+		// Navigate to username field and activate it.
+		return []llmAction{
+			{Type: "dpad_up", Reason: "navigate to username field"},
+			{Type: "dpad_up", Reason: "ensure at top"},
+			{Type: "dpad_up", Reason: "ensure at top"},
+			{Type: "dpad_center", Reason: "activate username field"},
+		}
+	case step == 1:
+		return []llmAction{
+			{Type: "type", Value: "admin", Reason: "enter username"},
+		}
+	case step == 2:
+		return []llmAction{
+			{Type: "tab", Reason: "move to password field"},
+			{Type: "dpad_center", Reason: "activate password field"},
+		}
+	case step == 3:
+		return []llmAction{
+			{Type: "type", Value: "admin123", Reason: "enter password"},
+		}
+	case step == 4:
+		return []llmAction{
+			{Type: "tab", Reason: "move to Sign In button"},
+			{Type: "dpad_center", Reason: "submit login"},
+		}
+	case step == 5:
+		return []llmAction{
+			{Type: "wait", Reason: "wait for login to complete"},
+		}
+	case step >= 6 && step <= 10:
+		// Browse home screen rails — scroll down.
+		return []llmAction{
+			{Type: "dpad_down", Reason: "browse content rails"},
+		}
+	case step >= 11 && step <= 15:
+		// Browse horizontally through rails.
+		return []llmAction{
+			{Type: "dpad_right", Reason: "browse rail items"},
+		}
+	case step == 16:
+		// Open a media item.
+		return []llmAction{
+			{Type: "dpad_center", Reason: "open media item detail"},
+		}
+	case step == 17:
+		return []llmAction{
+			{Type: "wait", Reason: "wait for detail screen"},
+		}
+	case step == 18:
+		// Scroll detail screen.
+		return []llmAction{
+			{Type: "dpad_down", Reason: "scroll detail screen"},
+			{Type: "dpad_down", Reason: "see more details"},
+		}
+	case step == 19:
+		// Try to play media.
+		return []llmAction{
+			{Type: "dpad_center", Reason: "attempt to play media"},
+		}
+	case step == 20:
+		return []llmAction{
+			{Type: "wait", Reason: "wait for playback"},
+		}
+	case step == 21:
+		return []llmAction{
+			{Type: "back", Reason: "go back from player/detail"},
+		}
+	case step >= 22 && step <= 25:
+		return []llmAction{
+			{Type: "dpad_down", Reason: "continue browsing"},
+			{Type: "dpad_right", Reason: "explore more items"},
+		}
+	case step == 26:
+		return []llmAction{
+			{Type: "dpad_center", Reason: "open another item"},
+		}
+	case step == 27:
+		return []llmAction{
+			{Type: "dpad_up", Reason: "navigate to favorite button"},
+			{Type: "dpad_center", Reason: "toggle favorite"},
+		}
+	case step == 28:
+		return []llmAction{
+			{Type: "back", Reason: "go back to browse"},
+		}
+	case step >= 29 && step <= 32:
+		return []llmAction{
+			{Type: "dpad_left", Reason: "navigate left"},
+		}
+	case step >= 33 && step <= 36:
+		return []llmAction{
+			{Type: "dpad_up", Reason: "scroll up to top"},
+		}
+	case step >= 37 && step <= 40:
+		// Navigate to settings or search.
+		return []llmAction{
+			{Type: "dpad_down", Reason: "explore more UI"},
+			{Type: "dpad_center", Reason: "select element"},
+		}
+	default:
+		// Later steps: back navigation and re-exploration.
+		if step%3 == 0 {
+			return []llmAction{
+				{Type: "back", Reason: "test back navigation"},
+			}
+		}
+		if step%3 == 1 {
+			return []llmAction{
+				{Type: "dpad_down", Reason: "continue exploration"},
+				{Type: "dpad_right", Reason: "explore rail"},
+			}
+		}
+		return []llmAction{
+			{Type: "dpad_center", Reason: "interact with element"},
+		}
+	}
 }
 
 // sanitizeFilename converts a screen name or label into a

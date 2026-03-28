@@ -16,6 +16,11 @@ import (
 // N * timeout total latency.
 const adaptivePerProviderTimeout = 30 * time.Second
 
+// adaptiveVisionTimeout is longer than the chat timeout
+// to allow native vision providers (Gemini, Anthropic)
+// time for their internal retry/backoff on rate limits.
+const adaptiveVisionTimeout = 90 * time.Second
+
 // AdaptiveProvider wraps a slice of Provider implementations and
 // tries them in order, falling back to the next on failure. It
 // satisfies the Provider interface itself, so it can be used
@@ -158,9 +163,14 @@ func (a *AdaptiveProvider) Vision(
 	}
 	var errs []string
 	for _, p := range capable {
-		pCtx, pCancel := context.WithTimeout(
-			ctx, adaptivePerProviderTimeout,
-		)
+		// Native vision providers (Gemini, Anthropic) get
+		// more time for their internal retry/backoff logic.
+		timeout := adaptivePerProviderTimeout
+		switch p.Name() {
+		case ProviderGoogle, ProviderAnthropic, ProviderOpenAI:
+			timeout = adaptiveVisionTimeout
+		}
+		pCtx, pCancel := context.WithTimeout(ctx, timeout)
 		resp, err := p.Vision(pCtx, image, prompt)
 		pCancel()
 		if err == nil {

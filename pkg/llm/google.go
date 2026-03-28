@@ -151,14 +151,57 @@ func (p *googleProvider) Vision(
 	return p.doRequest(ctx, req)
 }
 
+// geminiMaxRetries is the maximum number of retries for
+// rate-limited requests. With 5 retries and exponential
+// backoff (5s, 10s, 15s, 20s, 25s) the total retry window
+// is ~75 seconds, which handles most Gemini rate limits.
+const geminiMaxRetries = 5
+
 // doRequest serialises req, POSTs to generateContent, and
-// parses the response into a *Response.
+// parses the response into a *Response. Retries on 429
+// (rate limit) with exponential backoff.
 func (p *googleProvider) doRequest(
 	ctx context.Context,
 	req geminiRequest,
 ) (*Response, error) {
 	url := fmt.Sprintf(geminiGenerateURLFmt, p.model, p.apiKey)
-	return p.doRequestURL(ctx, req, url)
+	var lastErr error
+	for attempt := 0; attempt <= geminiMaxRetries; attempt++ {
+		if attempt > 0 {
+			backoff := time.Duration(attempt*5) * time.Second
+			fmt.Printf(
+				"  [gemini] retry %d/%d after %v\n",
+				attempt, geminiMaxRetries, backoff,
+			)
+			select {
+			case <-ctx.Done():
+				return nil, ctx.Err()
+			case <-time.After(backoff):
+			}
+		}
+		resp, err := p.doRequestURL(ctx, req, url)
+		if err == nil {
+			return resp, nil
+		}
+		lastErr = err
+		// Only retry on rate limit errors (429 / RESOURCE_EXHAUSTED).
+		if !isRateLimitError(err) {
+			return nil, err
+		}
+	}
+	return nil, lastErr
+}
+
+// isRateLimitError checks if an error indicates a rate limit
+// that may resolve with a retry.
+func isRateLimitError(err error) bool {
+	if err == nil {
+		return false
+	}
+	s := err.Error()
+	return bytes.Contains([]byte(s), []byte("429")) ||
+		bytes.Contains([]byte(s), []byte("RESOURCE_EXHAUSTED")) ||
+		bytes.Contains([]byte(s), []byte("quota"))
 }
 
 // doRequestURL is the internal implementation that posts the
