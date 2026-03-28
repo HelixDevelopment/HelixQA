@@ -1578,14 +1578,17 @@ YOUR MISSION (in order):
 1. LOGIN SCREEN: Use this EXACT sequence (tested and verified):
    a) dpad_up, dpad_up, dpad_up — navigate to Username field
    b) dpad_center — ACTIVATE the text field (opens keyboard, REQUIRED before typing)
-   c) type "admin" — enters username
-   d) tab — moves focus AND text cursor to Password field, dismisses keyboard
-   e) dpad_center — ACTIVATE the password field
-   f) type "admin123" — enters password
-   g) tab — moves to Sign In button
-   h) dpad_center — submit login
+   c) clear — CLEAR any pre-filled text (the app remembers the last username)
+   d) type "admin" — enters username
+   e) tab — moves focus AND text cursor to Password field, dismisses keyboard
+   f) dpad_center — ACTIVATE the password field
+   g) clear — CLEAR any existing password text
+   h) type "admin123" — enters password
+   i) key KEYCODE_ENTER — submit login (triggers IME Done action directly)
    CRITICAL RULES: You MUST press dpad_center to activate a text field BEFORE using "type".
+   You MUST use "clear" before "type" to remove any pre-filled text.
    Use "tab" (not back+dpad_down) to move between fields — tab moves the text input cursor.
+   Use "key" with "KEYCODE_ENTER" to submit login — do NOT tab to Sign In (tab goes to the eye icon).
 2. SERVER URL "localhost:8080" is correct. Do NOT change it.
 3. After login: browse ALL content rails on the home screen (scroll down, right)
 4. Open media items to view details
@@ -1790,6 +1793,18 @@ func executeAction(
 		// screen transitions, login processing, etc.
 		time.Sleep(3 * time.Second)
 		return nil
+	case "clear":
+		// Select all text in the active field and delete it.
+		// Uses Ctrl+A (select all) then Delete to clear any
+		// pre-filled text before typing new content.
+		_ = exec.KeyPress(ctx, "KEYCODE_MOVE_END")
+		time.Sleep(200 * time.Millisecond)
+		// Delete up to 30 characters to clear the field
+		for i := 0; i < 30; i++ {
+			_ = exec.KeyPress(ctx, "KEYCODE_DEL")
+		}
+		time.Sleep(300 * time.Millisecond)
+		return nil
 	default:
 		return fmt.Errorf("unknown action type: %s", action.Type)
 	}
@@ -1820,12 +1835,15 @@ func stripCodeFence(s string) string {
 func fallbackActions(step int) []llmAction {
 	switch {
 	case step == 0:
-		// Navigate to username field and activate it.
+		// Navigate to username field, activate, and clear any
+		// pre-filled text (remember credentials may have saved
+		// the previous username).
 		return []llmAction{
 			{Type: "dpad_up", Reason: "navigate to username field"},
 			{Type: "dpad_up", Reason: "ensure at top"},
 			{Type: "dpad_up", Reason: "ensure at top"},
 			{Type: "dpad_center", Reason: "activate username field"},
+			{Type: "clear", Reason: "clear any pre-filled text"},
 		}
 	case step == 1:
 		return []llmAction{
@@ -1835,15 +1853,19 @@ func fallbackActions(step int) []llmAction {
 		return []llmAction{
 			{Type: "tab", Reason: "move to password field"},
 			{Type: "dpad_center", Reason: "activate password field"},
+			{Type: "clear", Reason: "clear any existing password"},
 		}
 	case step == 3:
 		return []llmAction{
 			{Type: "type", Value: "admin123", Reason: "enter password"},
 		}
 	case step == 4:
+		// Press ENTER to trigger ImeAction.Done on the password
+		// field, which directly calls the login function. This
+		// avoids the tab/dpad_down issue where focus lands on
+		// the password visibility eye icon instead of Sign In.
 		return []llmAction{
-			{Type: "tab", Reason: "move to Sign In button"},
-			{Type: "dpad_center", Reason: "submit login"},
+			{Type: "key", Value: "KEYCODE_ENTER", Reason: "submit login via IME action Done"},
 		}
 	case step == 5:
 		return []llmAction{
