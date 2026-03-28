@@ -22,10 +22,27 @@ const (
 
 // openaiProvider implements Provider for the OpenAI API.
 type openaiProvider struct {
-	apiKey  string
-	baseURL string
-	model   string
-	client  *http.Client
+	apiKey       string
+	baseURL      string
+	model        string
+	providerName string
+	client       *http.Client
+}
+
+// visionCapableProviders lists OpenAI-compatible provider names
+// that actually support multimodal (image) input. Providers not
+// in this set will report SupportsVision() = false, preventing
+// the adaptive fallback from wasting time sending images to
+// text-only APIs.
+var visionCapableProviders = map[string]bool{
+	ProviderOpenAI:     true,
+	ProviderOpenRouter: true,
+	"fireworks":        true,
+	"together":         true,
+	"hyperbolic":       true,
+	"githubmodels":     true,
+	"nvidia":           true,
+	"xai":              true,
 }
 
 // openaiRequest is the JSON body sent to /v1/chat/completions.
@@ -93,22 +110,32 @@ func NewOpenAIProvider(cfg ProviderConfig) Provider {
 	if model == "" {
 		model = openaiDefaultModel
 	}
+	name := cfg.Name
+	if name == "" {
+		name = ProviderOpenAI
+	}
 	return &openaiProvider{
-		apiKey:  cfg.APIKey,
-		baseURL: baseURL,
-		model:   model,
-		client:  &http.Client{Timeout: openaiHTTPTimeout},
+		apiKey:       cfg.APIKey,
+		baseURL:      baseURL,
+		model:        model,
+		providerName: name,
+		client:       &http.Client{Timeout: openaiHTTPTimeout},
 	}
 }
 
-// Name returns the canonical provider identifier.
+// Name returns the actual provider identifier (e.g. "deepseek",
+// "openrouter") rather than always "openai", so the adaptive
+// provider can distinguish between providers for fallback logic.
 func (p *openaiProvider) Name() string {
-	return ProviderOpenAI
+	return p.providerName
 }
 
-// SupportsVision reports that OpenAI GPT-4o supports image inputs.
+// SupportsVision reports whether this provider actually handles
+// multimodal image inputs. Many OpenAI-compatible providers
+// (DeepSeek, Groq, Cerebras, etc.) are text-only and will error
+// on image_url content parts.
 func (p *openaiProvider) SupportsVision() bool {
-	return true
+	return visionCapableProviders[p.providerName]
 }
 
 // Chat sends a multi-turn conversation to the OpenAI chat

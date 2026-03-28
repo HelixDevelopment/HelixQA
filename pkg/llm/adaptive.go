@@ -159,7 +159,23 @@ func (a *AdaptiveProvider) Vision(
 	}
 	capable = append(capable, secondary...)
 	if len(capable) == 0 {
-		return nil, fmt.Errorf("llm: no vision-capable providers available")
+		// List all providers to help debug configuration.
+		var names []string
+		for _, p := range a.providers {
+			names = append(names, p.Name())
+		}
+		return nil, fmt.Errorf(
+			"llm: no vision-capable providers among %v",
+			names,
+		)
+	}
+	// Log which providers will be attempted for observability.
+	{
+		var names []string
+		for _, p := range capable {
+			names = append(names, p.Name())
+		}
+		fmt.Printf("  [llm] vision providers: %v\n", names)
 	}
 	var errs []string
 	for _, p := range capable {

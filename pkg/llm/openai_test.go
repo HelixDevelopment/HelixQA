@@ -33,6 +33,19 @@ func TestOpenAIProvider_SupportsVision(t *testing.T) {
 	assert.True(t, p.SupportsVision())
 }
 
+func TestOpenAIProvider_SupportsVision_TextOnly(t *testing.T) {
+	// DeepSeek and Groq are text-only and should NOT report
+	// vision support, even though they use the OpenAI API format.
+	for _, name := range []string{ProviderDeepSeek, ProviderGroq, "cerebras", "siliconflow"} {
+		p := NewOpenAIProvider(ProviderConfig{
+			Name:   name,
+			APIKey: "sk-test",
+		})
+		assert.False(t, p.SupportsVision(), "provider %q should not support vision", name)
+		assert.Equal(t, name, p.Name(), "provider should preserve its name")
+	}
+}
+
 func TestOpenAIProvider_Chat(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		assert.Equal(t, http.MethodPost, r.Method)

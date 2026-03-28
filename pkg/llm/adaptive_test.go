@@ -203,9 +203,9 @@ func TestAdaptiveProvider_Vision_NoCapableProvider(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected error when no vision-capable provider, got nil")
 	}
-	if !strings.Contains(err.Error(), "no vision-capable providers available") {
+	if !strings.Contains(err.Error(), "no vision-capable providers") {
 		t.Errorf("expected error to contain %q, got: %v",
-			"no vision-capable providers available", err)
+			"no vision-capable providers", err)
 	}
 }
 
