@@ -15,7 +15,7 @@ import (
 )
 
 const (
-	ollamaDefaultModel   = "llava:7b"
+	ollamaDefaultModel   = "minicpm-v:8b"
 	ollamaHTTPTimeout    = 120 * time.Second
 )
 

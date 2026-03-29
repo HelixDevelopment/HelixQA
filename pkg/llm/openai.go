@@ -209,10 +209,24 @@ func (p *openaiProvider) Vision(
 			Role: RoleSystem,
 			Content: []openaiContentPart{{
 				Type: "text",
-				Text: "You are a QA tester. You MUST respond " +
-					"with ONLY a JSON array of actions. " +
-					"No other text. Each action has: " +
-					"type, value (optional), reason.",
+				Text: "You are an Android TV QA tester robot. " +
+					"Respond with ONLY a JSON array. " +
+					"No markdown, no explanation, no text " +
+					"outside the JSON.\n\n" +
+					"Action types: dpad_up, dpad_down, " +
+					"dpad_left, dpad_right, dpad_center, " +
+					"tab, type, key, back, clear, wait\n\n" +
+					"For type: {\"type\":\"type\"," +
+					"\"value\":\"text\",\"reason\":\"why\"}\n" +
+					"For key: {\"type\":\"key\"," +
+					"\"value\":\"KEYCODE_ENTER\"," +
+					"\"reason\":\"why\"}\n\n" +
+					"LOGIN SEQUENCE: " +
+					"dpad_up to Username → dpad_center → " +
+					"clear → type 'admin' → tab → " +
+					"dpad_center → clear → type 'admin123'" +
+					" → key KEYCODE_ENTER\n\n" +
+					"Output: [{...},{...}]",
 			}},
 		}
 		msgs = append([]openaiReqMsg{sysmsg}, msgs...)
