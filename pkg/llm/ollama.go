@@ -15,8 +15,8 @@ import (
 )
 
 const (
-	ollamaDefaultModel   = "qwen2.5"
-	ollamaHTTPTimeout    = 60 * time.Second
+	ollamaDefaultModel   = "llava:7b"
+	ollamaHTTPTimeout    = 120 * time.Second
 )
 
 // ollamaProvider implements Provider for a self-hosted Ollama

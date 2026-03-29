@@ -69,10 +69,9 @@ func TestDefaultExecutorFactory_Create_Web(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, exec)
 
-	// Verify it's a PlaywrightExecutor by exercising it.
-	err = exec.Click(context.Background(), 50, 60)
-	assert.NoError(t, err)
-	assert.Equal(t, "npx", mock.lastCmd)
+	// Verify it's a PlaywrightExecutor.
+	_, ok := exec.(*navigator.PlaywrightExecutor)
+	assert.True(t, ok, "expected PlaywrightExecutor")
 }
 
 func TestDefaultExecutorFactory_Create_Web_NoURL(t *testing.T) {

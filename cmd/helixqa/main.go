@@ -506,6 +506,9 @@ func cmdAutonomous(args []string) {
 		FFmpegPath:       os.Getenv("HELIX_FFMPEG_PATH"),
 		CuriosityEnabled: *curiosity,
 		CuriosityTimeout: *curiosityTimeout,
+		VisionHost:       os.Getenv("HELIX_VISION_HOST"),
+		VisionUser:       os.Getenv("HELIX_VISION_USER"),
+		VisionModel:      os.Getenv("HELIX_VISION_MODEL"),
 	}
 	pipeline := autonomous.NewSessionPipeline(
 		cfg, provider, store,

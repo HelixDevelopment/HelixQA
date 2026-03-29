@@ -41,9 +41,9 @@ var providerDefaults = map[string]struct {
 	"venice":           {"https://api.venice.ai/api", ""},
 	"vulavula":         {"https://api.vulavula.ai", ""},
 	"xai":              {"https://api.x.ai", "grok-3"},
-	"zai":              {"https://open.bigmodel.cn/api/paas", "glm-4-flash"},
+	"zai":              {"https://open.bigmodel.cn/api/paas/v4", "glm-4.5"},
 	"zen":              {"https://opencode.ai/zen", ""},
-	"zhipu":            {"https://open.bigmodel.cn/api/paas", "glm-4-flash"},
+	"zhipu":            {"https://open.bigmodel.cn/api/paas/v4", "glm-4.5"},
 	"cohere":           {"https://api.cohere.com", "command-r-plus"},
 }
 

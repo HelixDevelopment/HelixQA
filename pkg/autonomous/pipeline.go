@@ -27,6 +27,7 @@ import (
 	"digital.vasic.helixqa/pkg/performance"
 	"digital.vasic.helixqa/pkg/planning"
 	"digital.vasic.helixqa/pkg/video"
+	visionremote "digital.vasic.visionengine/pkg/remote"
 )
 
 // PipelineConfig holds the parameters for a SessionPipeline
@@ -87,6 +88,18 @@ type PipelineConfig struct {
 	// CuriosityTimeout is the maximum duration for the
 	// curiosity-driven exploration phase.
 	CuriosityTimeout time.Duration
+
+	// VisionHost is the hostname of the remote machine
+	// running Ollama for vision inference (e.g.
+	// "thinker.local"). Empty disables auto-deploy.
+	VisionHost string
+
+	// VisionUser is the SSH user for the vision host.
+	VisionUser string
+
+	// VisionModel is the Ollama model to use for vision
+	// (default "llava:7b").
+	VisionModel string
 }
 
 // PipelineResult captures the outcome of a SessionPipeline
@@ -197,6 +210,35 @@ func (sp *SessionPipeline) Run(
 	result := &PipelineResult{
 		SessionID: sessionID,
 		Status:    StatusRunning,
+	}
+
+	// ── Phase 0: Ensure remote vision is ready ──────────
+	if sp.config.VisionHost != "" {
+		fmt.Printf(
+			"[pipeline] Phase 0: Ensuring vision on %s\n",
+			sp.config.VisionHost,
+		)
+		deployer := visionremote.NewDeployer(
+			visionremote.Config{
+				Host:  sp.config.VisionHost,
+				User:  sp.config.VisionUser,
+				Model: sp.config.VisionModel,
+			},
+		)
+		if endpoint, err := deployer.EnsureReady(
+			ctx,
+		); err != nil {
+			fmt.Printf(
+				"[pipeline] warning: vision deploy "+
+					"failed: %v (continuing without)\n",
+				err,
+			)
+		} else {
+			fmt.Printf(
+				"[pipeline] Vision ready at %s\n",
+				endpoint,
+			)
+		}
 	}
 
 	// ── Phase 1: Learn ──────────────────────────────────
@@ -1217,12 +1259,77 @@ func (sp *SessionPipeline) validateAPIData(
 	client := &http.Client{Timeout: apiDataTimeout}
 	var findings []analysis.AnalysisFinding
 
+	// ── 0. Login first to get auth token ────────────
+	var authToken string
+	loginURL := baseURL + "/api/v1/auth/login"
+	loginBody, _ := json.Marshal(map[string]string{
+		"username": "admin",
+		"password": "admin123",
+	})
+	loginReq, err := http.NewRequestWithContext(
+		ctx, http.MethodPost, loginURL,
+		bytes.NewReader(loginBody),
+	)
+	if err == nil {
+		loginReq.Header.Set(
+			"Content-Type", "application/json",
+		)
+		resp, err := client.Do(loginReq)
+		if err == nil {
+			body, _ := io.ReadAll(resp.Body)
+			resp.Body.Close()
+			if resp.StatusCode == http.StatusOK {
+				var loginResp struct {
+					SessionToken string `json:"session_token"`
+				}
+				if jErr := json.Unmarshal(
+					body, &loginResp,
+				); jErr == nil && loginResp.SessionToken != "" {
+					authToken = loginResp.SessionToken
+					fmt.Println(
+						"[data-validation] login OK " +
+							"(admin/admin123)",
+					)
+				}
+			} else {
+				fmt.Printf(
+					"[data-validation] login failed "+
+						"with status %d\n",
+					resp.StatusCode,
+				)
+				findings = append(findings,
+					analysis.AnalysisFinding{
+						Category: analysis.CategoryFunctional,
+						Severity: analysis.SeverityHigh,
+						Title: fmt.Sprintf(
+							"API login failed with "+
+								"status %d",
+							resp.StatusCode,
+						),
+						Description: string(body),
+						Platform:    "api",
+					},
+				)
+			}
+		} else {
+			fmt.Printf(
+				"[data-validation] login request "+
+					"failed: %v\n", err,
+			)
+		}
+	}
+
 	// ── 1. Entity stats ─────────────────────────────
 	statsURL := baseURL + "/api/v1/entities/stats"
 	statsReq, err := http.NewRequestWithContext(
 		ctx, http.MethodGet, statsURL, nil,
 	)
 	if err == nil {
+		if authToken != "" {
+			statsReq.Header.Set(
+				"Authorization", "Bearer "+authToken,
+			)
+		}
 		resp, err := client.Do(statsReq)
 		if err != nil {
 			fmt.Printf(
@@ -1268,7 +1375,7 @@ func (sp *SessionPipeline) validateAPIData(
 				)
 			} else {
 				var statsResp struct {
-					Total   int            `json:"total"`
+					Total   int            `json:"total_entities"`
 					ByType  map[string]int `json:"by_type"`
 				}
 				if jErr := json.Unmarshal(
@@ -1319,78 +1426,18 @@ func (sp *SessionPipeline) validateAPIData(
 		}
 	}
 
-	// ── 2. Login verification ───────────────────────
-	loginURL := baseURL + "/api/v1/auth/login"
-	loginBody, _ := json.Marshal(map[string]string{
-		"username": "admin",
-		"password": "admin123",
-	})
-	loginReq, err := http.NewRequestWithContext(
-		ctx, http.MethodPost, loginURL,
-		bytes.NewReader(loginBody),
-	)
-	if err == nil {
-		loginReq.Header.Set(
-			"Content-Type", "application/json",
-		)
-		resp, err := client.Do(loginReq)
-		if err != nil {
-			fmt.Printf(
-				"[data-validation] login request "+
-					"failed: %v\n",
-				err,
-			)
-			findings = append(findings,
-				analysis.AnalysisFinding{
-					Category: analysis.CategoryFunctional,
-					Severity: analysis.SeverityHigh,
-					Title:    "API unreachable: auth/login",
-					Description: fmt.Sprintf(
-						"POST %s failed: %v",
-						loginURL, err,
-					),
-					Platform: "api",
-				},
-			)
-		} else {
-			body, _ := io.ReadAll(resp.Body)
-			resp.Body.Close()
-
-			if resp.StatusCode == http.StatusOK {
-				fmt.Println(
-					"[data-validation] login OK " +
-						"(admin/admin123)",
-				)
-			} else {
-				fmt.Printf(
-					"[data-validation] login failed "+
-						"with status %d\n",
-					resp.StatusCode,
-				)
-				findings = append(findings,
-					analysis.AnalysisFinding{
-						Category: analysis.CategoryFunctional,
-						Severity: analysis.SeverityHigh,
-						Title: fmt.Sprintf(
-							"API login failed with "+
-								"status %d",
-							resp.StatusCode,
-						),
-						Description: string(body),
-						Platform:    "api",
-					},
-				)
-			}
-		}
-	}
-
-	// ── 3. Media search ─────────────────────────────
+	// ── 2. Media search (authenticated) ────────────
 	searchURL := baseURL +
 		"/api/v1/media/search?limit=5"
 	searchReq, err := http.NewRequestWithContext(
 		ctx, http.MethodGet, searchURL, nil,
 	)
 	if err == nil {
+		if authToken != "" {
+			searchReq.Header.Set(
+				"Authorization", "Bearer "+authToken,
+			)
+		}
 		resp, err := client.Do(searchReq)
 		if err != nil {
 			fmt.Printf(
@@ -1534,6 +1581,26 @@ func (sp *SessionPipeline) WriteReport(
 	}
 
 	fmt.Printf("[pipeline] Report written: %s\n", path)
+
+	// Create/update "latest" symlink in the parent of the
+	// session directory so users can always find the most
+	// recent results at qa-results/latest/.
+	parentDir := filepath.Dir(sp.config.OutputDir)
+	latestLink := filepath.Join(parentDir, "latest")
+	_ = os.Remove(latestLink)
+	sessionDir := filepath.Base(sp.config.OutputDir)
+	if err := os.Symlink(sessionDir, latestLink); err != nil {
+		fmt.Printf(
+			"[pipeline] warning: could not create "+
+				"latest symlink: %v\n", err,
+		)
+	} else {
+		fmt.Printf(
+			"[pipeline] Updated latest -> %s\n",
+			sessionDir,
+		)
+	}
+
 	return nil
 }
 
@@ -1630,6 +1697,64 @@ IMPORTANT TESTING GOALS (cover ALL of these during the session):
 Think step by step about what screen you see and what the NEXT logical QA action is.
 Respond with ONLY the JSON array, no other text.`
 
+// webNavigationPromptTemplate is the prompt for web browser
+// QA sessions. Uses mouse clicks and keyboard input instead of
+// DPAD navigation.
+const webNavigationPromptTemplate = `You are an expert QA tester performing a FULL autonomous QA session on the Catalogizer web application — a media collection manager. You must test EVERY feature like a real human QA tester would.
+
+APPLICATION CONTEXT:
+- App name: Catalogizer — Advanced Multi-Protocol Media Collection Management System
+- Login credentials: username "admin", password "admin123"
+- The app is a React SPA running in a headless browser at 1920x1080 resolution
+- Key screens: Login, Dashboard (stats, recent items), Media Browser, Entity Details, Collections, Favorites, Settings, Search
+
+YOUR MISSION (in order):
+1. LOGIN: You should see a "Welcome back" login screen.
+   a) click the Username field (center of the input)
+   b) type "admin"
+   c) click the Password field
+   d) type "admin123"
+   e) click the "Sign In" button
+2. After login: explore the Dashboard — check stats, recent items
+3. Navigate to the Media Browser — browse files and folders
+4. Open entity detail pages — check metadata, images
+5. Test favorites: add/remove items from favorites
+6. Test collections: browse and manage collections
+7. Test search functionality — type queries, verify results
+8. Navigate to Settings and explore options
+9. Test edge cases: back navigation, refresh, empty states
+10. Look for UI bugs: misaligned elements, empty screens, broken layouts, console errors
+
+WEB INTERACTION RULES:
+- Use "click" with x,y pixel coordinates to click elements
+- Use "type" to enter text (click the input field first!)
+- Use "scroll_down"/"scroll_up" to scroll the page
+- Use "key" with standard key names: "Enter", "Escape", "Tab", "Backspace"
+- Use "back" for browser back navigation
+- The viewport is 1920x1080. Estimate coordinates from the screenshot.
+
+RESPONSE FORMAT:
+Return ONLY a JSON array of 1-5 actions. Each action:
+- "type": one of "click", "type", "scroll_down", "scroll_up", "key", "back", "wait"
+- "value": for "type" = text to enter; for "click" = "x,y" coordinates; for "key" = key name
+- "reason": brief explanation
+
+The "wait" action pauses for 3 seconds — use after login or page transitions.
+
+IMPORTANT TESTING GOALS (cover ALL during session):
+- Login successfully
+- Browse the dashboard and verify stats match data
+- Navigate to media browser and open files/folders
+- Open at least 2 entity detail pages
+- Test favorites: add/remove items
+- Test search with a real query
+- Navigate to settings
+- Press Back from various screens
+- Look for bugs: empty screens, broken layouts, missing data, console errors
+
+Think step by step about what screen you see and what the NEXT logical QA action is.
+Respond with ONLY the JSON array, no other text.`
+
 // llmAction is a single navigation action suggested by the LLM.
 type llmAction struct {
 	Type   string `json:"type"`
@@ -1658,9 +1783,14 @@ func (sp *SessionPipeline) llmNavigate(
 	step int,
 	history []string,
 ) []llmAction {
-	// Build the prompt with step history so the LLM
-	// knows what it already did and can progress.
-	prompt := navigationPromptTemplate
+	// Select the right prompt for the platform.
+	var prompt string
+	switch platform {
+	case "web":
+		prompt = webNavigationPromptTemplate
+	default:
+		prompt = navigationPromptTemplate
+	}
 	if len(history) > 0 {
 		prompt += "\n\nPREVIOUS ACTIONS IN THIS SESSION " +
 			"(do NOT repeat these — move to the NEXT " +
@@ -1769,13 +1899,13 @@ func executeAction(
 			)
 		}
 		return exec.Click(ctx, x, y)
-	case "swipe_up":
+	case "swipe_up", "scroll_up":
 		return exec.Scroll(ctx, "up", 400)
-	case "swipe_down":
+	case "swipe_down", "scroll_down":
 		return exec.Scroll(ctx, "down", 400)
-	case "swipe_left":
+	case "swipe_left", "scroll_left":
 		return exec.Scroll(ctx, "left", 400)
-	case "swipe_right":
+	case "swipe_right", "scroll_right":
 		return exec.Scroll(ctx, "right", 400)
 	case "type":
 		if action.Value == "" {

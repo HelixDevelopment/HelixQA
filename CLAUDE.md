@@ -79,6 +79,51 @@ make help                # Show all targets
 | `pkg/orchestrator` | Main QA brain tying everything together |
 | `cmd/helixqa` | CLI entry point (subcommands: run, list, report, version) |
 
+## Autonomous QA Pipeline
+
+The `helixqa autonomous` command runs a 5-phase pipeline:
+
+| Phase | Description |
+|-------|-------------|
+| 0. Deploy | Auto-ensures Ollama + vision model on remote host via SSH (`HELIX_VISION_HOST`) |
+| 1. Learn | Scans project docs, code, git for knowledge base |
+| 2. Plan | LLM generates test cases from knowledge |
+| 3. Execute | Screenshots + video recording per test |
+| 3.5 Curiosity | LLM vision drives exploration (login, browse, favorites, play) |
+| 4. Analyze | LLM vision analyzes screenshots, creates deduplicated issue tickets |
+
+### Remote Vision (Auto-Deploy)
+
+HelixQA auto-deploys Ollama on a remote GPU host before each session:
+```bash
+HELIX_VISION_HOST=thinker.local   # Remote host with GPU
+HELIX_VISION_USER=milosvasic      # SSH user
+HELIX_VISION_MODEL=llava:7b       # Vision model to use
+HELIX_OLLAMA_URL=http://thinker.local:11434  # Ollama API endpoint
+```
+
+The deployer (from `digital.vasic.visionengine/pkg/remote`) checks: Ollama installed → API running → model pulled. All automatic, no manual setup needed.
+
+### Output Structure
+
+```
+qa-results/
+├── latest -> session-NNNN   # Symlink to most recent session (gitignored)
+├── session-1774785711/
+│   ├── screenshots/          # PNG screenshots (execute + curiosity phases)
+│   ├── videos/               # MP4 recordings (pulled from Android device)
+│   ├── evidence/             # Logcat dumps, crash traces
+│   ├── frames/               # Video frame extracts
+│   └── pipeline-report.json  # Session results (tests, coverage, issues)
+```
+
+### Issue Deduplication
+
+`FindingsBridge.Process()` prevents duplicate tickets:
+- Same-title findings are skipped (cross-session dedup via `FindDuplicateByTitle`)
+- Intra-batch duplicates tracked in memory
+- Related findings in same category+platform are grouped with "Related Issues" section
+
 ## Key Interfaces
 
 - `detector.CommandRunner` -- abstraction for command execution (testable)

@@ -43,20 +43,40 @@ type RealExecutorConfig struct {
 // RealExecutorFactory creates platform-specific ActionExecutor
 // instances for Android, Android TV, web, and desktop platforms.
 // Android and Android TV use ADBExecutor; web uses PlaywrightExecutor;
-// desktop uses X11Executor.
+// desktop uses X11Executor. Executors are cached per platform to
+// reuse browser sessions and avoid redundant launches.
 type RealExecutorFactory struct {
 	config RealExecutorConfig
+	cache  map[string]navigator.ActionExecutor
 }
 
 // NewRealExecutorFactory creates a RealExecutorFactory with the
 // given configuration.
 func NewRealExecutorFactory(cfg RealExecutorConfig) *RealExecutorFactory {
-	return &RealExecutorFactory{config: cfg}
+	return &RealExecutorFactory{
+		config: cfg,
+		cache:  make(map[string]navigator.ActionExecutor),
+	}
 }
 
 // Create returns the appropriate ActionExecutor for the platform.
 // Supported platforms: "android", "androidtv", "web", "desktop".
+// Executors are cached per platform to reuse browser sessions.
 func (f *RealExecutorFactory) Create(
+	platform string,
+) (navigator.ActionExecutor, error) {
+	if exec, ok := f.cache[platform]; ok {
+		return exec, nil
+	}
+	exec, err := f.create(platform)
+	if err != nil {
+		return nil, err
+	}
+	f.cache[platform] = exec
+	return exec, nil
+}
+
+func (f *RealExecutorFactory) create(
 	platform string,
 ) (navigator.ActionExecutor, error) {
 	switch platform {

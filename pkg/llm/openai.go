@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 	"time"
 )
 
@@ -205,10 +206,21 @@ func (p *openaiProvider) doRequest(
 		return nil, fmt.Errorf("openai: marshal request: %w", err)
 	}
 
+	// Build the endpoint URL. Most providers use /v1/, but
+	// some (e.g. Z.AI/zhipu) use /v4/. If the baseURL already
+	// ends with a version path, append only /chat/completions.
+	endpoint := p.baseURL + "/v1/chat/completions"
+	for _, vp := range []string{"/v2", "/v3", "/v4", "/v5"} {
+		if strings.HasSuffix(p.baseURL, vp) {
+			endpoint = p.baseURL + "/chat/completions"
+			break
+		}
+	}
+
 	httpReq, err := http.NewRequestWithContext(
 		ctx,
 		http.MethodPost,
-		p.baseURL+"/v1/chat/completions",
+		endpoint,
 		bytes.NewReader(body),
 	)
 	if err != nil {

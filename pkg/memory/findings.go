@@ -116,6 +116,69 @@ func (s *Store) ListFindingsByStatus(status string) ([]Finding, error) {
 	return findings, nil
 }
 
+// FindDuplicateByTitle returns the first open finding whose
+// title matches exactly. Returns (nil, nil) when no duplicate
+// exists. Used by FindingsBridge to prevent creating tickets
+// for the same issue multiple times.
+func (s *Store) FindDuplicateByTitle(
+	title string,
+) (*Finding, error) {
+	const q = `
+		SELECT id, session_id, severity, category, title,
+		       description, repro_steps, evidence_paths,
+		       platform, screen, status,
+		       found_date, fixed_date, verified_date
+		FROM findings
+		WHERE title = ? AND status != 'fixed'
+		LIMIT 1`
+
+	row := s.db.QueryRow(q, title)
+	f, err := scanFinding(row)
+	if err == sql.ErrNoRows {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, fmt.Errorf(
+			"memory: find duplicate by title: %w", err,
+		)
+	}
+	return f, nil
+}
+
+// FindRelatedByCategory returns all open findings in the same
+// category and platform, for grouping related issues.
+func (s *Store) FindRelatedByCategory(
+	category, platform string,
+) ([]Finding, error) {
+	const q = `
+		SELECT id, session_id, severity, category, title,
+		       description, repro_steps, evidence_paths,
+		       platform, screen, status,
+		       found_date, fixed_date, verified_date
+		FROM findings
+		WHERE category = ? AND platform = ?
+		  AND status != 'fixed'
+		ORDER BY id ASC`
+
+	rows, err := s.db.Query(q, category, platform)
+	if err != nil {
+		return nil, fmt.Errorf(
+			"memory: find related: %w", err,
+		)
+	}
+	defer rows.Close()
+
+	var out []Finding
+	for rows.Next() {
+		f, err := scanFinding(rows)
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, *f)
+	}
+	return out, rows.Err()
+}
+
 // NextFindingID returns the next available HELIX-NNN identifier by inspecting
 // the highest numeric suffix already stored. Returns "HELIX-001" on an empty
 // store.

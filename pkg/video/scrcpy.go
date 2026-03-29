@@ -9,10 +9,15 @@ package video
 import (
 	"context"
 	"fmt"
+	"os"
 	"os/exec"
 	"sync"
+	"syscall"
 	"time"
 )
+
+// sigINT returns os.Signal for SIGINT. Separated for clarity.
+func sigINT() os.Signal { return syscall.SIGINT }
 
 // RecordMethod identifies the recording strategy.
 type RecordMethod int
@@ -161,9 +166,10 @@ func (r *ScrcpyRecorder) Start(ctx context.Context) error {
 	return nil
 }
 
-// Stop terminates an active recording. It sends an
-// interrupt signal to the recording process and waits for
-// it to exit. Returns an error if no recording is active.
+// Stop terminates an active recording. For ADB screenrecord,
+// it sends SIGINT to produce a valid MP4 file, then pulls the
+// recording from the device to the local output path. Returns
+// an error if no recording is active.
 func (r *ScrcpyRecorder) Stop() error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
@@ -174,19 +180,61 @@ func (r *ScrcpyRecorder) Stop() error {
 
 	var stopErr error
 	if r.cmd != nil && r.cmd.Process != nil {
-		if err := r.cmd.Process.Kill(); err != nil {
-			stopErr = fmt.Errorf(
-				"stop recording: %w", err,
-			)
+		// Send SIGINT (not SIGKILL) so screenrecord
+		// flushes the moov atom and produces a valid
+		// MP4 file.
+		if err := r.cmd.Process.Signal(
+			sigINT(),
+		); err != nil {
+			// Fallback to Kill if Signal fails.
+			_ = r.cmd.Process.Kill()
 		}
-		// Wait to reap the process; ignore exit error
-		// since Kill causes non-zero exit.
+		// Wait to reap the process; ignore exit error.
 		_ = r.cmd.Wait()
+	}
+
+	// For ADB screenrecord, pull the file from device.
+	if r.method == MethodADBScreenrecord ||
+		(r.method == MethodAuto &&
+			r.detectMethod() == MethodADBScreenrecord) {
+		r.pullFromDevice()
 	}
 
 	r.recording = false
 	r.cmd = nil
 	return stopErr
+}
+
+// pullFromDevice copies the recording from the Android
+// device to the local output path, then removes the
+// device-side file.
+func (r *ScrcpyRecorder) pullFromDevice() {
+	// Small delay to let screenrecord flush the file.
+	time.Sleep(2 * time.Second)
+
+	devicePath := "/sdcard/helixqa_record.mp4"
+	pull := exec.Command(
+		"adb", "-s", r.device,
+		"pull", devicePath, r.outputPath,
+	)
+	if out, err := pull.CombinedOutput(); err != nil {
+		fmt.Printf(
+			"  [video] pull failed: %v: %s\n",
+			err, string(out),
+		)
+		return
+	}
+	fmt.Printf(
+		"  [video] pulled recording to %s\n",
+		r.outputPath,
+	)
+
+	// Clean up device-side file.
+	rm := exec.Command(
+		"adb", "-s", r.device,
+		"shell", "rm", "-f", devicePath,
+	)
+	_ = rm.Run()
 }
 
 // Duration returns the elapsed recording time. Returns

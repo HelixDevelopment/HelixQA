@@ -14,7 +14,7 @@ import (
 // provider is allowed per call during adaptive fallback.
 // This prevents N slow providers from compounding into
 // N * timeout total latency.
-const adaptivePerProviderTimeout = 30 * time.Second
+const adaptivePerProviderTimeout = 60 * time.Second
 
 // adaptiveVisionTimeout is longer than the chat timeout
 // to allow native vision providers (Gemini, Anthropic)
@@ -151,6 +151,10 @@ func (a *AdaptiveProvider) Vision(
 			continue
 		}
 		switch p.Name() {
+		case ProviderOllama:
+			// Local Ollama is highest priority — free,
+			// no rate limits, and always available.
+			capable = append([]Provider{p}, capable...)
 		case ProviderGoogle, ProviderAnthropic, ProviderOpenAI:
 			capable = append(capable, p)
 		default:
@@ -183,7 +187,8 @@ func (a *AdaptiveProvider) Vision(
 		// more time for their internal retry/backoff logic.
 		timeout := adaptivePerProviderTimeout
 		switch p.Name() {
-		case ProviderGoogle, ProviderAnthropic, ProviderOpenAI:
+		case ProviderGoogle, ProviderAnthropic, ProviderOpenAI,
+			ProviderOllama:
 			timeout = adaptiveVisionTimeout
 		}
 		pCtx, pCancel := context.WithTimeout(ctx, timeout)
