@@ -1022,15 +1022,16 @@ func (sp *SessionPipeline) Run(
 				}
 			}
 
-			// Per-target vision provider.
+			// Per-target vision provider. Uses the shared
+			// AdaptiveProvider (which includes Ollama with
+			// GPU support) by default. Only overrides with
+			// llama-server when explicitly configured.
 			platformProvider := sp.provider
-			if visionPool != nil {
+			if visionPool != nil && sp.config.UseLlamaCpp {
 				slot := visionPool.GetSlot(
 					platform, device,
 				)
 				if slot != nil && slot.Endpoint != "" {
-					// Create an OpenAI-compatible provider
-					// pointing at this slot's llama-server.
 					slotProvider := llm.NewOpenAIProvider(
 						llm.ProviderConfig{
 							Name:    "llamacpp-" + slot.ID,
