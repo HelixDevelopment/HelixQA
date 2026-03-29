@@ -212,31 +212,57 @@ func (sp *SessionPipeline) Run(
 		Status:    StatusRunning,
 	}
 
-	// ── Phase 0: Ensure remote vision is ready ──────────
+	// ── Phase 0: Vision pool setup ───────────────────────
+	// Create a VisionPool with one dedicated slot per
+	// platform/device. Each slot serializes its own vision
+	// calls so platforms don't contend with each other.
+	var visionPool *visionremote.VisionPool
 	if sp.config.VisionHost != "" {
 		fmt.Printf(
-			"[pipeline] Phase 0: Ensuring vision on %s\n",
+			"[pipeline] Phase 0: Vision pool on %s "+
+				"(%d platforms)\n",
 			sp.config.VisionHost,
+			len(sp.config.Platforms),
 		)
-		deployer := visionremote.NewDeployer(
-			visionremote.Config{
-				Host:  sp.config.VisionHost,
-				User:  sp.config.VisionUser,
-				Model: sp.config.VisionModel,
+		visionPool = visionremote.NewVisionPool(
+			visionremote.PoolConfig{
+				Host:   sp.config.VisionHost,
+				User:   sp.config.VisionUser,
+				Model:  sp.config.VisionModel,
+				Shared: true, // single Ollama, per-slot locks
 			},
 		)
-		if endpoint, err := deployer.EnsureReady(
-			ctx,
-		); err != nil {
+		if err := visionPool.EnsureReady(ctx); err != nil {
 			fmt.Printf(
-				"[pipeline] warning: vision deploy "+
+				"[pipeline] warning: vision pool "+
 					"failed: %v (continuing without)\n",
 				err,
 			)
+			visionPool = nil
 		} else {
+			// Build slot targets from platforms + device.
+			var targets []visionremote.SlotTarget
+			for _, platform := range sp.config.Platforms {
+				device := ""
+				if platform == "android" ||
+					platform == "androidtv" {
+					device = sp.config.AndroidDevice
+				} else if platform == "web" {
+					device = sp.config.WebURL
+				} else if platform == "api" {
+					device = "api"
+				}
+				targets = append(targets,
+					visionremote.SlotTarget{
+						Platform: platform,
+						Device:   device,
+					},
+				)
+			}
+			visionPool.AssignSlots(targets)
 			fmt.Printf(
-				"[pipeline] Vision ready at %s\n",
-				endpoint,
+				"[pipeline] %d vision slots assigned\n",
+				visionPool.Size(),
 			)
 		}
 	}
@@ -897,6 +923,21 @@ func (sp *SessionPipeline) Run(
 				// Resize before sending to LLM to
 				// reduce latency and token cost.
 				resized := resizeScreenshot(screenshot)
+
+				// Acquire the platform's dedicated
+				// vision slot to prevent contention
+				// with other platforms' calls.
+				var slot *visionremote.VisionSlot
+				if visionPool != nil {
+					slot = visionPool.GetSlot(
+						platform,
+						sp.config.AndroidDevice,
+					)
+					if slot != nil {
+						slot.Lock()
+					}
+				}
+				visionStart := time.Now()
 				actions := sp.llmNavigate(
 					curiosityCtx,
 					resized,
@@ -904,6 +945,13 @@ func (sp *SessionPipeline) Run(
 					i+1,
 					stepHistory,
 				)
+				if slot != nil {
+					slot.RecordCall(
+						time.Since(visionStart),
+						nil,
+					)
+					slot.Unlock()
+				}
 
 				// Step 3: Execute LLM-suggested actions.
 				// If the LLM returned no actions (rate
@@ -1210,6 +1258,11 @@ func (sp *SessionPipeline) Run(
 		result.IssuesFound,
 		time.Since(phaseStart).Round(time.Millisecond),
 	)
+
+	// ── Shutdown vision pool ────────────────────────────
+	if visionPool != nil {
+		visionPool.Shutdown(ctx)
+	}
 
 	// ── Finalize ────────────────────────────────────────
 	result.Status = StatusComplete
