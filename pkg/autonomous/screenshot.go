@@ -17,9 +17,9 @@ import (
 // maxScreenshotWidth is the maximum width (in pixels) for
 // screenshots sent to the LLM vision API. Larger images
 // are downscaled proportionally using nearest-neighbour
-// sampling. 720px keeps file size under ~200KB while
-// retaining enough detail for UI analysis.
-const maxScreenshotWidth = 720
+// sampling. 480px keeps file size under ~50KB for fast
+// CPU-based inference while retaining UI readability.
+const maxScreenshotWidth = 480
 
 // resizeScreenshot downscales a PNG image to at most
 // maxScreenshotWidth pixels wide, preserving aspect ratio.

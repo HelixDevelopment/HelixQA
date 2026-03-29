@@ -18,7 +18,7 @@ import (
 const (
 	openaiDefaultBaseURL = "https://api.openai.com"
 	openaiDefaultModel   = "gpt-4o"
-	openaiHTTPTimeout    = 45 * time.Second
+	openaiHTTPTimeout    = 180 * time.Second
 )
 
 // openaiProvider implements Provider for the OpenAI API.

@@ -259,7 +259,7 @@ func (sp *SessionPipeline) Run(
 				MMProjPath: sp.config.LlamaCppMMProjPath,
 				BasePort:   8090,
 				GPULayers:  -1,
-				ContextSize: 4096,
+				ContextSize: 8192,
 			}
 			fmt.Printf(
 				"[pipeline] Using llama.cpp backend "+
@@ -1047,6 +1047,47 @@ func (sp *SessionPipeline) Run(
 					stepHistory,
 					platformProvider,
 				)
+
+				// If llama-server crashed (connection
+				// refused), try to restart it via the pool.
+				if len(actions) == 0 && visionPool != nil &&
+					slot != nil {
+					health, _ := http.Get(
+						slot.Endpoint + "/health",
+					)
+					if health == nil ||
+						health.StatusCode != 200 {
+						fmt.Printf(
+							"  [curiosity %s #%d] "+
+								"vision server down,"+
+								" restarting\n",
+							platform, i+1,
+						)
+						if visionPool != nil &&
+							sp.config.UseLlamaCpp {
+							// Attempt restart via deployer
+							cfg := sp.config
+							deployer := visionremote.NewLlamaCppDeployer(
+								visionremote.LlamaCppConfig{
+									Host:        cfg.VisionHost,
+									User:        cfg.VisionUser,
+									RepoDir:     "~/llama.cpp",
+									ModelPath:   cfg.LlamaCppModelPath,
+									MMProjPath:  cfg.LlamaCppMMProjPath,
+									BasePort:    slot.Port,
+									ContextSize: 8192,
+								},
+							)
+							deployer.StartInstance(
+								curiosityCtx, slot.Port,
+							)
+							time.Sleep(10 * time.Second)
+						}
+					}
+					if health != nil {
+						health.Body.Close()
+					}
+				}
 				if slot != nil {
 					slot.RecordCall(
 						time.Since(visionStart),
@@ -1944,7 +1985,7 @@ type llmAction struct {
 // llmNavigateTimeout caps a single LLM vision call. Set to
 // 90s to allow Gemini's internal 5-retry backoff (up to ~75s)
 // to succeed before the call is abandoned.
-const llmNavigateTimeout = 90 * time.Second
+const llmNavigateTimeout = 180 * time.Second
 
 // llmNavigate sends a (pre-resized) screenshot to the LLM
 // vision endpoint and parses the response into a list of
@@ -2132,6 +2173,35 @@ func executeAction(
 // JSON. Handles: trailing commas, single quotes, missing
 // commas between objects, and bare string values.
 func repairLLMJSON(s string) string {
+	// Remove literal newlines inside string values.
+	// LLaVA sometimes puts \n inside JSON strings which
+	// breaks the parser.
+	var result strings.Builder
+	inString := false
+	escaped := false
+	for i := 0; i < len(s); i++ {
+		c := s[i]
+		if escaped {
+			result.WriteByte(c)
+			escaped = false
+			continue
+		}
+		if c == '\\' && inString {
+			escaped = true
+			result.WriteByte(c)
+			continue
+		}
+		if c == '"' {
+			inString = !inString
+		}
+		if c == '\n' && inString {
+			result.WriteString("\\n")
+			continue
+		}
+		result.WriteByte(c)
+	}
+	s = result.String()
+
 	// Replace single quotes with double quotes (but not
 	// within already double-quoted strings).
 	if !strings.Contains(s, `"`) && strings.Contains(s, `'`) {
@@ -2148,7 +2218,6 @@ func repairLLMJSON(s string) string {
 
 	// Fix missing comma between adjacent objects: }{ → },{
 	s = strings.ReplaceAll(s, "}{", "},{")
-	// Fix: }\n{ or } { patterns.
 	s = strings.ReplaceAll(s, "}\n{", "},\n{")
 	s = strings.ReplaceAll(s, "} {", "}, {")
 
