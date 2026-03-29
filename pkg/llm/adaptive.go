@@ -155,7 +155,14 @@ func (a *AdaptiveProvider) Vision(
 			// Local Ollama is highest priority — free,
 			// no rate limits, and always available.
 			capable = append([]Provider{p}, capable...)
-		case ProviderGoogle, ProviderAnthropic, ProviderOpenAI:
+		case "nvidia":
+			// NVIDIA has Llama 3.2 90B Vision — the most
+			// capable instruction-following vision model
+			// available. Produces perfect DPAD navigation
+			// JSON for Android TV. Prioritize after Ollama.
+			capable = append(capable, p)
+		case ProviderGoogle, ProviderAnthropic, ProviderOpenAI,
+			"githubmodels":
 			capable = append(capable, p)
 		default:
 			secondary = append(secondary, p)
@@ -188,7 +195,7 @@ func (a *AdaptiveProvider) Vision(
 		timeout := adaptivePerProviderTimeout
 		switch p.Name() {
 		case ProviderGoogle, ProviderAnthropic, ProviderOpenAI,
-			ProviderOllama:
+			ProviderOllama, "nvidia", "githubmodels":
 			timeout = adaptiveVisionTimeout
 		}
 		pCtx, pCancel := context.WithTimeout(ctx, timeout)

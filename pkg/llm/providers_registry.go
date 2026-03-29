@@ -28,7 +28,7 @@ var providerDefaults = map[string]struct {
 	"nia":              {"https://api.nia.ai", ""},
 	"nlpcloud":         {"https://api.nlpcloud.io/v1/gpu", ""},
 	"novita":           {"https://api.novita.ai/v3/openai", ""},
-	"nvidia":           {"https://integrate.api.nvidia.com", "meta/llama-3.3-70b-instruct"},
+	"nvidia":           {"https://integrate.api.nvidia.com", "meta/llama-3.2-90b-vision-instruct"},
 	"perplexity":       {"https://api.perplexity.ai", "sonar"},
 	"publicai":         {"https://api.publicai.co", ""},
 	"qwen":             {"https://dashscope.aliyuncs.com/api", "qwen-plus"},

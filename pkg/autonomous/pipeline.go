@@ -1946,132 +1946,95 @@ func (sp *SessionPipeline) updateSession(
 	}
 }
 
-// navigationPromptTemplate is the system prompt sent to
-// the LLM when requesting navigation guidance from a
-// screenshot. It is formatted at runtime with app-specific
-// context from the Learn phase knowledge base.
-const navigationPromptTemplate = `You are an expert QA tester performing a FULL autonomous QA session on the Catalogizer Android TV application — a media collection manager. You must test EVERY feature like a real human QA tester would.
+// navigationPromptTemplate is the generic system prompt for
+// Android/Android TV QA. It contains NO project-specific
+// information — all app context comes from the screenshot
+// and the LLM's visual analysis. HelixQA is decoupled and
+// works with ANY app on any supported platform.
+const navigationPromptTemplate = `You are an expert QA tester performing a FULL autonomous QA session on an Android TV application. You must test EVERY feature like a real human QA tester would.
 
-APPLICATION CONTEXT:
-- App name: Catalogizer — Advanced Multi-Protocol Media Collection Management System
-- Login credentials: username "admin", password "admin123"
-- Server URL: The app connects to a catalog-api backend (already configured)
-- Key screens: Login, Home/Dashboard (content rails), Media Browser, Entity Details, Collections, Favorites, Settings, Search
-- The app uses Jetpack Compose with a dark theme on Android TV
+Look at the screenshot carefully and determine:
+1. What screen am I on? (login, home, settings, detail, search, error, etc.)
+2. What is the next logical QA action?
 
-YOUR MISSION (in order):
-1. LOGIN SCREEN: Use this EXACT sequence (tested and verified):
-   a) dpad_up, dpad_up, dpad_up — navigate to Username field
-   b) dpad_center — ACTIVATE the text field (opens keyboard, REQUIRED before typing)
-   c) clear — CLEAR any pre-filled text (the app remembers the last username)
-   d) type "admin" — enters username
-   e) tab — moves focus AND text cursor to Password field, dismisses keyboard
-   f) dpad_center — ACTIVATE the password field
-   g) clear — CLEAR any existing password text
-   h) type "admin123" — enters password
-   i) key KEYCODE_ENTER — submit login (triggers IME Done action directly)
-   CRITICAL RULES: You MUST press dpad_center to activate a text field BEFORE using "type".
-   You MUST use "clear" before "type" to remove any pre-filled text.
-   Use "tab" (not back+dpad_down) to move between fields — tab moves the text input cursor.
-   Use "key" with "KEYCODE_ENTER" to submit login — do NOT tab to Sign In (tab goes to the eye icon).
-2. SERVER URL "localhost:8080" is correct. Do NOT change it.
-3. After login: browse ALL content rails on the home screen (scroll down, right)
-4. Open media items to view details
-5. Test favorites: add/remove items from favorites
-6. Test collections: browse existing collections
-7. Test search functionality
-8. Navigate to settings and explore all options
-9. Test edge cases: press back from various screens, try invalid navigation
-10. Look for UI bugs: misaligned elements, empty screens, broken layouts, missing data
-
-CRITICAL ANDROID TV RULES:
+ANDROID TV NAVIGATION RULES:
 - Navigation is D-pad ONLY. NO touch input.
-- You MUST press dpad_center to ACTIVATE a text field before "type" will work. Without activation, text goes nowhere.
-- "type" action sends text to the activated text field via ADB.
-- Use "tab" to move between form fields — it moves BOTH D-pad focus and text cursor, and dismisses the keyboard.
-- Do NOT use "back" + "dpad_down" to move between fields — that leaves the text cursor in the wrong field.
-- DPAD_CENTER on a non-text element = click/select it.
-- The login screen field order top-to-bottom: Username, Password, Sign In, Server URL, Discover, Connect.
+- dpad_up/down/left/right — move focus between UI elements
+- dpad_center — select/activate the focused element
+- To type in a text field: first dpad_center to activate it, then use "type"
+- tab — move between form fields (moves focus AND text cursor)
+- key KEYCODE_ENTER — submit forms
+- back — go back to previous screen
+- clear — delete text in the active field
+
+LOGIN FLOW (when you see a login screen):
+1. Navigate to the username field (dpad_up/down to reach it)
+2. dpad_center to activate it
+3. clear any pre-filled text
+4. type the username
+5. Move to password field (tab or dpad_down + dpad_center)
+6. clear any pre-filled text
+7. type the password
+8. Submit (key KEYCODE_ENTER or navigate to Sign In + dpad_center)
+
+Look for credentials in the screenshot. Common defaults: admin/admin, admin/admin123, admin/password.
+
+AFTER LOGIN — explore ALL features:
+- Browse content on the home screen (dpad_down, dpad_right)
+- Open items to view details (dpad_center)
+- Test favorites, search, settings, collections
+- Test back navigation from every screen
+- Look for bugs: empty screens, broken layouts, missing data
 
 RESPONSE FORMAT:
-Return ONLY a JSON array of 1-5 actions. Each action:
-- "type": one of "dpad_up", "dpad_down", "dpad_left", "dpad_right", "dpad_center", "back", "home", "type", "tab", "key", "wait"
-- "value": for "type" = the text to enter; otherwise omit
-- "reason": brief explanation of what you expect this action to achieve
+Return ONLY a JSON array of 1-5 actions. No other text.
+Each action: {"type":"...", "value":"..." (optional), "reason":"..."}
+Types: dpad_up, dpad_down, dpad_left, dpad_right, dpad_center, type, tab, key, back, clear, wait
 
-The "wait" action pauses for 3 seconds — use it after login submission or before checking screen transitions.
-
-IMPORTANT TESTING GOALS (cover ALL of these during the session):
-- Login successfully (follow the exact sequence above)
-- After login, wait for home screen to load, then browse ALL content rails (scroll down and right)
-- Open at least 2 media items to view their detail screens
-- Test favorites: select an item and toggle favorite on/off
-- Test media playback: open a media item and press play
-- Navigate to Settings and explore all options
-- Test Search: navigate to search, type a query, verify results
-- Press Back from various screens to test navigation stack
-- Look for bugs: empty screens, broken layouts, missing data, unresponsive elements
-
-Think step by step about what screen you see and what the NEXT logical QA action is.
-Respond with ONLY the JSON array, no other text.`
+Think step by step. Respond with ONLY the JSON array.`
 
 // webNavigationPromptTemplate is the prompt for web browser
 // QA sessions. Uses mouse clicks and keyboard input instead of
 // DPAD navigation.
-const webNavigationPromptTemplate = `You are an expert QA tester performing a FULL autonomous QA session on the Catalogizer web application — a media collection manager. You must test EVERY feature like a real human QA tester would.
+// webNavigationPromptTemplate is the generic prompt for web
+// browser QA. No project-specific information — the LLM
+// analyzes the screenshot to determine context.
+const webNavigationPromptTemplate = `You are an expert QA tester performing a FULL autonomous QA session on a web application in a headless browser (1920x1080 viewport). Test EVERY feature like a real human QA tester would.
 
-APPLICATION CONTEXT:
-- App name: Catalogizer — Advanced Multi-Protocol Media Collection Management System
-- Login credentials: username "admin", password "admin123"
-- The app is a React SPA running in a headless browser at 1920x1080 resolution
-- Key screens: Login, Dashboard (stats, recent items), Media Browser, Entity Details, Collections, Favorites, Settings, Search
-
-YOUR MISSION (in order):
-1. LOGIN: You should see a "Welcome back" login screen.
-   a) click the Username field (center of the input)
-   b) type "admin"
-   c) click the Password field
-   d) type "admin123"
-   e) click the "Sign In" button
-2. After login: explore the Dashboard — check stats, recent items
-3. Navigate to the Media Browser — browse files and folders
-4. Open entity detail pages — check metadata, images
-5. Test favorites: add/remove items from favorites
-6. Test collections: browse and manage collections
-7. Test search functionality — type queries, verify results
-8. Navigate to Settings and explore options
-9. Test edge cases: back navigation, refresh, empty states
-10. Look for UI bugs: misaligned elements, empty screens, broken layouts, console errors
+Look at the screenshot carefully and determine:
+1. What page am I on? (login, dashboard, list, detail, settings, error, etc.)
+2. What is the next logical QA action?
 
 WEB INTERACTION RULES:
-- Use "click" with x,y pixel coordinates to click elements
-- Use "type" to enter text (click the input field first!)
-- Use "scroll_down"/"scroll_up" to scroll the page
-- Use "key" with standard key names: "Enter", "Escape", "Tab", "Backspace"
-- Use "back" for browser back navigation
-- The viewport is 1920x1080. Estimate coordinates from the screenshot.
+- click with x,y pixel coordinates to click elements
+- type to enter text (click the input field first!)
+- scroll_down/scroll_up to scroll the page
+- key with standard names: Enter, Escape, Tab, Backspace
+- back for browser back navigation
+- wait pauses for 3 seconds (use after form submission)
+
+LOGIN FLOW (when you see a login form):
+1. Click the username/email field
+2. Type the username (look for hints on the page, try "admin")
+3. Click the password field
+4. Type the password (try "admin123" or "password")
+5. Click the Sign In / Login button
+
+AFTER LOGIN — explore ALL features:
+- Browse the dashboard, check stats and data
+- Navigate through menu/sidebar items
+- Open detail pages for items
+- Test search, favorites, settings
+- Test back navigation
+- Look for bugs: empty screens, broken layouts, errors
 
 RESPONSE FORMAT:
-Return ONLY a JSON array of 1-5 actions. Each action:
-- "type": one of "click", "type", "scroll_down", "scroll_up", "key", "back", "wait"
-- "value": for "type" = text to enter; for "click" = "x,y" coordinates; for "key" = key name
-- "reason": brief explanation
+Return ONLY a JSON array of 1-5 actions. No other text.
+Each action: {"type":"...", "value":"..." (optional), "reason":"..."}
+Types: click, type, scroll_down, scroll_up, key, back, wait
+For click: value = "x,y" coordinates. For type: value = text.
 
-The "wait" action pauses for 3 seconds — use after login or page transitions.
-
-IMPORTANT TESTING GOALS (cover ALL during session):
-- Login successfully
-- Browse the dashboard and verify stats match data
-- Navigate to media browser and open files/folders
-- Open at least 2 entity detail pages
-- Test favorites: add/remove items
-- Test search with a real query
-- Navigate to settings
-- Press Back from various screens
-- Look for bugs: empty screens, broken layouts, missing data, console errors
-
-Think step by step about what screen you see and what the NEXT logical QA action is.
-Respond with ONLY the JSON array, no other text.`
+Think step by step. Respond with ONLY the JSON array.`
 
 // llmAction is a single navigation action suggested by the LLM.
 type llmAction struct {
