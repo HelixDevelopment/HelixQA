@@ -40,3 +40,4 @@ Thumbs.db
 
 # Vendor (optional)
 /vendor/
+data/memory.db.bak
