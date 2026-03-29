@@ -64,7 +64,14 @@ type PipelineConfig struct {
 
 	// AndroidDevice is the ADB device/emulator serial
 	// (e.g. "emulator-5554" or "192.168.0.214:5555").
+	// For single-device mode.
 	AndroidDevice string
+
+	// AndroidDevices is a list of all ADB devices to test
+	// in parallel. When non-empty, the pipeline creates one
+	// executor + vision slot per device and runs curiosity
+	// in parallel goroutines.
+	AndroidDevices []string
 
 	// AndroidPackage is the Android application package
 	// name (e.g. "com.example.app").
@@ -276,9 +283,24 @@ func (sp *SessionPipeline) Run(
 			)
 			visionPool = nil
 		} else {
-			// Build slot targets from platforms + device.
+			// Build slot targets — one per device for Android,
+			// one per non-Android platform.
 			var targets []visionremote.SlotTarget
 			for _, platform := range sp.config.Platforms {
+				if (platform == "android" ||
+					platform == "androidtv") &&
+					len(sp.config.AndroidDevices) > 0 {
+					// One slot per Android device.
+					for _, dev := range sp.config.AndroidDevices {
+						targets = append(targets,
+							visionremote.SlotTarget{
+								Platform: platform,
+								Device:   dev,
+							},
+						)
+					}
+					continue
+				}
 				device := ""
 				if platform == "android" ||
 					platform == "androidtv" {
@@ -303,38 +325,48 @@ func (sp *SessionPipeline) Run(
 		}
 	}
 
-	// ── Phase 0b: ADB reverse proxy for Android devices ─
-	// Ensure every Android device can reach the API at
-	// localhost:8080 via ADB reverse proxy. Without this,
-	// the app shows "Unable to reach server".
-	if sp.config.AndroidDevice != "" {
-		for _, platform := range sp.config.Platforms {
-			if platform == "android" ||
-				platform == "androidtv" {
-				device := sp.config.AndroidDevice
-				revCtx, revCancel := context.WithTimeout(
-					ctx, 10*time.Second,
-				)
-				out, err := osexec.CommandContext(
-					revCtx, "adb", "-s", device,
-					"reverse", "tcp:8080", "tcp:8080",
-				).CombinedOutput()
-				revCancel()
-				if err != nil {
-					fmt.Printf(
-						"[pipeline] warning: ADB "+
-							"reverse on %s failed: "+
-							"%v (%s)\n",
-						device, err, string(out),
-					)
-				} else {
-					fmt.Printf(
-						"[pipeline] ADB reverse "+
-							"proxy set on %s\n",
-						device,
-					)
-				}
-			}
+	// ── Phase 0b: ADB reverse proxy for ALL Android devices
+	// Ensure every connected device can reach the API at
+	// localhost:8080 via ADB reverse proxy.
+	allDevices := sp.config.AndroidDevices
+	if len(allDevices) == 0 && sp.config.AndroidDevice != "" {
+		allDevices = []string{sp.config.AndroidDevice}
+	}
+	for _, device := range allDevices {
+		revCtx, revCancel := context.WithTimeout(
+			ctx, 10*time.Second,
+		)
+		out, err := osexec.CommandContext(
+			revCtx, "adb", "-s", device,
+			"reverse", "tcp:8080", "tcp:8080",
+		).CombinedOutput()
+		revCancel()
+		if err != nil {
+			fmt.Printf(
+				"[pipeline] warning: ADB reverse "+
+					"on %s failed: %v (%s)\n",
+				device, err, string(out),
+			)
+		} else {
+			fmt.Printf(
+				"[pipeline] ADB reverse proxy "+
+					"set on %s\n",
+				device,
+			)
+		}
+		// Also launch the app on this device.
+		if sp.config.AndroidPackage != "" {
+			launchCtx, lc := context.WithTimeout(
+				ctx, 10*time.Second,
+			)
+			_, _ = osexec.CommandContext(
+				launchCtx, "adb", "-s", device,
+				"shell", "monkey", "-p",
+				sp.config.AndroidPackage,
+				"-c", "android.intent.category.LEANBACK_LAUNCHER",
+				"1",
+			).CombinedOutput()
+			lc()
 		}
 	}
 
@@ -889,54 +921,95 @@ func (sp *SessionPipeline) Run(
 
 		preCuriosityCount := len(allScreenshots)
 
-		// Launch the app on Android platforms before
-		// curiosity exploration to ensure it is in the
-		// foreground. This is essential for fire-and-forget
-		// reliability — the LLM must see the app, not the
-		// home screen or another app.
-		if sp.config.AndroidPackage != "" &&
-			sp.config.AndroidDevice != "" {
-			for _, platform := range sp.config.Platforms {
-				if platform == "android" ||
-					platform == "androidtv" {
-					launchCtx, launchCancel :=
-						context.WithTimeout(ctx, 10*time.Second)
-					_, _ = osexec.CommandContext(
-						launchCtx, "adb", "-s",
-						sp.config.AndroidDevice,
-						"shell", "monkey", "-p",
-						sp.config.AndroidPackage,
-						"-c", "android.intent.category.LEANBACK_LAUNCHER",
-						"1",
-					).CombinedOutput()
-					launchCancel()
-					time.Sleep(3 * time.Second)
-					fmt.Printf(
-						"  [curiosity] launched %s on %s\n",
-						sp.config.AndroidPackage, platform,
+		// Build list of curiosity targets — one entry per
+		// device for Android, one per non-Android platform.
+		type curiosityTarget struct {
+			platform string
+			device   string
+		}
+		var curTargets []curiosityTarget
+		for _, platform := range sp.config.Platforms {
+			if (platform == "android" ||
+				platform == "androidtv") &&
+				len(sp.config.AndroidDevices) > 0 {
+				for _, dev := range sp.config.AndroidDevices {
+					curTargets = append(curTargets,
+						curiosityTarget{platform, dev},
 					)
 				}
+			} else {
+				dev := sp.config.AndroidDevice
+				if platform == "web" {
+					dev = sp.config.WebURL
+				} else if platform == "api" {
+					dev = "api"
+				}
+				curTargets = append(curTargets,
+					curiosityTarget{platform, dev},
+				)
 			}
 		}
 
-		for _, platform := range sp.config.Platforms {
-			executor, err := execFactory.Create(
-				platform,
-			)
-			if err != nil {
-				continue
+		fmt.Printf(
+			"  [curiosity] %d targets: ",
+			len(curTargets),
+		)
+		for _, ct := range curTargets {
+			fmt.Printf("%s(%s) ", ct.platform, ct.device)
+		}
+		fmt.Println()
+
+		// Launch app on all Android devices.
+		for _, ct := range curTargets {
+			if (ct.platform == "android" ||
+				ct.platform == "androidtv") &&
+				sp.config.AndroidPackage != "" {
+				launchCtx, lc := context.WithTimeout(
+					ctx, 10*time.Second,
+				)
+				_, _ = osexec.CommandContext(
+					launchCtx, "adb", "-s", ct.device,
+					"shell", "monkey", "-p",
+					sp.config.AndroidPackage,
+					"-c", "android.intent.category.LEANBACK_LAUNCHER",
+					"1",
+				).CombinedOutput()
+				lc()
+				time.Sleep(3 * time.Second)
+				fmt.Printf(
+					"  [curiosity] launched %s on %s\n",
+					sp.config.AndroidPackage, ct.device,
+				)
+			}
+		}
+
+		// Run curiosity on each target sequentially.
+		// (Parallel would overload single llama-server.)
+		for _, ct := range curTargets {
+			platform := ct.platform
+			device := ct.device
+
+			// Create executor for this specific device.
+			var executor navigator.ActionExecutor
+			var err error
+			if (platform == "android" ||
+				platform == "androidtv") && device != "" {
+				executor = navigator.NewADBExecutor(
+					device,
+					detector.NewExecRunner(),
+				)
+			} else {
+				executor, err = execFactory.Create(platform)
+				if err != nil {
+					continue
+				}
 			}
 
-			// Create a per-platform vision provider.
-			// If a VisionPool slot exists for this platform,
-			// create a dedicated provider pointing at the
-			// slot's endpoint (llama-server or Ollama).
-			// Otherwise fall back to the shared provider.
+			// Per-target vision provider.
 			platformProvider := sp.provider
 			if visionPool != nil {
 				slot := visionPool.GetSlot(
-					platform,
-					sp.config.AndroidDevice,
+					platform, device,
 				)
 				if slot != nil && slot.Endpoint != "" {
 					// Create an OpenAI-compatible provider

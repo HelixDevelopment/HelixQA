@@ -21,6 +21,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	osexec "os/exec"
 	"os/signal"
 	"path/filepath"
 	"strings"
@@ -500,6 +501,7 @@ func cmdAutonomous(args []string) {
 		Timeout:          *timeout,
 		PassNumber:       passNumber,
 		AndroidDevice:    os.Getenv("HELIX_ANDROID_DEVICE"),
+		AndroidDevices:   detectADBDevices(),
 		AndroidPackage:   os.Getenv("HELIX_ANDROID_PACKAGE"),
 		WebURL:           os.Getenv("HELIX_WEB_URL"),
 		DesktopDisplay:   os.Getenv("HELIX_DESKTOP_DISPLAY"),
@@ -531,6 +533,41 @@ func cmdAutonomous(args []string) {
 			"Session failed: %s\n", result.Error)
 		os.Exit(1)
 	}
+}
+
+// detectADBDevices runs `adb devices` and returns all
+// connected device serials. Falls back to HELIX_ANDROID_DEVICE
+// env var if no devices are detected.
+func detectADBDevices() []string {
+	out, err := osexec.Command(
+		"adb", "devices",
+	).Output()
+	if err != nil {
+		// Fall back to env var.
+		if dev := os.Getenv("HELIX_ANDROID_DEVICE"); dev != "" {
+			return []string{dev}
+		}
+		return nil
+	}
+	var devices []string
+	for _, line := range strings.Split(string(out), "\n") {
+		line = strings.TrimSpace(line)
+		if line == "" || strings.HasPrefix(line, "List") ||
+			strings.HasPrefix(line, "*") {
+			continue
+		}
+		parts := strings.Fields(line)
+		if len(parts) >= 2 && parts[1] == "device" {
+			devices = append(devices, parts[0])
+		}
+	}
+	if len(devices) > 0 {
+		fmt.Printf(
+			"Detected %d ADB devices: %v\n",
+			len(devices), devices,
+		)
+	}
+	return devices
 }
 
 func truncate(s string, max int) string {
