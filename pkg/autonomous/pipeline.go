@@ -267,6 +267,41 @@ func (sp *SessionPipeline) Run(
 		}
 	}
 
+	// ── Phase 0b: ADB reverse proxy for Android devices ─
+	// Ensure every Android device can reach the API at
+	// localhost:8080 via ADB reverse proxy. Without this,
+	// the app shows "Unable to reach server".
+	if sp.config.AndroidDevice != "" {
+		for _, platform := range sp.config.Platforms {
+			if platform == "android" ||
+				platform == "androidtv" {
+				device := sp.config.AndroidDevice
+				revCtx, revCancel := context.WithTimeout(
+					ctx, 10*time.Second,
+				)
+				out, err := osexec.CommandContext(
+					revCtx, "adb", "-s", device,
+					"reverse", "tcp:8080", "tcp:8080",
+				).CombinedOutput()
+				revCancel()
+				if err != nil {
+					fmt.Printf(
+						"[pipeline] warning: ADB "+
+							"reverse on %s failed: "+
+							"%v (%s)\n",
+						device, err, string(out),
+					)
+				} else {
+					fmt.Printf(
+						"[pipeline] ADB reverse "+
+							"proxy set on %s\n",
+						device,
+					)
+				}
+			}
+		}
+	}
+
 	// ── Phase 1: Learn ──────────────────────────────────
 	phaseStart := time.Now()
 	fmt.Println("[pipeline] Phase 1/4: Learn")
@@ -906,18 +941,18 @@ func (sp *SessionPipeline) Run(
 				// Step 2: Send resized screenshot to
 				// LLM for navigation guidance.
 				if !sp.provider.SupportsVision() {
-					// Use structured fallback when no
-					// vision is available.
-					fbActions := fallbackActions(
-						i, platform,
+					// No vision provider available —
+					// skip this step entirely. HelixQA
+					// is fully autonomous and MUST NOT
+					// use hardcoded navigation. Without
+					// vision, curiosity cannot proceed.
+					fmt.Printf(
+						"  [curiosity %s #%d] "+
+							"no vision provider — "+
+							"skipping\n",
+						platform, i+1,
 					)
-					for _, a := range fbActions {
-						_ = executeAction(
-							curiosityCtx, executor, a,
-						)
-						time.Sleep(1 * time.Second)
-					}
-					continue
+					break
 				}
 
 				// Resize before sending to LLM to
@@ -954,19 +989,35 @@ func (sp *SessionPipeline) Run(
 				}
 
 				// Step 3: Execute LLM-suggested actions.
-				// If the LLM returned no actions (rate
-				// limit, parse error), use a structured
-				// fallback pattern that progresses through
-				// login and navigation like a real user.
+				// If the LLM returned no actions (parse
+				// error), retry the vision call once.
+				// HelixQA is fully autonomous — NO
+				// hardcoded fallback navigation.
 				if len(actions) == 0 {
-					actions = fallbackActions(
-					i, platform,
-				)
-					fmt.Printf(
-						"  [curiosity %s #%d] using "+
-							"fallback navigation\n",
-						platform, i+1,
+					time.Sleep(2 * time.Second)
+					retryShot, _ := executor.Screenshot(
+						curiosityCtx,
 					)
+					if len(retryShot) > 0 {
+						actions = sp.llmNavigate(
+							curiosityCtx,
+							resizeScreenshot(retryShot),
+							platform,
+							i+1,
+							stepHistory,
+						)
+					}
+					if len(actions) == 0 {
+						fmt.Printf(
+							"  [curiosity %s #%d] "+
+								"LLM returned no "+
+								"actions after retry"+
+								" — waiting\n",
+							platform, i+1,
+						)
+						time.Sleep(3 * time.Second)
+						continue
+					}
 				}
 
 				var stepActions []string
@@ -1908,8 +1959,11 @@ func (sp *SessionPipeline) llmNavigate(
 	}
 
 	var actions []llmAction
+	jsonStr := content[start : end+1]
+	// Repair common LLM JSON quirks before parsing.
+	jsonStr = repairLLMJSON(jsonStr)
 	if err := json.Unmarshal(
-		[]byte(content[start:end+1]), &actions,
+		[]byte(jsonStr), &actions,
 	); err != nil {
 		fmt.Printf(
 			"  [curiosity %s #%d] LLM JSON parse "+
@@ -1997,6 +2051,34 @@ func executeAction(
 	}
 }
 
+// repairLLMJSON fixes common JSON formatting issues from LLM
+// vision models (especially LLaVA) that return almost-valid
+// JSON. Handles: trailing commas, single quotes, missing
+// commas between objects, and bare string values.
+func repairLLMJSON(s string) string {
+	// Replace single quotes with double quotes (but not
+	// within already double-quoted strings).
+	if !strings.Contains(s, `"`) && strings.Contains(s, `'`) {
+		s = strings.ReplaceAll(s, `'`, `"`)
+	}
+
+	// Remove trailing commas before ] or }.
+	for _, pair := range [][2]string{
+		{",]", "]"}, {",}", "}"},
+		{", ]", "]"}, {", }", "}"},
+	} {
+		s = strings.ReplaceAll(s, pair[0], pair[1])
+	}
+
+	// Fix missing comma between adjacent objects: }{ → },{
+	s = strings.ReplaceAll(s, "}{", "},{")
+	// Fix: }\n{ or } { patterns.
+	s = strings.ReplaceAll(s, "}\n{", "},\n{")
+	s = strings.ReplaceAll(s, "} {", "}, {")
+
+	return s
+}
+
 // stripCodeFence removes leading/trailing markdown code-fence
 // markers from a string.
 func stripCodeFence(s string) string {
@@ -2012,243 +2094,6 @@ func stripCodeFence(s string) string {
 		s = strings.TrimSpace(s)
 	}
 	return s
-}
-
-// fallbackActions returns a deterministic sequence of actions
-// based on the step number and platform, simulating a real QA
-// session when the LLM vision provider is unavailable. The
-// sequence covers: login (steps 0-9), home browsing (10-24),
-// detail views (25-34), favorites (35-39), settings (40-49).
-func fallbackActions(step int, platform string) []llmAction {
-	if platform == "web" {
-		return webFallbackActions(step)
-	}
-	switch {
-	case step == 0:
-		// Navigate to username field, activate, and clear any
-		// pre-filled text (remember credentials may have saved
-		// the previous username).
-		return []llmAction{
-			{Type: "dpad_up", Reason: "navigate to username field"},
-			{Type: "dpad_up", Reason: "ensure at top"},
-			{Type: "dpad_up", Reason: "ensure at top"},
-			{Type: "dpad_center", Reason: "activate username field"},
-			{Type: "clear", Reason: "clear any pre-filled text"},
-		}
-	case step == 1:
-		return []llmAction{
-			{Type: "type", Value: "admin", Reason: "enter username"},
-		}
-	case step == 2:
-		return []llmAction{
-			{Type: "tab", Reason: "move to password field"},
-			{Type: "dpad_center", Reason: "activate password field"},
-			{Type: "clear", Reason: "clear any existing password"},
-		}
-	case step == 3:
-		return []llmAction{
-			{Type: "type", Value: "admin123", Reason: "enter password"},
-		}
-	case step == 4:
-		// Press ENTER to trigger ImeAction.Done on the password
-		// field, which directly calls the login function. This
-		// avoids the tab/dpad_down issue where focus lands on
-		// the password visibility eye icon instead of Sign In.
-		return []llmAction{
-			{Type: "key", Value: "KEYCODE_ENTER", Reason: "submit login via IME action Done"},
-		}
-	case step == 5:
-		return []llmAction{
-			{Type: "wait", Reason: "wait for login to complete"},
-		}
-	case step >= 6 && step <= 10:
-		// Browse home screen rails — scroll down.
-		return []llmAction{
-			{Type: "dpad_down", Reason: "browse content rails"},
-		}
-	case step >= 11 && step <= 15:
-		// Browse horizontally through rails.
-		return []llmAction{
-			{Type: "dpad_right", Reason: "browse rail items"},
-		}
-	case step == 16:
-		// Open a media item.
-		return []llmAction{
-			{Type: "dpad_center", Reason: "open media item detail"},
-		}
-	case step == 17:
-		return []llmAction{
-			{Type: "wait", Reason: "wait for detail screen"},
-		}
-	case step == 18:
-		// Scroll detail screen.
-		return []llmAction{
-			{Type: "dpad_down", Reason: "scroll detail screen"},
-			{Type: "dpad_down", Reason: "see more details"},
-		}
-	case step == 19:
-		// Try to play media.
-		return []llmAction{
-			{Type: "dpad_center", Reason: "attempt to play media"},
-		}
-	case step == 20:
-		return []llmAction{
-			{Type: "wait", Reason: "wait for playback"},
-		}
-	case step == 21:
-		return []llmAction{
-			{Type: "back", Reason: "go back from player/detail"},
-		}
-	case step >= 22 && step <= 25:
-		return []llmAction{
-			{Type: "dpad_down", Reason: "continue browsing"},
-			{Type: "dpad_right", Reason: "explore more items"},
-		}
-	case step == 26:
-		return []llmAction{
-			{Type: "dpad_center", Reason: "open another item"},
-		}
-	case step == 27:
-		return []llmAction{
-			{Type: "dpad_up", Reason: "navigate to favorite button"},
-			{Type: "dpad_center", Reason: "toggle favorite"},
-		}
-	case step == 28:
-		return []llmAction{
-			{Type: "back", Reason: "go back to browse"},
-		}
-	case step >= 29 && step <= 32:
-		return []llmAction{
-			{Type: "dpad_left", Reason: "navigate left"},
-		}
-	case step >= 33 && step <= 36:
-		return []llmAction{
-			{Type: "dpad_up", Reason: "scroll up to top"},
-		}
-	case step >= 37 && step <= 40:
-		// Navigate to settings or search.
-		return []llmAction{
-			{Type: "dpad_down", Reason: "explore more UI"},
-			{Type: "dpad_center", Reason: "select element"},
-		}
-	default:
-		// Later steps: back navigation and re-exploration.
-		if step%3 == 0 {
-			return []llmAction{
-				{Type: "back", Reason: "test back navigation"},
-			}
-		}
-		if step%3 == 1 {
-			return []llmAction{
-				{Type: "dpad_down", Reason: "continue exploration"},
-				{Type: "dpad_right", Reason: "explore rail"},
-			}
-		}
-		return []llmAction{
-			{Type: "dpad_center", Reason: "interact with element"},
-		}
-	}
-}
-
-// sanitizeFilename converts a screen name or label into a
-// safe, lowercase filename component. Slashes and spaces
-// are replaced with hyphens, and the result is capped at
-// 40 characters.
-// webFallbackActions returns click-based fallback actions for
-// the web platform. Coordinates are based on a 1920x1080
-// viewport with the Catalogizer login form centered.
-func webFallbackActions(step int) []llmAction {
-	switch {
-	case step == 0:
-		// Click username field (centered card, ~960,310).
-		return []llmAction{
-			{Type: "click", Value: "960,310",
-				Reason: "click username field"},
-		}
-	case step == 1:
-		return []llmAction{
-			{Type: "type", Value: "admin",
-				Reason: "enter username"},
-		}
-	case step == 2:
-		// Click password field (~960,400).
-		return []llmAction{
-			{Type: "click", Value: "960,400",
-				Reason: "click password field"},
-		}
-	case step == 3:
-		return []llmAction{
-			{Type: "type", Value: "admin123",
-				Reason: "enter password"},
-		}
-	case step == 4:
-		// Click Sign In button (~960,490).
-		return []llmAction{
-			{Type: "click", Value: "960,490",
-				Reason: "click Sign In button"},
-		}
-	case step == 5:
-		return []llmAction{
-			{Type: "wait",
-				Reason: "wait for login to complete"},
-		}
-	case step >= 6 && step <= 10:
-		return []llmAction{
-			{Type: "scroll_down",
-				Reason: "scroll dashboard content"},
-		}
-	case step >= 11 && step <= 15:
-		// Click various nav items on the sidebar.
-		targets := []string{
-			"100,200", "100,250", "100,300",
-			"100,350", "100,400",
-		}
-		idx := step - 11
-		return []llmAction{
-			{Type: "click",
-				Value:  targets[idx],
-				Reason: "click sidebar nav item"},
-			{Type: "wait",
-				Reason: "wait for page load"},
-		}
-	case step >= 16 && step <= 20:
-		// Click content items on the main area.
-		return []llmAction{
-			{Type: "click", Value: "600,400",
-				Reason: "click content item"},
-			{Type: "wait",
-				Reason: "wait for detail page"},
-		}
-	case step >= 21 && step <= 25:
-		return []llmAction{
-			{Type: "back",
-				Reason: "navigate back"},
-		}
-	case step >= 26 && step <= 30:
-		return []llmAction{
-			{Type: "scroll_down",
-				Reason: "scroll page content"},
-			{Type: "click", Value: "800,500",
-				Reason: "click element"},
-		}
-	default:
-		if step%3 == 0 {
-			return []llmAction{
-				{Type: "back",
-					Reason: "test back navigation"},
-			}
-		}
-		if step%3 == 1 {
-			return []llmAction{
-				{Type: "scroll_down",
-					Reason: "continue scrolling"},
-			}
-		}
-		return []llmAction{
-			{Type: "click", Value: "960,400",
-				Reason: "click content element"},
-		}
-	}
 }
 
 func sanitizeFilename(s string) string {

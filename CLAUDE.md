@@ -1,5 +1,18 @@
 # CLAUDE.md - HelixQA Module
 
+## CONSTITUTION: Fully Autonomous LLM-Driven QA
+
+**This is the SUPREME, NON-NEGOTIABLE rule of HelixQA:**
+
+- **ALL navigation, interaction, and decision-making MUST be performed by real LLM vision models.** No exceptions.
+- **NEVER write hardcoded tap coordinates, sleep timers, keystroke sequences, or scripted navigation flows.** These are brittle, break on different devices, and produce false positives.
+- **NEVER implement "fallback actions" or "fallback navigation" that bypass the LLM.** If the LLM vision provider is unavailable, the curiosity phase MUST skip — not fake results with scripted steps.
+- **If the LLM returns malformed JSON, RETRY the vision call** — do not substitute a hardcoded action sequence.
+- **A QA session that reports "success" while using scripted navigation instead of real LLM analysis is a CRITICAL infrastructure failure** and is worse than reporting "skipped".
+- **Every QA result MUST be backed by real LLM vision analysis.** Screenshots must be sent to and analyzed by the vision model. The LLM decides the next action based on what it sees — always.
+
+Violations of this constitution void the entire QA session's results.
+
 ## MANDATORY: No CI/CD Pipelines
 
 **NO GitHub Actions, GitLab CI/CD, or any automated pipeline may exist in this repository!**
