@@ -927,6 +927,36 @@ func (sp *SessionPipeline) Run(
 				continue
 			}
 
+			// Create a per-platform vision provider.
+			// If a VisionPool slot exists for this platform,
+			// create a dedicated provider pointing at the
+			// slot's endpoint (llama-server or Ollama).
+			// Otherwise fall back to the shared provider.
+			platformProvider := sp.provider
+			if visionPool != nil {
+				slot := visionPool.GetSlot(
+					platform,
+					sp.config.AndroidDevice,
+				)
+				if slot != nil && slot.Endpoint != "" {
+					// Create an OpenAI-compatible provider
+					// pointing at this slot's llama-server.
+					slotProvider := llm.NewOpenAIProvider(
+						llm.ProviderConfig{
+							Name:    "llamacpp-" + slot.ID,
+							BaseURL: slot.Endpoint,
+							Model:   "llava",
+						},
+					)
+					platformProvider = slotProvider
+					fmt.Printf(
+						"  [curiosity %s] using "+
+							"dedicated vision: %s\n",
+						platform, slot.Endpoint,
+					)
+				}
+			}
+
 			// stepHistory tracks actions from previous
 			// steps so the LLM avoids repeating itself.
 			var stepHistory []string
@@ -976,7 +1006,7 @@ func (sp *SessionPipeline) Run(
 
 				// Step 2: Send resized screenshot to
 				// LLM for navigation guidance.
-				if !sp.provider.SupportsVision() {
+				if !platformProvider.SupportsVision() {
 					// No vision provider available —
 					// skip this step entirely. HelixQA
 					// is fully autonomous and MUST NOT
@@ -1015,6 +1045,7 @@ func (sp *SessionPipeline) Run(
 					platform,
 					i+1,
 					stepHistory,
+					platformProvider,
 				)
 				if slot != nil {
 					slot.RecordCall(
@@ -1041,6 +1072,7 @@ func (sp *SessionPipeline) Run(
 							platform,
 							i+1,
 							stepHistory,
+							platformProvider,
 						)
 					}
 					if len(actions) == 0 {
@@ -1926,6 +1958,7 @@ func (sp *SessionPipeline) llmNavigate(
 	platform string,
 	step int,
 	history []string,
+	visionProvider ...llm.Provider,
 ) []llmAction {
 	// Select the right prompt for the platform.
 	var prompt string
@@ -1954,8 +1987,15 @@ func (sp *SessionPipeline) llmNavigate(
 	)
 	defer callCancel()
 
+	// Use the per-platform provider if given, otherwise
+	// fall back to the shared pipeline provider.
+	vp := sp.provider
+	if len(visionProvider) > 0 && visionProvider[0] != nil {
+		vp = visionProvider[0]
+	}
+
 	visionStart := time.Now()
-	resp, err := sp.provider.Vision(
+	resp, err := vp.Vision(
 		callCtx, screenshot, prompt,
 	)
 	visionDur := time.Since(visionStart)

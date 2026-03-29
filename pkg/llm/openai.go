@@ -136,7 +136,17 @@ func (p *openaiProvider) Name() string {
 // (DeepSeek, Groq, Cerebras, etc.) are text-only and will error
 // on image_url content parts.
 func (p *openaiProvider) SupportsVision() bool {
-	return visionCapableProviders[p.providerName]
+	if visionCapableProviders[p.providerName] {
+		return true
+	}
+	// llama.cpp per-slot providers have dynamic names like
+	// "llamacpp-androidtv-192.168.0.134:5555". All
+	// llamacpp providers support vision.
+	if len(p.providerName) > 8 &&
+		p.providerName[:8] == "llamacpp" {
+		return true
+	}
+	return false
 }
 
 // Chat sends a multi-turn conversation to the OpenAI chat
@@ -173,24 +183,45 @@ func (p *openaiProvider) Vision(
 	encoded := base64.StdEncoding.EncodeToString(image)
 	dataURI := "data:image/png;base64," + encoded
 
-	req := openaiRequest{
-		Model:     p.model,
-		MaxTokens: 4096,
-		Messages: []openaiReqMsg{
-			{
-				Role: RoleUser,
-				Content: []openaiContentPart{
-					{
-						Type:     "image_url",
-						ImageURL: &openaiImageURL{URL: dataURI},
-					},
-					{
-						Type: "text",
-						Text: prompt,
-					},
+	msgs := []openaiReqMsg{
+		{
+			Role: RoleUser,
+			Content: []openaiContentPart{
+				{
+					Type:     "image_url",
+					ImageURL: &openaiImageURL{URL: dataURI},
+				},
+				{
+					Type: "text",
+					Text: prompt,
 				},
 			},
 		},
+	}
+
+	// For llama.cpp (llamacpp-*) providers, add a system
+	// message that enforces JSON-only output. Without this,
+	// LLaVA models return natural language descriptions
+	// instead of structured JSON actions.
+	if len(p.providerName) > 8 &&
+		p.providerName[:8] == "llamacpp" {
+		sysmsg := openaiReqMsg{
+			Role: RoleSystem,
+			Content: []openaiContentPart{{
+				Type: "text",
+				Text: "You are a QA tester. You MUST respond " +
+					"with ONLY a JSON array of actions. " +
+					"No other text. Each action has: " +
+					"type, value (optional), reason.",
+			}},
+		}
+		msgs = append([]openaiReqMsg{sysmsg}, msgs...)
+	}
+
+	req := openaiRequest{
+		Model:     p.model,
+		MaxTokens: 4096,
+		Messages:  msgs,
 	}
 	return p.doRequest(ctx, req)
 }
