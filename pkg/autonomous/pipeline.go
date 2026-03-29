@@ -100,6 +100,19 @@ type PipelineConfig struct {
 	// VisionModel is the Ollama model to use for vision
 	// (default "llava:7b").
 	VisionModel string
+
+	// UseLlamaCpp switches from Ollama to llama.cpp backend.
+	// When true, HelixQA uses llama-server instances (one per
+	// platform/device) for true multi-instance vision.
+	UseLlamaCpp bool
+
+	// LlamaCppModelPath is the path to the GGUF model on the
+	// remote host (e.g. ~/models/llava-7b-q4.gguf).
+	LlamaCppModelPath string
+
+	// LlamaCppMMProjPath is the path to the multimodal
+	// projector GGUF on the remote host.
+	LlamaCppMMProjPath string
 }
 
 // PipelineResult captures the outcome of a SessionPipeline
@@ -224,14 +237,37 @@ func (sp *SessionPipeline) Run(
 			sp.config.VisionHost,
 			len(sp.config.Platforms),
 		)
-		visionPool = visionremote.NewVisionPool(
-			visionremote.PoolConfig{
-				Host:   sp.config.VisionHost,
-				User:   sp.config.VisionUser,
-				Model:  sp.config.VisionModel,
-				Shared: true, // single Ollama, per-slot locks
-			},
-		)
+		poolCfg := visionremote.PoolConfig{
+			Host:   sp.config.VisionHost,
+			User:   sp.config.VisionUser,
+			Model:  sp.config.VisionModel,
+			Shared: true,
+		}
+
+		// Use llama.cpp backend when configured — provides
+		// true multi-instance with one llama-server per
+		// platform/device for zero contention.
+		if sp.config.UseLlamaCpp {
+			poolCfg.InferenceBackend = visionremote.BackendLlamaCpp
+			poolCfg.Shared = false // dedicated instance per slot
+			poolCfg.BasePort = 8090
+			poolCfg.LlamaCpp = &visionremote.LlamaCppConfig{
+				Host:       sp.config.VisionHost,
+				User:       sp.config.VisionUser,
+				RepoDir:    "~/llama.cpp",
+				ModelPath:  sp.config.LlamaCppModelPath,
+				MMProjPath: sp.config.LlamaCppMMProjPath,
+				BasePort:   8090,
+				GPULayers:  -1,
+				ContextSize: 4096,
+			}
+			fmt.Printf(
+				"[pipeline] Using llama.cpp backend "+
+					"(dedicated instances)\n",
+			)
+		}
+
+		visionPool = visionremote.NewVisionPool(poolCfg)
 		if err := visionPool.EnsureReady(ctx); err != nil {
 			fmt.Printf(
 				"[pipeline] warning: vision pool "+

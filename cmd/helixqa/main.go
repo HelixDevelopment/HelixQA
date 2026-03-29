@@ -506,9 +506,12 @@ func cmdAutonomous(args []string) {
 		FFmpegPath:       os.Getenv("HELIX_FFMPEG_PATH"),
 		CuriosityEnabled: *curiosity,
 		CuriosityTimeout: *curiosityTimeout,
-		VisionHost:       os.Getenv("HELIX_VISION_HOST"),
-		VisionUser:       os.Getenv("HELIX_VISION_USER"),
-		VisionModel:      os.Getenv("HELIX_VISION_MODEL"),
+		VisionHost:         os.Getenv("HELIX_VISION_HOST"),
+		VisionUser:         os.Getenv("HELIX_VISION_USER"),
+		VisionModel:        os.Getenv("HELIX_VISION_MODEL"),
+		UseLlamaCpp:        os.Getenv("HELIX_LLAMACPP") == "true",
+		LlamaCppModelPath:  os.Getenv("HELIX_LLAMACPP_MODEL"),
+		LlamaCppMMProjPath: os.Getenv("HELIX_LLAMACPP_MMPROJ"),
 	}
 	pipeline := autonomous.NewSessionPipeline(
 		cfg, provider, store,
