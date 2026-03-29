@@ -120,6 +120,11 @@ type PipelineConfig struct {
 	// LlamaCppMMProjPath is the path to the multimodal
 	// projector GGUF on the remote host.
 	LlamaCppMMProjPath string
+
+	// LlamaCppFreeGPU stops Ollama before starting
+	// llama-server to free GPU VRAM. Ollama is restored
+	// after the QA session completes.
+	LlamaCppFreeGPU bool
 }
 
 // PipelineResult captures the outcome of a SessionPipeline
@@ -275,6 +280,18 @@ func (sp *SessionPipeline) Run(
 		}
 
 		visionPool = visionremote.NewVisionPool(poolCfg)
+
+		// Free GPU by stopping Ollama if configured.
+		// This allows MiniCPM-V to use the full GPU.
+		if sp.config.LlamaCppFreeGPU &&
+			sp.config.UseLlamaCpp &&
+			poolCfg.LlamaCpp != nil {
+			deployer := visionremote.NewLlamaCppDeployer(
+				*poolCfg.LlamaCpp,
+			)
+			deployer.FreeGPU(ctx)
+		}
+
 		if err := visionPool.EnsureReady(ctx); err != nil {
 			fmt.Printf(
 				"[pipeline] warning: vision pool "+
@@ -1495,6 +1512,16 @@ func (sp *SessionPipeline) Run(
 	// ── Shutdown vision pool ────────────────────────────
 	if visionPool != nil {
 		visionPool.Shutdown(ctx)
+	}
+	// Restore Ollama if we stopped it for GPU access.
+	if sp.config.LlamaCppFreeGPU && sp.config.UseLlamaCpp {
+		deployer := visionremote.NewLlamaCppDeployer(
+			visionremote.LlamaCppConfig{
+				Host: sp.config.VisionHost,
+				User: sp.config.VisionUser,
+			},
+		)
+		deployer.RestoreOllama(ctx)
 	}
 
 	// ── Finalize ────────────────────────────────────────

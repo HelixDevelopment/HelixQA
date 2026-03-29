@@ -514,6 +514,7 @@ func cmdAutonomous(args []string) {
 		UseLlamaCpp:        os.Getenv("HELIX_LLAMACPP") == "true",
 		LlamaCppModelPath:  os.Getenv("HELIX_LLAMACPP_MODEL"),
 		LlamaCppMMProjPath: os.Getenv("HELIX_LLAMACPP_MMPROJ"),
+		LlamaCppFreeGPU:    os.Getenv("HELIX_LLAMACPP_FREE_GPU") == "true",
 	}
 	pipeline := autonomous.NewSessionPipeline(
 		cfg, provider, store,
