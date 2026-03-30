@@ -435,6 +435,7 @@ func cmdAutonomous(args []string) {
 		llm.ProviderOpenAI:    true,
 		llm.ProviderGoogle:    true,
 		llm.ProviderOllama:    true,
+		"astica":              true,
 		"qwen":                true,
 		"kimi":                true,
 		"stepfun":             true,
