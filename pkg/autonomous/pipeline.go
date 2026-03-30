@@ -2112,49 +2112,48 @@ func (sp *SessionPipeline) updateSession(
 // information — all app context comes from the screenshot
 // and the LLM's visual analysis. HelixQA is decoupled and
 // works with ANY app on any supported platform.
-const navigationPromptTemplate = `You are an expert QA tester performing a FULL autonomous QA session on an Android TV application. You must test EVERY feature like a real human QA tester would.
+const navigationPromptTemplate = `You are an expert QA tester performing a thorough autonomous QA session on an Android TV application. You must test EVERY feature like a real human tester would — browsing content, opening details, playing media, testing all screens.
 
-Look at the screenshot carefully and determine:
-1. What screen am I on? (login, home, settings, detail, search, error, etc.)
-2. What is the next logical QA action?
+Look at the screenshot and determine:
+1. What screen am I on?
+2. What is the MOST VALUABLE next QA action? Prioritize UNEXPLORED features.
 
-ANDROID TV NAVIGATION RULES:
-- Navigation is D-pad ONLY. NO touch input.
-- dpad_up/down/left/right — move focus between UI elements
-- dpad_center — select/activate the focused element
-- To type in a text field: first dpad_center to activate it, then use "type"
-- tab — move between form fields (moves focus AND text cursor)
-- key KEYCODE_ENTER — submit forms
-- back — go back to previous screen
-- clear — delete text in the active field
+ANDROID TV CONTROLS:
+- dpad_up/down/left/right — move focus
+- dpad_center — select/activate focused element
+- type — enter text (activate field with dpad_center first)
+- tab — move between form fields
+- back — go back
+- clear — delete text in active field
+- wait — pause 3 seconds
 
-LOGIN FLOW (when you see a login screen):
-1. Navigate to the username field (dpad_up/down to reach it)
-2. dpad_center to activate it
-3. clear any pre-filled text
-4. type the username
-5. tab to move to password field
-6. clear any pre-filled text
-7. type the password
-8. Navigate to Sign In button: dpad_down until Sign In is focused
-9. dpad_center to click Sign In
-IMPORTANT: Do NOT use "key KEYCODE_ENTER" to submit — navigate to the Sign In button and press dpad_center instead.
+LOGIN (only when you see a login screen):
+1. dpad_down to username field, dpad_center to activate
+2. clear, then type the username
+3. tab to password, clear, type the password
+4. dpad_down to Sign In, dpad_center to click
 
-Look for credentials in the screenshot. Common defaults: admin/admin, admin/admin123, admin/password.
+QA TESTING PRIORITY (follow this order):
+1. LOGIN first if on login screen (try admin/admin123)
+2. BROWSE the home screen — scroll down and right through ALL content rows
+3. OPEN detail screens — select items to see their detail/info page
+4. PLAY media — find and activate play buttons for video/audio content
+5. BROWSE categories — navigate to different content sections (movies, TV, music, etc.)
+6. SEARCH — use search to find specific content, verify results appear
+7. TEST favorites — add/remove favorites
+8. EXPLORE settings — check settings/preferences screens
+9. TEST collections — browse/create collections
+10. NAVIGATE back — verify back button works from every screen
 
-AFTER LOGIN — explore ALL features:
-- Browse content on the home screen (dpad_down, dpad_right)
-- Open items to view details (dpad_center)
-- Test favorites, search, settings, collections
-- Test back navigation from every screen
-- Look for bugs: empty screens, broken layouts, missing data
+CRITICAL: Do NOT stay on the same screen! After 2-3 actions on any screen, MOVE to a different screen. A real QA tester explores the ENTIRE app, not just login and search.
 
-RESPONSE FORMAT:
-Return ONLY a JSON array of 1-5 actions. No other text.
-Each action: {"type":"...", "value":"..." (optional), "reason":"..."}
-Types: dpad_up, dpad_down, dpad_left, dpad_right, dpad_center, type, tab, key, back, clear, wait
+If you see content items (movies, shows, songs, etc.), SELECT one to open its detail page.
+If you see a play button, PRESS IT to test playback.
+If you see navigation tabs or menu items you haven't visited, GO THERE.
 
-Think step by step. Respond with ONLY the JSON array.`
+RESPONSE: Return ONLY a JSON array of 1-5 actions. No other text.
+Format: [{"type":"...", "value":"...", "reason":"..."}]
+Types: dpad_up, dpad_down, dpad_left, dpad_right, dpad_center, type, tab, key, back, clear, wait`
 
 // webNavigationPromptTemplate is the prompt for web browser
 // QA sessions. Uses mouse clicks and keyboard input instead of
@@ -2164,40 +2163,40 @@ Think step by step. Respond with ONLY the JSON array.`
 // analyzes the screenshot to determine context.
 const webNavigationPromptTemplate = `You are an expert QA tester performing a FULL autonomous QA session on a web application in a headless browser (1920x1080 viewport). Test EVERY feature like a real human QA tester would.
 
-Look at the screenshot carefully and determine:
-1. What page am I on? (login, dashboard, list, detail, settings, error, etc.)
-2. What is the next logical QA action?
+Look at the screenshot and determine:
+1. What page am I on?
+2. What is the MOST VALUABLE unexplored QA action?
 
-WEB INTERACTION RULES:
-- click with x,y pixel coordinates to click elements
-- type to enter text (click the input field first!)
-- scroll_down/scroll_up to scroll the page
-- key with standard names: Enter, Escape, Tab, Backspace
-- back for browser back navigation
-- wait pauses for 3 seconds (use after form submission)
+WEB CONTROLS:
+- click — value is "x,y" pixel coordinates
+- type — enter text (click input first)
+- scroll_down/scroll_up — scroll page
+- key — Enter, Escape, Tab, Backspace
+- back — browser back
+- wait — pause 3 seconds
 
-LOGIN FLOW (when you see a login form):
-1. Click the username/email field
-2. Type the username (look for hints on the page, try "admin")
-3. Click the password field
-4. Type the password (try "admin123" or "password")
-5. Click the Sign In / Login button
+LOGIN (only on login page):
+1. Click username field, type "admin"
+2. Click password field, type "admin123"
+3. Click Sign In button
 
-AFTER LOGIN — explore ALL features:
-- Browse the dashboard, check stats and data
-- Navigate through menu/sidebar items
-- Open detail pages for items
-- Test search, favorites, settings
-- Test back navigation
-- Look for bugs: empty screens, broken layouts, errors
+QA TESTING PRIORITY (follow this order):
+1. LOGIN first if on login page
+2. DASHBOARD — check stats, charts, activity feed
+3. BROWSE MEDIA — click on media items to open details
+4. PLAY CONTENT — click play buttons to test playback
+5. SIDEBAR NAVIGATION — click every menu item
+6. COLLECTIONS — browse and manage collections
+7. FAVORITES — add/remove favorites
+8. SEARCH — search for content, verify results
+9. SETTINGS — check all settings pages
+10. ADMIN — check admin panel if available
 
-RESPONSE FORMAT:
-Return ONLY a JSON array of 1-5 actions. No other text.
-Each action: {"type":"...", "value":"..." (optional), "reason":"..."}
-Types: click, type, scroll_down, scroll_up, key, back, wait
-For click: value = "x,y" coordinates. For type: value = text.
+CRITICAL: Do NOT stay on the same page! After testing one area, NAVIGATE to the next. Click sidebar links, breadcrumbs, and navigation elements to explore the ENTIRE app.
 
-Think step by step. Respond with ONLY the JSON array.`
+RESPONSE: Return ONLY a JSON array of 1-5 actions. No other text.
+Format: [{"type":"...", "value":"...", "reason":"..."}]
+Types: click, type, scroll_down, scroll_up, key, back, wait`
 
 // llmAction is a single navigation action suggested by the LLM.
 type llmAction struct {
