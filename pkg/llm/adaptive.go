@@ -133,6 +133,12 @@ func (a *AdaptiveProvider) Chat(
 // vision are skipped entirely. If no vision-capable provider is
 // registered a descriptive error is returned immediately.
 //
+// Provider ordering is determined dynamically by
+// rankVisionProviders, which scores each provider based on
+// quality, reliability, cost, and API key availability from the
+// vision model registry. This replaces the former hardcoded
+// priority list.
+//
 // Each provider call is capped at adaptivePerProviderTimeout to
 // prevent N slow providers from compounding into N * timeout
 // total latency.
@@ -141,36 +147,7 @@ func (a *AdaptiveProvider) Vision(
 	image []byte,
 	prompt string,
 ) (*Response, error) {
-	// Prioritize providers with native multimodal support
-	// (Gemini, Anthropic) over OpenAI-compatible providers
-	// whose Vision() may not actually work.
-	var capable []Provider
-	var secondary []Provider
-	for _, p := range a.providers {
-		if !p.SupportsVision() {
-			continue
-		}
-		switch p.Name() {
-		case ProviderOllama:
-			// Local Ollama — free, fast, always available.
-			// Highest priority for reliable vision calls.
-			capable = append([]Provider{p}, capable...)
-		case "kimi":
-			// Kimi K2.5 — very cheap ($0.60/1M tokens),
-			// native vision, fast response times.
-			capable = append([]Provider{p}, capable...)
-		case "nvidia":
-			// NVIDIA Llama 3.2 90B Vision — powerful but
-			// can return 500 errors under load.
-			capable = append(capable, p)
-		case ProviderGoogle, ProviderAnthropic, ProviderOpenAI,
-			"githubmodels":
-			capable = append(capable, p)
-		default:
-			secondary = append(secondary, p)
-		}
-	}
-	capable = append(capable, secondary...)
+	capable := rankVisionProviders(a.providers)
 	if len(capable) == 0 {
 		// List all providers to help debug configuration.
 		var names []string
@@ -188,16 +165,14 @@ func (a *AdaptiveProvider) Vision(
 		for _, p := range capable {
 			names = append(names, p.Name())
 		}
-		fmt.Printf("  [llm] vision providers: %v\n", names)
+		fmt.Printf("  [llm] vision providers (ranked): %v\n", names)
 	}
 	var errs []string
 	for _, p := range capable {
-		// Native vision providers (Gemini, Anthropic) get
-		// more time for their internal retry/backoff logic.
+		// Providers with known registry entries get the longer
+		// vision timeout to allow for internal retry/backoff.
 		timeout := adaptivePerProviderTimeout
-		switch p.Name() {
-		case ProviderGoogle, ProviderAnthropic, ProviderOpenAI,
-			ProviderOllama, "nvidia", "githubmodels":
+		if _, known := visionRegistryByProvider[p.Name()]; known {
 			timeout = adaptiveVisionTimeout
 		}
 		pCtx, pCancel := context.WithTimeout(ctx, timeout)
