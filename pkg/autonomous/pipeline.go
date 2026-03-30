@@ -147,6 +147,14 @@ type PipelineConfig struct {
 	// the master host for distributed RPC inference. When
 	// empty, auto-detection will not start RPC workers.
 	LlamaCppRPCModelPath string
+
+	// ChatProviders holds provider configs for the chat model
+	// used in Plan and Analyze phases. When non-empty, a
+	// separate AdaptiveProvider is built for chat tasks
+	// (reasoning, test planning, report generation) so it can
+	// differ from the vision provider used in Execute and
+	// Curiosity phases.
+	ChatProviders []llm.ProviderConfig
 }
 
 // PipelineResult captures the outcome of a SessionPipeline
@@ -200,7 +208,15 @@ func (c *PipelineConfig) qaPassword() string {
 type SessionPipeline struct {
 	config   *PipelineConfig
 	provider llm.Provider
-	store    *memory.Store
+	// chatProvider is used for reasoning-heavy phases (Plan,
+	// Analyze report generation). When nil, falls back to the
+	// shared provider.
+	chatProvider llm.Provider
+	// visionProvider is used for screenshot analysis phases
+	// (Execute, Curiosity). When nil, falls back to the shared
+	// provider.
+	visionProvider llm.Provider
+	store          *memory.Store
 	// kbContext holds a summary of the Learn phase knowledge
 	// base, injected into navigation prompts so the LLM
 	// knows app-specific details (credentials, screens, etc.)
@@ -210,6 +226,9 @@ type SessionPipeline struct {
 
 // NewSessionPipeline creates a SessionPipeline with the
 // given configuration, LLM provider, and memory store.
+// The provider is used as the default for all phases.
+// Use WithChatProvider and WithVisionProvider to override
+// for specific phase types.
 func NewSessionPipeline(
 	cfg *PipelineConfig,
 	provider llm.Provider,
@@ -220,6 +239,44 @@ func NewSessionPipeline(
 		provider: provider,
 		store:    store,
 	}
+}
+
+// WithChatProvider sets a dedicated provider for reasoning-heavy
+// phases (Plan, Analyze). This allows using a different model
+// optimized for text reasoning while the default provider handles
+// vision tasks.
+func (sp *SessionPipeline) WithChatProvider(p llm.Provider) *SessionPipeline {
+	sp.chatProvider = p
+	return sp
+}
+
+// WithVisionProvider sets a dedicated provider for screenshot
+// analysis phases (Execute, Curiosity). This allows using a
+// specialized vision model while the default provider handles
+// chat/reasoning tasks.
+func (sp *SessionPipeline) WithVisionProvider(p llm.Provider) *SessionPipeline {
+	sp.visionProvider = p
+	return sp
+}
+
+// getChatProvider returns the provider for reasoning tasks.
+// Falls back to the shared provider if no dedicated chat
+// provider is configured.
+func (sp *SessionPipeline) getChatProvider() llm.Provider {
+	if sp.chatProvider != nil {
+		return sp.chatProvider
+	}
+	return sp.provider
+}
+
+// getVisionProvider returns the provider for vision tasks.
+// Falls back to the shared provider if no dedicated vision
+// provider is configured.
+func (sp *SessionPipeline) getVisionProvider() llm.Provider {
+	if sp.visionProvider != nil {
+		return sp.visionProvider
+	}
+	return sp.provider
 }
 
 // perTestTimeout is the maximum time a single test
@@ -729,7 +786,7 @@ func (sp *SessionPipeline) Run(
 	// ── Phase 2: Plan ───────────────────────────────────
 	phaseStart = time.Now()
 	fmt.Println("[pipeline] Phase 2/4: Plan")
-	gen := planning.NewTestPlanGenerator(sp.provider)
+	gen := planning.NewTestPlanGenerator(sp.getChatProvider())
 	plan, err := gen.Generate(
 		ctx, kb, sp.config.Platforms,
 	)
@@ -1355,11 +1412,11 @@ func (sp *SessionPipeline) Run(
 				}
 			}
 
-			// Per-target vision provider. Uses the shared
-			// AdaptiveProvider (which includes Ollama with
-			// GPU support) by default. Only overrides with
-			// llama-server when explicitly configured.
-			platformProvider := sp.provider
+			// Per-target vision provider. Uses the dedicated
+			// vision provider (or shared AdaptiveProvider) by
+			// default. Only overrides with llama-server when
+			// explicitly configured.
+			platformProvider := sp.getVisionProvider()
 			if visionPool != nil && sp.config.UseLlamaCpp {
 				slot := visionPool.GetSlot(
 					platform, device,
@@ -1715,10 +1772,11 @@ func (sp *SessionPipeline) Run(
 	// Analyze screenshots with LLM vision — bounded to
 	// maxVisionScreenshots to prevent timeout. We select
 	// evenly spaced screenshots for best coverage.
-	if sp.provider.SupportsVision() &&
+	analyzeVisionProvider := sp.getVisionProvider()
+	if analyzeVisionProvider.SupportsVision() &&
 		len(allScreenshots) > 0 {
 		visionAnalyzer := analysis.NewVisionAnalyzer(
-			sp.provider,
+			analyzeVisionProvider,
 		)
 		toAnalyze := selectEvenly(
 			allScreenshots, maxVisionScreenshots,
@@ -1823,9 +1881,9 @@ func (sp *SessionPipeline) Run(
 			if len(frames) < limit {
 				limit = len(frames)
 			}
-			if sp.provider.SupportsVision() && limit > 0 {
+			if analyzeVisionProvider.SupportsVision() && limit > 0 {
 				va := analysis.NewVisionAnalyzer(
-					sp.provider,
+					analyzeVisionProvider,
 				)
 				for _, framePath := range frames[:limit] {
 					if ctx.Err() != nil {
@@ -2548,8 +2606,9 @@ func (sp *SessionPipeline) llmNavigate(
 	defer callCancel()
 
 	// Use the per-platform provider if given, otherwise
-	// fall back to the shared pipeline provider.
-	vp := sp.provider
+	// fall back to the dedicated vision provider (or shared
+	// pipeline provider).
+	vp := sp.getVisionProvider()
 	if len(visionProvider) > 0 && visionProvider[0] != nil {
 		vp = visionProvider[0]
 	}

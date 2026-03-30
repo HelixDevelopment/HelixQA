@@ -56,6 +56,8 @@ func NewAdaptiveFromConfigs(
 			providers = append(providers, NewGoogleProvider(cfg))
 		case ProviderOllama, ProviderUITars:
 			providers = append(providers, NewOllamaProvider(cfg))
+		case "astica":
+			providers = append(providers, NewAsticaProvider(cfg))
 		default:
 			// Check registry for OpenAI-compatible providers
 			if defaults, ok := providerDefaults[cfg.Name]; ok {

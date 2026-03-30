@@ -421,7 +421,27 @@ func cmdAutonomous(args []string) {
 
 	// ── LLM provider setup ────────────────────────────────────────
 	// Build provider configs from environment variables.
+	// Configs are split into vision-capable and chat-capable
+	// pools so the pipeline can use the best model for each
+	// purpose without hardcoding preferences.
 	var providerConfigs []llm.ProviderConfig
+	var visionConfigs []llm.ProviderConfig
+	var chatConfigs []llm.ProviderConfig
+
+	// Known vision-capable providers (models that support
+	// image input for screenshot analysis).
+	visionProviders := map[string]bool{
+		llm.ProviderAnthropic: true,
+		llm.ProviderOpenAI:    true,
+		llm.ProviderGoogle:    true,
+		llm.ProviderOllama:    true,
+		"qwen":                true,
+		"kimi":                true,
+		"stepfun":             true,
+		"nvidia":              true,
+		"githubmodels":        true,
+		"xai":                 true,
+	}
 
 	// Auto-discover all LLM providers from environment variables.
 	// Supports 40+ providers via the registry in pkg/llm.
@@ -430,19 +450,28 @@ func cmdAutonomous(args []string) {
 		if val == "" {
 			continue
 		}
+		var cfg llm.ProviderConfig
 		if providerName == llm.ProviderOllama {
 			// Ollama uses URL, not API key
-			providerConfigs = append(providerConfigs, llm.ProviderConfig{
+			cfg = llm.ProviderConfig{
 				Name:    providerName,
 				BaseURL: val,
 				Model:   os.Getenv("HELIX_OLLAMA_MODEL"),
-			})
+			}
 		} else {
-			providerConfigs = append(providerConfigs, llm.ProviderConfig{
+			cfg = llm.ProviderConfig{
 				Name:   providerName,
 				APIKey: val,
-			})
+			}
 		}
+		providerConfigs = append(providerConfigs, cfg)
+
+		// Classify into vision and chat pools.
+		if visionProviders[providerName] {
+			visionConfigs = append(visionConfigs, cfg)
+		}
+		// All providers can do chat.
+		chatConfigs = append(chatConfigs, cfg)
 	}
 
 	if len(providerConfigs) == 0 {
@@ -453,10 +482,24 @@ func cmdAutonomous(args []string) {
 		os.Exit(1)
 	}
 
+	// Build the shared provider from all discovered configs.
 	provider, err := llm.NewAdaptiveFromConfigs(providerConfigs)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "error: LLM setup: %v\n", err)
 		os.Exit(1)
+	}
+
+	// Build dedicated vision provider from vision-capable configs.
+	var visionProvider *llm.AdaptiveProvider
+	if len(visionConfigs) > 0 {
+		visionProvider, _ = llm.NewAdaptiveFromConfigs(visionConfigs)
+	}
+
+	// Build dedicated chat provider from all configs (chat
+	// models prioritize reasoning quality over vision).
+	var chatProvider *llm.AdaptiveProvider
+	if len(chatConfigs) > 0 {
+		chatProvider, _ = llm.NewAdaptiveFromConfigs(chatConfigs)
 	}
 
 	// ── Memory store setup ────────────────────────────────────────
@@ -530,6 +573,18 @@ func cmdAutonomous(args []string) {
 	pipeline := autonomous.NewSessionPipeline(
 		cfg, provider, store,
 	)
+	// Wire dedicated providers for dual-model selection.
+	// Vision provider handles Execute/Curiosity phases;
+	// chat provider handles Plan/Analyze phases.
+	if visionProvider != nil {
+		pipeline.WithVisionProvider(visionProvider)
+		fmt.Printf("Vision provider:  %s\n", visionProvider.Name())
+	}
+	if chatProvider != nil {
+		pipeline.WithChatProvider(chatProvider)
+		fmt.Printf("Chat provider:    %s\n", chatProvider.Name())
+	}
+	fmt.Println()
 	result, err := pipeline.Run(context.Background())
 	if err != nil {
 		fmt.Fprintf(os.Stderr,

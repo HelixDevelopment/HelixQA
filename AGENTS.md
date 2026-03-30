@@ -76,6 +76,34 @@ go run ./cmd/helixqa --help
 3. Update `WriteReport()` dispatch
 4. Add tests
 
+## Vision Provider Architecture
+
+HelixQA uses a dual-model architecture for autonomous QA:
+
+### Vision Models (screenshot analysis — Execute and Curiosity phases)
+- **Astica.AI** — Specialized computer vision API (`ASTICA_API_KEY`)
+- **Gemini 2.0 Flash** — Primary cloud vision for autonomous navigation
+- **OpenAI GPT-4o** — Alternate cloud vision provider
+- **Ollama** (local) — Free inference via `minicpm-v:8b` or similar (`HELIX_OLLAMA_URL`)
+- **llama.cpp RPC** — Distributed inference across multiple hosts
+
+### Chat Models (reasoning — Learn, Plan, Analyze phases)
+- Any text-capable provider (OpenAI, Anthropic, Gemini, Groq, Mistral, etc.)
+- Selected by LLMsVerifier using dynamic scoring (no hardcoded preferences)
+
+### Dynamic Model Selection
+Model selection is fully dynamic via LLMsVerifier's Strategy pattern:
+- All configured providers are probed at session start
+- Scored on quality, speed, cost, reliability dimensions
+- Best available model selected per-phase requirements
+- No hardcoded model preferences — scores determine selection
+
+### Local Model Probing
+- Ollama instances on configured hosts are auto-discovered
+- Local models compete alongside cloud providers on scoring dimensions
+- Local models get cost=1.0 (free), competing on quality/speed/reliability
+- Distributed hosts (`HELIX_VISION_HOSTS`) are each probed independently
+
 ## Testing Strategy
 
 - All packages use `testify` for assertions

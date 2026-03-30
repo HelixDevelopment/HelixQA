@@ -96,6 +96,37 @@ Violations of this constitution void the entire QA session's results.
 **Module**: `digital.vasic.helixqa` (Go 1.24+)
 **Depends on**: `digital.vasic.challenges`, `digital.vasic.containers`
 
+## Vision Provider Architecture
+
+HelixQA uses a **dual-model architecture** for autonomous QA sessions:
+
+### Vision Models (screenshot analysis)
+Used in the Execute and Curiosity phases to analyze screenshots and decide actions.
+- **Astica.AI** -- Specialized computer vision API providing high-quality UI element detection and screen analysis. Configured via `ASTICA_API_KEY`.
+- **Gemini** -- Google's multimodal model, used as the primary cloud vision provider for autonomous navigation (Gemini 2.0 Flash).
+- **OpenAI** (GPT-4o) -- Alternate cloud vision provider with strong UI comprehension.
+- **Ollama** (local) -- Free local inference via models like `minicpm-v:8b`. No rate limits. Configured via `HELIX_OLLAMA_URL`.
+- **llama.cpp RPC** (distributed) -- Split large vision models across multiple hosts. Each worker contributes VRAM/RAM.
+
+### Chat Models (reasoning and planning)
+Used in the Learn, Plan, and Analyze phases for test generation and report writing.
+- Any provider supporting text chat (OpenAI, Anthropic, Gemini, Groq, Mistral, etc.)
+- Selected dynamically by LLMsVerifier based on quality, speed, cost, and reliability scoring.
+
+### Dynamic Model Selection (no hardcoded preferences)
+Model selection is handled by LLMsVerifier using the Strategy pattern. There are no hardcoded model preferences -- all available providers are probed, scored across multiple dimensions (quality, speed, cost, reliability), and the best available model is selected at runtime. This means:
+- If Astica is configured, it competes on score alongside other vision providers
+- If only Ollama is available, it is used automatically
+- If multiple hosts are configured, distributed inference is preferred over single-host
+
+### Host Machine Configuration
+Distributed vision runs across multiple machines:
+- **thinker.local** -- GPU host (primary vision inference)
+- **amber.local** -- CPU host (secondary, llama.cpp RPC worker)
+- SSH user: configured via `HELIX_VISION_MULTI_USER`
+- Auto-deployment: HelixQA ensures Ollama + model are running on each host before sessions
+- See `HelixQA/.env.example` for full host configuration
+
 ## Critical Constraint
 
 HelixQA IMPORTS from Challenges and Containers -- it NEVER reimplements their functionality. Use `digital.vasic.challenges` and `digital.vasic.containers` packages directly.

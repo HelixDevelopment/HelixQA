@@ -91,6 +91,7 @@ var ProviderEnvKeys = map[string]string{
 	"zhipu":            "ZHIPU_API_KEY",
 	ProviderOllama:     "HELIX_OLLAMA_URL",
 	"stepfun":          "STEPFUN_API_KEY",
+	"astica":           "ASTICA_API_KEY",
 }
 
 // IsOpenAICompatible returns true if the provider uses the

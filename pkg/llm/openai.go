@@ -47,6 +47,7 @@ var visionCapableProviders = map[string]bool{
 	"kimi":             true, // Moonshot AI Kimi K2.5 — native vision, $0.60/1M tokens
 	"qwen":             true, // Alibaba Qwen3-VL — ~90% UI grounding accuracy
 	"stepfun":          true, // Stepfun Step-GUI — GUI-specialized vision
+	"astica":           true, // Astica.AI — specialized vision API (captioning, OCR, object detection)
 }
 
 // openaiRequest is the JSON body sent to /v1/chat/completions.

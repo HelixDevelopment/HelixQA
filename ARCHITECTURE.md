@@ -479,6 +479,46 @@ flowchart TD
     style O fill:#fce4ec
 ```
 
+### Vision Provider Architecture
+
+HelixQA uses a dual-model architecture for autonomous QA sessions:
+
+```
+                    ┌─────────────────────────────┐
+                    │     LLMsVerifier             │
+                    │  (Dynamic Model Selection)   │
+                    └──────────┬──────────────────┘
+                               │ probe + score + rank
+                    ┌──────────▼──────────────────┐
+                    │     Available Providers       │
+                    ├──────────────────────────────┤
+                    │  Vision Models:               │
+                    │  ├── Astica.AI (specialized)  │
+                    │  ├── Gemini 2.0 Flash         │
+                    │  ├── OpenAI GPT-4o            │
+                    │  ├── Ollama (local, free)     │
+                    │  └── llama.cpp RPC (distrib.) │
+                    │                               │
+                    │  Chat Models:                 │
+                    │  ├── Any text-capable cloud   │
+                    │  └── Local Ollama text models  │
+                    └──────────┬──────────────────┘
+                               │ best model per phase
+              ┌────────────────┼────────────────┐
+              │                │                │
+     ┌────────▼────┐  ┌───────▼───────┐ ┌──────▼──────┐
+     │  Learn/Plan  │  │Execute/Curiosity│ │  Analyze    │
+     │  (Chat)      │  │   (Vision)      │ │  (Chat)     │
+     └─────────────┘  └────────────────┘ └─────────────┘
+```
+
+**Key design decisions:**
+- No hardcoded model preferences. All selection is score-based via LLMsVerifier.
+- Astica.AI is a specialized vision API that competes on score alongside general-purpose providers.
+- Local Ollama models get cost=1.0 (free) and compete on quality/speed/reliability.
+- Distributed llama.cpp RPC splits large models across thinker.local (GPU) + amber.local (CPU).
+- FallbackProvider in VisionEngine chains multiple providers for resilience.
+
 ### Bridge Adapter Pattern
 
 HelixQA acts as the sole integration point. External modules (LLMsVerifier, LLMOrchestrator, VisionEngine, DocProcessor) define their own interfaces with no cross-dependencies. HelixQA bridges them via adapter implementations:
