@@ -10,6 +10,8 @@
 - **If the LLM returns malformed JSON, RETRY the vision call** — do not substitute a hardcoded action sequence.
 - **A QA session that reports "success" while using scripted navigation instead of real LLM analysis is a CRITICAL infrastructure failure** and is worse than reporting "skipped".
 - **Every QA result MUST be backed by real LLM vision analysis.** Screenshots must be sent to and analyzed by the vision model. The LLM decides the next action based on what it sees — always.
+- **Vision models MUST be distributed across ALL available hosts** using llama.cpp RPC when multiple hosts are configured. The system MUST dynamically determine the strongest vision model that can run across the combined hardware of all available hosts. Single-host Ollama is acceptable only when no additional hosts are available.
+- **Always use the STRONGEST available vision model.** The system MUST auto-detect GPU/CPU/RAM on each host and select the most capable model that fits the combined resources. A larger model distributed across 3 machines is ALWAYS preferred over a smaller model on 1 machine.
 
 Violations of this constitution void the entire QA session's results.
 
