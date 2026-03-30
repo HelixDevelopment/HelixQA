@@ -2398,6 +2398,11 @@ func executeAction(
 		if action.Value == "" {
 			return nil
 		}
+		// Auto-clear the focused field before typing to
+		// prevent text accumulation. ADB input text appends
+		// to existing content rather than replacing it.
+		_ = exec.Clear(ctx)
+		time.Sleep(300 * time.Millisecond)
 		return exec.Type(ctx, action.Value)
 	case "key":
 		keyCode := action.Value
@@ -2421,17 +2426,10 @@ func executeAction(
 		time.Sleep(3 * time.Second)
 		return nil
 	case "clear":
-		// Select all text in the active field and delete it.
-		// Uses Ctrl+A (select all) then Delete to clear any
-		// pre-filled text before typing new content.
-		_ = exec.KeyPress(ctx, "KEYCODE_MOVE_END")
-		time.Sleep(200 * time.Millisecond)
-		// Delete up to 30 characters to clear the field
-		for i := 0; i < 30; i++ {
-			_ = exec.KeyPress(ctx, "KEYCODE_DEL")
-		}
-		time.Sleep(300 * time.Millisecond)
-		return nil
+		// Delegate to the platform-specific Clear method which
+		// uses select-all + delete (reliable regardless of
+		// field content length).
+		return exec.Clear(ctx)
 	default:
 		return fmt.Errorf("unknown action type: %s", action.Type)
 	}

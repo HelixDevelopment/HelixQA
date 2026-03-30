@@ -451,6 +451,7 @@ type noopExecutor struct{}
 
 func (n *noopExecutor) Click(_ context.Context, _, _ int) error { return nil }
 func (n *noopExecutor) Type(_ context.Context, _ string) error  { return nil }
+func (n *noopExecutor) Clear(_ context.Context) error           { return nil }
 func (n *noopExecutor) Scroll(_ context.Context, _ string, _ int) error {
 	return nil
 }

@@ -223,6 +223,18 @@ func (p *PlaywrightExecutor) Type(
 	return err
 }
 
+// Clear selects all text and deletes it via Playwright
+// keyboard shortcuts.
+func (p *PlaywrightExecutor) Clear(
+	ctx context.Context,
+) error {
+	// Ctrl+A selects all, then Backspace deletes.
+	if err := p.KeyPress(ctx, "Control+a"); err != nil {
+		return err
+	}
+	return p.KeyPress(ctx, "Backspace")
+}
+
 // Scroll scrolls the page in the given direction.
 func (p *PlaywrightExecutor) Scroll(
 	ctx context.Context, direction string, amount int,

@@ -76,6 +76,13 @@ func (c *CLIExecutor) KeyPress(
 	return err
 }
 
+// Clear sends Ctrl-U (kill line) to clear the current input.
+func (c *CLIExecutor) Clear(ctx context.Context) error {
+	runArgs := append(append([]string{}, c.args...), "\x15")
+	_, err := c.runner.Run(ctx, c.command, runArgs...)
+	return err
+}
+
 // Screenshot captures terminal output by running the command
 // and returning its stdout as raw bytes.
 func (c *CLIExecutor) Screenshot(

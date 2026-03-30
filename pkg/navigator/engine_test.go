@@ -224,6 +224,10 @@ func (m *mockExecutor) Scroll(_ context.Context, dir string, _ int) error {
 	return nil
 }
 
+func (m *mockExecutor) Clear(_ context.Context) error {
+	return m.failErr
+}
+
 func (m *mockExecutor) LongPress(_ context.Context, _, _ int) error {
 	return m.failErr
 }

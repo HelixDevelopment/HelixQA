@@ -148,6 +148,11 @@ func (a *APIExecutor) Screenshot(
 	return data, nil
 }
 
+// Clear is not applicable for REST APIs — returns nil.
+func (a *APIExecutor) Clear(_ context.Context) error {
+	return nil
+}
+
 // Click is not applicable for REST APIs — returns nil.
 func (a *APIExecutor) Click(
 	_ context.Context, _, _ int,

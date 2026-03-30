@@ -53,6 +53,15 @@ func (x *X11Executor) Type(
 	return err
 }
 
+// Clear selects all text and deletes it via xdotool
+// keyboard shortcuts (Ctrl+A then BackSpace).
+func (x *X11Executor) Clear(ctx context.Context) error {
+	if err := x.KeyPress(ctx, "ctrl+a"); err != nil {
+		return err
+	}
+	return x.KeyPress(ctx, "BackSpace")
+}
+
 // Scroll uses xdotool to scroll.
 func (x *X11Executor) Scroll(
 	ctx context.Context, direction string, amount int,

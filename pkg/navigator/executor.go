@@ -25,6 +25,11 @@ type ActionExecutor interface {
 	Click(ctx context.Context, x, y int) error
 	// Type enters text into the currently focused element.
 	Type(ctx context.Context, text string) error
+	// Clear selects all text in the focused field and deletes
+	// it. This prevents text accumulation when typing into
+	// fields that already contain content (e.g., ADB input
+	// text appends rather than replaces).
+	Clear(ctx context.Context) error
 	// Scroll scrolls in the given direction by the given amount.
 	Scroll(ctx context.Context, direction string, amount int) error
 	// LongPress performs a long press at the given coordinates.
@@ -113,6 +118,49 @@ func (a *ADBExecutor) Type(
 		"adb", "-s", a.device, "shell", "input", "text", text,
 	)
 	return err
+}
+
+// Clear selects all text in the focused field and deletes it.
+// Uses Ctrl+A (select all) followed by Delete to reliably
+// clear the entire field content regardless of cursor position
+// or field length. This is far more reliable than the previous
+// approach of MOVE_END + looping KEYCODE_DEL which only
+// deleted a fixed number of characters.
+func (a *ADBExecutor) Clear(ctx context.Context) error {
+	// Send Ctrl+A to select all text in the field.
+	// ADB keyevent supports key combinations with --meta.
+	// Keycode 29 = KEYCODE_A, meta 0x7000 = META_CTRL_ON.
+	_, err := a.cmdRunner.Run(ctx,
+		"adb", "-s", a.device, "shell",
+		"input", "keyevent", "--longpress", "29",
+	)
+	if err != nil {
+		// Fallback: try the two-step approach if longpress
+		// CTRL+A is not supported on this Android version.
+		_, _ = a.cmdRunner.Run(ctx,
+			"adb", "-s", a.device, "shell",
+			"input", "keyevent", "KEYCODE_MOVE_HOME",
+		)
+		time.Sleep(100 * time.Millisecond)
+		_, _ = a.cmdRunner.Run(ctx,
+			"adb", "-s", a.device, "shell",
+			"input", "keyevent",
+			"KEYCODE_SHIFT_LEFT", "KEYCODE_MOVE_END",
+		)
+		time.Sleep(100 * time.Millisecond)
+	}
+	time.Sleep(200 * time.Millisecond)
+
+	// Delete the selected text.
+	_, err = a.cmdRunner.Run(ctx,
+		"adb", "-s", a.device, "shell",
+		"input", "keyevent", "KEYCODE_DEL",
+	)
+	if err != nil {
+		return fmt.Errorf("adb clear delete: %w", err)
+	}
+	time.Sleep(200 * time.Millisecond)
+	return nil
 }
 
 // Scroll swipes in the given direction.
