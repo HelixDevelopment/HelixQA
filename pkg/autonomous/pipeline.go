@@ -2398,11 +2398,9 @@ func executeAction(
 		if action.Value == "" {
 			return nil
 		}
-		// Auto-clear the focused field before typing to
-		// prevent text accumulation. ADB input text appends
-		// to existing content rather than replacing it.
-		_ = exec.Clear(ctx)
-		time.Sleep(300 * time.Millisecond)
+		// The LLM decides when to clear — the framework does not
+		// auto-clear. HelixQA constitution requires all navigation
+		// decisions to come from the LLM vision analysis.
 		return exec.Type(ctx, action.Value)
 	case "key":
 		keyCode := action.Value
