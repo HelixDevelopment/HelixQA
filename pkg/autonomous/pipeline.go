@@ -1095,10 +1095,23 @@ func (sp *SessionPipeline) Run(
 		fmt.Println()
 
 		// Launch app on all Android devices with auto-login.
+		// Force-stop first to ensure intent extras are read.
 		for _, ct := range curTargets {
 			if (ct.platform == "android" ||
 				ct.platform == "androidtv") &&
 				sp.config.AndroidPackage != "" {
+				// Force-stop so intent extras are re-read.
+				stopCtx, sc := context.WithTimeout(
+					ctx, 5*time.Second,
+				)
+				_, _ = osexec.CommandContext(
+					stopCtx, "adb", "-s", ct.device,
+					"shell", "am", "force-stop",
+					sp.config.AndroidPackage,
+				).CombinedOutput()
+				sc()
+				time.Sleep(1 * time.Second)
+
 				launchCtx, lc := context.WithTimeout(
 					ctx, 10*time.Second,
 				)
