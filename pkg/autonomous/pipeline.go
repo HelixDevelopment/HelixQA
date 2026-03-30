@@ -121,6 +121,11 @@ type PipelineConfig struct {
 	// projector GGUF on the remote host.
 	LlamaCppMMProjPath string
 
+	// QACredentials holds login credentials discovered by
+	// the Learn phase from .env files. Used to auto-login
+	// via intent extras on Android TV.
+	QACredentials map[string]string
+
 	// LlamaCppFreeGPU stops Ollama before starting
 	// llama-server to free GPU VRAM. Ollama is restored
 	// after the QA session completes.
@@ -139,6 +144,38 @@ type PipelineResult struct {
 	TicketsCreated int           `json:"tickets_created"`
 	CoveragePct    float64       `json:"coverage_pct"`
 	Error          string        `json:"error,omitempty"`
+}
+
+// qaUsername returns the admin username from QA credentials.
+func (c *PipelineConfig) qaUsername() string {
+	if c.QACredentials == nil {
+		return ""
+	}
+	for _, key := range []string{
+		"ADMIN_USERNAME", "ADMIN_USER", "USERNAME",
+		"DEFAULT_USER", "TEST_USERNAME",
+	} {
+		if v := c.QACredentials[key]; v != "" {
+			return v
+		}
+	}
+	return ""
+}
+
+// qaPassword returns the admin password from QA credentials.
+func (c *PipelineConfig) qaPassword() string {
+	if c.QACredentials == nil {
+		return ""
+	}
+	for _, key := range []string{
+		"ADMIN_PASSWORD", "ADMIN_PASS", "PASSWORD",
+		"DEFAULT_PASSWORD", "TEST_PASSWORD",
+	} {
+		if v := c.QACredentials[key]; v != "" {
+			return v
+		}
+	}
+	return ""
 }
 
 // SessionPipeline orchestrates the four-phase autonomous QA
@@ -381,12 +418,29 @@ func (sp *SessionPipeline) Run(
 			launchCtx, lc := context.WithTimeout(
 				ctx, 10*time.Second,
 			)
+			// Launch with QA credentials via intent extras
+			// so the app auto-logs in (bypasses keyboard).
+			args := []string{
+				"-s", device, "shell", "am", "start",
+				"-n", sp.config.AndroidPackage +
+					"/.ui.MainActivity",
+			}
+			// Inject credentials from KB if available.
+			user := sp.config.qaUsername()
+			pass := sp.config.qaPassword()
+			if user != "" && pass != "" {
+				args = append(args,
+					"--es", "qa_username", user,
+					"--es", "qa_password", pass,
+				)
+				fmt.Printf(
+					"[pipeline] launching %s on %s "+
+						"with QA auto-login\n",
+					sp.config.AndroidPackage, device,
+				)
+			}
 			_, _ = osexec.CommandContext(
-				launchCtx, "adb", "-s", device,
-				"shell", "monkey", "-p",
-				sp.config.AndroidPackage,
-				"-c", "android.intent.category.LEANBACK_LAUNCHER",
-				"1",
+				launchCtx, "adb", args...,
 			).CombinedOutput()
 			lc()
 		}
@@ -412,9 +466,34 @@ func (sp *SessionPipeline) Run(
 	// screens, constraints) discovered by the Learn phase
 	// into the generic navigation prompts.
 	var kbParts []string
+	// Credentials from .env — most important for login.
+	if len(kb.Credentials) > 0 {
+		kbParts = append(kbParts,
+			"LOGIN CREDENTIALS (from project .env):")
+		for k, v := range kb.Credentials {
+			kbParts = append(kbParts,
+				fmt.Sprintf("  %s = %s", k, v))
+		}
+		// Make it explicit for the LLM.
+		user := kb.Credentials["ADMIN_USERNAME"]
+		if user == "" {
+			user = kb.Credentials["USERNAME"]
+		}
+		pass := kb.Credentials["ADMIN_PASSWORD"]
+		if pass == "" {
+			pass = kb.Credentials["PASSWORD"]
+		}
+		if user != "" && pass != "" {
+			kbParts = append(kbParts,
+				fmt.Sprintf(
+					"USE THESE CREDENTIALS: "+
+						"username='%s' password='%s'",
+					user, pass))
+		}
+	}
 	if len(kb.Constraints) > 0 {
 		kbParts = append(kbParts,
-			"PROJECT CONSTRAINTS (from documentation):")
+			"PROJECT CONSTRAINTS:")
 		for _, c := range kb.Constraints {
 			kbParts = append(kbParts, "- "+c)
 		}
@@ -429,6 +508,10 @@ func (sp *SessionPipeline) Run(
 				screenNames, ", "))
 	}
 	sp.kbContext = strings.Join(kbParts, "\n")
+	// Store credentials in config for app auto-login.
+	if len(kb.Credentials) > 0 {
+		sp.config.QACredentials = kb.Credentials
+	}
 	if sp.kbContext != "" {
 		fmt.Printf(
 			"[pipeline]   KB context: %d chars\n",
@@ -1011,7 +1094,7 @@ func (sp *SessionPipeline) Run(
 		}
 		fmt.Println()
 
-		// Launch app on all Android devices.
+		// Launch app on all Android devices with auto-login.
 		for _, ct := range curTargets {
 			if (ct.platform == "android" ||
 				ct.platform == "androidtv") &&
@@ -1019,15 +1102,24 @@ func (sp *SessionPipeline) Run(
 				launchCtx, lc := context.WithTimeout(
 					ctx, 10*time.Second,
 				)
+				args := []string{
+					"-s", ct.device, "shell", "am", "start",
+					"-n", sp.config.AndroidPackage +
+						"/.ui.MainActivity",
+				}
+				user := sp.config.qaUsername()
+				pass := sp.config.qaPassword()
+				if user != "" && pass != "" {
+					args = append(args,
+						"--es", "qa_username", user,
+						"--es", "qa_password", pass,
+					)
+				}
 				_, _ = osexec.CommandContext(
-					launchCtx, "adb", "-s", ct.device,
-					"shell", "monkey", "-p",
-					sp.config.AndroidPackage,
-					"-c", "android.intent.category.LEANBACK_LAUNCHER",
-					"1",
+					launchCtx, "adb", args...,
 				).CombinedOutput()
 				lc()
-				time.Sleep(3 * time.Second)
+				time.Sleep(5 * time.Second)
 				fmt.Printf(
 					"  [curiosity] launched %s on %s\n",
 					sp.config.AndroidPackage, ct.device,
@@ -2007,10 +2099,12 @@ LOGIN FLOW (when you see a login screen):
 2. dpad_center to activate it
 3. clear any pre-filled text
 4. type the username
-5. Move to password field (tab or dpad_down + dpad_center)
+5. tab to move to password field
 6. clear any pre-filled text
 7. type the password
-8. Submit (key KEYCODE_ENTER or navigate to Sign In + dpad_center)
+8. Navigate to Sign In button: dpad_down until Sign In is focused
+9. dpad_center to click Sign In
+IMPORTANT: Do NOT use "key KEYCODE_ENTER" to submit — navigate to the Sign In button and press dpad_center instead.
 
 Look for credentials in the screenshot. Common defaults: admin/admin, admin/admin123, admin/password.
 
@@ -2247,7 +2341,17 @@ func executeAction(
 	case "key":
 		keyCode := action.Value
 		if keyCode == "" {
-			keyCode = "KEYCODE_MENU"
+			// Infer key from reason — LLMs often omit the
+			// value but describe the intent in the reason.
+			reason := strings.ToLower(action.Reason)
+			if strings.Contains(reason, "submit") ||
+				strings.Contains(reason, "login") ||
+				strings.Contains(reason, "enter") ||
+				strings.Contains(reason, "confirm") {
+				keyCode = "KEYCODE_ENTER"
+			} else {
+				keyCode = "KEYCODE_ENTER"
+			}
 		}
 		return exec.KeyPress(ctx, keyCode)
 	case "wait":

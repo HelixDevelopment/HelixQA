@@ -58,12 +58,18 @@ type KnowledgeBase struct {
 	Components    []string
 	Constraints   []string
 	KnownIssues   []string
+	// Credentials holds discovered login credentials from
+	// .env files and documentation (e.g. ADMIN_USERNAME,
+	// ADMIN_PASSWORD). Used by navigation prompts so the
+	// LLM knows how to log in without hardcoding.
+	Credentials map[string]string
 }
 
 // NewKnowledgeBase returns a KnowledgeBase with all slice fields initialised
 // to empty (not nil) slices.
 func NewKnowledgeBase() *KnowledgeBase {
 	return &KnowledgeBase{
+		Credentials:   map[string]string{},
 		Screens:       []Screen{},
 		APIEndpoints:  []APIEndpoint{},
 		Docs:          []DocEntry{},
@@ -144,6 +150,7 @@ func BuildKnowledgeBase(projectRoot string, store *memory.Store) (*KnowledgeBase
 	}
 	kb.Docs = append(kb.Docs, claudeDocs...)
 	kb.Constraints = reader.ExtractConstraints(claudeDocs)
+	kb.Credentials = reader.ExtractCredentials(projectRoot)
 
 	// ── API endpoints ────────────────────────────────────────────────────────
 	mapper := NewCodebaseMapper(projectRoot)

@@ -9,6 +9,22 @@ import (
 	"strings"
 )
 
+// credentialKeys lists environment variable names that typically
+// hold login credentials. These are extracted from .env files
+// and injected into navigation prompts so the LLM can log in.
+var credentialKeys = map[string]bool{
+	"ADMIN_USERNAME":  true,
+	"ADMIN_PASSWORD":  true,
+	"ADMIN_USER":      true,
+	"ADMIN_PASS":      true,
+	"DEFAULT_USER":    true,
+	"DEFAULT_PASSWORD": true,
+	"TEST_USERNAME":   true,
+	"TEST_PASSWORD":   true,
+	"USERNAME":        true,
+	"PASSWORD":        true,
+}
+
 // skipDirs contains directory names that should never be walked when
 // searching for CLAUDE.md / AGENTS.md files.
 var skipDirs = map[string]bool{
@@ -145,6 +161,47 @@ func (r *ProjectReader) ExtractConstraints(docs []DocEntry) []string {
 	}
 
 	return constraints
+}
+
+// ExtractCredentials scans .env files in the project root for
+// common credential patterns (ADMIN_USERNAME, ADMIN_PASSWORD, etc.)
+// Returns a map of key=value pairs.
+func (r *ProjectReader) ExtractCredentials(
+	root string,
+) map[string]string {
+	creds := map[string]string{}
+
+	// Scan common .env locations.
+	envFiles := []string{
+		filepath.Join(root, ".env"),
+		filepath.Join(root, "catalog-api", ".env"),
+		filepath.Join(root, "backend", ".env"),
+		filepath.Join(root, "server", ".env"),
+		filepath.Join(root, "api", ".env"),
+	}
+
+	for _, path := range envFiles {
+		data, err := os.ReadFile(path)
+		if err != nil {
+			continue
+		}
+		for _, line := range strings.Split(string(data), "\n") {
+			line = strings.TrimSpace(line)
+			if line == "" || strings.HasPrefix(line, "#") {
+				continue
+			}
+			parts := strings.SplitN(line, "=", 2)
+			if len(parts) != 2 {
+				continue
+			}
+			key := strings.TrimSpace(parts[0])
+			val := strings.TrimSpace(parts[1])
+			if credentialKeys[key] {
+				creds[key] = val
+			}
+		}
+	}
+	return creds
 }
 
 // extractTitle returns the text of the first `# ` heading found in content.
