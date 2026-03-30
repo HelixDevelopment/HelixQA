@@ -1061,6 +1061,7 @@ func (sp *SessionPipeline) Run(
 		type curiosityTarget struct {
 			platform string
 			device   string
+			pkg      string // Android package name for foreground detection
 		}
 		var curTargets []curiosityTarget
 		for _, platform := range sp.config.Platforms {
@@ -1069,7 +1070,7 @@ func (sp *SessionPipeline) Run(
 				len(sp.config.AndroidDevices) > 0 {
 				for _, dev := range sp.config.AndroidDevices {
 					curTargets = append(curTargets,
-						curiosityTarget{platform, dev},
+						curiosityTarget{platform, dev, sp.config.AndroidPackage},
 					)
 				}
 			} else {
@@ -1080,7 +1081,7 @@ func (sp *SessionPipeline) Run(
 					dev = "api"
 				}
 				curTargets = append(curTargets,
-					curiosityTarget{platform, dev},
+					curiosityTarget{platform, dev, sp.config.AndroidPackage},
 				)
 			}
 		}
@@ -1192,9 +1193,54 @@ func (sp *SessionPipeline) Run(
 			// steps so the LLM avoids repeating itself.
 			var stepHistory []string
 
+			// Determine the expected package name for this target.
+			// Used to detect if the app has lost focus (e.g., user
+			// pressed back too many times and landed on the launcher).
+			expectedPkg := ct.pkg
+			if expectedPkg == "" {
+				expectedPkg = sp.config.AndroidPackage
+			}
+
 			for i := 0; i < maxCuriositySteps; i++ {
 				if curiosityCtx.Err() != nil {
 					break
+				}
+
+				// Guard: verify the target app is still in the
+				// foreground. If the LLM navigated away (e.g.,
+				// pressed back to the launcher), relaunch the app.
+				if (platform == "android" || platform == "androidtv") && device != "" && expectedPkg != "" {
+					fgOut, _ := osexec.CommandContext(
+						curiosityCtx,
+						"adb", "-s", device,
+						"shell", "dumpsys", "window", "windows",
+					).CombinedOutput()
+					fgStr := string(fgOut)
+					// Check if the expected package appears in the
+					// current focus window.
+					if len(fgStr) > 0 && !strings.Contains(fgStr, expectedPkg) {
+						fmt.Printf(
+							"  [curiosity %s #%d] app not in foreground, relaunching %s\n",
+							platform, i+1, expectedPkg,
+						)
+						launchArgs := []string{
+							"-s", device, "shell", "am", "start",
+							"-n", expectedPkg + "/.ui.MainActivity",
+						}
+						user := sp.config.qaUsername()
+						pass := sp.config.qaPassword()
+						if user != "" && pass != "" {
+							launchArgs = append(launchArgs,
+								"--es", "qa_username", user,
+								"--es", "qa_password", pass,
+							)
+						}
+						_, _ = osexec.CommandContext(
+							curiosityCtx,
+							"adb", launchArgs...,
+						).CombinedOutput()
+						time.Sleep(3 * time.Second)
+					}
 				}
 
 				// Step 1: Take screenshot.
