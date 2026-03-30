@@ -1,0 +1,14 @@
+# Device Ignore List for HelixQA
+# ================================
+# Devices listed here will be excluded from HelixQA autonomous testing.
+# Each line is a case-insensitive substring match against the device
+# model name from `adb devices -l`.
+#
+# Examples:
+#   ATMOSphere     — excludes all ATMOSphere (rk3588) devices
+#   emulator       — excludes Android emulators
+#   Pixel          — excludes Pixel phones
+#
+# Blank lines and lines starting with # are ignored.
+
+ATMOSphere

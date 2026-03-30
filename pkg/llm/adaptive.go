@@ -151,16 +151,17 @@ func (a *AdaptiveProvider) Vision(
 			continue
 		}
 		switch p.Name() {
-		case "nvidia":
-			// NVIDIA has Llama 3.2 90B Vision — the most
-			// capable instruction-following vision model.
-			// Produces perfect navigation JSON. Highest
-			// priority for vision calls.
-			capable = append([]Provider{p}, capable...)
 		case ProviderOllama:
-			// Local Ollama as fallback — free, always
-			// available, but smaller models may produce
-			// imprecise actions.
+			// Local Ollama — free, fast, always available.
+			// Highest priority for reliable vision calls.
+			capable = append([]Provider{p}, capable...)
+		case "kimi":
+			// Kimi K2.5 — very cheap ($0.60/1M tokens),
+			// native vision, fast response times.
+			capable = append([]Provider{p}, capable...)
+		case "nvidia":
+			// NVIDIA Llama 3.2 90B Vision — powerful but
+			// can return 500 errors under load.
 			capable = append(capable, p)
 		case ProviderGoogle, ProviderAnthropic, ProviderOpenAI,
 			"githubmodels":
