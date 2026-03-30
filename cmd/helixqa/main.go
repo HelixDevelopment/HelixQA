@@ -550,6 +550,45 @@ func detectADBDevices() []string {
 		}
 		return nil
 	}
+	// Load device exclusions from .devignore file (project root)
+	// and HELIX_ADB_EXCLUDE env var. Case-insensitive substring
+	// match against `adb devices -l` output.
+	var excludeModels []string
+
+	// Read .devignore from project root (try multiple locations).
+	for _, path := range []string{".devignore", "../.devignore", "../../.devignore"} {
+		if data, err := os.ReadFile(path); err == nil {
+			for _, line := range strings.Split(string(data), "\n") {
+				line = strings.TrimSpace(line)
+				if line == "" || strings.HasPrefix(line, "#") {
+					continue
+				}
+				excludeModels = append(excludeModels, strings.ToLower(line))
+			}
+			break
+		}
+	}
+
+	// Also check HELIX_ADB_EXCLUDE env var.
+	if excludeRaw := os.Getenv("HELIX_ADB_EXCLUDE"); excludeRaw != "" {
+		for _, m := range strings.Split(excludeRaw, ",") {
+			m = strings.TrimSpace(m)
+			if m != "" {
+				excludeModels = append(excludeModels, strings.ToLower(m))
+			}
+		}
+	}
+
+	// Also get detailed device info for filtering.
+	detailOut, _ := osexec.Command("adb", "devices", "-l").Output()
+	detailLines := make(map[string]string) // serial -> full line
+	for _, line := range strings.Split(string(detailOut), "\n") {
+		parts := strings.Fields(line)
+		if len(parts) >= 2 && parts[1] == "device" {
+			detailLines[parts[0]] = strings.ToLower(line)
+		}
+	}
+
 	var devices []string
 	for _, line := range strings.Split(string(out), "\n") {
 		line = strings.TrimSpace(line)
@@ -559,7 +598,21 @@ func detectADBDevices() []string {
 		}
 		parts := strings.Fields(line)
 		if len(parts) >= 2 && parts[1] == "device" {
-			devices = append(devices, parts[0])
+			serial := parts[0]
+			// Check exclude list against device detail line.
+			excluded := false
+			if detail, ok := detailLines[serial]; ok {
+				for _, exc := range excludeModels {
+					if strings.Contains(detail, exc) {
+						fmt.Printf("Excluding device %s (matches %q)\n", serial, exc)
+						excluded = true
+						break
+					}
+				}
+			}
+			if !excluded {
+				devices = append(devices, serial)
+			}
 		}
 	}
 	if len(devices) > 0 {
