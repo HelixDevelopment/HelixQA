@@ -475,15 +475,73 @@ func cmdAutonomous(args []string) {
 		chatConfigs = append(chatConfigs, cfg)
 	}
 
-	if len(providerConfigs) == 0 {
+	// ── Bridged CLI model discovery ──────────────────────────
+	// Discover CLI-based LLM tools (claude, qwen-coder,
+	// opencode) that can be used as providers with zero
+	// API key cost. Each discovered CLI is wrapped in a
+	// BridgedCLIProvider and added to the provider pools.
+	var bridgedProviders []*llm.BridgedCLIProvider
+	for _, cli := range []struct {
+		name  string
+		bin   string
+		model string
+	}{
+		{"claude", "claude", ""},
+		{"qwen-coder", "qwen-coder", ""},
+		{"opencode", "opencode", ""},
+	} {
+		cliPath, lookErr := osexec.LookPath(cli.bin)
+		if lookErr != nil {
+			continue
+		}
+		bp := llm.NewBridgedCLIProvider(
+			cliPath, cli.name, cli.model,
+		)
+		bridgedProviders = append(bridgedProviders, bp)
+
+		// Bridged CLIs are chat-capable; only Claude
+		// supports vision.
+		chatConfigs = append(chatConfigs,
+			llm.ProviderConfig{
+				Name: "bridge-" + cli.name,
+			},
+		)
+		if bp.SupportsVision() {
+			visionConfigs = append(visionConfigs,
+				llm.ProviderConfig{
+					Name: "bridge-" + cli.name,
+				},
+			)
+		}
+		fmt.Printf(
+			"Bridged CLI:      %s (%s)\n",
+			cli.name, cliPath,
+		)
+	}
+
+	if len(providerConfigs) == 0 &&
+		len(bridgedProviders) == 0 {
 		fmt.Fprintln(os.Stderr,
 			"error: no LLM providers configured — set at least one "+
 				"API key env var (e.g., ANTHROPIC_API_KEY, OPENAI_API_KEY, "+
-				"OPENROUTER_API_KEY, DEEPSEEK_API_KEY, GROQ_API_KEY, etc.)")
+				"OPENROUTER_API_KEY, DEEPSEEK_API_KEY, GROQ_API_KEY, etc.) "+
+				"or install a CLI tool (claude, qwen-coder, opencode)")
 		os.Exit(1)
 	}
 
 	// Build the shared provider from all discovered configs.
+	// If only bridged CLIs are available, create a minimal
+	// config list so the adaptive provider has at least one
+	// entry.
+	if len(providerConfigs) == 0 && len(bridgedProviders) > 0 {
+		// Use a placeholder config — the bridged
+		// providers will be added to allProviders directly.
+		providerConfigs = append(providerConfigs,
+			llm.ProviderConfig{
+				Name: bridgedProviders[0].Name(),
+			},
+		)
+	}
 	provider, err := llm.NewAdaptiveFromConfigs(providerConfigs)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "error: LLM setup: %v\n", err)
@@ -600,6 +658,10 @@ func cmdAutonomous(args []string) {
 		for _, p := range chatProvider.Providers() {
 			allProviders = append(allProviders, p)
 		}
+	}
+	// Add bridged CLI providers to the allProviders pool.
+	for _, bp := range bridgedProviders {
+		allProviders = append(allProviders, bp)
 	}
 	// Deduplicate — vision and chat pools may overlap.
 	allProviders = deduplicateProviders(allProviders)

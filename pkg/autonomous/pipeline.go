@@ -26,7 +26,12 @@ import (
 	"digital.vasic.helixqa/pkg/navigator"
 	"digital.vasic.helixqa/pkg/performance"
 	"digital.vasic.helixqa/pkg/planning"
+	"digital.vasic.helixqa/pkg/regression"
+	"digital.vasic.helixqa/pkg/replay"
+	"digital.vasic.helixqa/pkg/reproduce"
+	"digital.vasic.helixqa/pkg/training"
 	"digital.vasic.helixqa/pkg/video"
+	"digital.vasic.helixqa/pkg/vision"
 	visionremote "digital.vasic.visionengine/pkg/remote"
 )
 
@@ -232,6 +237,34 @@ type SessionPipeline struct {
 	// knows app-specific details (credentials, screens, etc.)
 	// without hardcoding them in the prompt templates.
 	kbContext string
+
+	// ── Revolutionary features (all optional — nil-safe) ──
+
+	// screenDiffer detects when a UI action had no visible
+	// effect by comparing consecutive screenshots. When the
+	// screen is unchanged, the LLM is told to try a
+	// different action.
+	screenDiffer *vision.ScreenDiffer
+
+	// replayBuffer persists known-good action sequences to
+	// SQLite so future sessions can replay them instead of
+	// re-discovering navigation paths from scratch.
+	replayBuffer *replay.ReplayBuffer
+
+	// trainingCollector records screenshot + action pairs
+	// during autonomous QA for future vision model
+	// fine-tuning.
+	trainingCollector *training.TrainingCollector
+
+	// dualScreenCapturer captures both visual screenshots
+	// and UI automator XML from Android devices to provide
+	// richer context to the LLM.
+	dualScreenCapturer *navigator.DualScreenCapturer
+
+	// visualRegression compares screenshots across multiple
+	// devices at the same test step to detect cross-device
+	// layout inconsistencies.
+	visualRegression *regression.VisualRegression
 }
 
 // NewSessionPipeline creates a SessionPipeline with the
@@ -445,6 +478,42 @@ func (sp *SessionPipeline) Run(
 		SessionID: sessionID,
 		Status:    StatusRunning,
 	}
+
+	// ── Initialize revolutionary features ────────────────
+	// All features are optional — nil checks protect every
+	// use site so a failure here never blocks the pipeline.
+
+	sp.screenDiffer = vision.NewScreenDiffer(0.97)
+
+	replayDBPath := filepath.Join(
+		sp.config.OutputDir, "replay.db",
+	)
+	if rb, rbErr := replay.NewReplayBuffer(
+		replayDBPath,
+	); rbErr != nil {
+		fmt.Printf(
+			"[pipeline] warning: replay buffer "+
+				"init failed: %v\n", rbErr,
+		)
+	} else {
+		sp.replayBuffer = rb
+		defer sp.replayBuffer.Close()
+		fmt.Printf(
+			"[pipeline] Replay buffer: %s (%d sequences)\n",
+			replayDBPath, sp.replayBuffer.Len(),
+		)
+	}
+
+	trainingDir := filepath.Join(
+		sp.config.OutputDir, "training-data",
+	)
+	sp.trainingCollector = training.NewTrainingCollector(
+		trainingDir,
+	)
+
+	sp.dualScreenCapturer = navigator.NewDualScreenCapturer(
+		detector.NewExecRunner(),
+	)
 
 	// ── Phase 0: Vision pool setup ───────────────────────
 	// Create a VisionPool with one dedicated slot per
@@ -1628,6 +1697,82 @@ func (sp *SessionPipeline) Run(
 					allScreenshots, fname,
 				)
 
+				// ── ScreenDiffer: detect unchanged screens ──
+				if sp.screenDiffer != nil {
+					diffResult := sp.screenDiffer.Compare(
+						screenshot,
+					)
+					if diffResult.IsSame {
+						stepHistory = append(
+							stepHistory,
+							"WARNING: Previous action had "+
+								"NO visible effect on the "+
+								"screen. Try a DIFFERENT "+
+								"action.",
+						)
+						fmt.Printf(
+							"  [curiosity %s #%d] "+
+								"screen unchanged "+
+								"(similarity=%.2f)\n",
+							platform, i+1,
+							diffResult.Similarity,
+						)
+					}
+				}
+
+				// ── ReplayBuffer: replay known sequences ────
+				if sp.replayBuffer != nil {
+					screenHash := replay.ScreenHash(
+						screenshot,
+					)
+					if seq := sp.replayBuffer.FindMatch(
+						screenHash, platform,
+					); seq != nil &&
+						seq.SuccessCount > 2 {
+						fmt.Printf(
+							"  [curiosity %s #%d] "+
+								"replaying known sequence "+
+								"(%d successes)\n",
+							platform, i+1,
+							seq.SuccessCount,
+						)
+						for _, a := range seq.Actions {
+							_ = executeAction(
+								curiosityCtx,
+								executor,
+								llmAction{
+									Type:  a.Type,
+									Value: a.Value,
+								},
+							)
+							time.Sleep(
+								500 * time.Millisecond,
+							)
+						}
+						_ = sp.replayBuffer.MarkSuccess(
+							seq.ID,
+						)
+						continue
+					}
+				}
+
+				// ── DualScreen: capture UI tree for Android ─
+				var uiContext string
+				if (platform == "android" ||
+					platform == "androidtv") &&
+					device != "" &&
+					sp.dualScreenCapturer != nil {
+					capture, capErr :=
+						sp.dualScreenCapturer.CaptureDualScreen(
+							curiosityCtx, device,
+						)
+					if capErr == nil &&
+						capture != nil &&
+						capture.Combined != "" {
+						uiContext = capture.Combined
+					}
+				}
+
 				// Step 2: Send resized screenshot to
 				// LLM for navigation guidance.
 				if !platformProvider.SupportsVision() {
@@ -1643,6 +1788,16 @@ func (sp *SessionPipeline) Run(
 						platform, i+1,
 					)
 					break
+				}
+
+				// Inject UI tree context into the
+				// history so the LLM knows about visible
+				// elements beyond what is in the image.
+				if uiContext != "" {
+					stepHistory = append(
+						stepHistory,
+						"\nUI TREE CONTEXT:\n"+uiContext,
+					)
 				}
 
 				// Resize before sending to LLM to
@@ -1831,6 +1986,64 @@ func (sp *SessionPipeline) Run(
 					),
 				)
 
+				// ── TrainingCollector: record pair ───────
+				if sp.trainingCollector != nil &&
+					len(actions) > 0 {
+					tActions := make(
+						[]training.Action, len(actions),
+					)
+					for ai, a := range actions {
+						tActions[ai] = training.Action{
+							Type:   a.Type,
+							Value:  a.Value,
+							Reason: a.Reason,
+						}
+					}
+					if tErr := sp.trainingCollector.Record(
+						screenshot,
+						tActions,
+						platform,
+						"curiosity",
+						platformProvider.Name(),
+						true,
+					); tErr != nil {
+						fmt.Printf(
+							"  [training %s #%d] "+
+								"record failed: %v\n",
+							platform, i+1, tErr,
+						)
+					}
+				}
+
+				// ── ReplayBuffer: record sequence ───────
+				if sp.replayBuffer != nil &&
+					len(actions) > 0 {
+					screenHash := replay.ScreenHash(
+						screenshot,
+					)
+					recActions := make(
+						[]replay.RecordedAction,
+						len(actions),
+					)
+					for ai, a := range actions {
+						recActions[ai] = replay.RecordedAction{
+							Type:       a.Type,
+							Value:      a.Value,
+							ScreenHash: screenHash,
+						}
+					}
+					_ = sp.replayBuffer.Record(
+						replay.ActionSequence{
+							ID: fmt.Sprintf(
+								"%s-%s-%d",
+								platform, device, i+1,
+							),
+							Platform: platform,
+							Actions:  recActions,
+						},
+					)
+				}
+
 				fmt.Printf(
 					"  [curiosity %s #%d] "+
 						"step done in %v\n",
@@ -1849,6 +2062,77 @@ func (sp *SessionPipeline) Run(
 				time.Millisecond,
 			),
 		)
+
+		// ── ScreenDiffer stats ──────────────────────────
+		if sp.screenDiffer != nil {
+			same, diff := sp.screenDiffer.Stats()
+			fmt.Printf(
+				"  [screen-diff] %d unchanged, "+
+					"%d changed screens\n",
+				same, diff,
+			)
+		}
+
+		// ── VisualRegression: cross-device comparison ───
+		// When multiple devices were tested, initialize
+		// visual regression and log infrastructure status.
+		// Full pairwise comparison requires collecting
+		// matching screenshots across devices at the same
+		// step, which is complex — we set up the
+		// infrastructure here and log readiness.
+		if len(curTargets) > 1 {
+			vrProvider := sp.selectProviderForPhase(
+				"analyze",
+			)
+			if vrProvider.SupportsVision() {
+				sp.visualRegression =
+					regression.NewVisualRegression(
+						&visionRegressionAdapter{
+							provider: vrProvider,
+						},
+					)
+				fmt.Printf(
+					"  [visual-regression] "+
+						"initialized for %d devices "+
+						"(ready for cross-device "+
+						"comparison)\n",
+					len(curTargets),
+				)
+			}
+		}
+
+		// ── Training data export ────────────────────────
+		if sp.trainingCollector != nil &&
+			sp.trainingCollector.Len() > 0 {
+			exportPath := filepath.Join(
+				sp.config.OutputDir,
+				"training-data",
+				"training.jsonl",
+			)
+			n, exportErr := sp.trainingCollector.Export(
+				exportPath,
+			)
+			if exportErr != nil {
+				fmt.Printf(
+					"  [training] export failed: %v\n",
+					exportErr,
+				)
+			} else {
+				fmt.Printf(
+					"  [training] exported %d pairs "+
+						"to %s\n",
+					n, exportPath,
+				)
+			}
+		}
+
+		// ── ReplayBuffer stats ──────────────────────────
+		if sp.replayBuffer != nil {
+			fmt.Printf(
+				"  [replay] %d sequences stored\n",
+				sp.replayBuffer.Len(),
+			)
+		}
 
 		// Validate that on-screen data matches API data.
 		apiFindings := sp.validateAPIData(ctx)
@@ -2045,6 +2329,86 @@ func (sp *SessionPipeline) Run(
 	}
 
 	result.IssuesFound = len(allFindings)
+
+	// ── BugReproducer: confirm high-severity bugs ───────
+	// After analysis finds issues, attempt to reproduce
+	// critical and high-severity ones using the LLM vision
+	// provider to confirm they are real.
+	if len(allFindings) > 0 {
+		reproduceProvider := sp.selectProviderForPhase(
+			"analyze",
+		)
+		if reproduceProvider.SupportsVision() {
+			highSev := findingsToReproBugs(allFindings)
+			if len(highSev) > 0 {
+				// Create an executor for the first
+				// available Android device (reproduction
+				// needs a live device).
+				var reproExec navigator.ActionExecutor
+				if len(allDevices) > 0 {
+					reproExec = navigator.NewADBExecutor(
+						allDevices[0],
+						detector.NewExecRunner(),
+					)
+				} else if sp.config.AndroidDevice != "" {
+					reproExec = navigator.NewADBExecutor(
+						sp.config.AndroidDevice,
+						detector.NewExecRunner(),
+					)
+				}
+
+				if reproExec != nil {
+					fmt.Printf(
+						"  [reproduce] Attempting to "+
+							"reproduce %d high-severity "+
+							"bugs...\n",
+						len(highSev),
+					)
+					reproducer := reproduce.NewBugReproducer(
+						reproExec, reproduceProvider,
+					)
+					reproCtx, reproCancel :=
+						context.WithTimeout(
+							ctx, 5*time.Minute,
+						)
+					for _, bug := range highSev {
+						reproResult, reproErr :=
+							reproducer.Reproduce(
+								reproCtx, bug,
+							)
+						if reproErr != nil {
+							fmt.Printf(
+								"  [reproduce] %s: "+
+									"error: %v\n",
+								bug.ID, reproErr,
+							)
+							continue
+						}
+						if reproResult != nil &&
+							reproResult.Reproduced {
+							fmt.Printf(
+								"  [reproduce] %s "+
+									"CONFIRMED "+
+									"(reproduced in %d "+
+									"attempts)\n",
+								bug.ID,
+								reproResult.Attempts,
+							)
+						} else if reproResult != nil {
+							fmt.Printf(
+								"  [reproduce] %s "+
+									"not reproduced "+
+									"(%d attempts)\n",
+								bug.ID,
+								reproResult.Attempts,
+							)
+						}
+					}
+					reproCancel()
+				}
+			}
+		}
+	}
 
 	// Create tickets via FindingsBridge.
 	if len(allFindings) > 0 {
@@ -2994,6 +3358,60 @@ func sanitizeFilename(s string) string {
 }
 
 // joinStrings joins a string slice with commas.
+// findingsToReproBugs converts high-severity analysis
+// findings into Bug structs for the BugReproducer. Only
+// findings with "critical" or "high" severity are included.
+func findingsToReproBugs(
+	findings []analysis.AnalysisFinding,
+) []reproduce.Bug {
+	var bugs []reproduce.Bug
+	for i, f := range findings {
+		sev := strings.ToLower(string(f.Severity))
+		if sev != "critical" && sev != "high" {
+			continue
+		}
+		bugs = append(bugs, reproduce.Bug{
+			ID: fmt.Sprintf(
+				"finding-%d-%s", i+1, f.Platform,
+			),
+			Description: f.Title + ": " + f.Description,
+			Severity:    sev,
+			Platform:    f.Platform,
+			// ActionSequence is empty — the reproducer
+			// will use the LLM to navigate based on the
+			// bug description rather than replaying
+			// recorded actions.
+		})
+	}
+	return bugs
+}
+
+// visionRegressionAdapter bridges the llm.Provider
+// interface to the regression.VisionProvider interface.
+// This allows the regression package to remain decoupled
+// from the full llm.Provider type.
+type visionRegressionAdapter struct {
+	provider llm.Provider
+}
+
+func (a *visionRegressionAdapter) Vision(
+	ctx context.Context,
+	image []byte,
+	prompt string,
+) (*regression.VisionResponse, error) {
+	resp, err := a.provider.Vision(ctx, image, prompt)
+	if err != nil {
+		return nil, err
+	}
+	return &regression.VisionResponse{
+		Content: resp.Content,
+	}, nil
+}
+
+func (a *visionRegressionAdapter) SupportsVision() bool {
+	return a.provider.SupportsVision()
+}
+
 func joinStrings(ss []string) string {
 	return strings.Join(ss, ",")
 }
