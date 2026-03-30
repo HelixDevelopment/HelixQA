@@ -102,30 +102,55 @@ HelixQA uses a **dual-model architecture** for autonomous QA sessions:
 
 ### Vision Models (screenshot analysis)
 Used in the Execute and Curiosity phases to analyze screenshots and decide actions.
-- **Astica.AI** -- Specialized computer vision API providing high-quality UI element detection and screen analysis. Configured via `ASTICA_API_KEY`.
-- **Gemini** -- Google's multimodal model, used as the primary cloud vision provider for autonomous navigation (Gemini 2.0 Flash).
-- **OpenAI** (GPT-4o) -- Alternate cloud vision provider with strong UI comprehension.
-- **Ollama** (local) -- Free local inference via models like `minicpm-v:8b`. No rate limits. Configured via `HELIX_OLLAMA_URL`.
-- **llama.cpp RPC** (distributed) -- Split large vision models across multiple hosts. Each worker contributes VRAM/RAM.
+
+**MANDATORY: llama.cpp RPC distributed inference** is the primary local vision backend. It distributes model layers across ALL configured host machines (thinker.local GPU + amber.local CPU + localhost). This is SUPERIOR to Ollama and is the required approach when multiple hosts are available. Ollama is only a fallback when llama.cpp RPC is unavailable.
+
+- **llama.cpp RPC** (distributed, MANDATORY) -- Split vision models across multiple hosts via RPC workers. Master runs on GPU host, workers contribute RAM. Configured via `HELIX_LLAMACPP=true`, `HELIX_LLAMACPP_RPC_WORKERS`, `HELIX_LLAMACPP_MODEL`.
+- **Astica.AI** (cloud) -- Specialized computer vision API for high-quality analysis. Configured via `ASTICA_API_KEY`.
+- **Gemini/OpenAI/Kimi** (cloud fallback) -- Cloud vision providers as secondary options.
+- **Ollama** (local fallback) -- Only when llama.cpp RPC is unavailable. Inferior to llama.cpp for performance.
 
 ### Chat Models (reasoning and planning)
 Used in the Learn, Plan, and Analyze phases for test generation and report writing.
 - Any provider supporting text chat (OpenAI, Anthropic, Gemini, Groq, Mistral, etc.)
-- Selected dynamically by LLMsVerifier based on quality, speed, cost, and reliability scoring.
+- Selected dynamically by LLMsVerifier VisionStrategy based on scoring.
 
 ### Dynamic Model Selection (no hardcoded preferences)
-Model selection is handled by LLMsVerifier using the Strategy pattern. There are no hardcoded model preferences -- all available providers are probed, scored across multiple dimensions (quality, speed, cost, reliability), and the best available model is selected at runtime. This means:
-- If Astica is configured, it competes on score alongside other vision providers
-- If only Ollama is available, it is used automatically
-- If multiple hosts are configured, distributed inference is preferred over single-host
+Model selection is handled by LLMsVerifier using the Strategy pattern (VisionStrategy for vision, CatalogizerStrategy for chat). There are no hardcoded model preferences. All available providers are probed, scored, and the best is selected at runtime.
+
+### Vision Provider Scoring (pkg/llm/vision_ranking.go)
+The `rankVisionProviders()` function dynamically scores and sorts providers:
+- **Score formula**: `(0.6 * quality + 0.4 * reliability) * availability * costBonus`
+- **Availability**: providers with configured API keys get 2x multiplier; Ollama is always available
+- **Cost bonus**: free providers get 1.10x; cheap (<$0.002/1k) get 1.05x
+- **Local Ollama models** (thinker.local, amber.local) are scored alongside cloud providers
+- Provider scores are derived from `visionModelRegistry` which mirrors LLMsVerifier's `VisionModelRegistry()`
+- Both registries MUST stay in sync -- see `LLMsVerifier/pkg/helixqa/models.go`
+
+### Local Ollama Configuration
+Local Ollama models participate in vision scoring via `HELIX_OLLAMA_URL`:
+```bash
+HELIX_OLLAMA_URL=http://thinker.local:11434  # Ollama API endpoint
+HELIX_OLLAMA_MODEL=minicpm-v:8b              # Vision model name
+```
+When configured, Ollama appears in both the vision and chat provider pools. The `ollamaProvider.Vision()` method sends base64-encoded screenshots to `/api/chat` with the images array.
+
+### MANDATORY: llama.cpp RPC Distributed Inference
+- **This is NON-NEGOTIABLE when multiple hosts are configured.**
+- llama.cpp RPC MUST be used instead of Ollama when hosts are available.
+- Each host runs `rpc-server` binary built with `-DGGML_RPC=ON`.
+- The master node (GPU host) runs `llama-server` with `--rpc worker1:port,worker2:port`.
+- Model files (GGUF) are stored on the master; layers distributed to workers.
+- `HELIX_LLAMACPP_FREE_GPU=true` stops Ollama to reclaim GPU VRAM for llama.cpp.
 
 ### Host Machine Configuration
 Distributed vision runs across multiple machines:
-- **thinker.local** -- GPU host (primary vision inference)
-- **amber.local** -- CPU host (secondary, llama.cpp RPC worker)
-- SSH user: configured via `HELIX_VISION_MULTI_USER`
-- Auto-deployment: HelixQA ensures Ollama + model are running on each host before sessions
-- See `HelixQA/.env.example` for full host configuration
+- **thinker.local** -- GPU host (RTX 3060 6GB), master node, GGUF models in `~/models/`
+- **amber.local** -- CPU host, RPC worker contributing RAM
+- **localhost** -- Orchestrator, optional RPC worker
+- SSH keys configured for passwordless access
+- `HELIX_VISION_HOSTS=thinker.local,amber.local` in .env
+- `HELIX_LLAMACPP_RPC_WORKERS=thinker.local:50052,amber.local:50052` in .env
 
 ## Critical Constraint
 
@@ -162,6 +187,7 @@ make help                # Show all targets
 | `pkg/ticket` | Markdown ticket generation for AI fix pipelines |
 | `pkg/reporter` | QA report generation (reuses `challenges/pkg/report`) |
 | `pkg/orchestrator` | Main QA brain tying everything together |
+| `pkg/llm` | LLM provider abstraction, adaptive fallback, cost tracking |
 | `cmd/helixqa` | CLI entry point (subcommands: run, list, report, version) |
 
 ## Autonomous QA Pipeline
@@ -208,6 +234,64 @@ qa-results/
 - Same-title findings are skipped (cross-session dedup via `FindDuplicateByTitle`)
 - Intra-batch duplicates tracked in memory
 - Related findings in same category+platform are grouped with "Related Issues" section
+
+## LLM Cost Tracking
+
+Every autonomous QA session tracks the cost of all LLM API calls. The cost tracker is created automatically by `NewSessionPipeline` and attached to all `AdaptiveProvider` instances.
+
+### Architecture
+
+- `pkg/llm/cost_tracker.go` -- `CostTracker` accumulates per-call cost records (thread-safe via `sync.RWMutex`)
+- `pkg/llm/adaptive.go` -- `AdaptiveProvider.recordCost()` auto-records after every successful `Chat()` and `Vision()` call
+- `pkg/autonomous/pipeline.go` -- `SessionPipeline` creates the tracker, sets the phase label before each phase, and attaches cost summary to `PipelineResult`
+
+### Cost Rates
+
+Rates are sourced from `visionModelRegistry` (vision_ranking.go) and LLMsVerifier's `VisionModelRegistry()` (models.go):
+
+| Provider | Input $/1K tokens | Output $/1K tokens |
+|----------|-------------------|--------------------|
+| OpenAI | 0.005 | 0.015 |
+| Anthropic | 0.003 | 0.015 |
+| Google | 0.0001 | 0.0004 |
+| Kimi | 0.0003 | 0.0006 |
+| Astica | 0.0005 | 0.0005 |
+| Qwen | 0.001 | 0.002 |
+| xAI | 0.0025 | 0.0025 |
+| Ollama | 0.0 | 0.0 (free/local) |
+| StepFun | 0.0 | 0.0 (free tier) |
+| NVIDIA | 0.0 | 0.0 (free tier) |
+
+Custom rates can be set via `CostTracker.SetRate(provider, CostRate{...})`.
+
+### Report Output
+
+Cost data is included in `pipeline-report.json` under the `cost` field:
+
+```json
+{
+  "cost": {
+    "total_cost_usd": 0.042,
+    "total_calls": 15,
+    "total_input_tokens": 25000,
+    "total_output_tokens": 8000,
+    "by_provider": { "google": { "calls": 10, "total_cost_usd": 0.004 } },
+    "by_phase": { "plan": 0.02, "execute": 0.01, "curiosity": 0.008, "analyze": 0.004 },
+    "by_call_type": { "chat": 0.03, "vision": 0.012 }
+  }
+}
+```
+
+### API
+
+- `SessionPipeline.CurrentCost()` -- returns a `CostSummary` snapshot (safe to call during a running session)
+- `CostTracker.Summary()` -- full summary with individual records
+- `CostTracker.SummaryCompact()` -- summary without records (for progress reporting)
+- `CostTracker.TotalCost()` / `CostByProvider()` / `CostByModel()` / `CostByPhase()` -- individual breakdowns
+
+### Token Estimation
+
+When a provider does not report token counts (InputTokens/OutputTokens are both 0), the system estimates output tokens as `len(content) / 4` (roughly 1 token per 4 characters). Providers that do report tokens (OpenAI, Anthropic, Google, Ollama) use exact counts.
 
 ## Key Interfaces
 

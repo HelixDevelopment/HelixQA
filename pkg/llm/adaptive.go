@@ -26,7 +26,9 @@ const adaptiveVisionTimeout = 20 * time.Second
 // satisfies the Provider interface itself, so it can be used
 // anywhere a Provider is expected.
 type AdaptiveProvider struct {
-	providers []Provider
+	providers   []Provider
+	costTracker *CostTracker
+	phase       string
 }
 
 // NewAdaptiveProvider constructs an AdaptiveProvider from an
@@ -82,6 +84,28 @@ func NewAdaptiveFromConfigs(
 	return &AdaptiveProvider{providers: providers}, nil
 }
 
+// SetCostTracker attaches a CostTracker to this provider.
+// All subsequent Chat and Vision calls will record their
+// costs in the tracker.
+func (a *AdaptiveProvider) SetCostTracker(
+	ct *CostTracker,
+) {
+	a.costTracker = ct
+}
+
+// GetCostTracker returns the attached CostTracker, or nil
+// if none has been set.
+func (a *AdaptiveProvider) GetCostTracker() *CostTracker {
+	return a.costTracker
+}
+
+// SetPhase sets the current pipeline phase label used for
+// cost tracking (e.g. "plan", "execute", "curiosity",
+// "analyze").
+func (a *AdaptiveProvider) SetPhase(phase string) {
+	a.phase = phase
+}
+
 // Name returns the canonical identifier for the adaptive provider.
 func (a *AdaptiveProvider) Name() string {
 	return "adaptive"
@@ -117,6 +141,9 @@ func (a *AdaptiveProvider) Chat(
 		resp, err := p.Chat(pCtx, messages)
 		pCancel()
 		if err == nil {
+			a.recordCost(
+				p.Name(), resp, "chat", true,
+			)
 			return resp, nil
 		}
 		errs = append(errs, fmt.Sprintf("%s: %v", p.Name(), err))
@@ -181,6 +208,9 @@ func (a *AdaptiveProvider) Vision(
 		resp, err := p.Vision(pCtx, image, prompt)
 		pCancel()
 		if err == nil {
+			a.recordCost(
+				p.Name(), resp, "vision", true,
+			)
 			return resp, nil
 		}
 		errs = append(errs, fmt.Sprintf("%s: %v", p.Name(), err))
@@ -192,5 +222,33 @@ func (a *AdaptiveProvider) Vision(
 	return nil, fmt.Errorf(
 		"llm: all providers failed: %s",
 		strings.Join(errs, "; "),
+	)
+}
+
+// recordCost records a cost entry in the attached tracker.
+// It is a no-op when no cost tracker is set.
+func (a *AdaptiveProvider) recordCost(
+	providerName string,
+	resp *Response,
+	callType string,
+	success bool,
+) {
+	if a.costTracker == nil || resp == nil {
+		return
+	}
+	inputTokens := resp.InputTokens
+	outputTokens := resp.OutputTokens
+	// If the provider did not report token counts, estimate
+	// from content length (1 token ~ 4 characters).
+	if inputTokens == 0 && outputTokens == 0 &&
+		resp.Content != "" {
+		outputTokens = len(resp.Content) / 4
+		if outputTokens == 0 {
+			outputTokens = 1
+		}
+	}
+	a.costTracker.Record(
+		providerName, resp.Model, a.phase, callType,
+		inputTokens, outputTokens, success,
 	)
 }

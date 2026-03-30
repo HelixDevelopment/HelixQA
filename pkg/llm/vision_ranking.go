@@ -31,11 +31,13 @@ type visionModelScore struct {
 }
 
 // visionModelRegistry mirrors the essential scoring data from
-// LLMsVerifier's VisionModelRegistry(). Each entry represents
-// the best vision model available from a given provider.
+// LLMsVerifier's VisionModelRegistry() (pkg/helixqa/models.go).
+// Each entry represents the best vision model available from a
+// given provider. The LLMsVerifier VisionStrategy (pkg/vision/)
+// uses the same data for its scoring dimensions.
 //
 // When LLMsVerifier adds or updates models, this table should
-// be updated to match.
+// be updated to match. Both registries MUST stay in sync.
 var visionModelRegistry = []visionModelScore{
 	// Tier 0: Specialized vision API
 	{Provider: "astica", QualityScore: 0.97, ReliabilityScore: 0.95, CostPer1kTokens: 0.001, AvgLatencyMs: 800},

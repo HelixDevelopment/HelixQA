@@ -24,6 +24,7 @@ generation for Android, Web, and Desktop targets.
 | `pkg/autonomous` | SessionCoordinator, PlatformWorker, PhaseManager |
 | `pkg/navigator` | NavigationEngine with ADB, Playwright, X11 executors |
 | `pkg/issuedetector` | LLM-powered visual/UX/accessibility/functional bug detection |
+| `pkg/llm` | LLM provider abstraction, adaptive fallback, cost tracking |
 | `pkg/session` | SessionRecorder, Timeline, VideoManager |
 
 ---
@@ -130,3 +131,41 @@ The `autonomous` subcommand extends the standard pipeline with four phases:
 
 `PhaseManager` enforces phase transitions and propagates context cancellation so a
 `--timeout` flag cleanly terminates all workers.
+
+---
+
+## LLM Cost Tracking
+
+Every autonomous session automatically tracks the USD cost of all LLM API calls
+via `CostTracker` (`pkg/llm/cost_tracker.go`).
+
+### Data Flow
+
+```
+NewSessionPipeline()
+  └── NewCostTracker() ← pre-populated with provider rates
+       ├── attached to default AdaptiveProvider
+       ├── attached to chatProvider (if set)
+       └── attached to visionProvider (if set)
+
+AdaptiveProvider.Chat() / .Vision()
+  └── on success → recordCost(provider, resp, callType, true)
+       └── CostTracker.Record(provider, model, phase, callType, tokens, success)
+
+Pipeline.Run() finalization
+  └── costTracker.Summary() → PipelineResult.Cost
+       └── serialized into pipeline-report.json
+```
+
+### Key Types
+
+- `CostRecord` — single API call: provider, model, phase, tokens, cost, success
+- `CostRate` — per-1K-token rates (input + output) for a provider
+- `CostSummary` — aggregate: total cost, calls, tokens, breakdowns by provider/phase/call-type
+- `ProviderCost` — per-provider aggregate with call count and token totals
+
+### Thread Safety
+
+`CostTracker` uses `sync.RWMutex` for all reads/writes. Multiple platform workers
+can record costs concurrently without races. The race detector validates this in
+`TestCostTracker_ConcurrentAccess`.

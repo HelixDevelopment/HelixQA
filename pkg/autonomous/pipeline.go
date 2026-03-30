@@ -160,15 +160,16 @@ type PipelineConfig struct {
 // PipelineResult captures the outcome of a SessionPipeline
 // run.
 type PipelineResult struct {
-	Status         SessionStatus `json:"status"`
-	SessionID      string        `json:"session_id"`
-	Duration       time.Duration `json:"duration"`
-	TestsPlanned   int           `json:"tests_planned"`
-	TestsRun       int           `json:"tests_run"`
-	IssuesFound    int           `json:"issues_found"`
-	TicketsCreated int           `json:"tickets_created"`
-	CoveragePct    float64       `json:"coverage_pct"`
-	Error          string        `json:"error,omitempty"`
+	Status         SessionStatus    `json:"status"`
+	SessionID      string           `json:"session_id"`
+	Duration       time.Duration    `json:"duration"`
+	TestsPlanned   int              `json:"tests_planned"`
+	TestsRun       int              `json:"tests_run"`
+	IssuesFound    int              `json:"issues_found"`
+	TicketsCreated int              `json:"tickets_created"`
+	CoveragePct    float64          `json:"coverage_pct"`
+	Cost           *llm.CostSummary `json:"cost,omitempty"`
+	Error          string           `json:"error,omitempty"`
 }
 
 // qaUsername returns the admin username from QA credentials.
@@ -217,6 +218,10 @@ type SessionPipeline struct {
 	// provider.
 	visionProvider llm.Provider
 	store          *memory.Store
+	// costTracker accumulates LLM API call costs across the
+	// session. Created at pipeline start and attached to all
+	// adaptive providers.
+	costTracker *llm.CostTracker
 	// kbContext holds a summary of the Learn phase knowledge
 	// base, injected into navigation prompts so the LLM
 	// knows app-specific details (credentials, screens, etc.)
@@ -228,35 +233,61 @@ type SessionPipeline struct {
 // given configuration, LLM provider, and memory store.
 // The provider is used as the default for all phases.
 // Use WithChatProvider and WithVisionProvider to override
-// for specific phase types.
+// for specific phase types. A CostTracker is automatically
+// created and attached to all adaptive providers.
 func NewSessionPipeline(
 	cfg *PipelineConfig,
 	provider llm.Provider,
 	store *memory.Store,
 ) *SessionPipeline {
+	ct := llm.NewCostTracker()
+	attachCostTracker(provider, ct)
 	return &SessionPipeline{
-		config:   cfg,
-		provider: provider,
-		store:    store,
+		config:      cfg,
+		provider:    provider,
+		store:       store,
+		costTracker: ct,
+	}
+}
+
+// attachCostTracker sets the cost tracker on a provider if
+// it is an *AdaptiveProvider.
+func attachCostTracker(p llm.Provider, ct *llm.CostTracker) {
+	if ap, ok := p.(*llm.AdaptiveProvider); ok {
+		ap.SetCostTracker(ct)
 	}
 }
 
 // WithChatProvider sets a dedicated provider for reasoning-heavy
 // phases (Plan, Analyze). This allows using a different model
 // optimized for text reasoning while the default provider handles
-// vision tasks.
+// vision tasks. The session's cost tracker is automatically
+// attached.
 func (sp *SessionPipeline) WithChatProvider(p llm.Provider) *SessionPipeline {
 	sp.chatProvider = p
+	attachCostTracker(p, sp.costTracker)
 	return sp
 }
 
 // WithVisionProvider sets a dedicated provider for screenshot
 // analysis phases (Execute, Curiosity). This allows using a
 // specialized vision model while the default provider handles
-// chat/reasoning tasks.
+// chat/reasoning tasks. The session's cost tracker is
+// automatically attached.
 func (sp *SessionPipeline) WithVisionProvider(p llm.Provider) *SessionPipeline {
 	sp.visionProvider = p
+	attachCostTracker(p, sp.costTracker)
 	return sp
+}
+
+// CurrentCost returns the current cost summary for the active
+// session. This can be called while the pipeline is running
+// to get a real-time view of accumulated costs.
+func (sp *SessionPipeline) CurrentCost() llm.CostSummary {
+	if sp.costTracker == nil {
+		return llm.CostSummary{}
+	}
+	return sp.costTracker.SummaryCompact()
 }
 
 // getChatProvider returns the provider for reasoning tasks.
@@ -277,6 +308,18 @@ func (sp *SessionPipeline) getVisionProvider() llm.Provider {
 		return sp.visionProvider
 	}
 	return sp.provider
+}
+
+// setPhase updates the phase label on all adaptive providers
+// so that cost records are tagged with the correct phase.
+func (sp *SessionPipeline) setPhase(phase string) {
+	for _, p := range []llm.Provider{
+		sp.provider, sp.chatProvider, sp.visionProvider,
+	} {
+		if ap, ok := p.(*llm.AdaptiveProvider); ok {
+			ap.SetPhase(phase)
+		}
+	}
 }
 
 // perTestTimeout is the maximum time a single test
@@ -696,6 +739,7 @@ func (sp *SessionPipeline) Run(
 	}
 
 	// ── Phase 1: Learn ──────────────────────────────────
+	sp.setPhase("learn")
 	phaseStart := time.Now()
 	fmt.Println("[pipeline] Phase 1/4: Learn")
 	kb, err := learning.BuildKnowledgeBase(
@@ -784,6 +828,7 @@ func (sp *SessionPipeline) Run(
 	})
 
 	// ── Phase 2: Plan ───────────────────────────────────
+	sp.setPhase("plan")
 	phaseStart = time.Now()
 	fmt.Println("[pipeline] Phase 2/4: Plan")
 	gen := planning.NewTestPlanGenerator(sp.getChatProvider())
@@ -822,6 +867,7 @@ func (sp *SessionPipeline) Run(
 	)
 
 	// ── Phase 3: Execute ────────────────────────────────
+	sp.setPhase("execute")
 	phaseStart = time.Now()
 	fmt.Println("[pipeline] Phase 3/4: Execute")
 
@@ -1291,6 +1337,7 @@ func (sp *SessionPipeline) Run(
 
 	// ── Phase 3.5: Curiosity-Driven Exploration ────────
 	if sp.config.CuriosityEnabled {
+		sp.setPhase("curiosity")
 		phaseStart = time.Now()
 		curiosityBudget := sp.config.CuriosityTimeout
 		fmt.Printf(
@@ -1766,6 +1813,7 @@ func (sp *SessionPipeline) Run(
 	}
 
 	// ── Phase 4: Analyze ────────────────────────────────
+	sp.setPhase("analyze")
 	phaseStart = time.Now()
 	fmt.Println("[pipeline] Phase 4/4: Analyze")
 
@@ -2016,6 +2064,12 @@ func (sp *SessionPipeline) Run(
 			float64(result.TestsPlanned) * 100.0
 	}
 
+	// Attach cost summary to the result.
+	if sp.costTracker != nil {
+		costSummary := sp.costTracker.Summary()
+		result.Cost = &costSummary
+	}
+
 	sp.updateSession(sessionID, result)
 
 	fmt.Printf(
@@ -2026,6 +2080,26 @@ func (sp *SessionPipeline) Run(
 		result.CoveragePct,
 		result.Duration.Round(time.Millisecond),
 	)
+
+	// Log cost summary.
+	if result.Cost != nil && result.Cost.TotalCalls > 0 {
+		fmt.Printf(
+			"[pipeline] LLM cost: $%.6f "+
+				"(%d calls, %d input tokens, "+
+				"%d output tokens)\n",
+			result.Cost.TotalCostUSD,
+			result.Cost.TotalCalls,
+			result.Cost.TotalInputTokens,
+			result.Cost.TotalOutputTokens,
+		)
+		for provider, pc := range result.Cost.ByProvider {
+			fmt.Printf(
+				"[pipeline]   %s: $%.6f "+
+					"(%d calls)\n",
+				provider, pc.TotalCostUSD, pc.Calls,
+			)
+		}
+	}
 
 	return result, nil
 }
