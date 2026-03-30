@@ -134,6 +134,59 @@ The `autonomous` subcommand extends the standard pipeline with four phases:
 
 ---
 
+## Phase-Specific Model Selection
+
+HelixQA's autonomous pipeline selects different LLM models for each phase using
+dedicated LLMsVerifier strategies. This ensures each phase gets the model best
+suited to its task rather than using a one-size-fits-all approach.
+
+### Strategy Mapping
+
+| Phase | LLMsVerifier Strategy | Model Type | Key Dimensions |
+|-------|----------------------|-----------|----------------|
+| Learn | `PlanningStrategy` | Chat | Reasoning (35%), Context (25%), Structured output (20%) |
+| Plan | `PlanningStrategy` | Chat | Reasoning (35%), Context (25%), Structured output (20%) |
+| Execute | `NavigationStrategy` | Vision | JSON compliance (40%), GUI understanding (25%), Speed (20%) |
+| Curiosity | `NavigationStrategy` | Vision | JSON compliance (40%), GUI understanding (25%), Speed (20%) |
+| Analyze | `AnalysisStrategy` | Vision | Description quality (35%), OCR (20%), Object detection (20%) |
+
+### Why Phase-Specific Selection Matters
+
+- **Execute/Curiosity** need models that produce valid JSON action arrays (e.g., Gemini Flash).
+  Models like Astica that return natural-language descriptions are unsuitable and score 0.2 on
+  the JSON compliance dimension.
+- **Analyze** needs models with rich image description, OCR, and object detection (e.g., Astica).
+  Speed is less critical since analysis runs once on selected screenshots.
+- **Learn/Plan** need models with strong reasoning and large context windows (e.g., Claude,
+  Gemini Pro). Vision capability is not required.
+
+### Bridged CLI Models
+
+Models available via CLI coding assistants (Claude Code, Qwen Coder, OpenCode) are
+discovered by `LLMsVerifier/pkg/bridge/` and included in the scoring pool alongside cloud
+and local providers. They have zero token cost (the CLI handles billing) and are tagged with
+a "bridged" capability. Only Claude Code currently supports vision input.
+
+### Model Selection Flow
+
+```
+PhaseModelSelector
+  ├── Learn/Plan phase
+  │     └── PlanningStrategy.Rank(allModels)
+  │           └── PlanningStrategy.Select(ranked, requirements)
+  │                 └── Best chat model (Claude, Gemini, GPT)
+  ├── Execute/Curiosity phase
+  │     └── NavigationStrategy.Rank(allModels)
+  │           └── NavigationStrategy.Select(ranked, {NeedsVision: true})
+  │                 └── Best JSON-capable vision model (Gemini Flash)
+  └── Analyze phase
+        └── AnalysisStrategy.Rank(allModels)
+              └── AnalysisStrategy.Select(ranked, {NeedsVision: true})
+                    └── Best analysis vision model (Astica, GPT-4o)
+```
+
+---
+
 ## LLM Cost Tracking
 
 Every autonomous session automatically tracks the USD cost of all LLM API calls

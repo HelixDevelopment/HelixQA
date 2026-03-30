@@ -225,6 +225,13 @@ func (a *AdaptiveProvider) Vision(
 	)
 }
 
+// Providers returns the underlying Provider slice. This is
+// used by the PhaseModelSelector to score individual
+// providers for phase-specific selection.
+func (a *AdaptiveProvider) Providers() []Provider {
+	return a.providers
+}
+
 // recordCost records a cost entry in the attached tracker.
 // It is a no-op when no cost tracker is set.
 func (a *AdaptiveProvider) recordCost(

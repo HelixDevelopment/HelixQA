@@ -585,6 +585,35 @@ func cmdAutonomous(args []string) {
 		pipeline.WithChatProvider(chatProvider)
 		fmt.Printf("Chat provider:    %s\n", chatProvider.Name())
 	}
+
+	// Build phase-aware model selector from all discovered
+	// providers. This scores each provider per phase
+	// (vision, JSON, reasoning) so the pipeline
+	// automatically picks the best model for each phase.
+	var allProviders []llm.Provider
+	if visionProvider != nil {
+		for _, p := range visionProvider.Providers() {
+			allProviders = append(allProviders, p)
+		}
+	}
+	if chatProvider != nil {
+		for _, p := range chatProvider.Providers() {
+			allProviders = append(allProviders, p)
+		}
+	}
+	// Deduplicate — vision and chat pools may overlap.
+	allProviders = deduplicateProviders(allProviders)
+	if len(allProviders) > 0 {
+		phaseSelector := llm.NewPhaseModelSelector(
+			allProviders,
+		)
+		pipeline.WithPhaseSelector(phaseSelector)
+		fmt.Printf(
+			"Phase selector:   %d providers\n",
+			len(allProviders),
+		)
+	}
+
 	fmt.Println()
 	result, err := pipeline.Run(context.Background())
 	if err != nil {
@@ -696,6 +725,22 @@ func truncate(s string, max int) string {
 		return s
 	}
 	return s[:max-3] + "..."
+}
+
+// deduplicateProviders removes duplicate providers by
+// name, keeping the first occurrence.
+func deduplicateProviders(
+	providers []llm.Provider,
+) []llm.Provider {
+	seen := make(map[string]bool, len(providers))
+	var unique []llm.Provider
+	for _, p := range providers {
+		if !seen[p.Name()] {
+			seen[p.Name()] = true
+			unique = append(unique, p)
+		}
+	}
+	return unique
 }
 
 // loadEnvFile reads a .env file and sets environment variables

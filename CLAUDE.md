@@ -98,25 +98,43 @@ Violations of this constitution void the entire QA session's results.
 
 ## Vision Provider Architecture
 
-HelixQA uses a **dual-model architecture** for autonomous QA sessions:
+HelixQA uses a **phase-specific model selection architecture** for autonomous QA sessions. Each pipeline phase uses a different LLMsVerifier strategy optimised for that phase's requirements:
 
-### Vision Models (screenshot analysis)
-Used in the Execute and Curiosity phases to analyze screenshots and decide actions.
+### Phase-Specific Strategy Selection
+
+| Phase | Strategy | Model Type | Optimised For |
+|-------|----------|-----------|---------------|
+| **Learn** | `PlanningStrategy` | Chat | Large context window, fast text processing |
+| **Plan** | `PlanningStrategy` | Chat | Strong reasoning, structured test case output |
+| **Execute** | `NavigationStrategy` | Vision | JSON action arrays, GUI understanding, speed |
+| **Curiosity** | `NavigationStrategy` | Vision | JSON action arrays, exploration, speed |
+| **Analyze** | `AnalysisStrategy` | Vision | Rich descriptions, OCR, object detection |
+
+The `PhaseModelSelector` wires each phase to its optimal strategy via LLMsVerifier presets:
+- `recipe.NavigationPreset()` for Execute/Curiosity -- prioritises JSON compliance (40%), GUI understanding (25%), speed (20%), cost (15%)
+- `recipe.AnalysisPreset()` for Analyze -- prioritises description quality (35%), OCR (20%), object detection (20%), comprehensiveness (15%), cost (10%)
+- `recipe.PlanningPreset()` for Learn/Plan -- prioritises reasoning (35%), context window (25%), structured output (20%), speed (10%), cost (10%)
+
+### Vision Models (Execute/Curiosity/Analyze phases)
+Used for screenshot analysis and UI navigation.
 
 **MANDATORY: llama.cpp RPC distributed inference** is the primary local vision backend. It distributes model layers across ALL configured host machines (thinker.local GPU + amber.local CPU + localhost). This is SUPERIOR to Ollama and is the required approach when multiple hosts are available. Ollama is only a fallback when llama.cpp RPC is unavailable.
 
 - **llama.cpp RPC** (distributed, MANDATORY) -- Split vision models across multiple hosts via RPC workers. Master runs on GPU host, workers contribute RAM. Configured via `HELIX_LLAMACPP=true`, `HELIX_LLAMACPP_RPC_WORKERS`, `HELIX_LLAMACPP_MODEL`.
-- **Astica.AI** (cloud) -- Specialized computer vision API for high-quality analysis. Configured via `ASTICA_API_KEY`.
-- **Gemini/OpenAI/Kimi** (cloud fallback) -- Cloud vision providers as secondary options.
+- **Astica.AI** (cloud, Analyze only) -- Specialized computer vision API for rich analysis. Cannot produce JSON actions, so NOT used for Execute/Curiosity. Configured via `ASTICA_API_KEY`.
+- **Gemini/OpenAI/Kimi** (cloud) -- Cloud vision providers for navigation (JSON-capable).
 - **Ollama** (local fallback) -- Only when llama.cpp RPC is unavailable. Inferior to llama.cpp for performance.
 
-### Chat Models (reasoning and planning)
-Used in the Learn, Plan, and Analyze phases for test generation and report writing.
+### Chat Models (Learn/Plan phases)
+Used for knowledge base processing, test generation, and report writing.
 - Any provider supporting text chat (OpenAI, Anthropic, Gemini, Groq, Mistral, etc.)
-- Selected dynamically by LLMsVerifier VisionStrategy based on scoring.
+- Selected dynamically by LLMsVerifier `PlanningStrategy` based on reasoning quality and context window.
+
+### Bridged CLI Models
+Models available via CLI coding assistants (Claude Code, Qwen Coder, OpenCode) are discovered by `pkg/bridge/` and included in the scoring pool. They have zero token cost (CLI handles billing) and compete alongside cloud and local models. Only Claude Code currently supports vision input.
 
 ### Dynamic Model Selection (no hardcoded preferences)
-Model selection is handled by LLMsVerifier using the Strategy pattern (VisionStrategy for vision, CatalogizerStrategy for chat). There are no hardcoded model preferences. All available providers are probed, scored, and the best is selected at runtime.
+Model selection is handled by LLMsVerifier using phase-specific strategies (`NavigationStrategy` for Execute/Curiosity, `AnalysisStrategy` for Analyze, `PlanningStrategy` for Learn/Plan). There are no hardcoded model preferences. All available providers are probed, scored by the appropriate strategy, and the best is selected at runtime.
 
 ### Vision Provider Scoring (pkg/llm/vision_ranking.go)
 The `rankVisionProviders()` function dynamically scores and sorts providers:

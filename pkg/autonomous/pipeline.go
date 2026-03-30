@@ -217,7 +217,12 @@ type SessionPipeline struct {
 	// (Execute, Curiosity). When nil, falls back to the shared
 	// provider.
 	visionProvider llm.Provider
-	store          *memory.Store
+	// phaseSelector dynamically selects the best provider
+	// for each pipeline phase based on capability scoring.
+	// When non-nil, selectProviderForPhase uses it before
+	// falling back to the dedicated chat/vision providers.
+	phaseSelector *llm.PhaseModelSelector
+	store         *memory.Store
 	// costTracker accumulates LLM API call costs across the
 	// session. Created at pipeline start and attached to all
 	// adaptive providers.
@@ -280,6 +285,18 @@ func (sp *SessionPipeline) WithVisionProvider(p llm.Provider) *SessionPipeline {
 	return sp
 }
 
+// WithPhaseSelector sets the phase-aware model selector that
+// dynamically picks the best provider for each pipeline phase
+// based on capability scoring from the vision model registry.
+// When set, selectProviderForPhase consults it before falling
+// back to the dedicated chat/vision providers.
+func (sp *SessionPipeline) WithPhaseSelector(
+	sel *llm.PhaseModelSelector,
+) *SessionPipeline {
+	sp.phaseSelector = sel
+	return sp
+}
+
 // CurrentCost returns the current cost summary for the active
 // session. This can be called while the pipeline is running
 // to get a real-time view of accumulated costs.
@@ -320,6 +337,39 @@ func (sp *SessionPipeline) setPhase(phase string) {
 			ap.SetPhase(phase)
 		}
 	}
+}
+
+// selectProviderForPhase consults the PhaseModelSelector
+// (if configured) to pick the best provider for the given
+// phase. Falls back to getChatProvider or
+// getVisionProvider depending on the phase's strategy, and
+// ultimately to the shared provider.
+func (sp *SessionPipeline) selectProviderForPhase(
+	phase string,
+) llm.Provider {
+	if sp.phaseSelector != nil {
+		if selected := sp.phaseSelector.SelectForPhase(
+			phase,
+		); selected != nil {
+			fmt.Printf(
+				"[pipeline] Phase %s: using %s "+
+					"(score-selected)\n",
+				phase, selected.Name(),
+			)
+			return selected
+		}
+	}
+	// Fallback: use the dedicated provider for the
+	// phase type (vision or chat), or the shared
+	// provider.
+	strat := llm.PhaseStrategy{}
+	if sp.phaseSelector != nil {
+		strat = sp.phaseSelector.Strategy(phase)
+	}
+	if strat.PreferVision {
+		return sp.getVisionProvider()
+	}
+	return sp.getChatProvider()
 }
 
 // perTestTimeout is the maximum time a single test
@@ -831,7 +881,7 @@ func (sp *SessionPipeline) Run(
 	sp.setPhase("plan")
 	phaseStart = time.Now()
 	fmt.Println("[pipeline] Phase 2/4: Plan")
-	gen := planning.NewTestPlanGenerator(sp.getChatProvider())
+	gen := planning.NewTestPlanGenerator(sp.selectProviderForPhase("plan"))
 	plan, err := gen.Generate(
 		ctx, kb, sp.config.Platforms,
 	)
@@ -1459,11 +1509,12 @@ func (sp *SessionPipeline) Run(
 				}
 			}
 
-			// Per-target vision provider. Uses the dedicated
-			// vision provider (or shared AdaptiveProvider) by
-			// default. Only overrides with llama-server when
-			// explicitly configured.
-			platformProvider := sp.getVisionProvider()
+			// Per-target vision provider. Uses phase-aware
+			// selection (or dedicated vision provider, or
+			// shared AdaptiveProvider) by default. Only
+			// overrides with llama-server when explicitly
+			// configured.
+			platformProvider := sp.selectProviderForPhase("curiosity")
 			if visionPool != nil && sp.config.UseLlamaCpp {
 				slot := visionPool.GetSlot(
 					platform, device,
@@ -1820,7 +1871,7 @@ func (sp *SessionPipeline) Run(
 	// Analyze screenshots with LLM vision — bounded to
 	// maxVisionScreenshots to prevent timeout. We select
 	// evenly spaced screenshots for best coverage.
-	analyzeVisionProvider := sp.getVisionProvider()
+	analyzeVisionProvider := sp.selectProviderForPhase("analyze")
 	if analyzeVisionProvider.SupportsVision() &&
 		len(allScreenshots) > 0 {
 		visionAnalyzer := analysis.NewVisionAnalyzer(
@@ -2682,9 +2733,9 @@ func (sp *SessionPipeline) llmNavigate(
 	defer callCancel()
 
 	// Use the per-platform provider if given, otherwise
-	// fall back to the dedicated vision provider (or shared
-	// pipeline provider).
-	vp := sp.getVisionProvider()
+	// fall back to phase-aware selection (or dedicated
+	// vision provider, or shared pipeline provider).
+	vp := sp.selectProviderForPhase("curiosity")
 	if len(visionProvider) > 0 && visionProvider[0] != nil {
 		vp = visionProvider[0]
 	}
