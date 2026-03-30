@@ -13,6 +13,45 @@
 
 Violations of this constitution void the entire QA session's results.
 
+## CONSTITUTION: QA Testing Priority Order (MANDATORY)
+
+**The LLM MUST follow this testing priority, in this exact order:**
+
+1. **Happy paths FIRST** — Test all primary user flows as a normal user would:
+   - Login with valid credentials
+   - Browse the home screen / catalog
+   - Open detail screens for content items
+   - Play media (video, audio)
+   - Use search with real content terms
+   - Manage favorites, collections, playlists
+   - Navigate settings
+
+2. **Standard flows and use cases SECOND** — Test reasonable variations:
+   - Browse different content categories
+   - Search with various valid queries
+   - Test pagination, filtering, sorting
+   - Test back navigation from every screen
+   - Verify data loads correctly on all screens
+
+3. **Edge cases and error scenarios THIRD** — Challenge the system:
+   - Empty search queries
+   - Very long text input
+   - Rapid navigation
+   - Network interruption scenarios
+   - Invalid but reasonable input
+
+4. **Adversarial testing LAST** — Only after all above are covered:
+   - Invalid credentials
+   - Unexpected input formats
+   - Stress testing UI elements
+
+**CRITICAL RULES:**
+- **NEVER type login credentials into search fields.** The LLM MUST understand which screen it is on and use context-appropriate input.
+- **NEVER repeat the same action pattern for more than 3 consecutive steps.** If stuck, navigate to a DIFFERENT screen.
+- **Search queries MUST be content-related** (e.g., movie titles, genres, artists) — NOT usernames, passwords, or test strings.
+- **After login, IMMEDIATELY explore the app** — do not return to the login screen.
+- **Every screen transition MUST be intentional** — the LLM must state WHY it's navigating there.
+
 ## MANDATORY: No CI/CD Pipelines
 
 **NO GitHub Actions, GitLab CI/CD, or any automated pipeline may exist in this repository!**

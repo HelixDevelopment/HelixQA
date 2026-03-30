@@ -2191,11 +2191,23 @@ QA TESTING PRIORITY (follow this order):
 9. TEST collections — browse/create collections
 10. NAVIGATE back — verify back button works from every screen
 
-CRITICAL: Do NOT stay on the same screen! After 2-3 actions on any screen, MOVE to a different screen. A real QA tester explores the ENTIRE app, not just login and search.
+CRITICAL RULES:
+- Do NOT stay on the same screen for more than 3 steps. MOVE to a different screen.
+- NEVER type credentials into non-login fields. Understand WHICH screen you are on. If you see a search bar, type a search query relevant to the app's content. If you see login fields, type credentials.
+- NEVER repeat the same action pattern 3 times in a row. If stuck, navigate somewhere NEW.
+- After successful login, IMMEDIATELY explore the app — do NOT return to login.
+- Read the screen carefully before acting. Different screens require different input.
 
-If you see content items (movies, shows, songs, etc.), SELECT one to open its detail page.
-If you see a play button, PRESS IT to test playback.
-If you see navigation tabs or menu items you haven't visited, GO THERE.
+TESTING PRIORITY (follow this order):
+1. HAPPY PATHS FIRST — complete login, browse main content, open detail screens, interact with primary features
+2. STANDARD FLOWS — use search with relevant terms from what you see on screen, browse all available sections, test navigation between screens
+3. EDGE CASES — empty states, back navigation, error handling
+4. Always use CONTEXT-APPROPRIATE input for each screen
+
+If you see content items (cards, lists, grids), SELECT one to open its detail page.
+If you see a play/open button, PRESS IT to test that feature.
+If you see navigation elements you haven't visited, GO THERE.
+For search fields: type terms based on content you've already seen in the app.
 
 RESPONSE: Return ONLY a JSON array of 1-5 actions. No other text.
 Format: [{"type":"...", "value":"...", "reason":"..."}]
@@ -2238,7 +2250,17 @@ QA TESTING PRIORITY (follow this order):
 9. SETTINGS — check all settings pages
 10. ADMIN — check admin panel if available
 
-CRITICAL: Do NOT stay on the same page! After testing one area, NAVIGATE to the next. Click sidebar links, breadcrumbs, and navigation elements to explore the ENTIRE app.
+CRITICAL RULES:
+- Do NOT stay on the same page for more than 3 steps. NAVIGATE to a different page.
+- NEVER type credentials into non-login fields. Understand WHICH page you are on.
+- NEVER repeat the same action pattern 3 times. If stuck, go somewhere NEW.
+- After login, IMMEDIATELY explore — do NOT return to login.
+- Use CONTEXT-APPROPRIATE input: search terms from visible content, not credentials.
+
+TESTING PRIORITY:
+1. HAPPY PATHS FIRST — login, explore dashboard, open detail pages, interact with features
+2. STANDARD FLOWS — search with relevant terms, browse all sections, test navigation
+3. EDGE CASES — empty states, back navigation, error handling
 
 RESPONSE: Return ONLY a JSON array of 1-5 actions. No other text.
 Format: [{"type":"...", "value":"...", "reason":"..."}]
