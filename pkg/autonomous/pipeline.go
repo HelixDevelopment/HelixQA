@@ -2257,10 +2257,10 @@ type llmAction struct {
 // so stuck calls fail faster and the retry logic gets a
 // chance to recover.
 // llmNavigateTimeout caps a single provider attempt. Kept short
-// (15s) so rate-limited providers fail fast and the ranking system
-// can try the next provider quickly. Most successful vision calls
-// complete in 2-10 seconds.
-const llmNavigateTimeout = 15 * time.Second
+// Parent timeout for a single LLM navigation call. Set to 90s to
+// allow the adaptive provider to try multiple providers (each capped
+// at 15-20s internally). Most successful calls complete in 2-10s.
+const llmNavigateTimeout = 90 * time.Second
 
 // llmNavigate sends a (pre-resized) screenshot to the LLM
 // vision endpoint and parses the response into a list of

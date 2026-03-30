@@ -14,12 +14,12 @@ import (
 // provider is allowed per call during adaptive fallback.
 // This prevents N slow providers from compounding into
 // N * timeout total latency.
-const adaptivePerProviderTimeout = 60 * time.Second
+const adaptivePerProviderTimeout = 15 * time.Second
 
 // adaptiveVisionTimeout is longer than the chat timeout
 // to allow native vision providers (Gemini, Anthropic)
 // time for their internal retry/backoff on rate limits.
-const adaptiveVisionTimeout = 90 * time.Second
+const adaptiveVisionTimeout = 20 * time.Second
 
 // AdaptiveProvider wraps a slice of Provider implementations and
 // tries them in order, falling back to the next on failure. It
