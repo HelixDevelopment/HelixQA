@@ -22,7 +22,7 @@ var providerDefaults = map[string]struct {
 	"githubmodels":     {"https://models.github.ai/inference", "openai/gpt-4o"},
 	"huggingface":      {"https://router.huggingface.co", ""},
 	"hyperbolic":       {"https://api.hyperbolic.xyz", "deepseek-ai/DeepSeek-V3"},
-	"kimi":             {"https://api.moonshot.cn", "moonshot-v1-8k"},
+	"kimi":             {"https://api.moonshot.cn/v1", "kimi-k2.5"},
 	"mistral":          {"https://api.mistral.ai", "mistral-large-latest"},
 	"modal":            {"https://api.modal.com", ""},
 	"nia":              {"https://api.nia.ai", ""},
@@ -31,7 +31,7 @@ var providerDefaults = map[string]struct {
 	"nvidia":           {"https://integrate.api.nvidia.com", "meta/llama-3.2-90b-vision-instruct"},
 	"perplexity":       {"https://api.perplexity.ai", "sonar"},
 	"publicai":         {"https://api.publicai.co", ""},
-	"qwen":             {"https://dashscope.aliyuncs.com/api", "qwen-plus"},
+	"qwen":             {"https://dashscope.aliyuncs.com/compatible-mode", "qwen-vl-max"},
 	"replicate":        {"https://api.replicate.com", ""},
 	"sambanova":        {"https://api.sambanova.ai", "Meta-Llama-3.3-70B-Instruct"},
 	"sarvam":           {"https://api.sarvam.ai", ""},
@@ -45,6 +45,7 @@ var providerDefaults = map[string]struct {
 	"zen":              {"https://opencode.ai/zen", ""},
 	"zhipu":            {"https://open.bigmodel.cn/api/paas/v4", "glm-4.5"},
 	"cohere":           {"https://api.cohere.com", "command-r-plus"},
+	"stepfun":          {"https://api.stepfun.com/v1", "step-1.5v-mini"},
 }
 
 // ProviderEnvKeys maps provider names to their expected
@@ -89,6 +90,7 @@ var ProviderEnvKeys = map[string]string{
 	"zen":              "ZEN_API_KEY",
 	"zhipu":            "ZHIPU_API_KEY",
 	ProviderOllama:     "HELIX_OLLAMA_URL",
+	"stepfun":          "STEPFUN_API_KEY",
 }
 
 // IsOpenAICompatible returns true if the provider uses the
