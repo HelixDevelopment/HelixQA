@@ -514,7 +514,18 @@ func cmdAutonomous(args []string) {
 		UseLlamaCpp:        os.Getenv("HELIX_LLAMACPP") == "true",
 		LlamaCppModelPath:  os.Getenv("HELIX_LLAMACPP_MODEL"),
 		LlamaCppMMProjPath: os.Getenv("HELIX_LLAMACPP_MMPROJ"),
-		LlamaCppFreeGPU:    os.Getenv("HELIX_LLAMACPP_FREE_GPU") == "true",
+		LlamaCppFreeGPU:      os.Getenv("HELIX_LLAMACPP_FREE_GPU") == "true",
+		VisionMultiUser:      os.Getenv("HELIX_VISION_MULTI_USER"),
+		LlamaCppRPCModelPath: os.Getenv("HELIX_LLAMACPP_RPC_MODEL"),
+	}
+	// Parse HELIX_VISION_HOSTS (comma-separated).
+	if hostsEnv := os.Getenv("HELIX_VISION_HOSTS"); hostsEnv != "" {
+		for _, h := range strings.Split(hostsEnv, ",") {
+			h = strings.TrimSpace(h)
+			if h != "" {
+				cfg.VisionHosts = append(cfg.VisionHosts, h)
+			}
+		}
 	}
 	pipeline := autonomous.NewSessionPipeline(
 		cfg, provider, store,

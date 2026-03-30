@@ -130,6 +130,23 @@ type PipelineConfig struct {
 	// llama-server to free GPU VRAM. Ollama is restored
 	// after the QA session completes.
 	LlamaCppFreeGPU bool
+
+	// VisionHosts is a comma-separated list of remote hosts
+	// for distributed vision inference. When set, the
+	// pipeline probes each host's hardware via SSH, selects
+	// the strongest model that fits the combined resources,
+	// and activates distributed RPC if needed. Takes
+	// precedence over VisionHost for multi-host setups.
+	VisionHosts []string
+
+	// VisionMultiUser is the SSH user for multi-host
+	// probing. Falls back to VisionUser if empty.
+	VisionMultiUser string
+
+	// LlamaCppRPCModelPath is the path to the GGUF model on
+	// the master host for distributed RPC inference. When
+	// empty, auto-detection will not start RPC workers.
+	LlamaCppRPCModelPath string
 }
 
 // PipelineResult captures the outcome of a SessionPipeline
@@ -284,6 +301,181 @@ func (sp *SessionPipeline) Run(
 	// platform/device. Each slot serializes its own vision
 	// calls so platforms don't contend with each other.
 	var visionPool *visionremote.VisionPool
+
+	// Track distributed RPC deployers for cleanup at
+	// session end.
+	var distributedDeployers []*visionremote.LlamaCppDeployer
+	var distributedRPCPorts []int
+	var distributedMasterDeployer *visionremote.LlamaCppDeployer
+	var distributedMasterPort int
+
+	// ── Phase 0a: Distributed vision auto-detection ─────
+	// When HELIX_VISION_HOSTS is set, probe each host's
+	// hardware via SSH, select the strongest model, and
+	// activate distributed RPC if the model needs it.
+	if len(sp.config.VisionHosts) > 0 {
+		sshUser := sp.config.VisionMultiUser
+		if sshUser == "" {
+			sshUser = sp.config.VisionUser
+		}
+
+		fmt.Printf(
+			"[pipeline] Phase 0a: Probing %d hosts "+
+				"for distributed vision\n",
+			len(sp.config.VisionHosts),
+		)
+		hwList := visionremote.ProbeHosts(
+			ctx, sp.config.VisionHosts, sshUser,
+		)
+
+		if len(hwList) > 0 {
+			rec := visionremote.SelectStrongestModel(
+				hwList,
+			)
+			fmt.Printf(
+				"[pipeline] Model selected: %s (%s) "+
+					"across %d hosts "+
+					"(GPU=%dMB, RAM=%dMB, "+
+					"distributed=%v)\n",
+				rec.ModelName, rec.ModelSize,
+				len(rec.AllHosts),
+				rec.TotalGPUMemMB,
+				rec.TotalRAMMB,
+				rec.NeedsDistribution,
+			)
+
+			// Override VisionModel with the auto-selected
+			// model so downstream phases use it.
+			sp.config.VisionModel = rec.ModelName
+
+			if rec.NeedsDistribution &&
+				sp.config.LlamaCppRPCModelPath != "" {
+				// Distributed RPC mode: start rpc-server on
+				// each host, then start master llama-server
+				// with --rpc flag.
+				distCfg := visionremote.PlanDistribution(
+					hwList,
+					sp.config.LlamaCppRPCModelPath,
+					8090,  // server port
+					50052, // RPC base port
+				)
+				if distCfg != nil {
+					fmt.Printf(
+						"[pipeline] Distributed RPC: "+
+							"master=%s, %d workers\n",
+						distCfg.MasterHost,
+						len(distCfg.RPCWorkers),
+					)
+
+					// Start RPC workers on each host.
+					rpcBasePort := 50052
+					for i, h := range hwList {
+						port := rpcBasePort + i
+						deployer := visionremote.NewLlamaCppDeployer(
+							visionremote.LlamaCppConfig{
+								Host:    h.Host,
+								User:    sshUser,
+								RepoDir: h.LlamaCppDir,
+							},
+						)
+						if err := deployer.StartRPCServer(
+							ctx, port,
+						); err != nil {
+							fmt.Printf(
+								"[pipeline] warning: "+
+									"RPC server on %s:%d "+
+									"failed: %v\n",
+								h.Host, port, err,
+							)
+						} else {
+							fmt.Printf(
+								"[pipeline] RPC worker "+
+									"started on %s:%d\n",
+								h.Host, port,
+							)
+						}
+						distributedDeployers = append(
+							distributedDeployers, deployer,
+						)
+						distributedRPCPorts = append(
+							distributedRPCPorts, port,
+						)
+					}
+
+					// Start master llama-server with --rpc.
+					masterDeployer := visionremote.NewLlamaCppDeployer(
+						visionremote.LlamaCppConfig{
+							Host:        distCfg.MasterHost,
+							User:        sshUser,
+							RepoDir:     distCfg.MasterDir,
+							ModelPath:   distCfg.ModelPath,
+							BasePort:    distCfg.ServerPort,
+							ContextSize: distCfg.ContextSize,
+						},
+					)
+					if err := masterDeployer.StartWithRPC(
+						ctx,
+						distCfg.ModelPath,
+						distCfg.RPCWorkers,
+						distCfg.ServerPort,
+					); err != nil {
+						fmt.Printf(
+							"[pipeline] warning: "+
+								"distributed master "+
+								"failed: %v "+
+								"(falling back to "+
+								"single-host)\n",
+							err,
+						)
+					} else {
+						distributedMasterDeployer = masterDeployer
+						distributedMasterPort = distCfg.ServerPort
+						// Override VisionHost to point to
+						// the distributed master.
+						sp.config.VisionHost = distCfg.MasterHost
+						sp.config.UseLlamaCpp = false
+						// Use Ollama-compatible endpoint
+						// (llama-server serves OpenAI API).
+						fmt.Printf(
+							"[pipeline] Distributed "+
+								"inference active at "+
+								"http://%s:%d\n",
+							distCfg.MasterHost,
+							distCfg.ServerPort,
+						)
+					}
+				}
+			} else if !rec.NeedsDistribution &&
+				len(rec.GPUHosts) > 0 {
+				// Single GPU host is sufficient — use Ollama
+				// on the strongest GPU host for simplicity.
+				sp.config.VisionHost = rec.GPUHosts[0]
+				fmt.Printf(
+					"[pipeline] Single-host vision: "+
+						"%s (%s on %s)\n",
+					rec.ModelName, rec.ModelSize,
+					rec.GPUHosts[0],
+				)
+			} else if len(rec.AllHosts) > 0 {
+				// CPU-only or single host — use first
+				// reachable host.
+				sp.config.VisionHost = rec.AllHosts[0]
+				fmt.Printf(
+					"[pipeline] Single-host vision: "+
+						"%s (%s on %s)\n",
+					rec.ModelName, rec.ModelSize,
+					rec.AllHosts[0],
+				)
+			}
+		} else {
+			fmt.Println(
+				"[pipeline] warning: all vision hosts " +
+					"unreachable, falling back to " +
+					"single-host config",
+			)
+		}
+	}
+
 	if sp.config.VisionHost != "" {
 		fmt.Printf(
 			"[pipeline] Phase 0: Vision pool on %s "+
@@ -1720,6 +1912,31 @@ func (sp *SessionPipeline) Run(
 	// ── Shutdown vision pool ────────────────────────────
 	if visionPool != nil {
 		visionPool.Shutdown(ctx)
+	}
+	// Shutdown distributed RPC workers and master if active.
+	if distributedMasterDeployer != nil {
+		distributedMasterDeployer.StopInstance(
+			ctx, distributedMasterPort,
+		)
+		fmt.Printf(
+			"[pipeline] distributed master stopped "+
+				"(port %d)\n",
+			distributedMasterPort,
+		)
+	}
+	for i, deployer := range distributedDeployers {
+		if i < len(distributedRPCPorts) {
+			deployer.StopRPCServer(
+				ctx, distributedRPCPorts[i],
+			)
+		}
+	}
+	if len(distributedDeployers) > 0 {
+		fmt.Printf(
+			"[pipeline] %d distributed RPC workers "+
+				"stopped\n",
+			len(distributedDeployers),
+		)
 	}
 	// Restore Ollama if we stopped it for GPU access.
 	if sp.config.LlamaCppFreeGPU && sp.config.UseLlamaCpp {
