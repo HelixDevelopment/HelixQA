@@ -2298,12 +2298,40 @@ func (sp *SessionPipeline) llmNavigate(
 	start := strings.Index(content, "[")
 	end := strings.LastIndex(content, "]")
 	if start == -1 || end == -1 || end < start {
-		fmt.Printf(
-			"  [curiosity %s #%d] LLM response "+
-				"not JSON array: %.80s\n",
-			platform, step, content,
-		)
-		return nil
+		// No JSON array found — try to extract individual JSON objects
+		// from markdown bullet points or inline backticks.
+		// Pattern: *   `{"type":"...", "reason":"..."}`
+		// or: * {"type":"...", "reason":"..."}
+		var objects []string
+		for _, line := range strings.Split(content, "\n") {
+			line = strings.TrimSpace(line)
+			// Strip markdown bullet prefixes
+			line = strings.TrimLeft(line, "*-• ")
+			line = strings.TrimSpace(line)
+			// Strip inline backticks
+			line = strings.Trim(line, "`")
+			line = strings.TrimSpace(line)
+			// Check if it looks like a JSON object
+			if strings.HasPrefix(line, "{") && strings.Contains(line, "}") {
+				// Extract just the JSON object
+				objEnd := strings.LastIndex(line, "}")
+				if objEnd >= 0 {
+					objects = append(objects, line[:objEnd+1])
+				}
+			}
+		}
+		if len(objects) > 0 {
+			content = "[" + strings.Join(objects, ",") + "]"
+			start = 0
+			end = len(content) - 1
+		} else {
+			fmt.Printf(
+				"  [curiosity %s #%d] LLM response "+
+					"not JSON array: %.80s\n",
+				platform, step, content,
+			)
+			return nil
+		}
 	}
 
 	var actions []llmAction
