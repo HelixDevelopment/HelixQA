@@ -151,15 +151,16 @@ func (a *AdaptiveProvider) Vision(
 			continue
 		}
 		switch p.Name() {
-		case ProviderOllama:
-			// Local Ollama is highest priority — free,
-			// no rate limits, and always available.
-			capable = append([]Provider{p}, capable...)
 		case "nvidia":
 			// NVIDIA has Llama 3.2 90B Vision — the most
-			// capable instruction-following vision model
-			// available. Produces perfect DPAD navigation
-			// JSON for Android TV. Prioritize after Ollama.
+			// capable instruction-following vision model.
+			// Produces perfect navigation JSON. Highest
+			// priority for vision calls.
+			capable = append([]Provider{p}, capable...)
+		case ProviderOllama:
+			// Local Ollama as fallback — free, always
+			// available, but smaller models may produce
+			// imprecise actions.
 			capable = append(capable, p)
 		case ProviderGoogle, ProviderAnthropic, ProviderOpenAI,
 			"githubmodels":

@@ -147,6 +147,11 @@ type SessionPipeline struct {
 	config   *PipelineConfig
 	provider llm.Provider
 	store    *memory.Store
+	// kbContext holds a summary of the Learn phase knowledge
+	// base, injected into navigation prompts so the LLM
+	// knows app-specific details (credentials, screens, etc.)
+	// without hardcoding them in the prompt templates.
+	kbContext string
 }
 
 // NewSessionPipeline creates a SessionPipeline with the
@@ -401,6 +406,36 @@ func (sp *SessionPipeline) Run(
 		return result, nil
 	}
 	fmt.Printf("[pipeline]   %s\n", kb.Summary())
+
+	// Build knowledge context for navigation prompts.
+	// This injects project-specific details (credentials,
+	// screens, constraints) discovered by the Learn phase
+	// into the generic navigation prompts.
+	var kbParts []string
+	if len(kb.Constraints) > 0 {
+		kbParts = append(kbParts,
+			"PROJECT CONSTRAINTS (from documentation):")
+		for _, c := range kb.Constraints {
+			kbParts = append(kbParts, "- "+c)
+		}
+	}
+	if len(kb.Screens) > 0 {
+		var screenNames []string
+		for _, s := range kb.Screens {
+			screenNames = append(screenNames, s.Name)
+		}
+		kbParts = append(kbParts,
+			"KNOWN SCREENS: "+strings.Join(
+				screenNames, ", "))
+	}
+	sp.kbContext = strings.Join(kbParts, "\n")
+	if sp.kbContext != "" {
+		fmt.Printf(
+			"[pipeline]   KB context: %d chars\n",
+			len(sp.kbContext),
+		)
+	}
+
 	fmt.Printf(
 		"[pipeline]   Learn completed in %v\n",
 		time.Since(phaseStart).Round(time.Millisecond),
@@ -2072,6 +2107,11 @@ func (sp *SessionPipeline) llmNavigate(
 		prompt = webNavigationPromptTemplate
 	default:
 		prompt = navigationPromptTemplate
+	}
+	// Inject knowledge base context (credentials, screens,
+	// constraints discovered during Learn phase).
+	if sp.kbContext != "" {
+		prompt += "\n\n" + sp.kbContext
 	}
 	if len(history) > 0 {
 		prompt += "\n\nPREVIOUS ACTIONS IN THIS SESSION " +
