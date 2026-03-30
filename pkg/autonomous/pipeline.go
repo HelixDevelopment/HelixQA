@@ -1329,15 +1329,33 @@ func (sp *SessionPipeline) Run(
 
 				// Step 3: Execute LLM-suggested actions.
 				// If the LLM returned no actions (parse
-				// error), retry the vision call once.
+				// error or empty response), retry up to 3
+				// times with a fresh screenshot each time.
 				// HelixQA is fully autonomous — NO
 				// hardcoded fallback navigation.
 				if len(actions) == 0 {
-					time.Sleep(2 * time.Second)
-					retryShot, _ := executor.Screenshot(
-						curiosityCtx,
-					)
-					if len(retryShot) > 0 {
+					retried := false
+					for retryN := 1; retryN <= 3; retryN++ {
+						if curiosityCtx.Err() != nil {
+							break
+						}
+						fmt.Printf(
+							"  [curiosity %s #%d] "+
+								"empty actions, "+
+								"retrying (%d/3)\n",
+							platform, i+1, retryN,
+						)
+						time.Sleep(
+							time.Duration(retryN) *
+								time.Second,
+						)
+						retryShot, _ :=
+							executor.Screenshot(
+								curiosityCtx,
+							)
+						if len(retryShot) == 0 {
+							continue
+						}
 						actions = sp.llmNavigate(
 							curiosityCtx,
 							resizeScreenshot(retryShot),
@@ -1346,16 +1364,19 @@ func (sp *SessionPipeline) Run(
 							stepHistory,
 							platformProvider,
 						)
+						if len(actions) > 0 {
+							retried = true
+							break
+						}
 					}
-					if len(actions) == 0 {
+					if !retried && len(actions) == 0 {
 						fmt.Printf(
 							"  [curiosity %s #%d] "+
-								"LLM returned no "+
-								"actions after retry"+
-								" — waiting\n",
+								"stuck: LLM returned "+
+								"no actions after 3 "+
+								"retries\n",
 							platform, i+1,
 						)
-						time.Sleep(3 * time.Second)
 						continue
 					}
 				}
@@ -2187,11 +2208,10 @@ type llmAction struct {
 
 // llmNavigateTimeout caps a single LLM vision call during
 // curiosity navigation so one slow API response cannot
-// stall the exploration phase.
-// llmNavigateTimeout caps a single LLM vision call. Set to
-// 90s to allow Gemini's internal 5-retry backoff (up to ~75s)
-// to succeed before the call is abandoned.
-const llmNavigateTimeout = 180 * time.Second
+// stall the exploration phase. Reduced from 180s to 60s
+// so stuck calls fail faster and the retry logic gets a
+// chance to recover.
+const llmNavigateTimeout = 60 * time.Second
 
 // llmNavigate sends a (pre-resized) screenshot to the LLM
 // vision endpoint and parses the response into a list of
