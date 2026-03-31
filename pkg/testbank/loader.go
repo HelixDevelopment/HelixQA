@@ -4,6 +4,7 @@
 package testbank
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -12,17 +13,45 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-// LoadFile loads a YAML test bank file and returns the parsed
-// BankFile. Supports both .yaml and .yml extensions.
+// jsonBankFile mirrors BankFile but accepts "challenges" as an
+// alternate key for test_cases (used by comprehensive JSON banks).
+type jsonBankFile struct {
+	Version    string            `json:"version"`
+	Name       string            `json:"name"`
+	Description string           `json:"description"`
+	TestCases  []TestCase        `json:"test_cases"`
+	Challenges []TestCase        `json:"challenges"`
+	Metadata   map[string]string `json:"metadata,omitempty"`
+}
+
+// LoadFile loads a test bank file (YAML or JSON) and returns the
+// parsed BankFile.
 func LoadFile(path string) (*BankFile, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return nil, fmt.Errorf("read bank file %s: %w", path, err)
 	}
 
+	ext := strings.ToLower(filepath.Ext(path))
 	var bf BankFile
-	if err := yaml.Unmarshal(data, &bf); err != nil {
-		return nil, fmt.Errorf("parse bank file %s: %w", path, err)
+
+	if ext == ".json" {
+		var jbf jsonBankFile
+		if err := json.Unmarshal(data, &jbf); err != nil {
+			return nil, fmt.Errorf("parse bank file %s: %w", path, err)
+		}
+		bf.Version = jbf.Version
+		bf.Name = jbf.Name
+		bf.Description = jbf.Description
+		bf.Metadata = jbf.Metadata
+		bf.TestCases = jbf.TestCases
+		if len(bf.TestCases) == 0 && len(jbf.Challenges) > 0 {
+			bf.TestCases = jbf.Challenges
+		}
+	} else {
+		if err := yaml.Unmarshal(data, &bf); err != nil {
+			return nil, fmt.Errorf("parse bank file %s: %w", path, err)
+		}
 	}
 
 	// Validate all test cases.
@@ -38,8 +67,8 @@ func LoadFile(path string) (*BankFile, error) {
 	return &bf, nil
 }
 
-// LoadDir loads all YAML test bank files from a directory.
-// It scans for .yaml and .yml files (non-recursive).
+// LoadDir loads all test bank files from a directory.
+// It scans for .yaml, .yml, and .json files (non-recursive).
 func LoadDir(dir string) ([]*BankFile, error) {
 	entries, err := os.ReadDir(dir)
 	if err != nil {
@@ -52,7 +81,7 @@ func LoadDir(dir string) ([]*BankFile, error) {
 			continue
 		}
 		ext := strings.ToLower(filepath.Ext(entry.Name()))
-		if ext != ".yaml" && ext != ".yml" {
+		if ext != ".yaml" && ext != ".yml" && ext != ".json" {
 			continue
 		}
 		bf, err := LoadFile(filepath.Join(dir, entry.Name()))
