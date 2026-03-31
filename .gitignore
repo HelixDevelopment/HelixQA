@@ -9,7 +9,9 @@
 *.so
 *.dylib
 /helixqa
+/helix-qa
 /bin/helixqa
+/bin/helix-qa
 
 # Test binary
 *.test
