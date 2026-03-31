@@ -21,8 +21,8 @@ require (
 replace (
 	digital.vasic.challenges => ../Challenges
 	digital.vasic.containers => ../Containers
-	digital.vasic.docprocessor => ../../DocProcessor
-	digital.vasic.llmorchestrator => ../../LLMOrchestrator
-	digital.vasic.llmprovider => ../../LLMProvider
+	digital.vasic.docprocessor => ../DocProcessor
+	digital.vasic.llmorchestrator => ../LLMOrchestrator
+	digital.vasic.llmprovider => ../LLMProvider
 	digital.vasic.visionengine => ../VisionEngine
 )
