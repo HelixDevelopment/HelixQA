@@ -114,13 +114,32 @@ func (a *ADBExecutor) Click(
 func (a *ADBExecutor) Type(
 	ctx context.Context, text string,
 ) error {
-	// Always clear the field before typing to prevent text
-	// accumulation. ADB `input text` APPENDS at cursor —
-	// it never replaces. Without clearing first, repeated
-	// type actions produce garbled concatenated strings.
+	// On Android TV, the virtual keyboard intercepts keyevents
+	// (including DEL) when visible. The reliable sequence is:
+	// 1. Dismiss keyboard with BACK
+	// 2. Clear the text field (DEL keycodes hit the field directly)
+	// 3. Re-focus the field with DPAD_CENTER
+	// 4. Type the new text via `input text`
+
+	// Step 1: Dismiss virtual keyboard if open.
+	_, _ = a.cmdRunner.Run(ctx,
+		"adb", "-s", a.device, "shell",
+		"input", "keyevent", "KEYCODE_BACK",
+	)
+	time.Sleep(500 * time.Millisecond)
+
+	// Step 2: Clear the text field while keyboard is dismissed.
 	_ = a.Clear(ctx)
 	time.Sleep(300 * time.Millisecond)
 
+	// Step 3: Re-focus the text field to accept input.
+	_, _ = a.cmdRunner.Run(ctx,
+		"adb", "-s", a.device, "shell",
+		"input", "keyevent", "KEYCODE_DPAD_CENTER",
+	)
+	time.Sleep(500 * time.Millisecond)
+
+	// Step 4: Type the new text.
 	_, err := a.cmdRunner.Run(ctx,
 		"adb", "-s", a.device, "shell", "input", "text", text,
 	)
