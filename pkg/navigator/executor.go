@@ -170,34 +170,26 @@ func (a *ADBExecutor) Clear(ctx context.Context) error {
 	)
 	time.Sleep(100 * time.Millisecond)
 
-	// Step 2: Batch-delete 50 chars in ONE adb shell call.
-	// Android `input keyevent` accepts multiple keycodes as
-	// separate arguments: `input keyevent 67 67 67 ...`
-	// KEYCODE_DEL = 67. This avoids 50 separate adb calls.
-	delArgs := []string{
-		"-s", a.device, "shell", "input", "keyevent",
-	}
-	for i := 0; i < 50; i++ {
-		delArgs = append(delArgs, "67")
-	}
-	_, _ = a.cmdRunner.Run(ctx, "adb", delArgs...)
-	time.Sleep(200 * time.Millisecond)
-
-	// Step 3: Try Ctrl+A + DEL as secondary cleanup.
-	_, err := a.cmdRunner.Run(ctx,
-		"adb", "-s", a.device, "shell",
-		"input", "keyevent", "--longpress", "29",
-	)
-	if err == nil {
+	// Step 2: Delete chars in small batches (10 per call).
+	// Large batches (50+) cause ADB timeouts on Android 9.
+	// KEYCODE_DEL = 67.
+	for batch := 0; batch < 3; batch++ {
+		_, _ = a.cmdRunner.Run(ctx,
+			"adb", "-s", a.device, "shell",
+			"input", "keyevent",
+			"67", "67", "67", "67", "67",
+			"67", "67", "67", "67", "67",
+		)
 		time.Sleep(100 * time.Millisecond)
 	}
 
-	_, err = a.cmdRunner.Run(ctx,
+	// Final single DEL for any remaining char.
+	_, delErr := a.cmdRunner.Run(ctx,
 		"adb", "-s", a.device, "shell",
 		"input", "keyevent", "KEYCODE_DEL",
 	)
-	if err != nil {
-		return fmt.Errorf("adb clear delete: %w", err)
+	if delErr != nil {
+		return fmt.Errorf("adb clear delete: %w", delErr)
 	}
 	time.Sleep(200 * time.Millisecond)
 	return nil
