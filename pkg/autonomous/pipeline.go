@@ -3004,13 +3004,7 @@ TESTING PRIORITY (follow this order):
 If you see content items (cards, lists, grids), SELECT one to open its detail page.
 If you see a play/open button, PRESS IT to test that feature.
 If you see navigation elements you haven't visited, GO THERE.
-For search fields: type SHORT, REAL content titles from this catalog. Use ONLY these known titles:
-Movies: "Matrix", "Inception", "2001", "Die Hard", "American Beauty", "Annihilation", "Avatar"
-TV Shows: "Lucky Luke", "Breaking Bad"
-Music: "Metallica", "Black Sabbath", "Satriani"
-Books: "Odyssey"
-Comics: "Lucky Luke", "Asterix"
-RULES: Keep search queries to 1-2 words MAX. NEVER type long strings. NEVER type random characters, usernames, or "test". The 'type' action will auto-clear the field before typing.
+For search fields: type SHORT, REAL content titles that you can SEE on screen or that were mentioned in the knowledge base context above. Look at the current screenshot — pick a title visible in a category row or detail screen. Keep search queries to 1-2 words MAX (e.g., just the first word of a movie title you see). NEVER type long strings, random characters, usernames, passwords, or "test". The 'type' action will auto-clear the field before typing.
 
 MANDATORY: Complete ALL happy paths before testing any negative scenarios. Do NOT test error cases, invalid inputs, or edge cases until you have successfully: logged in, browsed all content sections, opened at least 3 detail pages, attempted media playback, and tested search with valid terms.
 
