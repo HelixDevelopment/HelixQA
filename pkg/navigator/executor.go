@@ -114,6 +114,13 @@ func (a *ADBExecutor) Click(
 func (a *ADBExecutor) Type(
 	ctx context.Context, text string,
 ) error {
+	// Always clear the field before typing to prevent text
+	// accumulation. ADB `input text` APPENDS at cursor —
+	// it never replaces. Without clearing first, repeated
+	// type actions produce garbled concatenated strings.
+	_ = a.Clear(ctx)
+	time.Sleep(300 * time.Millisecond)
+
 	_, err := a.cmdRunner.Run(ctx,
 		"adb", "-s", a.device, "shell", "input", "text", text,
 	)
@@ -127,31 +134,45 @@ func (a *ADBExecutor) Type(
 // approach of MOVE_END + looping KEYCODE_DEL which only
 // deleted a fixed number of characters.
 func (a *ADBExecutor) Clear(ctx context.Context) error {
-	// Send Ctrl+A to select all text in the field.
-	// ADB keyevent supports key combinations with --meta.
-	// Keycode 29 = KEYCODE_A, meta 0x7000 = META_CTRL_ON.
+	// Root cause: Android TV (Mi Box, Android 9) does not
+	// reliably support Ctrl+A select-all via ADB. The meta
+	// key combos are ignored on hardware-keyboard (DPAD)
+	// input mode. Additionally, `adb shell input text`
+	// always APPENDS at cursor position — never replaces.
+	//
+	// Fix: Move cursor to end, then batch-delete all chars
+	// in a SINGLE adb shell command (avoids 100 round-trips).
+	// Then verify with a second pass if needed.
+
+	// Step 1: Move cursor to end of text.
+	_, _ = a.cmdRunner.Run(ctx,
+		"adb", "-s", a.device, "shell",
+		"input", "keyevent", "KEYCODE_MOVE_END",
+	)
+	time.Sleep(100 * time.Millisecond)
+
+	// Step 2: Batch-delete 50 chars in ONE adb shell call.
+	// Android `input keyevent` accepts multiple keycodes as
+	// separate arguments: `input keyevent 67 67 67 ...`
+	// KEYCODE_DEL = 67. This avoids 50 separate adb calls.
+	delArgs := []string{
+		"-s", a.device, "shell", "input", "keyevent",
+	}
+	for i := 0; i < 50; i++ {
+		delArgs = append(delArgs, "67")
+	}
+	_, _ = a.cmdRunner.Run(ctx, "adb", delArgs...)
+	time.Sleep(200 * time.Millisecond)
+
+	// Step 3: Try Ctrl+A + DEL as secondary cleanup.
 	_, err := a.cmdRunner.Run(ctx,
 		"adb", "-s", a.device, "shell",
 		"input", "keyevent", "--longpress", "29",
 	)
-	if err != nil {
-		// Fallback: try the two-step approach if longpress
-		// CTRL+A is not supported on this Android version.
-		_, _ = a.cmdRunner.Run(ctx,
-			"adb", "-s", a.device, "shell",
-			"input", "keyevent", "KEYCODE_MOVE_HOME",
-		)
-		time.Sleep(100 * time.Millisecond)
-		_, _ = a.cmdRunner.Run(ctx,
-			"adb", "-s", a.device, "shell",
-			"input", "keyevent",
-			"KEYCODE_SHIFT_LEFT", "KEYCODE_MOVE_END",
-		)
+	if err == nil {
 		time.Sleep(100 * time.Millisecond)
 	}
-	time.Sleep(200 * time.Millisecond)
 
-	// Delete the selected text.
 	_, err = a.cmdRunner.Run(ctx,
 		"adb", "-s", a.device, "shell",
 		"input", "keyevent", "KEYCODE_DEL",
