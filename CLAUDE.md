@@ -76,6 +76,31 @@ Violations of this constitution void the entire QA session's results.
 - False positives are UNACCEPTABLE — every "PASS" must be backed by visual evidence
 - API keys and secrets MUST NEVER be committed to git
 
+## MANDATORY: Evidence-Backed Issue Tickets
+
+**Every issue ticket created during or after a QA session MUST include concrete evidence references. This is NON-NEGOTIABLE.**
+
+- **Video reference**: Exact filename of the video recording AND exact timestamp (MM:SS) where the issue is visible
+- **Screenshot reference**: Exact filename(s) of screenshot(s) showing the issue (both before and after states when applicable)
+- **Session reference**: HelixQA session ID and step number where the issue was observed
+- **Reproduction path**: Sequence of actions that led to the issue (derived from the session log)
+- Tickets WITHOUT video/screenshot evidence are INVALID and must be rejected
+- Post-QA analysis of all video recordings and screenshots is MANDATORY — every frame must be examined for UI/UX imperfections
+- ALL issues discovered during video/screenshot analysis (visual glitches, misaligned elements, truncated text, missing images, broken animations, wrong colors, empty screens with data, oversized/undersized elements) MUST result in tickets with evidence
+- Video recordings MUST be valid (non-trivial file size, playable, correct duration) — a 20KB recording for a 30-minute session is a CRITICAL infrastructure failure
+- Screenshots MUST show visual changes between steps — consecutive identical screenshots indicate a navigation or capture failure
+
+## MANDATORY: Flawless Session Documentation
+
+**Every QA session MUST produce complete, valid, and analyzable documentation. This is NON-NEGOTIABLE.**
+
+- Video recordings must be properly finalized (remote screenrecord process killed via `killall -INT` before pull)
+- Screenshots must capture BOTH pre-action and post-action states for every curiosity step
+- All platforms and apps tested must have their own screenshots and video recordings
+- Session logs must include per-step timing, actions taken, and LLM reasoning
+- Pipeline report must accurately reflect tests run, coverage, and issues found
+- All evidence must be archived in the session directory under `qa-results/session-*/`
+
 ## MANDATORY: No Hardcoded QA Flows
 
 **ALL QA testing MUST be driven by LLM vision — NEVER by hardcoded scripts. This is NON-NEGOTIABLE.**
