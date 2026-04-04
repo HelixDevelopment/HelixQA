@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"strings"
 	"sync"
 	"syscall"
 	"time"
@@ -209,10 +210,35 @@ func (r *ScrcpyRecorder) Stop() error {
 // device to the local output path, then removes the
 // device-side file.
 func (r *ScrcpyRecorder) pullFromDevice() {
-	// Small delay to let screenrecord flush the file.
-	time.Sleep(2 * time.Second)
-
 	devicePath := "/sdcard/helixqa_record.mp4"
+
+	// CRITICAL: Kill the remote screenrecord process on the
+	// device. Sending SIGINT to the local adb process only
+	// disconnects the adb session — it does NOT stop the
+	// screenrecord process running on the device. Without
+	// this kill, the file is still being written when we
+	// try to pull it, resulting in truncated/empty MP4.
+	killCmd := exec.Command(
+		"adb", "-s", r.device,
+		"shell", "killall", "-INT", "screenrecord",
+	)
+	if out, err := killCmd.CombinedOutput(); err != nil {
+		// Fallback: try SIGTERM if SIGINT fails.
+		killFallback := exec.Command(
+			"adb", "-s", r.device,
+			"shell", "killall", "screenrecord",
+		)
+		_ = killFallback.Run()
+		fmt.Printf(
+			"  [video] killall -INT failed (%v: %s), used SIGTERM fallback\n",
+			err, strings.TrimSpace(string(out)),
+		)
+	}
+
+	// Wait for screenrecord to flush the moov atom and
+	// finalize the MP4 file on the device.
+	time.Sleep(3 * time.Second)
+
 	pull := exec.Command(
 		"adb", "-s", r.device,
 		"pull", devicePath, r.outputPath,
@@ -224,10 +250,21 @@ func (r *ScrcpyRecorder) pullFromDevice() {
 		)
 		return
 	}
-	fmt.Printf(
-		"  [video] pulled recording to %s\n",
-		r.outputPath,
-	)
+
+	// Verify the pulled file is not trivially small.
+	if info, err := os.Stat(r.outputPath); err == nil {
+		if info.Size() < 50*1024 { // < 50KB is suspicious
+			fmt.Printf(
+				"  [video] WARNING: recording is only %d bytes — may be incomplete\n",
+				info.Size(),
+			)
+		} else {
+			fmt.Printf(
+				"  [video] pulled recording to %s (%d bytes)\n",
+				r.outputPath, info.Size(),
+			)
+		}
+	}
 
 	// Clean up device-side file.
 	rm := exec.Command(

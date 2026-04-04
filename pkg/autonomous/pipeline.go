@@ -1986,6 +1986,33 @@ func (sp *SessionPipeline) Run(
 					),
 				)
 
+				// Take a post-action screenshot to capture the
+				// result of the executed actions. This ensures we
+				// have visual evidence of BOTH the before-state
+				// (captured at top of loop) and the after-state
+				// for every curiosity step.
+				if len(stepActions) > 0 {
+					time.Sleep(500 * time.Millisecond)
+					postShot, postErr := executor.Screenshot(
+						curiosityCtx,
+					)
+					if postErr == nil && len(postShot) > 0 {
+						postFname := filepath.Join(
+							screenshotDir,
+							fmt.Sprintf(
+								"%s-curiosity-%03d-after.png",
+								platform, i+1,
+							),
+						)
+						_ = os.WriteFile(
+							postFname, postShot, 0o644,
+						)
+						allScreenshots = append(
+							allScreenshots, postFname,
+						)
+					}
+				}
+
 				// ── TrainingCollector: record pair ───────
 				if sp.trainingCollector != nil &&
 					len(actions) > 0 {
