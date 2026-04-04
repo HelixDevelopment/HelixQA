@@ -11,6 +11,7 @@ package navigator
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	"digital.vasic.helixqa/pkg/detector"
@@ -114,18 +115,21 @@ func (a *ADBExecutor) Click(
 func (a *ADBExecutor) Type(
 	ctx context.Context, text string,
 ) error {
-	// Clear existing text before typing to prevent accumulation.
-	// ADB `input text` always APPENDS at cursor position.
-	// NOTE: We do NOT send KEYCODE_BACK here because it would
-	// navigate away from the current screen if no keyboard is
-	// open (e.g., settings screen with toggles). The LLM is
-	// responsible for ensuring a text field is focused before
-	// calling type.
-	_ = a.Clear(ctx)
-	time.Sleep(300 * time.Millisecond)
-
+	// Atomically clear and type in a SINGLE adb shell call.
+	// This avoids the multi-command round-trip issue where
+	// batch DEL keycodes hang on Android TV virtual keyboards.
+	//
+	// The shell script: move to end, delete 20 chars (enough
+	// for any previous search query), then type the new text.
+	// All in one `adb shell` invocation = no inter-command lag.
+	script := fmt.Sprintf(
+		"input keyevent KEYCODE_MOVE_END && "+
+			"input keyevent 67 67 67 67 67 67 67 67 67 67 67 67 67 67 67 67 67 67 67 67 && "+
+			"input text '%s'",
+		strings.ReplaceAll(text, "'", "'\\''"),
+	)
 	_, err := a.cmdRunner.Run(ctx,
-		"adb", "-s", a.device, "shell", "input", "text", text,
+		"adb", "-s", a.device, "shell", script,
 	)
 	return err
 }
@@ -137,43 +141,16 @@ func (a *ADBExecutor) Type(
 // approach of MOVE_END + looping KEYCODE_DEL which only
 // deleted a fixed number of characters.
 func (a *ADBExecutor) Clear(ctx context.Context) error {
-	// Root cause: Android TV (Mi Box, Android 9) does not
-	// reliably support Ctrl+A select-all via ADB. The meta
-	// key combos are ignored on hardware-keyboard (DPAD)
-	// input mode. Additionally, `adb shell input text`
-	// always APPENDS at cursor position — never replaces.
-	//
-	// Fix: Move cursor to end, then batch-delete all chars
-	// in a SINGLE adb shell command (avoids 100 round-trips).
-	// Then verify with a second pass if needed.
-
-	// Step 1: Move cursor to end of text.
-	_, _ = a.cmdRunner.Run(ctx,
+	// Single shell command: move to end + 20 DEL keycodes.
+	// All in one `adb shell` call to avoid round-trip hangs
+	// on Android TV (Mi Box Android 9) virtual keyboards.
+	_, err := a.cmdRunner.Run(ctx,
 		"adb", "-s", a.device, "shell",
-		"input", "keyevent", "KEYCODE_MOVE_END",
+		"input keyevent KEYCODE_MOVE_END && "+
+			"input keyevent 67 67 67 67 67 67 67 67 67 67 67 67 67 67 67 67 67 67 67 67",
 	)
-	time.Sleep(100 * time.Millisecond)
-
-	// Step 2: Delete chars in small batches (10 per call).
-	// Large batches (50+) cause ADB timeouts on Android 9.
-	// KEYCODE_DEL = 67.
-	for batch := 0; batch < 3; batch++ {
-		_, _ = a.cmdRunner.Run(ctx,
-			"adb", "-s", a.device, "shell",
-			"input", "keyevent",
-			"67", "67", "67", "67", "67",
-			"67", "67", "67", "67", "67",
-		)
-		time.Sleep(100 * time.Millisecond)
-	}
-
-	// Final single DEL for any remaining char.
-	_, delErr := a.cmdRunner.Run(ctx,
-		"adb", "-s", a.device, "shell",
-		"input", "keyevent", "KEYCODE_DEL",
-	)
-	if delErr != nil {
-		return fmt.Errorf("adb clear delete: %w", delErr)
+	if err != nil {
+		return fmt.Errorf("adb clear: %w", err)
 	}
 	time.Sleep(200 * time.Millisecond)
 	return nil
