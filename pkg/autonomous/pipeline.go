@@ -1365,19 +1365,10 @@ func (sp *SessionPipeline) Run(
 	}
 	result.TestsRun = testsRun
 
-	// Stop video recorders.
-	for p, rec := range recorders {
-		if err := rec.Stop(); err != nil {
-			fmt.Printf(
-				"  [exec] video stop %s: %v\n",
-				p, err,
-			)
-		} else {
-			fmt.Printf(
-				"  [exec] video stopped for %s\n", p,
-			)
-		}
-	}
+	// NOTE: Video recorders are NOT stopped here. They continue
+	// recording through the Curiosity phase so the video captures
+	// the full QA session (Execute + Curiosity). Recorders are
+	// stopped after Curiosity, before the Analyze phase.
 
 	// Collect logcat (with dedicated timeout).
 	if sp.config.AndroidDevice != "" {
@@ -2170,6 +2161,21 @@ func (sp *SessionPipeline) Run(
 			fmt.Printf(
 				"  [data-validation] %d issues found\n",
 				len(apiFindings),
+			)
+		}
+	}
+
+	// Stop video recorders AFTER Curiosity so the video captures
+	// the full QA session (Execute + Curiosity). The killall -INT
+	// on the device finalizes the MP4 moov atom before pulling.
+	for p, rec := range recorders {
+		if err := rec.Stop(); err != nil {
+			fmt.Printf(
+				"  [video] stop %s: %v\n", p, err,
+			)
+		} else {
+			fmt.Printf(
+				"  [video] stopped for %s\n", p,
 			)
 		}
 	}
