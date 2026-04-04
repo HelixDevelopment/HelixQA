@@ -39,13 +39,13 @@ type visionModelScore struct {
 // When LLMsVerifier adds or updates models, this table should
 // be updated to match. Both registries MUST stay in sync.
 var visionModelRegistry = []visionModelScore{
-	// Tier 0: Specialized vision API
-	{Provider: "astica", QualityScore: 0.97, ReliabilityScore: 0.95, CostPer1kTokens: 0.001, AvgLatencyMs: 800},
-
-	// Tier 1: Premium
+	// Tier 0: Premium multi-modal vision
+	{Provider: ProviderGoogle, QualityScore: 0.92, ReliabilityScore: 0.98, CostPer1kTokens: 0.0005, AvgLatencyMs: 800},
 	{Provider: ProviderOpenAI, QualityScore: 0.95, ReliabilityScore: 0.98, CostPer1kTokens: 0.020, AvgLatencyMs: 1200},
 	{Provider: ProviderAnthropic, QualityScore: 0.94, ReliabilityScore: 0.97, CostPer1kTokens: 0.018, AvgLatencyMs: 1500},
-	{Provider: ProviderGoogle, QualityScore: 0.88, ReliabilityScore: 0.96, CostPer1kTokens: 0.0005, AvgLatencyMs: 800},
+
+	// Specialized vision API (quality high but availability varies)
+	{Provider: "astica", QualityScore: 0.90, ReliabilityScore: 0.70, CostPer1kTokens: 0.001, AvgLatencyMs: 800},
 
 	// Tier 2: Cost-effective
 	{Provider: "qwen", QualityScore: 0.87, ReliabilityScore: 0.88, CostPer1kTokens: 0.003, AvgLatencyMs: 1100},
