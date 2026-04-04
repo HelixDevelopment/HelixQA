@@ -94,14 +94,20 @@ func (p *PlaywrightExecutor) ensureLaunched(
 	}
 
 	bridge := p.findBridge()
+	// Derive API URL from browser URL (replace :3000 with :8080).
+	apiURL := strings.Replace(p.browserURL, ":3000", ":8080", 1)
+	if envAPI := os.Getenv("BROWSING_API_URL"); envAPI != "" {
+		apiURL = envAPI
+	}
 	cmd := map[string]interface{}{
 		"action": "launch",
 		"url":    p.browserURL,
+		"apiUrl": apiURL,
 	}
 	cmdJSON, _ := json.Marshal(cmd)
 
 	launchCtx, cancel := context.WithTimeout(
-		ctx, 45*time.Second,
+		ctx, 90*time.Second,
 	)
 	defer cancel()
 

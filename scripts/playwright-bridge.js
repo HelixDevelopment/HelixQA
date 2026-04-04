@@ -109,6 +109,41 @@ function waitForCDP(url, retries) {
   });
 }
 
+// apiLogin authenticates via the API and returns the session token.
+// This bypasses the need for coordinate-based form interaction.
+function apiLogin(baseUrl, username, password) {
+  return new Promise((resolve, reject) => {
+    const url = new URL('/api/v1/auth/login', baseUrl);
+    const body = JSON.stringify({ username, password });
+    const proto = url.protocol === 'https:' ? require('https') : http;
+    const req = proto.request(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Content-Length': Buffer.byteLength(body),
+      },
+    }, (res) => {
+      let data = '';
+      res.on('data', chunk => { data += chunk; });
+      res.on('end', () => {
+        try {
+          const parsed = JSON.parse(data);
+          if (parsed.session_token) {
+            resolve(parsed.session_token);
+          } else {
+            reject(new Error('No session_token in response'));
+          }
+        } catch (e) {
+          reject(new Error('API login parse error: ' + e.message));
+        }
+      });
+    });
+    req.on('error', reject);
+    req.write(body);
+    req.end();
+  });
+}
+
 async function handleLaunch(cmd) {
   // Kill any existing browser silently.
   killExisting();
@@ -140,6 +175,47 @@ async function handleLaunch(cmd) {
     process.exit(1);
   }
 
+  // Pre-login: authenticate via API and inject token into browser.
+  // This bypasses coordinate-based form interaction which is unreliable
+  // in headless mode. The React app reads auth_token from localStorage.
+  const apiBase = cmd.apiUrl || cmd.url?.replace(':3000', ':8080') || 'http://localhost:8080';
+  const username = cmd.username || process.env.ADMIN_USERNAME || 'admin';
+  const password = cmd.password || process.env.ADMIN_PASSWORD || 'admin123';
+
+  try {
+    const token = await apiLogin(apiBase, username, password);
+    // Connect to browser and inject the token.
+    const browser = await chromium.connectOverCDP(cdpURL);
+    const contexts = browser.contexts();
+    if (contexts.length > 0) {
+      const pages = contexts[0].pages();
+      if (pages.length > 0) {
+        const page = pages[0];
+        // Wait for page to load, then inject auth token.
+        await page.waitForLoadState('load').catch(() => {});
+        await page.evaluate((t) => {
+          localStorage.setItem('auth_token', t);
+          localStorage.setItem('user', JSON.stringify({
+            id: 1, username: 'admin', role: { name: 'Admin' }
+          }));
+        }, token);
+        // Navigate to dashboard (reload with token in place).
+        await page.goto(cmd.url || 'http://localhost:3000', {
+          waitUntil: 'domcontentloaded',
+          timeout: 10000,
+        }).catch(() => {});
+        // Brief wait for React to hydrate with the auth token.
+        await page.waitForTimeout(2000);
+        process.stderr.write('pre-login: token injected, navigated to dashboard\n');
+      }
+    }
+    // Don't call browser.disconnect() — it hangs on some CDP
+    // connections. The browser stays alive via the detached spawn.
+  } catch (e) {
+    // Pre-login failed — browser still launches, LLM will see login page.
+    process.stderr.write('pre-login warning: ' + e.message + '\n');
+  }
+
   // Save state — viewport setup happens on first action.
   fs.writeFileSync(STATE_FILE, JSON.stringify({
     pid: proc.pid,
@@ -151,6 +227,10 @@ async function handleLaunch(cmd) {
     status: 'launched',
     pid: proc.pid,
   }));
+
+  // Force exit — CDP connections keep the node process alive.
+  // The browser runs as a detached process independently.
+  setTimeout(() => process.exit(0), 500);
 }
 
 async function handleClose() {
