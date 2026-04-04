@@ -15,8 +15,8 @@ import (
 )
 
 const (
-	geminiDefaultModel   = "gemini-2.0-flash"
-	geminiHTTPTimeout    = 45 * time.Second
+	geminiDefaultModel   = "gemini-2.5-flash"
+	geminiHTTPTimeout    = 120 * time.Second
 	geminiGenerateURLFmt = "https://generativelanguage.googleapis.com/v1beta/models/%s:generateContent?key=%s"
 )
 
@@ -71,7 +71,7 @@ type geminiUsage struct {
 }
 
 // NewGoogleProvider constructs a Provider backed by the Google
-// Gemini API. Model defaults to gemini-2.0-flash.
+// Gemini API. Model defaults to gemini-2.5-flash.
 func NewGoogleProvider(cfg ProviderConfig) Provider {
 	model := cfg.Model
 	if model == "" {

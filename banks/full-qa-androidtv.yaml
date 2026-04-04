@@ -1,0 +1,4410 @@
+# SPDX-FileCopyrightText: 2026 Milos Vasic
+# SPDX-License-Identifier: Apache-2.0
+#
+# HelixQA Test Bank: Catalogizer Full QA - Android TV
+# Comprehensive QA coverage for the Catalogizer Android TV app running on
+# Xiaomi Mi Box 4 (192.168.0.214:5555, Android 9). Covers app launch, login,
+# home screen, media browsing, detail, playback, TV home screen channels,
+# deep linking, Watch Next, favorites, collections, settings, search,
+# and edge cases/negative scenarios. All navigation is via DPAD remote.
+
+version: "1.0"
+name: "Catalogizer Full QA - Android TV"
+description: "Comprehensive end-to-end QA test bank for the Catalogizer Android TV app (v2.3.0) on Xiaomi Mi Box 4. Covers all screens, DPAD navigation, media playback, TV home screen channels, deep linking, Watch Next, favorites, settings, search, and edge cases."
+metadata:
+  author: "vasic-digital"
+  app: "Catalogizer"
+  version: "2.3.0"
+
+test_cases:
+  # ==================== App Launch (FQA-ATV-001 to 010) ====================
+
+  - id: FQA-ATV-001
+    name: "App launches from Android TV home screen"
+    category: functional
+    priority: critical
+    platforms: [androidtv]
+    steps:
+      - name: "Navigate to Catalogizer on TV home"
+        action: "Use DPAD to locate and select Catalogizer app icon on the Android TV launcher"
+        expected: "App icon is visible and focusable on the home screen"
+      - name: "Press DPAD_CENTER to launch"
+        action: "Press DPAD_CENTER on the Catalogizer icon"
+        expected: "App begins launching, splash or loading screen appears"
+    tags: [launch, home-screen, critical-path]
+    estimated_duration: "10s"
+    expected_result: "Catalogizer app launches successfully from the Android TV home screen"
+
+  - id: FQA-ATV-002
+    name: "App displays splash or loading screen on launch"
+    category: functional
+    priority: high
+    platforms: [androidtv]
+    steps:
+      - name: "Launch app"
+        action: "Open Catalogizer from Android TV launcher"
+        expected: "Splash screen or loading indicator is displayed"
+      - name: "Verify branding"
+        action: "Observe the splash/loading screen content"
+        expected: "CATALOGIZER branding text and Media Collection Manager subtitle visible"
+    tags: [launch, splash, branding]
+    estimated_duration: "10s"
+    expected_result: "Splash/loading screen displays with correct Catalogizer branding"
+
+  - id: FQA-ATV-003
+    name: "First launch shows server configuration"
+    category: functional
+    priority: critical
+    platforms: [androidtv]
+    steps:
+      - name: "Fresh install launch"
+        action: "Launch the app after a fresh install with no prior configuration"
+        expected: "Login screen displays with SERVER CONNECTION section visible"
+      - name: "Verify server URL field"
+        action: "Check that the Server URL field is present below the login form"
+        expected: "Server URL OutlinedTextField is visible with Discover and Connect buttons"
+    tags: [launch, first-launch, server-config]
+    estimated_duration: "15s"
+    expected_result: "First launch presents server URL configuration on the login screen"
+
+  - id: FQA-ATV-004
+    name: "Configure server URL via DPAD"
+    category: functional
+    priority: critical
+    platforms: [androidtv]
+    steps:
+      - name: "Navigate to server URL field"
+        action: "Use DPAD_DOWN to navigate past username, password, and Sign In button to the Server URL field"
+        expected: "Server URL field receives focus with animated border highlight"
+      - name: "Open keyboard"
+        action: "Press DPAD_CENTER to activate the text field and open on-screen keyboard"
+        expected: "On-screen keyboard appears"
+      - name: "Type server URL"
+        action: "Type http://localhost:8080 using ADB input or on-screen keyboard"
+        expected: "Server URL field displays http://localhost:8080"
+    tags: [launch, server-config, dpad, text-input]
+    estimated_duration: "30s"
+    expected_result: "Server URL is successfully entered via DPAD navigation"
+
+  - id: FQA-ATV-005
+    name: "Connect button tests server connectivity"
+    category: functional
+    priority: high
+    platforms: [androidtv]
+    steps:
+      - name: "Enter server URL"
+        action: "Set server URL to http://localhost:8080"
+        expected: "Server URL field populated"
+      - name: "Press Connect"
+        action: "DPAD navigate to Connect button and press DPAD_CENTER"
+        expected: "Connection test initiates, trailing icon shows loading spinner"
+      - name: "Verify connection status"
+        action: "Observe the connection result indicator"
+        expected: "Green checkmark icon appears on successful connection, Connected to server text below"
+    tags: [launch, server-config, connectivity]
+    estimated_duration: "15s"
+    expected_result: "Connect button tests and confirms server connectivity"
+
+  - id: FQA-ATV-006
+    name: "Discover button finds servers on network"
+    category: functional
+    priority: high
+    platforms: [androidtv]
+    steps:
+      - name: "Press Discover"
+        action: "DPAD navigate to Discover button and press DPAD_CENTER"
+        expected: "Discovery starts, Searching for server... status appears"
+      - name: "Wait for discovery"
+        action: "Wait up to 10 seconds for discovery to complete"
+        expected: "Either discovered servers appear as selectable buttons or No servers found message"
+    tags: [launch, server-config, discovery, network]
+    estimated_duration: "20s"
+    expected_result: "Discover button initiates network discovery for Catalogizer API instances"
+
+  - id: FQA-ATV-007
+    name: "Auto-discovery selects single server"
+    category: functional
+    priority: medium
+    platforms: [androidtv]
+    steps:
+      - name: "Launch with auto-discovery enabled and no saved URL"
+        action: "Fresh launch with autoDiscovery=true and blank serverUrl"
+        expected: "Auto-discovery runs on launch"
+      - name: "Verify auto-selection"
+        action: "If exactly one server found, verify it is auto-selected"
+        expected: "Server URL field auto-populated and Connected to {name} status shown"
+    tags: [launch, auto-discovery, server-config]
+    estimated_duration: "15s"
+    expected_result: "Single discovered server is automatically selected and connected"
+
+  - id: FQA-ATV-008
+    name: "Server URL persists across app restarts"
+    category: functional
+    priority: high
+    platforms: [androidtv]
+    steps:
+      - name: "Configure server URL"
+        action: "Enter and connect to http://localhost:8080"
+        expected: "Server URL saved via DataStore"
+      - name: "Kill and restart app"
+        action: "Force stop the app and relaunch from Android TV home"
+        expected: "App launches with previously saved server URL pre-filled"
+    tags: [launch, persistence, datastore]
+    estimated_duration: "20s"
+    expected_result: "Server URL configuration persists across app restarts"
+
+  - id: FQA-ATV-009
+    name: "Login screen displays correctly on launch"
+    category: functional
+    priority: critical
+    platforms: [androidtv]
+    steps:
+      - name: "Launch app"
+        action: "Open Catalogizer app"
+        expected: "Login screen is the initial screen for unauthenticated users"
+      - name: "Verify login form elements"
+        action: "Check all form elements are visible"
+        expected: "Username field, Password field, Sign In button, SERVER CONNECTION section all visible"
+      - name: "Verify branding"
+        action: "Check header content"
+        expected: "CATALOGIZER title and Media Collection Manager subtitle displayed"
+    tags: [launch, login, ui-verification]
+    estimated_duration: "10s"
+    expected_result: "Login screen displays correctly with all form elements and branding"
+
+  - id: FQA-ATV-010
+    name: "Username field auto-focused on launch"
+    category: functional
+    priority: high
+    platforms: [androidtv]
+    steps:
+      - name: "Launch app to login screen"
+        action: "Open Catalogizer and wait for login screen"
+        expected: "Login screen displayed"
+      - name: "Verify initial focus"
+        action: "Check which field has focus after 200ms launch delay"
+        expected: "Username field has focus with animated border highlight (ice-blue glow)"
+    tags: [launch, focus, dpad, accessibility]
+    estimated_duration: "10s"
+    expected_result: "Username field receives auto-focus on login screen load"
+
+  # ==================== Login Flow (FQA-ATV-011 to 025) ====================
+
+  - id: FQA-ATV-011
+    name: "Login with valid credentials"
+    category: functional
+    priority: critical
+    platforms: [androidtv]
+    steps:
+      - name: "Enter username"
+        action: "With username field focused, press DPAD_CENTER to open keyboard, type admin"
+        expected: "Username field shows admin"
+      - name: "Navigate to password"
+        action: "Press KEYCODE_TAB or DPAD_DOWN to move to password field"
+        expected: "Password field receives focus"
+      - name: "Enter password"
+        action: "Press DPAD_CENTER to open keyboard, type admin123"
+        expected: "Password field shows masked characters"
+      - name: "Submit login"
+        action: "DPAD_DOWN to Sign In button, press DPAD_CENTER"
+        expected: "Loading spinner appears on Sign In button"
+      - name: "Verify navigation"
+        action: "Wait for authentication to complete"
+        expected: "Navigates to home screen, login screen removed from back stack"
+    tags: [login, authentication, critical-path, happy-path]
+    estimated_duration: "20s"
+    expected_result: "Valid credentials authenticate successfully and navigate to home screen"
+
+  - id: FQA-ATV-012
+    name: "DPAD navigate to username field"
+    category: functional
+    priority: high
+    platforms: [androidtv]
+    steps:
+      - name: "Start from login screen"
+        action: "Ensure login screen is displayed"
+        expected: "Login form visible"
+      - name: "Focus username"
+        action: "Press DPAD_UP until username field has focus"
+        expected: "Username field shows animated ice-blue border glow, background becomes slightly brighter"
+    tags: [login, dpad, focus, navigation]
+    estimated_duration: "10s"
+    expected_result: "Username field is focusable and shows visible focus indicator via DPAD"
+
+  - id: FQA-ATV-013
+    name: "DPAD_CENTER opens keyboard on username field"
+    category: functional
+    priority: critical
+    platforms: [androidtv]
+    steps:
+      - name: "Focus username field"
+        action: "DPAD navigate to username field"
+        expected: "Username field focused"
+      - name: "Open keyboard"
+        action: "Press DPAD_CENTER"
+        expected: "On-screen keyboard or IME appears, field is ready for text input"
+    tags: [login, dpad, keyboard, text-input]
+    estimated_duration: "10s"
+    expected_result: "DPAD_CENTER activates the keyboard for text entry in username field"
+
+  - id: FQA-ATV-014
+    name: "Type username via keyboard"
+    category: functional
+    priority: critical
+    platforms: [androidtv]
+    steps:
+      - name: "Activate username field"
+        action: "Focus and press DPAD_CENTER on username field"
+        expected: "Keyboard active"
+      - name: "Type username"
+        action: "Input text admin via on-screen keyboard or ADB input text"
+        expected: "Username field displays admin in white text"
+    tags: [login, text-input, keyboard]
+    estimated_duration: "15s"
+    expected_result: "Username text is entered successfully into the field"
+
+  - id: FQA-ATV-015
+    name: "KEYCODE_TAB moves to password field"
+    category: functional
+    priority: critical
+    platforms: [androidtv]
+    steps:
+      - name: "Enter username"
+        action: "Type admin in username field"
+        expected: "Username populated"
+      - name: "Tab to password"
+        action: "Press KEYCODE_TAB to move focus to password field"
+        expected: "Password field receives focus with animated border glow"
+    tags: [login, dpad, tab, field-navigation]
+    estimated_duration: "10s"
+    expected_result: "KEYCODE_TAB successfully moves focus from username to password field"
+
+  - id: FQA-ATV-016
+    name: "Type password with masking"
+    category: functional
+    priority: critical
+    platforms: [androidtv]
+    steps:
+      - name: "Focus password field"
+        action: "Navigate to password field"
+        expected: "Password field focused"
+      - name: "Enter password"
+        action: "Press DPAD_CENTER, type admin123"
+        expected: "Password field displays masked dots, not plaintext"
+      - name: "Verify masking"
+        action: "Observe password field visual"
+        expected: "PasswordVisualTransformation applied, password icon visible as trailing icon"
+    tags: [login, password, masking, security]
+    estimated_duration: "15s"
+    expected_result: "Password is entered and masked with dots for security"
+
+  - id: FQA-ATV-017
+    name: "DPAD to Sign In button and press center"
+    category: functional
+    priority: critical
+    platforms: [androidtv]
+    steps:
+      - name: "Fill credentials"
+        action: "Enter admin and admin123 in respective fields"
+        expected: "Both fields populated"
+      - name: "Navigate to Sign In"
+        action: "DPAD_DOWN from password field to Sign In button"
+        expected: "Sign In button receives focus"
+      - name: "Press Sign In"
+        action: "Press DPAD_CENTER or Enter key"
+        expected: "Login initiated, loading spinner replaces Sign In text"
+    tags: [login, dpad, submit, button]
+    estimated_duration: "15s"
+    expected_result: "DPAD navigation to Sign In button works and DPAD_CENTER triggers login"
+
+  - id: FQA-ATV-018
+    name: "Login success navigates to home screen"
+    category: functional
+    priority: critical
+    platforms: [androidtv]
+    steps:
+      - name: "Perform valid login"
+        action: "Login with admin/admin123"
+        expected: "Authentication succeeds"
+      - name: "Verify home screen"
+        action: "Observe screen after login"
+        expected: "Home screen displayed with Catalogizer top bar, search icon, settings icon"
+      - name: "Verify login screen removed"
+        action: "Press BACK"
+        expected: "Does not return to login screen (popUpTo with inclusive=true)"
+    tags: [login, navigation, home-screen, critical-path]
+    estimated_duration: "15s"
+    expected_result: "Successful login navigates to home screen with login screen removed from back stack"
+
+  - id: FQA-ATV-019
+    name: "Login with wrong password shows error"
+    category: negative
+    priority: high
+    platforms: [androidtv]
+    steps:
+      - name: "Enter valid username"
+        action: "Type admin in username field"
+        expected: "Username populated"
+      - name: "Enter wrong password"
+        action: "Type wrongpassword in password field"
+        expected: "Password populated"
+      - name: "Submit login"
+        action: "Press Sign In button"
+        expected: "Error message appears in red error box below the login button"
+      - name: "Verify still on login screen"
+        action: "Check current screen"
+        expected: "Login screen still displayed, not navigated to home"
+    tags: [login, negative, error-handling, authentication]
+    estimated_duration: "15s"
+    expected_result: "Wrong password displays error message and remains on login screen"
+
+  - id: FQA-ATV-020
+    name: "Login with empty username shows validation error"
+    category: negative
+    priority: high
+    platforms: [androidtv]
+    steps:
+      - name: "Leave username empty"
+        action: "Do not enter any text in username field"
+        expected: "Username field blank"
+      - name: "Enter password"
+        action: "Type admin123 in password field"
+        expected: "Password populated"
+      - name: "Submit login"
+        action: "Press Sign In"
+        expected: "Username is required validation error displayed below username field in red"
+    tags: [login, validation, empty-field, negative]
+    estimated_duration: "10s"
+    expected_result: "Empty username triggers client-side validation error"
+
+  - id: FQA-ATV-021
+    name: "Login with empty password shows validation error"
+    category: negative
+    priority: high
+    platforms: [androidtv]
+    steps:
+      - name: "Enter username"
+        action: "Type admin in username field"
+        expected: "Username populated"
+      - name: "Leave password empty"
+        action: "Do not enter text in password field"
+        expected: "Password field blank"
+      - name: "Submit login"
+        action: "Press Sign In"
+        expected: "Password is required validation error displayed below password field in red"
+    tags: [login, validation, empty-field, negative]
+    estimated_duration: "10s"
+    expected_result: "Empty password triggers client-side validation error"
+
+  - id: FQA-ATV-022
+    name: "Login with short username shows validation error"
+    category: negative
+    priority: medium
+    platforms: [androidtv]
+    steps:
+      - name: "Enter single character username"
+        action: "Type a in username field"
+        expected: "Username contains single character"
+      - name: "Enter valid password"
+        action: "Type admin123 in password field"
+        expected: "Password populated"
+      - name: "Submit login"
+        action: "Press Sign In"
+        expected: "Username must be at least 2 characters validation error displayed"
+    tags: [login, validation, min-length, negative]
+    estimated_duration: "10s"
+    expected_result: "Username under 2 characters triggers validation error"
+
+  - id: FQA-ATV-023
+    name: "Login with short password shows validation error"
+    category: negative
+    priority: medium
+    platforms: [androidtv]
+    steps:
+      - name: "Enter valid username"
+        action: "Type admin in username field"
+        expected: "Username populated"
+      - name: "Enter short password"
+        action: "Type abc in password field"
+        expected: "Password has 3 characters"
+      - name: "Submit login"
+        action: "Press Sign In"
+        expected: "Password must be at least 4 characters validation error displayed"
+    tags: [login, validation, min-length, negative]
+    estimated_duration: "10s"
+    expected_result: "Password under 4 characters triggers validation error"
+
+  - id: FQA-ATV-024
+    name: "Saved username restored on login screen"
+    category: functional
+    priority: medium
+    platforms: [androidtv]
+    steps:
+      - name: "Login successfully"
+        action: "Login with admin/admin123"
+        expected: "Navigated to home screen, username saved to DataStore"
+      - name: "Logout and return to login"
+        action: "Navigate to Settings > Logout"
+        expected: "Login screen displayed"
+      - name: "Verify saved username"
+        action: "Check username field content"
+        expected: "Username field pre-populated with admin from previous session"
+    tags: [login, persistence, remember-me, datastore]
+    estimated_duration: "25s"
+    expected_result: "Previously used username is restored on the login screen"
+
+  - id: FQA-ATV-025
+    name: "Server URL change flow"
+    category: functional
+    priority: medium
+    platforms: [androidtv]
+    steps:
+      - name: "Navigate to server URL field"
+        action: "DPAD_DOWN past Sign In to Server URL field"
+        expected: "Server URL field focused"
+      - name: "Clear existing URL"
+        action: "Clear the field content"
+        expected: "Server URL field empty"
+      - name: "Enter new URL"
+        action: "Type http://192.168.0.100:8080"
+        expected: "New URL displayed in field"
+      - name: "Test connection"
+        action: "Press Connect button"
+        expected: "Connection test runs, result indicator updates"
+    tags: [login, server-config, url-change]
+    estimated_duration: "20s"
+    expected_result: "Server URL can be changed and tested from the login screen"
+
+  # ==================== Home Screen (FQA-ATV-026 to 050) ====================
+
+  - id: FQA-ATV-026
+    name: "Home screen loads after login"
+    category: functional
+    priority: critical
+    platforms: [androidtv]
+    steps:
+      - name: "Login successfully"
+        action: "Login with admin/admin123"
+        expected: "Home screen displayed"
+      - name: "Verify top bar"
+        action: "Check top bar content"
+        expected: "Catalogizer title, search icon, and settings icon visible in TopBar"
+    tags: [home, critical-path, post-login]
+    estimated_duration: "15s"
+    expected_result: "Home screen loads with TopBar displaying Catalogizer branding and action icons"
+
+  - id: FQA-ATV-027
+    name: "Category rows display on home screen"
+    category: functional
+    priority: critical
+    platforms: [androidtv]
+    steps:
+      - name: "Navigate to home screen"
+        action: "Login and arrive at home screen"
+        expected: "Home screen content loading"
+      - name: "Verify category rows"
+        action: "Observe content rails in TvLazyColumn"
+        expected: "At least one content rail visible (e.g., Recently Added Movies, Recently Added TV Shows)"
+    tags: [home, categories, content-rails]
+    estimated_duration: "15s"
+    expected_result: "Home screen displays category rows with media content"
+
+  - id: FQA-ATV-028
+    name: "Continue Watching rail displays"
+    category: functional
+    priority: high
+    platforms: [androidtv]
+    steps:
+      - name: "With partially watched content"
+        action: "After watching some media partially, navigate to home screen"
+        expected: "Home screen loads"
+      - name: "Verify Continue Watching"
+        action: "Check for Continue Watching rail"
+        expected: "Continue Watching rail appears at the top with items that have watch progress"
+    tags: [home, continue-watching, progress]
+    estimated_duration: "15s"
+    expected_result: "Continue Watching rail shows partially watched media items"
+
+  - id: FQA-ATV-029
+    name: "Recently Added Movies rail"
+    category: functional
+    priority: high
+    platforms: [androidtv]
+    steps:
+      - name: "Home screen loaded"
+        action: "Navigate to home screen with movies in catalog"
+        expected: "Home screen displayed"
+      - name: "Verify movies rail"
+        action: "Look for Recently Added Movies section header and content"
+        expected: "Recently Added Movies rail visible with movie cards in LazyRow"
+    tags: [home, movies, content-rails]
+    estimated_duration: "10s"
+    expected_result: "Recently Added Movies rail displays with movie content cards"
+
+  - id: FQA-ATV-030
+    name: "Recently Added TV Shows rail"
+    category: functional
+    priority: high
+    platforms: [androidtv]
+    steps:
+      - name: "Home screen loaded"
+        action: "Navigate to home screen with TV shows in catalog"
+        expected: "Home screen displayed"
+      - name: "Verify TV shows rail"
+        action: "Look for Recently Added TV Shows section"
+        expected: "Recently Added TV Shows rail visible with show cards"
+    tags: [home, tv-shows, content-rails]
+    estimated_duration: "10s"
+    expected_result: "Recently Added TV Shows rail displays with TV show content cards"
+
+  - id: FQA-ATV-031
+    name: "Recently Added Music Albums rail"
+    category: functional
+    priority: high
+    platforms: [androidtv]
+    steps:
+      - name: "Home screen loaded"
+        action: "Navigate to home screen with music in catalog"
+        expected: "Home screen displayed"
+      - name: "Verify music rail"
+        action: "Look for Recently Added Music Albums section"
+        expected: "Recently Added Music Albums rail visible with album cards"
+    tags: [home, music, content-rails]
+    estimated_duration: "10s"
+    expected_result: "Recently Added Music Albums rail displays with album content cards"
+
+  - id: FQA-ATV-032
+    name: "DPAD left/right scrolls within category row"
+    category: functional
+    priority: critical
+    platforms: [androidtv]
+    steps:
+      - name: "Focus a media card in a row"
+        action: "DPAD navigate to a media card in any content rail"
+        expected: "Media card receives focus"
+      - name: "Scroll right"
+        action: "Press DPAD_RIGHT multiple times"
+        expected: "Focus moves to next cards in the LazyRow, row scrolls horizontally to reveal more items"
+      - name: "Scroll left"
+        action: "Press DPAD_LEFT multiple times"
+        expected: "Focus moves back to previous cards"
+    tags: [home, dpad, horizontal-scroll, navigation]
+    estimated_duration: "15s"
+    expected_result: "DPAD left/right navigates and scrolls within category rows"
+
+  - id: FQA-ATV-033
+    name: "DPAD up/down navigates between rows"
+    category: functional
+    priority: critical
+    platforms: [androidtv]
+    steps:
+      - name: "Focus item in first row"
+        action: "DPAD navigate to an item in the first content rail"
+        expected: "First row item focused"
+      - name: "Navigate down"
+        action: "Press DPAD_DOWN"
+        expected: "Focus moves to an item in the next content rail below"
+      - name: "Navigate up"
+        action: "Press DPAD_UP"
+        expected: "Focus returns to the previous content rail above"
+    tags: [home, dpad, vertical-navigation, rows]
+    estimated_duration: "10s"
+    expected_result: "DPAD up/down moves focus between content rails vertically"
+
+  - id: FQA-ATV-034
+    name: "Focus ring visible on selected media card"
+    category: functional
+    priority: critical
+    platforms: [androidtv]
+    steps:
+      - name: "Navigate to a media card"
+        action: "DPAD to any media card on home screen"
+        expected: "Media card is focused"
+      - name: "Verify focus indicator"
+        action: "Observe the focused card visual state"
+        expected: "Card shows visible focus ring/border or scale animation indicating it is selected"
+    tags: [home, focus, accessibility, dpad]
+    estimated_duration: "10s"
+    expected_result: "Focused media card has a clearly visible focus indicator"
+
+  - id: FQA-ATV-035
+    name: "Poster images load on media cards"
+    category: functional
+    priority: high
+    platforms: [androidtv]
+    steps:
+      - name: "Home screen with content"
+        action: "Navigate to home screen with media items that have cover images"
+        expected: "Content rails visible"
+      - name: "Verify image loading"
+        action: "Observe media cards in content rails"
+        expected: "Poster/cover images load via Coil AsyncImage, not showing placeholder indefinitely"
+    tags: [home, images, coil, async-loading]
+    estimated_duration: "15s"
+    expected_result: "Media card poster images load correctly from the server"
+
+  - id: FQA-ATV-036
+    name: "Title text readable on media cards"
+    category: functional
+    priority: high
+    platforms: [androidtv]
+    steps:
+      - name: "View media cards"
+        action: "Navigate to content rails on home screen"
+        expected: "Media cards displayed"
+      - name: "Verify title visibility"
+        action: "Check text on media cards"
+        expected: "Media title text is readable, properly sized for 10-foot TV viewing"
+    tags: [home, text, readability, accessibility]
+    estimated_duration: "10s"
+    expected_result: "Media card titles are readable at TV viewing distance"
+
+  - id: FQA-ATV-037
+    name: "Category section headers visible"
+    category: functional
+    priority: high
+    platforms: [androidtv]
+    steps:
+      - name: "View home screen"
+        action: "Navigate to home screen with multiple content rails"
+        expected: "Multiple rails visible"
+      - name: "Verify section headers"
+        action: "Check headlineMedium text above each rail"
+        expected: "Section headers like Recently Added Movies, Recently Added TV Shows clearly visible"
+    tags: [home, headers, typography, sections]
+    estimated_duration: "10s"
+    expected_result: "Category section headers are visible above each content rail"
+
+  - id: FQA-ATV-038
+    name: "Catalog stats header displays"
+    category: functional
+    priority: medium
+    platforms: [androidtv]
+    steps:
+      - name: "View home screen with entities"
+        action: "Navigate to home screen when totalEntities > 0"
+        expected: "Stats header at top of TvLazyColumn"
+      - name: "Verify stats content"
+        action: "Check CatalogStatsHeader content"
+        expected: "Your Library -- N items text and stats chips showing counts per media type"
+    tags: [home, stats, header, summary]
+    estimated_duration: "10s"
+    expected_result: "Catalog stats header shows total items and per-type breakdown chips"
+
+  - id: FQA-ATV-039
+    name: "Top Rated Movies rail"
+    category: functional
+    priority: medium
+    platforms: [androidtv]
+    steps:
+      - name: "Scroll to top rated section"
+        action: "DPAD_DOWN to scroll through home screen rails"
+        expected: "Scrolling through content"
+      - name: "Verify top rated movies"
+        action: "Find Top Rated Movies rail"
+        expected: "Top Rated Movies rail visible with highest-rated movie cards"
+    tags: [home, top-rated, movies]
+    estimated_duration: "15s"
+    expected_result: "Top Rated Movies rail appears with rated content"
+
+  - id: FQA-ATV-040
+    name: "Recommended for You rail"
+    category: functional
+    priority: medium
+    platforms: [androidtv]
+    steps:
+      - name: "Scroll down home screen"
+        action: "DPAD_DOWN through rails"
+        expected: "Scrolling through content"
+      - name: "Find recommendations"
+        action: "Locate Recommended for You rail"
+        expected: "Recommended for You section visible with personalized media suggestions"
+    tags: [home, recommendations, personalization]
+    estimated_duration: "15s"
+    expected_result: "Recommended for You rail displays with suggested content"
+
+  - id: FQA-ATV-041
+    name: "Trending rail"
+    category: functional
+    priority: medium
+    platforms: [androidtv]
+    steps:
+      - name: "Scroll down home screen"
+        action: "DPAD_DOWN through rails"
+        expected: "Scrolling through content"
+      - name: "Find trending"
+        action: "Locate Trending rail"
+        expected: "Trending section visible with popular media items"
+    tags: [home, trending, popular]
+    estimated_duration: "15s"
+    expected_result: "Trending rail displays with popular content"
+
+  - id: FQA-ATV-042
+    name: "Recently Added Games rail"
+    category: functional
+    priority: medium
+    platforms: [androidtv]
+    steps:
+      - name: "Home screen with games"
+        action: "Navigate to home screen with games in catalog"
+        expected: "Home screen displayed"
+      - name: "Find games rail"
+        action: "Look for Recently Added Games section"
+        expected: "Recently Added Games rail visible if games exist in catalog"
+    tags: [home, games, content-rails]
+    estimated_duration: "10s"
+    expected_result: "Recently Added Games rail displays when games are in the catalog"
+
+  - id: FQA-ATV-043
+    name: "Recently Added Books rail"
+    category: functional
+    priority: medium
+    platforms: [androidtv]
+    steps:
+      - name: "Home screen with books"
+        action: "Navigate to home screen with books in catalog"
+        expected: "Home screen displayed"
+      - name: "Find books rail"
+        action: "Look for Recently Added Books section"
+        expected: "Recently Added Books rail visible if books exist in catalog"
+    tags: [home, books, content-rails]
+    estimated_duration: "10s"
+    expected_result: "Recently Added Books rail displays when books are in the catalog"
+
+  - id: FQA-ATV-044
+    name: "Recently Added Comics rail"
+    category: functional
+    priority: medium
+    platforms: [androidtv]
+    steps:
+      - name: "Home screen with comics"
+        action: "Navigate to home screen with comics in catalog"
+        expected: "Home screen displayed"
+      - name: "Find comics rail"
+        action: "Look for Recently Added Comics section"
+        expected: "Recently Added Comics rail visible if comics exist in catalog"
+    tags: [home, comics, content-rails]
+    estimated_duration: "10s"
+    expected_result: "Recently Added Comics rail displays when comics are in the catalog"
+
+  - id: FQA-ATV-045
+    name: "Recently Added Software rail"
+    category: functional
+    priority: medium
+    platforms: [androidtv]
+    steps:
+      - name: "Home screen with software"
+        action: "Navigate to home screen with software in catalog"
+        expected: "Home screen displayed"
+      - name: "Find software rail"
+        action: "Look for Recently Added Software section"
+        expected: "Recently Added Software rail visible if software exists in catalog"
+    tags: [home, software, content-rails]
+    estimated_duration: "10s"
+    expected_result: "Recently Added Software rail displays when software items are in the catalog"
+
+  - id: FQA-ATV-046
+    name: "Search icon navigates to search screen"
+    category: functional
+    priority: high
+    platforms: [androidtv]
+    steps:
+      - name: "Focus search icon"
+        action: "DPAD navigate to search icon in TopBar"
+        expected: "Search icon focused"
+      - name: "Press search"
+        action: "Press DPAD_CENTER"
+        expected: "Navigates to search screen"
+    tags: [home, search, navigation, topbar]
+    estimated_duration: "10s"
+    expected_result: "Search icon in TopBar navigates to the search screen"
+
+  - id: FQA-ATV-047
+    name: "Settings icon navigates to settings screen"
+    category: functional
+    priority: high
+    platforms: [androidtv]
+    steps:
+      - name: "Focus settings icon"
+        action: "DPAD navigate to settings icon in TopBar"
+        expected: "Settings icon focused"
+      - name: "Press settings"
+        action: "Press DPAD_CENTER"
+        expected: "Navigates to settings screen"
+    tags: [home, settings, navigation, topbar]
+    estimated_duration: "10s"
+    expected_result: "Settings icon in TopBar navigates to the settings screen"
+
+  - id: FQA-ATV-048
+    name: "Home screen loading state"
+    category: functional
+    priority: high
+    platforms: [androidtv]
+    steps:
+      - name: "Navigate to home screen"
+        action: "Login and observe home screen loading"
+        expected: "CircularProgressIndicator displayed"
+      - name: "Verify loading text"
+        action: "Check loading message"
+        expected: "Loading your media collection... text visible below spinner"
+    tags: [home, loading, state, progress]
+    estimated_duration: "10s"
+    expected_result: "Home screen shows loading indicator with descriptive text while data loads"
+
+  - id: FQA-ATV-049
+    name: "Home screen error state with retry"
+    category: negative
+    priority: high
+    platforms: [androidtv]
+    steps:
+      - name: "Trigger error state"
+        action: "Navigate to home screen when API is unreachable"
+        expected: "Error state displayed"
+      - name: "Verify error UI"
+        action: "Check error screen content"
+        expected: "Error loading content heading, network check message, error detail, and Retry button"
+      - name: "Press Retry"
+        action: "DPAD to Retry button and press DPAD_CENTER"
+        expected: "Data loading retries"
+    tags: [home, error, retry, network]
+    estimated_duration: "15s"
+    expected_result: "Home screen error state shows retry button that reloads data"
+
+  - id: FQA-ATV-050
+    name: "Empty library state"
+    category: functional
+    priority: medium
+    platforms: [androidtv]
+    steps:
+      - name: "Navigate to home with empty catalog"
+        action: "Login when catalog has no scanned media"
+        expected: "Empty state displayed"
+      - name: "Verify empty state UI"
+        action: "Check content"
+        expected: "Your Library is Empty heading, storage root setup instructions, and Refresh button"
+    tags: [home, empty-state, onboarding]
+    estimated_duration: "15s"
+    expected_result: "Empty catalog shows helpful empty state with guidance to add storage roots"
+
+  # ==================== Media Browsing (FQA-ATV-051 to 090) ====================
+
+  - id: FQA-ATV-051
+    name: "Navigate into Movies category"
+    category: functional
+    priority: critical
+    platforms: [androidtv]
+    steps:
+      - name: "Find movies rail"
+        action: "DPAD navigate to Recently Added Movies rail on home screen"
+        expected: "Movies rail focused"
+      - name: "Select a movie"
+        action: "DPAD_RIGHT to a movie card and press DPAD_CENTER"
+        expected: "Navigates to media detail screen for the selected movie"
+    tags: [browse, movies, navigation, critical-path]
+    estimated_duration: "15s"
+    expected_result: "Selecting a movie card from the Movies rail opens its detail screen"
+
+  - id: FQA-ATV-052
+    name: "Browse movie cards in LazyRow"
+    category: functional
+    priority: high
+    platforms: [androidtv]
+    steps:
+      - name: "Focus movies rail"
+        action: "DPAD to the Recently Added Movies rail"
+        expected: "Movies rail focused"
+      - name: "Browse cards"
+        action: "Press DPAD_RIGHT repeatedly to scroll through movie cards"
+        expected: "Each card receives focus sequentially, LazyRow scrolls to reveal more items"
+      - name: "Verify card width"
+        action: "Observe card dimensions"
+        expected: "Each MediaCard is 240dp wide with proper spacing"
+    tags: [browse, movies, horizontal-scroll, lazy-row]
+    estimated_duration: "15s"
+    expected_result: "Movie cards are browsable with DPAD_RIGHT in a horizontally scrolling LazyRow"
+
+  - id: FQA-ATV-053
+    name: "DPAD navigation through media items"
+    category: functional
+    priority: critical
+    platforms: [androidtv]
+    steps:
+      - name: "Focus first item"
+        action: "DPAD to the first media card in any rail"
+        expected: "First card focused"
+      - name: "Navigate right"
+        action: "DPAD_RIGHT 5 times"
+        expected: "Focus moves through 5 consecutive cards"
+      - name: "Navigate left"
+        action: "DPAD_LEFT 5 times"
+        expected: "Focus returns to first card"
+    tags: [browse, dpad, focus, navigation]
+    estimated_duration: "15s"
+    expected_result: "DPAD navigation moves focus correctly through media cards in both directions"
+
+  - id: FQA-ATV-054
+    name: "Select movie opens detail screen"
+    category: functional
+    priority: critical
+    platforms: [androidtv]
+    steps:
+      - name: "Focus a movie card"
+        action: "DPAD to a movie card on home screen"
+        expected: "Movie card focused"
+      - name: "Open detail"
+        action: "Press DPAD_CENTER"
+        expected: "MediaDetailScreen opens showing the movie details"
+    tags: [browse, detail, navigation, critical-path]
+    estimated_duration: "10s"
+    expected_result: "Pressing DPAD_CENTER on a movie card navigates to its detail screen"
+
+  - id: FQA-ATV-055
+    name: "Navigate back from detail returns to home"
+    category: functional
+    priority: critical
+    platforms: [androidtv]
+    steps:
+      - name: "Open media detail"
+        action: "Select any media item to open detail screen"
+        expected: "Detail screen displayed"
+      - name: "Press BACK"
+        action: "Press BACK button on remote"
+        expected: "Returns to home screen at the same scroll position"
+    tags: [browse, back-navigation, popbackstack]
+    estimated_duration: "10s"
+    expected_result: "BACK button returns from detail screen to home screen"
+
+  - id: FQA-ATV-056
+    name: "Browse TV Shows category"
+    category: functional
+    priority: high
+    platforms: [androidtv]
+    steps:
+      - name: "Find TV shows rail"
+        action: "DPAD_DOWN to Recently Added TV Shows rail"
+        expected: "TV Shows rail focused"
+      - name: "Browse shows"
+        action: "DPAD_RIGHT through TV show cards"
+        expected: "TV show cards are browsable with proper titles and posters"
+    tags: [browse, tv-shows, content-rails]
+    estimated_duration: "15s"
+    expected_result: "TV Shows category rail is browsable with DPAD navigation"
+
+  - id: FQA-ATV-057
+    name: "Browse Music category"
+    category: functional
+    priority: high
+    platforms: [androidtv]
+    steps:
+      - name: "Find music rail"
+        action: "DPAD_DOWN to Recently Added Music Albums rail"
+        expected: "Music rail focused"
+      - name: "Browse albums"
+        action: "DPAD_RIGHT through music album cards"
+        expected: "Music album cards are browsable with album art and titles"
+    tags: [browse, music, content-rails]
+    estimated_duration: "15s"
+    expected_result: "Music Albums category rail is browsable with DPAD navigation"
+
+  - id: FQA-ATV-058
+    name: "Browse Books category"
+    category: functional
+    priority: medium
+    platforms: [androidtv]
+    steps:
+      - name: "Find books rail"
+        action: "DPAD_DOWN to Recently Added Books rail"
+        expected: "Books rail focused"
+      - name: "Browse books"
+        action: "DPAD_RIGHT through book cards"
+        expected: "Book cards displayed with covers and titles"
+    tags: [browse, books, content-rails]
+    estimated_duration: "15s"
+    expected_result: "Books category rail is browsable"
+
+  - id: FQA-ATV-059
+    name: "Browse Comics category"
+    category: functional
+    priority: medium
+    platforms: [androidtv]
+    steps:
+      - name: "Find comics rail"
+        action: "DPAD_DOWN to Recently Added Comics rail"
+        expected: "Comics rail focused"
+      - name: "Browse comics"
+        action: "DPAD_RIGHT through comic cards"
+        expected: "Comic cards displayed with covers and titles"
+    tags: [browse, comics, content-rails]
+    estimated_duration: "15s"
+    expected_result: "Comics category rail is browsable"
+
+  - id: FQA-ATV-060
+    name: "Browse Games category"
+    category: functional
+    priority: medium
+    platforms: [androidtv]
+    steps:
+      - name: "Find games rail"
+        action: "DPAD_DOWN to Recently Added Games rail"
+        expected: "Games rail focused"
+      - name: "Browse games"
+        action: "DPAD_RIGHT through game cards"
+        expected: "Game cards displayed with covers and titles"
+    tags: [browse, games, content-rails]
+    estimated_duration: "15s"
+    expected_result: "Games category rail is browsable"
+
+  - id: FQA-ATV-061
+    name: "Browse Software category"
+    category: functional
+    priority: low
+    platforms: [androidtv]
+    steps:
+      - name: "Find software rail"
+        action: "DPAD_DOWN to Recently Added Software rail"
+        expected: "Software rail focused"
+      - name: "Browse software"
+        action: "DPAD_RIGHT through software cards"
+        expected: "Software cards displayed with titles"
+    tags: [browse, software, content-rails]
+    estimated_duration: "15s"
+    expected_result: "Software category rail is browsable"
+
+  - id: FQA-ATV-062
+    name: "Browse Concerts category"
+    category: functional
+    priority: low
+    platforms: [androidtv]
+    steps:
+      - name: "Find concerts rail"
+        action: "DPAD_DOWN to Recently Added Concerts rail"
+        expected: "Concerts rail focused"
+      - name: "Browse concerts"
+        action: "DPAD_RIGHT through concert cards"
+        expected: "Concert cards displayed with covers and titles"
+    tags: [browse, concerts, content-rails]
+    estimated_duration: "15s"
+    expected_result: "Concerts category rail is browsable"
+
+  - id: FQA-ATV-063
+    name: "Continue Watching item opens player directly"
+    category: functional
+    priority: high
+    platforms: [androidtv]
+    steps:
+      - name: "Focus Continue Watching item"
+        action: "DPAD to a card in Continue Watching rail"
+        expected: "Card focused"
+      - name: "Select item"
+        action: "Press DPAD_CENTER"
+        expected: "Navigates directly to player screen (navigateToPlayer=true), not detail screen"
+    tags: [browse, continue-watching, player, navigation]
+    estimated_duration: "15s"
+    expected_result: "Continue Watching items navigate directly to the media player"
+
+  - id: FQA-ATV-064
+    name: "Top Rated TV Shows rail browsable"
+    category: functional
+    priority: medium
+    platforms: [androidtv]
+    steps:
+      - name: "Find top rated TV shows"
+        action: "DPAD_DOWN to Top Rated TV Shows rail"
+        expected: "Rail focused"
+      - name: "Browse items"
+        action: "DPAD_RIGHT through cards"
+        expected: "Top rated TV show cards browsable with ratings visible"
+    tags: [browse, top-rated, tv-shows]
+    estimated_duration: "15s"
+    expected_result: "Top Rated TV Shows rail is browsable"
+
+  - id: FQA-ATV-065
+    name: "Top Rated Music rail browsable"
+    category: functional
+    priority: medium
+    platforms: [androidtv]
+    steps:
+      - name: "Find top rated music"
+        action: "DPAD_DOWN to Top Rated Music rail"
+        expected: "Rail focused"
+      - name: "Browse items"
+        action: "DPAD_RIGHT through cards"
+        expected: "Top rated music cards browsable"
+    tags: [browse, top-rated, music]
+    estimated_duration: "15s"
+    expected_result: "Top Rated Music rail is browsable"
+
+  - id: FQA-ATV-066
+    name: "Top Rated Documents rail browsable"
+    category: functional
+    priority: low
+    platforms: [androidtv]
+    steps:
+      - name: "Find top rated documents"
+        action: "DPAD_DOWN to Top Rated Documents rail"
+        expected: "Rail focused"
+      - name: "Browse items"
+        action: "DPAD_RIGHT through cards"
+        expected: "Top rated document cards browsable"
+    tags: [browse, top-rated, documents]
+    estimated_duration: "15s"
+    expected_result: "Top Rated Documents rail is browsable"
+
+  - id: FQA-ATV-067
+    name: "Only non-empty rails shown on home"
+    category: functional
+    priority: medium
+    platforms: [androidtv]
+    steps:
+      - name: "Load home screen"
+        action: "Navigate to home screen"
+        expected: "Home screen displayed"
+      - name: "Verify rail filtering"
+        action: "Check that rails with zero items are not displayed"
+        expected: "Only content rails with non-empty item lists are rendered, no empty sections"
+    tags: [browse, dynamic-rails, filtering]
+    estimated_duration: "10s"
+    expected_result: "Home screen only shows category rails that have content"
+
+  - id: FQA-ATV-068
+    name: "Search from home screen via search icon"
+    category: functional
+    priority: high
+    platforms: [androidtv]
+    steps:
+      - name: "Press search icon"
+        action: "DPAD navigate to search icon in TopBar and press DPAD_CENTER"
+        expected: "Search screen opens"
+      - name: "Verify search screen"
+        action: "Check search screen elements"
+        expected: "Search text field, Search button, placeholder text visible"
+    tags: [browse, search, navigation]
+    estimated_duration: "10s"
+    expected_result: "Search icon on home screen opens the search screen"
+
+  - id: FQA-ATV-069
+    name: "Search with movie title Matrix"
+    category: functional
+    priority: high
+    platforms: [androidtv]
+    steps:
+      - name: "Open search"
+        action: "Navigate to search screen"
+        expected: "Search screen displayed"
+      - name: "Enter search query"
+        action: "Press DPAD_CENTER on search field, type Matrix"
+        expected: "Search field shows Matrix"
+      - name: "Execute search"
+        action: "Press Search button or Enter key"
+        expected: "Search results displayed with items matching Matrix"
+    tags: [browse, search, movie-title, happy-path]
+    estimated_duration: "20s"
+    expected_result: "Searching for Matrix returns relevant movie results"
+
+  - id: FQA-ATV-070
+    name: "Search with Cyrillic text"
+    category: functional
+    priority: medium
+    platforms: [androidtv]
+    steps:
+      - name: "Open search"
+        action: "Navigate to search screen"
+        expected: "Search screen displayed"
+      - name: "Enter Cyrillic query"
+        action: "Type a Cyrillic query via ADB input"
+        expected: "Search field accepts Cyrillic characters"
+      - name: "Execute search"
+        action: "Press Search button"
+        expected: "Search executes without error, results or no-results state shown"
+    tags: [browse, search, cyrillic, i18n]
+    estimated_duration: "20s"
+    expected_result: "Search accepts and processes Cyrillic text input"
+
+  - id: FQA-ATV-071
+    name: "Search with empty query does nothing"
+    category: negative
+    priority: medium
+    platforms: [androidtv]
+    steps:
+      - name: "Open search with empty field"
+        action: "Navigate to search screen, leave search field empty"
+        expected: "Search field empty"
+      - name: "Try to search"
+        action: "Press Search button"
+        expected: "Search button is disabled (enabled only when query isNotBlank), no search executed"
+    tags: [browse, search, empty-query, validation]
+    estimated_duration: "10s"
+    expected_result: "Empty search query keeps search button disabled"
+
+  - id: FQA-ATV-072
+    name: "Search with long text"
+    category: edge-case
+    priority: low
+    platforms: [androidtv]
+    steps:
+      - name: "Open search"
+        action: "Navigate to search screen"
+        expected: "Search screen displayed"
+      - name: "Enter very long query"
+        action: "Type a very long search string (100+ characters)"
+        expected: "Search field accepts the text, single line with overflow"
+      - name: "Execute search"
+        action: "Press Search button"
+        expected: "Search executes without crash, results or empty state displayed"
+    tags: [browse, search, long-text, edge-case]
+    estimated_duration: "20s"
+    expected_result: "Long search queries are handled gracefully without crashes"
+
+  - id: FQA-ATV-073
+    name: "Search loading state with overlay"
+    category: functional
+    priority: medium
+    platforms: [androidtv]
+    steps:
+      - name: "Trigger search"
+        action: "Enter a search query and press Search"
+        expected: "Search initiates"
+      - name: "Verify loading overlay"
+        action: "Observe the UI during search"
+        expected: "Semi-transparent black overlay with CircularProgressIndicator and Searching... text"
+    tags: [browse, search, loading, overlay]
+    estimated_duration: "10s"
+    expected_result: "Search shows a loading overlay with progress indicator"
+
+  - id: FQA-ATV-074
+    name: "Search no results state"
+    category: functional
+    priority: medium
+    platforms: [androidtv]
+    steps:
+      - name: "Search for non-existent title"
+        action: "Search for xyznonexistent12345"
+        expected: "Search completes"
+      - name: "Verify no results UI"
+        action: "Observe the results area"
+        expected: "No results found for xyznonexistent12345 message with Try a different title suggestion"
+    tags: [browse, search, no-results, empty-state]
+    estimated_duration: "15s"
+    expected_result: "No results state shows helpful message with search tips"
+
+  - id: FQA-ATV-075
+    name: "Search results count display"
+    category: functional
+    priority: medium
+    platforms: [androidtv]
+    steps:
+      - name: "Perform search with results"
+        action: "Search for a term that returns results"
+        expected: "Results displayed"
+      - name: "Verify count label"
+        action: "Check label above results"
+        expected: "N results found label visible (labelLarge text)"
+    tags: [browse, search, results-count]
+    estimated_duration: "15s"
+    expected_result: "Search results count is displayed above the results list"
+
+  - id: FQA-ATV-076
+    name: "Navigate search results with DPAD"
+    category: functional
+    priority: high
+    platforms: [androidtv]
+    steps:
+      - name: "Get search results"
+        action: "Perform a search that returns multiple results"
+        expected: "Results in LazyColumn"
+      - name: "Navigate results"
+        action: "DPAD_DOWN through CompactMediaCard items"
+        expected: "Focus moves through result items vertically"
+      - name: "Select a result"
+        action: "Press DPAD_CENTER on a focused result"
+        expected: "Navigates to media detail screen for that item"
+    tags: [browse, search, results, dpad, navigation]
+    estimated_duration: "20s"
+    expected_result: "Search results are navigable with DPAD and selectable to open detail"
+
+  - id: FQA-ATV-077
+    name: "Clear search results"
+    category: functional
+    priority: medium
+    platforms: [androidtv]
+    steps:
+      - name: "Perform search"
+        action: "Search for a term and get results"
+        expected: "Results displayed"
+      - name: "Clear search"
+        action: "Press the Clear (X) icon in the search field trailing icon"
+        expected: "Search query cleared, results cleared, search field empty, hasSearched reset"
+    tags: [browse, search, clear, reset]
+    estimated_duration: "15s"
+    expected_result: "Clear button resets search query and results"
+
+  - id: FQA-ATV-078
+    name: "Search field initial state"
+    category: functional
+    priority: medium
+    platforms: [androidtv]
+    steps:
+      - name: "Navigate to search screen"
+        action: "Open search screen"
+        expected: "Search screen displayed"
+      - name: "Verify initial state"
+        action: "Check search field and content area"
+        expected: "Search text field with placeholder, Search for Media heading, instruction text visible"
+    tags: [browse, search, initial-state, placeholder]
+    estimated_duration: "10s"
+    expected_result: "Search screen shows initial state with placeholder and instructions"
+
+  - id: FQA-ATV-079
+    name: "Search field auto-focus on open"
+    category: functional
+    priority: high
+    platforms: [androidtv]
+    steps:
+      - name: "Open search screen"
+        action: "Navigate to search screen"
+        expected: "Search screen displayed"
+      - name: "Verify focus"
+        action: "Check which element has focus after 100ms delay"
+        expected: "Search text field has focus, ready for input"
+    tags: [browse, search, auto-focus, accessibility]
+    estimated_duration: "10s"
+    expected_result: "Search text field receives auto-focus when search screen opens"
+
+  - id: FQA-ATV-080
+    name: "Search with music artist Metallica"
+    category: functional
+    priority: medium
+    platforms: [androidtv]
+    steps:
+      - name: "Open search"
+        action: "Navigate to search screen"
+        expected: "Search screen displayed"
+      - name: "Search for artist"
+        action: "Type Metallica and press Search"
+        expected: "Search results include music-related items matching Metallica"
+    tags: [browse, search, music, artist]
+    estimated_duration: "20s"
+    expected_result: "Searching for Metallica returns relevant music results"
+
+  - id: FQA-ATV-081
+    name: "Search with TV show Breaking Bad"
+    category: functional
+    priority: medium
+    platforms: [androidtv]
+    steps:
+      - name: "Open search"
+        action: "Navigate to search screen"
+        expected: "Search screen displayed"
+      - name: "Search for TV show"
+        action: "Type Breaking Bad and press Search"
+        expected: "Search results include TV show items matching Breaking Bad"
+    tags: [browse, search, tv-show]
+    estimated_duration: "20s"
+    expected_result: "Searching for Breaking Bad returns relevant TV show results"
+
+  - id: FQA-ATV-082
+    name: "Search with Inception"
+    category: functional
+    priority: medium
+    platforms: [androidtv]
+    steps:
+      - name: "Open search"
+        action: "Navigate to search screen"
+        expected: "Search screen displayed"
+      - name: "Search for movie"
+        action: "Type Inception and press Search"
+        expected: "Search results include movie items matching Inception"
+    tags: [browse, search, movie]
+    estimated_duration: "20s"
+    expected_result: "Searching for Inception returns relevant movie results"
+
+  - id: FQA-ATV-083
+    name: "Search error handling"
+    category: negative
+    priority: medium
+    platforms: [androidtv]
+    steps:
+      - name: "Search when API unavailable"
+        action: "Attempt search when server is unreachable"
+        expected: "Error container appears with Search failed: message"
+    tags: [browse, search, error, network]
+    estimated_duration: "15s"
+    expected_result: "Search error is displayed in error container when API fails"
+
+  - id: FQA-ATV-084
+    name: "DPAD_RIGHT from search field to Search button"
+    category: functional
+    priority: high
+    platforms: [androidtv]
+    steps:
+      - name: "Focus search field"
+        action: "Navigate to search field"
+        expected: "Search field focused"
+      - name: "Press DPAD_RIGHT"
+        action: "Press DPAD_RIGHT key"
+        expected: "Focus moves to the Search button (onKeyEvent handler transfers focus)"
+    tags: [browse, search, dpad, focus-transfer]
+    estimated_duration: "10s"
+    expected_result: "DPAD_RIGHT from search field moves focus to the Search button"
+
+  - id: FQA-ATV-085
+    name: "DPAD_LEFT from Search button to search field"
+    category: functional
+    priority: high
+    platforms: [androidtv]
+    steps:
+      - name: "Focus Search button"
+        action: "Navigate to Search button"
+        expected: "Search button focused"
+      - name: "Press DPAD_LEFT"
+        action: "Press DPAD_LEFT key"
+        expected: "Focus returns to search text field"
+    tags: [browse, search, dpad, focus-transfer]
+    estimated_duration: "10s"
+    expected_result: "DPAD_LEFT from Search button returns focus to search field"
+
+  - id: FQA-ATV-086
+    name: "Enter key submits search from text field"
+    category: functional
+    priority: high
+    platforms: [androidtv]
+    steps:
+      - name: "Enter query"
+        action: "Type a search term in the search field"
+        expected: "Query entered"
+      - name: "Press Enter"
+        action: "Press Enter key while search field is focused"
+        expected: "Search executes (onKeyEvent handles Key.Enter), keyboard hides"
+    tags: [browse, search, enter-key, submit]
+    estimated_duration: "15s"
+    expected_result: "Enter key triggers search directly from the text field"
+
+  - id: FQA-ATV-087
+    name: "IME Search action submits search"
+    category: functional
+    priority: medium
+    platforms: [androidtv]
+    steps:
+      - name: "Enter query with keyboard open"
+        action: "Type a search term with on-screen keyboard active"
+        expected: "Query entered"
+      - name: "Press IME Search action"
+        action: "Tap the Search action on the on-screen keyboard"
+        expected: "Search executes, keyboard hides"
+    tags: [browse, search, ime, keyboard]
+    estimated_duration: "15s"
+    expected_result: "IME Search action on keyboard triggers search"
+
+  - id: FQA-ATV-088
+    name: "Search back navigation"
+    category: functional
+    priority: high
+    platforms: [androidtv]
+    steps:
+      - name: "Open search screen"
+        action: "Navigate to search from home"
+        expected: "Search screen displayed"
+      - name: "Press BACK"
+        action: "Press BACK button"
+        expected: "Returns to home screen (navController.popBackStack)"
+    tags: [browse, search, back-navigation]
+    estimated_duration: "10s"
+    expected_result: "BACK button from search screen returns to home screen"
+
+  - id: FQA-ATV-089
+    name: "Stats chips show type breakdown"
+    category: functional
+    priority: medium
+    platforms: [androidtv]
+    steps:
+      - name: "View home screen stats"
+        action: "Navigate to home screen with populated catalog"
+        expected: "CatalogStatsHeader visible"
+      - name: "Verify stats chips"
+        action: "Check horizontal chip row"
+        expected: "Chips show count + type label (e.g. 42 Movies, 15 TV Shows) sorted by count descending"
+    tags: [browse, stats, chips, summary]
+    estimated_duration: "10s"
+    expected_result: "Stats chips display per-type entity counts in descending order"
+
+  - id: FQA-ATV-090
+    name: "Media card 240dp width and spacing"
+    category: functional
+    priority: medium
+    platforms: [androidtv]
+    steps:
+      - name: "View content rail"
+        action: "Navigate to any content rail on home screen"
+        expected: "Media cards visible"
+      - name: "Verify card layout"
+        action: "Observe card sizing and spacing"
+        expected: "Cards are 240dp wide with 16dp horizontal spacing in LazyRow"
+    tags: [browse, layout, card-size, spacing]
+    estimated_duration: "10s"
+    expected_result: "Media cards maintain correct 240dp width with 16dp spacing"
+
+  # ==================== Media Detail (FQA-ATV-091 to 115) ====================
+
+  - id: FQA-ATV-091
+    name: "Detail screen loads for movie"
+    category: functional
+    priority: critical
+    platforms: [androidtv]
+    steps:
+      - name: "Select a movie"
+        action: "Press DPAD_CENTER on a movie card from home screen"
+        expected: "MediaDetailScreen loads"
+      - name: "Verify loading state"
+        action: "Observe initial loading"
+        expected: "CircularProgressIndicator shown while data fetches"
+      - name: "Verify content"
+        action: "Wait for data to load"
+        expected: "Movie title, metadata, hero poster, and action buttons displayed"
+    tags: [detail, movie, loading, critical-path]
+    estimated_duration: "15s"
+    expected_result: "Movie detail screen loads with complete movie information"
+
+  - id: FQA-ATV-092
+    name: "Detail screen loads for TV show"
+    category: functional
+    priority: high
+    platforms: [androidtv]
+    steps:
+      - name: "Select a TV show"
+        action: "Navigate to and select a TV show card"
+        expected: "MediaDetailScreen opens"
+      - name: "Verify TV show content"
+        action: "Check detail screen content"
+        expected: "TV show title, type badge showing TV SHOW, metadata, and action buttons"
+    tags: [detail, tv-show, loading]
+    estimated_duration: "15s"
+    expected_result: "TV show detail screen loads with correct type badge and metadata"
+
+  - id: FQA-ATV-093
+    name: "Detail screen loads for music album"
+    category: functional
+    priority: high
+    platforms: [androidtv]
+    steps:
+      - name: "Select a music album"
+        action: "Navigate to and select a music album card"
+        expected: "MediaDetailScreen opens"
+      - name: "Verify music content"
+        action: "Check detail screen content"
+        expected: "Album title, type badge, and action buttons displayed"
+    tags: [detail, music, album]
+    estimated_duration: "15s"
+    expected_result: "Music album detail screen loads with correct information"
+
+  - id: FQA-ATV-094
+    name: "Cover art/poster displayed in hero section"
+    category: functional
+    priority: high
+    platforms: [androidtv]
+    steps:
+      - name: "Open detail for item with cover"
+        action: "Select a media item that has a posterUrl/coverUrl"
+        expected: "Detail screen displayed"
+      - name: "Verify hero poster"
+        action: "Check the hero section (top 400dp area)"
+        expected: "AsyncImage loads cover art with ContentScale.Crop, gradient overlay for readability"
+    tags: [detail, cover-art, poster, hero]
+    estimated_duration: "15s"
+    expected_result: "Hero section displays cover art image with gradient overlay"
+
+  - id: FQA-ATV-095
+    name: "Title and metadata badges visible"
+    category: functional
+    priority: high
+    platforms: [androidtv]
+    steps:
+      - name: "Open detail screen"
+        action: "Navigate to any media detail"
+        expected: "Detail screen loaded"
+      - name: "Verify title"
+        action: "Check title text"
+        expected: "Media title in headlineMedium, bold, white, max 2 lines with ellipsis"
+      - name: "Verify metadata badges"
+        action: "Check badges row"
+        expected: "Year, star rating (gold), type badge (white on translucent), quality badge (green) visible"
+    tags: [detail, title, metadata, badges]
+    estimated_duration: "10s"
+    expected_result: "Title and metadata badges display correctly on detail screen"
+
+  - id: FQA-ATV-096
+    name: "Description/synopsis visible"
+    category: functional
+    priority: high
+    platforms: [androidtv]
+    steps:
+      - name: "Open detail for item with description"
+        action: "Select an item that has a non-blank description"
+        expected: "Detail screen loaded"
+      - name: "Verify synopsis"
+        action: "Scroll down and check Synopsis section"
+        expected: "Synopsis heading and description text visible in bodyMedium style"
+    tags: [detail, synopsis, description]
+    estimated_duration: "10s"
+    expected_result: "Synopsis section displays the media description"
+
+  - id: FQA-ATV-097
+    name: "Play button focused by default"
+    category: functional
+    priority: critical
+    platforms: [androidtv]
+    steps:
+      - name: "Open detail screen"
+        action: "Navigate to any media detail"
+        expected: "Detail screen loaded"
+      - name: "Verify auto-focus"
+        action: "Check which button has focus after 300ms delay"
+        expected: "Play button receives auto-focus via FocusRequester (playButtonFocus)"
+    tags: [detail, play, auto-focus, dpad]
+    estimated_duration: "10s"
+    expected_result: "Play button receives auto-focus when detail screen content loads"
+
+  - id: FQA-ATV-098
+    name: "Favorite button toggles state"
+    category: functional
+    priority: high
+    platforms: [androidtv]
+    steps:
+      - name: "Open detail screen"
+        action: "Navigate to media detail"
+        expected: "Detail screen with Favorite button"
+      - name: "Toggle favorite"
+        action: "DPAD to Favorite button and press DPAD_CENTER"
+        expected: "Icon changes from FavoriteBorder to Favorite (filled heart), optimistic update"
+      - name: "Toggle again"
+        action: "Press DPAD_CENTER on Favorite button again"
+        expected: "Icon reverts to FavoriteBorder"
+    tags: [detail, favorite, toggle, optimistic-update]
+    estimated_duration: "15s"
+    expected_result: "Favorite button toggles between filled and outline heart icons"
+
+  - id: FQA-ATV-099
+    name: "Back button in hero section"
+    category: functional
+    priority: high
+    platforms: [androidtv]
+    steps:
+      - name: "Open detail screen"
+        action: "Navigate to media detail"
+        expected: "Detail screen displayed"
+      - name: "Navigate to Back button"
+        action: "DPAD to the Back button in the hero poster area"
+        expected: "Back button focused"
+      - name: "Press Back"
+        action: "Press DPAD_CENTER"
+        expected: "Returns to previous screen"
+    tags: [detail, back-button, navigation, hero]
+    estimated_duration: "10s"
+    expected_result: "Back button in hero section navigates to previous screen"
+
+  - id: FQA-ATV-100
+    name: "Back to Library button works"
+    category: functional
+    priority: high
+    platforms: [androidtv]
+    steps:
+      - name: "Open detail screen"
+        action: "Navigate to media detail"
+        expected: "Detail screen displayed"
+      - name: "Navigate to Back to Library"
+        action: "DPAD to Back to Library button"
+        expected: "Button focused"
+      - name: "Press button"
+        action: "Press DPAD_CENTER"
+        expected: "Returns to previous screen (home screen)"
+    tags: [detail, back-to-library, navigation]
+    estimated_duration: "10s"
+    expected_result: "Back to Library button returns to previous screen"
+
+  - id: FQA-ATV-101
+    name: "Rating display with star icon"
+    category: functional
+    priority: medium
+    platforms: [androidtv]
+    steps:
+      - name: "Open detail for rated item"
+        action: "Select an item with rating > 0"
+        expected: "Detail screen loaded"
+      - name: "Verify rating"
+        action: "Check rating badge area"
+        expected: "Gold star icon with rating value in bold gold text (e.g., 7.5)"
+    tags: [detail, rating, star, badge]
+    estimated_duration: "10s"
+    expected_result: "Rating displays with gold star icon and numeric value"
+
+  - id: FQA-ATV-102
+    name: "Media type badge display"
+    category: functional
+    priority: medium
+    platforms: [androidtv]
+    steps:
+      - name: "Open detail screen"
+        action: "Navigate to media detail"
+        expected: "Detail screen loaded"
+      - name: "Verify type badge"
+        action: "Check type badge in metadata row"
+        expected: "Type badge shows uppercase media type (e.g., MOVIE, TV SHOW) on translucent white background"
+    tags: [detail, type-badge, metadata]
+    estimated_duration: "10s"
+    expected_result: "Media type badge displays correctly with uppercase text"
+
+  - id: FQA-ATV-103
+    name: "Quality badge display"
+    category: functional
+    priority: medium
+    platforms: [androidtv]
+    steps:
+      - name: "Open detail for item with quality"
+        action: "Select an item that has a quality field (e.g., 1080p)"
+        expected: "Detail screen loaded"
+      - name: "Verify quality badge"
+        action: "Check quality badge in metadata row"
+        expected: "Green badge with uppercase quality text (e.g., 1080P)"
+    tags: [detail, quality, badge]
+    estimated_duration: "10s"
+    expected_result: "Quality badge displays in green with uppercase quality value"
+
+  - id: FQA-ATV-104
+    name: "File size information"
+    category: functional
+    priority: low
+    platforms: [androidtv]
+    steps:
+      - name: "Open detail for item with file size"
+        action: "Select an item with fileSize > 0"
+        expected: "Detail screen loaded"
+      - name: "Verify file size"
+        action: "Scroll down and check file info"
+        expected: "File Size: X.X GB/MB/KB text visible in bodySmall style"
+    tags: [detail, file-size, info]
+    estimated_duration: "10s"
+    expected_result: "File size information displays in human-readable format"
+
+  - id: FQA-ATV-105
+    name: "Detail screen gradient overlay for hero"
+    category: functional
+    priority: medium
+    platforms: [androidtv]
+    steps:
+      - name: "Open detail with cover art"
+        action: "Select media item with poster"
+        expected: "Detail screen with hero poster"
+      - name: "Verify gradient"
+        action: "Check bottom of hero section"
+        expected: "Vertical gradient from transparent to dark ensures text below is readable"
+    tags: [detail, gradient, hero, readability]
+    estimated_duration: "10s"
+    expected_result: "Hero poster has gradient overlay ensuring metadata text readability"
+
+  - id: FQA-ATV-106
+    name: "Detail screen without cover art shows gradient fallback"
+    category: functional
+    priority: medium
+    platforms: [androidtv]
+    steps:
+      - name: "Open detail for item without cover"
+        action: "Select media item with no posterUrl/coverUrl"
+        expected: "Detail screen loaded"
+      - name: "Verify fallback"
+        action: "Check hero section"
+        expected: "Vertical gradient from indigo to dark background instead of image"
+    tags: [detail, no-cover, fallback, gradient]
+    estimated_duration: "10s"
+    expected_result: "Items without cover art show gradient color fallback in hero section"
+
+  - id: FQA-ATV-107
+    name: "Detail screen error state with retry"
+    category: negative
+    priority: high
+    platforms: [androidtv]
+    steps:
+      - name: "Open detail when API fails"
+        action: "Navigate to detail screen when server is unreachable"
+        expected: "Error state displayed"
+      - name: "Verify error UI"
+        action: "Check error state content"
+        expected: "Unable to Load Media heading, network check message, error detail, Retry and Back to Library buttons"
+      - name: "Press Retry"
+        action: "DPAD to Retry button and press"
+        expected: "retryCount increments, data fetch retries"
+    tags: [detail, error, retry, network]
+    estimated_duration: "15s"
+    expected_result: "Detail screen error state shows retry option that reloads data"
+
+  - id: FQA-ATV-108
+    name: "Detail screen scrollable with long content"
+    category: functional
+    priority: medium
+    platforms: [androidtv]
+    steps:
+      - name: "Open detail for item with long description"
+        action: "Select item with extensive metadata and description"
+        expected: "Detail screen loaded"
+      - name: "Scroll content"
+        action: "DPAD_DOWN or scroll through verticalScroll content"
+        expected: "Content scrolls smoothly, all sections accessible"
+    tags: [detail, scroll, long-content]
+    estimated_duration: "15s"
+    expected_result: "Detail screen scrolls smoothly with long content"
+
+  - id: FQA-ATV-109
+    name: "Play button starts playback"
+    category: functional
+    priority: critical
+    platforms: [androidtv]
+    steps:
+      - name: "Open media detail"
+        action: "Navigate to detail screen with Play button focused"
+        expected: "Play button focused"
+      - name: "Press Play"
+        action: "Press DPAD_CENTER on Play button"
+        expected: "Navigates to player screen (TVScreen.Player route)"
+    tags: [detail, play, navigation, critical-path]
+    estimated_duration: "10s"
+    expected_result: "Play button navigates to the media player screen"
+
+  - id: FQA-ATV-110
+    name: "Favorite toggle handles API error gracefully"
+    category: negative
+    priority: medium
+    platforms: [androidtv]
+    steps:
+      - name: "Open detail screen"
+        action: "Navigate to detail with favorite button visible"
+        expected: "Detail loaded"
+      - name: "Disconnect from API"
+        action: "Make API unreachable"
+        expected: "API unavailable"
+      - name: "Toggle favorite"
+        action: "Press Favorite button"
+        expected: "Optimistic UI update occurs, then reverts on API failure (isFavorite reverted)"
+    tags: [detail, favorite, error, rollback]
+    estimated_duration: "15s"
+    expected_result: "Favorite toggle reverts on API failure with optimistic UI rollback"
+
+  - id: FQA-ATV-111
+    name: "Year display in metadata"
+    category: functional
+    priority: medium
+    platforms: [androidtv]
+    steps:
+      - name: "Open detail for item with year"
+        action: "Select item with year field populated"
+        expected: "Detail screen loaded"
+      - name: "Verify year"
+        action: "Check metadata row"
+        expected: "Year value displayed in white text (alpha 0.7)"
+    tags: [detail, year, metadata]
+    estimated_duration: "10s"
+    expected_result: "Year metadata displays correctly on detail screen"
+
+  - id: FQA-ATV-112
+    name: "Detail screen responsive layout (compact)"
+    category: functional
+    priority: medium
+    platforms: [androidtv]
+    steps:
+      - name: "View on smaller screen"
+        action: "Open detail on device with screenWidthDp < 600"
+        expected: "Detail screen in compact mode"
+      - name: "Verify compact layout"
+        action: "Check layout adjustments"
+        expected: "Hero height 280dp, headlineSmall title, reduced horizontal padding (24dp)"
+    tags: [detail, responsive, compact, layout]
+    estimated_duration: "10s"
+    expected_result: "Detail screen adapts to compact layout on smaller screens"
+
+  - id: FQA-ATV-113
+    name: "Detail screen dark background"
+    category: functional
+    priority: low
+    platforms: [androidtv]
+    steps:
+      - name: "Open detail"
+        action: "Navigate to any media detail"
+        expected: "Detail screen displayed"
+      - name: "Verify background"
+        action: "Check screen background color"
+        expected: "Background is Color(0xFF0A0A0A) - near-black for TV-optimized viewing"
+    tags: [detail, theme, dark, background]
+    estimated_duration: "5s"
+    expected_result: "Detail screen uses near-black background for optimal TV viewing"
+
+  - id: FQA-ATV-114
+    name: "Cover URL resolution with server base"
+    category: functional
+    priority: medium
+    platforms: [androidtv]
+    steps:
+      - name: "Open detail for item with relative cover URL"
+        action: "Select item where thumbnailUrl starts with /"
+        expected: "Detail screen loaded"
+      - name: "Verify image URL"
+        action: "Check that cover image loads"
+        expected: "Relative URL correctly prefixed with server base URL, image loads from API"
+    tags: [detail, cover-url, resolution, api]
+    estimated_duration: "15s"
+    expected_result: "Relative cover URLs are resolved with server base URL for correct image loading"
+
+  - id: FQA-ATV-115
+    name: "Media not found detail error"
+    category: negative
+    priority: medium
+    platforms: [androidtv]
+    steps:
+      - name: "Navigate to invalid media ID"
+        action: "Deep link to media_detail/999999 (non-existent ID)"
+        expected: "Detail screen attempts to load"
+      - name: "Verify error"
+        action: "Check detail screen state"
+        expected: "Media not found error displayed with Back to Library button"
+    tags: [detail, not-found, error, negative]
+    estimated_duration: "10s"
+    expected_result: "Non-existent media ID shows not found error state"
+
+  # ==================== Media Playback (FQA-ATV-116 to 140) ====================
+
+  - id: FQA-ATV-116
+    name: "Play video file from detail screen"
+    category: functional
+    priority: critical
+    platforms: [androidtv]
+    steps:
+      - name: "Open movie detail"
+        action: "Navigate to a movie detail screen"
+        expected: "Play button focused"
+      - name: "Press Play"
+        action: "Press DPAD_CENTER on Play button"
+        expected: "Player screen opens, stream URL resolved from /api/v1/entities/:id/stream"
+      - name: "Verify playback"
+        action: "Wait for stream to buffer and start"
+        expected: "Video plays with ExoPlayer, VLC-style controls overlay shown"
+    tags: [playback, video, exoplayer, critical-path]
+    estimated_duration: "30s"
+    expected_result: "Video playback starts from the detail screen Play button"
+
+  - id: FQA-ATV-117
+    name: "Player controls appear on any key press"
+    category: functional
+    priority: critical
+    platforms: [androidtv]
+    steps:
+      - name: "Start video playback"
+        action: "Play a video file"
+        expected: "Video playing"
+      - name: "Wait for controls to auto-hide"
+        action: "Wait 5 seconds for controls to auto-hide"
+        expected: "Controls overlay disappears"
+      - name: "Press any key"
+        action: "Press any DPAD key"
+        expected: "Controls overlay reappears (showControls = true on any keyEvent)"
+    tags: [playback, controls, overlay, visibility]
+    estimated_duration: "15s"
+    expected_result: "Player controls overlay appears on any key press"
+
+  - id: FQA-ATV-118
+    name: "Play/pause via DPAD_CENTER"
+    category: functional
+    priority: critical
+    platforms: [androidtv]
+    steps:
+      - name: "Start playback"
+        action: "Play a video"
+        expected: "Video playing"
+      - name: "Pause"
+        action: "Press DPAD_CENTER"
+        expected: "Playback pauses, center icon changes to PlayArrow"
+      - name: "Resume"
+        action: "Press DPAD_CENTER again"
+        expected: "Playback resumes, center icon changes to Pause"
+    tags: [playback, play-pause, dpad, critical-path]
+    estimated_duration: "15s"
+    expected_result: "DPAD_CENTER toggles play/pause during video playback"
+
+  - id: FQA-ATV-119
+    name: "Seek forward via DPAD_RIGHT"
+    category: functional
+    priority: high
+    platforms: [androidtv]
+    steps:
+      - name: "Start playback"
+        action: "Play a video with controls visible"
+        expected: "Video playing"
+      - name: "Seek forward"
+        action: "Press DPAD_RIGHT"
+        expected: "Playback seeks forward 10 seconds (seekForwardIncrementMs=10000)"
+      - name: "Verify position"
+        action: "Check seekbar position"
+        expected: "Current position advanced by approximately 10 seconds"
+    tags: [playback, seek, forward, dpad]
+    estimated_duration: "15s"
+    expected_result: "DPAD_RIGHT seeks forward 10 seconds"
+
+  - id: FQA-ATV-120
+    name: "Seek backward via DPAD_LEFT"
+    category: functional
+    priority: high
+    platforms: [androidtv]
+    steps:
+      - name: "Start playback with progress"
+        action: "Play a video and seek forward a few times"
+        expected: "Video playing with some progress"
+      - name: "Seek backward"
+        action: "Press DPAD_LEFT"
+        expected: "Playback seeks backward 10 seconds (seekBackIncrementMs=10000)"
+      - name: "Verify position"
+        action: "Check seekbar position"
+        expected: "Current position moved back by approximately 10 seconds"
+    tags: [playback, seek, backward, dpad]
+    estimated_duration: "15s"
+    expected_result: "DPAD_LEFT seeks backward 10 seconds"
+
+  - id: FQA-ATV-121
+    name: "Playback speed control"
+    category: functional
+    priority: medium
+    platforms: [androidtv]
+    steps:
+      - name: "Start playback"
+        action: "Play a video with controls visible"
+        expected: "Video playing"
+      - name: "Open speed menu"
+        action: "DPAD to Speed button (1.0x) and press"
+        expected: "Speed menu overlay opens with options: 0.25x, 0.5x, 0.75x, 1.0x, 1.25x, 1.5x, 2.0x, 3.0x"
+      - name: "Select 1.5x"
+        action: "Navigate to 1.5x and press DPAD_CENTER"
+        expected: "Speed set to 1.5x, speed label updates to 1.5x, VlcOrange accent shown"
+    tags: [playback, speed, vlc-style]
+    estimated_duration: "20s"
+    expected_result: "Playback speed can be changed via the speed menu"
+
+  - id: FQA-ATV-122
+    name: "Subtitle toggle"
+    category: functional
+    priority: medium
+    platforms: [androidtv]
+    steps:
+      - name: "Start playback with subtitle tracks"
+        action: "Play a video that has embedded subtitles"
+        expected: "Video playing"
+      - name: "Open subtitle menu"
+        action: "DPAD to Subtitles button and press"
+        expected: "Subtitle menu opens with Off + available subtitle tracks"
+      - name: "Enable subtitles"
+        action: "Select a subtitle track"
+        expected: "Subtitles enabled, TRACK_TYPE_TEXT no longer disabled"
+      - name: "Disable subtitles"
+        action: "Reopen menu and select Off"
+        expected: "Subtitles disabled (TRACK_TYPE_TEXT disabled)"
+    tags: [playback, subtitles, toggle, menu]
+    estimated_duration: "25s"
+    expected_result: "Subtitles can be toggled on/off from the subtitle menu"
+
+  - id: FQA-ATV-123
+    name: "Audio track selection"
+    category: functional
+    priority: medium
+    platforms: [androidtv]
+    steps:
+      - name: "Start playback with multiple audio tracks"
+        action: "Play a video with multiple audio tracks"
+        expected: "Video playing"
+      - name: "Open audio menu"
+        action: "DPAD to Audio button and press"
+        expected: "Audio track menu opens with available tracks"
+      - name: "Switch track"
+        action: "Select a different audio track"
+        expected: "Audio switches to selected track"
+    tags: [playback, audio, track-selection, menu]
+    estimated_duration: "20s"
+    expected_result: "Audio track can be switched from the audio menu"
+
+  - id: FQA-ATV-124
+    name: "Exit playback via BACK"
+    category: functional
+    priority: critical
+    platforms: [androidtv]
+    steps:
+      - name: "Start playback"
+        action: "Play a video"
+        expected: "Video playing"
+      - name: "Press BACK"
+        action: "Press BACK button on remote"
+        expected: "Playback stops, navigates back to detail screen (onNavigateBack called)"
+    tags: [playback, back, exit, navigation]
+    estimated_duration: "10s"
+    expected_result: "BACK button exits playback and returns to previous screen"
+
+  - id: FQA-ATV-125
+    name: "BACK closes overlay menus before exiting"
+    category: functional
+    priority: high
+    platforms: [androidtv]
+    steps:
+      - name: "Open a menu during playback"
+        action: "Open speed, audio, or subtitle menu"
+        expected: "Menu overlay displayed"
+      - name: "Press BACK"
+        action: "Press BACK button"
+        expected: "Menu closes but player remains (showSpeedMenu/showAudioMenu/showSubtitleMenu set to false)"
+      - name: "Press BACK again"
+        action: "Press BACK with no menu open"
+        expected: "Exits player, returns to previous screen"
+    tags: [playback, back, menu-close, overlay]
+    estimated_duration: "15s"
+    expected_result: "BACK first closes open menus, then exits player on second press"
+
+  - id: FQA-ATV-126
+    name: "Seekbar position and duration display"
+    category: functional
+    priority: high
+    platforms: [androidtv]
+    steps:
+      - name: "Start playback"
+        action: "Play a video with known duration"
+        expected: "Video playing with controls"
+      - name: "Verify seekbar"
+        action: "Check bottom control area"
+        expected: "Slider shows current position, time labels show MM:SS or H:MM:SS format"
+      - name: "Verify duration"
+        action: "Check right time label"
+        expected: "Total duration displayed correctly"
+    tags: [playback, seekbar, time, duration]
+    estimated_duration: "15s"
+    expected_result: "Seekbar shows position and duration in correct time format"
+
+  - id: FQA-ATV-127
+    name: "Buffer progress indicator"
+    category: functional
+    priority: medium
+    platforms: [androidtv]
+    steps:
+      - name: "Start playback"
+        action: "Play a video"
+        expected: "Video playing"
+      - name: "Verify buffer indicator"
+        action: "Check LinearProgressIndicator behind slider"
+        expected: "Buffer progress shown as lighter bar behind the seek slider"
+    tags: [playback, buffer, progress, indicator]
+    estimated_duration: "10s"
+    expected_result: "Buffer progress indicator shows how much content is buffered ahead"
+
+  - id: FQA-ATV-128
+    name: "Controls auto-hide after 5 seconds"
+    category: functional
+    priority: high
+    platforms: [androidtv]
+    steps:
+      - name: "Show controls"
+        action: "Press any key to show controls during playback"
+        expected: "Controls visible"
+      - name: "Wait 5 seconds"
+        action: "Do not press any keys for 5 seconds while video is playing"
+        expected: "Controls auto-hide (showControls set to false after 5000ms)"
+    tags: [playback, auto-hide, controls, timer]
+    estimated_duration: "15s"
+    expected_result: "Player controls auto-hide after 5 seconds of inactivity during playback"
+
+  - id: FQA-ATV-129
+    name: "Controls do not auto-hide when paused"
+    category: functional
+    priority: medium
+    platforms: [androidtv]
+    steps:
+      - name: "Pause playback"
+        action: "Press DPAD_CENTER to pause"
+        expected: "Video paused, controls visible"
+      - name: "Wait 10 seconds"
+        action: "Wait without pressing any keys"
+        expected: "Controls remain visible (auto-hide only triggers when isPlaying=true)"
+    tags: [playback, auto-hide, paused, controls]
+    estimated_duration: "15s"
+    expected_result: "Controls stay visible when playback is paused"
+
+  - id: FQA-ATV-130
+    name: "VLC-style orange accent on player controls"
+    category: functional
+    priority: low
+    platforms: [androidtv]
+    steps:
+      - name: "Open player"
+        action: "Start video playback"
+        expected: "Player controls displayed"
+      - name: "Verify VLC styling"
+        action: "Check control button colors"
+        expected: "VlcOrange (0xFFFF6600) accent on play button, active seekbar, speed when != 1.0x"
+    tags: [playback, vlc-style, theming, accent]
+    estimated_duration: "10s"
+    expected_result: "Player controls use VLC-style orange accent color"
+
+  - id: FQA-ATV-131
+    name: "Title displayed in player top bar"
+    category: functional
+    priority: medium
+    platforms: [androidtv]
+    steps:
+      - name: "Start playback"
+        action: "Play a known media item"
+        expected: "Player opens"
+      - name: "Verify title"
+        action: "Check top bar text"
+        expected: "Resolved media title shown in headlineSmall bold white text"
+    tags: [playback, title, top-bar]
+    estimated_duration: "10s"
+    expected_result: "Player top bar displays the correct media title"
+
+  - id: FQA-ATV-132
+    name: "Stream error handling"
+    category: negative
+    priority: high
+    platforms: [androidtv]
+    steps:
+      - name: "Try to play unavailable stream"
+        action: "Navigate to player for media without a valid stream"
+        expected: "Stream resolution fails"
+      - name: "Verify error UI"
+        action: "Check player screen"
+        expected: "Error icon, Unable to Play Media heading, error detail, Retry and Back to Library buttons"
+    tags: [playback, error, stream, unavailable]
+    estimated_duration: "15s"
+    expected_result: "Stream error shows friendly error UI with retry option"
+
+  - id: FQA-ATV-133
+    name: "Stream loading state"
+    category: functional
+    priority: high
+    platforms: [androidtv]
+    steps:
+      - name: "Open player"
+        action: "Navigate to player screen"
+        expected: "Stream URL resolution begins"
+      - name: "Verify loading state"
+        action: "Observe UI while stream resolves"
+        expected: "VlcOrange CircularProgressIndicator with Loading stream... text"
+    tags: [playback, loading, stream]
+    estimated_duration: "10s"
+    expected_result: "Player shows loading indicator while stream URL resolves"
+
+  - id: FQA-ATV-134
+    name: "Buffering state display"
+    category: functional
+    priority: medium
+    platforms: [androidtv]
+    steps:
+      - name: "Start playback"
+        action: "Begin playing a stream"
+        expected: "ExoPlayer initialized with URL but not yet playing"
+      - name: "Verify buffering state"
+        action: "Check player UI before playback starts"
+        expected: "VlcOrange CircularProgressIndicator with Buffering... text"
+    tags: [playback, buffering, loading]
+    estimated_duration: "10s"
+    expected_result: "Player shows buffering indicator while content buffers"
+
+  - id: FQA-ATV-135
+    name: "Stream retry after error"
+    category: functional
+    priority: medium
+    platforms: [androidtv]
+    steps:
+      - name: "Trigger stream error"
+        action: "Play media that fails to stream"
+        expected: "Error state displayed"
+      - name: "Press Retry"
+        action: "DPAD to Retry button and press"
+        expected: "streamError cleared, resolvedUrl reset, retryCount increments, stream resolution retries"
+    tags: [playback, retry, error-recovery]
+    estimated_duration: "15s"
+    expected_result: "Retry button re-attempts stream resolution"
+
+  - id: FQA-ATV-136
+    name: "Auth token included in stream requests"
+    category: functional
+    priority: high
+    platforms: [androidtv]
+    steps:
+      - name: "Start playback while authenticated"
+        action: "Play a video after login"
+        expected: "ExoPlayer uses DefaultHttpDataSource with auth headers"
+      - name: "Verify authorization"
+        action: "Check that stream loads successfully"
+        expected: "Stream URL resolves and plays (Bearer token included in HTTP headers)"
+    tags: [playback, auth, token, security]
+    estimated_duration: "15s"
+    expected_result: "Stream requests include Bearer token for authenticated playback"
+
+  - id: FQA-ATV-137
+    name: "Seek via slider interaction"
+    category: functional
+    priority: medium
+    platforms: [androidtv]
+    steps:
+      - name: "Start playback"
+        action: "Play a video with visible seekbar"
+        expected: "Video playing with seekbar"
+      - name: "Interact with slider"
+        action: "Use DPAD to manipulate the Slider control"
+        expected: "exoPlayer.seekTo called with new position"
+    tags: [playback, seek, slider, interaction]
+    estimated_duration: "15s"
+    expected_result: "Slider interaction seeks to the selected position"
+
+  - id: FQA-ATV-138
+    name: "Speed display updates in title bar"
+    category: functional
+    priority: low
+    platforms: [androidtv]
+    steps:
+      - name: "Change playback speed"
+        action: "Set speed to 2.0x via speed menu"
+        expected: "Speed changed"
+      - name: "Verify title bar"
+        action: "Check below the title text"
+        expected: "2.0x speed text shown in VlcOrange below the media title"
+    tags: [playback, speed, display, title-bar]
+    estimated_duration: "10s"
+    expected_result: "Non-1.0x speed is displayed in the title bar area"
+
+  - id: FQA-ATV-139
+    name: "Seek forward/backward buttons in control row"
+    category: functional
+    priority: medium
+    platforms: [androidtv]
+    steps:
+      - name: "Show controls"
+        action: "Press any key to show player controls"
+        expected: "Control row visible"
+      - name: "Use -10s button"
+        action: "DPAD to -10s button and press"
+        expected: "Seeks backward 10 seconds"
+      - name: "Use +10s button"
+        action: "DPAD to +10s button and press"
+        expected: "Seeks forward 10 seconds"
+    tags: [playback, seek, buttons, controls]
+    estimated_duration: "15s"
+    expected_result: "Seek forward/backward buttons in control row work correctly"
+
+  - id: FQA-ATV-140
+    name: "Player disposes ExoPlayer on exit"
+    category: functional
+    priority: medium
+    platforms: [androidtv]
+    steps:
+      - name: "Start and stop playback"
+        action: "Play a video then press BACK to exit"
+        expected: "Player screen closes"
+      - name: "Verify cleanup"
+        action: "Check that no playback continues in background"
+        expected: "ExoPlayer released via DisposableEffect onDispose, no resource leak"
+    tags: [playback, cleanup, dispose, resource]
+    estimated_duration: "10s"
+    expected_result: "ExoPlayer is properly released when leaving the player screen"
+
+  # ==================== TV Home Screen Channels (FQA-ATV-141 to 175) ====================
+
+  - id: FQA-ATV-141
+    name: "Catalogizer Picks channel appears on TV home"
+    category: functional
+    priority: critical
+    platforms: [androidtv]
+    steps:
+      - name: "Login to app"
+        action: "Login with valid credentials and return to TV home screen"
+        expected: "Catalogizer app runs, channels synced"
+      - name: "Navigate TV home"
+        action: "Go to Android TV home screen and look for Catalogizer Picks channel"
+        expected: "Catalogizer Picks channel visible in the TV home channels area"
+    tags: [channels, default-channel, tv-home, critical-path]
+    estimated_duration: "20s"
+    expected_result: "Catalogizer Picks default channel appears on the Android TV home screen"
+
+  - id: FQA-ATV-142
+    name: "Default channel has program content"
+    category: functional
+    priority: critical
+    platforms: [androidtv]
+    steps:
+      - name: "Find Catalogizer Picks channel"
+        action: "Locate the default channel on TV home"
+        expected: "Channel visible"
+      - name: "Verify programs"
+        action: "DPAD through programs in the channel row"
+        expected: "Program cards with media titles and images displayed (up to 30 items)"
+    tags: [channels, programs, content, default-channel]
+    estimated_duration: "15s"
+    expected_result: "Catalogizer Picks channel contains program cards with media content"
+
+  - id: FQA-ATV-143
+    name: "DPAD navigate to channel programs"
+    category: functional
+    priority: high
+    platforms: [androidtv]
+    steps:
+      - name: "Focus a channel"
+        action: "DPAD to the Catalogizer Picks channel on TV home"
+        expected: "Channel row focused"
+      - name: "Navigate programs"
+        action: "DPAD_RIGHT through program cards"
+        expected: "Focus moves between program cards within the channel"
+    tags: [channels, dpad, navigation, programs]
+    estimated_duration: "15s"
+    expected_result: "DPAD navigation works within channel program cards on TV home"
+
+  - id: FQA-ATV-144
+    name: "Select program deep-links to app"
+    category: functional
+    priority: critical
+    platforms: [androidtv]
+    steps:
+      - name: "Focus a program card"
+        action: "DPAD to a program in the Catalogizer channel"
+        expected: "Program card focused"
+      - name: "Select program"
+        action: "Press DPAD_CENTER"
+        expected: "Deep link URI catalogizer://media/{id}?type={type} triggered"
+      - name: "Verify app opens"
+        action: "Observe app launch"
+        expected: "ChannelDeepLinkActivity receives intent, routes to correct screen"
+    tags: [channels, deep-link, program-select, critical-path]
+    estimated_duration: "20s"
+    expected_result: "Selecting a channel program deep-links into the Catalogizer app"
+
+  - id: FQA-ATV-145
+    name: "Per-category Movies channel exists"
+    category: functional
+    priority: high
+    platforms: [androidtv]
+    steps:
+      - name: "Check TV home channels"
+        action: "Navigate TV home and look for a Movies category channel"
+        expected: "Per-category channel for Movies visible (if movies exist in catalog)"
+    tags: [channels, per-category, movies]
+    estimated_duration: "15s"
+    expected_result: "Per-category Movies channel appears on TV home when movies exist"
+
+  - id: FQA-ATV-146
+    name: "Per-category TV Shows channel exists"
+    category: functional
+    priority: high
+    platforms: [androidtv]
+    steps:
+      - name: "Check TV home channels"
+        action: "Navigate TV home and look for a TV Shows category channel"
+        expected: "Per-category channel for TV Shows visible (if TV shows exist)"
+    tags: [channels, per-category, tv-shows]
+    estimated_duration: "15s"
+    expected_result: "Per-category TV Shows channel appears when TV shows exist"
+
+  - id: FQA-ATV-147
+    name: "Per-category Music channel exists"
+    category: functional
+    priority: high
+    platforms: [androidtv]
+    steps:
+      - name: "Check TV home channels"
+        action: "Navigate TV home and look for a Music category channel"
+        expected: "Per-category channel for Music visible (if music exists)"
+    tags: [channels, per-category, music]
+    estimated_duration: "15s"
+    expected_result: "Per-category Music channel appears when music exists in catalog"
+
+  - id: FQA-ATV-148
+    name: "Category channel has relevant content"
+    category: functional
+    priority: high
+    platforms: [androidtv]
+    steps:
+      - name: "Open Movies channel"
+        action: "Navigate to the Movies per-category channel on TV home"
+        expected: "Channel focused"
+      - name: "Verify content relevance"
+        action: "Check program cards in the channel"
+        expected: "All programs are movie-type media items, not mixed with other types"
+    tags: [channels, per-category, content-relevance, filtering]
+    estimated_duration: "15s"
+    expected_result: "Per-category channel only contains media items of the correct type"
+
+  - id: FQA-ATV-149
+    name: "Watch Next row shows partially-watched items"
+    category: functional
+    priority: critical
+    platforms: [androidtv]
+    steps:
+      - name: "Watch a video partially"
+        action: "Play a video for at least 5% but less than 90% duration, then exit"
+        expected: "Watch progress saved"
+      - name: "Check Watch Next row"
+        action: "Go to TV home and look for Watch Next row"
+        expected: "Partially watched item appears in the system Watch Next row"
+    tags: [channels, watch-next, progress, critical-path]
+    estimated_duration: "30s"
+    expected_result: "Partially watched items appear in the Watch Next row on TV home"
+
+  - id: FQA-ATV-150
+    name: "Watch Next shows next episode for TV shows"
+    category: functional
+    priority: high
+    platforms: [androidtv]
+    steps:
+      - name: "Complete a TV episode"
+        action: "Watch a TV show episode to 90%+ completion"
+        expected: "Episode marked as completed"
+      - name: "Check Watch Next"
+        action: "Go to TV home Watch Next row"
+        expected: "Next episode of the TV show appears in Watch Next (auto-next-episode)"
+    tags: [channels, watch-next, auto-next, tv-episode]
+    estimated_duration: "30s"
+    expected_result: "Watch Next auto-surfaces the next episode for TV shows"
+
+  - id: FQA-ATV-151
+    name: "Deep link opens correct media detail"
+    category: functional
+    priority: critical
+    platforms: [androidtv]
+    steps:
+      - name: "Trigger deep link"
+        action: "Open catalogizer://media/1?type=movie"
+        expected: "ChannelDeepLinkActivity processes the intent"
+      - name: "Verify routing"
+        action: "Check which screen opens"
+        expected: "MediaDetailScreen opens for media ID 1"
+    tags: [channels, deep-link, routing, detail]
+    estimated_duration: "15s"
+    expected_result: "Deep link with media ID routes to the correct detail screen"
+
+  - id: FQA-ATV-152
+    name: "Deep link with type=movie opens movie detail"
+    category: functional
+    priority: high
+    platforms: [androidtv]
+    steps:
+      - name: "Deep link with movie type"
+        action: "Open catalogizer://media/{id}?type=movie"
+        expected: "Intent processed"
+      - name: "Verify detail screen"
+        action: "Check screen content"
+        expected: "Movie detail screen displayed (default DETAIL launch action for movies)"
+    tags: [channels, deep-link, movie, type-routing]
+    estimated_duration: "15s"
+    expected_result: "Movie deep link opens the movie detail screen"
+
+  - id: FQA-ATV-153
+    name: "Deep link with type=tv_episode plays episode"
+    category: functional
+    priority: high
+    platforms: [androidtv]
+    steps:
+      - name: "Configure launch action"
+        action: "Set TV episodes launch action to IMMEDIATE_PLAY in settings"
+        expected: "Setting saved"
+      - name: "Deep link with episode type"
+        action: "Open catalogizer://media/{id}?type=tv_episode"
+        expected: "Intent processed"
+      - name: "Verify routing"
+        action: "Check which screen opens"
+        expected: "Player screen opens directly (IMMEDIATE_PLAY action)"
+    tags: [channels, deep-link, tv-episode, immediate-play]
+    estimated_duration: "20s"
+    expected_result: "TV episode deep link with IMMEDIATE_PLAY opens player directly"
+
+  - id: FQA-ATV-154
+    name: "Deep link with type=music plays music"
+    category: functional
+    priority: high
+    platforms: [androidtv]
+    steps:
+      - name: "Configure music launch"
+        action: "Set music launch action to IMMEDIATE_PLAY in settings"
+        expected: "Setting saved"
+      - name: "Deep link with music type"
+        action: "Open catalogizer://media/{id}?type=music"
+        expected: "Intent processed"
+      - name: "Verify routing"
+        action: "Check which screen opens"
+        expected: "Player screen opens for audio playback"
+    tags: [channels, deep-link, music, immediate-play]
+    estimated_duration: "20s"
+    expected_result: "Music deep link with IMMEDIATE_PLAY opens player for audio"
+
+  - id: FQA-ATV-155
+    name: "Deep link with action=play overrides settings"
+    category: functional
+    priority: high
+    platforms: [androidtv]
+    steps:
+      - name: "Set launch to DETAIL"
+        action: "Configure movie launch action to DETAIL in settings"
+        expected: "Detail action set"
+      - name: "Deep link with play action"
+        action: "Open catalogizer://media/{id}?type=movie&action=play"
+        expected: "URI action parameter overrides per-category setting"
+      - name: "Verify routing"
+        action: "Check which screen opens"
+        expected: "Player screen opens (URI action=play takes precedence)"
+    tags: [channels, deep-link, action-override, play]
+    estimated_duration: "15s"
+    expected_result: "URI action=play parameter overrides per-category launch settings"
+
+  - id: FQA-ATV-156
+    name: "Deep link with action=detail overrides settings"
+    category: functional
+    priority: medium
+    platforms: [androidtv]
+    steps:
+      - name: "Set launch to IMMEDIATE_PLAY"
+        action: "Configure movie launch action to IMMEDIATE_PLAY"
+        expected: "Play action set"
+      - name: "Deep link with detail action"
+        action: "Open catalogizer://media/{id}?type=movie&action=detail"
+        expected: "URI action=detail overrides setting"
+      - name: "Verify routing"
+        action: "Check screen"
+        expected: "Detail screen opens (not player)"
+    tags: [channels, deep-link, action-override, detail]
+    estimated_duration: "15s"
+    expected_result: "URI action=detail parameter overrides IMMEDIATE_PLAY setting"
+
+  - id: FQA-ATV-157
+    name: "Channel Tap Behavior settings accessible"
+    category: functional
+    priority: high
+    platforms: [androidtv]
+    steps:
+      - name: "Navigate to Settings"
+        action: "Go to Settings screen"
+        expected: "Settings screen displayed"
+      - name: "Find Channel Tap Behavior"
+        action: "Scroll down to Channel Tap Behavior section"
+        expected: "Section visible with description and per-type radio buttons"
+    tags: [channels, settings, tap-behavior]
+    estimated_duration: "15s"
+    expected_result: "Channel Tap Behavior settings section is accessible in Settings"
+
+  - id: FQA-ATV-158
+    name: "Configure per-category launch action detail"
+    category: functional
+    priority: high
+    platforms: [androidtv]
+    steps:
+      - name: "Open Channel Tap Behavior"
+        action: "Navigate to Channel Tap Behavior in Settings"
+        expected: "Per-type options visible"
+      - name: "Select Detail Screen for Movies"
+        action: "DPAD to Detail Screen radio button for Movies, press DPAD_CENTER"
+        expected: "Detail Screen radio button selected"
+    tags: [channels, settings, launch-action, detail]
+    estimated_duration: "15s"
+    expected_result: "Per-category launch action can be set to Detail Screen"
+
+  - id: FQA-ATV-159
+    name: "Configure per-category launch action play immediately"
+    category: functional
+    priority: high
+    platforms: [androidtv]
+    steps:
+      - name: "Open Channel Tap Behavior"
+        action: "Navigate to Channel Tap Behavior in Settings"
+        expected: "Per-type options visible"
+      - name: "Select Play Immediately for Movies"
+        action: "DPAD to Play Immediately radio button for Movies, press DPAD_CENTER"
+        expected: "Play Immediately radio button selected"
+    tags: [channels, settings, launch-action, immediate-play]
+    estimated_duration: "15s"
+    expected_result: "Per-category launch action can be set to Play Immediately"
+
+  - id: FQA-ATV-160
+    name: "Channels update after content changes"
+    category: functional
+    priority: high
+    platforms: [androidtv]
+    steps:
+      - name: "Note current channel content"
+        action: "Check programs in Catalogizer Picks channel"
+        expected: "Current programs noted"
+      - name: "Trigger content sync"
+        action: "Force a media sync or add new content via API"
+        expected: "Content updated"
+      - name: "Verify channel update"
+        action: "Check channel programs again"
+        expected: "Channel programs reflect the new content after sync"
+    tags: [channels, update, sync, content-change]
+    estimated_duration: "30s"
+    expected_result: "Channel programs update when catalog content changes"
+
+  - id: FQA-ATV-161
+    name: "Channels cleaned up on logout"
+    category: functional
+    priority: critical
+    platforms: [androidtv]
+    steps:
+      - name: "Verify channels exist"
+        action: "Check that Catalogizer channels are on TV home"
+        expected: "Channels present"
+      - name: "Logout"
+        action: "Navigate to Settings > Logout"
+        expected: "Logout initiated"
+      - name: "Verify cleanup"
+        action: "Check TV home for Catalogizer channels"
+        expected: "All Catalogizer channels removed, Watch Next entries cleared, sync worker cancelled"
+    tags: [channels, logout, cleanup, critical-path]
+    estimated_duration: "20s"
+    expected_result: "Logout removes all channels, Watch Next entries, and cancels sync worker"
+
+  - id: FQA-ATV-162
+    name: "Re-login recreates channels"
+    category: functional
+    priority: high
+    platforms: [androidtv]
+    steps:
+      - name: "Logout"
+        action: "Perform logout to clean up channels"
+        expected: "Channels removed"
+      - name: "Login again"
+        action: "Login with admin/admin123"
+        expected: "Home screen displayed"
+      - name: "Verify channels recreated"
+        action: "Go to TV home and check for Catalogizer channels"
+        expected: "Catalogizer Picks and per-category channels recreated"
+    tags: [channels, re-login, recreation]
+    estimated_duration: "25s"
+    expected_result: "Channels are recreated after re-login"
+
+  - id: FQA-ATV-163
+    name: "WorkManager sync triggers channel update"
+    category: functional
+    priority: medium
+    platforms: [androidtv]
+    steps:
+      - name: "Verify sync worker scheduled"
+        action: "Check WorkManager for TvChannelSyncWorker periodic work"
+        expected: "6-hour periodic sync work is enqueued"
+      - name: "Trigger sync manually"
+        action: "Force WorkManager to run the sync worker"
+        expected: "Sync worker executes, channels updated with latest content"
+    tags: [channels, workmanager, sync, periodic]
+    estimated_duration: "20s"
+    expected_result: "WorkManager periodic sync updates channel content"
+
+  - id: FQA-ATV-164
+    name: "Channel program images load"
+    category: functional
+    priority: high
+    platforms: [androidtv]
+    steps:
+      - name: "View channel programs"
+        action: "Navigate to a Catalogizer channel on TV home"
+        expected: "Program cards visible"
+      - name: "Verify images"
+        action: "Check program card poster images"
+        expected: "Poster images load from ChannelProgramMapper, not showing blank placeholders"
+    tags: [channels, programs, images, loading]
+    estimated_duration: "15s"
+    expected_result: "Channel program cards display poster images correctly"
+
+  - id: FQA-ATV-165
+    name: "Channel program titles correct"
+    category: functional
+    priority: high
+    platforms: [androidtv]
+    steps:
+      - name: "View channel programs"
+        action: "Navigate to Catalogizer channel programs"
+        expected: "Programs visible"
+      - name: "Verify titles"
+        action: "Read program card titles"
+        expected: "Each program card shows the correct media title matching the linked entity"
+    tags: [channels, programs, titles, accuracy]
+    estimated_duration: "15s"
+    expected_result: "Channel program titles match their corresponding media entities"
+
+  - id: FQA-ATV-166
+    name: "Deep link without auth redirects to login"
+    category: functional
+    priority: high
+    platforms: [androidtv]
+    steps:
+      - name: "Logout"
+        action: "Ensure user is not authenticated"
+        expected: "User logged out"
+      - name: "Trigger deep link"
+        action: "Open catalogizer://media/1?type=movie"
+        expected: "ChannelDeepLinkActivity detects unauthenticated state"
+      - name: "Verify redirect"
+        action: "Check which screen opens"
+        expected: "Redirected to login screen with pending deep link extras (EXTRA_MEDIA_ID, EXTRA_MEDIA_TYPE)"
+    tags: [channels, deep-link, auth, redirect]
+    estimated_duration: "15s"
+    expected_result: "Deep link without authentication redirects to login with pending link"
+
+  - id: FQA-ATV-167
+    name: "Deep link invalid URI handled gracefully"
+    category: negative
+    priority: medium
+    platforms: [androidtv]
+    steps:
+      - name: "Trigger invalid deep link"
+        action: "Open catalogizer://media/ (no ID in path)"
+        expected: "DeepLinkParser returns null mediaId"
+      - name: "Verify fallback"
+        action: "Check behavior"
+        expected: "Launches MainActivity normally without crash (launchMainActivity called)"
+    tags: [channels, deep-link, invalid, graceful-degradation]
+    estimated_duration: "10s"
+    expected_result: "Invalid deep link URI is handled gracefully without crash"
+
+  - id: FQA-ATV-168
+    name: "Audio without external metadata plays immediately"
+    category: functional
+    priority: medium
+    platforms: [androidtv]
+    steps:
+      - name: "Setup"
+        action: "Have an audio item (music/audiobook/podcast) without external metadata"
+        expected: "Audio item exists"
+      - name: "Deep link to audio"
+        action: "Open catalogizer://media/{id}?type=music"
+        expected: "DeepLinkParser.isAudioWithoutContext returns true"
+      - name: "Verify behavior"
+        action: "Check routing"
+        expected: "Routes to player directly (audio without context goes to play)"
+    tags: [channels, deep-link, audio, auto-play]
+    estimated_duration: "15s"
+    expected_result: "Audio without external metadata deep-links to immediate playback"
+
+  - id: FQA-ATV-169
+    name: "App launch triggers channel sync"
+    category: functional
+    priority: medium
+    platforms: [androidtv]
+    steps:
+      - name: "Launch app after being closed"
+        action: "Open Catalogizer from launcher"
+        expected: "App starts"
+      - name: "Verify sync trigger"
+        action: "Check that channel sync runs on app launch"
+        expected: "SyncService triggers channel update during app initialization"
+    tags: [channels, app-launch, sync, trigger]
+    estimated_duration: "15s"
+    expected_result: "App launch triggers channel content sync"
+
+  - id: FQA-ATV-170
+    name: "Multiple media types create separate channels"
+    category: functional
+    priority: medium
+    platforms: [androidtv]
+    steps:
+      - name: "Ensure diverse catalog"
+        action: "Have media items across multiple types (movies, TV shows, music)"
+        expected: "Multiple media types in catalog"
+      - name: "Check TV home"
+        action: "Look for per-category channels"
+        expected: "Separate channels for each media type that has content"
+    tags: [channels, per-category, multiple-types]
+    estimated_duration: "20s"
+    expected_result: "Each media type with content gets its own TV home channel"
+
+  - id: FQA-ATV-171
+    name: "Channel settings show only active media types"
+    category: functional
+    priority: medium
+    platforms: [androidtv]
+    steps:
+      - name: "Open Channel Tap Behavior settings"
+        action: "Navigate to Settings > Channel Tap Behavior"
+        expected: "Settings section visible"
+      - name: "Verify type list"
+        action: "Check which media types are listed"
+        expected: "Only media types that have content in catalog are shown (activeMediaTypes)"
+    tags: [channels, settings, active-types, dynamic]
+    estimated_duration: "15s"
+    expected_result: "Channel settings only show media types that have actual content"
+
+  - id: FQA-ATV-172
+    name: "Channel settings radio buttons focusable via DPAD"
+    category: functional
+    priority: medium
+    platforms: [androidtv]
+    steps:
+      - name: "Open Channel Tap Behavior"
+        action: "Navigate to Channel Tap Behavior section"
+        expected: "Per-type radio buttons visible"
+      - name: "DPAD navigate between options"
+        action: "DPAD through Detail Screen and Play Immediately radio buttons"
+        expected: "Each radio button row shows focus border (FocusBorderColor) when focused"
+    tags: [channels, settings, dpad, focus, radio-button]
+    estimated_duration: "15s"
+    expected_result: "Channel settings radio buttons are DPAD-focusable with visible focus indicators"
+
+  - id: FQA-ATV-173
+    name: "Watch Next cleared on logout"
+    category: functional
+    priority: high
+    platforms: [androidtv]
+    steps:
+      - name: "Add Watch Next entries"
+        action: "Watch several items partially to populate Watch Next"
+        expected: "Watch Next entries created"
+      - name: "Logout"
+        action: "Navigate to Settings > Logout"
+        expected: "Logout completes"
+      - name: "Check Watch Next"
+        action: "Go to TV home Watch Next row"
+        expected: "Catalogizer entries cleared from Watch Next"
+    tags: [channels, watch-next, logout, cleanup]
+    estimated_duration: "25s"
+    expected_result: "Watch Next entries from Catalogizer are cleared on logout"
+
+  - id: FQA-ATV-174
+    name: "Sync worker cancelled on logout"
+    category: functional
+    priority: medium
+    platforms: [androidtv]
+    steps:
+      - name: "Verify sync worker running"
+        action: "Check WorkManager for periodic sync work"
+        expected: "Sync worker scheduled"
+      - name: "Logout"
+        action: "Perform logout"
+        expected: "Logout completes"
+      - name: "Verify worker cancelled"
+        action: "Check WorkManager after logout"
+        expected: "TvChannelSyncWorker periodic work cancelled"
+    tags: [channels, workmanager, logout, cancel]
+    estimated_duration: "15s"
+    expected_result: "Periodic sync worker is cancelled on logout"
+
+  - id: FQA-ATV-175
+    name: "Deep link with non-existent type falls back to DETAIL"
+    category: negative
+    priority: medium
+    platforms: [androidtv]
+    steps:
+      - name: "Deep link with unknown type"
+        action: "Open catalogizer://media/{id}?type=unknown_type"
+        expected: "Intent processed, no per-category setting found"
+      - name: "Verify fallback"
+        action: "Check routing"
+        expected: "Falls back to LaunchAction.DETAIL, opens detail screen"
+    tags: [channels, deep-link, fallback, unknown-type]
+    estimated_duration: "10s"
+    expected_result: "Unknown media type in deep link falls back to detail screen"
+
+  # ==================== Favorites & Collections (FQA-ATV-176 to 195) ====================
+
+  - id: FQA-ATV-176
+    name: "Add movie to favorites from detail"
+    category: functional
+    priority: high
+    platforms: [androidtv]
+    steps:
+      - name: "Open movie detail"
+        action: "Navigate to a movie detail screen"
+        expected: "Detail with Favorite button visible"
+      - name: "Add to favorites"
+        action: "DPAD to Favorite button and press DPAD_CENTER"
+        expected: "Heart icon changes to filled (Icons.Default.Favorite)"
+    tags: [favorites, add, movie, toggle]
+    estimated_duration: "15s"
+    expected_result: "Movie is added to favorites from detail screen"
+
+  - id: FQA-ATV-177
+    name: "Add music to favorites from detail"
+    category: functional
+    priority: high
+    platforms: [androidtv]
+    steps:
+      - name: "Open music detail"
+        action: "Navigate to a music album detail screen"
+        expected: "Detail with Favorite button"
+      - name: "Add to favorites"
+        action: "Press Favorite button"
+        expected: "Heart icon fills, music item favorited"
+    tags: [favorites, add, music, toggle]
+    estimated_duration: "15s"
+    expected_result: "Music item is added to favorites from detail screen"
+
+  - id: FQA-ATV-178
+    name: "Remove from favorites"
+    category: functional
+    priority: high
+    platforms: [androidtv]
+    steps:
+      - name: "Open favorited item detail"
+        action: "Navigate to detail of a previously favorited item"
+        expected: "Favorite button shows filled heart"
+      - name: "Remove from favorites"
+        action: "Press Favorite button"
+        expected: "Heart icon changes to outline (Icons.Default.FavoriteBorder)"
+    tags: [favorites, remove, toggle, unfavorite]
+    estimated_duration: "15s"
+    expected_result: "Item is removed from favorites when Favorite button toggled again"
+
+  - id: FQA-ATV-179
+    name: "Favorite state persists across screen transitions"
+    category: functional
+    priority: medium
+    platforms: [androidtv]
+    steps:
+      - name: "Favorite an item"
+        action: "Toggle favorite on a media item"
+        expected: "Favorited"
+      - name: "Navigate away and back"
+        action: "Press BACK then re-open the same detail"
+        expected: "Detail screen reloads"
+      - name: "Verify state"
+        action: "Check Favorite button state"
+        expected: "Favorite state persisted, filled heart icon shown"
+    tags: [favorites, persistence, state, navigation]
+    estimated_duration: "20s"
+    expected_result: "Favorite state persists when navigating away and returning"
+
+  - id: FQA-ATV-180
+    name: "Favorite toggle optimistic update"
+    category: functional
+    priority: medium
+    platforms: [androidtv]
+    steps:
+      - name: "Toggle favorite"
+        action: "Press Favorite button"
+        expected: "Icon changes immediately (optimistic update: isFavorite = !oldState)"
+      - name: "Verify instant response"
+        action: "Observe UI timing"
+        expected: "UI updates immediately without waiting for API response"
+    tags: [favorites, optimistic-update, instant, ux]
+    estimated_duration: "10s"
+    expected_result: "Favorite toggle applies optimistic UI update before API confirmation"
+
+  - id: FQA-ATV-181
+    name: "Favorite revert on API error"
+    category: negative
+    priority: medium
+    platforms: [androidtv]
+    steps:
+      - name: "Disconnect API"
+        action: "Make API unreachable"
+        expected: "API down"
+      - name: "Toggle favorite"
+        action: "Press Favorite button"
+        expected: "Icon changes optimistically"
+      - name: "Verify revert"
+        action: "Wait for API call to fail"
+        expected: "Icon reverts to previous state (isFavorite = oldState on exception)"
+    tags: [favorites, error, revert, optimistic]
+    estimated_duration: "15s"
+    expected_result: "Favorite toggle reverts on API failure"
+
+  - id: FQA-ATV-182
+    name: "Add TV show to favorites"
+    category: functional
+    priority: medium
+    platforms: [androidtv]
+    steps:
+      - name: "Open TV show detail"
+        action: "Navigate to a TV show detail"
+        expected: "Detail displayed"
+      - name: "Favorite TV show"
+        action: "Press Favorite button"
+        expected: "TV show added to favorites"
+    tags: [favorites, add, tv-show]
+    estimated_duration: "15s"
+    expected_result: "TV show can be added to favorites"
+
+  - id: FQA-ATV-183
+    name: "Add game to favorites"
+    category: functional
+    priority: low
+    platforms: [androidtv]
+    steps:
+      - name: "Open game detail"
+        action: "Navigate to a game detail"
+        expected: "Detail displayed"
+      - name: "Favorite game"
+        action: "Press Favorite button"
+        expected: "Game added to favorites"
+    tags: [favorites, add, game]
+    estimated_duration: "15s"
+    expected_result: "Game can be added to favorites"
+
+  - id: FQA-ATV-184
+    name: "Add book to favorites"
+    category: functional
+    priority: low
+    platforms: [androidtv]
+    steps:
+      - name: "Open book detail"
+        action: "Navigate to a book detail"
+        expected: "Detail displayed"
+      - name: "Favorite book"
+        action: "Press Favorite button"
+        expected: "Book added to favorites"
+    tags: [favorites, add, book]
+    estimated_duration: "15s"
+    expected_result: "Book can be added to favorites"
+
+  - id: FQA-ATV-185
+    name: "Favorite multiple items sequentially"
+    category: functional
+    priority: medium
+    platforms: [androidtv]
+    steps:
+      - name: "Favorite first item"
+        action: "Open a detail and favorite it"
+        expected: "First item favorited"
+      - name: "Navigate back and favorite second"
+        action: "Go back, open another item, and favorite it"
+        expected: "Second item favorited"
+      - name: "Verify both persist"
+        action: "Re-open each detail and verify favorite state"
+        expected: "Both items remain favorited"
+    tags: [favorites, multiple, sequential, persistence]
+    estimated_duration: "30s"
+    expected_result: "Multiple items can be favorited sequentially with persistent state"
+
+  - id: FQA-ATV-186
+    name: "Favorite button DPAD accessible"
+    category: functional
+    priority: high
+    platforms: [androidtv]
+    steps:
+      - name: "Open detail screen"
+        action: "Navigate to media detail"
+        expected: "Action buttons row visible"
+      - name: "Navigate to Favorite"
+        action: "DPAD_RIGHT from Play button past Back to Library to Favorite"
+        expected: "Favorite button receives focus"
+      - name: "Toggle"
+        action: "Press DPAD_CENTER"
+        expected: "Favorite toggled successfully via DPAD"
+    tags: [favorites, dpad, accessibility, focus]
+    estimated_duration: "15s"
+    expected_result: "Favorite button is accessible via DPAD navigation on detail screen"
+
+  - id: FQA-ATV-187
+    name: "Favorite with different entity types"
+    category: functional
+    priority: medium
+    platforms: [androidtv]
+    steps:
+      - name: "Open movie detail"
+        action: "Navigate to movie"
+        expected: "Detail with mediaType movie"
+      - name: "Favorite"
+        action: "Press Favorite"
+        expected: "API call uses entityType=movie"
+      - name: "Open music detail"
+        action: "Navigate to music item"
+        expected: "Detail with different mediaType"
+      - name: "Favorite"
+        action: "Press Favorite"
+        expected: "API call uses correct entityType"
+    tags: [favorites, entity-type, api, toggle]
+    estimated_duration: "25s"
+    expected_result: "Favorite toggle correctly passes entity type to API for different media types"
+
+  - id: FQA-ATV-188
+    name: "Favorite icon state reflects API check"
+    category: functional
+    priority: medium
+    platforms: [androidtv]
+    steps:
+      - name: "Open detail for favorited item"
+        action: "Navigate to an item that was previously favorited"
+        expected: "Detail screen loads"
+      - name: "Verify icon"
+        action: "Observe Favorite button after data load"
+        expected: "Filled heart displayed (checkFavorite returns true from API)"
+    tags: [favorites, state-check, api, icon]
+    estimated_duration: "15s"
+    expected_result: "Favorite icon reflects server-side favorite status on load"
+
+  - id: FQA-ATV-189
+    name: "Unfavorited item shows outline heart"
+    category: functional
+    priority: medium
+    platforms: [androidtv]
+    steps:
+      - name: "Open detail for non-favorited item"
+        action: "Navigate to item that is not favorited"
+        expected: "Detail loads"
+      - name: "Verify icon"
+        action: "Check Favorite button icon"
+        expected: "Outline heart (FavoriteBorder) displayed"
+    tags: [favorites, unfavorited, icon, state]
+    estimated_duration: "10s"
+    expected_result: "Non-favorited items show outline heart icon"
+
+  - id: FQA-ATV-190
+    name: "Favorite null entity type defaults to movie"
+    category: edge-case
+    priority: low
+    platforms: [androidtv]
+    steps:
+      - name: "Open detail for item with null mediaType"
+        action: "Navigate to item where mediaType is null"
+        expected: "Detail loaded"
+      - name: "Toggle favorite"
+        action: "Press Favorite"
+        expected: "API call uses entityType=movie as default (val entityType = item.mediaType ?: movie)"
+    tags: [favorites, null-type, default, edge-case]
+    estimated_duration: "10s"
+    expected_result: "Null mediaType defaults to movie for favorite API calls"
+
+  - id: FQA-ATV-191
+    name: "Favorite button visual states"
+    category: functional
+    priority: medium
+    platforms: [androidtv]
+    steps:
+      - name: "View unfavorited state"
+        action: "Open detail for non-favorited item"
+        expected: "FavoriteBorder icon with Favorite text"
+      - name: "Toggle to favorited"
+        action: "Press Favorite"
+        expected: "Favorite (filled) icon with Favorite text, icon size 24dp"
+    tags: [favorites, visual-states, icon, text]
+    estimated_duration: "15s"
+    expected_result: "Favorite button shows correct icon for both states"
+
+  - id: FQA-ATV-192
+    name: "Multiple rapid favorite toggles"
+    category: edge-case
+    priority: medium
+    platforms: [androidtv]
+    steps:
+      - name: "Open detail"
+        action: "Navigate to media detail"
+        expected: "Favorite button visible"
+      - name: "Rapid toggles"
+        action: "Press DPAD_CENTER on Favorite rapidly 5 times"
+        expected: "UI toggles each time, final state matches last API result"
+    tags: [favorites, rapid-toggle, race-condition, edge-case]
+    estimated_duration: "15s"
+    expected_result: "Rapid favorite toggles do not cause crashes or inconsistent state"
+
+  - id: FQA-ATV-193
+    name: "Favorite check on detail load"
+    category: functional
+    priority: medium
+    platforms: [androidtv]
+    steps:
+      - name: "Open detail"
+        action: "Navigate to media detail"
+        expected: "Detail loading"
+      - name: "Verify API check"
+        action: "Wait for content to load"
+        expected: "checkFavorite called after entity data loads, isFavorite set correctly"
+    tags: [favorites, api-check, load, initialization]
+    estimated_duration: "10s"
+    expected_result: "Favorite status is checked from API when detail screen loads"
+
+  - id: FQA-ATV-194
+    name: "Favorite from search result detail"
+    category: functional
+    priority: medium
+    platforms: [androidtv]
+    steps:
+      - name: "Search for media"
+        action: "Search and select a result to open detail"
+        expected: "Detail screen from search"
+      - name: "Favorite item"
+        action: "Press Favorite button"
+        expected: "Item favorited successfully from search-navigated detail"
+    tags: [favorites, search, navigation, toggle]
+    estimated_duration: "20s"
+    expected_result: "Items can be favorited from detail screens accessed via search"
+
+  - id: FQA-ATV-195
+    name: "Favorite from deep link detail"
+    category: functional
+    priority: medium
+    platforms: [androidtv]
+    steps:
+      - name: "Deep link to detail"
+        action: "Open detail via deep link"
+        expected: "Detail screen displayed"
+      - name: "Favorite item"
+        action: "Press Favorite button"
+        expected: "Item favorited from deep-linked detail screen"
+    tags: [favorites, deep-link, toggle]
+    estimated_duration: "15s"
+    expected_result: "Items can be favorited from detail screens accessed via deep link"
+
+  # ==================== Settings (FQA-ATV-196 to 215) ====================
+
+  - id: FQA-ATV-196
+    name: "Navigate to Settings screen"
+    category: functional
+    priority: high
+    platforms: [androidtv]
+    steps:
+      - name: "Press settings icon"
+        action: "DPAD to settings icon in TopBar and press DPAD_CENTER"
+        expected: "Settings screen displayed"
+      - name: "Verify header"
+        action: "Check Settings heading"
+        expected: "Settings heading and Back button visible in header row"
+    tags: [settings, navigation, header]
+    estimated_duration: "10s"
+    expected_result: "Settings screen accessible from home screen TopBar"
+
+  - id: FQA-ATV-197
+    name: "Playback Settings section"
+    category: functional
+    priority: high
+    platforms: [androidtv]
+    steps:
+      - name: "Open Settings"
+        action: "Navigate to Settings screen"
+        expected: "Settings displayed"
+      - name: "Verify Playback Settings"
+        action: "Check first section"
+        expected: "Playback Settings section with Auto Play Next Episode toggle and Streaming Quality selector"
+    tags: [settings, playback, section]
+    estimated_duration: "10s"
+    expected_result: "Playback Settings section displays with auto-play toggle and quality selector"
+
+  - id: FQA-ATV-198
+    name: "Auto Play Next Episode toggle"
+    category: functional
+    priority: high
+    platforms: [androidtv]
+    steps:
+      - name: "Find toggle"
+        action: "DPAD to Auto Play Next Episode toggle in Playback Settings"
+        expected: "Toggle focused with visible border"
+      - name: "Toggle on"
+        action: "Press DPAD_CENTER"
+        expected: "Switch changes to on state"
+      - name: "Toggle off"
+        action: "Press DPAD_CENTER again"
+        expected: "Switch changes to off state"
+    tags: [settings, auto-play, toggle, playback]
+    estimated_duration: "10s"
+    expected_result: "Auto Play Next Episode toggle works correctly"
+
+  - id: FQA-ATV-199
+    name: "Streaming Quality selector"
+    category: functional
+    priority: high
+    platforms: [androidtv]
+    steps:
+      - name: "Find quality chips"
+        action: "DPAD to Streaming Quality options"
+        expected: "Auto, High, Medium, Low quality chips visible"
+      - name: "Select High"
+        action: "DPAD to High chip and press DPAD_CENTER"
+        expected: "High chip becomes selected (primary color), others deselected"
+      - name: "Select Auto"
+        action: "DPAD to Auto chip and press"
+        expected: "Auto chip selected"
+    tags: [settings, streaming-quality, chips, selector]
+    estimated_duration: "15s"
+    expected_result: "Streaming quality can be changed between Auto, High, Medium, Low"
+
+  - id: FQA-ATV-200
+    name: "Subtitle Settings section"
+    category: functional
+    priority: high
+    platforms: [androidtv]
+    steps:
+      - name: "Find Subtitle Settings"
+        action: "Scroll down to Subtitle Settings section"
+        expected: "Section visible with Enable Subtitles toggle and language selector"
+    tags: [settings, subtitles, section]
+    estimated_duration: "10s"
+    expected_result: "Subtitle Settings section displays with toggle and language options"
+
+  - id: FQA-ATV-201
+    name: "Enable Subtitles toggle"
+    category: functional
+    priority: medium
+    platforms: [androidtv]
+    steps:
+      - name: "Find toggle"
+        action: "DPAD to Enable Subtitles toggle"
+        expected: "Toggle focused"
+      - name: "Toggle"
+        action: "Press DPAD_CENTER"
+        expected: "Subtitles setting toggled, language options enable/disable accordingly"
+    tags: [settings, subtitles, toggle]
+    estimated_duration: "10s"
+    expected_result: "Enable Subtitles toggle controls subtitle feature and language selector state"
+
+  - id: FQA-ATV-202
+    name: "Subtitle language selection"
+    category: functional
+    priority: medium
+    platforms: [androidtv]
+    steps:
+      - name: "Enable subtitles"
+        action: "Ensure Enable Subtitles is on"
+        expected: "Subtitle language options enabled"
+      - name: "Select language"
+        action: "DPAD to a language radio button (English, Spanish, French, German, Japanese)"
+        expected: "Radio button focused with border"
+      - name: "Choose language"
+        action: "Press DPAD_CENTER on Spanish"
+        expected: "Spanish radio button selected"
+    tags: [settings, subtitles, language, radio-button]
+    estimated_duration: "15s"
+    expected_result: "Subtitle language can be selected from available options"
+
+  - id: FQA-ATV-203
+    name: "Language options disabled when subtitles off"
+    category: functional
+    priority: medium
+    platforms: [androidtv]
+    steps:
+      - name: "Disable subtitles"
+        action: "Turn off Enable Subtitles toggle"
+        expected: "Subtitles disabled"
+      - name: "Check language options"
+        action: "Observe language radio buttons"
+        expected: "Language labels and radio buttons show disabled state (TextDisabled color)"
+    tags: [settings, subtitles, disabled-state, language]
+    estimated_duration: "10s"
+    expected_result: "Language options are visually disabled when subtitles are turned off"
+
+  - id: FQA-ATV-204
+    name: "Notifications section"
+    category: functional
+    priority: medium
+    platforms: [androidtv]
+    steps:
+      - name: "Find Notifications section"
+        action: "Scroll to Notifications section in Settings"
+        expected: "Notifications section visible"
+      - name: "Toggle notifications"
+        action: "DPAD to Enable Notifications toggle and press"
+        expected: "Notification setting toggled"
+    tags: [settings, notifications, toggle]
+    estimated_duration: "10s"
+    expected_result: "Notifications section allows toggling notification preferences"
+
+  - id: FQA-ATV-205
+    name: "Account section with Logout button"
+    category: functional
+    priority: high
+    platforms: [androidtv]
+    steps:
+      - name: "Find Account section"
+        action: "Scroll to Account section in Settings"
+        expected: "Account section visible with description and Logout button"
+      - name: "Verify button style"
+        action: "Check Logout button"
+        expected: "Red error-colored button with Logout text"
+    tags: [settings, account, logout, section]
+    estimated_duration: "10s"
+    expected_result: "Account section displays with red Logout button"
+
+  - id: FQA-ATV-206
+    name: "Logout flow"
+    category: functional
+    priority: critical
+    platforms: [androidtv]
+    steps:
+      - name: "Press Logout"
+        action: "DPAD to Logout button and press DPAD_CENTER"
+        expected: "Logout initiated"
+      - name: "Verify navigation"
+        action: "Check which screen appears"
+        expected: "Navigates to Login screen with entire back stack cleared (popUpTo(0) inclusive=true)"
+    tags: [settings, logout, navigation, critical-path]
+    estimated_duration: "10s"
+    expected_result: "Logout navigates to login screen with cleared back stack"
+
+  - id: FQA-ATV-207
+    name: "Logout cleans up channels"
+    category: functional
+    priority: high
+    platforms: [androidtv]
+    steps:
+      - name: "Logout via Settings"
+        action: "Press Logout in Settings"
+        expected: "Logout process"
+      - name: "Verify channel cleanup"
+        action: "Check TV home screen"
+        expected: "All Catalogizer channels removed from TV home"
+    tags: [settings, logout, channels, cleanup]
+    estimated_duration: "20s"
+    expected_result: "Logout removes all Catalogizer channels from TV home screen"
+
+  - id: FQA-ATV-208
+    name: "Settings persist after app restart"
+    category: functional
+    priority: high
+    platforms: [androidtv]
+    steps:
+      - name: "Change settings"
+        action: "Set streaming quality to High, enable auto-play, select Spanish subtitles"
+        expected: "Settings changed"
+      - name: "Restart app"
+        action: "Force stop and relaunch"
+        expected: "App restarts"
+      - name: "Verify persistence"
+        action: "Navigate to Settings"
+        expected: "All settings restored to previously set values"
+    tags: [settings, persistence, restart, datastore]
+    estimated_duration: "25s"
+    expected_result: "All settings persist across app restarts via DataStore"
+
+  - id: FQA-ATV-209
+    name: "DPAD navigation in settings forms"
+    category: functional
+    priority: high
+    platforms: [androidtv]
+    steps:
+      - name: "Open Settings"
+        action: "Navigate to Settings"
+        expected: "Settings displayed"
+      - name: "Navigate down through sections"
+        action: "DPAD_DOWN through all settings sections"
+        expected: "Focus moves through toggles, chips, radio buttons, and buttons sequentially"
+      - name: "Navigate up"
+        action: "DPAD_UP back to top"
+        expected: "Focus returns to top elements"
+    tags: [settings, dpad, navigation, forms]
+    estimated_duration: "20s"
+    expected_result: "DPAD navigation works correctly through all settings form elements"
+
+  - id: FQA-ATV-210
+    name: "Settings Back button"
+    category: functional
+    priority: high
+    platforms: [androidtv]
+    steps:
+      - name: "Open Settings"
+        action: "Navigate to Settings"
+        expected: "Settings displayed"
+      - name: "Press Back button"
+        action: "DPAD to Back button and press DPAD_CENTER"
+        expected: "Returns to home screen (onNavigateBack)"
+    tags: [settings, back, navigation]
+    estimated_duration: "10s"
+    expected_result: "Settings Back button returns to home screen"
+
+  - id: FQA-ATV-211
+    name: "Settings focus indicators on toggle rows"
+    category: functional
+    priority: medium
+    platforms: [androidtv]
+    steps:
+      - name: "Focus a toggle row"
+        action: "DPAD to any ToggleRow in Settings"
+        expected: "ToggleRow focused"
+      - name: "Verify focus indicator"
+        action: "Check visual state"
+        expected: "FocusBorderColor (0xFF9ECAFF) border appears around the toggle row"
+    tags: [settings, focus, toggle, accessibility]
+    estimated_duration: "10s"
+    expected_result: "Toggle rows show visible focus border indicator"
+
+  - id: FQA-ATV-212
+    name: "Settings focus indicator on Logout button"
+    category: functional
+    priority: medium
+    platforms: [androidtv]
+    steps:
+      - name: "Focus Logout button"
+        action: "DPAD to Logout button"
+        expected: "Button focused"
+      - name: "Verify focus indicator"
+        action: "Check visual state"
+        expected: "Error-tone focus ring (0xFFFFB4AB) border appears around Logout button"
+    tags: [settings, focus, logout, accessibility]
+    estimated_duration: "10s"
+    expected_result: "Logout button has distinct error-tone focus ring"
+
+  - id: FQA-ATV-213
+    name: "Settings section titles visible"
+    category: functional
+    priority: medium
+    platforms: [androidtv]
+    steps:
+      - name: "View Settings screen"
+        action: "Navigate to Settings"
+        expected: "Settings displayed"
+      - name: "Verify section titles"
+        action: "Check section headers"
+        expected: "Playback Settings, Subtitle Settings, Notifications, Channel Tap Behavior, Account titles visible in white titleMedium"
+    tags: [settings, sections, titles, typography]
+    estimated_duration: "10s"
+    expected_result: "All settings sections have visible white section title headers"
+
+  - id: FQA-ATV-214
+    name: "Settings WCAG AA contrast compliance"
+    category: functional
+    priority: medium
+    platforms: [androidtv]
+    steps:
+      - name: "Inspect text colors"
+        action: "Check text contrast in Settings screen"
+        expected: "Primary text white (0xFFFFFFFF), secondary near-white (0xFFE0E0E0), disabled gray (0xFF9E9E9E)"
+      - name: "Verify readability"
+        action: "Check that all text is readable on dark background"
+        expected: "All text passes WCAG AA contrast ratio on the dark surfaceVariant background"
+    tags: [settings, accessibility, wcag, contrast]
+    estimated_duration: "10s"
+    expected_result: "Settings text colors meet WCAG AA contrast requirements"
+
+  - id: FQA-ATV-215
+    name: "Settings auto-save via LaunchedEffect"
+    category: functional
+    priority: medium
+    platforms: [androidtv]
+    steps:
+      - name: "Change a setting"
+        action: "Toggle any setting (e.g., auto-play)"
+        expected: "Setting changed"
+      - name: "Navigate away immediately"
+        action: "Press Back without waiting"
+        expected: "LaunchedEffect triggers updateAllSettings on state change"
+      - name: "Return to Settings"
+        action: "Reopen Settings"
+        expected: "Changed setting persisted (auto-saved via LaunchedEffect)"
+    tags: [settings, auto-save, persistence, launched-effect]
+    estimated_duration: "15s"
+    expected_result: "Settings are auto-saved immediately on change via LaunchedEffect"
+
+  # ==================== Search (FQA-ATV-216 to 235) ====================
+
+  - id: FQA-ATV-216
+    name: "Open search screen from home"
+    category: functional
+    priority: high
+    platforms: [androidtv]
+    steps:
+      - name: "Navigate to search"
+        action: "DPAD to search icon in TopBar and press DPAD_CENTER"
+        expected: "Search screen opens with Search for Media heading"
+    tags: [search, navigation, open]
+    estimated_duration: "10s"
+    expected_result: "Search screen opens from home screen"
+
+  - id: FQA-ATV-217
+    name: "Type search query via keyboard"
+    category: functional
+    priority: critical
+    platforms: [androidtv]
+    steps:
+      - name: "Focus search field"
+        action: "Search field auto-focused on open"
+        expected: "Search field focused"
+      - name: "Open keyboard"
+        action: "Press DPAD_CENTER to activate text input"
+        expected: "On-screen keyboard or IME opens"
+      - name: "Type query"
+        action: "Type action via keyboard"
+        expected: "Text action appears in search field"
+    tags: [search, keyboard, text-input, critical-path]
+    estimated_duration: "15s"
+    expected_result: "Search query can be typed via keyboard input"
+
+  - id: FQA-ATV-218
+    name: "Search returns results"
+    category: functional
+    priority: critical
+    platforms: [androidtv]
+    steps:
+      - name: "Enter valid query"
+        action: "Type a known media title in search field"
+        expected: "Query entered"
+      - name: "Submit search"
+        action: "Press Search button"
+        expected: "Results appear in LazyColumn, N results found label visible"
+    tags: [search, results, query, critical-path]
+    estimated_duration: "20s"
+    expected_result: "Search with valid query returns and displays results"
+
+  - id: FQA-ATV-219
+    name: "Navigate results with DPAD"
+    category: functional
+    priority: high
+    platforms: [androidtv]
+    steps:
+      - name: "Get results"
+        action: "Perform search that returns multiple results"
+        expected: "Results in LazyColumn"
+      - name: "DPAD through results"
+        action: "DPAD_DOWN through CompactMediaCard items"
+        expected: "Focus moves through each result item"
+    tags: [search, results, dpad, navigation]
+    estimated_duration: "15s"
+    expected_result: "Search results are navigable with DPAD_DOWN"
+
+  - id: FQA-ATV-220
+    name: "Select result opens detail"
+    category: functional
+    priority: high
+    platforms: [androidtv]
+    steps:
+      - name: "Focus a result"
+        action: "DPAD to a search result CompactMediaCard"
+        expected: "Result focused"
+      - name: "Select it"
+        action: "Press DPAD_CENTER"
+        expected: "Navigates to MediaDetailScreen for that item (onNavigateToMediaDetail(mediaItem.id))"
+    tags: [search, select, detail, navigation]
+    estimated_duration: "10s"
+    expected_result: "Selecting a search result opens the media detail screen"
+
+  - id: FQA-ATV-221
+    name: "Search for movie title Inception"
+    category: functional
+    priority: medium
+    platforms: [androidtv]
+    steps:
+      - name: "Search for Inception"
+        action: "Enter Inception and search"
+        expected: "Results displayed"
+      - name: "Verify result"
+        action: "Check results list"
+        expected: "Movie Inception appears in results"
+    tags: [search, movie, inception]
+    estimated_duration: "20s"
+    expected_result: "Searching Inception returns the movie in results"
+
+  - id: FQA-ATV-222
+    name: "Search for music artist Metallica"
+    category: functional
+    priority: medium
+    platforms: [androidtv]
+    steps:
+      - name: "Search for Metallica"
+        action: "Enter Metallica and search"
+        expected: "Results displayed"
+      - name: "Verify result"
+        action: "Check results list"
+        expected: "Music items related to Metallica appear"
+    tags: [search, music, metallica]
+    estimated_duration: "20s"
+    expected_result: "Searching Metallica returns music-related results"
+
+  - id: FQA-ATV-223
+    name: "Search for TV show Breaking Bad"
+    category: functional
+    priority: medium
+    platforms: [androidtv]
+    steps:
+      - name: "Search for Breaking Bad"
+        action: "Enter Breaking Bad and search"
+        expected: "Results displayed"
+      - name: "Verify result"
+        action: "Check results list"
+        expected: "TV show Breaking Bad appears in results"
+    tags: [search, tv-show, breaking-bad]
+    estimated_duration: "20s"
+    expected_result: "Searching Breaking Bad returns TV show results"
+
+  - id: FQA-ATV-224
+    name: "Search with Cyrillic query"
+    category: functional
+    priority: medium
+    platforms: [androidtv]
+    steps:
+      - name: "Search Cyrillic"
+        action: "Type a Cyrillic query and search"
+        expected: "Search processes Cyrillic text"
+      - name: "Verify no crash"
+        action: "Check results or empty state"
+        expected: "Results displayed or graceful no-results message"
+    tags: [search, cyrillic, i18n]
+    estimated_duration: "20s"
+    expected_result: "Cyrillic search queries are handled without crashes"
+
+  - id: FQA-ATV-225
+    name: "Search with no results"
+    category: functional
+    priority: medium
+    platforms: [androidtv]
+    steps:
+      - name: "Search non-existent"
+        action: "Search for asdfgjklqwerty"
+        expected: "Search completes"
+      - name: "Verify UI"
+        action: "Check results area"
+        expected: "No results found for asdfgjklqwerty text, suggestion to try different terms"
+    tags: [search, no-results, empty-state]
+    estimated_duration: "15s"
+    expected_result: "No results state displays with helpful suggestion"
+
+  - id: FQA-ATV-226
+    name: "Clear search field and results"
+    category: functional
+    priority: medium
+    platforms: [androidtv]
+    steps:
+      - name: "Perform search"
+        action: "Search and get results"
+        expected: "Results displayed"
+      - name: "Clear"
+        action: "Press Clear (X) icon"
+        expected: "Query cleared, results cleared, initial state shown"
+    tags: [search, clear, reset]
+    estimated_duration: "10s"
+    expected_result: "Clear resets search to initial state"
+
+  - id: FQA-ATV-227
+    name: "Search limit of 50 results"
+    category: functional
+    priority: low
+    platforms: [androidtv]
+    steps:
+      - name: "Search broad term"
+        action: "Search for a very common term"
+        expected: "Results displayed"
+      - name: "Check limit"
+        action: "Count results"
+        expected: "Maximum 50 results returned (MediaSearchRequest limit=50)"
+    tags: [search, limit, pagination]
+    estimated_duration: "20s"
+    expected_result: "Search results are limited to 50 items"
+
+  - id: FQA-ATV-228
+    name: "Search placeholder text"
+    category: functional
+    priority: low
+    platforms: [androidtv]
+    steps:
+      - name: "Open search"
+        action: "Navigate to search screen"
+        expected: "Search field visible"
+      - name: "Verify placeholder"
+        action: "Check placeholder text in empty field"
+        expected: "Search movies, shows, music, games, books... placeholder visible"
+    tags: [search, placeholder, text]
+    estimated_duration: "5s"
+    expected_result: "Search field shows descriptive placeholder text"
+
+  - id: FQA-ATV-229
+    name: "Search field single line"
+    category: functional
+    priority: low
+    platforms: [androidtv]
+    steps:
+      - name: "Enter long text"
+        action: "Type a very long query in search field"
+        expected: "Text stays on single line (singleLine=true), scrolls horizontally"
+    tags: [search, single-line, text-field]
+    estimated_duration: "10s"
+    expected_result: "Search field is single-line with horizontal scroll for long text"
+
+  - id: FQA-ATV-230
+    name: "Search button disabled when empty"
+    category: functional
+    priority: medium
+    platforms: [androidtv]
+    steps:
+      - name: "Open search with empty field"
+        action: "Navigate to search screen"
+        expected: "Empty search field"
+      - name: "Check button state"
+        action: "Observe Search button"
+        expected: "Search button is disabled (enabled = searchQuery.isNotBlank() && !isLoading)"
+    tags: [search, button, disabled, validation]
+    estimated_duration: "5s"
+    expected_result: "Search button is disabled when query is blank"
+
+  - id: FQA-ATV-231
+    name: "Search button disabled during loading"
+    category: functional
+    priority: medium
+    platforms: [androidtv]
+    steps:
+      - name: "Trigger search"
+        action: "Enter query and press Search"
+        expected: "Search loading"
+      - name: "Check button state"
+        action: "Observe Search button during loading"
+        expected: "Button disabled, shows CircularProgressIndicator instead of text"
+    tags: [search, button, loading, disabled]
+    estimated_duration: "10s"
+    expected_result: "Search button is disabled and shows spinner during loading"
+
+  - id: FQA-ATV-232
+    name: "Search result CompactMediaCard layout"
+    category: functional
+    priority: medium
+    platforms: [androidtv]
+    steps:
+      - name: "Get search results"
+        action: "Perform search"
+        expected: "Results displayed"
+      - name: "Verify card layout"
+        action: "Check CompactMediaCard elements"
+        expected: "Each result card fills full width, shows media title and type info"
+    tags: [search, results, card-layout, compact]
+    estimated_duration: "10s"
+    expected_result: "Search result cards display with full width and proper media information"
+
+  - id: FQA-ATV-233
+    name: "Search back navigation preserves query"
+    category: functional
+    priority: low
+    platforms: [androidtv]
+    steps:
+      - name: "Search and get results"
+        action: "Perform a search"
+        expected: "Results shown"
+      - name: "Open a result detail"
+        action: "Press DPAD_CENTER on a result"
+        expected: "Detail screen opens"
+      - name: "Press BACK"
+        action: "Return to search"
+        expected: "Search screen with previous query and results still visible"
+    tags: [search, back-navigation, state-preservation]
+    estimated_duration: "20s"
+    expected_result: "Back navigation from detail preserves search query and results"
+
+  - id: FQA-ATV-234
+    name: "Search field colors match TV theme"
+    category: functional
+    priority: low
+    platforms: [androidtv]
+    steps:
+      - name: "View search field"
+        action: "Navigate to search screen"
+        expected: "Search field visible"
+      - name: "Check styling"
+        action: "Verify text field colors"
+        expected: "Focus border uses primary color, text uses onSurface color, container uses surface color"
+    tags: [search, theming, colors, styling]
+    estimated_duration: "5s"
+    expected_result: "Search field colors match the TV material theme"
+
+  - id: FQA-ATV-235
+    name: "Search leading icon visible"
+    category: functional
+    priority: low
+    platforms: [androidtv]
+    steps:
+      - name: "View search field"
+        action: "Navigate to search screen"
+        expected: "Search field visible"
+      - name: "Verify icon"
+        action: "Check leading icon"
+        expected: "Search (magnifying glass) icon visible in the leading position"
+    tags: [search, icon, leading, visual]
+    estimated_duration: "5s"
+    expected_result: "Search field has visible magnifying glass leading icon"
+
+  # ==================== Edge Cases & Negative (FQA-ATV-236 to 260) ====================
+
+  - id: FQA-ATV-236
+    name: "Rapid DPAD navigation on home screen"
+    category: stress
+    priority: high
+    platforms: [androidtv]
+    steps:
+      - name: "Navigate home screen rapidly"
+        action: "Press DPAD_DOWN and DPAD_RIGHT rapidly (10+ presses per second)"
+        expected: "Focus moves rapidly through items"
+      - name: "Verify no crash"
+        action: "Check app stability"
+        expected: "App remains responsive, no ANR, no crash"
+    tags: [edge-case, rapid-navigation, stress, dpad]
+    estimated_duration: "15s"
+    expected_result: "Rapid DPAD navigation does not cause crashes or ANR"
+
+  - id: FQA-ATV-237
+    name: "Press BACK from home screen shows exit dialog"
+    category: functional
+    priority: high
+    platforms: [androidtv]
+    steps:
+      - name: "On home screen"
+        action: "Ensure home screen is displayed"
+        expected: "Home screen visible"
+      - name: "Press BACK"
+        action: "Press BACK button on remote"
+        expected: "App exits or shows confirmation dialog (Android system behavior)"
+    tags: [edge-case, back, exit, home-screen]
+    estimated_duration: "10s"
+    expected_result: "BACK from home screen handles app exit gracefully"
+
+  - id: FQA-ATV-238
+    name: "Network disconnection handling on home screen"
+    category: negative
+    priority: high
+    platforms: [androidtv]
+    steps:
+      - name: "Disconnect network"
+        action: "Disable network on Mi Box during home screen load"
+        expected: "Network unavailable"
+      - name: "Verify error handling"
+        action: "Check home screen state"
+        expected: "Error state with Error loading content message and Retry button"
+    tags: [edge-case, network, disconnection, error]
+    estimated_duration: "15s"
+    expected_result: "Network disconnection shows error state with retry option on home screen"
+
+  - id: FQA-ATV-239
+    name: "API server down handling"
+    category: negative
+    priority: high
+    platforms: [androidtv]
+    steps:
+      - name: "Stop API server"
+        action: "Shut down catalog-api while app is running"
+        expected: "API unreachable"
+      - name: "Navigate to a screen"
+        action: "Try loading home screen or search"
+        expected: "Error state displayed gracefully, no crash"
+    tags: [edge-case, server-down, error, resilience]
+    estimated_duration: "15s"
+    expected_result: "App handles API server down gracefully with error states"
+
+  - id: FQA-ATV-240
+    name: "Play unavailable media file"
+    category: negative
+    priority: high
+    platforms: [androidtv]
+    steps:
+      - name: "Open player for missing media"
+        action: "Navigate to player for a media item whose file is no longer available"
+        expected: "Stream resolution fails"
+      - name: "Verify error"
+        action: "Check player screen"
+        expected: "Stream unavailable (404) or No stream URL in response error with Retry and Back buttons"
+    tags: [edge-case, play, unavailable, error]
+    estimated_duration: "15s"
+    expected_result: "Playing unavailable media shows stream error with retry option"
+
+  - id: FQA-ATV-241
+    name: "Very long title display on detail screen"
+    category: edge-case
+    priority: medium
+    platforms: [androidtv]
+    steps:
+      - name: "Open detail for item with very long title"
+        action: "Navigate to media with title exceeding 100 characters"
+        expected: "Detail screen loaded"
+      - name: "Verify title handling"
+        action: "Check title text"
+        expected: "Title truncated with ellipsis (maxLines=2, overflow=TextOverflow.Ellipsis)"
+    tags: [edge-case, long-title, ellipsis, overflow]
+    estimated_duration: "10s"
+    expected_result: "Very long titles are truncated with ellipsis on detail screen"
+
+  - id: FQA-ATV-242
+    name: "Special characters in metadata"
+    category: edge-case
+    priority: medium
+    platforms: [androidtv]
+    steps:
+      - name: "Open detail with special chars"
+        action: "Navigate to media with special characters in title/description (e.g., Unicode, CJK, emojis)"
+        expected: "Detail screen loaded"
+      - name: "Verify rendering"
+        action: "Check title and description display"
+        expected: "Special characters render correctly without garbled text"
+    tags: [edge-case, special-characters, unicode, rendering]
+    estimated_duration: "10s"
+    expected_result: "Special characters in metadata render correctly"
+
+  - id: FQA-ATV-243
+    name: "Re-launch app from background"
+    category: functional
+    priority: high
+    platforms: [androidtv]
+    steps:
+      - name: "Login and navigate"
+        action: "Login and browse to a detail screen"
+        expected: "Detail screen visible"
+      - name: "Press HOME"
+        action: "Press HOME button to background the app"
+        expected: "App goes to background"
+      - name: "Re-launch"
+        action: "Open Catalogizer from launcher again"
+        expected: "App resumes from where it was (detail screen), auth state preserved"
+    tags: [edge-case, background, resume, lifecycle]
+    estimated_duration: "15s"
+    expected_result: "App resumes correctly from background with preserved state"
+
+  - id: FQA-ATV-244
+    name: "Deep link with invalid media ID"
+    category: negative
+    priority: medium
+    platforms: [androidtv]
+    steps:
+      - name: "Trigger deep link with bad ID"
+        action: "Open catalogizer://media/abc (non-numeric ID)"
+        expected: "DeepLinkParser returns null mediaId (toLongOrNull fails)"
+      - name: "Verify handling"
+        action: "Check behavior"
+        expected: "Invalid deep link logged, MainActivity launched normally"
+    tags: [edge-case, deep-link, invalid-id, negative]
+    estimated_duration: "10s"
+    expected_result: "Non-numeric media ID in deep link is handled gracefully"
+
+  - id: FQA-ATV-245
+    name: "Deep link with non-existent media ID"
+    category: negative
+    priority: medium
+    platforms: [androidtv]
+    steps:
+      - name: "Deep link to non-existent ID"
+        action: "Open catalogizer://media/999999?type=movie"
+        expected: "Deep link processed, detail screen attempts load"
+      - name: "Verify error"
+        action: "Check detail screen"
+        expected: "Media not found error state with Back to Library option"
+    tags: [edge-case, deep-link, non-existent, error]
+    estimated_duration: "15s"
+    expected_result: "Non-existent media ID shows error state on detail screen"
+
+  - id: FQA-ATV-246
+    name: "Multiple rapid DPAD_CENTER presses on login"
+    category: stress
+    priority: medium
+    platforms: [androidtv]
+    steps:
+      - name: "Fill login form"
+        action: "Enter admin/admin123"
+        expected: "Form filled"
+      - name: "Rapid press Sign In"
+        action: "Press DPAD_CENTER rapidly on Sign In button 5 times"
+        expected: "First press sets isLoading=true, subsequent presses are no-op (button disabled when loading)"
+    tags: [edge-case, rapid-press, login, stress]
+    estimated_duration: "10s"
+    expected_result: "Rapid presses on Sign In do not cause multiple login attempts"
+
+  - id: FQA-ATV-247
+    name: "Multiple rapid DPAD_CENTER on media card"
+    category: stress
+    priority: medium
+    platforms: [androidtv]
+    steps:
+      - name: "Focus a media card"
+        action: "DPAD to a media card on home"
+        expected: "Card focused"
+      - name: "Rapid press"
+        action: "Press DPAD_CENTER rapidly 3 times"
+        expected: "First press navigates to detail, no duplicate navigation or crash"
+    tags: [edge-case, rapid-press, navigation, stress]
+    estimated_duration: "10s"
+    expected_result: "Rapid DPAD_CENTER on media card does not cause duplicate navigation"
+
+  - id: FQA-ATV-248
+    name: "Player handles very short video"
+    category: edge-case
+    priority: low
+    platforms: [androidtv]
+    steps:
+      - name: "Play very short video"
+        action: "Start playback of a video under 5 seconds"
+        expected: "Player opens and plays"
+      - name: "Verify handling"
+        action: "Check seekbar and controls"
+        expected: "Seekbar shows correct short duration, controls work normally"
+    tags: [edge-case, short-video, player]
+    estimated_duration: "15s"
+    expected_result: "Player handles very short videos without issues"
+
+  - id: FQA-ATV-249
+    name: "Player handles very long video"
+    category: edge-case
+    priority: low
+    platforms: [androidtv]
+    steps:
+      - name: "Play very long video"
+        action: "Start playback of a multi-hour video"
+        expected: "Player opens and plays"
+      - name: "Verify time format"
+        action: "Check time labels"
+        expected: "Duration shows H:MM:SS format for hours-long content"
+    tags: [edge-case, long-video, player, time-format]
+    estimated_duration: "15s"
+    expected_result: "Player correctly shows hours format for long videos"
+
+  - id: FQA-ATV-250
+    name: "Focus navigation between home screen sections"
+    category: functional
+    priority: high
+    platforms: [androidtv]
+    steps:
+      - name: "Focus TopBar"
+        action: "DPAD_UP to TopBar area"
+        expected: "TopBar action icon focused"
+      - name: "Navigate to content"
+        action: "DPAD_DOWN to content area"
+        expected: "Focus moves from TopBar to stats header or first content rail"
+      - name: "Continue down"
+        action: "DPAD_DOWN through rails"
+        expected: "Focus traverses all visible content rails"
+    tags: [edge-case, focus, section-navigation, topbar]
+    estimated_duration: "15s"
+    expected_result: "Focus navigates smoothly between TopBar and content sections"
+
+  - id: FQA-ATV-251
+    name: "ADB auto-login via intent extras"
+    category: functional
+    priority: medium
+    platforms: [androidtv]
+    steps:
+      - name: "Launch with QA extras"
+        action: "adb shell am start -n com.catalogizer.androidtv/.ui.MainActivity --es qa_username admin --es qa_password admin123"
+        expected: "App launches"
+      - name: "Verify auto-login"
+        action: "Check that login is performed automatically"
+        expected: "After 500ms delay, validateAndLogin called with admin/admin123, navigates to home"
+    tags: [edge-case, adb, auto-login, qa-testing]
+    estimated_duration: "15s"
+    expected_result: "ADB intent extras trigger automatic login for QA testing"
+
+  - id: FQA-ATV-252
+    name: "Connection status indicator in login"
+    category: functional
+    priority: medium
+    platforms: [androidtv]
+    steps:
+      - name: "View connected state"
+        action: "With successful server connection, check trailing icon"
+        expected: "Green CheckCircle icon and Connected to server text"
+      - name: "View failed state"
+        action: "Enter invalid server URL and Connect"
+        expected: "Red Warning icon and Unable to reach server text"
+    tags: [edge-case, login, connection-status, indicator]
+    estimated_duration: "15s"
+    expected_result: "Login screen shows correct connection status indicators"
+
+  - id: FQA-ATV-253
+    name: "Focus glow animation on login fields"
+    category: functional
+    priority: low
+    platforms: [androidtv]
+    steps:
+      - name: "Focus username"
+        action: "DPAD to username field"
+        expected: "Animated ice-blue border glow (220ms animateColorAsState transition)"
+      - name: "Move focus away"
+        action: "DPAD_DOWN"
+        expected: "Glow fades out smoothly (animates to dormantBorder)"
+    tags: [edge-case, animation, focus, glow]
+    estimated_duration: "10s"
+    expected_result: "Login field focus transitions include smooth glow animation"
+
+  - id: FQA-ATV-254
+    name: "Multiple discovered servers list"
+    category: functional
+    priority: low
+    platforms: [androidtv]
+    steps:
+      - name: "Discover multiple servers"
+        action: "Press Discover when multiple Catalogizer instances are on network"
+        expected: "Multiple server buttons appear"
+      - name: "Select one"
+        action: "DPAD to a server button and press"
+        expected: "Selected server URL set, connected, list cleared"
+    tags: [edge-case, discovery, multiple-servers]
+    estimated_duration: "20s"
+    expected_result: "Multiple discovered servers are listed and selectable"
+
+  - id: FQA-ATV-255
+    name: "Speed menu closes on BACK"
+    category: functional
+    priority: medium
+    platforms: [androidtv]
+    steps:
+      - name: "Open speed menu in player"
+        action: "Open the playback speed menu"
+        expected: "Speed menu overlay visible"
+      - name: "Press BACK"
+        action: "Press BACK button"
+        expected: "Speed menu closes, player remains (showSpeedMenu=false)"
+    tags: [edge-case, player, menu, back]
+    estimated_duration: "10s"
+    expected_result: "BACK button closes player speed menu without exiting player"
+
+  - id: FQA-ATV-256
+    name: "Audio menu closes on BACK"
+    category: functional
+    priority: medium
+    platforms: [androidtv]
+    steps:
+      - name: "Open audio menu"
+        action: "Open audio track menu in player"
+        expected: "Audio menu visible"
+      - name: "Press BACK"
+        action: "Press BACK"
+        expected: "Audio menu closes, player remains"
+    tags: [edge-case, player, audio-menu, back]
+    estimated_duration: "10s"
+    expected_result: "BACK button closes player audio menu without exiting player"
+
+  - id: FQA-ATV-257
+    name: "Subtitle menu closes on BACK"
+    category: functional
+    priority: medium
+    platforms: [androidtv]
+    steps:
+      - name: "Open subtitle menu"
+        action: "Open subtitle menu in player"
+        expected: "Subtitle menu visible"
+      - name: "Press BACK"
+        action: "Press BACK"
+        expected: "Subtitle menu closes, player remains"
+    tags: [edge-case, player, subtitle-menu, back]
+    estimated_duration: "10s"
+    expected_result: "BACK button closes player subtitle menu without exiting player"
+
+  - id: FQA-ATV-258
+    name: "Concurrent search and navigation"
+    category: stress
+    priority: medium
+    platforms: [androidtv]
+    steps:
+      - name: "Start a search"
+        action: "Enter query and press Search"
+        expected: "Search loading"
+      - name: "Press BACK during loading"
+        action: "Press BACK while search is in progress"
+        expected: "Returns to home screen without crash"
+      - name: "Verify stability"
+        action: "Navigate around"
+        expected: "App remains stable, no orphaned coroutines causing issues"
+    tags: [edge-case, concurrent, search, navigation, stress]
+    estimated_duration: "15s"
+    expected_result: "Navigating away during search does not cause crashes"
+
+  - id: FQA-ATV-259
+    name: "Deep link while app is in background"
+    category: edge-case
+    priority: medium
+    platforms: [androidtv]
+    steps:
+      - name: "Background the app"
+        action: "Press HOME to put app in background"
+        expected: "App in background"
+      - name: "Trigger deep link"
+        action: "Open catalogizer://media/{id}?type=movie from TV home channel"
+        expected: "ChannelDeepLinkActivity handles intent"
+      - name: "Verify routing"
+        action: "Check which screen opens"
+        expected: "App brought to foreground with correct screen (FLAG_ACTIVITY_NEW_TASK | FLAG_ACTIVITY_CLEAR_TOP)"
+    tags: [edge-case, deep-link, background, lifecycle]
+    estimated_duration: "15s"
+    expected_result: "Deep link correctly brings backgrounded app to foreground with correct screen"
+
+  - id: FQA-ATV-260
+    name: "Settings scroll through all sections"
+    category: functional
+    priority: medium
+    platforms: [androidtv]
+    steps:
+      - name: "Open Settings"
+        action: "Navigate to Settings screen"
+        expected: "Settings displayed"
+      - name: "Scroll all sections"
+        action: "DPAD_DOWN through all TvLazyColumn items"
+        expected: "All sections accessible: Playback Settings, Subtitle Settings, Notifications, Channel Tap Behavior, Account"
+      - name: "Verify last section"
+        action: "Reach Account section with Logout button"
+        expected: "Logout button visible and focusable"
+    tags: [edge-case, settings, scroll, all-sections]
+    estimated_duration: "20s"
+    expected_result: "All settings sections are scrollable and accessible via DPAD"
