@@ -101,12 +101,26 @@ Violations of this constitution void the entire QA session's results.
 - Pipeline report must accurately reflect tests run, coverage, and issues found
 - All evidence must be archived in the session directory under `qa-results/session-*/`
 
-## MANDATORY: No Hardcoded QA Flows
+## MANDATORY: Prepared Test Plans + LLM-Driven Execution
 
-**ALL QA testing MUST be driven by LLM vision — NEVER by hardcoded scripts. This is NON-NEGOTIABLE.**
+**Test plans with steps and data MUST be prepared in advance. The LLM vision drives the EXECUTION — how to interact with the UI. This is NON-NEGOTIABLE.**
 
-- **NEVER** write fixed tap coordinates, sleep timers, or keystroke sequences. These break on different devices and produce false positives
-- The `helixqa autonomous` command handles everything: device detection, screenshot→LLM→action loop, validation, reporting
+### What MUST be prepared (test banks):
+- Test case ID, name, priority, platform
+- **What to do**: "Navigate to Movies category", "Search for 'Matrix'", "Open entity detail for a movie"
+- **What data to use**: Specific titles, usernames, search terms, boundary values
+- **What to verify**: "Movies grid displays", "Search results contain 'Matrix'", "Cover art is visible"
+- Test cases organized by priority: happy paths → standard flows → edge cases → adversarial
+
+### What the LLM decides at runtime:
+- **How to click**: Which UI element to tap/focus, exact coordinates determined by vision
+- **How to navigate**: Which DPAD directions, how many presses, which menu items
+- **How to type**: When to press DPAD_CENTER first (Android TV keyboard), when to use TAB
+- **How to verify**: Analyzing screenshot content against expected outcomes
+
+### Hard rules:
+- **NEVER** write fixed tap coordinates, sleep timers, or keystroke sequences
+- The `helixqa autonomous` command handles device detection, screenshot→LLM→action loop, validation, reporting
 - If the autonomous pipeline doesn't work, **fix the Go code** — do NOT write bash workarounds
 - The LLM vision analyzes each screenshot, decides the next action (tap, type, swipe, DPAD), and validates the result
 - On Android TV: the LLM must know that DPAD_CENTER opens the keyboard before `input text` works
