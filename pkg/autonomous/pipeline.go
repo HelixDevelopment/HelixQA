@@ -1647,6 +1647,41 @@ func (sp *SessionPipeline) Run(
 					break
 				}
 
+				// Guard: verify ADB connection is alive.
+				// Step 17 crash was caused by ADB dropping the
+				// TCP connection to a Wi-Fi device. Reconnect
+				// before attempting any ADB operation.
+				if (platform == "android" || platform == "androidtv") && device != "" {
+					pingOut, pingErr := osexec.CommandContext(
+						curiosityCtx,
+						"adb", "-s", device,
+						"shell", "echo", "ping",
+					).CombinedOutput()
+					if pingErr != nil || !strings.Contains(string(pingOut), "ping") {
+						fmt.Printf(
+							"  [curiosity %s #%d] "+
+								"ADB connection lost, reconnecting %s\n",
+							platform, i+1, device,
+						)
+						_ = osexec.CommandContext(
+							curiosityCtx,
+							"adb", "disconnect", device,
+						).Run()
+						time.Sleep(1 * time.Second)
+						_ = osexec.CommandContext(
+							curiosityCtx,
+							"adb", "connect", device,
+						).Run()
+						time.Sleep(2 * time.Second)
+						// Re-establish reverse proxy.
+						_ = osexec.CommandContext(
+							curiosityCtx,
+							"adb", "-s", device,
+							"reverse", "tcp:8080", "tcp:8080",
+						).Run()
+					}
+				}
+
 				// Guard: verify the target app is still in the
 				// foreground. If the LLM navigated away (e.g.,
 				// pressed back to the launcher), relaunch the app.
