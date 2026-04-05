@@ -88,7 +88,7 @@ func NewGoogleProvider(cfg ProviderConfig) Provider {
 		// per-call budgets (45s navigate, 120s plan).
 		client: &http.Client{
 			Transport: &http.Transport{
-				ResponseHeaderTimeout: 55 * time.Second,
+				ResponseHeaderTimeout: 90 * time.Second,
 				TLSHandshakeTimeout:   10 * time.Second,
 			},
 		},
