@@ -16,7 +16,7 @@ import (
 
 const (
 	geminiDefaultModel   = "gemini-2.5-flash"
-	geminiHTTPTimeout    = 120 * time.Second
+	geminiHTTPTimeout    = 40 * time.Second
 	geminiGenerateURLFmt = "https://generativelanguage.googleapis.com/v1beta/models/%s:generateContent?key=%s"
 )
 
