@@ -1654,8 +1654,10 @@ func (sp *SessionPipeline) Run(
 				// takes longer than 60s, cancel it and move on.
 				// This prevents Gemini API hangs from stalling
 				// the entire QA session.
+				// Per-step budget: 90s accommodates thinking models
+				// (Gemini 2.5 Flash: 10-45s LLM + 15s actions + 15s screenshot)
 				stepCtx, stepCancel := context.WithTimeout(
-					curiosityCtx, 60*time.Second,
+					curiosityCtx, 90*time.Second,
 				)
 
 				// Step 1: Take screenshot.
