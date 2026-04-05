@@ -93,8 +93,14 @@ func TestADBExecutor_Type(t *testing.T) {
 	require.NoError(t, err)
 
 	c := runner.lastCall()
-	assert.Contains(t, c.args, "text")
-	assert.Contains(t, c.args, "hello")
+	require.NotNil(t, c)
+	assert.Equal(t, "adb", c.name)
+	assert.Contains(t, c.args, "shell")
+	// The atomic command puts clear+type in a single shell
+	// script argument, so check the last arg as a string.
+	script := c.args[len(c.args)-1]
+	assert.Contains(t, script, "input text")
+	assert.Contains(t, script, "hello")
 }
 
 func TestADBExecutor_Scroll_Directions(t *testing.T) {

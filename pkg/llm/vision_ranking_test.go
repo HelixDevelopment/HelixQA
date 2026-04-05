@@ -38,23 +38,27 @@ func TestRankVisionProviders_AllNonVision(t *testing.T) {
 	assert.Empty(t, ranked)
 }
 
-// TestRankVisionProviders_HigherQualityFirst verifies that a
-// provider with a higher quality score ranks above one with a
-// lower score when both have API keys available.
+// TestRankVisionProviders_HigherQualityFirst verifies that
+// when both providers have API keys available, the scoring
+// formula (quality + reliability + cost bonus) determines
+// ranking. Google (0.93 quality, 0.0005 cost → 1.05x bonus)
+// outscores OpenAI (0.95 quality, 0.020 cost → no bonus).
 func TestRankVisionProviders_HigherQualityFirst(t *testing.T) {
-	// Set env keys so both are "available".
 	t.Setenv("OPENAI_API_KEY", "test-key")
 	t.Setenv("GEMINI_API_KEY", "test-key")
 
 	providers := []Provider{
-		&mockProvider{name: ProviderGoogle, vision: true},  // quality 0.88
-		&mockProvider{name: ProviderOpenAI, vision: true},  // quality 0.95
+		&mockProvider{name: ProviderGoogle, vision: true},
+		&mockProvider{name: ProviderOpenAI, vision: true},
 	}
 	ranked := rankVisionProviders(providers)
 	require.Len(t, ranked, 2)
-	assert.Equal(t, ProviderOpenAI, ranked[0].Name(),
-		"OpenAI (quality 0.95) should rank above Google (quality 0.88)")
-	assert.Equal(t, ProviderGoogle, ranked[1].Name())
+	// Google's cost bonus (1.05x for <$0.002/1k) pushes it
+	// above OpenAI despite slightly lower raw quality.
+	assert.Equal(t, ProviderGoogle, ranked[0].Name(),
+		"Google (quality 0.93 + cost bonus 1.05x) should "+
+			"rank above OpenAI (quality 0.95, no bonus)")
+	assert.Equal(t, ProviderOpenAI, ranked[1].Name())
 }
 
 // TestRankVisionProviders_AvailableBeatsUnavailable verifies that

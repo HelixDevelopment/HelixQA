@@ -11,7 +11,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestADBExecutor_Clear_SendsSelectAllThenDelete(
+func TestADBExecutor_Clear_AtomicShellCommand(
 	t *testing.T,
 ) {
 	runner := newMockRunner()
@@ -20,65 +20,30 @@ func TestADBExecutor_Clear_SendsSelectAllThenDelete(
 	err := exec.Clear(context.Background())
 	require.NoError(t, err)
 
-	// Should have at least 2 calls: select-all and delete.
+	// Single atomic shell call: MOVE_END + 20 DEL keycodes.
 	calls := runner.calls
-	require.GreaterOrEqual(t, len(calls), 2,
-		"Clear must send at least select-all + delete",
+	require.Equal(t, 1, len(calls),
+		"Clear must use a single atomic shell command",
 	)
 
-	// First call should be the select-all via longpress
-	// KEYCODE_A (keycode 29).
-	first := calls[0]
-	assert.Equal(t, "adb", first.name)
-	assert.Contains(t, first.args, "keyevent")
-	assert.Contains(t, first.args, "--longpress")
-	assert.Contains(t, first.args, "29")
-
-	// Last call should be KEYCODE_DEL to delete selection.
-	last := calls[len(calls)-1]
-	assert.Equal(t, "adb", last.name)
-	assert.Contains(t, last.args, "keyevent")
-	assert.Contains(t, last.args, "KEYCODE_DEL")
+	c := calls[0]
+	assert.Equal(t, "adb", c.name)
+	assert.Contains(t, c.args, "shell")
+	// The script is the last arg.
+	script := c.args[len(c.args)-1]
+	assert.Contains(t, script, "KEYCODE_MOVE_END")
+	assert.Contains(t, script, "67")
 }
 
-func TestADBExecutor_Clear_FallbackOnSelectAllFailure(
-	t *testing.T,
-) {
+func TestADBExecutor_Clear_Error(t *testing.T) {
 	runner := newMockRunner()
-	// Make the longpress call fail to trigger the fallback
-	// path (MOVE_HOME + SHIFT+MOVE_END).
-	runner.failOn["adb -s emulator-5554 shell "+
-		"input keyevent --longpress 29"] =
-		assert.AnError
-
-	exec := NewADBExecutor("emulator-5554", runner)
-
-	err := exec.Clear(context.Background())
-	require.NoError(t, err)
-
-	// Should have fallback calls: MOVE_HOME, SHIFT+MOVE_END,
-	// then KEYCODE_DEL.
-	calls := runner.calls
-	require.GreaterOrEqual(t, len(calls), 3,
-		"Fallback path must send MOVE_HOME, "+
-			"SHIFT+MOVE_END, DEL",
-	)
-
-	// Last call must still be DEL.
-	last := calls[len(calls)-1]
-	assert.Contains(t, last.args, "KEYCODE_DEL")
-}
-
-func TestADBExecutor_Clear_DeleteError(t *testing.T) {
-	runner := newMockRunner()
-	// Fail all adb calls — the delete will fail.
 	runner.failOn["adb"] = assert.AnError
 
 	exec := NewADBExecutor("emulator-5554", runner)
 
 	err := exec.Clear(context.Background())
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "adb clear delete")
+	assert.Contains(t, err.Error(), "adb clear")
 }
 
 func TestPlaywrightExecutor_Clear_Interface(t *testing.T) {
