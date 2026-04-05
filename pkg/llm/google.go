@@ -11,14 +11,17 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"strings"
 	"time"
 )
 
 const (
 	geminiDefaultModel   = "gemini-2.5-flash"
 	geminiHTTPTimeout    = 40 * time.Second
-	geminiGenerateURLFmt = "https://generativelanguage.googleapis.com/v1beta/models/%s:generateContent?key=%s"
+	// geminiGenerateURLFmt no longer includes the API key
+	// in the URL. The key is sent via the x-goog-api-key
+	// header to prevent leakage in error messages, logs,
+	// and HTTP access logs.
+	geminiGenerateURLFmt = "https://generativelanguage.googleapis.com/v1beta/models/%s:generateContent"
 )
 
 // googleProvider implements Provider for the Google Gemini API.
@@ -176,7 +179,7 @@ func (p *googleProvider) doRequest(
 	ctx context.Context,
 	req geminiRequest,
 ) (*Response, error) {
-	url := fmt.Sprintf(geminiGenerateURLFmt, p.model, p.apiKey)
+	url := fmt.Sprintf(geminiGenerateURLFmt, p.model)
 	var lastErr error
 	for attempt := 0; attempt <= geminiMaxRetries; attempt++ {
 		if attempt > 0 {
@@ -216,24 +219,6 @@ func isRateLimitError(err error) bool {
 		bytes.Contains([]byte(s), []byte("quota"))
 }
 
-// redactKeyFromError strips API key values from error
-// messages to prevent accidental secret leakage in logs.
-// The key parameter is the raw API key to scrub.
-func redactKeyFromError(err error, key string) error {
-	if err == nil || key == "" {
-		return err
-	}
-	msg := err.Error()
-	redacted := strings.ReplaceAll(msg, key, "REDACTED")
-	// Also redact URL-encoded form (unlikely but safe).
-	redacted = strings.ReplaceAll(
-		redacted,
-		"key="+key,
-		"key=REDACTED",
-	)
-	return fmt.Errorf("%s", redacted)
-}
-
 // doRequestURL is the internal implementation that posts the
 // request to the given URL. It is split from doRequest so that
 // tests can supply a test-server URL without overriding the
@@ -255,19 +240,16 @@ func (p *googleProvider) doRequestURL(
 		bytes.NewReader(body),
 	)
 	if err != nil {
-		return nil, fmt.Errorf(
-			"google: create request: %w",
-			redactKeyFromError(err, p.apiKey),
-		)
+		return nil, fmt.Errorf("google: create request: %w", err)
 	}
 	httpReq.Header.Set("Content-Type", "application/json")
+	// API key via header — never in the URL — to prevent
+	// leakage in error messages, logs, and access logs.
+	httpReq.Header.Set("x-goog-api-key", p.apiKey)
 
 	httpResp, err := p.client.Do(httpReq)
 	if err != nil {
-		return nil, fmt.Errorf(
-			"google: send request: %w",
-			redactKeyFromError(err, p.apiKey),
-		)
+		return nil, fmt.Errorf("google: send request: %w", err)
 	}
 	defer httpResp.Body.Close()
 

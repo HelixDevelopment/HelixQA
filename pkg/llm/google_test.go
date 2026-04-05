@@ -59,11 +59,13 @@ func TestGoogleProvider_Chat(t *testing.T) {
 				r.URL.Path,
 				"generateContent",
 			))
-			// Verify API key in query params.
+			// Verify API key in header (not URL).
 			assert.Equal(t,
 				"test-api-key",
-				r.URL.Query().Get("key"),
+				r.Header.Get("x-goog-api-key"),
 			)
+			assert.Empty(t, r.URL.Query().Get("key"),
+				"key must NOT be in URL query params")
 			assert.Equal(t,
 				"application/json",
 				r.Header.Get("Content-Type"),
@@ -148,7 +150,7 @@ func TestGoogleProvider_Chat(t *testing.T) {
 	resp, err := testProvider.doRequestURL(
 		context.Background(),
 		req,
-		srv.URL+"/v1beta/models/gemini-test:generateContent?key=test-api-key",
+		srv.URL+"/v1beta/models/gemini-test:generateContent",
 	)
 	require.NoError(t, err)
 	require.NotNil(t, resp)
@@ -185,7 +187,7 @@ func TestGoogleProvider_Chat_Error(t *testing.T) {
 	resp, err := p.doRequestURL(
 		context.Background(),
 		req,
-		srv.URL+"/v1beta/models/gemini-test:generateContent?key=test-key",
+		srv.URL+"/v1beta/models/gemini-test:generateContent",
 	)
 	assert.Error(t, err)
 	assert.Nil(t, resp)
@@ -271,7 +273,7 @@ func TestGoogleProvider_Vision(t *testing.T) {
 	resp, err := p.doRequestURL(
 		context.Background(),
 		req,
-		srv.URL+"/v1beta/models/gemini-test:generateContent?key=test-key",
+		srv.URL+"/v1beta/models/gemini-test:generateContent",
 	)
 	require.NoError(t, err)
 	require.NotNil(t, resp)
@@ -312,7 +314,7 @@ func TestGoogleProvider_EmptyResponse(t *testing.T) {
 	resp, err := p.doRequestURL(
 		context.Background(),
 		req,
-		srv.URL+"/v1beta/models/gemini-test:generateContent?key=test-key",
+		srv.URL+"/v1beta/models/gemini-test:generateContent",
 	)
 	require.NoError(t, err)
 	require.NotNil(t, resp)
@@ -348,13 +350,12 @@ func TestRedactKeyFromError_NoMatch(t *testing.T) {
 		"connection refused", redacted.Error(),
 	)
 }
-
 func TestGoogleProvider_ErrorDoesNotLeakKey(t *testing.T) {
-	// Simulate a connection error to a non-existent host.
-	// The error message from http.Client.Do includes the
-	// full URL — verify the key is redacted.
+	// Simulate a connection error. The error message from
+	// http.Client.Do includes the full URL. With the key
+	// now in the header (not the URL), it must never appear.
 	p := &googleProvider{
-		apiKey: "AIzaSyTestKeyThatMustBeRedacted",
+		apiKey: "AIzaSyTestKeyThatMustNotLeak",
 		model:  "gemini-test",
 		client: &http.Client{},
 	}
@@ -367,15 +368,13 @@ func TestGoogleProvider_ErrorDoesNotLeakKey(t *testing.T) {
 			{Parts: []geminiPart{{Text: "test"}}},
 		},
 	}
-	url := fmt.Sprintf(
-		geminiGenerateURLFmt,
-		p.model, p.apiKey,
-	)
+	url := fmt.Sprintf(geminiGenerateURLFmt, p.model)
 	_, err := p.doRequestURL(ctx, req, url)
 	require.Error(t, err)
 	assert.NotContains(t, err.Error(),
-		"AIzaSyTestKeyThatMustBeRedacted",
+		"AIzaSyTestKeyThatMustNotLeak",
 		"API key MUST NOT appear in error messages",
 	)
-	assert.Contains(t, err.Error(), "REDACTED")
+	assert.NotContains(t, err.Error(), "key=",
+		"No key= parameter should exist in URL")
 }
