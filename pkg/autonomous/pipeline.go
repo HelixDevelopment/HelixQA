@@ -2012,6 +2012,13 @@ func (sp *SessionPipeline) Run(
 					}
 				}
 
+				// ── Non-blocking recording: training + replay ──
+				// These write to SQLite which can lock. Run with
+				// a 5s deadline to prevent blocking the step.
+				recDone := make(chan struct{}, 1)
+				go func() {
+					defer func() { recDone <- struct{}{} }()
+
 				// ── TrainingCollector: record pair ───────
 				if sp.trainingCollector != nil &&
 					len(actions) > 0 {
@@ -2068,6 +2075,14 @@ func (sp *SessionPipeline) Run(
 							Actions:  recActions,
 						},
 					)
+				}
+
+				}() // end goroutine
+				// Wait up to 5s for recording, then proceed regardless
+				select {
+				case <-recDone:
+				case <-time.After(5 * time.Second):
+					fmt.Printf("  [curiosity %s #%d] recording timeout (5s)\n", platform, i+1)
 				}
 
 				stepCancel() // Release per-step watchdog

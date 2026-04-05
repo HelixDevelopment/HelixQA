@@ -39,8 +39,8 @@ type visionModelScore struct {
 // When LLMsVerifier adds or updates models, this table should
 // be updated to match. Both registries MUST stay in sync.
 var visionModelRegistry = []visionModelScore{
-	// Tier 0: Premium multi-modal vision
-	{Provider: ProviderGoogle, QualityScore: 0.92, ReliabilityScore: 0.98, CostPer1kTokens: 0.0005, AvgLatencyMs: 800},
+	// Tier 0: Premium multi-modal vision (validated in 50+ QA sessions)
+	{Provider: ProviderGoogle, QualityScore: 0.93, ReliabilityScore: 0.95, CostPer1kTokens: 0.0005, AvgLatencyMs: 2000},
 	{Provider: ProviderOpenAI, QualityScore: 0.95, ReliabilityScore: 0.98, CostPer1kTokens: 0.020, AvgLatencyMs: 1200},
 	{Provider: ProviderAnthropic, QualityScore: 0.94, ReliabilityScore: 0.97, CostPer1kTokens: 0.018, AvgLatencyMs: 1500},
 
