@@ -80,7 +80,11 @@ func NewGoogleProvider(cfg ProviderConfig) Provider {
 	return &googleProvider{
 		apiKey: cfg.APIKey,
 		model:  model,
-		client: &http.Client{Timeout: geminiHTTPTimeout},
+		// No http.Client.Timeout — rely on context.WithTimeout
+		// from callers (45s for navigate, 120s for plan). A global
+		// timeout would cap ALL calls equally, but different phases
+		// need different budgets.
+		client: &http.Client{},
 	}
 }
 
