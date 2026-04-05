@@ -3081,7 +3081,7 @@ type llmAction struct {
 // Parent timeout for a single LLM navigation call. Set to 90s to
 // allow the adaptive provider to try multiple providers (each capped
 // at 15-20s internally). Most successful calls complete in 2-10s.
-const llmNavigateTimeout = 90 * time.Second
+const llmNavigateTimeout = 45 * time.Second
 
 // llmNavigate sends a (pre-resized) screenshot to the LLM
 // vision endpoint and parses the response into a list of
