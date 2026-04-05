@@ -1650,10 +1650,18 @@ func (sp *SessionPipeline) Run(
 					}
 				}
 
+				// Per-step watchdog: if any single curiosity step
+				// takes longer than 60s, cancel it and move on.
+				// This prevents Gemini API hangs from stalling
+				// the entire QA session.
+				stepCtx, stepCancel := context.WithTimeout(
+					curiosityCtx, 60*time.Second,
+				)
+
 				// Step 1: Take screenshot.
 				stepStart := time.Now()
 				screenshot, err :=
-					executor.Screenshot(curiosityCtx)
+					executor.Screenshot(stepCtx)
 				if err != nil || len(screenshot) == 0 {
 					fmt.Printf(
 						"  [curiosity %s #%d] "+
@@ -1662,7 +1670,7 @@ func (sp *SessionPipeline) Run(
 					)
 					// Fall back to blind navigation.
 					_ = executor.KeyPress(
-						curiosityCtx,
+						stepCtx,
 						"KEYCODE_DPAD_DOWN",
 					)
 					time.Sleep(1 * time.Second)
@@ -1729,7 +1737,7 @@ func (sp *SessionPipeline) Run(
 						)
 						for _, a := range seq.Actions {
 							_ = executeAction(
-								curiosityCtx,
+								stepCtx,
 								executor,
 								llmAction{
 									Type:  a.Type,
@@ -1755,7 +1763,7 @@ func (sp *SessionPipeline) Run(
 					sp.dualScreenCapturer != nil {
 					capture, capErr :=
 						sp.dualScreenCapturer.CaptureDualScreen(
-							curiosityCtx, device,
+							stepCtx, device,
 						)
 					if capErr == nil &&
 						capture != nil &&
@@ -1810,7 +1818,7 @@ func (sp *SessionPipeline) Run(
 				}
 				visionStart := time.Now()
 				actions := sp.llmNavigate(
-					curiosityCtx,
+					stepCtx,
 					resized,
 					platform,
 					i+1,
@@ -1849,7 +1857,7 @@ func (sp *SessionPipeline) Run(
 								},
 							)
 							deployer.StartInstance(
-								curiosityCtx, slot.Port,
+								stepCtx, slot.Port,
 							)
 							time.Sleep(10 * time.Second)
 						}
@@ -1875,7 +1883,7 @@ func (sp *SessionPipeline) Run(
 				if len(actions) == 0 {
 					retried := false
 					for retryN := 1; retryN <= 3; retryN++ {
-						if curiosityCtx.Err() != nil {
+						if stepCtx.Err() != nil {
 							break
 						}
 						fmt.Printf(
@@ -1890,13 +1898,13 @@ func (sp *SessionPipeline) Run(
 						)
 						retryShot, _ :=
 							executor.Screenshot(
-								curiosityCtx,
+								stepCtx,
 							)
 						if len(retryShot) == 0 {
 							continue
 						}
 						actions = sp.llmNavigate(
-							curiosityCtx,
+							stepCtx,
 							resizeScreenshot(retryShot),
 							platform,
 							i+1,
@@ -1922,11 +1930,11 @@ func (sp *SessionPipeline) Run(
 
 				var stepActions []string
 				for _, action := range actions {
-					if curiosityCtx.Err() != nil {
+					if stepCtx.Err() != nil {
 						break
 					}
 					execErr := executeAction(
-						curiosityCtx,
+						stepCtx,
 						executor,
 						action,
 					)
@@ -1985,7 +1993,7 @@ func (sp *SessionPipeline) Run(
 				if len(stepActions) > 0 {
 					time.Sleep(500 * time.Millisecond)
 					postShot, postErr := executor.Screenshot(
-						curiosityCtx,
+						stepCtx,
 					)
 					if postErr == nil && len(postShot) > 0 {
 						postFname := filepath.Join(
@@ -2062,14 +2070,25 @@ func (sp *SessionPipeline) Run(
 					)
 				}
 
-				fmt.Printf(
-					"  [curiosity %s #%d] "+
-						"step done in %v\n",
-					platform, i+1,
-					time.Since(stepStart).Round(
-						time.Millisecond,
-					),
-				)
+				stepCancel() // Release per-step watchdog
+
+				// Check if step was killed by watchdog
+				if stepCtx.Err() == context.DeadlineExceeded {
+					fmt.Printf(
+						"  [curiosity %s #%d] "+
+							"WATCHDOG: step killed after 60s\n",
+						platform, i+1,
+					)
+				} else {
+					fmt.Printf(
+						"  [curiosity %s #%d] "+
+							"step done in %v\n",
+						platform, i+1,
+						time.Since(stepStart).Round(
+							time.Millisecond,
+						),
+					)
+				}
 			}
 		}
 		fmt.Printf(
