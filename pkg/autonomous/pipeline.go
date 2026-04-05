@@ -18,6 +18,7 @@ import (
 
 	"digital.vasic.helixqa/pkg/analysis"
 	"digital.vasic.helixqa/pkg/config"
+	"digital.vasic.helixqa/pkg/controller"
 	"digital.vasic.helixqa/pkg/detector"
 	"digital.vasic.helixqa/pkg/learning"
 	"digital.vasic.helixqa/pkg/llm"
@@ -265,6 +266,11 @@ type SessionPipeline struct {
 	// devices at the same test step to detect cross-device
 	// layout inconsistencies.
 	visualRegression *regression.VisualRegression
+
+	// processController monitors step liveness and kills
+	// stuck steps. When non-nil, the curiosity loop
+	// registers steps and sends heartbeats.
+	processController *controller.Controller
 }
 
 // NewSessionPipeline creates a SessionPipeline with the
@@ -330,6 +336,17 @@ func (sp *SessionPipeline) WithPhaseSelector(
 	return sp
 }
 
+// WithController attaches a QA Process Controller that
+// monitors step liveness during the curiosity phase and
+// kills stuck steps. The controller runs as a background
+// goroutine and is stopped when the pipeline finishes.
+func (sp *SessionPipeline) WithController(
+	ctrl *controller.Controller,
+) *SessionPipeline {
+	sp.processController = ctrl
+	return sp
+}
+
 // CurrentCost returns the current cost summary for the active
 // session. This can be called while the pipeline is running
 // to get a real-time view of accumulated costs.
@@ -373,23 +390,32 @@ func (sp *SessionPipeline) setPhase(phase string) {
 }
 
 // selectProviderForPhase consults the PhaseModelSelector
-// (if configured) to pick the best provider for the given
-// phase. Falls back to getChatProvider or
-// getVisionProvider depending on the phase's strategy, and
-// ultimately to the shared provider.
+// (if configured) to build a phase-aware AdaptiveProvider
+// with all available providers ranked by score. This gives
+// automatic fallback: if the primary provider fails, the
+// next best is tried immediately — no single point of
+// failure.
+//
+// Falls back to getChatProvider or getVisionProvider
+// depending on the phase's strategy when no selector is
+// configured.
 func (sp *SessionPipeline) selectProviderForPhase(
 	phase string,
 ) llm.Provider {
 	if sp.phaseSelector != nil {
-		if selected := sp.phaseSelector.SelectForPhase(
+		if adaptive := sp.phaseSelector.SelectAdaptiveForPhase(
 			phase,
-		); selected != nil {
+		); adaptive != nil {
+			// Attach cost tracker for spend visibility.
+			if sp.costTracker != nil {
+				adaptive.SetCostTracker(sp.costTracker)
+			}
 			fmt.Printf(
-				"[pipeline] Phase %s: using %s "+
-					"(score-selected)\n",
-				phase, selected.Name(),
+				"[pipeline] Phase %s: adaptive fallback "+
+					"with %d providers\n",
+				phase, len(adaptive.Providers()),
 			)
-			return selected
+			return adaptive
 		}
 	}
 	// Fallback: use the dedicated provider for the
@@ -1458,6 +1484,14 @@ func (sp *SessionPipeline) Run(
 		)
 		curiosityCtx, curiosityCancel :=
 			context.WithTimeout(ctx, curiosityBudget)
+
+		// Start the process controller watchdog for the
+		// curiosity phase. It monitors step heartbeats
+		// and kills stuck steps independently of the
+		// per-step context timeout.
+		if sp.processController != nil {
+			sp.processController.Start(curiosityCtx)
+		}
 		defer curiosityCancel()
 
 		preCuriosityCount := len(allScreenshots)
@@ -1660,6 +1694,15 @@ func (sp *SessionPipeline) Run(
 					curiosityCtx, 90*time.Second,
 				)
 
+				// Register step with process controller.
+				if sp.processController != nil {
+					sp.processController.RegisterStep(
+						"curiosity", platform, i+1,
+						fmt.Sprintf("curiosity step %d", i+1),
+						stepCancel,
+					)
+				}
+
 				// Step 1: Take screenshot.
 				stepStart := time.Now()
 				screenshot, err :=
@@ -1676,6 +1719,12 @@ func (sp *SessionPipeline) Run(
 						"KEYCODE_DPAD_DOWN",
 					)
 					time.Sleep(1 * time.Second)
+					if sp.processController != nil {
+						sp.processController.CompleteStep(
+							"curiosity", platform, i+1,
+						)
+					}
+					stepCancel()
 					continue
 				}
 
@@ -1874,6 +1923,14 @@ func (sp *SessionPipeline) Run(
 						nil,
 					)
 					slot.Unlock()
+				}
+
+				// Heartbeat after vision call.
+				if sp.processController != nil &&
+					len(actions) > 0 {
+					sp.processController.Heartbeat(
+						"curiosity", platform, i+1,
+					)
 				}
 
 				// Step 3: Execute LLM-suggested actions.
@@ -2087,7 +2144,28 @@ func (sp *SessionPipeline) Run(
 					fmt.Printf("  [curiosity %s #%d] recording timeout (5s)\n", platform, i+1)
 				}
 
+				// Complete step in process controller.
+				if sp.processController != nil {
+					sp.processController.CompleteStep(
+						"curiosity", platform, i+1,
+					)
+				}
+
 				stepCancel() // Release per-step watchdog
+
+				// Check if controller recommends aborting.
+				if sp.processController != nil &&
+					sp.processController.ShouldAbortPhase(
+						"curiosity",
+					) {
+					fmt.Printf(
+						"  [controller] Aborting "+
+							"curiosity phase on %s: "+
+							"too many killed steps\n",
+						platform,
+					)
+					break
+				}
 
 				// Check if step was killed by watchdog
 				if stepCtx.Err() == context.DeadlineExceeded {
@@ -2116,6 +2194,14 @@ func (sp *SessionPipeline) Run(
 				time.Millisecond,
 			),
 		)
+
+		// ── Process Controller summary ──────────────────
+		if sp.processController != nil {
+			sp.processController.Stop()
+			fmt.Printf("  [%s]\n",
+				sp.processController.Summary(),
+			)
+		}
 
 		// ── ScreenDiffer stats ──────────────────────────
 		if sp.screenDiffer != nil {
@@ -3042,7 +3128,9 @@ If you see a play/open button, PRESS IT to test that feature.
 If you see navigation elements you haven't visited, GO THERE.
 For search fields: type SHORT, REAL content titles that you can SEE on screen or that were mentioned in the knowledge base context above. Look at the current screenshot — pick a title visible in a category row or detail screen. Keep search queries to 1-2 words MAX (e.g., just the first word of a movie title you see). NEVER type long strings, random characters, usernames, passwords, or "test". The 'type' action will auto-clear the field before typing.
 
-MANDATORY: Complete ALL happy paths before testing any negative scenarios. Do NOT test error cases, invalid inputs, or edge cases until you have successfully: logged in, browsed all content sections, opened at least 3 detail pages, attempted media playback, and tested search with valid terms.
+MANDATORY: Complete ALL happy paths before testing any negative scenarios. Do NOT test error cases, invalid inputs, or edge cases until you have successfully: logged in, browsed all content sections, opened at least 3 detail pages, PLAYED media content (video or audio — press play and verify progress), and tested search with valid terms.
+
+CRITICAL PLAYBACK VERIFICATION: When you see a Play button on a detail page, you MUST press it. After the player opens, wait 3 seconds and take note of whether the progress bar has moved (non-zero currentTime). If it hasn't, that is a BUG. Playback must actually start, not just open a player screen.
 
 RESPONSE: Return ONLY a JSON array of 1-5 actions. No other text.
 Format: [{"type":"...", "value":"...", "reason":"..."}]
@@ -3094,8 +3182,11 @@ CRITICAL RULES:
 
 TESTING PRIORITY:
 1. HAPPY PATHS FIRST — login, explore dashboard, open detail pages, interact with features
-2. STANDARD FLOWS — search with relevant terms, browse all sections, test navigation
-3. EDGE CASES — empty states, back navigation, error handling
+2. PLAY MEDIA — click play buttons on detail pages, verify video/audio plays (progress bar moves)
+3. STANDARD FLOWS — search with relevant terms, browse all sections, test navigation
+4. EDGE CASES — empty states, back navigation, error handling
+
+PLAYBACK VERIFICATION: When you see a Play button, CLICK IT. After the player opens, wait 3 seconds. The progress bar must show non-zero time. If it doesn't, that is a BUG.
 
 RESPONSE: Return ONLY a JSON array of 1-5 actions. No other text.
 Format: [{"type":"...", "value":"...", "reason":"..."}]

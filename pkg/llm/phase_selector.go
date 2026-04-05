@@ -3,7 +3,10 @@
 
 package llm
 
-import "fmt"
+import (
+	"fmt"
+	"sort"
+)
 
 // PhaseStrategy describes the capability requirements for
 // a pipeline phase. The selector uses these to score
@@ -105,36 +108,78 @@ func (s *PhaseModelSelector) SetStrategy(
 func (s *PhaseModelSelector) SelectForPhase(
 	phase string,
 ) Provider {
+	ranked := s.SelectRankedForPhase(phase)
+	if len(ranked) == 0 {
+		return nil
+	}
+	return ranked[0]
+}
+
+// SelectRankedForPhase returns all providers sorted by their
+// score for the given pipeline phase (highest first). This
+// enables callers to build fallback chains — if the primary
+// provider fails, the next one in the list is the best
+// alternative. Returns nil if no providers are available.
+func (s *PhaseModelSelector) SelectRankedForPhase(
+	phase string,
+) []Provider {
 	if len(s.allProviders) == 0 {
 		return nil
 	}
 
 	strat, ok := s.strategies[phase]
 	if !ok {
-		// Unknown phase — return the highest base-scored
-		// provider as a reasonable default.
 		strat = PhaseStrategy{Name: "default"}
 	}
 
-	var best Provider
-	var bestScore float64
-
+	scored := make([]scoredProvider, 0, len(s.allProviders))
 	for _, p := range s.allProviders {
-		score := s.scoreProvider(p, strat)
-		if score > bestScore {
-			bestScore = score
-			best = p
-		}
+		scored = append(scored, scoredProvider{
+			provider: p,
+			score:    s.scoreProvider(p, strat),
+		})
 	}
 
-	if best != nil {
+	sort.SliceStable(scored, func(i, j int) bool {
+		return scored[i].score > scored[j].score
+	})
+
+	result := make([]Provider, len(scored))
+	for i, sp := range scored {
+		result[i] = sp.provider
+	}
+
+	if len(result) > 0 {
+		var names []string
+		for _, sp := range scored {
+			names = append(names,
+				fmt.Sprintf("%s(%.3f)", sp.provider.Name(), sp.score),
+			)
+		}
 		fmt.Printf(
-			"  [phase-selector] %s -> %s (score=%.3f)\n",
-			phase, best.Name(), bestScore,
+			"  [phase-selector] %s -> %v\n",
+			phase, names,
 		)
 	}
 
-	return best
+	return result
+}
+
+// SelectAdaptiveForPhase returns an AdaptiveProvider wrapping
+// all available providers ordered by their phase-specific
+// scores. This gives automatic fallback: if the primary
+// provider fails, the next best is tried immediately, with no
+// single point of failure. Returns nil if no providers exist.
+func (s *PhaseModelSelector) SelectAdaptiveForPhase(
+	phase string,
+) *AdaptiveProvider {
+	ranked := s.SelectRankedForPhase(phase)
+	if len(ranked) == 0 {
+		return nil
+	}
+	ap := NewAdaptiveProvider(ranked...)
+	ap.SetPhase(phase)
+	return ap
 }
 
 // scoreProvider computes a composite score for a provider

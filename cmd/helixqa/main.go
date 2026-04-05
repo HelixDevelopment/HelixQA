@@ -32,6 +32,8 @@ import (
 
 	"digital.vasic.helixqa/pkg/autonomous"
 	"digital.vasic.helixqa/pkg/config"
+	"digital.vasic.helixqa/pkg/controller"
+	qainfra "digital.vasic.helixqa/pkg/infra"
 	"digital.vasic.helixqa/pkg/llm"
 	"digital.vasic.helixqa/pkg/memory"
 	"digital.vasic.helixqa/pkg/orchestrator"
@@ -674,6 +676,38 @@ func cmdAutonomous(args []string) {
 			"Phase selector:   %d providers\n",
 			len(allProviders),
 		)
+	}
+
+	// Attach QA Process Controller watchdog. Monitors
+	// curiosity steps and kills stuck ones that exceed
+	// the stale threshold with no heartbeat.
+	ctrl := controller.New(controller.DefaultConfig())
+	pipeline.WithController(ctrl)
+	fmt.Println("Process ctrl:     enabled (90s stale threshold)")
+
+	// ── QA Infrastructure boot ──────────────────────────────────
+	// When HELIX_INFRA_HOST is set, use the Containers module
+	// to verify that backend services (PostgreSQL, Redis,
+	// catalog-api) are healthy before starting the pipeline.
+	if infraHost := os.Getenv("HELIX_INFRA_HOST"); infraHost != "" {
+		fmt.Printf("Infra host:       %s\n", infraHost)
+		infraCfg := qainfra.DefaultQAInfraConfig(infraHost)
+		infraMgr, infraErr := qainfra.NewQAInfraManager(infraCfg)
+		if infraErr != nil {
+			fmt.Fprintf(os.Stderr,
+				"warning: infra manager: %v\n", infraErr)
+		} else {
+			infraCtx, infraCancel := context.WithTimeout(
+				context.Background(), 30*time.Second,
+			)
+			_, infraBootErr := infraMgr.Boot(infraCtx)
+			infraCancel()
+			if infraBootErr != nil {
+				fmt.Fprintf(os.Stderr,
+					"warning: infra boot: %v\n",
+					infraBootErr)
+			}
+		}
 	}
 
 	fmt.Println()

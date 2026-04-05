@@ -344,6 +344,108 @@ func TestPhaseModelSelector_HighQualityBoostedForJSON(
 		"High-quality provider should get JSON bonus")
 }
 
+// TestPhaseModelSelector_SelectRankedForPhase returns
+// all providers sorted by score.
+func TestPhaseModelSelector_SelectRankedForPhase(
+	t *testing.T,
+) {
+	t.Setenv("GEMINI_API_KEY", "k")
+	t.Setenv("OPENAI_API_KEY", "k")
+
+	providers := []Provider{
+		&mockProvider{name: "text-only", vision: false},
+		&mockProvider{name: ProviderGoogle, vision: true},
+		&mockProvider{name: ProviderOpenAI, vision: true},
+	}
+	sel := NewPhaseModelSelector(providers)
+	ranked := sel.SelectRankedForPhase("execute")
+
+	require.Len(t, ranked, 3,
+		"All providers should be returned")
+	// Vision providers should rank above text-only
+	// for execute phase.
+	assert.True(t, ranked[0].SupportsVision(),
+		"Best provider should have vision")
+	assert.True(t, ranked[1].SupportsVision(),
+		"Second provider should have vision")
+	assert.Equal(t, "text-only", ranked[2].Name(),
+		"Text-only should rank last for vision phase")
+}
+
+// TestPhaseModelSelector_SelectRankedForPhase_Empty
+// returns nil.
+func TestPhaseModelSelector_SelectRankedForPhase_Empty(
+	t *testing.T,
+) {
+	sel := NewPhaseModelSelector(nil)
+	ranked := sel.SelectRankedForPhase("execute")
+	assert.Nil(t, ranked)
+}
+
+// TestPhaseModelSelector_SelectAdaptiveForPhase returns
+// an AdaptiveProvider wrapping ranked providers.
+func TestPhaseModelSelector_SelectAdaptiveForPhase(
+	t *testing.T,
+) {
+	t.Setenv("GEMINI_API_KEY", "k")
+	t.Setenv("OPENAI_API_KEY", "k")
+
+	providers := []Provider{
+		&mockProvider{name: ProviderGoogle, vision: true},
+		&mockProvider{name: ProviderOpenAI, vision: true},
+	}
+	sel := NewPhaseModelSelector(providers)
+	adaptive := sel.SelectAdaptiveForPhase("execute")
+
+	require.NotNil(t, adaptive)
+	assert.Equal(t, "adaptive", adaptive.Name())
+	assert.Len(t, adaptive.Providers(), 2)
+	assert.True(t, adaptive.SupportsVision(),
+		"Adaptive should report vision support")
+}
+
+// TestPhaseModelSelector_SelectAdaptiveForPhase_Empty
+// returns nil when no providers.
+func TestPhaseModelSelector_SelectAdaptiveForPhase_Empty(
+	t *testing.T,
+) {
+	sel := NewPhaseModelSelector(nil)
+	adaptive := sel.SelectAdaptiveForPhase("plan")
+	assert.Nil(t, adaptive)
+}
+
+// TestPhaseModelSelector_SelectForPhase_Consistent
+// ensures SelectForPhase returns the same provider as
+// the first element of SelectRankedForPhase.
+func TestPhaseModelSelector_SelectForPhase_Consistent(
+	t *testing.T,
+) {
+	t.Setenv("GEMINI_API_KEY", "k")
+	t.Setenv("OPENAI_API_KEY", "k")
+	t.Setenv("ANTHROPIC_API_KEY", "k")
+
+	providers := []Provider{
+		&mockProvider{name: ProviderGoogle, vision: true},
+		&mockProvider{name: ProviderOpenAI, vision: true},
+		&mockProvider{
+			name: ProviderAnthropic, vision: true,
+		},
+	}
+	sel := NewPhaseModelSelector(providers)
+
+	for _, phase := range []string{
+		"learn", "plan", "execute", "curiosity", "analyze",
+	} {
+		best := sel.SelectForPhase(phase)
+		ranked := sel.SelectRankedForPhase(phase)
+		require.NotNil(t, best, "phase %s", phase)
+		require.NotEmpty(t, ranked, "phase %s", phase)
+		assert.Equal(t, best.Name(), ranked[0].Name(),
+			"SelectForPhase and SelectRankedForPhase[0] "+
+				"must agree for phase %s", phase)
+	}
+}
+
 // TestIsGeneralPurposeLLM verifies the heuristic.
 func TestIsGeneralPurposeLLM(t *testing.T) {
 	tests := []struct {
