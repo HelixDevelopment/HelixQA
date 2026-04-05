@@ -318,3 +318,64 @@ func TestGoogleProvider_EmptyResponse(t *testing.T) {
 	require.NotNil(t, resp)
 	assert.Equal(t, "", resp.Content)
 }
+
+func TestRedactKeyFromError_Nil(t *testing.T) {
+	assert.Nil(t, redactKeyFromError(nil, "secret"))
+}
+
+func TestRedactKeyFromError_EmptyKey(t *testing.T) {
+	err := fmt.Errorf("some error")
+	assert.Equal(t, err, redactKeyFromError(err, ""))
+}
+
+func TestRedactKeyFromError_RedactsKey(t *testing.T) {
+	key := "AIzaSyBnQTvs9r3X0kNYnUv9BSy-AuGO20jKnww"
+	err := fmt.Errorf(
+		"Post https://example.com/api?key=%s: timeout",
+		key,
+	)
+	redacted := redactKeyFromError(err, key)
+	assert.NotContains(t, redacted.Error(), key,
+		"API key must not appear in redacted error")
+	assert.Contains(t, redacted.Error(), "REDACTED")
+	assert.Contains(t, redacted.Error(), "timeout")
+}
+
+func TestRedactKeyFromError_NoMatch(t *testing.T) {
+	err := fmt.Errorf("connection refused")
+	redacted := redactKeyFromError(err, "secret-key")
+	assert.Equal(t,
+		"connection refused", redacted.Error(),
+	)
+}
+
+func TestGoogleProvider_ErrorDoesNotLeakKey(t *testing.T) {
+	// Simulate a connection error to a non-existent host.
+	// The error message from http.Client.Do includes the
+	// full URL — verify the key is redacted.
+	p := &googleProvider{
+		apiKey: "AIzaSyTestKeyThatMustBeRedacted",
+		model:  "gemini-test",
+		client: &http.Client{},
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel() // Immediately cancel to force an error.
+
+	req := geminiRequest{
+		Contents: []geminiContent{
+			{Parts: []geminiPart{{Text: "test"}}},
+		},
+	}
+	url := fmt.Sprintf(
+		geminiGenerateURLFmt,
+		p.model, p.apiKey,
+	)
+	_, err := p.doRequestURL(ctx, req, url)
+	require.Error(t, err)
+	assert.NotContains(t, err.Error(),
+		"AIzaSyTestKeyThatMustBeRedacted",
+		"API key MUST NOT appear in error messages",
+	)
+	assert.Contains(t, err.Error(), "REDACTED")
+}

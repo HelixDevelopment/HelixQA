@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 	"time"
 )
 
@@ -215,6 +216,24 @@ func isRateLimitError(err error) bool {
 		bytes.Contains([]byte(s), []byte("quota"))
 }
 
+// redactKeyFromError strips API key values from error
+// messages to prevent accidental secret leakage in logs.
+// The key parameter is the raw API key to scrub.
+func redactKeyFromError(err error, key string) error {
+	if err == nil || key == "" {
+		return err
+	}
+	msg := err.Error()
+	redacted := strings.ReplaceAll(msg, key, "REDACTED")
+	// Also redact URL-encoded form (unlikely but safe).
+	redacted = strings.ReplaceAll(
+		redacted,
+		"key="+key,
+		"key=REDACTED",
+	)
+	return fmt.Errorf("%s", redacted)
+}
+
 // doRequestURL is the internal implementation that posts the
 // request to the given URL. It is split from doRequest so that
 // tests can supply a test-server URL without overriding the
@@ -236,13 +255,19 @@ func (p *googleProvider) doRequestURL(
 		bytes.NewReader(body),
 	)
 	if err != nil {
-		return nil, fmt.Errorf("google: create request: %w", err)
+		return nil, fmt.Errorf(
+			"google: create request: %w",
+			redactKeyFromError(err, p.apiKey),
+		)
 	}
 	httpReq.Header.Set("Content-Type", "application/json")
 
 	httpResp, err := p.client.Do(httpReq)
 	if err != nil {
-		return nil, fmt.Errorf("google: send request: %w", err)
+		return nil, fmt.Errorf(
+			"google: send request: %w",
+			redactKeyFromError(err, p.apiKey),
+		)
 	}
 	defer httpResp.Body.Close()
 
