@@ -80,11 +80,18 @@ func NewGoogleProvider(cfg ProviderConfig) Provider {
 	return &googleProvider{
 		apiKey: cfg.APIKey,
 		model:  model,
-		// No http.Client.Timeout — rely on context.WithTimeout
-		// from callers (45s for navigate, 120s for plan). A global
-		// timeout would cap ALL calls equally, but different phases
-		// need different budgets.
-		client: &http.Client{},
+		// Transport-level timeout ensures TCP connections can't
+		// hang indefinitely even when context cancellation fails
+		// to propagate (common on some Go/Linux combinations).
+		// ResponseHeaderTimeout kills stalled connections waiting
+		// for server response, while context timeout handles
+		// per-call budgets (45s navigate, 120s plan).
+		client: &http.Client{
+			Transport: &http.Transport{
+				ResponseHeaderTimeout: 55 * time.Second,
+				TLSHandshakeTimeout:   10 * time.Second,
+			},
+		},
 	}
 }
 
