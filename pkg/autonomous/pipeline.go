@@ -1046,23 +1046,28 @@ func (sp *SessionPipeline) Run(
 		}
 	}
 
-	// Start video recording for Android platforms.
+	// Start video recording for ALL platforms.
+	// Android uses ADB screenrecord, Web/Desktop use ffmpeg X11 capture.
 	recorders := make(map[string]*video.ScrcpyRecorder)
+	ffmpegRecorders := make(map[string]*video.FFmpegRecorder)
+	
 	for _, platform := range sp.config.Platforms {
-		if platform == "android" ||
-			platform == "androidtv" {
-			videoPath := filepath.Join(
-				sp.config.OutputDir, "videos",
-				platform+"-session.mp4",
+		videoPath := filepath.Join(
+			sp.config.OutputDir, "videos",
+			platform+"-session.mp4",
+		)
+		if mkErr := os.MkdirAll(
+			filepath.Dir(videoPath), 0o755,
+		); mkErr != nil {
+			fmt.Printf(
+				"  [exec] mkdir for video failed: %v\n",
+				mkErr,
 			)
-			if mkErr := os.MkdirAll(
-				filepath.Dir(videoPath), 0o755,
-			); mkErr != nil {
-				fmt.Printf(
-					"  [exec] mkdir for video failed: %v\n",
-					mkErr,
-				)
-			}
+			continue
+		}
+		
+		switch platform {
+		case "android", "androidtv":
 			rec := video.NewScrcpyRecorder(
 				sp.config.AndroidDevice, videoPath,
 				video.WithMethod(
@@ -1073,7 +1078,25 @@ func (sp *SessionPipeline) Run(
 				recorders[platform] = rec
 				fmt.Printf(
 					"  [exec] video recording "+
-						"started for %s\n",
+						"started for %s (adb)\n",
+					platform,
+				)
+			} else {
+				fmt.Printf(
+					"  [exec] video recording "+
+						"failed for %s: %v\n",
+					platform, err,
+				)
+			}
+			
+		case "web", "desktop", "wizard":
+			// Use ffmpeg for X11 screen capture
+			rec := video.NewFFmpegRecorder(videoPath)
+			if err := rec.Start(ctx); err == nil {
+				ffmpegRecorders[platform] = rec
+				fmt.Printf(
+					"  [exec] video recording "+
+						"started for %s (ffmpeg)\n",
 					platform,
 				)
 			} else {
@@ -1222,6 +1245,9 @@ func (sp *SessionPipeline) Run(
 			sp.updateSession(sessionID, result)
 			// Stop recorders before returning.
 			for _, rec := range recorders {
+				_ = rec.Stop()
+			}
+			for _, rec := range ffmpegRecorders {
 				_ = rec.Stop()
 			}
 			return result, nil
@@ -2398,6 +2424,19 @@ func (sp *SessionPipeline) Run(
 		} else {
 			fmt.Printf(
 				"  [video] stopped for %s\n", p,
+			)
+		}
+	}
+	
+	// Stop ffmpeg recorders for web/desktop platforms
+	for p, rec := range ffmpegRecorders {
+		if err := rec.Stop(); err != nil {
+			fmt.Printf(
+				"  [video] stop %s (ffmpeg): %v\n", p, err,
+			)
+		} else {
+			fmt.Printf(
+				"  [video] stopped for %s (ffmpeg)\n", p,
 			)
 		}
 	}
