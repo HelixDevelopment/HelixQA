@@ -1,0 +1,1141 @@
+{
+  "version": "1.0",
+  "name": "HelixAgent CLI Agents Comprehensive Test Bank",
+  "description": "Comprehensive tests for all 47 CLI agent integrations",
+  "metadata": {
+    "author": "vasic-digital",
+    "app": "HelixAgent",
+    "version": "1.0.0",
+    "agent_count": 47,
+    "agents": [
+      "aider",
+      "claude_code",
+      "codex",
+      "openhands",
+      "cline",
+      "gemini_cli",
+      "amazon_q",
+      "kiro",
+      "continue",
+      "agent_deck",
+      "bridle",
+      "claude_plugins",
+      "claude_squad",
+      "codai",
+      "codename_goose",
+      "codex_skills",
+      "conduit",
+      "copilot_cli",
+      "crush",
+      "deepseek_cli",
+      "fauxpilot",
+      "forge",
+      "get_shit_done",
+      "git_mcp",
+      "gpt_engineer",
+      "gptme",
+      "junie",
+      "kilo_code",
+      "mistral_code",
+      "mobile_agent",
+      "multiagent_coding",
+      "nanocoder",
+      "noi",
+      "octogen",
+      "ollama_code",
+      "opencode_cli",
+      "plandex",
+      "postgres_mcp",
+      "qwen_code",
+      "shai",
+      "snow_cli",
+      "spec_kit",
+      "superset",
+      "taskweaver",
+      "ui_ux_pro_max",
+      "vtcode",
+      "warp",
+      "windsurf",
+      "cursor",
+      "kodu",
+      "lovable",
+      "github_spark",
+      "supermaven",
+      "cody",
+      "tabnine",
+      "jetbrains_ai",
+      "copilot_workspace",
+      "deepseek",
+      "promptfoo",
+      "smolagents",
+      "gptr",
+      "honeycomb",
+      "hunyuan",
+      "codeium_windsurf",
+      "kimi",
+      "perplexity"
+    ]
+  },
+  "test_cases": [
+    {
+      "id": "CLI-REG-001",
+      "name": "Agent registry initialization",
+      "category": "functional",
+      "priority": "critical",
+      "platforms": [
+        "api",
+        "cli"
+      ],
+      "steps": [
+        {
+          "name": "Initialize agent registry",
+          "action": "Create new Registry instance",
+          "expected": "Registry created with empty agents map"
+        },
+        {
+          "name": "Check initial stats",
+          "action": "Call registry.GetStats()",
+          "expected": "Returns total: 0, available: 0, started: 0"
+        }
+      ],
+      "tags": [
+        "registry",
+        "initialization"
+      ],
+      "estimated_duration": "5s",
+      "expected_result": "Registry initializes successfully"
+    },
+    {
+      "id": "CLI-REG-002",
+      "name": "Register all 47 agents",
+      "category": "functional",
+      "priority": "critical",
+      "platforms": [
+        "api",
+        "cli"
+      ],
+      "steps": [
+        {
+          "name": "Get global registry",
+          "action": "Call agents.GetGlobalRegistry()",
+          "expected": "Returns singleton registry instance"
+        },
+        {
+          "name": "Register each agent",
+          "action": "Iterate through AllAgentTypes() and register each",
+          "expected": "All agents registered without errors"
+        },
+        {
+          "name": "Verify registration count",
+          "action": "Check registry.GetStats()['total']",
+          "expected": "Equals 47 (or more if additional agents)"
+        }
+      ],
+      "tags": [
+        "registry",
+        "registration",
+        "all-agents"
+      ],
+      "estimated_duration": "15s",
+      "expected_result": "All 47 agents registered successfully"
+    },
+    {
+      "id": "CLI-REG-003",
+      "name": "Duplicate agent registration rejected",
+      "category": "functional",
+      "priority": "high",
+      "platforms": [
+        "api",
+        "cli"
+      ],
+      "steps": [
+        {
+          "name": "Register agent first time",
+          "action": "Register aider.New()",
+          "expected": "Registration succeeds"
+        },
+        {
+          "name": "Register same agent again",
+          "action": "Register aider.New() again",
+          "expected": "Returns error: 'agent already registered'"
+        }
+      ],
+      "tags": [
+        "registry",
+        "validation",
+        "duplicate"
+      ],
+      "estimated_duration": "5s",
+      "expected_result": "Duplicate registration returns error"
+    },
+    {
+      "id": "CLI-INIT-001",
+      "name": "Aider agent initialization",
+      "category": "functional",
+      "priority": "critical",
+      "platforms": [
+        "api",
+        "cli"
+      ],
+      "steps": [
+        {
+          "name": "Create Aider instance",
+          "action": "Call aider.New()",
+          "expected": "Returns initialized Aider struct"
+        },
+        {
+          "name": "Get agent info",
+          "action": "Call agent.Info()",
+          "expected": "Returns TypeAider, name 'Aider', capabilities"
+        },
+        {
+          "name": "Initialize with config",
+          "action": "Call Initialize(ctx, config)",
+          "expected": "No error, work directory created"
+        }
+      ],
+      "tags": [
+        "aider",
+        "initialization",
+        "smoke"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Aider initializes successfully"
+    },
+    {
+      "id": "CLI-INIT-002",
+      "name": "Claude Code agent initialization",
+      "category": "functional",
+      "priority": "critical",
+      "platforms": [
+        "api",
+        "cli"
+      ],
+      "steps": [
+        {
+          "name": "Create Claude Code instance",
+          "action": "Call claude_code.New()",
+          "expected": "Returns initialized ClaudeCode struct"
+        },
+        {
+          "name": "Get agent info",
+          "action": "Call agent.Info()",
+          "expected": "Returns TypeClaudeCode, MCP enabled, capabilities"
+        },
+        {
+          "name": "Verify MCP integration",
+          "action": "Check config.MCPEnabled",
+          "expected": "True by default"
+        }
+      ],
+      "tags": [
+        "claude_code",
+        "initialization",
+        "mcp"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Claude Code initializes with MCP support"
+    },
+    {
+      "id": "CLI-INIT-003",
+      "name": "OpenHands agent initialization",
+      "category": "functional",
+      "priority": "critical",
+      "platforms": [
+        "api",
+        "cli"
+      ],
+      "steps": [
+        {
+          "name": "Create OpenHands instance",
+          "action": "Call openhands.New()",
+          "expected": "Returns initialized OpenHands struct"
+        },
+        {
+          "name": "Check Docker capabilities",
+          "action": "Verify capabilities include 'docker'",
+          "expected": "Docker support listed"
+        }
+      ],
+      "tags": [
+        "openhands",
+        "initialization",
+        "docker"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "OpenHands initializes with Docker support"
+    },
+    {
+      "id": "CLI-INIT-004",
+      "name": "All agents have Execute method",
+      "category": "functional",
+      "priority": "critical",
+      "platforms": [
+        "api",
+        "cli"
+      ],
+      "steps": [
+        {
+          "name": "Register all agents",
+          "action": "Register each agent type",
+          "expected": "All agents registered"
+        },
+        {
+          "name": "Check Execute method",
+          "action": "Verify each agent implements AgentIntegration.Execute",
+          "expected": "All agents have Execute method"
+        }
+      ],
+      "tags": [
+        "all-agents",
+        "initialization",
+        "interface"
+      ],
+      "estimated_duration": "20s",
+      "expected_result": "All 47 agents implement Execute"
+    },
+    {
+      "id": "CLI-LIFE-001",
+      "name": "Agent start/stop cycle",
+      "category": "functional",
+      "priority": "high",
+      "platforms": [
+        "api",
+        "cli"
+      ],
+      "steps": [
+        {
+          "name": "Create and initialize agent",
+          "action": "Create Aider, Initialize(ctx, nil)",
+          "expected": "Initialization succeeds"
+        },
+        {
+          "name": "Start agent",
+          "action": "Call Start(ctx)",
+          "expected": "No error, IsStarted() returns true"
+        },
+        {
+          "name": "Check health",
+          "action": "Call Health(ctx)",
+          "expected": "No error"
+        },
+        {
+          "name": "Stop agent",
+          "action": "Call Stop(ctx)",
+          "expected": "No error, IsStarted() returns false"
+        }
+      ],
+      "tags": [
+        "lifecycle",
+        "start",
+        "stop",
+        "aider"
+      ],
+      "estimated_duration": "15s",
+      "expected_result": "Agent starts and stops correctly"
+    },
+    {
+      "id": "CLI-LIFE-002",
+      "name": "Registry start all agents",
+      "category": "functional",
+      "priority": "high",
+      "platforms": [
+        "api",
+        "cli"
+      ],
+      "steps": [
+        {
+          "name": "Register multiple agents",
+          "action": "Register Aider, ClaudeCode, OpenHands, Codex",
+          "expected": "All registered"
+        },
+        {
+          "name": "Start all agents",
+          "action": "Call registry.StartAll(ctx)",
+          "expected": "All agents started, no errors"
+        },
+        {
+          "name": "Verify started status",
+          "action": "Check each agent's IsStarted()",
+          "expected": "All return true"
+        }
+      ],
+      "tags": [
+        "lifecycle",
+        "registry",
+        "start-all"
+      ],
+      "estimated_duration": "20s",
+      "expected_result": "All registered agents start"
+    },
+    {
+      "id": "CLI-LIFE-003",
+      "name": "Registry stop all agents",
+      "category": "functional",
+      "priority": "high",
+      "platforms": [
+        "api",
+        "cli"
+      ],
+      "steps": [
+        {
+          "name": "Start all registered agents",
+          "action": "registry.StartAll(ctx)",
+          "expected": "Agents started"
+        },
+        {
+          "name": "Stop all agents",
+          "action": "Call registry.StopAll(ctx)",
+          "expected": "All agents stopped, no errors"
+        },
+        {
+          "name": "Verify stopped status",
+          "action": "Check stats['started']",
+          "expected": "Equals 0"
+        }
+      ],
+      "tags": [
+        "lifecycle",
+        "registry",
+        "stop-all"
+      ],
+      "estimated_duration": "15s",
+      "expected_result": "All registered agents stop"
+    },
+    {
+      "id": "CLI-EXEC-001",
+      "name": "Aider chat command",
+      "category": "functional",
+      "priority": "critical",
+      "platforms": [
+        "api",
+        "cli"
+      ],
+      "steps": [
+        {
+          "name": "Initialize and start Aider",
+          "action": "Create, initialize, start Aider",
+          "expected": "Agent ready"
+        },
+        {
+          "name": "Execute chat command",
+          "action": "Execute(ctx, 'chat', {message: 'Hello'})",
+          "expected": "Returns Response with success=true"
+        }
+      ],
+      "tags": [
+        "aider",
+        "execution",
+        "chat"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Chat command executes successfully"
+    },
+    {
+      "id": "CLI-EXEC-002",
+      "name": "Claude Code chat command",
+      "category": "functional",
+      "priority": "critical",
+      "platforms": [
+        "api",
+        "cli"
+      ],
+      "steps": [
+        {
+          "name": "Initialize Claude Code",
+          "action": "Create, initialize, start Claude Code",
+          "expected": "Agent ready"
+        },
+        {
+          "name": "Execute chat command",
+          "action": "Execute(ctx, 'chat', {message: 'Test'})",
+          "expected": "Returns Response with SessionID, Content"
+        }
+      ],
+      "tags": [
+        "claude_code",
+        "execution",
+        "chat"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Claude Code chat executes"
+    },
+    {
+      "id": "CLI-EXEC-003",
+      "name": "Claude Code bash command",
+      "category": "functional",
+      "priority": "high",
+      "platforms": [
+        "api",
+        "cli"
+      ],
+      "steps": [
+        {
+          "name": "Initialize Claude Code",
+          "action": "Create and start agent",
+          "expected": "Agent ready"
+        },
+        {
+          "name": "Execute bash command",
+          "action": "Execute(ctx, 'bash', {command: 'echo test'})",
+          "expected": "Returns Response with command output"
+        }
+      ],
+      "tags": [
+        "claude_code",
+        "execution",
+        "bash"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Bash command executes and returns output"
+    },
+    {
+      "id": "CLI-EXEC-004",
+      "name": "Claude Code git command",
+      "category": "functional",
+      "priority": "high",
+      "platforms": [
+        "api",
+        "cli"
+      ],
+      "steps": [
+        {
+          "name": "Initialize Claude Code",
+          "action": "Create agent",
+          "expected": "Agent ready"
+        },
+        {
+          "name": "Execute git status",
+          "action": "Execute(ctx, 'git', {subcommand: 'status'})",
+          "expected": "Returns git status output"
+        }
+      ],
+      "tags": [
+        "claude_code",
+        "execution",
+        "git"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Git command executes successfully"
+    },
+    {
+      "id": "CLI-EXEC-005",
+      "name": "Unknown command handling",
+      "category": "functional",
+      "priority": "high",
+      "platforms": [
+        "api",
+        "cli"
+      ],
+      "steps": [
+        {
+          "name": "Execute unknown command",
+          "action": "Execute(ctx, 'unknown_command', {})",
+          "expected": "Returns error: 'unknown command'"
+        }
+      ],
+      "tags": [
+        "error-handling",
+        "validation"
+      ],
+      "estimated_duration": "5s",
+      "expected_result": "Unknown command returns error"
+    },
+    {
+      "id": "CLI-EXEC-006",
+      "name": "OpenHands edit command",
+      "category": "functional",
+      "priority": "critical",
+      "platforms": [
+        "api",
+        "cli"
+      ],
+      "steps": [
+        {
+          "name": "Initialize OpenHands",
+          "action": "Create and start",
+          "expected": "Agent ready"
+        },
+        {
+          "name": "Execute edit command",
+          "action": "Execute(ctx, 'edit', {file: 'test.go', instruction: 'Add comment'})",
+          "expected": "Returns edit result"
+        }
+      ],
+      "tags": [
+        "openhands",
+        "execution",
+        "edit"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Edit command executes"
+    },
+    {
+      "id": "CLI-MCP-001",
+      "name": "Claude Code MCP integration",
+      "category": "functional",
+      "priority": "high",
+      "platforms": [
+        "api",
+        "cli"
+      ],
+      "steps": [
+        {
+          "name": "Create MCP integration",
+          "action": "NewMCPIntegration(configPath)",
+          "expected": "Returns MCPIntegration"
+        },
+        {
+          "name": "Load default config",
+          "action": "mcp.LoadConfig()",
+          "expected": "Creates default MCP servers"
+        },
+        {
+          "name": "List MCP servers",
+          "action": "mcp.GetServers()",
+          "expected": "Returns filesystem, github, memory, fetch"
+        }
+      ],
+      "tags": [
+        "claude_code",
+        "mcp",
+        "configuration"
+      ],
+      "estimated_duration": "15s",
+      "expected_result": "MCP servers configured"
+    },
+    {
+      "id": "CLI-MCP-002",
+      "name": "MCP tool listing",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "api",
+        "cli"
+      ],
+      "steps": [
+        {
+          "name": "Initialize MCP",
+          "action": "Load config",
+          "expected": "Servers loaded"
+        },
+        {
+          "name": "List tools",
+          "action": "Execute(ctx, 'mcp', {action: 'list'})",
+          "expected": "Returns available MCP servers"
+        }
+      ],
+      "tags": [
+        "claude_code",
+        "mcp",
+        "tools"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "MCP tools listed"
+    },
+    {
+      "id": "CLI-SESS-001",
+      "name": "Session creation",
+      "category": "functional",
+      "priority": "high",
+      "platforms": [
+        "api",
+        "cli"
+      ],
+      "steps": [
+        {
+          "name": "Create session",
+          "action": "NewSession('/tmp', config)",
+          "expected": "Returns Session with unique ID"
+        },
+        {
+          "name": "Add messages",
+          "action": "session.AddMessage('user', 'Hello')",
+          "expected": "Message added to session"
+        },
+        {
+          "name": "Verify messages",
+          "action": "session.GetMessages()",
+          "expected": "Returns array with added message"
+        }
+      ],
+      "tags": [
+        "claude_code",
+        "session",
+        "management"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Session created and messages tracked"
+    },
+    {
+      "id": "CLI-SESS-002",
+      "name": "Session expiration",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "api",
+        "cli"
+      ],
+      "steps": [
+        {
+          "name": "Create session",
+          "action": "NewSession('/tmp', config)",
+          "expected": "Session created"
+        },
+        {
+          "name": "Check not expired",
+          "action": "session.IsExpired(60)",
+          "expected": "Returns false"
+        },
+        {
+          "name": "Set old activity",
+          "action": "Set LastActivity to past",
+          "expected": "Activity time updated"
+        },
+        {
+          "name": "Check expired",
+          "action": "session.IsExpired(0)",
+          "expected": "Returns true"
+        }
+      ],
+      "tags": [
+        "claude_code",
+        "session",
+        "expiration"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Session expiration detected"
+    },
+    {
+      "id": "CLI-SESS-003",
+      "name": "Session manager",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "api",
+        "cli"
+      ],
+      "steps": [
+        {
+          "name": "Create manager",
+          "action": "NewSessionManager(config)",
+          "expected": "Returns SessionManager"
+        },
+        {
+          "name": "Create multiple sessions",
+          "action": "Create 3 sessions",
+          "expected": "Sessions created"
+        },
+        {
+          "name": "List sessions",
+          "action": "sm.ListSessions()",
+          "expected": "Returns all 3 sessions"
+        },
+        {
+          "name": "Delete session",
+          "action": "sm.DeleteSession(id)",
+          "expected": "Session removed"
+        }
+      ],
+      "tags": [
+        "claude_code",
+        "session",
+        "manager"
+      ],
+      "estimated_duration": "15s",
+      "expected_result": "Session manager works correctly"
+    },
+    {
+      "id": "CLI-TOOL-001",
+      "name": "Tool executor - read/write file",
+      "category": "functional",
+      "priority": "high",
+      "platforms": [
+        "api",
+        "cli"
+      ],
+      "steps": [
+        {
+          "name": "Create executor",
+          "action": "NewToolExecutor(tempDir, allowedTools)",
+          "expected": "Returns ToolExecutor"
+        },
+        {
+          "name": "Write file",
+          "action": "ExecuteTool('write_file', {file_path: 'test.txt', content: 'Hello'})",
+          "expected": "Success, file created"
+        },
+        {
+          "name": "Read file",
+          "action": "ExecuteTool('read_file', {file_path: 'test.txt'})",
+          "expected": "Returns 'Hello'"
+        }
+      ],
+      "tags": [
+        "claude_code",
+        "tools",
+        "filesystem"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "File operations work"
+    },
+    {
+      "id": "CLI-TOOL-002",
+      "name": "Tool executor - edit file",
+      "category": "functional",
+      "priority": "high",
+      "platforms": [
+        "api",
+        "cli"
+      ],
+      "steps": [
+        {
+          "name": "Create test file",
+          "action": "Write 'old content' to file",
+          "expected": "File created"
+        },
+        {
+          "name": "Edit file",
+          "action": "ExecuteTool('edit_file', {old_string: 'old', new_string: 'new'})",
+          "expected": "Success, content changed"
+        },
+        {
+          "name": "Verify edit",
+          "action": "Read file",
+          "expected": "Contains 'new content'"
+        }
+      ],
+      "tags": [
+        "claude_code",
+        "tools",
+        "edit"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "File edit works"
+    },
+    {
+      "id": "CLI-TOOL-003",
+      "name": "Tool executor - bash",
+      "category": "functional",
+      "priority": "high",
+      "platforms": [
+        "api",
+        "cli"
+      ],
+      "steps": [
+        {
+          "name": "Execute bash",
+          "action": "ExecuteTool('bash', {command: 'echo test123'})",
+          "expected": "Returns output with 'test123'"
+        }
+      ],
+      "tags": [
+        "claude_code",
+        "tools",
+        "bash"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Bash execution works"
+    },
+    {
+      "id": "CLI-TOOL-004",
+      "name": "Tool executor - blocked dangerous command",
+      "category": "security",
+      "priority": "critical",
+      "platforms": [
+        "api",
+        "cli"
+      ],
+      "steps": [
+        {
+          "name": "Try dangerous command",
+          "action": "ExecuteTool('bash', {command: 'rm -rf /'})",
+          "expected": "Returns error: 'dangerous command blocked'"
+        }
+      ],
+      "tags": [
+        "claude_code",
+        "tools",
+        "security"
+      ],
+      "estimated_duration": "5s",
+      "expected_result": "Dangerous command blocked"
+    },
+    {
+      "id": "CLI-CONF-001",
+      "name": "Agent configuration",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "api",
+        "cli"
+      ],
+      "steps": [
+        {
+          "name": "Create config",
+          "action": "Create Config with custom values",
+          "expected": "Config created"
+        },
+        {
+          "name": "Initialize with config",
+          "action": "Initialize(ctx, config)",
+          "expected": "Config applied"
+        },
+        {
+          "name": "Verify config",
+          "action": "GetConfig()",
+          "expected": "Returns same config values"
+        }
+      ],
+      "tags": [
+        "configuration",
+        "aider"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Configuration applied"
+    },
+    {
+      "id": "CLI-HEALTH-001",
+      "name": "Agent health check",
+      "category": "functional",
+      "priority": "high",
+      "platforms": [
+        "api",
+        "cli"
+      ],
+      "steps": [
+        {
+          "name": "Check health before start",
+          "action": "Health(ctx) on new agent",
+          "expected": "Returns error: 'not started'"
+        },
+        {
+          "name": "Start agent",
+          "action": "Start(ctx)",
+          "expected": "Success"
+        },
+        {
+          "name": "Check health after start",
+          "action": "Health(ctx)",
+          "expected": "Returns nil (healthy)"
+        }
+      ],
+      "tags": [
+        "health",
+        "lifecycle"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Health check works"
+    },
+    {
+      "id": "CLI-HEALTH-002",
+      "name": "Registry health check all agents",
+      "category": "functional",
+      "priority": "high",
+      "platforms": [
+        "api",
+        "cli"
+      ],
+      "steps": [
+        {
+          "name": "Register and start agents",
+          "action": "Register and start multiple agents",
+          "expected": "Agents started"
+        },
+        {
+          "name": "Health check all",
+          "action": "registry.HealthCheck(ctx)",
+          "expected": "Returns map with nil errors for started agents"
+        }
+      ],
+      "tags": [
+        "health",
+        "registry",
+        "all-agents"
+      ],
+      "estimated_duration": "15s",
+      "expected_result": "All agents healthy"
+    },
+    {
+      "id": "CLI-CONC-001",
+      "name": "Concurrent agent registration",
+      "category": "performance",
+      "priority": "medium",
+      "platforms": [
+        "api",
+        "cli"
+      ],
+      "steps": [
+        {
+          "name": "Register agents concurrently",
+          "action": "Goroutines registering different agents",
+          "expected": "All registrations succeed"
+        },
+        {
+          "name": "Verify registry state",
+          "action": "Check stats",
+          "expected": "All agents registered"
+        }
+      ],
+      "tags": [
+        "concurrency",
+        "registry"
+      ],
+      "estimated_duration": "15s",
+      "expected_result": "Concurrent registration safe"
+    },
+    {
+      "id": "CLI-CONC-002",
+      "name": "Concurrent command execution",
+      "category": "performance",
+      "priority": "medium",
+      "platforms": [
+        "api",
+        "cli"
+      ],
+      "steps": [
+        {
+          "name": "Start agent",
+          "action": "Start Aider",
+          "expected": "Agent ready"
+        },
+        {
+          "name": "Execute commands concurrently",
+          "action": "Multiple goroutines calling Execute",
+          "expected": "All executions complete without panic"
+        }
+      ],
+      "tags": [
+        "concurrency",
+        "execution"
+      ],
+      "estimated_duration": "20s",
+      "expected_result": "Concurrent execution safe"
+    },
+    {
+      "id": "CLI-EDGE-001",
+      "name": "Empty parameters handling",
+      "category": "edge_case",
+      "priority": "medium",
+      "platforms": [
+        "api",
+        "cli"
+      ],
+      "steps": [
+        {
+          "name": "Execute with nil params",
+          "action": "Execute(ctx, 'chat', nil)",
+          "expected": "Handles gracefully, returns error"
+        }
+      ],
+      "tags": [
+        "edge-case",
+        "error-handling"
+      ],
+      "estimated_duration": "5s",
+      "expected_result": "Nil params handled"
+    },
+    {
+      "id": "CLI-EDGE-002",
+      "name": "Context cancellation",
+      "category": "edge_case",
+      "priority": "medium",
+      "platforms": [
+        "api",
+        "cli"
+      ],
+      "steps": [
+        {
+          "name": "Create cancelled context",
+          "action": "context.WithCancel, then cancel",
+          "expected": "Context cancelled"
+        },
+        {
+          "name": "Execute with cancelled context",
+          "action": "Execute(cancelledCtx, ...)",
+          "expected": "Returns context cancelled error"
+        }
+      ],
+      "tags": [
+        "edge-case",
+        "context"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Context cancellation respected"
+    },
+    {
+      "id": "CLI-AIDER-001",
+      "name": "Aider repo map generation",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "api",
+        "cli"
+      ],
+      "steps": [
+        {
+          "name": "Initialize Aider",
+          "action": "Create Aider instance",
+          "expected": "Initialized"
+        },
+        {
+          "name": "Check repo map",
+          "action": "Verify repo map capability",
+          "expected": "Repo map in capabilities"
+        }
+      ],
+      "tags": [
+        "aider",
+        "repo-map"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Repo map capability present"
+    },
+    {
+      "id": "CLI-OPEN-001",
+      "name": "OpenHands sandbox mode",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "api",
+        "cli"
+      ],
+      "steps": [
+        {
+          "name": "Check sandbox capability",
+          "action": "Verify capabilities include 'sandbox'",
+          "expected": "Sandbox listed"
+        }
+      ],
+      "tags": [
+        "openhands",
+        "sandbox"
+      ],
+      "estimated_duration": "5s",
+      "expected_result": "Sandbox capability present"
+    },
+    {
+      "id": "CLI-CODEX-001",
+      "name": "Codex agent mode",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "api",
+        "cli"
+      ],
+      "steps": [
+        {
+          "name": "Check agent mode",
+          "action": "Verify capabilities include 'agent_mode'",
+          "expected": "Agent mode listed"
+        }
+      ],
+      "tags": [
+        "codex",
+        "agent-mode"
+      ],
+      "estimated_duration": "5s",
+      "expected_result": "Agent mode capability present"
+    }
+  ]
+}

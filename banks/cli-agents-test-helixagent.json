@@ -1,0 +1,743 @@
+{
+  "version": "1.0",
+  "name": "CLI Agents as HelixAgent System Validators",
+  "description": "47 CLI agents test HelixAgent using their native capabilities with exported configs",
+  "metadata": {
+    "author": "vasic-digital",
+    "app": "HelixAgent",
+    "version": "1.0.0",
+    "validation_strategy": "cli_agents_as_testers",
+    "config_source": "exported_helixagent_configs",
+    "agents_total": 47
+  },
+  "test_cases": [
+    {
+      "id": "CLI-CC-001",
+      "name": "Claude Code validates HelixAgent via terminal integration",
+      "category": "system_validation",
+      "priority": "critical",
+      "executor_agent": "claude_code",
+      "config_file": "cli_agents_configs/claude-code.yaml",
+      "helixagent_features_tested": [
+        "ensemble_api",
+        "mcp_tools",
+        "streaming",
+        "debate_orchestrator"
+      ],
+      "steps": [
+        {
+          "name": "Load exported HelixAgent config",
+          "action": "--config=/etc/helixagent/agents/claude-code.yaml",
+          "expected": "Config loaded with HelixAgent endpoint, API key, model preferences"
+        },
+        {
+          "name": "Test ensemble via natural chat",
+          "action": "Chat: 'Use HelixAgent ensemble to explain Go interfaces'",
+          "expected": "Claude Code routes to HelixAgent /v1/ensemble/completions, shows aggregated response"
+        },
+        {
+          "name": "Verify multi-provider aggregation",
+          "action": "Ask: 'Show me which providers contributed'",
+          "expected": "Response metadata shows Claude, DeepSeek, Gemini contributions"
+        },
+        {
+          "name": "Test MCP tools through chat",
+          "action": "Chat: 'Read the HelixAgent README'",
+          "expected": "Claude Code uses MCP read_file tool via HelixAgent MCP bridge"
+        },
+        {
+          "name": "Validate streaming in terminal",
+          "action": "Request streaming completion",
+          "expected": "Real-time token streaming visible in terminal UI"
+        },
+        {
+          "name": "Test debate mode",
+          "action": "Chat: 'Debate: Should we use Redis or PostgreSQL for sessions?'",
+          "expected": "HelixAgent debate orchestrator activated, multiple viewpoints shown"
+        }
+      ],
+      "tags": [
+        "claude_code",
+        "terminal",
+        "ensemble",
+        "mcp",
+        "debate"
+      ],
+      "estimated_duration": "120s",
+      "expected_result": "Claude Code validates all HelixAgent features through natural terminal interaction"
+    },
+    {
+      "id": "CLI-CC-002",
+      "name": "Claude Code bash tool tests HelixAgent health endpoints",
+      "category": "system_validation",
+      "priority": "critical",
+      "executor_agent": "claude_code",
+      "steps": [
+        {
+          "name": "Health check via bash",
+          "action": "Execute: 'curl -s http://localhost:7061/health | jq .'",
+          "expected": "Returns HelixAgent health status, containers, providers"
+        },
+        {
+          "name": "Check provider status",
+          "action": "Execute: 'curl -s http://localhost:7061/v1/providers | jq '.providers | length''",
+          "expected": "Returns 22+ providers"
+        },
+        {
+          "name": "Verify metrics endpoint",
+          "action": "Execute: 'curl -s http://localhost:7061/metrics | grep helixagent'",
+          "expected": "Prometheus metrics visible"
+        }
+      ],
+      "tags": [
+        "claude_code",
+        "bash",
+        "health",
+        "monitoring"
+      ],
+      "estimated_duration": "30s",
+      "expected_result": "HelixAgent health validated via Claude Code bash execution"
+    },
+    {
+      "id": "CLI-CC-003",
+      "name": "Claude Code git integration tests HelixAgent version control",
+      "category": "system_validation",
+      "priority": "high",
+      "executor_agent": "claude_code",
+      "steps": [
+        {
+          "name": "Check git status of HelixAgent repo",
+          "action": "git: status",
+          "expected": "Shows repo state"
+        },
+        {
+          "name": "Use ensemble to review changes",
+          "action": "Chat: 'Review my git diff using HelixAgent ensemble'",
+          "expected": "HelixAgent analyzes diff, provides review comments"
+        },
+        {
+          "name": "Commit with AI message",
+          "action": "Chat: 'Generate commit message for these changes'",
+          "expected": "HelixAgent generates conventional commit message"
+        },
+        {
+          "name": "Execute git commit",
+          "action": "git: commit -m '<generated_message>'",
+          "expected": "Commit succeeds"
+        }
+      ],
+      "tags": [
+        "claude_code",
+        "git",
+        "version_control",
+        "ensemble"
+      ],
+      "estimated_duration": "60s",
+      "expected_result": "Git workflow enhanced by HelixAgent ensemble"
+    },
+    {
+      "id": "CLI-AIDER-001",
+      "name": "Aider tests HelixAgent with real code modifications",
+      "category": "system_validation",
+      "priority": "critical",
+      "executor_agent": "aider",
+      "config_file": "cli_agents_configs/aider.yaml",
+      "helixagent_features_tested": [
+        "code_ensemble",
+        "architect_mode",
+        "repo_map",
+        "test_execution"
+      ],
+      "steps": [
+        {
+          "name": "Load Aider with HelixAgent backend",
+          "action": "aider --model helixagent/ensemble --architect",
+          "expected": "Aider connects to HelixAgent ensemble API"
+        },
+        {
+          "name": "Request code edit via ensemble",
+          "action": "/ask 'Add error handling to the validateConfig function'",
+          "expected": "HelixAgent ensemble generates code, Aider proposes diff"
+        },
+        {
+          "name": "Verify repo map integration",
+          "action": "/map",
+          "expected": "HelixAgent provides repository context, Aider displays structure"
+        },
+        {
+          "name": "Run tests via Aider",
+          "action": "/test",
+          "expected": "Aider triggers HelixAgent test execution, shows results"
+        },
+        {
+          "name": "Commit changes",
+          "action": "/commit",
+          "expected": "Aider uses HelixAgent to generate commit message, commits"
+        }
+      ],
+      "tags": [
+        "aider",
+        "code_editing",
+        "architect_mode",
+        "repo_map"
+      ],
+      "estimated_duration": "180s",
+      "expected_result": "Aider validates HelixAgent code generation and repo understanding"
+    },
+    {
+      "id": "CLI-AIDER-002",
+      "name": "Aider tests HelixAgent multi-file editing",
+      "category": "system_validation",
+      "priority": "high",
+      "executor_agent": "aider",
+      "steps": [
+        {
+          "name": "Add multiple files to context",
+          "action": "/add internal/handlers/*.go",
+          "expected": "Files added to Aider context"
+        },
+        {
+          "name": "Request refactoring",
+          "action": "/ask 'Refactor these handlers to use a common base'",
+          "expected": "HelixAgent ensemble analyzes all files, proposes coordinated changes"
+        },
+        {
+          "name": "Review multi-file diff",
+          "action": "Review proposed changes across files",
+          "expected": "Consistent refactoring across all handlers"
+        },
+        {
+          "name": "Accept changes",
+          "action": "/accept",
+          "expected": "All files modified atomically"
+        }
+      ],
+      "tags": [
+        "aider",
+        "multi_file",
+        "refactoring",
+        "ensemble"
+      ],
+      "estimated_duration": "150s",
+      "expected_result": "Multi-file editing via HelixAgent ensemble works correctly"
+    },
+    {
+      "id": "CLI-OH-001",
+      "name": "OpenHands validates HelixAgent Docker integration",
+      "category": "system_validation",
+      "priority": "critical",
+      "executor_agent": "openhands",
+      "config_file": "cli_agents_configs/openhands.yaml",
+      "helixagent_features_tested": [
+        "container_orchestration",
+        "lazy_startup",
+        "nvidia_rag",
+        "sandbox_mode"
+      ],
+      "steps": [
+        {
+          "name": "Start OpenHands with HelixAgent config",
+          "action": "openhands --config ~/.helixagent/agents/openhands.json",
+          "expected": "OpenHands loads HelixAgent endpoint, LLM config"
+        },
+        {
+          "name": "Request task requiring containers",
+          "action": "Task: 'Analyze this code using NVIDIA RAG embedding'",
+          "expected": "OpenHands triggers HelixAgent lazy container startup"
+        },
+        {
+          "name": "Verify container startup",
+          "action": "OpenHands executes: docker ps | grep nemo",
+          "expected": "NeMo Retriever container running"
+        },
+        {
+          "name": "Test sandbox isolation",
+          "action": "Task: 'Run this untrusted script in sandbox'",
+          "expected": "OpenHands uses HelixAgent sandbox, isolated execution"
+        },
+        {
+          "name": "Verify resource cleanup",
+          "action": "Task completes, check container status",
+          "expected": "Resources managed according to HelixAgent policy"
+        }
+      ],
+      "tags": [
+        "openhands",
+        "docker",
+        "containers",
+        "nvidia_rag",
+        "sandbox"
+      ],
+      "estimated_duration": "240s",
+      "expected_result": "OpenHands validates HelixAgent container orchestration"
+    },
+    {
+      "id": "CLI-OH-002",
+      "name": "OpenHands tests HelixAgent multi-agent workflows",
+      "category": "system_validation",
+      "priority": "high",
+      "executor_agent": "openhands",
+      "steps": [
+        {
+          "name": "Create multi-agent task",
+          "action": "Task: 'Have multiple agents review this PR'",
+          "expected": "OpenHands uses HelixAgent debate orchestrator"
+        },
+        {
+          "name": "Verify agent coordination",
+          "action": "Monitor agent communication",
+          "expected": "Multiple perspectives gathered via HelixAgent"
+        },
+        {
+          "name": "Get consolidated review",
+          "action": "Receive final output",
+          "expected": "Coordinated review from ensemble"
+        }
+      ],
+      "tags": [
+        "openhands",
+        "multi_agent",
+        "debate",
+        "coordination"
+      ],
+      "estimated_duration": "180s",
+      "expected_result": "Multi-agent workflows via HelixAgent work"
+    },
+    {
+      "id": "CLI-CODEX-001",
+      "name": "Codex validates HelixAgent agent mode capabilities",
+      "category": "system_validation",
+      "priority": "critical",
+      "executor_agent": "codex",
+      "config_file": "cli_agents_configs/codex.yaml",
+      "helixagent_features_tested": [
+        "agent_mode",
+        "tool_use",
+        "file_operations",
+        "command_execution"
+      ],
+      "steps": [
+        {
+          "name": "Start Codex with HelixAgent backend",
+          "action": "codex --model helixagent/ensemble --agent-mode",
+          "expected": "Codex connects to HelixAgent, loads tools"
+        },
+        {
+          "name": "Natural language task",
+          "action": "'Add a new handler for MCP requests'",
+          "expected": "Codex uses HelixAgent to plan, generates code via ensemble"
+        },
+        {
+          "name": "Verify tool usage",
+          "action": "Observe tool calls",
+          "expected": "HelixAgent MCP tools used: read_file, write_file, edit_file"
+        },
+        {
+          "name": "Test command execution",
+          "action": "Codex runs: go build ./...",
+          "expected": "Build command executed, results fed back to HelixAgent"
+        },
+        {
+          "name": "Validate final output",
+          "action": "Review generated handler",
+          "expected": "Working MCP handler created"
+        }
+      ],
+      "tags": [
+        "codex",
+        "agent_mode",
+        "tools",
+        "file_ops",
+        "commands"
+      ],
+      "estimated_duration": "200s",
+      "expected_result": "Codex validates HelixAgent agent mode with full tool chain"
+    },
+    {
+      "id": "CLI-CLINE-001",
+      "name": "Cline validates HelixAgent IDE integration",
+      "category": "system_validation",
+      "priority": "high",
+      "executor_agent": "cline",
+      "config_file": "cli_agents_configs/cline.yaml",
+      "helixagent_features_tested": [
+        "ide_integration",
+        "auto_approve",
+        "context_management"
+      ],
+      "steps": [
+        {
+          "name": "Configure Cline for HelixAgent",
+          "action": "cline --set-model helixagent/ensemble",
+          "expected": "Cline uses HelixAgent for all LLM requests"
+        },
+        {
+          "name": "Test context awareness",
+          "action": "Open file, ask: 'Explain this function'",
+          "expected": "HelixAgent receives file context, provides explanation"
+        },
+        {
+          "name": "Test auto-approval",
+          "action": "Enable auto-approve, request edit",
+          "expected": "Cline executes via HelixAgent without prompting"
+        },
+        {
+          "name": "Test checkpoint navigation",
+          "action": "Make changes, then revert",
+          "expected": "HelixAgent tracks changes, allows rollback"
+        }
+      ],
+      "tags": [
+        "cline",
+        "ide",
+        "context",
+        "auto_approve"
+      ],
+      "estimated_duration": "120s",
+      "expected_result": "Cline validates HelixAgent IDE integration features"
+    },
+    {
+      "id": "CLI-CURSOR-001",
+      "name": "Cursor validates HelixAgent editor integration",
+      "category": "system_validation",
+      "priority": "high",
+      "executor_agent": "cursor",
+      "config_file": "cli_agents_configs/cursor.yaml",
+      "helixagent_features_tested": [
+        "tab_completion",
+        "inline_editing",
+        "chat_panel",
+        "composer"
+      ],
+      "steps": [
+        {
+          "name": "Configure Cursor with HelixAgent",
+          "action": "cursor set-api http://localhost:7061/v1",
+          "expected": "Cursor uses HelixAgent ensemble"
+        },
+        {
+          "name": "Test tab completion",
+          "action": "Type code, press Tab",
+          "expected": "HelixAgent provides completion suggestions"
+        },
+        {
+          "name": "Test inline edit",
+          "action": "Select code, Cmd+K, 'Refactor this'",
+          "expected": "HelixAgent generates inline diff"
+        },
+        {
+          "name": "Test chat panel",
+          "action": "Open chat, ask about codebase",
+          "expected": "HelixAgent uses repo context to answer"
+        },
+        {
+          "name": "Test composer",
+          "action": "Use Cmd+I for multi-file edit",
+          "expected": "HelixAgent coordinates multi-file changes"
+        }
+      ],
+      "tags": [
+        "cursor",
+        "editor",
+        "completion",
+        "chat",
+        "composer"
+      ],
+      "estimated_duration": "150s",
+      "expected_result": "Cursor validates HelixAgent editor features"
+    },
+    {
+      "id": "CLI-CONT-001",
+      "name": "Continue validates HelixAgent open source integration",
+      "category": "system_validation",
+      "priority": "medium",
+      "executor_agent": "continue",
+      "config_file": "cli_agents_configs/continue.yaml",
+      "helixagent_features_tested": [
+        "open_source_models",
+        "local_llm",
+        "privacy_mode"
+      ],
+      "steps": [
+        {
+          "name": "Configure Continue for HelixAgent",
+          "action": "Edit config.json with HelixAgent endpoint",
+          "expected": "Continue uses HelixAgent as model provider"
+        },
+        {
+          "name": "Test local model",
+          "action": "Select local-llm profile, send request",
+          "expected": "HelixAgent routes to local Ollama/Zen"
+        },
+        {
+          "name": "Test privacy mode",
+          "action": "Enable privacy mode, send code",
+          "expected": "HelixAgent ensures no external API calls"
+        },
+        {
+          "name": "Test open source ensemble",
+          "action": "Request with opensource profile",
+          "expected": "Only open source models used"
+        }
+      ],
+      "tags": [
+        "continue",
+        "open_source",
+        "local",
+        "privacy"
+      ],
+      "estimated_duration": "120s",
+      "expected_result": "Continue validates HelixAgent open source features"
+    },
+    {
+      "id": "CLI-KIRO-001",
+      "name": "Kiro validates HelixAgent context engine",
+      "category": "system_validation",
+      "priority": "high",
+      "executor_agent": "kiro",
+      "config_file": "cli_agents_configs/kiro.yaml",
+      "helixagent_features_tested": [
+        "context_engine",
+        "intent_detection",
+        "file_relationships"
+      ],
+      "steps": [
+        {
+          "name": "Configure Kiro for HelixAgent",
+          "action": "kiro --helixagent-endpoint http://localhost:7061",
+          "expected": "Kiro uses HelixAgent context API"
+        },
+        {
+          "name": "Test intent detection",
+          "action": "Type: 'Fix the bug in auth'",
+          "expected": "HelixAgent context engine identifies auth-related files"
+        },
+        {
+          "name": "Test file relationships",
+          "action": "Modify file, check related files",
+          "expected": "HelixAgent suggests related files to review"
+        },
+        {
+          "name": "Test context preservation",
+          "action": "Switch tasks, return to original",
+          "expected": "HelixAgent restores previous context"
+        }
+      ],
+      "tags": [
+        "kiro",
+        "context",
+        "intent",
+        "relationships"
+      ],
+      "estimated_duration": "120s",
+      "expected_result": "Kiro validates HelixAgent context engine"
+    },
+    {
+      "id": "CLI-GEM-001",
+      "name": "Gemini CLI validates HelixAgent multi-modal",
+      "category": "system_validation",
+      "priority": "high",
+      "executor_agent": "gemini",
+      "config_file": "cli_agents_configs/gemini.yaml",
+      "helixagent_features_tested": [
+        "multi_modal",
+        "image_understanding",
+        "document_processing"
+      ],
+      "steps": [
+        {
+          "name": "Configure Gemini for HelixAgent",
+          "action": "gemini config set endpoint http://localhost:7061",
+          "expected": "Gemini routes through HelixAgent"
+        },
+        {
+          "name": "Test image input",
+          "action": "Upload architecture diagram, ask for analysis",
+          "expected": "HelixAgent vision model processes image"
+        },
+        {
+          "name": "Test document processing",
+          "action": "Upload PDF, ask for summary",
+          "expected": "HelixAgent extracts and summarizes text"
+        },
+        {
+          "name": "Test multi-modal ensemble",
+          "action": "Request with image and text",
+          "expected": "Multiple models contribute to response"
+        }
+      ],
+      "tags": [
+        "gemini",
+        "multi_modal",
+        "vision",
+        "documents"
+      ],
+      "estimated_duration": "120s",
+      "expected_result": "Gemini validates HelixAgent multi-modal capabilities"
+    },
+    {
+      "id": "CLI-AQ-001",
+      "name": "Amazon Q validates HelixAgent enterprise features",
+      "category": "system_validation",
+      "priority": "high",
+      "executor_agent": "amazonq",
+      "config_file": "cli_agents_configs/amazonq.yaml",
+      "helixagent_features_tested": [
+        "code_transformation",
+        "security_scanning",
+        "compliance_check"
+      ],
+      "steps": [
+        {
+          "name": "Configure Amazon Q for HelixAgent",
+          "action": "q configure --endpoint http://localhost:7061",
+          "expected": "Amazon Q uses HelixAgent backend"
+        },
+        {
+          "name": "Test code transformation",
+          "action": "'Transform this Java code to Go'",
+          "expected": "HelixAgent ensemble performs language conversion"
+        },
+        {
+          "name": "Test security scanning",
+          "action": "'Scan this code for vulnerabilities'",
+          "expected": "HelixAgent security module analyzes code"
+        },
+        {
+          "name": "Test compliance check",
+          "action": "'Check license compliance'",
+          "expected": "HelixAgent verifies dependencies"
+        }
+      ],
+      "tags": [
+        "amazonq",
+        "enterprise",
+        "security",
+        "compliance"
+      ],
+      "estimated_duration": "150s",
+      "expected_result": "Amazon Q validates HelixAgent enterprise features"
+    },
+    {
+      "id": "CLI-ALL-001",
+      "name": "All CLI agents validate config export/import",
+      "category": "system_validation",
+      "priority": "critical",
+      "executor_agent": "all",
+      "steps": [
+        {
+          "name": "Generate all agent configs",
+          "action": "./bin/helixagent --generate-all-agents --all-agents-output-dir=./configs",
+          "expected": "47 config files created"
+        },
+        {
+          "name": "Verify each config",
+          "action": "For each agent: validate config structure",
+          "expected": "All configs have endpoint, auth, model settings"
+        },
+        {
+          "name": "Test config loading",
+          "action": "Each agent starts with its config",
+          "expected": "All agents connect to HelixAgent successfully"
+        },
+        {
+          "name": "Verify feature parity",
+          "action": "Test core features across all agents",
+          "expected": "Consistent HelixAgent experience"
+        }
+      ],
+      "tags": [
+        "all_agents",
+        "configuration",
+        "export",
+        "import"
+      ],
+      "estimated_duration": "300s",
+      "expected_result": "All 47 agents validate config system"
+    },
+    {
+      "id": "CLI-ALL-002",
+      "name": "Feature parity across all CLI agents",
+      "category": "system_validation",
+      "priority": "critical",
+      "executor_agent": "all",
+      "test_matrix": {
+        "agents": 47,
+        "features": [
+          "ensemble_completion",
+          "streaming",
+          "mcp_tools",
+          "health_check",
+          "metrics"
+        ]
+      },
+      "steps": [
+        {
+          "name": "Test ensemble on all agents",
+          "action": "Each agent requests ensemble completion",
+          "expected": "All receive valid ensemble response"
+        },
+        {
+          "name": "Test streaming on all agents",
+          "action": "Each agent requests streaming",
+          "expected": "All receive streamed response"
+        },
+        {
+          "name": "Test MCP on supporting agents",
+          "action": "Agents with MCP request tool list",
+          "expected": "All receive 45+ tools"
+        },
+        {
+          "name": "Test health endpoint",
+          "action": "Each agent checks /health",
+          "expected": "All receive healthy status"
+        }
+      ],
+      "tags": [
+        "all_agents",
+        "parity",
+        "matrix"
+      ],
+      "estimated_duration": "600s",
+      "expected_result": "Feature parity validated across all 47 agents"
+    },
+    {
+      "id": "CLI-STRESS-001",
+      "name": "Stress test: All 47 agents simultaneously",
+      "category": "stress",
+      "priority": "high",
+      "executor_agent": "all",
+      "concurrent": true,
+      "steps": [
+        {
+          "name": "Start all agents concurrently",
+          "action": "Parallel: Start each of 47 agents",
+          "expected": "All agents initialize without conflict"
+        },
+        {
+          "name": "Send concurrent requests",
+          "action": "All agents request ensemble completion simultaneously",
+          "expected": "HelixAgent handles 47 concurrent ensemble requests"
+        },
+        {
+          "name": "Monitor resource usage",
+          "action": "Track CPU, memory, container status",
+          "expected": "Resources within acceptable limits"
+        },
+        {
+          "name": "Verify response quality",
+          "action": "Check all responses are valid",
+          "expected": "No errors, all responses complete"
+        }
+      ],
+      "tags": [
+        "stress",
+        "concurrent",
+        "all_agents",
+        "performance"
+      ],
+      "estimated_duration": "300s",
+      "expected_result": "HelixAgent handles 47 concurrent agents"
+    }
+  ]
+}

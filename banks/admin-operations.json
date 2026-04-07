@@ -1,0 +1,1478 @@
+{
+  "version": "1.0",
+  "name": "Catalogizer Admin Operations Test Bank",
+  "description": "Admin operations tests for system info, user management, storage, backup, logging, configuration, health, metrics, and access control",
+  "metadata": {
+    "author": "vasic-digital",
+    "app": "Catalogizer",
+    "version": "1.0.0"
+  },
+  "test_cases": [
+    {
+      "id": "ADM-001",
+      "name": "Retrieve system info",
+      "category": "functional",
+      "priority": "critical",
+      "platforms": [
+        "api",
+        "web",
+        "desktop"
+      ],
+      "steps": [
+        {
+          "name": "Authenticate as admin",
+          "action": "POST /api/v1/auth/login with admin credentials",
+          "expected": "200 OK with JWT token"
+        },
+        {
+          "name": "Request system info",
+          "action": "GET /api/v1/admin/system-info with admin token",
+          "expected": "200 OK with version, build number, build date, Go version, OS info"
+        }
+      ],
+      "tags": [
+        "admin",
+        "system-info",
+        "version"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "System info returned with version and build metadata"
+    },
+    {
+      "id": "ADM-002",
+      "name": "System info includes database status",
+      "category": "functional",
+      "priority": "high",
+      "platforms": [
+        "api",
+        "web"
+      ],
+      "steps": [
+        {
+          "name": "Request system info as admin",
+          "action": "GET /api/v1/admin/system-info",
+          "expected": "Response includes database type (sqlite/postgres), connection status"
+        }
+      ],
+      "tags": [
+        "admin",
+        "system-info",
+        "database"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Database status included in system info"
+    },
+    {
+      "id": "ADM-003",
+      "name": "System info includes uptime",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "api",
+        "web"
+      ],
+      "steps": [
+        {
+          "name": "Request system info as admin",
+          "action": "GET /api/v1/admin/system-info",
+          "expected": "Response includes server uptime duration"
+        }
+      ],
+      "tags": [
+        "admin",
+        "system-info",
+        "uptime"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Server uptime reported in system info"
+    },
+    {
+      "id": "ADM-004",
+      "name": "List all users",
+      "category": "functional",
+      "priority": "critical",
+      "platforms": [
+        "api",
+        "web",
+        "desktop"
+      ],
+      "steps": [
+        {
+          "name": "Authenticate as admin",
+          "action": "POST /api/v1/auth/login with admin credentials",
+          "expected": "200 OK with JWT token"
+        },
+        {
+          "name": "List users",
+          "action": "GET /api/v1/admin/users",
+          "expected": "200 OK with array of user objects (id, username, role, created_at)"
+        }
+      ],
+      "tags": [
+        "admin",
+        "user-management",
+        "list"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "User list returned with expected fields"
+    },
+    {
+      "id": "ADM-005",
+      "name": "Create new user",
+      "category": "functional",
+      "priority": "critical",
+      "platforms": [
+        "api",
+        "web",
+        "desktop"
+      ],
+      "steps": [
+        {
+          "name": "Authenticate as admin",
+          "action": "POST /api/v1/auth/login with admin credentials",
+          "expected": "200 OK"
+        },
+        {
+          "name": "Create user",
+          "action": "POST /api/v1/admin/users with username 'newuser', password 'SecurePass123!', role 'user'",
+          "expected": "201 Created with new user ID"
+        },
+        {
+          "name": "Verify user exists",
+          "action": "GET /api/v1/admin/users",
+          "expected": "New user appears in list"
+        }
+      ],
+      "tags": [
+        "admin",
+        "user-management",
+        "create"
+      ],
+      "estimated_duration": "15s",
+      "expected_result": "New user created and visible in user list"
+    },
+    {
+      "id": "ADM-006",
+      "name": "Create user with duplicate username rejected",
+      "category": "functional",
+      "priority": "high",
+      "platforms": [
+        "api",
+        "web"
+      ],
+      "steps": [
+        {
+          "name": "Create first user",
+          "action": "POST /api/v1/admin/users with username 'dupeuser'",
+          "expected": "201 Created"
+        },
+        {
+          "name": "Create duplicate",
+          "action": "POST /api/v1/admin/users with same username 'dupeuser'",
+          "expected": "409 Conflict with error about duplicate username"
+        }
+      ],
+      "tags": [
+        "admin",
+        "user-management",
+        "duplicate",
+        "validation"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Duplicate username rejected with clear error"
+    },
+    {
+      "id": "ADM-007",
+      "name": "Delete user",
+      "category": "functional",
+      "priority": "critical",
+      "platforms": [
+        "api",
+        "web",
+        "desktop"
+      ],
+      "steps": [
+        {
+          "name": "Create expendable user",
+          "action": "POST /api/v1/admin/users with username 'todelete'",
+          "expected": "201 Created"
+        },
+        {
+          "name": "Delete user",
+          "action": "DELETE /api/v1/admin/users/{id}",
+          "expected": "200 OK or 204 No Content"
+        },
+        {
+          "name": "Verify deletion",
+          "action": "GET /api/v1/admin/users",
+          "expected": "Deleted user no longer in list"
+        }
+      ],
+      "tags": [
+        "admin",
+        "user-management",
+        "delete"
+      ],
+      "estimated_duration": "15s",
+      "expected_result": "User deleted successfully"
+    },
+    {
+      "id": "ADM-008",
+      "name": "Cannot delete the last admin user",
+      "category": "functional",
+      "priority": "critical",
+      "platforms": [
+        "api",
+        "web"
+      ],
+      "steps": [
+        {
+          "name": "Attempt to delete sole admin",
+          "action": "DELETE /api/v1/admin/users/{admin_id} when only one admin exists",
+          "expected": "403 Forbidden or 409 Conflict with error preventing deletion"
+        }
+      ],
+      "tags": [
+        "admin",
+        "user-management",
+        "delete",
+        "safety",
+        "last-admin"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Last admin deletion blocked to prevent lockout"
+    },
+    {
+      "id": "ADM-009",
+      "name": "Update user role",
+      "category": "functional",
+      "priority": "high",
+      "platforms": [
+        "api",
+        "web"
+      ],
+      "steps": [
+        {
+          "name": "Create regular user",
+          "action": "POST /api/v1/admin/users with role 'user'",
+          "expected": "201 Created"
+        },
+        {
+          "name": "Promote to admin",
+          "action": "PUT /api/v1/admin/users/{id} with role 'admin'",
+          "expected": "200 OK"
+        },
+        {
+          "name": "Verify role change",
+          "action": "GET /api/v1/admin/users/{id}",
+          "expected": "User role is 'admin'"
+        }
+      ],
+      "tags": [
+        "admin",
+        "user-management",
+        "role-update",
+        "promotion"
+      ],
+      "estimated_duration": "15s",
+      "expected_result": "User role updated to admin"
+    },
+    {
+      "id": "ADM-010",
+      "name": "Reset user password",
+      "category": "functional",
+      "priority": "high",
+      "platforms": [
+        "api",
+        "web"
+      ],
+      "steps": [
+        {
+          "name": "Reset password",
+          "action": "PUT /api/v1/admin/users/{id}/password with new password 'NewSecure456!'",
+          "expected": "200 OK"
+        },
+        {
+          "name": "Login with new password",
+          "action": "POST /api/v1/auth/login with updated credentials",
+          "expected": "200 OK with new JWT token"
+        },
+        {
+          "name": "Old password rejected",
+          "action": "POST /api/v1/auth/login with old credentials",
+          "expected": "401 Unauthorized"
+        }
+      ],
+      "tags": [
+        "admin",
+        "user-management",
+        "password-reset"
+      ],
+      "estimated_duration": "15s",
+      "expected_result": "Password reset works and old password invalidated"
+    },
+    {
+      "id": "ADM-011",
+      "name": "Retrieve storage info",
+      "category": "functional",
+      "priority": "critical",
+      "platforms": [
+        "api",
+        "web",
+        "desktop"
+      ],
+      "steps": [
+        {
+          "name": "Request storage info",
+          "action": "GET /api/v1/admin/storage",
+          "expected": "200 OK with storage roots, total size, file counts"
+        }
+      ],
+      "tags": [
+        "admin",
+        "storage",
+        "info"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Storage info returned with roots and sizes"
+    },
+    {
+      "id": "ADM-012",
+      "name": "Trigger manual scan of storage root",
+      "category": "functional",
+      "priority": "critical",
+      "platforms": [
+        "api",
+        "web",
+        "desktop"
+      ],
+      "steps": [
+        {
+          "name": "Trigger scan",
+          "action": "POST /api/v1/admin/scan with storage root path",
+          "expected": "202 Accepted or 200 OK with scan started confirmation"
+        },
+        {
+          "name": "Monitor scan progress",
+          "action": "GET /api/v1/admin/scan/status",
+          "expected": "Scan progress reported (percentage or file count)"
+        },
+        {
+          "name": "Wait for completion",
+          "action": "Poll scan status until complete",
+          "expected": "Scan completes with summary of files found"
+        }
+      ],
+      "tags": [
+        "admin",
+        "storage",
+        "scan",
+        "trigger"
+      ],
+      "estimated_duration": "60s",
+      "expected_result": "Manual scan triggered and completes successfully"
+    },
+    {
+      "id": "ADM-013",
+      "name": "Add new storage root",
+      "category": "functional",
+      "priority": "high",
+      "platforms": [
+        "api",
+        "web",
+        "desktop"
+      ],
+      "steps": [
+        {
+          "name": "Add storage root",
+          "action": "POST /api/v1/admin/storage/roots with path '/media/new-root'",
+          "expected": "201 Created"
+        },
+        {
+          "name": "Verify root added",
+          "action": "GET /api/v1/admin/storage",
+          "expected": "New root appears in storage root list"
+        }
+      ],
+      "tags": [
+        "admin",
+        "storage",
+        "root",
+        "add"
+      ],
+      "estimated_duration": "15s",
+      "expected_result": "New storage root added and visible"
+    },
+    {
+      "id": "ADM-014",
+      "name": "Remove storage root",
+      "category": "functional",
+      "priority": "high",
+      "platforms": [
+        "api",
+        "web"
+      ],
+      "steps": [
+        {
+          "name": "Remove storage root",
+          "action": "DELETE /api/v1/admin/storage/roots/{id}",
+          "expected": "200 OK or 204 No Content"
+        },
+        {
+          "name": "Verify removal",
+          "action": "GET /api/v1/admin/storage",
+          "expected": "Root no longer in list"
+        }
+      ],
+      "tags": [
+        "admin",
+        "storage",
+        "root",
+        "remove"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Storage root removed"
+    },
+    {
+      "id": "ADM-015",
+      "name": "Create database backup",
+      "category": "functional",
+      "priority": "critical",
+      "platforms": [
+        "api",
+        "web",
+        "desktop"
+      ],
+      "steps": [
+        {
+          "name": "Trigger backup",
+          "action": "POST /api/v1/admin/backup",
+          "expected": "200 OK with backup file path or download link"
+        },
+        {
+          "name": "Verify backup file",
+          "action": "Check that backup file exists and has non-zero size",
+          "expected": "Backup file created with valid size"
+        }
+      ],
+      "tags": [
+        "admin",
+        "backup",
+        "create",
+        "database"
+      ],
+      "estimated_duration": "30s",
+      "expected_result": "Database backup created successfully"
+    },
+    {
+      "id": "ADM-016",
+      "name": "Restore database from backup",
+      "category": "functional",
+      "priority": "critical",
+      "platforms": [
+        "api",
+        "web",
+        "desktop"
+      ],
+      "steps": [
+        {
+          "name": "Create backup",
+          "action": "POST /api/v1/admin/backup",
+          "expected": "Backup file created"
+        },
+        {
+          "name": "Modify data",
+          "action": "Create a new entity after backup",
+          "expected": "Entity created"
+        },
+        {
+          "name": "Restore from backup",
+          "action": "POST /api/v1/admin/restore with backup file",
+          "expected": "200 OK with restoration confirmation"
+        },
+        {
+          "name": "Verify restoration",
+          "action": "Check that entity created after backup no longer exists",
+          "expected": "Database restored to backup state"
+        }
+      ],
+      "tags": [
+        "admin",
+        "backup",
+        "restore",
+        "database"
+      ],
+      "estimated_duration": "60s",
+      "expected_result": "Database restored to backup point"
+    },
+    {
+      "id": "ADM-017",
+      "name": "Backup with invalid path rejected",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Attempt restore with invalid file",
+          "action": "POST /api/v1/admin/restore with path '/nonexistent/backup.db'",
+          "expected": "400 Bad Request or 404 Not Found"
+        }
+      ],
+      "tags": [
+        "admin",
+        "backup",
+        "restore",
+        "error",
+        "validation"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Invalid backup path rejected with clear error"
+    },
+    {
+      "id": "ADM-018",
+      "name": "Collect application logs",
+      "category": "functional",
+      "priority": "high",
+      "platforms": [
+        "api",
+        "web",
+        "desktop"
+      ],
+      "steps": [
+        {
+          "name": "Request log collection",
+          "action": "GET /api/v1/admin/logs",
+          "expected": "200 OK with recent log entries"
+        },
+        {
+          "name": "Verify log format",
+          "action": "Check log entries have timestamp, level, message fields",
+          "expected": "Structured log entries returned"
+        }
+      ],
+      "tags": [
+        "admin",
+        "logs",
+        "collection",
+        "structured"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Application logs retrieved with structured format"
+    },
+    {
+      "id": "ADM-019",
+      "name": "Filter logs by level",
+      "category": "functional",
+      "priority": "high",
+      "platforms": [
+        "api",
+        "web"
+      ],
+      "steps": [
+        {
+          "name": "Request error logs only",
+          "action": "GET /api/v1/admin/logs?level=error",
+          "expected": "Only error-level log entries returned"
+        },
+        {
+          "name": "Request warning logs",
+          "action": "GET /api/v1/admin/logs?level=warn",
+          "expected": "Warning and above log entries returned"
+        }
+      ],
+      "tags": [
+        "admin",
+        "logs",
+        "filter",
+        "level"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Log level filtering works correctly"
+    },
+    {
+      "id": "ADM-020",
+      "name": "Filter logs by time range",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "api",
+        "web"
+      ],
+      "steps": [
+        {
+          "name": "Request logs for last hour",
+          "action": "GET /api/v1/admin/logs?since=1h",
+          "expected": "Only log entries from the last hour returned"
+        }
+      ],
+      "tags": [
+        "admin",
+        "logs",
+        "filter",
+        "time-range"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Time-range log filtering works"
+    },
+    {
+      "id": "ADM-021",
+      "name": "Log collection returns copy not shared pointer",
+      "category": "functional",
+      "priority": "high",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Collect logs",
+          "action": "GET /api/v1/admin/logs",
+          "expected": "200 OK with log data"
+        },
+        {
+          "name": "Collect logs again",
+          "action": "GET /api/v1/admin/logs",
+          "expected": "Same data, independent response (no race condition)"
+        }
+      ],
+      "tags": [
+        "admin",
+        "logs",
+        "concurrency",
+        "safety"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Log collection returns independent copies"
+    },
+    {
+      "id": "ADM-022",
+      "name": "Update server configuration",
+      "category": "functional",
+      "priority": "high",
+      "platforms": [
+        "api",
+        "web",
+        "desktop"
+      ],
+      "steps": [
+        {
+          "name": "Get current config",
+          "action": "GET /api/v1/admin/config",
+          "expected": "200 OK with current configuration"
+        },
+        {
+          "name": "Update a setting",
+          "action": "PUT /api/v1/admin/config with scan_interval changed",
+          "expected": "200 OK"
+        },
+        {
+          "name": "Verify change",
+          "action": "GET /api/v1/admin/config",
+          "expected": "Updated scan_interval reflected"
+        }
+      ],
+      "tags": [
+        "admin",
+        "config",
+        "update"
+      ],
+      "estimated_duration": "15s",
+      "expected_result": "Configuration updated and persisted"
+    },
+    {
+      "id": "ADM-023",
+      "name": "Configuration rejects invalid values",
+      "category": "functional",
+      "priority": "high",
+      "platforms": [
+        "api",
+        "web"
+      ],
+      "steps": [
+        {
+          "name": "Submit invalid config",
+          "action": "PUT /api/v1/admin/config with negative scan_interval",
+          "expected": "400 Bad Request with validation error"
+        }
+      ],
+      "tags": [
+        "admin",
+        "config",
+        "validation",
+        "error"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Invalid configuration values rejected"
+    },
+    {
+      "id": "ADM-024",
+      "name": "Configuration precedence: env vars over config",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Set env var",
+          "action": "Start API with PORT=9090 environment variable",
+          "expected": "API starts on port 9090"
+        },
+        {
+          "name": "Check config file port",
+          "action": "Verify config.json has different port value",
+          "expected": "Env var takes precedence over config.json"
+        }
+      ],
+      "tags": [
+        "admin",
+        "config",
+        "precedence",
+        "env-vars"
+      ],
+      "estimated_duration": "20s",
+      "expected_result": "Environment variables override config file values"
+    },
+    {
+      "id": "ADM-025",
+      "name": "Health endpoint returns OK",
+      "category": "functional",
+      "priority": "critical",
+      "platforms": [
+        "api",
+        "web",
+        "desktop",
+        "android"
+      ],
+      "steps": [
+        {
+          "name": "Request health check",
+          "action": "GET /api/v1/health",
+          "expected": "200 OK with status 'healthy'"
+        }
+      ],
+      "tags": [
+        "admin",
+        "health",
+        "endpoint",
+        "critical"
+      ],
+      "estimated_duration": "5s",
+      "expected_result": "Health endpoint returns healthy status"
+    },
+    {
+      "id": "ADM-026",
+      "name": "Health check includes component status",
+      "category": "functional",
+      "priority": "high",
+      "platforms": [
+        "api",
+        "web"
+      ],
+      "steps": [
+        {
+          "name": "Request health check",
+          "action": "GET /api/v1/health",
+          "expected": "Response includes database status, cache status, storage status"
+        }
+      ],
+      "tags": [
+        "admin",
+        "health",
+        "components",
+        "detailed"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Health check reports status of all components"
+    },
+    {
+      "id": "ADM-027",
+      "name": "Health check does not require authentication",
+      "category": "functional",
+      "priority": "high",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Request health without token",
+          "action": "GET /api/v1/health with no Authorization header",
+          "expected": "200 OK (health is public)"
+        }
+      ],
+      "tags": [
+        "admin",
+        "health",
+        "public",
+        "no-auth"
+      ],
+      "estimated_duration": "5s",
+      "expected_result": "Health endpoint accessible without authentication"
+    },
+    {
+      "id": "ADM-028",
+      "name": "Metrics endpoint returns Prometheus format",
+      "category": "functional",
+      "priority": "high",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Request metrics",
+          "action": "GET /metrics",
+          "expected": "200 OK with Prometheus text format"
+        },
+        {
+          "name": "Verify metric names",
+          "action": "Check for standard Go runtime metrics and custom app metrics",
+          "expected": "go_goroutines, http_requests_total, or similar metrics present"
+        }
+      ],
+      "tags": [
+        "admin",
+        "metrics",
+        "prometheus",
+        "monitoring"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Prometheus metrics exposed correctly"
+    },
+    {
+      "id": "ADM-029",
+      "name": "Metrics include HTTP request counts",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Make several API requests",
+          "action": "Send 5 GET /api/v1/health requests",
+          "expected": "Requests succeed"
+        },
+        {
+          "name": "Check metrics",
+          "action": "GET /metrics and look for http request counter",
+          "expected": "Request count incremented"
+        }
+      ],
+      "tags": [
+        "admin",
+        "metrics",
+        "http-requests",
+        "counter"
+      ],
+      "estimated_duration": "15s",
+      "expected_result": "HTTP request metrics tracked"
+    },
+    {
+      "id": "ADM-030",
+      "name": "Metrics include database connection pool stats",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Request metrics",
+          "action": "GET /metrics",
+          "expected": "Database pool metrics present (open connections, idle, in use)"
+        }
+      ],
+      "tags": [
+        "admin",
+        "metrics",
+        "database",
+        "pool"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Database pool metrics reported"
+    },
+    {
+      "id": "ADM-031",
+      "name": "Non-admin user rejected from admin endpoints",
+      "category": "functional",
+      "priority": "critical",
+      "platforms": [
+        "api",
+        "web"
+      ],
+      "steps": [
+        {
+          "name": "Login as regular user",
+          "action": "POST /api/v1/auth/login with non-admin credentials",
+          "expected": "200 OK with user JWT token"
+        },
+        {
+          "name": "Access admin endpoint",
+          "action": "GET /api/v1/admin/users with user token",
+          "expected": "403 Forbidden"
+        },
+        {
+          "name": "Access system info",
+          "action": "GET /api/v1/admin/system-info with user token",
+          "expected": "403 Forbidden"
+        }
+      ],
+      "tags": [
+        "admin",
+        "access-control",
+        "rbac",
+        "non-admin"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Non-admin users blocked from admin endpoints"
+    },
+    {
+      "id": "ADM-032",
+      "name": "Unauthenticated user rejected from admin endpoints",
+      "category": "functional",
+      "priority": "critical",
+      "platforms": [
+        "api",
+        "web"
+      ],
+      "steps": [
+        {
+          "name": "Access admin endpoint without token",
+          "action": "GET /api/v1/admin/users with no Authorization header",
+          "expected": "401 Unauthorized"
+        }
+      ],
+      "tags": [
+        "admin",
+        "access-control",
+        "unauthenticated"
+      ],
+      "estimated_duration": "5s",
+      "expected_result": "Unauthenticated access to admin endpoints blocked"
+    },
+    {
+      "id": "ADM-033",
+      "name": "Admin token required for user creation",
+      "category": "functional",
+      "priority": "high",
+      "platforms": [
+        "api",
+        "web"
+      ],
+      "steps": [
+        {
+          "name": "Attempt user creation as regular user",
+          "action": "POST /api/v1/admin/users with non-admin token",
+          "expected": "403 Forbidden"
+        }
+      ],
+      "tags": [
+        "admin",
+        "access-control",
+        "user-creation",
+        "rbac"
+      ],
+      "estimated_duration": "5s",
+      "expected_result": "User creation restricted to admin role"
+    },
+    {
+      "id": "ADM-034",
+      "name": "Admin token required for backup operations",
+      "category": "functional",
+      "priority": "high",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Attempt backup as regular user",
+          "action": "POST /api/v1/admin/backup with non-admin token",
+          "expected": "403 Forbidden"
+        },
+        {
+          "name": "Attempt restore as regular user",
+          "action": "POST /api/v1/admin/restore with non-admin token",
+          "expected": "403 Forbidden"
+        }
+      ],
+      "tags": [
+        "admin",
+        "access-control",
+        "backup",
+        "rbac"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Backup operations restricted to admin role"
+    },
+    {
+      "id": "ADM-035",
+      "name": "Admin token required for configuration changes",
+      "category": "functional",
+      "priority": "high",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Attempt config update as regular user",
+          "action": "PUT /api/v1/admin/config with non-admin token",
+          "expected": "403 Forbidden"
+        }
+      ],
+      "tags": [
+        "admin",
+        "access-control",
+        "config",
+        "rbac"
+      ],
+      "estimated_duration": "5s",
+      "expected_result": "Configuration changes restricted to admin role"
+    },
+    {
+      "id": "ADM-036",
+      "name": "Admin panel accessible in web UI",
+      "category": "functional",
+      "priority": "high",
+      "platforms": [
+        "web",
+        "desktop"
+      ],
+      "steps": [
+        {
+          "name": "Login as admin in web UI",
+          "action": "Login with admin credentials at web UI",
+          "expected": "Dashboard loads"
+        },
+        {
+          "name": "Navigate to admin panel",
+          "action": "Click Admin or Settings in navigation",
+          "expected": "Admin panel displayed with system info, users, storage sections"
+        }
+      ],
+      "tags": [
+        "admin",
+        "web-ui",
+        "panel",
+        "navigation"
+      ],
+      "estimated_duration": "15s",
+      "expected_result": "Admin panel accessible via web UI navigation"
+    },
+    {
+      "id": "ADM-037",
+      "name": "Admin panel hidden for non-admin users",
+      "category": "functional",
+      "priority": "high",
+      "platforms": [
+        "web",
+        "desktop"
+      ],
+      "steps": [
+        {
+          "name": "Login as regular user",
+          "action": "Login with non-admin credentials",
+          "expected": "Dashboard loads"
+        },
+        {
+          "name": "Check for admin panel",
+          "action": "Look for Admin link in navigation",
+          "expected": "Admin panel link not visible"
+        },
+        {
+          "name": "Direct URL access",
+          "action": "Navigate directly to /admin URL",
+          "expected": "Redirected to dashboard or 403 page"
+        }
+      ],
+      "tags": [
+        "admin",
+        "web-ui",
+        "access-control",
+        "hidden"
+      ],
+      "estimated_duration": "15s",
+      "expected_result": "Admin panel not accessible to non-admin users"
+    },
+    {
+      "id": "ADM-038",
+      "name": "User management table in admin UI",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "web",
+        "desktop"
+      ],
+      "steps": [
+        {
+          "name": "Navigate to admin user management",
+          "action": "Open admin panel > Users section",
+          "expected": "User table displayed with columns: username, role, created date"
+        },
+        {
+          "name": "Verify actions available",
+          "action": "Check for edit and delete buttons per user row",
+          "expected": "Action buttons visible for each user"
+        }
+      ],
+      "tags": [
+        "admin",
+        "web-ui",
+        "user-management",
+        "table"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "User management table rendered with actions"
+    },
+    {
+      "id": "ADM-039",
+      "name": "Cache statistics available",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "api",
+        "web"
+      ],
+      "steps": [
+        {
+          "name": "Request cache stats",
+          "action": "GET /api/v1/admin/cache/stats",
+          "expected": "200 OK with hit count, miss count, eviction count, size"
+        }
+      ],
+      "tags": [
+        "admin",
+        "cache",
+        "statistics"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Cache statistics returned"
+    },
+    {
+      "id": "ADM-040",
+      "name": "Clear cache",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "api",
+        "web"
+      ],
+      "steps": [
+        {
+          "name": "Clear cache",
+          "action": "POST /api/v1/admin/cache/clear",
+          "expected": "200 OK"
+        },
+        {
+          "name": "Verify cache cleared",
+          "action": "GET /api/v1/admin/cache/stats",
+          "expected": "Cache size is 0 after clear"
+        }
+      ],
+      "tags": [
+        "admin",
+        "cache",
+        "clear",
+        "management"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Cache cleared and verified empty"
+    },
+    {
+      "id": "ADM-041",
+      "name": "Graceful shutdown completes pending requests",
+      "category": "functional",
+      "priority": "critical",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Start long-running request",
+          "action": "Initiate a scan operation",
+          "expected": "Scan in progress"
+        },
+        {
+          "name": "Send shutdown signal",
+          "action": "Send SIGTERM to catalog-api process",
+          "expected": "Server begins graceful shutdown"
+        },
+        {
+          "name": "Verify completion",
+          "action": "Check that in-flight request completes before exit",
+          "expected": "Process exits cleanly after pending work finishes"
+        }
+      ],
+      "tags": [
+        "admin",
+        "lifecycle",
+        "graceful-shutdown",
+        "signal"
+      ],
+      "estimated_duration": "30s",
+      "expected_result": "Graceful shutdown waits for in-flight requests"
+    },
+    {
+      "id": "ADM-042",
+      "name": "WebSocket handler stopped during shutdown",
+      "category": "functional",
+      "priority": "high",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Establish WebSocket connection",
+          "action": "Connect WebSocket client to /api/v1/ws",
+          "expected": "WebSocket connected"
+        },
+        {
+          "name": "Trigger shutdown",
+          "action": "Send SIGTERM",
+          "expected": "WebSocket handler Stop() called"
+        },
+        {
+          "name": "Verify clean close",
+          "action": "Check WebSocket client receives close frame",
+          "expected": "Client receives close notification"
+        }
+      ],
+      "tags": [
+        "admin",
+        "lifecycle",
+        "websocket",
+        "shutdown"
+      ],
+      "estimated_duration": "20s",
+      "expected_result": "WebSocket connections closed cleanly during shutdown"
+    },
+    {
+      "id": "ADM-043",
+      "name": "Cache service closed during shutdown",
+      "category": "functional",
+      "priority": "high",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Verify cache running",
+          "action": "GET /api/v1/admin/cache/stats",
+          "expected": "Cache operational"
+        },
+        {
+          "name": "Trigger shutdown",
+          "action": "Send SIGTERM",
+          "expected": "Cache cleanup goroutine stopped, Close() called"
+        }
+      ],
+      "tags": [
+        "admin",
+        "lifecycle",
+        "cache",
+        "shutdown"
+      ],
+      "estimated_duration": "15s",
+      "expected_result": "Cache service stopped cleanly during shutdown"
+    },
+    {
+      "id": "ADM-044",
+      "name": "Database pool settings applied",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Check database pool config",
+          "action": "GET /metrics or /api/v1/admin/system-info",
+          "expected": "Pool settings match config: MaxOpen=25, MaxIdle=10"
+        }
+      ],
+      "tags": [
+        "admin",
+        "database",
+        "pool",
+        "configuration"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Database pool configured with expected limits"
+    },
+    {
+      "id": "ADM-045",
+      "name": "Database pool handles connection exhaustion",
+      "category": "functional",
+      "priority": "high",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Send burst of concurrent requests",
+          "action": "Send 30 simultaneous API requests",
+          "expected": "All requests complete (some may queue waiting for pool)"
+        },
+        {
+          "name": "Verify no connection leak",
+          "action": "Check pool stats after burst",
+          "expected": "Active connections return to idle levels"
+        }
+      ],
+      "tags": [
+        "admin",
+        "database",
+        "pool",
+        "exhaustion",
+        "stress"
+      ],
+      "estimated_duration": "30s",
+      "expected_result": "Connection pool handles burst without leaking connections"
+    },
+    {
+      "id": "ADM-046",
+      "name": "Services initialized in dependency order",
+      "category": "functional",
+      "priority": "high",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Start API server",
+          "action": "Launch catalog-api",
+          "expected": "Server starts successfully"
+        },
+        {
+          "name": "Check startup logs",
+          "action": "Review log output for service initialization order",
+          "expected": "Services initialized in dependency order (database before repositories before services)"
+        }
+      ],
+      "tags": [
+        "admin",
+        "lifecycle",
+        "lazy-registry",
+        "initialization"
+      ],
+      "estimated_duration": "15s",
+      "expected_result": "Services initialized in correct dependency order"
+    },
+    {
+      "id": "ADM-047",
+      "name": "Deferred service not initialized until needed",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Start server",
+          "action": "Launch catalog-api",
+          "expected": "Server starts"
+        },
+        {
+          "name": "Check lazy services",
+          "action": "Verify that optional services are not initialized until first access",
+          "expected": "Lazy services show deferred status in logs until accessed"
+        }
+      ],
+      "tags": [
+        "admin",
+        "lifecycle",
+        "lazy-registry",
+        "deferred"
+      ],
+      "estimated_duration": "15s",
+      "expected_result": "Deferred services lazily initialized"
+    },
+    {
+      "id": "ADM-048",
+      "name": "Concurrent admin operations do not deadlock",
+      "category": "functional",
+      "priority": "high",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Send concurrent admin requests",
+          "action": "Simultaneously: GET /admin/users, GET /admin/storage, GET /admin/logs",
+          "expected": "All three responses return within timeout"
+        },
+        {
+          "name": "Repeat 5 times",
+          "action": "Run the concurrent batch 5 times",
+          "expected": "No deadlock or timeout on any iteration"
+        }
+      ],
+      "tags": [
+        "admin",
+        "concurrency",
+        "deadlock",
+        "stress"
+      ],
+      "estimated_duration": "30s",
+      "expected_result": "Concurrent admin operations complete without deadlock"
+    },
+    {
+      "id": "ADM-049",
+      "name": "Scan and user management concurrent",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Start scan",
+          "action": "POST /api/v1/admin/scan",
+          "expected": "Scan started"
+        },
+        {
+          "name": "Manage users during scan",
+          "action": "Create and delete a user while scan is in progress",
+          "expected": "User operations succeed independently of scan"
+        }
+      ],
+      "tags": [
+        "admin",
+        "concurrency",
+        "scan",
+        "user-management"
+      ],
+      "estimated_duration": "30s",
+      "expected_result": "User management works during active scan"
+    },
+    {
+      "id": "ADM-050",
+      "name": "Semaphore limits parallel scan operations",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Trigger multiple scans",
+          "action": "POST /api/v1/admin/scan twice rapidly",
+          "expected": "Second scan queued or rejected (not running in parallel)"
+        },
+        {
+          "name": "Verify semaphore",
+          "action": "Check that only one scan runs at a time",
+          "expected": "Semaphore enforces single concurrent scan"
+        }
+      ],
+      "tags": [
+        "admin",
+        "concurrency",
+        "semaphore",
+        "scan-limit"
+      ],
+      "estimated_duration": "30s",
+      "expected_result": "Parallel scan operations limited by semaphore"
+    }
+  ]
+}

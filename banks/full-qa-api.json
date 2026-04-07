@@ -1,0 +1,6996 @@
+{
+  "version": "1.0",
+  "name": "Catalogizer Full QA - API",
+  "description": "Comprehensive end-to-end API test bank for the Catalogizer Go/Gin backend covering all /api/v1 endpoints: authentication, health, storage roots, scanning, media browsing, media entities, collections, playlists, favorites, streaming, WebSocket, admin operations, and edge cases",
+  "metadata": {
+    "author": "vasic-digital",
+    "app": "Catalogizer",
+    "version": "2.3.0"
+  },
+  "test_cases": [
+    {
+      "id": "FQA-API-001",
+      "name": "Login with valid admin credentials",
+      "category": "functional",
+      "priority": "critical",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Send login request",
+          "action": "POST /api/v1/auth/login with body {\"username\":\"admin\",\"password\":\"admin123\"}",
+          "expected": "200 OK with JSON containing token field"
+        },
+        {
+          "name": "Verify token is a valid JWT",
+          "action": "Decode the returned token and inspect header and payload",
+          "expected": "Token has three base64 segments, alg HS256, contains username and role claims"
+        }
+      ],
+      "tags": [
+        "auth",
+        "login",
+        "admin",
+        "happy-path"
+      ],
+      "estimated_duration": "5s",
+      "expected_result": "Admin login succeeds and returns a valid JWT token"
+    },
+    {
+      "id": "FQA-API-002",
+      "name": "Login with wrong password",
+      "category": "functional",
+      "priority": "critical",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Send login request with wrong password",
+          "action": "POST /api/v1/auth/login with body {\"username\":\"admin\",\"password\":\"wrongpass\"}",
+          "expected": "401 Unauthorized with error message"
+        }
+      ],
+      "tags": [
+        "auth",
+        "login",
+        "negative",
+        "invalid-credentials"
+      ],
+      "estimated_duration": "5s",
+      "expected_result": "Login rejected with 401 when password is incorrect"
+    },
+    {
+      "id": "FQA-API-003",
+      "name": "Login with non-existent user",
+      "category": "functional",
+      "priority": "critical",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Send login with non-existent username",
+          "action": "POST /api/v1/auth/login with body {\"username\":\"ghost_user\",\"password\":\"test123\"}",
+          "expected": "401 Unauthorized"
+        }
+      ],
+      "tags": [
+        "auth",
+        "login",
+        "negative",
+        "non-existent-user"
+      ],
+      "estimated_duration": "5s",
+      "expected_result": "Login rejected for non-existent username"
+    },
+    {
+      "id": "FQA-API-004",
+      "name": "Login with empty credentials",
+      "category": "functional",
+      "priority": "high",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Send login with empty username and password",
+          "action": "POST /api/v1/auth/login with body {\"username\":\"\",\"password\":\"\"}",
+          "expected": "400 Bad Request or 401 Unauthorized"
+        }
+      ],
+      "tags": [
+        "auth",
+        "login",
+        "negative",
+        "empty-input"
+      ],
+      "estimated_duration": "5s",
+      "expected_result": "Login rejected when credentials are empty"
+    },
+    {
+      "id": "FQA-API-005",
+      "name": "Login with SQL injection attempt",
+      "category": "security",
+      "priority": "critical",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Send SQL injection in username",
+          "action": "POST /api/v1/auth/login with body {\"username\":\"admin' OR '1'='1\",\"password\":\"anything\"}",
+          "expected": "401 Unauthorized (SQL injection has no effect)"
+        },
+        {
+          "name": "Verify server is still healthy",
+          "action": "GET /health",
+          "expected": "200 OK with status healthy"
+        }
+      ],
+      "tags": [
+        "auth",
+        "login",
+        "security",
+        "sql-injection"
+      ],
+      "estimated_duration": "5s",
+      "expected_result": "SQL injection in login has no effect, server remains healthy"
+    },
+    {
+      "id": "FQA-API-006",
+      "name": "Token refresh with valid refresh token",
+      "category": "functional",
+      "priority": "critical",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Login to obtain tokens",
+          "action": "POST /api/v1/auth/login with body {\"username\":\"admin\",\"password\":\"admin123\"}",
+          "expected": "200 OK with access token and refresh token"
+        },
+        {
+          "name": "Refresh the token",
+          "action": "POST /api/v1/auth/refresh with the refresh token from login",
+          "expected": "200 OK with a new access token"
+        },
+        {
+          "name": "Use new token on protected endpoint",
+          "action": "GET /api/v1/entities with new access token",
+          "expected": "200 OK (new token is valid)"
+        }
+      ],
+      "tags": [
+        "auth",
+        "token",
+        "refresh",
+        "happy-path"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Token refresh returns a new valid access token"
+    },
+    {
+      "id": "FQA-API-007",
+      "name": "Logout invalidates token",
+      "category": "functional",
+      "priority": "critical",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Login",
+          "action": "POST /api/v1/auth/login with admin credentials",
+          "expected": "200 OK with token"
+        },
+        {
+          "name": "Logout",
+          "action": "POST /api/v1/auth/logout with the obtained token in Authorization header",
+          "expected": "200 OK"
+        },
+        {
+          "name": "Use logged-out token",
+          "action": "GET /api/v1/entities with the logged-out token",
+          "expected": "401 Unauthorized (token blacklisted)"
+        }
+      ],
+      "tags": [
+        "auth",
+        "logout",
+        "token-invalidation"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "After logout the token is no longer accepted"
+    },
+    {
+      "id": "FQA-API-008",
+      "name": "Access protected endpoint without token",
+      "category": "functional",
+      "priority": "critical",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Call protected endpoint with no Authorization header",
+          "action": "GET /api/v1/entities",
+          "expected": "401 Unauthorized"
+        }
+      ],
+      "tags": [
+        "auth",
+        "protected",
+        "no-token"
+      ],
+      "estimated_duration": "5s",
+      "expected_result": "Protected endpoints reject requests without a token"
+    },
+    {
+      "id": "FQA-API-009",
+      "name": "Access protected endpoint with expired token",
+      "category": "functional",
+      "priority": "critical",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Craft a JWT with exp claim in the past",
+          "action": "Sign JWT with the server secret but exp = now - 3600",
+          "expected": "Expired token crafted"
+        },
+        {
+          "name": "Send request with expired token",
+          "action": "GET /api/v1/entities with Authorization: Bearer <expired_token>",
+          "expected": "401 Unauthorized with token expired message"
+        }
+      ],
+      "tags": [
+        "auth",
+        "token",
+        "expired",
+        "security"
+      ],
+      "estimated_duration": "5s",
+      "expected_result": "Expired tokens are rejected with a clear error"
+    },
+    {
+      "id": "FQA-API-010",
+      "name": "Access admin endpoint as regular user",
+      "category": "functional",
+      "priority": "critical",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Register or login as regular user",
+          "action": "POST /api/v1/auth/login with regular user credentials",
+          "expected": "200 OK with user-role JWT"
+        },
+        {
+          "name": "Access admin system-info",
+          "action": "GET /api/v1/admin/system-info with user token",
+          "expected": "403 Forbidden"
+        }
+      ],
+      "tags": [
+        "auth",
+        "rbac",
+        "admin",
+        "forbidden"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Regular users cannot access admin endpoints"
+    },
+    {
+      "id": "FQA-API-011",
+      "name": "Register new user",
+      "category": "functional",
+      "priority": "high",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Send registration request",
+          "action": "POST /api/v1/auth/register with body {\"username\":\"newuser_test\",\"password\":\"SecureP@ss123\"}",
+          "expected": "201 Created or 200 OK with user info"
+        },
+        {
+          "name": "Login as new user",
+          "action": "POST /api/v1/auth/login with body {\"username\":\"newuser_test\",\"password\":\"SecureP@ss123\"}",
+          "expected": "200 OK with JWT token"
+        }
+      ],
+      "tags": [
+        "auth",
+        "register",
+        "new-user",
+        "happy-path"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "New user registered and can log in"
+    },
+    {
+      "id": "FQA-API-012",
+      "name": "Change password via auth endpoint",
+      "category": "functional",
+      "priority": "high",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Login with current password",
+          "action": "POST /api/v1/auth/login with body {\"username\":\"admin\",\"password\":\"admin123\"}",
+          "expected": "200 OK with token"
+        },
+        {
+          "name": "Change password",
+          "action": "POST /api/v1/auth/change-password with token and body {\"current_password\":\"admin123\",\"new_password\":\"NewAdmin456!\"}",
+          "expected": "200 OK"
+        },
+        {
+          "name": "Login with new password",
+          "action": "POST /api/v1/auth/login with body {\"username\":\"admin\",\"password\":\"NewAdmin456!\"}",
+          "expected": "200 OK"
+        },
+        {
+          "name": "Restore original password",
+          "action": "POST /api/v1/auth/change-password with body {\"current_password\":\"NewAdmin456!\",\"new_password\":\"admin123\"}",
+          "expected": "200 OK (cleanup)"
+        }
+      ],
+      "tags": [
+        "auth",
+        "change-password",
+        "happy-path"
+      ],
+      "estimated_duration": "15s",
+      "expected_result": "Password changed successfully and new password works"
+    },
+    {
+      "id": "FQA-API-013",
+      "name": "Rate limiting on login endpoint",
+      "category": "security",
+      "priority": "critical",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Send 6 rapid failed login attempts",
+          "action": "POST /api/v1/auth/login with wrong password 6 times in under 10 seconds",
+          "expected": "After threshold, response becomes 429 Too Many Requests"
+        },
+        {
+          "name": "Check rate limit headers",
+          "action": "Inspect response headers",
+          "expected": "X-RateLimit-Remaining or Retry-After header present"
+        }
+      ],
+      "tags": [
+        "auth",
+        "rate-limiting",
+        "brute-force",
+        "security"
+      ],
+      "estimated_duration": "15s",
+      "expected_result": "Login rate limiting triggers after 5 rapid failed attempts"
+    },
+    {
+      "id": "FQA-API-014",
+      "name": "Get current user info",
+      "category": "functional",
+      "priority": "high",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Login as admin",
+          "action": "POST /api/v1/auth/login with admin credentials",
+          "expected": "200 OK with token"
+        },
+        {
+          "name": "Get current user",
+          "action": "GET /api/v1/auth/me with token",
+          "expected": "200 OK with username 'admin' and role 'admin'"
+        }
+      ],
+      "tags": [
+        "auth",
+        "me",
+        "current-user",
+        "profile"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Current user info returned with correct username and role"
+    },
+    {
+      "id": "FQA-API-015",
+      "name": "Get auth status (public)",
+      "category": "functional",
+      "priority": "high",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Check auth status without token",
+          "action": "GET /api/v1/auth/status",
+          "expected": "200 OK with authentication status info"
+        }
+      ],
+      "tags": [
+        "auth",
+        "status",
+        "public"
+      ],
+      "estimated_duration": "5s",
+      "expected_result": "Auth status endpoint is accessible and returns status"
+    },
+    {
+      "id": "FQA-API-016",
+      "name": "Get user permissions",
+      "category": "functional",
+      "priority": "high",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Login as admin",
+          "action": "POST /api/v1/auth/login with admin credentials",
+          "expected": "200 OK with token"
+        },
+        {
+          "name": "Get permissions",
+          "action": "GET /api/v1/auth/permissions with admin token",
+          "expected": "200 OK with list of permissions for admin role"
+        }
+      ],
+      "tags": [
+        "auth",
+        "permissions",
+        "rbac"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Admin permissions returned correctly"
+    },
+    {
+      "id": "FQA-API-017",
+      "name": "Login with malformed JSON body",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Send malformed JSON",
+          "action": "POST /api/v1/auth/login with body 'not valid json{'",
+          "expected": "400 Bad Request"
+        }
+      ],
+      "tags": [
+        "auth",
+        "login",
+        "malformed-json",
+        "negative"
+      ],
+      "estimated_duration": "5s",
+      "expected_result": "Malformed JSON body rejected with 400"
+    },
+    {
+      "id": "FQA-API-018",
+      "name": "Login with extra unknown fields",
+      "category": "functional",
+      "priority": "low",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Login with extra fields",
+          "action": "POST /api/v1/auth/login with body {\"username\":\"admin\",\"password\":\"admin123\",\"evil_field\":\"hack\"}",
+          "expected": "200 OK (extra fields ignored, login succeeds)"
+        }
+      ],
+      "tags": [
+        "auth",
+        "login",
+        "mass-assignment",
+        "security"
+      ],
+      "estimated_duration": "5s",
+      "expected_result": "Extra fields in login body are safely ignored"
+    },
+    {
+      "id": "FQA-API-019",
+      "name": "Get init status",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Request init status",
+          "action": "GET /api/v1/auth/init-status",
+          "expected": "200 OK with initialization status (whether setup wizard is needed)"
+        }
+      ],
+      "tags": [
+        "auth",
+        "init-status",
+        "setup"
+      ],
+      "estimated_duration": "5s",
+      "expected_result": "Init status endpoint returns setup state"
+    },
+    {
+      "id": "FQA-API-020",
+      "name": "Token with invalid signature rejected",
+      "category": "security",
+      "priority": "critical",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Craft JWT signed with wrong secret",
+          "action": "Create JWT with payload {\"username\":\"admin\",\"role\":\"admin\"} signed with secret 'wrong_secret'",
+          "expected": "Token created"
+        },
+        {
+          "name": "Use forged token",
+          "action": "GET /api/v1/entities with forged token",
+          "expected": "401 Unauthorized"
+        }
+      ],
+      "tags": [
+        "auth",
+        "token",
+        "forged",
+        "invalid-signature",
+        "security"
+      ],
+      "estimated_duration": "5s",
+      "expected_result": "Tokens signed with wrong secret are rejected"
+    },
+    {
+      "id": "FQA-API-021",
+      "name": "Health endpoint returns version info",
+      "category": "functional",
+      "priority": "critical",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Request health check",
+          "action": "GET /health",
+          "expected": "200 OK with JSON containing status 'healthy', version, build_number, build_date, and time fields"
+        }
+      ],
+      "tags": [
+        "health",
+        "version",
+        "system",
+        "happy-path"
+      ],
+      "estimated_duration": "5s",
+      "expected_result": "Health endpoint returns healthy status with version metadata"
+    },
+    {
+      "id": "FQA-API-022",
+      "name": "Deep health check includes component status",
+      "category": "functional",
+      "priority": "high",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Request deep health check",
+          "action": "GET /health/deep",
+          "expected": "200 OK with status and components object including database health"
+        }
+      ],
+      "tags": [
+        "health",
+        "deep",
+        "components",
+        "database"
+      ],
+      "estimated_duration": "5s",
+      "expected_result": "Deep health check reports database and component health"
+    },
+    {
+      "id": "FQA-API-023",
+      "name": "Metrics endpoint returns Prometheus format",
+      "category": "functional",
+      "priority": "high",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Request metrics",
+          "action": "GET /metrics",
+          "expected": "200 OK with text/plain Prometheus-format output containing go_goroutines, process_cpu_seconds_total"
+        }
+      ],
+      "tags": [
+        "metrics",
+        "prometheus",
+        "monitoring"
+      ],
+      "estimated_duration": "5s",
+      "expected_result": "Prometheus metrics exposed in standard text format"
+    },
+    {
+      "id": "FQA-API-024",
+      "name": "CORS headers present on API responses",
+      "category": "functional",
+      "priority": "high",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Send OPTIONS preflight",
+          "action": "OPTIONS /api/v1/entities with Origin: http://localhost:3000",
+          "expected": "200 OK with Access-Control-Allow-Origin, Access-Control-Allow-Methods, Access-Control-Allow-Headers"
+        }
+      ],
+      "tags": [
+        "cors",
+        "headers",
+        "preflight"
+      ],
+      "estimated_duration": "5s",
+      "expected_result": "CORS preflight returns correct allowed origin and methods"
+    },
+    {
+      "id": "FQA-API-025",
+      "name": "Brotli compression in API responses",
+      "category": "functional",
+      "priority": "high",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Request with Accept-Encoding: br",
+          "action": "GET /api/v1/entities with Accept-Encoding: br and valid auth token",
+          "expected": "Response contains Content-Encoding: br header"
+        },
+        {
+          "name": "Request with Accept-Encoding: gzip",
+          "action": "GET /api/v1/entities with Accept-Encoding: gzip and valid auth token",
+          "expected": "Response contains Content-Encoding: gzip header (fallback)"
+        }
+      ],
+      "tags": [
+        "compression",
+        "brotli",
+        "gzip",
+        "performance"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Brotli compression applied when requested, gzip as fallback"
+    },
+    {
+      "id": "FQA-API-026",
+      "name": "Security headers present on all responses",
+      "category": "functional",
+      "priority": "high",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Inspect response headers from health",
+          "action": "GET /health and check response headers",
+          "expected": "X-Content-Type-Options: nosniff, X-Frame-Options present"
+        }
+      ],
+      "tags": [
+        "security",
+        "headers",
+        "nosniff",
+        "x-frame-options"
+      ],
+      "estimated_duration": "5s",
+      "expected_result": "Security headers set on all responses"
+    },
+    {
+      "id": "FQA-API-027",
+      "name": "Request ID assigned to every response",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Send any request",
+          "action": "GET /health",
+          "expected": "Response contains X-Request-ID header with a unique identifier"
+        }
+      ],
+      "tags": [
+        "tracing",
+        "request-id",
+        "observability"
+      ],
+      "estimated_duration": "5s",
+      "expected_result": "Every response has a unique X-Request-ID header"
+    },
+    {
+      "id": "FQA-API-028",
+      "name": "Discovery endpoint for service location",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Request discovery info",
+          "action": "GET /api/v1/discovery",
+          "expected": "200 OK with service discovery information"
+        }
+      ],
+      "tags": [
+        "discovery",
+        "service-location"
+      ],
+      "estimated_duration": "5s",
+      "expected_result": "Discovery endpoint returns service info"
+    },
+    {
+      "id": "FQA-API-029",
+      "name": "Image proxy endpoint for external images",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Proxy a TMDB image",
+          "action": "GET /api/v1/image-proxy?url=https://image.tmdb.org/t/p/w500/test.jpg",
+          "expected": "200 OK with proxied image content or appropriate error if URL invalid"
+        }
+      ],
+      "tags": [
+        "image-proxy",
+        "tmdb",
+        "external-images"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Image proxy serves external images from allowed domains"
+    },
+    {
+      "id": "FQA-API-030",
+      "name": "Concurrency limiter rejects excess requests",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Note configured concurrency limit",
+          "action": "Server configured with ConcurrencyLimiter(100)",
+          "expected": "Acknowledged"
+        },
+        {
+          "name": "Verify server responds under normal load",
+          "action": "Send 5 parallel GET /health requests",
+          "expected": "All return 200 OK within 1 second"
+        }
+      ],
+      "tags": [
+        "concurrency",
+        "limiter",
+        "load",
+        "performance"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Server handles concurrent requests within configured limit"
+    },
+    {
+      "id": "FQA-API-031",
+      "name": "Create SMB storage root",
+      "category": "functional",
+      "priority": "critical",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Authenticate as admin",
+          "action": "POST /api/v1/auth/login with admin credentials",
+          "expected": "200 OK with token"
+        },
+        {
+          "name": "Create SMB storage root",
+          "action": "POST /api/v1/storage/roots with body {\"name\":\"Synology NAS\",\"protocol\":\"smb\",\"host\":\"synology.local\",\"share\":\"media\",\"path\":\"/\"}",
+          "expected": "201 Created with storage root ID"
+        }
+      ],
+      "tags": [
+        "storage",
+        "root",
+        "create",
+        "smb",
+        "happy-path"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "SMB storage root created successfully"
+    },
+    {
+      "id": "FQA-API-032",
+      "name": "Create local filesystem storage root",
+      "category": "functional",
+      "priority": "critical",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Authenticate as admin",
+          "action": "POST /api/v1/auth/login with admin credentials",
+          "expected": "200 OK with token"
+        },
+        {
+          "name": "Create local storage root",
+          "action": "POST /api/v1/storage/roots with body {\"name\":\"Local Media\",\"protocol\":\"local\",\"path\":\"/tmp/test-media\"}",
+          "expected": "201 Created with storage root ID"
+        }
+      ],
+      "tags": [
+        "storage",
+        "root",
+        "create",
+        "local",
+        "happy-path"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Local filesystem storage root created"
+    },
+    {
+      "id": "FQA-API-033",
+      "name": "List all storage roots",
+      "category": "functional",
+      "priority": "critical",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Authenticate",
+          "action": "POST /api/v1/auth/login with admin credentials",
+          "expected": "200 OK with token"
+        },
+        {
+          "name": "List storage roots",
+          "action": "GET /api/v1/storage/roots with token",
+          "expected": "200 OK with JSON array of storage root objects"
+        }
+      ],
+      "tags": [
+        "storage",
+        "root",
+        "list",
+        "happy-path"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Storage roots list returned with all configured roots"
+    },
+    {
+      "id": "FQA-API-034",
+      "name": "List storage roots via alternative endpoint",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "List via /storage-roots",
+          "action": "GET /api/v1/storage-roots with valid auth token",
+          "expected": "200 OK with same data as /storage/roots"
+        }
+      ],
+      "tags": [
+        "storage",
+        "root",
+        "list",
+        "alternative-endpoint"
+      ],
+      "estimated_duration": "5s",
+      "expected_result": "Alternative storage-roots endpoint returns same data"
+    },
+    {
+      "id": "FQA-API-035",
+      "name": "Get storage root status by ID",
+      "category": "functional",
+      "priority": "high",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "List roots and get first ID",
+          "action": "GET /api/v1/storage-roots with auth token",
+          "expected": "200 OK with at least one root"
+        },
+        {
+          "name": "Get status by ID",
+          "action": "GET /api/v1/storage-roots/{id}/status",
+          "expected": "200 OK with storage root status including connectivity info"
+        }
+      ],
+      "tags": [
+        "storage",
+        "root",
+        "status",
+        "by-id"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Storage root status returned with health info"
+    },
+    {
+      "id": "FQA-API-036",
+      "name": "Create storage root with invalid protocol",
+      "category": "functional",
+      "priority": "high",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Attempt to create with unsupported protocol",
+          "action": "POST /api/v1/storage/roots with body {\"name\":\"Bad Root\",\"protocol\":\"gopher\",\"path\":\"/test\"}",
+          "expected": "400 Bad Request with validation error about unsupported protocol"
+        }
+      ],
+      "tags": [
+        "storage",
+        "root",
+        "create",
+        "invalid-protocol",
+        "negative"
+      ],
+      "estimated_duration": "5s",
+      "expected_result": "Unsupported protocol rejected with 400"
+    },
+    {
+      "id": "FQA-API-037",
+      "name": "Create storage root with missing required fields",
+      "category": "functional",
+      "priority": "high",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Attempt to create with empty body",
+          "action": "POST /api/v1/storage/roots with body {}",
+          "expected": "400 Bad Request with validation errors"
+        },
+        {
+          "name": "Attempt with only name",
+          "action": "POST /api/v1/storage/roots with body {\"name\":\"Incomplete Root\"}",
+          "expected": "400 Bad Request"
+        }
+      ],
+      "tags": [
+        "storage",
+        "root",
+        "create",
+        "missing-fields",
+        "validation",
+        "negative"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Missing required fields rejected with clear validation errors"
+    },
+    {
+      "id": "FQA-API-038",
+      "name": "Create storage root with duplicate name",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Create first root",
+          "action": "POST /api/v1/storage/roots with body {\"name\":\"Duplicate Test\",\"protocol\":\"local\",\"path\":\"/tmp/dup1\"}",
+          "expected": "201 Created"
+        },
+        {
+          "name": "Create second root with same name",
+          "action": "POST /api/v1/storage/roots with body {\"name\":\"Duplicate Test\",\"protocol\":\"local\",\"path\":\"/tmp/dup2\"}",
+          "expected": "409 Conflict or 400 Bad Request with duplicate name error"
+        }
+      ],
+      "tags": [
+        "storage",
+        "root",
+        "duplicate",
+        "validation",
+        "negative"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Duplicate storage root name rejected"
+    },
+    {
+      "id": "FQA-API-039",
+      "name": "SMB connection test",
+      "category": "functional",
+      "priority": "high",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Test SMB connection",
+          "action": "POST /api/v1/smb/test with body {\"host\":\"synology.local\",\"share\":\"media\",\"username\":\"test\",\"password\":\"test\"}",
+          "expected": "200 OK with connection test result (success or failure details)"
+        }
+      ],
+      "tags": [
+        "storage",
+        "smb",
+        "connection-test"
+      ],
+      "estimated_duration": "15s",
+      "expected_result": "SMB connection test returns clear success/failure status"
+    },
+    {
+      "id": "FQA-API-040",
+      "name": "SMB share discovery",
+      "category": "functional",
+      "priority": "high",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Discover SMB shares",
+          "action": "POST /api/v1/smb/discover with body {\"host\":\"synology.local\"}",
+          "expected": "200 OK with list of available shares"
+        }
+      ],
+      "tags": [
+        "storage",
+        "smb",
+        "discovery",
+        "shares"
+      ],
+      "estimated_duration": "15s",
+      "expected_result": "SMB shares on the host are discovered and listed"
+    },
+    {
+      "id": "FQA-API-041",
+      "name": "Browse SMB share contents",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Browse SMB share",
+          "action": "POST /api/v1/smb/browse with body {\"host\":\"synology.local\",\"share\":\"media\",\"path\":\"/\"}",
+          "expected": "200 OK with directory listing"
+        }
+      ],
+      "tags": [
+        "storage",
+        "smb",
+        "browse",
+        "directory"
+      ],
+      "estimated_duration": "15s",
+      "expected_result": "SMB share contents listed including subdirectories"
+    },
+    {
+      "id": "FQA-API-042",
+      "name": "List storage paths under a root",
+      "category": "functional",
+      "priority": "high",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "List storage path",
+          "action": "GET /api/v1/storage/list/ with auth token",
+          "expected": "200 OK with directory listing of root level"
+        }
+      ],
+      "tags": [
+        "storage",
+        "list",
+        "browse",
+        "path"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Storage path listing returns files and directories"
+    },
+    {
+      "id": "FQA-API-043",
+      "name": "Admin get storage info",
+      "category": "functional",
+      "priority": "high",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Get admin storage overview",
+          "action": "GET /api/v1/admin/storage with admin token",
+          "expected": "200 OK with total size, file counts, and storage root details"
+        }
+      ],
+      "tags": [
+        "storage",
+        "admin",
+        "info",
+        "overview"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Admin storage info endpoint returns storage summary"
+    },
+    {
+      "id": "FQA-API-044",
+      "name": "Create FTP storage root",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Create FTP root",
+          "action": "POST /api/v1/storage/roots with body {\"name\":\"FTP Server\",\"protocol\":\"ftp\",\"host\":\"ftp.example.com\",\"port\":21,\"path\":\"/\"}",
+          "expected": "201 Created with storage root ID"
+        }
+      ],
+      "tags": [
+        "storage",
+        "root",
+        "create",
+        "ftp"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "FTP storage root created successfully"
+    },
+    {
+      "id": "FQA-API-045",
+      "name": "Create NFS storage root",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Create NFS root",
+          "action": "POST /api/v1/storage/roots with body {\"name\":\"NFS Export\",\"protocol\":\"nfs\",\"host\":\"nas.local\",\"path\":\"/export/media\"}",
+          "expected": "201 Created with storage root ID"
+        }
+      ],
+      "tags": [
+        "storage",
+        "root",
+        "create",
+        "nfs"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "NFS storage root created successfully"
+    },
+    {
+      "id": "FQA-API-046",
+      "name": "Create WebDAV storage root",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Create WebDAV root",
+          "action": "POST /api/v1/storage/roots with body {\"name\":\"WebDAV Server\",\"protocol\":\"webdav\",\"host\":\"webdav.example.com\",\"path\":\"/dav/media\"}",
+          "expected": "201 Created with storage root ID"
+        }
+      ],
+      "tags": [
+        "storage",
+        "root",
+        "create",
+        "webdav"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "WebDAV storage root created"
+    },
+    {
+      "id": "FQA-API-047",
+      "name": "Admin scan storage",
+      "category": "functional",
+      "priority": "high",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Trigger admin storage scan",
+          "action": "POST /api/v1/admin/storage/scan with admin token and storage root path",
+          "expected": "200 OK or 202 Accepted with scan confirmation"
+        }
+      ],
+      "tags": [
+        "storage",
+        "admin",
+        "scan",
+        "trigger"
+      ],
+      "estimated_duration": "15s",
+      "expected_result": "Admin can trigger storage scan via admin endpoint"
+    },
+    {
+      "id": "FQA-API-048",
+      "name": "SMB test connection via GET",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Test SMB connection via GET",
+          "action": "GET /api/v1/smb/test?host=synology.local&share=media",
+          "expected": "200 OK with connection test result"
+        }
+      ],
+      "tags": [
+        "storage",
+        "smb",
+        "test",
+        "get-method"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "SMB connection test works via GET method"
+    },
+    {
+      "id": "FQA-API-049",
+      "name": "SMB discover shares via GET",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Discover via GET",
+          "action": "GET /api/v1/smb/discover?host=synology.local",
+          "expected": "200 OK with discovered shares"
+        }
+      ],
+      "tags": [
+        "storage",
+        "smb",
+        "discover",
+        "get-method"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "SMB discovery works via GET method"
+    },
+    {
+      "id": "FQA-API-050",
+      "name": "Storage root with path traversal attempt",
+      "category": "security",
+      "priority": "critical",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Attempt path traversal in storage root",
+          "action": "POST /api/v1/storage/roots with body {\"name\":\"Evil Root\",\"protocol\":\"local\",\"path\":\"/../../../etc\"}",
+          "expected": "400 Bad Request or 403 Forbidden"
+        }
+      ],
+      "tags": [
+        "storage",
+        "root",
+        "path-traversal",
+        "security"
+      ],
+      "estimated_duration": "5s",
+      "expected_result": "Path traversal in storage root creation blocked"
+    },
+    {
+      "id": "FQA-API-051",
+      "name": "Queue scan for storage root",
+      "category": "functional",
+      "priority": "critical",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Authenticate",
+          "action": "POST /api/v1/auth/login with admin credentials",
+          "expected": "200 OK with token"
+        },
+        {
+          "name": "Queue a scan",
+          "action": "POST /api/v1/scans with body containing storage root ID",
+          "expected": "200 OK or 202 Accepted with scan job ID"
+        }
+      ],
+      "tags": [
+        "scan",
+        "queue",
+        "happy-path"
+      ],
+      "estimated_duration": "15s",
+      "expected_result": "Scan queued and job ID returned"
+    },
+    {
+      "id": "FQA-API-052",
+      "name": "Get scan status by job ID",
+      "category": "functional",
+      "priority": "critical",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Queue a scan and get job ID",
+          "action": "POST /api/v1/scans",
+          "expected": "Job ID returned"
+        },
+        {
+          "name": "Check scan status",
+          "action": "GET /api/v1/scans/{job_id}",
+          "expected": "200 OK with scan status (pending, running, completed, or failed)"
+        }
+      ],
+      "tags": [
+        "scan",
+        "status",
+        "job-id",
+        "progress"
+      ],
+      "estimated_duration": "15s",
+      "expected_result": "Scan status returned with current state and progress"
+    },
+    {
+      "id": "FQA-API-053",
+      "name": "List all scans",
+      "category": "functional",
+      "priority": "high",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "List scans",
+          "action": "GET /api/v1/scans with auth token",
+          "expected": "200 OK with JSON array of scan job objects"
+        }
+      ],
+      "tags": [
+        "scan",
+        "list",
+        "all"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "All scan jobs listed with status and timestamps"
+    },
+    {
+      "id": "FQA-API-054",
+      "name": "Queue scan for non-existent storage root",
+      "category": "functional",
+      "priority": "high",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Queue scan with invalid root ID",
+          "action": "POST /api/v1/scans with body {\"storage_root_id\": 99999}",
+          "expected": "404 Not Found or 400 Bad Request with error about non-existent root"
+        }
+      ],
+      "tags": [
+        "scan",
+        "queue",
+        "non-existent",
+        "negative"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Scan for non-existent root rejected with clear error"
+    },
+    {
+      "id": "FQA-API-055",
+      "name": "Scan progress monitoring via polling",
+      "category": "functional",
+      "priority": "high",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Queue scan",
+          "action": "POST /api/v1/scans",
+          "expected": "Job started"
+        },
+        {
+          "name": "Poll scan status 3 times",
+          "action": "GET /api/v1/scans/{job_id} every 5 seconds",
+          "expected": "Each response includes progress percentage or file count"
+        }
+      ],
+      "tags": [
+        "scan",
+        "progress",
+        "polling",
+        "monitoring"
+      ],
+      "estimated_duration": "30s",
+      "expected_result": "Scan progress increases over time when polled"
+    },
+    {
+      "id": "FQA-API-056",
+      "name": "Scan history in stats",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Get scan history",
+          "action": "GET /api/v1/stats/scans with auth token",
+          "expected": "200 OK with scan history entries"
+        }
+      ],
+      "tags": [
+        "scan",
+        "history",
+        "stats"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Scan history available in stats endpoint"
+    },
+    {
+      "id": "FQA-API-057",
+      "name": "Scan with empty storage root",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Create empty local storage root",
+          "action": "POST /api/v1/storage/roots with body {\"name\":\"Empty Root\",\"protocol\":\"local\",\"path\":\"/tmp/empty-test-dir\"}",
+          "expected": "201 Created"
+        },
+        {
+          "name": "Queue scan for empty root",
+          "action": "POST /api/v1/scans with the new root ID",
+          "expected": "Scan completes quickly with 0 files found"
+        }
+      ],
+      "tags": [
+        "scan",
+        "empty",
+        "zero-files"
+      ],
+      "estimated_duration": "15s",
+      "expected_result": "Scan of empty root completes without error, reports 0 files"
+    },
+    {
+      "id": "FQA-API-058",
+      "name": "Overall stats include scan information",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Get overall stats",
+          "action": "GET /api/v1/stats/overall with auth token",
+          "expected": "200 OK with statistics including total files, storage used, last scan time"
+        }
+      ],
+      "tags": [
+        "scan",
+        "stats",
+        "overall"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Overall stats endpoint returns file counts and storage metrics"
+    },
+    {
+      "id": "FQA-API-059",
+      "name": "File type statistics",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Get file type stats",
+          "action": "GET /api/v1/stats/filetypes with auth token",
+          "expected": "200 OK with breakdown of file types and counts"
+        }
+      ],
+      "tags": [
+        "scan",
+        "stats",
+        "filetypes",
+        "breakdown"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "File type distribution returned"
+    },
+    {
+      "id": "FQA-API-060",
+      "name": "Size distribution statistics",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Get size distribution",
+          "action": "GET /api/v1/stats/sizes with auth token",
+          "expected": "200 OK with size distribution buckets"
+        }
+      ],
+      "tags": [
+        "scan",
+        "stats",
+        "sizes",
+        "distribution"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "File size distribution returned with bucket counts"
+    },
+    {
+      "id": "FQA-API-061",
+      "name": "Duplicate stats",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Get duplicate statistics",
+          "action": "GET /api/v1/stats/duplicates with auth token",
+          "expected": "200 OK with duplicate file statistics"
+        }
+      ],
+      "tags": [
+        "scan",
+        "stats",
+        "duplicates"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Duplicate file statistics returned"
+    },
+    {
+      "id": "FQA-API-062",
+      "name": "Top duplicate groups",
+      "category": "functional",
+      "priority": "low",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Get top duplicate groups",
+          "action": "GET /api/v1/stats/duplicates/groups with auth token",
+          "expected": "200 OK with top groups of duplicate files"
+        }
+      ],
+      "tags": [
+        "scan",
+        "stats",
+        "duplicates",
+        "groups"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Top duplicate file groups returned"
+    },
+    {
+      "id": "FQA-API-063",
+      "name": "Access pattern statistics",
+      "category": "functional",
+      "priority": "low",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Get access patterns",
+          "action": "GET /api/v1/stats/access with auth token",
+          "expected": "200 OK with access pattern data"
+        }
+      ],
+      "tags": [
+        "stats",
+        "access",
+        "patterns"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "File access patterns returned"
+    },
+    {
+      "id": "FQA-API-064",
+      "name": "Growth trend statistics",
+      "category": "functional",
+      "priority": "low",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Get growth trends",
+          "action": "GET /api/v1/stats/growth with auth token",
+          "expected": "200 OK with storage growth trend data"
+        }
+      ],
+      "tags": [
+        "stats",
+        "growth",
+        "trends"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Storage growth trends over time returned"
+    },
+    {
+      "id": "FQA-API-065",
+      "name": "Directories by size",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Get directories sorted by size",
+          "action": "GET /api/v1/stats/directories/by-size with auth token",
+          "expected": "200 OK with directories ordered by total size"
+        }
+      ],
+      "tags": [
+        "stats",
+        "directories",
+        "size",
+        "ranking"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Directories ranked by size returned"
+    },
+    {
+      "id": "FQA-API-066",
+      "name": "Duplicate count stat",
+      "category": "functional",
+      "priority": "low",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Get duplicate count",
+          "action": "GET /api/v1/stats/duplicates/count with auth token",
+          "expected": "200 OK with total duplicate file count"
+        }
+      ],
+      "tags": [
+        "stats",
+        "duplicates",
+        "count"
+      ],
+      "estimated_duration": "5s",
+      "expected_result": "Total duplicate count returned"
+    },
+    {
+      "id": "FQA-API-067",
+      "name": "SMB root stats",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Get stats for SMB root",
+          "action": "GET /api/v1/stats/smb/{smb_root} with auth token",
+          "expected": "200 OK with stats specific to the SMB root"
+        }
+      ],
+      "tags": [
+        "stats",
+        "smb",
+        "per-root"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Per-SMB-root statistics returned"
+    },
+    {
+      "id": "FQA-API-068",
+      "name": "Queue scan with missing body",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Queue scan with empty body",
+          "action": "POST /api/v1/scans with empty JSON body {}",
+          "expected": "400 Bad Request with validation error"
+        }
+      ],
+      "tags": [
+        "scan",
+        "queue",
+        "missing-body",
+        "negative"
+      ],
+      "estimated_duration": "5s",
+      "expected_result": "Scan queue with empty body rejected"
+    },
+    {
+      "id": "FQA-API-069",
+      "name": "Scan without authentication",
+      "category": "security",
+      "priority": "critical",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Queue scan without token",
+          "action": "POST /api/v1/scans with no Authorization header",
+          "expected": "401 Unauthorized"
+        }
+      ],
+      "tags": [
+        "scan",
+        "auth",
+        "no-token",
+        "security"
+      ],
+      "estimated_duration": "5s",
+      "expected_result": "Scan operations require authentication"
+    },
+    {
+      "id": "FQA-API-070",
+      "name": "Multiple scans semaphore enforcement",
+      "category": "functional",
+      "priority": "high",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Queue first scan",
+          "action": "POST /api/v1/scans",
+          "expected": "Scan started"
+        },
+        {
+          "name": "Queue second scan immediately",
+          "action": "POST /api/v1/scans",
+          "expected": "Second scan queued or rejected (semaphore limits parallel scans)"
+        }
+      ],
+      "tags": [
+        "scan",
+        "concurrency",
+        "semaphore"
+      ],
+      "estimated_duration": "15s",
+      "expected_result": "Concurrent scan operations limited by semaphore"
+    },
+    {
+      "id": "FQA-API-071",
+      "name": "Browse catalog root",
+      "category": "functional",
+      "priority": "critical",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Browse root",
+          "action": "GET /api/v1/catalog with auth token",
+          "expected": "200 OK with top-level directory listing of the catalog"
+        }
+      ],
+      "tags": [
+        "browse",
+        "catalog",
+        "root",
+        "happy-path"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Catalog root listing returned with directories"
+    },
+    {
+      "id": "FQA-API-072",
+      "name": "Browse catalog by path",
+      "category": "functional",
+      "priority": "critical",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Browse a subdirectory",
+          "action": "GET /api/v1/catalog/media with auth token",
+          "expected": "200 OK with files and subdirectories in the path"
+        }
+      ],
+      "tags": [
+        "browse",
+        "catalog",
+        "path",
+        "directory"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Subdirectory contents returned"
+    },
+    {
+      "id": "FQA-API-073",
+      "name": "Get file info from catalog",
+      "category": "functional",
+      "priority": "high",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Get info for a file path",
+          "action": "GET /api/v1/catalog-info/path/to/file.mkv with auth token",
+          "expected": "200 OK with file metadata (name, size, modified date, type)"
+        }
+      ],
+      "tags": [
+        "browse",
+        "catalog",
+        "file-info",
+        "metadata"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "File info returned with size, type, and date"
+    },
+    {
+      "id": "FQA-API-074",
+      "name": "Browse storage roots via browse endpoint",
+      "category": "functional",
+      "priority": "high",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "List browse roots",
+          "action": "GET /api/v1/browse/roots with auth token",
+          "expected": "200 OK with list of storage roots available for browsing"
+        }
+      ],
+      "tags": [
+        "browse",
+        "roots",
+        "storage"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Browse roots endpoint returns available storage roots"
+    },
+    {
+      "id": "FQA-API-075",
+      "name": "Browse directory listing",
+      "category": "functional",
+      "priority": "high",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Browse a directory",
+          "action": "GET /api/v1/browse/directory/ with auth token",
+          "expected": "200 OK with directory contents"
+        }
+      ],
+      "tags": [
+        "browse",
+        "directory",
+        "listing"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Directory listing returned with files and folders"
+    },
+    {
+      "id": "FQA-API-076",
+      "name": "Get file info via browse endpoint",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Get file info",
+          "action": "GET /api/v1/browse/file-info/path/to/file with auth token",
+          "expected": "200 OK with detailed file information"
+        }
+      ],
+      "tags": [
+        "browse",
+        "file-info",
+        "detail"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "File detail info returned"
+    },
+    {
+      "id": "FQA-API-077",
+      "name": "Get directory sizes",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Get directory sizes",
+          "action": "GET /api/v1/browse/directory-sizes/ with auth token",
+          "expected": "200 OK with sizes of subdirectories"
+        }
+      ],
+      "tags": [
+        "browse",
+        "directory",
+        "sizes"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Directory sizes returned"
+    },
+    {
+      "id": "FQA-API-078",
+      "name": "Get directory duplicates",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Get duplicates in directory",
+          "action": "GET /api/v1/browse/duplicates/ with auth token",
+          "expected": "200 OK with list of duplicate files in directory"
+        }
+      ],
+      "tags": [
+        "browse",
+        "directory",
+        "duplicates"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Duplicate files within directory identified"
+    },
+    {
+      "id": "FQA-API-079",
+      "name": "Search files by title",
+      "category": "functional",
+      "priority": "critical",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Search for a movie title",
+          "action": "GET /api/v1/search?q=Matrix with auth token",
+          "expected": "200 OK with search results matching 'Matrix'"
+        }
+      ],
+      "tags": [
+        "search",
+        "title",
+        "movie",
+        "happy-path"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Search returns files matching 'Matrix' in title"
+    },
+    {
+      "id": "FQA-API-080",
+      "name": "Search files via dedicated search endpoint",
+      "category": "functional",
+      "priority": "high",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Search files",
+          "action": "GET /api/v1/search/files?q=Inception with auth token",
+          "expected": "200 OK with file search results for 'Inception'"
+        }
+      ],
+      "tags": [
+        "search",
+        "files",
+        "title"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "File search returns matching results"
+    },
+    {
+      "id": "FQA-API-081",
+      "name": "Search with Cyrillic term",
+      "category": "functional",
+      "priority": "high",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Search with Cyrillic",
+          "action": "GET /api/v1/search?q=%D0%A4%D0%B8%D0%BB%D0%BC%D0%BE%D0%B2%D0%B8 with auth token",
+          "expected": "200 OK with results matching Cyrillic directory name '\u0424\u0438\u043b\u043c\u043e\u0432\u0438'"
+        }
+      ],
+      "tags": [
+        "search",
+        "cyrillic",
+        "unicode",
+        "internationalization"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Cyrillic search term returns matching Cyrillic-named files"
+    },
+    {
+      "id": "FQA-API-082",
+      "name": "Search with empty query",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Search with empty string",
+          "action": "GET /api/v1/search?q= with auth token",
+          "expected": "200 OK with empty results or 400 Bad Request"
+        }
+      ],
+      "tags": [
+        "search",
+        "empty",
+        "edge-case"
+      ],
+      "estimated_duration": "5s",
+      "expected_result": "Empty search handled gracefully"
+    },
+    {
+      "id": "FQA-API-083",
+      "name": "Search with very long query",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Search with 1000+ character query",
+          "action": "GET /api/v1/search?q=AAAA...x1000 with auth token",
+          "expected": "400 Bad Request or 200 OK with empty results (no crash)"
+        }
+      ],
+      "tags": [
+        "search",
+        "long-query",
+        "edge-case",
+        "input-validation"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Very long search query handled without server crash"
+    },
+    {
+      "id": "FQA-API-084",
+      "name": "Search with XSS payload",
+      "category": "security",
+      "priority": "critical",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Search with script tag",
+          "action": "GET /api/v1/search?q=<script>alert('xss')</script> with auth token",
+          "expected": "200 OK with empty results, no script execution in response"
+        }
+      ],
+      "tags": [
+        "search",
+        "xss",
+        "security",
+        "injection"
+      ],
+      "estimated_duration": "5s",
+      "expected_result": "XSS payload in search is sanitized, not reflected as HTML"
+    },
+    {
+      "id": "FQA-API-085",
+      "name": "Search duplicates",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Search for duplicate files",
+          "action": "GET /api/v1/search/duplicates with auth token",
+          "expected": "200 OK with groups of duplicate files"
+        }
+      ],
+      "tags": [
+        "search",
+        "duplicates",
+        "files"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Duplicate file groups returned"
+    },
+    {
+      "id": "FQA-API-086",
+      "name": "Search files for duplicates",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Search file duplicates",
+          "action": "GET /api/v1/search/files/duplicates with auth token",
+          "expected": "200 OK with duplicate file search results"
+        }
+      ],
+      "tags": [
+        "search",
+        "files",
+        "duplicates"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "File duplicate search returns groups"
+    },
+    {
+      "id": "FQA-API-087",
+      "name": "Advanced search with filters",
+      "category": "functional",
+      "priority": "high",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Perform advanced search",
+          "action": "POST /api/v1/search/advanced with body {\"query\":\"Matrix\",\"type\":\"movie\",\"min_size\":1000000}",
+          "expected": "200 OK with filtered search results"
+        }
+      ],
+      "tags": [
+        "search",
+        "advanced",
+        "filters"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Advanced search returns filtered results"
+    },
+    {
+      "id": "FQA-API-088",
+      "name": "Search media entities",
+      "category": "functional",
+      "priority": "critical",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Search media",
+          "action": "GET /api/v1/media/search?q=Metallica with auth token",
+          "expected": "200 OK with media search results for 'Metallica'"
+        }
+      ],
+      "tags": [
+        "search",
+        "media",
+        "artist",
+        "music"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Media search returns matching entities"
+    },
+    {
+      "id": "FQA-API-089",
+      "name": "Get media stats",
+      "category": "functional",
+      "priority": "high",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Request media stats",
+          "action": "GET /api/v1/media/stats with auth token",
+          "expected": "200 OK with media statistics (counts by type, total items)"
+        }
+      ],
+      "tags": [
+        "media",
+        "stats",
+        "counts"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Media statistics returned with type breakdown"
+    },
+    {
+      "id": "FQA-API-090",
+      "name": "Get recent media",
+      "category": "functional",
+      "priority": "high",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Request recent media",
+          "action": "GET /api/v1/media/recent with auth token",
+          "expected": "200 OK with recently added/accessed media items"
+        }
+      ],
+      "tags": [
+        "media",
+        "recent",
+        "timeline"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Recent media items returned in chronological order"
+    },
+    {
+      "id": "FQA-API-091",
+      "name": "Get popular media",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Request popular media",
+          "action": "GET /api/v1/media/popular with auth token",
+          "expected": "200 OK with most accessed or highly rated media items"
+        }
+      ],
+      "tags": [
+        "media",
+        "popular",
+        "ranking"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Popular media items returned"
+    },
+    {
+      "id": "FQA-API-092",
+      "name": "Get media by path",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Request media by file path",
+          "action": "GET /api/v1/media/by-path?path=/media/movies/The.Matrix.mkv with auth token",
+          "expected": "200 OK with media entity matching the file path"
+        }
+      ],
+      "tags": [
+        "media",
+        "by-path",
+        "file-mapping"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Media entity resolved from file path"
+    },
+    {
+      "id": "FQA-API-093",
+      "name": "Get media by ID",
+      "category": "functional",
+      "priority": "critical",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Get media item by ID",
+          "action": "GET /api/v1/media/1 with auth token",
+          "expected": "200 OK with media item details"
+        }
+      ],
+      "tags": [
+        "media",
+        "by-id",
+        "detail"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Media item returned by ID"
+    },
+    {
+      "id": "FQA-API-094",
+      "name": "Update watch progress on media",
+      "category": "functional",
+      "priority": "high",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Update progress",
+          "action": "PUT /api/v1/media/1/progress with body {\"progress\":0.5,\"position\":3600}",
+          "expected": "200 OK with updated progress"
+        }
+      ],
+      "tags": [
+        "media",
+        "progress",
+        "watch",
+        "update"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Watch progress updated for media item"
+    },
+    {
+      "id": "FQA-API-095",
+      "name": "Update favorite status on media",
+      "category": "functional",
+      "priority": "high",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Mark as favorite",
+          "action": "PUT /api/v1/media/1/favorite with body {\"favorite\":true}",
+          "expected": "200 OK with updated favorite status"
+        }
+      ],
+      "tags": [
+        "media",
+        "favorite",
+        "update"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Favorite status toggled on media item"
+    },
+    {
+      "id": "FQA-API-096",
+      "name": "Refresh media metadata",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Refresh metadata",
+          "action": "POST /api/v1/media/1/refresh with auth token",
+          "expected": "200 OK with refreshed metadata from external providers"
+        }
+      ],
+      "tags": [
+        "media",
+        "metadata",
+        "refresh",
+        "providers"
+      ],
+      "estimated_duration": "15s",
+      "expected_result": "Media metadata refreshed from TMDB/OMDB/MusicBrainz"
+    },
+    {
+      "id": "FQA-API-097",
+      "name": "Get media quality info",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Get quality info",
+          "action": "GET /api/v1/media/1/quality with auth token",
+          "expected": "200 OK with quality details (resolution, codec, bitrate)"
+        }
+      ],
+      "tags": [
+        "media",
+        "quality",
+        "codec",
+        "resolution"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Media quality information returned"
+    },
+    {
+      "id": "FQA-API-098",
+      "name": "Analyze media file",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Analyze media",
+          "action": "POST /api/v1/media/analyze with body {\"path\":\"/media/movies/Inception.mkv\"}",
+          "expected": "200 OK with media analysis results (type detection, metadata)"
+        }
+      ],
+      "tags": [
+        "media",
+        "analyze",
+        "detection",
+        "pipeline"
+      ],
+      "estimated_duration": "15s",
+      "expected_result": "Media file analyzed and type detected"
+    },
+    {
+      "id": "FQA-API-099",
+      "name": "Get similar recommendations",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Get similar items",
+          "action": "GET /api/v1/recommendations/similar/1 with auth token",
+          "expected": "200 OK with list of similar media items"
+        }
+      ],
+      "tags": [
+        "recommendations",
+        "similar",
+        "personalization"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Similar items returned for the given media"
+    },
+    {
+      "id": "FQA-API-100",
+      "name": "Get trending items",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Get trending",
+          "action": "GET /api/v1/recommendations/trending with auth token",
+          "expected": "200 OK with trending media items"
+        }
+      ],
+      "tags": [
+        "recommendations",
+        "trending"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Trending media items returned"
+    },
+    {
+      "id": "FQA-API-101",
+      "name": "Get personalized recommendations",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Get personalized recs",
+          "action": "GET /api/v1/recommendations/personalized/1 with auth token",
+          "expected": "200 OK with personalized recommendations for user 1"
+        }
+      ],
+      "tags": [
+        "recommendations",
+        "personalized",
+        "user"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Personalized recommendations returned for user"
+    },
+    {
+      "id": "FQA-API-102",
+      "name": "Search with Cyrillic music term",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Search for music directory",
+          "action": "GET /api/v1/search?q=%D0%9C%D1%83%D0%B7%D0%B8%D0%BA%D0%B0 with auth token",
+          "expected": "200 OK with results matching '\u041c\u0443\u0437\u0438\u043a\u0430'"
+        }
+      ],
+      "tags": [
+        "search",
+        "cyrillic",
+        "music",
+        "internationalization"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Cyrillic term '\u041c\u0443\u0437\u0438\u043a\u0430' returns matching results"
+    },
+    {
+      "id": "FQA-API-103",
+      "name": "Search with Cyrillic series term",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Search for series directory",
+          "action": "GET /api/v1/search?q=%D0%A1%D0%B5%D1%80%D0%B8%D1%98%D0%B5 with auth token",
+          "expected": "200 OK with results matching '\u0421\u0435\u0440\u0438\u0458\u0435'"
+        }
+      ],
+      "tags": [
+        "search",
+        "cyrillic",
+        "series",
+        "internationalization"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Cyrillic term '\u0421\u0435\u0440\u0438\u0458\u0435' returns matching results"
+    },
+    {
+      "id": "FQA-API-104",
+      "name": "Search with special characters",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Search with ampersand and parentheses",
+          "action": "GET /api/v1/search?q=Tom%20%26%20Jerry%20(2021) with auth token",
+          "expected": "200 OK with results (may be empty, but no server error)"
+        }
+      ],
+      "tags": [
+        "search",
+        "special-characters",
+        "encoding"
+      ],
+      "estimated_duration": "5s",
+      "expected_result": "Special characters in search handled without error"
+    },
+    {
+      "id": "FQA-API-105",
+      "name": "Cover art for media entity",
+      "category": "functional",
+      "priority": "high",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Get cover by entity",
+          "action": "GET /api/v1/assets/by-entity/movie/1 with auth token",
+          "expected": "200 OK with image data or 404 if no cover available"
+        }
+      ],
+      "tags": [
+        "media",
+        "cover",
+        "assets",
+        "image"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Cover art returned for entity or appropriate 404"
+    },
+    {
+      "id": "FQA-API-106",
+      "name": "Cover placeholder by type",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Get movie placeholder cover",
+          "action": "GET /api/v1/cover/placeholder/movie",
+          "expected": "200 OK with placeholder image for movie type"
+        }
+      ],
+      "tags": [
+        "cover",
+        "placeholder",
+        "image",
+        "fallback"
+      ],
+      "estimated_duration": "5s",
+      "expected_result": "Placeholder cover image served for type"
+    },
+    {
+      "id": "FQA-API-107",
+      "name": "Cover URL by ID",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Get cover URL",
+          "action": "GET /api/v1/cover/url/1",
+          "expected": "200 OK with URL pointing to cover image"
+        }
+      ],
+      "tags": [
+        "cover",
+        "url",
+        "redirect"
+      ],
+      "estimated_duration": "5s",
+      "expected_result": "Cover URL returned for the given ID"
+    },
+    {
+      "id": "FQA-API-108",
+      "name": "Serve cover image by ID",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Get cover image",
+          "action": "GET /api/v1/cover/1",
+          "expected": "200 OK with image/jpeg or image/png content"
+        }
+      ],
+      "tags": [
+        "cover",
+        "image",
+        "serve"
+      ],
+      "estimated_duration": "5s",
+      "expected_result": "Cover image served directly by ID"
+    },
+    {
+      "id": "FQA-API-109",
+      "name": "Search with SQL injection attempt",
+      "category": "security",
+      "priority": "critical",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "SQL injection in search",
+          "action": "GET /api/v1/search?q=' OR '1'='1 with auth token",
+          "expected": "200 OK with empty results or safe response (no data dump)"
+        }
+      ],
+      "tags": [
+        "search",
+        "sql-injection",
+        "security"
+      ],
+      "estimated_duration": "5s",
+      "expected_result": "SQL injection in search query has no effect"
+    },
+    {
+      "id": "FQA-API-110",
+      "name": "Search Cyrillic installations term",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Search for installations",
+          "action": "GET /api/v1/search?q=%D0%98%D0%BD%D1%81%D1%82%D0%B0%D0%BB%D0%B0%D1%86%D0%B8%D1%98%D0%B5 with auth token",
+          "expected": "200 OK with results matching '\u0418\u043d\u0441\u0442\u0430\u043b\u0430\u0446\u0438\u0458\u0435'"
+        }
+      ],
+      "tags": [
+        "search",
+        "cyrillic",
+        "installations",
+        "internationalization"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Cyrillic term '\u0418\u043d\u0441\u0442\u0430\u043b\u0430\u0446\u0438\u0458\u0435' returns matching results"
+    },
+    {
+      "id": "FQA-API-111",
+      "name": "List all entities",
+      "category": "functional",
+      "priority": "critical",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "List entities",
+          "action": "GET /api/v1/entities with auth token",
+          "expected": "200 OK with JSON array of media entities"
+        }
+      ],
+      "tags": [
+        "entity",
+        "list",
+        "all",
+        "happy-path"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Entity list returned with all entities"
+    },
+    {
+      "id": "FQA-API-112",
+      "name": "Get entity by ID",
+      "category": "functional",
+      "priority": "critical",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Get entity 1",
+          "action": "GET /api/v1/entities/1 with auth token",
+          "expected": "200 OK with entity details including title, type, year"
+        }
+      ],
+      "tags": [
+        "entity",
+        "get",
+        "by-id",
+        "detail"
+      ],
+      "estimated_duration": "5s",
+      "expected_result": "Entity details returned by ID"
+    },
+    {
+      "id": "FQA-API-113",
+      "name": "Get entity types",
+      "category": "functional",
+      "priority": "high",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "List entity types",
+          "action": "GET /api/v1/entities/types with auth token",
+          "expected": "200 OK with all 11 media types: movie, tv_show, tv_season, tv_episode, music_artist, music_album, song, game, software, book, comic"
+        }
+      ],
+      "tags": [
+        "entity",
+        "types",
+        "media-types"
+      ],
+      "estimated_duration": "5s",
+      "expected_result": "All 11 media types returned"
+    },
+    {
+      "id": "FQA-API-114",
+      "name": "Get entity statistics",
+      "category": "functional",
+      "priority": "high",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Get entity stats",
+          "action": "GET /api/v1/entities/stats with auth token",
+          "expected": "200 OK with counts per entity type"
+        }
+      ],
+      "tags": [
+        "entity",
+        "stats",
+        "counts"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Entity statistics with per-type counts returned"
+    },
+    {
+      "id": "FQA-API-115",
+      "name": "List duplicate entity groups",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Get duplicate groups",
+          "action": "GET /api/v1/entities/duplicates with auth token",
+          "expected": "200 OK with groups of entities detected as duplicates"
+        }
+      ],
+      "tags": [
+        "entity",
+        "duplicates",
+        "groups"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Duplicate entity groups returned"
+    },
+    {
+      "id": "FQA-API-116",
+      "name": "Browse entities by type - movie",
+      "category": "functional",
+      "priority": "critical",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Browse movies",
+          "action": "GET /api/v1/entities/browse/movie with auth token",
+          "expected": "200 OK with list of movie entities"
+        }
+      ],
+      "tags": [
+        "entity",
+        "browse",
+        "movie",
+        "type-filter"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Only movie entities returned"
+    },
+    {
+      "id": "FQA-API-117",
+      "name": "Browse entities by type - tv_show",
+      "category": "functional",
+      "priority": "critical",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Browse TV shows",
+          "action": "GET /api/v1/entities/browse/tv_show with auth token",
+          "expected": "200 OK with list of TV show entities"
+        }
+      ],
+      "tags": [
+        "entity",
+        "browse",
+        "tv-show",
+        "type-filter"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Only TV show entities returned"
+    },
+    {
+      "id": "FQA-API-118",
+      "name": "Browse entities by type - music_album",
+      "category": "functional",
+      "priority": "high",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Browse music albums",
+          "action": "GET /api/v1/entities/browse/music_album with auth token",
+          "expected": "200 OK with list of music album entities"
+        }
+      ],
+      "tags": [
+        "entity",
+        "browse",
+        "music-album",
+        "type-filter"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Only music album entities returned"
+    },
+    {
+      "id": "FQA-API-119",
+      "name": "Browse entities by type - game",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Browse games",
+          "action": "GET /api/v1/entities/browse/game with auth token",
+          "expected": "200 OK with list of game entities"
+        }
+      ],
+      "tags": [
+        "entity",
+        "browse",
+        "game",
+        "type-filter"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Only game entities returned"
+    },
+    {
+      "id": "FQA-API-120",
+      "name": "Browse entities by type - book",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Browse books",
+          "action": "GET /api/v1/entities/browse/book with auth token",
+          "expected": "200 OK with list of book entities"
+        }
+      ],
+      "tags": [
+        "entity",
+        "browse",
+        "book",
+        "type-filter"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Only book entities returned"
+    },
+    {
+      "id": "FQA-API-121",
+      "name": "Browse entities by type - comic",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Browse comics",
+          "action": "GET /api/v1/entities/browse/comic with auth token",
+          "expected": "200 OK with list of comic entities"
+        }
+      ],
+      "tags": [
+        "entity",
+        "browse",
+        "comic",
+        "type-filter"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Only comic entities returned"
+    },
+    {
+      "id": "FQA-API-122",
+      "name": "Browse entities by type - software",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Browse software",
+          "action": "GET /api/v1/entities/browse/software with auth token",
+          "expected": "200 OK with list of software entities"
+        }
+      ],
+      "tags": [
+        "entity",
+        "browse",
+        "software",
+        "type-filter"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Only software entities returned"
+    },
+    {
+      "id": "FQA-API-123",
+      "name": "Browse entities by type - music_artist",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Browse music artists",
+          "action": "GET /api/v1/entities/browse/music_artist with auth token",
+          "expected": "200 OK with list of music artist entities"
+        }
+      ],
+      "tags": [
+        "entity",
+        "browse",
+        "music-artist",
+        "type-filter"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Only music artist entities returned"
+    },
+    {
+      "id": "FQA-API-124",
+      "name": "Browse entities by type - song",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Browse songs",
+          "action": "GET /api/v1/entities/browse/song with auth token",
+          "expected": "200 OK with list of song entities"
+        }
+      ],
+      "tags": [
+        "entity",
+        "browse",
+        "song",
+        "type-filter"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Only song entities returned"
+    },
+    {
+      "id": "FQA-API-125",
+      "name": "Browse entities by type - tv_season",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Browse TV seasons",
+          "action": "GET /api/v1/entities/browse/tv_season with auth token",
+          "expected": "200 OK with list of TV season entities"
+        }
+      ],
+      "tags": [
+        "entity",
+        "browse",
+        "tv-season",
+        "type-filter"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Only TV season entities returned"
+    },
+    {
+      "id": "FQA-API-126",
+      "name": "Browse entities by type - tv_episode",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Browse TV episodes",
+          "action": "GET /api/v1/entities/browse/tv_episode with auth token",
+          "expected": "200 OK with list of TV episode entities"
+        }
+      ],
+      "tags": [
+        "entity",
+        "browse",
+        "tv-episode",
+        "type-filter"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Only TV episode entities returned"
+    },
+    {
+      "id": "FQA-API-127",
+      "name": "Get entity children (TV show hierarchy)",
+      "category": "functional",
+      "priority": "critical",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Get children of a TV show entity",
+          "action": "GET /api/v1/entities/{tv_show_id}/children with auth token",
+          "expected": "200 OK with child entities (seasons)"
+        }
+      ],
+      "tags": [
+        "entity",
+        "children",
+        "hierarchy",
+        "tv-show"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "TV show children (seasons) returned"
+    },
+    {
+      "id": "FQA-API-128",
+      "name": "Get entity files",
+      "category": "functional",
+      "priority": "high",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Get files linked to entity",
+          "action": "GET /api/v1/entities/{id}/files with auth token",
+          "expected": "200 OK with list of files associated with the entity"
+        }
+      ],
+      "tags": [
+        "entity",
+        "files",
+        "junction",
+        "association"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Files linked to entity returned"
+    },
+    {
+      "id": "FQA-API-129",
+      "name": "Get entity external metadata",
+      "category": "functional",
+      "priority": "high",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Get external metadata",
+          "action": "GET /api/v1/entities/{id}/metadata with auth token",
+          "expected": "200 OK with external metadata from TMDB/OMDB/MusicBrainz/OpenLibrary"
+        }
+      ],
+      "tags": [
+        "entity",
+        "metadata",
+        "external",
+        "providers"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "External metadata from providers returned for entity"
+    },
+    {
+      "id": "FQA-API-130",
+      "name": "Get entity duplicates by ID",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Get duplicates for entity",
+          "action": "GET /api/v1/entities/{id}/duplicates with auth token",
+          "expected": "200 OK with entities detected as duplicates of this one"
+        }
+      ],
+      "tags": [
+        "entity",
+        "duplicates",
+        "by-id"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Duplicate entities for given ID returned"
+    },
+    {
+      "id": "FQA-API-131",
+      "name": "Stream entity content",
+      "category": "functional",
+      "priority": "high",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Stream entity",
+          "action": "GET /api/v1/entities/{id}/stream with auth token",
+          "expected": "200 OK with media stream or redirect to stream URL"
+        }
+      ],
+      "tags": [
+        "entity",
+        "stream",
+        "playback"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Entity streaming endpoint responds with media data"
+    },
+    {
+      "id": "FQA-API-132",
+      "name": "Download entity content",
+      "category": "functional",
+      "priority": "high",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Download entity",
+          "action": "GET /api/v1/entities/{id}/download with auth token",
+          "expected": "200 OK with file download (Content-Disposition: attachment header)"
+        }
+      ],
+      "tags": [
+        "entity",
+        "download",
+        "file"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Entity file download initiated"
+    },
+    {
+      "id": "FQA-API-133",
+      "name": "Get install info for software entity",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Get install info",
+          "action": "GET /api/v1/entities/{software_id}/install-info with auth token",
+          "expected": "200 OK with installation instructions or metadata"
+        }
+      ],
+      "tags": [
+        "entity",
+        "install-info",
+        "software"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Install info returned for software entity"
+    },
+    {
+      "id": "FQA-API-134",
+      "name": "Refresh entity metadata",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Trigger metadata refresh",
+          "action": "POST /api/v1/entities/{id}/metadata/refresh with auth token",
+          "expected": "200 OK with refreshed metadata"
+        }
+      ],
+      "tags": [
+        "entity",
+        "metadata",
+        "refresh"
+      ],
+      "estimated_duration": "15s",
+      "expected_result": "Entity metadata refreshed from external providers"
+    },
+    {
+      "id": "FQA-API-135",
+      "name": "Update user metadata on entity",
+      "category": "functional",
+      "priority": "high",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Update user metadata",
+          "action": "PUT /api/v1/entities/{id}/user-metadata with body {\"rating\":8,\"notes\":\"Great movie\"}",
+          "expected": "200 OK with updated user metadata"
+        }
+      ],
+      "tags": [
+        "entity",
+        "user-metadata",
+        "rating",
+        "notes"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "User metadata (rating, notes) saved on entity"
+    },
+    {
+      "id": "FQA-API-136",
+      "name": "Enrich all entities",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Trigger enrichment",
+          "action": "POST /api/v1/entities/enrich with auth token",
+          "expected": "200 OK or 202 Accepted with enrichment process started"
+        }
+      ],
+      "tags": [
+        "entity",
+        "enrich",
+        "batch",
+        "metadata"
+      ],
+      "estimated_duration": "30s",
+      "expected_result": "Entity enrichment process started"
+    },
+    {
+      "id": "FQA-API-137",
+      "name": "Entity list with pagination",
+      "category": "functional",
+      "priority": "high",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "First page",
+          "action": "GET /api/v1/entities?page=1&per_page=10 with auth token",
+          "expected": "200 OK with 10 or fewer entities"
+        },
+        {
+          "name": "Second page",
+          "action": "GET /api/v1/entities?page=2&per_page=10 with auth token",
+          "expected": "200 OK with next 10 entities (different from page 1)"
+        }
+      ],
+      "tags": [
+        "entity",
+        "list",
+        "pagination",
+        "page"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Entities paginated correctly across pages"
+    },
+    {
+      "id": "FQA-API-138",
+      "name": "Entity list with per_page=1",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Request single entity per page",
+          "action": "GET /api/v1/entities?page=1&per_page=1 with auth token",
+          "expected": "200 OK with exactly 1 entity"
+        }
+      ],
+      "tags": [
+        "entity",
+        "list",
+        "pagination",
+        "boundary"
+      ],
+      "estimated_duration": "5s",
+      "expected_result": "Single entity returned when per_page=1"
+    },
+    {
+      "id": "FQA-API-139",
+      "name": "Entity list with large per_page",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Request oversized page",
+          "action": "GET /api/v1/entities?page=1&per_page=10000 with auth token",
+          "expected": "200 OK with capped number of entities (server limits max per_page)"
+        }
+      ],
+      "tags": [
+        "entity",
+        "list",
+        "pagination",
+        "boundary",
+        "large"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Server caps per_page at maximum allowed value"
+    },
+    {
+      "id": "FQA-API-140",
+      "name": "Entity list with per_page=0",
+      "category": "functional",
+      "priority": "low",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Request zero per page",
+          "action": "GET /api/v1/entities?page=1&per_page=0 with auth token",
+          "expected": "200 OK with default page size or 400 Bad Request"
+        }
+      ],
+      "tags": [
+        "entity",
+        "list",
+        "pagination",
+        "boundary",
+        "zero"
+      ],
+      "estimated_duration": "5s",
+      "expected_result": "per_page=0 handled gracefully"
+    },
+    {
+      "id": "FQA-API-141",
+      "name": "Entity search by title",
+      "category": "functional",
+      "priority": "critical",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Search entities",
+          "action": "GET /api/v1/entities?search=Matrix with auth token",
+          "expected": "200 OK with entities matching 'Matrix' in title"
+        }
+      ],
+      "tags": [
+        "entity",
+        "search",
+        "title",
+        "filter"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Entities matching search term returned"
+    },
+    {
+      "id": "FQA-API-142",
+      "name": "Entity search by type filter",
+      "category": "functional",
+      "priority": "high",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Filter by type",
+          "action": "GET /api/v1/entities?type=movie with auth token",
+          "expected": "200 OK with only movie entities"
+        }
+      ],
+      "tags": [
+        "entity",
+        "search",
+        "type-filter"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Only entities of specified type returned"
+    },
+    {
+      "id": "FQA-API-143",
+      "name": "Get non-existent entity by ID",
+      "category": "functional",
+      "priority": "high",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Get entity with invalid ID",
+          "action": "GET /api/v1/entities/999999 with auth token",
+          "expected": "404 Not Found"
+        }
+      ],
+      "tags": [
+        "entity",
+        "get",
+        "not-found",
+        "negative"
+      ],
+      "estimated_duration": "5s",
+      "expected_result": "Non-existent entity returns 404"
+    },
+    {
+      "id": "FQA-API-144",
+      "name": "Browse entities by invalid type",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Browse invalid type",
+          "action": "GET /api/v1/entities/browse/invalid_type with auth token",
+          "expected": "400 Bad Request or 200 OK with empty results"
+        }
+      ],
+      "tags": [
+        "entity",
+        "browse",
+        "invalid-type",
+        "negative"
+      ],
+      "estimated_duration": "5s",
+      "expected_result": "Invalid entity type handled gracefully"
+    },
+    {
+      "id": "FQA-API-145",
+      "name": "Entity hierarchy - TV show to seasons to episodes",
+      "category": "functional",
+      "priority": "critical",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Get TV show",
+          "action": "GET /api/v1/entities/browse/tv_show with auth token",
+          "expected": "200 OK with TV show entities"
+        },
+        {
+          "name": "Get seasons (children)",
+          "action": "GET /api/v1/entities/{show_id}/children with auth token",
+          "expected": "200 OK with season entities (type tv_season)"
+        },
+        {
+          "name": "Get episodes (grandchildren)",
+          "action": "GET /api/v1/entities/{season_id}/children with auth token",
+          "expected": "200 OK with episode entities (type tv_episode)"
+        }
+      ],
+      "tags": [
+        "entity",
+        "hierarchy",
+        "tv-show",
+        "season",
+        "episode"
+      ],
+      "estimated_duration": "15s",
+      "expected_result": "Full TV show hierarchy navigable: show -> seasons -> episodes"
+    },
+    {
+      "id": "FQA-API-146",
+      "name": "Entity hierarchy - music artist to albums to songs",
+      "category": "functional",
+      "priority": "high",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Get music artist",
+          "action": "GET /api/v1/entities/browse/music_artist with auth token",
+          "expected": "200 OK with music artist entities"
+        },
+        {
+          "name": "Get albums (children)",
+          "action": "GET /api/v1/entities/{artist_id}/children with auth token",
+          "expected": "200 OK with music album entities"
+        },
+        {
+          "name": "Get songs (grandchildren)",
+          "action": "GET /api/v1/entities/{album_id}/children with auth token",
+          "expected": "200 OK with song entities"
+        }
+      ],
+      "tags": [
+        "entity",
+        "hierarchy",
+        "music-artist",
+        "album",
+        "song"
+      ],
+      "estimated_duration": "15s",
+      "expected_result": "Full music hierarchy navigable: artist -> albums -> songs"
+    },
+    {
+      "id": "FQA-API-147",
+      "name": "Entity children for leaf entity",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Get children of a leaf entity (episode or song)",
+          "action": "GET /api/v1/entities/{episode_id}/children with auth token",
+          "expected": "200 OK with empty array (leaf has no children)"
+        }
+      ],
+      "tags": [
+        "entity",
+        "children",
+        "leaf",
+        "empty"
+      ],
+      "estimated_duration": "5s",
+      "expected_result": "Leaf entity returns empty children array"
+    },
+    {
+      "id": "FQA-API-148",
+      "name": "Entity with non-numeric ID",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Request entity with string ID",
+          "action": "GET /api/v1/entities/abc with auth token",
+          "expected": "400 Bad Request or 404 Not Found"
+        }
+      ],
+      "tags": [
+        "entity",
+        "get",
+        "non-numeric",
+        "validation",
+        "negative"
+      ],
+      "estimated_duration": "5s",
+      "expected_result": "Non-numeric entity ID rejected"
+    },
+    {
+      "id": "FQA-API-149",
+      "name": "Entity list with sort parameter",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Sort by title ascending",
+          "action": "GET /api/v1/entities?sort=title&order=asc with auth token",
+          "expected": "200 OK with entities sorted alphabetically by title"
+        },
+        {
+          "name": "Sort by title descending",
+          "action": "GET /api/v1/entities?sort=title&order=desc with auth token",
+          "expected": "200 OK with entities sorted reverse-alphabetically"
+        }
+      ],
+      "tags": [
+        "entity",
+        "list",
+        "sort",
+        "order"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Entity list sorted correctly by specified field and order"
+    },
+    {
+      "id": "FQA-API-150",
+      "name": "Entity search with Cyrillic - \u0421\u0442\u0440\u0438\u043f\u043e\u0432\u0438 (comics)",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Search Cyrillic comics",
+          "action": "GET /api/v1/entities?search=%D0%A1%D1%82%D1%80%D0%B8%D0%BF%D0%BE%D0%B2%D0%B8 with auth token",
+          "expected": "200 OK with results matching '\u0421\u0442\u0440\u0438\u043f\u043e\u0432\u0438'"
+        }
+      ],
+      "tags": [
+        "entity",
+        "search",
+        "cyrillic",
+        "comics"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Cyrillic entity search returns matching results"
+    },
+    {
+      "id": "FQA-API-151",
+      "name": "Update user metadata via POST",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Post user metadata",
+          "action": "POST /api/v1/entities/{id}/user-metadata with body {\"tags\":[\"classic\",\"sci-fi\"],\"watched\":true}",
+          "expected": "200 OK with saved user metadata"
+        }
+      ],
+      "tags": [
+        "entity",
+        "user-metadata",
+        "post",
+        "tags"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "User metadata saved via POST method"
+    },
+    {
+      "id": "FQA-API-152",
+      "name": "Entity list with negative page number",
+      "category": "functional",
+      "priority": "low",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Negative page",
+          "action": "GET /api/v1/entities?page=-1 with auth token",
+          "expected": "400 Bad Request or 200 OK with first page (defaults to page 1)"
+        }
+      ],
+      "tags": [
+        "entity",
+        "list",
+        "pagination",
+        "negative-page",
+        "edge-case"
+      ],
+      "estimated_duration": "5s",
+      "expected_result": "Negative page number handled gracefully"
+    },
+    {
+      "id": "FQA-API-153",
+      "name": "Entity metadata for movie with TMDB data",
+      "category": "functional",
+      "priority": "high",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Get metadata for a movie entity",
+          "action": "GET /api/v1/entities/{movie_id}/metadata with auth token",
+          "expected": "200 OK with metadata including poster_url, overview, genres from TMDB"
+        }
+      ],
+      "tags": [
+        "entity",
+        "metadata",
+        "tmdb",
+        "movie"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "TMDB metadata returned for movie entity"
+    },
+    {
+      "id": "FQA-API-154",
+      "name": "Entity metadata for music with MusicBrainz data",
+      "category": "functional",
+      "priority": "high",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Get metadata for music entity",
+          "action": "GET /api/v1/entities/{album_id}/metadata with auth token",
+          "expected": "200 OK with metadata from MusicBrainz (if available)"
+        }
+      ],
+      "tags": [
+        "entity",
+        "metadata",
+        "musicbrainz",
+        "music"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "MusicBrainz metadata returned for music entity"
+    },
+    {
+      "id": "FQA-API-155",
+      "name": "Entity metadata for book with OpenLibrary data",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Get metadata for book entity",
+          "action": "GET /api/v1/entities/{book_id}/metadata with auth token",
+          "expected": "200 OK with metadata from OpenLibrary (if available)"
+        }
+      ],
+      "tags": [
+        "entity",
+        "metadata",
+        "openlibrary",
+        "book"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "OpenLibrary metadata returned for book entity"
+    },
+    {
+      "id": "FQA-API-156",
+      "name": "Entity files for movie shows linked files",
+      "category": "functional",
+      "priority": "high",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Get files for a movie",
+          "action": "GET /api/v1/entities/{movie_id}/files with auth token",
+          "expected": "200 OK with at least one file entry (path, size, type)"
+        }
+      ],
+      "tags": [
+        "entity",
+        "files",
+        "movie",
+        "junction"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Linked files returned for movie entity"
+    },
+    {
+      "id": "FQA-API-157",
+      "name": "Entity list search 'The Matrix'",
+      "category": "functional",
+      "priority": "high",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Search for The Matrix",
+          "action": "GET /api/v1/entities?search=The+Matrix with auth token",
+          "expected": "200 OK with entities matching 'The Matrix'"
+        }
+      ],
+      "tags": [
+        "entity",
+        "search",
+        "matrix",
+        "movie"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "The Matrix entity found in search results"
+    },
+    {
+      "id": "FQA-API-158",
+      "name": "Entity list search 'Inception'",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Search for Inception",
+          "action": "GET /api/v1/entities?search=Inception with auth token",
+          "expected": "200 OK with entities matching 'Inception'"
+        }
+      ],
+      "tags": [
+        "entity",
+        "search",
+        "inception",
+        "movie"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Inception entity found in search results"
+    },
+    {
+      "id": "FQA-API-159",
+      "name": "Entity list search 'Metallica'",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Search for Metallica",
+          "action": "GET /api/v1/entities?search=Metallica with auth token",
+          "expected": "200 OK with music entities matching 'Metallica'"
+        }
+      ],
+      "tags": [
+        "entity",
+        "search",
+        "metallica",
+        "music"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Metallica entities found in search results"
+    },
+    {
+      "id": "FQA-API-160",
+      "name": "Entity with parent_id hierarchy query",
+      "category": "functional",
+      "priority": "high",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Query entities with parent filter",
+          "action": "GET /api/v1/entities?parent_id={show_id} with auth token",
+          "expected": "200 OK with only entities that are children of the specified parent"
+        }
+      ],
+      "tags": [
+        "entity",
+        "parent",
+        "hierarchy",
+        "filter"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Entities filtered by parent_id returned"
+    },
+    {
+      "id": "FQA-API-161",
+      "name": "Create collection",
+      "category": "functional",
+      "priority": "critical",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Create a new collection",
+          "action": "POST /api/v1/collections with body {\"name\":\"Sci-Fi Favorites\",\"description\":\"Best science fiction movies\"}",
+          "expected": "201 Created with collection ID"
+        }
+      ],
+      "tags": [
+        "collection",
+        "create",
+        "happy-path"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Collection created successfully with name and description"
+    },
+    {
+      "id": "FQA-API-162",
+      "name": "List all collections",
+      "category": "functional",
+      "priority": "critical",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "List collections",
+          "action": "GET /api/v1/collections with auth token",
+          "expected": "200 OK with JSON array of collections"
+        }
+      ],
+      "tags": [
+        "collection",
+        "list",
+        "all"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "All collections returned"
+    },
+    {
+      "id": "FQA-API-163",
+      "name": "Get collection by ID",
+      "category": "functional",
+      "priority": "high",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Get collection details",
+          "action": "GET /api/v1/collections/{id} with auth token",
+          "expected": "200 OK with collection name, description, and items"
+        }
+      ],
+      "tags": [
+        "collection",
+        "get",
+        "by-id",
+        "detail"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Collection details returned by ID"
+    },
+    {
+      "id": "FQA-API-164",
+      "name": "Update collection",
+      "category": "functional",
+      "priority": "high",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Update collection name",
+          "action": "PUT /api/v1/collections/{id} with body {\"name\":\"Updated Sci-Fi Collection\"}",
+          "expected": "200 OK with updated collection"
+        }
+      ],
+      "tags": [
+        "collection",
+        "update",
+        "rename"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Collection name updated successfully"
+    },
+    {
+      "id": "FQA-API-165",
+      "name": "Delete collection",
+      "category": "functional",
+      "priority": "high",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Create expendable collection",
+          "action": "POST /api/v1/collections with body {\"name\":\"To Delete\"}",
+          "expected": "201 Created"
+        },
+        {
+          "name": "Delete collection",
+          "action": "DELETE /api/v1/collections/{id} with auth token",
+          "expected": "200 OK or 204 No Content"
+        },
+        {
+          "name": "Verify deleted",
+          "action": "GET /api/v1/collections/{id}",
+          "expected": "404 Not Found"
+        }
+      ],
+      "tags": [
+        "collection",
+        "delete",
+        "verify"
+      ],
+      "estimated_duration": "15s",
+      "expected_result": "Collection deleted and no longer accessible"
+    },
+    {
+      "id": "FQA-API-166",
+      "name": "Create collection with empty name",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Create with empty name",
+          "action": "POST /api/v1/collections with body {\"name\":\"\"}",
+          "expected": "400 Bad Request with validation error"
+        }
+      ],
+      "tags": [
+        "collection",
+        "create",
+        "validation",
+        "empty-name",
+        "negative"
+      ],
+      "estimated_duration": "5s",
+      "expected_result": "Empty collection name rejected"
+    },
+    {
+      "id": "FQA-API-167",
+      "name": "Get non-existent collection",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Get invalid collection",
+          "action": "GET /api/v1/collections/999999 with auth token",
+          "expected": "404 Not Found"
+        }
+      ],
+      "tags": [
+        "collection",
+        "get",
+        "not-found",
+        "negative"
+      ],
+      "estimated_duration": "5s",
+      "expected_result": "Non-existent collection returns 404"
+    },
+    {
+      "id": "FQA-API-168",
+      "name": "Delete non-existent collection",
+      "category": "functional",
+      "priority": "low",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Delete invalid collection",
+          "action": "DELETE /api/v1/collections/999999 with auth token",
+          "expected": "404 Not Found"
+        }
+      ],
+      "tags": [
+        "collection",
+        "delete",
+        "not-found",
+        "negative"
+      ],
+      "estimated_duration": "5s",
+      "expected_result": "Deleting non-existent collection returns 404"
+    },
+    {
+      "id": "FQA-API-169",
+      "name": "Create collection without authentication",
+      "category": "security",
+      "priority": "high",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Create without token",
+          "action": "POST /api/v1/collections with body {\"name\":\"Unauthorized\"} and no auth",
+          "expected": "401 Unauthorized"
+        }
+      ],
+      "tags": [
+        "collection",
+        "create",
+        "no-auth",
+        "security"
+      ],
+      "estimated_duration": "5s",
+      "expected_result": "Collection creation requires authentication"
+    },
+    {
+      "id": "FQA-API-170",
+      "name": "Update non-existent collection",
+      "category": "functional",
+      "priority": "low",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Update invalid collection",
+          "action": "PUT /api/v1/collections/999999 with body {\"name\":\"Ghost\"}",
+          "expected": "404 Not Found"
+        }
+      ],
+      "tags": [
+        "collection",
+        "update",
+        "not-found",
+        "negative"
+      ],
+      "estimated_duration": "5s",
+      "expected_result": "Updating non-existent collection returns 404"
+    },
+    {
+      "id": "FQA-API-171",
+      "name": "Create collection with very long name",
+      "category": "functional",
+      "priority": "low",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Create with 500-character name",
+          "action": "POST /api/v1/collections with body {\"name\":\"A...x500\"}",
+          "expected": "400 Bad Request with length validation or 201 Created (if no limit)"
+        }
+      ],
+      "tags": [
+        "collection",
+        "create",
+        "long-name",
+        "edge-case"
+      ],
+      "estimated_duration": "5s",
+      "expected_result": "Very long collection name handled gracefully"
+    },
+    {
+      "id": "FQA-API-172",
+      "name": "Create collection with Cyrillic name",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Create with Cyrillic name",
+          "action": "POST /api/v1/collections with body {\"name\":\"\u041e\u043c\u0438\u0459\u0435\u043d\u0438 \u0444\u0438\u043b\u043c\u043e\u0432\u0438\",\"description\":\"\u041a\u043e\u043b\u0435\u043a\u0446\u0438\u0458\u0430 \u043d\u0430\u0458\u0431\u043e\u0459\u0438\u0445 \u0444\u0438\u043b\u043c\u043e\u0432\u0430\"}",
+          "expected": "201 Created with Cyrillic name preserved"
+        }
+      ],
+      "tags": [
+        "collection",
+        "create",
+        "cyrillic",
+        "unicode"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Cyrillic collection name stored and retrieved correctly"
+    },
+    {
+      "id": "FQA-API-173",
+      "name": "Create collection with special characters in name",
+      "category": "functional",
+      "priority": "low",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Create with special chars",
+          "action": "POST /api/v1/collections with body {\"name\":\"Action & Adventure (2020s)\"}",
+          "expected": "201 Created"
+        }
+      ],
+      "tags": [
+        "collection",
+        "create",
+        "special-characters"
+      ],
+      "estimated_duration": "5s",
+      "expected_result": "Special characters in collection name handled"
+    },
+    {
+      "id": "FQA-API-174",
+      "name": "Create collection with XSS in name",
+      "category": "security",
+      "priority": "high",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Create with XSS payload",
+          "action": "POST /api/v1/collections with body {\"name\":\"<script>alert('xss')</script>\"}",
+          "expected": "201 Created with name stored as literal text, not executable HTML"
+        }
+      ],
+      "tags": [
+        "collection",
+        "create",
+        "xss",
+        "security"
+      ],
+      "estimated_duration": "5s",
+      "expected_result": "XSS payload stored as literal text, not executed"
+    },
+    {
+      "id": "FQA-API-175",
+      "name": "Create multiple collections",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Create first collection",
+          "action": "POST /api/v1/collections with body {\"name\":\"Horror Movies\"}",
+          "expected": "201 Created"
+        },
+        {
+          "name": "Create second collection",
+          "action": "POST /api/v1/collections with body {\"name\":\"Classic Rock Albums\"}",
+          "expected": "201 Created"
+        },
+        {
+          "name": "Verify both exist",
+          "action": "GET /api/v1/collections with auth token",
+          "expected": "Both collections in list"
+        }
+      ],
+      "tags": [
+        "collection",
+        "create",
+        "multiple"
+      ],
+      "estimated_duration": "15s",
+      "expected_result": "Multiple collections created and all visible"
+    },
+    {
+      "id": "FQA-API-176",
+      "name": "Update collection description",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Update description only",
+          "action": "PUT /api/v1/collections/{id} with body {\"description\":\"Updated description for this collection\"}",
+          "expected": "200 OK with updated description"
+        }
+      ],
+      "tags": [
+        "collection",
+        "update",
+        "description"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Collection description updated independently"
+    },
+    {
+      "id": "FQA-API-177",
+      "name": "Create collection with empty body",
+      "category": "functional",
+      "priority": "low",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Send empty body",
+          "action": "POST /api/v1/collections with body {}",
+          "expected": "400 Bad Request with validation error requiring name"
+        }
+      ],
+      "tags": [
+        "collection",
+        "create",
+        "empty-body",
+        "negative"
+      ],
+      "estimated_duration": "5s",
+      "expected_result": "Empty body collection creation rejected"
+    },
+    {
+      "id": "FQA-API-178",
+      "name": "Create collection with duplicate name",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Create first",
+          "action": "POST /api/v1/collections with body {\"name\":\"Duplicate Collection\"}",
+          "expected": "201 Created"
+        },
+        {
+          "name": "Create duplicate",
+          "action": "POST /api/v1/collections with body {\"name\":\"Duplicate Collection\"}",
+          "expected": "409 Conflict or 201 Created (if duplicates allowed)"
+        }
+      ],
+      "tags": [
+        "collection",
+        "create",
+        "duplicate",
+        "name"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Duplicate collection name handled per business rules"
+    },
+    {
+      "id": "FQA-API-179",
+      "name": "Collection CRUD lifecycle",
+      "category": "functional",
+      "priority": "high",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Create",
+          "action": "POST /api/v1/collections with body {\"name\":\"Lifecycle Test\"}",
+          "expected": "201 Created"
+        },
+        {
+          "name": "Read",
+          "action": "GET /api/v1/collections/{id}",
+          "expected": "200 OK with correct data"
+        },
+        {
+          "name": "Update",
+          "action": "PUT /api/v1/collections/{id} with body {\"name\":\"Updated Lifecycle\"}",
+          "expected": "200 OK"
+        },
+        {
+          "name": "Delete",
+          "action": "DELETE /api/v1/collections/{id}",
+          "expected": "200 OK or 204"
+        }
+      ],
+      "tags": [
+        "collection",
+        "crud",
+        "lifecycle"
+      ],
+      "estimated_duration": "20s",
+      "expected_result": "Full CRUD lifecycle on collection succeeds"
+    },
+    {
+      "id": "FQA-API-180",
+      "name": "Collection with SQL injection in name",
+      "category": "security",
+      "priority": "critical",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Create with SQL injection",
+          "action": "POST /api/v1/collections with body {\"name\":\"'; DROP TABLE media_collections; --\"}",
+          "expected": "201 Created with literal SQL string as name (no SQL execution)"
+        },
+        {
+          "name": "Verify table intact",
+          "action": "GET /api/v1/collections",
+          "expected": "200 OK (table not dropped)"
+        }
+      ],
+      "tags": [
+        "collection",
+        "sql-injection",
+        "security"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "SQL injection in collection name stored as literal text"
+    },
+    {
+      "id": "FQA-API-181",
+      "name": "List collections without authentication",
+      "category": "security",
+      "priority": "high",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "List without token",
+          "action": "GET /api/v1/collections with no auth header",
+          "expected": "401 Unauthorized"
+        }
+      ],
+      "tags": [
+        "collection",
+        "list",
+        "no-auth",
+        "security"
+      ],
+      "estimated_duration": "5s",
+      "expected_result": "Collection listing requires authentication"
+    },
+    {
+      "id": "FQA-API-182",
+      "name": "Create collection with malformed JSON",
+      "category": "functional",
+      "priority": "low",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Send malformed JSON",
+          "action": "POST /api/v1/collections with body 'not json'",
+          "expected": "400 Bad Request"
+        }
+      ],
+      "tags": [
+        "collection",
+        "create",
+        "malformed-json",
+        "negative"
+      ],
+      "estimated_duration": "5s",
+      "expected_result": "Malformed JSON body rejected"
+    },
+    {
+      "id": "FQA-API-183",
+      "name": "Collection update with wrong Content-Type",
+      "category": "functional",
+      "priority": "low",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Send with text/plain",
+          "action": "PUT /api/v1/collections/{id} with Content-Type: text/plain and JSON body",
+          "expected": "400 Bad Request or 415 Unsupported Media Type"
+        }
+      ],
+      "tags": [
+        "collection",
+        "update",
+        "content-type",
+        "negative"
+      ],
+      "estimated_duration": "5s",
+      "expected_result": "Wrong Content-Type rejected"
+    },
+    {
+      "id": "FQA-API-184",
+      "name": "Collection with emoji in name",
+      "category": "functional",
+      "priority": "low",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Create with emoji",
+          "action": "POST /api/v1/collections with body {\"name\":\"Best Movies 2024\"}",
+          "expected": "201 Created with emoji preserved in name"
+        }
+      ],
+      "tags": [
+        "collection",
+        "create",
+        "emoji",
+        "unicode"
+      ],
+      "estimated_duration": "5s",
+      "expected_result": "Emoji in collection name stored correctly"
+    },
+    {
+      "id": "FQA-API-185",
+      "name": "Collection update with empty name",
+      "category": "functional",
+      "priority": "low",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Update to empty name",
+          "action": "PUT /api/v1/collections/{id} with body {\"name\":\"\"}",
+          "expected": "400 Bad Request with validation error"
+        }
+      ],
+      "tags": [
+        "collection",
+        "update",
+        "empty-name",
+        "negative"
+      ],
+      "estimated_duration": "5s",
+      "expected_result": "Updating collection to empty name rejected"
+    },
+    {
+      "id": "FQA-API-186",
+      "name": "Create collection with null name",
+      "category": "functional",
+      "priority": "low",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Send null name",
+          "action": "POST /api/v1/collections with body {\"name\":null}",
+          "expected": "400 Bad Request with validation error"
+        }
+      ],
+      "tags": [
+        "collection",
+        "create",
+        null,
+        "negative"
+      ],
+      "estimated_duration": "5s",
+      "expected_result": "Null collection name rejected"
+    },
+    {
+      "id": "FQA-API-187",
+      "name": "Delete collection with string ID",
+      "category": "functional",
+      "priority": "low",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Delete with non-numeric ID",
+          "action": "DELETE /api/v1/collections/abc with auth token",
+          "expected": "400 Bad Request or 404 Not Found"
+        }
+      ],
+      "tags": [
+        "collection",
+        "delete",
+        "non-numeric",
+        "negative"
+      ],
+      "estimated_duration": "5s",
+      "expected_result": "Non-numeric collection ID handled gracefully"
+    },
+    {
+      "id": "FQA-API-188",
+      "name": "Get collection with negative ID",
+      "category": "functional",
+      "priority": "low",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Get with negative ID",
+          "action": "GET /api/v1/collections/-1 with auth token",
+          "expected": "400 Bad Request or 404 Not Found"
+        }
+      ],
+      "tags": [
+        "collection",
+        "get",
+        "negative-id",
+        "edge-case"
+      ],
+      "estimated_duration": "5s",
+      "expected_result": "Negative collection ID returns appropriate error"
+    },
+    {
+      "id": "FQA-API-189",
+      "name": "Update collection with extra unknown fields",
+      "category": "functional",
+      "priority": "low",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Update with extra fields",
+          "action": "PUT /api/v1/collections/{id} with body {\"name\":\"Test\",\"admin\":true,\"secret\":\"hack\"}",
+          "expected": "200 OK with extra fields ignored"
+        }
+      ],
+      "tags": [
+        "collection",
+        "update",
+        "mass-assignment",
+        "security"
+      ],
+      "estimated_duration": "5s",
+      "expected_result": "Extra unknown fields safely ignored during update"
+    },
+    {
+      "id": "FQA-API-190",
+      "name": "Create collection concurrent race",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Create 3 collections simultaneously",
+          "action": "Send 3 parallel POST /api/v1/collections with names 'Race1', 'Race2', 'Race3'",
+          "expected": "All 3 return 201 Created with unique IDs"
+        }
+      ],
+      "tags": [
+        "collection",
+        "create",
+        "concurrency",
+        "race"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Concurrent collection creation succeeds without conflict"
+    },
+    {
+      "id": "FQA-API-191",
+      "name": "Create playlist",
+      "category": "functional",
+      "priority": "critical",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Create a new playlist",
+          "action": "POST /api/v1/playlists with body {\"name\":\"Road Trip Mix\",\"description\":\"Songs for driving\"}",
+          "expected": "201 Created with playlist ID"
+        }
+      ],
+      "tags": [
+        "playlist",
+        "create",
+        "happy-path"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Playlist created successfully"
+    },
+    {
+      "id": "FQA-API-192",
+      "name": "List user playlists",
+      "category": "functional",
+      "priority": "critical",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "List playlists",
+          "action": "GET /api/v1/playlists with auth token",
+          "expected": "200 OK with JSON array of user playlists"
+        }
+      ],
+      "tags": [
+        "playlist",
+        "list",
+        "user"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "User playlists returned"
+    },
+    {
+      "id": "FQA-API-193",
+      "name": "Get playlist by ID",
+      "category": "functional",
+      "priority": "high",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Get playlist details",
+          "action": "GET /api/v1/playlists/{id} with auth token",
+          "expected": "200 OK with playlist name, description, and items"
+        }
+      ],
+      "tags": [
+        "playlist",
+        "get",
+        "by-id",
+        "detail"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Playlist details returned"
+    },
+    {
+      "id": "FQA-API-194",
+      "name": "Update playlist",
+      "category": "functional",
+      "priority": "high",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Update playlist name",
+          "action": "PUT /api/v1/playlists/{id} with body {\"name\":\"Updated Road Trip\"}",
+          "expected": "200 OK with updated playlist"
+        }
+      ],
+      "tags": [
+        "playlist",
+        "update",
+        "rename"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Playlist name updated"
+    },
+    {
+      "id": "FQA-API-195",
+      "name": "Delete playlist",
+      "category": "functional",
+      "priority": "high",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Create expendable playlist",
+          "action": "POST /api/v1/playlists with body {\"name\":\"To Delete\"}",
+          "expected": "201 Created"
+        },
+        {
+          "name": "Delete playlist",
+          "action": "DELETE /api/v1/playlists/{id} with auth token",
+          "expected": "200 OK or 204 No Content"
+        },
+        {
+          "name": "Verify deleted",
+          "action": "GET /api/v1/playlists/{id}",
+          "expected": "404 Not Found"
+        }
+      ],
+      "tags": [
+        "playlist",
+        "delete",
+        "verify"
+      ],
+      "estimated_duration": "15s",
+      "expected_result": "Playlist deleted and no longer accessible"
+    },
+    {
+      "id": "FQA-API-196",
+      "name": "Add item to playlist",
+      "category": "functional",
+      "priority": "critical",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Create playlist",
+          "action": "POST /api/v1/playlists with body {\"name\":\"Test Playlist\"}",
+          "expected": "201 Created"
+        },
+        {
+          "name": "Add media item",
+          "action": "POST /api/v1/playlists/{id}/items with body {\"entity_id\":1}",
+          "expected": "200 OK or 201 Created"
+        }
+      ],
+      "tags": [
+        "playlist",
+        "add-item",
+        "media"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Media item added to playlist"
+    },
+    {
+      "id": "FQA-API-197",
+      "name": "Remove item from playlist",
+      "category": "functional",
+      "priority": "high",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Remove item",
+          "action": "DELETE /api/v1/playlists/{id}/items/{item_id} with auth token",
+          "expected": "200 OK or 204 No Content"
+        }
+      ],
+      "tags": [
+        "playlist",
+        "remove-item"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Item removed from playlist"
+    },
+    {
+      "id": "FQA-API-198",
+      "name": "Get non-existent playlist",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Get invalid playlist",
+          "action": "GET /api/v1/playlists/999999 with auth token",
+          "expected": "404 Not Found"
+        }
+      ],
+      "tags": [
+        "playlist",
+        "get",
+        "not-found",
+        "negative"
+      ],
+      "estimated_duration": "5s",
+      "expected_result": "Non-existent playlist returns 404"
+    },
+    {
+      "id": "FQA-API-199",
+      "name": "Create playlist with empty name",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Create with empty name",
+          "action": "POST /api/v1/playlists with body {\"name\":\"\"}",
+          "expected": "400 Bad Request"
+        }
+      ],
+      "tags": [
+        "playlist",
+        "create",
+        "empty-name",
+        "negative"
+      ],
+      "estimated_duration": "5s",
+      "expected_result": "Empty playlist name rejected"
+    },
+    {
+      "id": "FQA-API-200",
+      "name": "Playlist without authentication",
+      "category": "security",
+      "priority": "high",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "List playlists without token",
+          "action": "GET /api/v1/playlists without Authorization header",
+          "expected": "401 Unauthorized"
+        }
+      ],
+      "tags": [
+        "playlist",
+        "list",
+        "no-auth",
+        "security"
+      ],
+      "estimated_duration": "5s",
+      "expected_result": "Playlist operations require authentication"
+    },
+    {
+      "id": "FQA-API-201",
+      "name": "Create playlist with Cyrillic name",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Create Cyrillic playlist",
+          "action": "POST /api/v1/playlists with body {\"name\":\"\u041e\u043c\u0438\u0459\u0435\u043d\u0435 \u043f\u0435\u0441\u043c\u0435\"}",
+          "expected": "201 Created with Cyrillic name preserved"
+        }
+      ],
+      "tags": [
+        "playlist",
+        "create",
+        "cyrillic",
+        "unicode"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Cyrillic playlist name stored correctly"
+    },
+    {
+      "id": "FQA-API-202",
+      "name": "Playlist full CRUD lifecycle",
+      "category": "functional",
+      "priority": "high",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Create",
+          "action": "POST /api/v1/playlists with body {\"name\":\"Lifecycle\"}",
+          "expected": "201 Created"
+        },
+        {
+          "name": "Add item",
+          "action": "POST /api/v1/playlists/{id}/items with body {\"entity_id\":1}",
+          "expected": "200 OK"
+        },
+        {
+          "name": "Read",
+          "action": "GET /api/v1/playlists/{id}",
+          "expected": "200 OK with 1 item"
+        },
+        {
+          "name": "Update",
+          "action": "PUT /api/v1/playlists/{id} with body {\"name\":\"Updated\"}",
+          "expected": "200 OK"
+        },
+        {
+          "name": "Remove item",
+          "action": "DELETE /api/v1/playlists/{id}/items/{item_id}",
+          "expected": "200 OK"
+        },
+        {
+          "name": "Delete",
+          "action": "DELETE /api/v1/playlists/{id}",
+          "expected": "200 OK"
+        }
+      ],
+      "tags": [
+        "playlist",
+        "crud",
+        "lifecycle",
+        "full"
+      ],
+      "estimated_duration": "30s",
+      "expected_result": "Full playlist CRUD lifecycle succeeds"
+    },
+    {
+      "id": "FQA-API-203",
+      "name": "Add non-existent entity to playlist",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Add invalid entity",
+          "action": "POST /api/v1/playlists/{id}/items with body {\"entity_id\":999999}",
+          "expected": "404 Not Found or 400 Bad Request"
+        }
+      ],
+      "tags": [
+        "playlist",
+        "add-item",
+        "non-existent",
+        "negative"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Adding non-existent entity to playlist rejected"
+    },
+    {
+      "id": "FQA-API-204",
+      "name": "Delete playlist item with invalid item ID",
+      "category": "functional",
+      "priority": "low",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Remove invalid item",
+          "action": "DELETE /api/v1/playlists/{id}/items/999999",
+          "expected": "404 Not Found"
+        }
+      ],
+      "tags": [
+        "playlist",
+        "remove-item",
+        "not-found",
+        "negative"
+      ],
+      "estimated_duration": "5s",
+      "expected_result": "Removing non-existent item returns 404"
+    },
+    {
+      "id": "FQA-API-205",
+      "name": "Update non-existent playlist",
+      "category": "functional",
+      "priority": "low",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Update invalid playlist",
+          "action": "PUT /api/v1/playlists/999999 with body {\"name\":\"Ghost\"}",
+          "expected": "404 Not Found"
+        }
+      ],
+      "tags": [
+        "playlist",
+        "update",
+        "not-found",
+        "negative"
+      ],
+      "estimated_duration": "5s",
+      "expected_result": "Updating non-existent playlist returns 404"
+    },
+    {
+      "id": "FQA-API-206",
+      "name": "Create playlist with SQL injection",
+      "category": "security",
+      "priority": "high",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "SQL injection in name",
+          "action": "POST /api/v1/playlists with body {\"name\":\"'); DROP TABLE playlists; --\"}",
+          "expected": "201 Created with literal SQL text as name"
+        }
+      ],
+      "tags": [
+        "playlist",
+        "create",
+        "sql-injection",
+        "security"
+      ],
+      "estimated_duration": "5s",
+      "expected_result": "SQL injection in playlist name stored as literal text"
+    },
+    {
+      "id": "FQA-API-207",
+      "name": "Add duplicate item to playlist",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Add item first time",
+          "action": "POST /api/v1/playlists/{id}/items with body {\"entity_id\":1}",
+          "expected": "200 OK"
+        },
+        {
+          "name": "Add same item again",
+          "action": "POST /api/v1/playlists/{id}/items with body {\"entity_id\":1}",
+          "expected": "409 Conflict or 200 OK (if duplicates allowed in playlists)"
+        }
+      ],
+      "tags": [
+        "playlist",
+        "add-item",
+        "duplicate"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Duplicate item handling per business rules"
+    },
+    {
+      "id": "FQA-API-208",
+      "name": "Multiple playlists for same user",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Create first playlist",
+          "action": "POST /api/v1/playlists with body {\"name\":\"Workout\"}",
+          "expected": "201 Created"
+        },
+        {
+          "name": "Create second playlist",
+          "action": "POST /api/v1/playlists with body {\"name\":\"Relaxation\"}",
+          "expected": "201 Created"
+        },
+        {
+          "name": "Verify both in list",
+          "action": "GET /api/v1/playlists",
+          "expected": "Both playlists returned"
+        }
+      ],
+      "tags": [
+        "playlist",
+        "multiple",
+        "user"
+      ],
+      "estimated_duration": "15s",
+      "expected_result": "User can have multiple playlists"
+    },
+    {
+      "id": "FQA-API-209",
+      "name": "Delete playlist with items",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Create playlist with items",
+          "action": "POST /api/v1/playlists and add 2 items",
+          "expected": "Playlist with items created"
+        },
+        {
+          "name": "Delete playlist",
+          "action": "DELETE /api/v1/playlists/{id}",
+          "expected": "200 OK (cascade deletes items)"
+        }
+      ],
+      "tags": [
+        "playlist",
+        "delete",
+        "cascade",
+        "items"
+      ],
+      "estimated_duration": "15s",
+      "expected_result": "Deleting playlist also removes its items"
+    },
+    {
+      "id": "FQA-API-210",
+      "name": "Playlist malformed JSON body",
+      "category": "functional",
+      "priority": "low",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Send malformed JSON",
+          "action": "POST /api/v1/playlists with body '{broken json'",
+          "expected": "400 Bad Request"
+        }
+      ],
+      "tags": [
+        "playlist",
+        "create",
+        "malformed-json",
+        "negative"
+      ],
+      "estimated_duration": "5s",
+      "expected_result": "Malformed JSON for playlist creation rejected"
+    },
+    {
+      "id": "FQA-API-211",
+      "name": "Add entity to favorites",
+      "category": "functional",
+      "priority": "critical",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Add to favorites",
+          "action": "POST /api/v1/favorites with body {\"entity_type\":\"movie\",\"entity_id\":1}",
+          "expected": "200 OK or 201 Created"
+        }
+      ],
+      "tags": [
+        "favorites",
+        "add",
+        "happy-path"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Entity added to favorites"
+    },
+    {
+      "id": "FQA-API-212",
+      "name": "List favorites",
+      "category": "functional",
+      "priority": "critical",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "List favorites",
+          "action": "GET /api/v1/favorites with auth token",
+          "expected": "200 OK with list of favorited entities"
+        }
+      ],
+      "tags": [
+        "favorites",
+        "list",
+        "all"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "All favorites returned for user"
+    },
+    {
+      "id": "FQA-API-213",
+      "name": "Remove from favorites",
+      "category": "functional",
+      "priority": "high",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Remove favorite",
+          "action": "DELETE /api/v1/favorites/movie/1 with auth token",
+          "expected": "200 OK or 204 No Content"
+        }
+      ],
+      "tags": [
+        "favorites",
+        "remove",
+        "delete"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Entity removed from favorites"
+    },
+    {
+      "id": "FQA-API-214",
+      "name": "Check if entity is favorited",
+      "category": "functional",
+      "priority": "high",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Check favorite status",
+          "action": "GET /api/v1/favorites/check/movie/1 with auth token",
+          "expected": "200 OK with boolean indicating favorite status"
+        }
+      ],
+      "tags": [
+        "favorites",
+        "check",
+        "status"
+      ],
+      "estimated_duration": "5s",
+      "expected_result": "Favorite check returns correct boolean status"
+    },
+    {
+      "id": "FQA-API-215",
+      "name": "Add and verify favorite lifecycle",
+      "category": "functional",
+      "priority": "high",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Check not favorited",
+          "action": "GET /api/v1/favorites/check/movie/1",
+          "expected": "200 OK with favorite=false"
+        },
+        {
+          "name": "Add to favorites",
+          "action": "POST /api/v1/favorites with body {\"entity_type\":\"movie\",\"entity_id\":1}",
+          "expected": "200 OK"
+        },
+        {
+          "name": "Check is favorited",
+          "action": "GET /api/v1/favorites/check/movie/1",
+          "expected": "200 OK with favorite=true"
+        },
+        {
+          "name": "Remove from favorites",
+          "action": "DELETE /api/v1/favorites/movie/1",
+          "expected": "200 OK"
+        }
+      ],
+      "tags": [
+        "favorites",
+        "lifecycle",
+        "add",
+        "check",
+        "remove"
+      ],
+      "estimated_duration": "20s",
+      "expected_result": "Full favorite lifecycle works: check -> add -> verify -> remove"
+    },
+    {
+      "id": "FQA-API-216",
+      "name": "Favorites without authentication",
+      "category": "security",
+      "priority": "high",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "List favorites without token",
+          "action": "GET /api/v1/favorites without auth",
+          "expected": "401 Unauthorized"
+        }
+      ],
+      "tags": [
+        "favorites",
+        "list",
+        "no-auth",
+        "security"
+      ],
+      "estimated_duration": "5s",
+      "expected_result": "Favorites operations require authentication"
+    },
+    {
+      "id": "FQA-API-217",
+      "name": "Add same entity to favorites twice",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Add first time",
+          "action": "POST /api/v1/favorites with body {\"entity_type\":\"movie\",\"entity_id\":1}",
+          "expected": "200 OK"
+        },
+        {
+          "name": "Add second time",
+          "action": "POST /api/v1/favorites with body {\"entity_type\":\"movie\",\"entity_id\":1}",
+          "expected": "200 OK or 409 Conflict (idempotent or error)"
+        }
+      ],
+      "tags": [
+        "favorites",
+        "add",
+        "duplicate",
+        "idempotent"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Adding same favorite twice handled gracefully"
+    },
+    {
+      "id": "FQA-API-218",
+      "name": "Remove non-existent favorite",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Remove non-favorited entity",
+          "action": "DELETE /api/v1/favorites/movie/999999 with auth token",
+          "expected": "404 Not Found or 200 OK (idempotent)"
+        }
+      ],
+      "tags": [
+        "favorites",
+        "remove",
+        "not-found"
+      ],
+      "estimated_duration": "5s",
+      "expected_result": "Removing non-existent favorite handled gracefully"
+    },
+    {
+      "id": "FQA-API-219",
+      "name": "Favorite with invalid entity type",
+      "category": "functional",
+      "priority": "low",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Add invalid type",
+          "action": "POST /api/v1/favorites with body {\"entity_type\":\"invalid_type\",\"entity_id\":1}",
+          "expected": "400 Bad Request with validation error"
+        }
+      ],
+      "tags": [
+        "favorites",
+        "add",
+        "invalid-type",
+        "negative"
+      ],
+      "estimated_duration": "5s",
+      "expected_result": "Invalid entity type rejected for favorites"
+    },
+    {
+      "id": "FQA-API-220",
+      "name": "Check favorite with invalid type",
+      "category": "functional",
+      "priority": "low",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Check invalid type",
+          "action": "GET /api/v1/favorites/check/invalid_type/1 with auth token",
+          "expected": "400 Bad Request or 200 OK with favorite=false"
+        }
+      ],
+      "tags": [
+        "favorites",
+        "check",
+        "invalid-type"
+      ],
+      "estimated_duration": "5s",
+      "expected_result": "Invalid entity type in favorite check handled gracefully"
+    },
+    {
+      "id": "FQA-API-221",
+      "name": "Stream video file by ID",
+      "category": "functional",
+      "priority": "critical",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Stream a file",
+          "action": "GET /api/v1/stream/1 with auth token",
+          "expected": "200 OK or 206 Partial Content with media data stream"
+        }
+      ],
+      "tags": [
+        "streaming",
+        "video",
+        "by-id",
+        "happy-path"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Video file streamed from server"
+    },
+    {
+      "id": "FQA-API-222",
+      "name": "Stream with range request (partial content)",
+      "category": "functional",
+      "priority": "critical",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Send range request",
+          "action": "GET /api/v1/stream/1 with Range: bytes=0-1023 header and auth token",
+          "expected": "206 Partial Content with Content-Range header and 1024 bytes of data"
+        }
+      ],
+      "tags": [
+        "streaming",
+        "range",
+        "partial-content",
+        "video"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Range request returns partial content with correct headers"
+    },
+    {
+      "id": "FQA-API-223",
+      "name": "Stream non-existent file",
+      "category": "functional",
+      "priority": "high",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Stream invalid ID",
+          "action": "GET /api/v1/stream/999999 with auth token",
+          "expected": "404 Not Found"
+        }
+      ],
+      "tags": [
+        "streaming",
+        "not-found",
+        "negative"
+      ],
+      "estimated_duration": "5s",
+      "expected_result": "Streaming non-existent file returns 404"
+    },
+    {
+      "id": "FQA-API-224",
+      "name": "Stream without authentication",
+      "category": "security",
+      "priority": "critical",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Stream without token",
+          "action": "GET /api/v1/stream/1 without auth",
+          "expected": "401 Unauthorized"
+        }
+      ],
+      "tags": [
+        "streaming",
+        "no-auth",
+        "security"
+      ],
+      "estimated_duration": "5s",
+      "expected_result": "Streaming requires authentication"
+    },
+    {
+      "id": "FQA-API-225",
+      "name": "Download file by ID",
+      "category": "functional",
+      "priority": "high",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Download file",
+          "action": "GET /api/v1/download/file/1 with auth token",
+          "expected": "200 OK with Content-Disposition: attachment header"
+        }
+      ],
+      "tags": [
+        "download",
+        "file",
+        "by-id"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "File downloaded with attachment header"
+    },
+    {
+      "id": "FQA-API-226",
+      "name": "Download directory as archive",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Download directory",
+          "action": "POST /api/v1/download/archive with body containing directory path",
+          "expected": "200 OK with zip/tar archive data"
+        }
+      ],
+      "tags": [
+        "download",
+        "directory",
+        "archive"
+      ],
+      "estimated_duration": "15s",
+      "expected_result": "Directory contents downloaded as archive"
+    },
+    {
+      "id": "FQA-API-227",
+      "name": "Search subtitles for media",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Search subtitles",
+          "action": "GET /api/v1/subtitles/search?query=Matrix with auth token",
+          "expected": "200 OK with subtitle search results"
+        }
+      ],
+      "tags": [
+        "subtitles",
+        "search",
+        "media"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Subtitle search returns results"
+    },
+    {
+      "id": "FQA-API-228",
+      "name": "Get subtitles for media ID",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Get subtitles",
+          "action": "GET /api/v1/subtitles/media/1 with auth token",
+          "expected": "200 OK with available subtitles for the media"
+        }
+      ],
+      "tags": [
+        "subtitles",
+        "media",
+        "by-id"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Available subtitles returned for media"
+    },
+    {
+      "id": "FQA-API-229",
+      "name": "Get supported subtitle languages",
+      "category": "functional",
+      "priority": "low",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Get languages",
+          "action": "GET /api/v1/subtitles/languages with auth token",
+          "expected": "200 OK with list of supported languages"
+        }
+      ],
+      "tags": [
+        "subtitles",
+        "languages",
+        "supported"
+      ],
+      "estimated_duration": "5s",
+      "expected_result": "Supported subtitle languages listed"
+    },
+    {
+      "id": "FQA-API-230",
+      "name": "Get supported subtitle providers",
+      "category": "functional",
+      "priority": "low",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Get providers",
+          "action": "GET /api/v1/subtitles/providers with auth token",
+          "expected": "200 OK with list of subtitle providers"
+        }
+      ],
+      "tags": [
+        "subtitles",
+        "providers",
+        "supported"
+      ],
+      "estimated_duration": "5s",
+      "expected_result": "Supported subtitle providers listed"
+    },
+    {
+      "id": "FQA-API-231",
+      "name": "Connect to WebSocket",
+      "category": "functional",
+      "priority": "critical",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Establish WebSocket connection",
+          "action": "GET /ws with Upgrade: websocket header and auth token in query param",
+          "expected": "101 Switching Protocols, WebSocket connection established"
+        }
+      ],
+      "tags": [
+        "websocket",
+        "connect",
+        "happy-path"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "WebSocket connection established successfully"
+    },
+    {
+      "id": "FQA-API-232",
+      "name": "WebSocket without authentication",
+      "category": "security",
+      "priority": "critical",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Connect without token",
+          "action": "GET /ws with Upgrade: websocket but no auth token",
+          "expected": "401 Unauthorized or connection rejected"
+        }
+      ],
+      "tags": [
+        "websocket",
+        "connect",
+        "no-auth",
+        "security"
+      ],
+      "estimated_duration": "5s",
+      "expected_result": "WebSocket rejects unauthenticated connections"
+    },
+    {
+      "id": "FQA-API-233",
+      "name": "Receive scan progress events via WebSocket",
+      "category": "functional",
+      "priority": "high",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Connect WebSocket",
+          "action": "Establish WebSocket connection with valid auth",
+          "expected": "Connected"
+        },
+        {
+          "name": "Queue a scan",
+          "action": "POST /api/v1/scans via HTTP",
+          "expected": "Scan started"
+        },
+        {
+          "name": "Listen for progress events",
+          "action": "Read WebSocket messages for scan progress",
+          "expected": "Receive JSON messages with scan progress updates"
+        }
+      ],
+      "tags": [
+        "websocket",
+        "scan",
+        "progress",
+        "events",
+        "realtime"
+      ],
+      "estimated_duration": "30s",
+      "expected_result": "Scan progress events received via WebSocket in real-time"
+    },
+    {
+      "id": "FQA-API-234",
+      "name": "Receive real-time update events via WebSocket",
+      "category": "functional",
+      "priority": "high",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Connect WebSocket",
+          "action": "Establish WebSocket connection",
+          "expected": "Connected"
+        },
+        {
+          "name": "Trigger an action that generates events",
+          "action": "Create or update an entity via HTTP",
+          "expected": "Action performed"
+        },
+        {
+          "name": "Check for event",
+          "action": "Read WebSocket messages",
+          "expected": "Event message received about the entity change"
+        }
+      ],
+      "tags": [
+        "websocket",
+        "realtime",
+        "events",
+        "entity-change"
+      ],
+      "estimated_duration": "15s",
+      "expected_result": "Real-time update events pushed via WebSocket"
+    },
+    {
+      "id": "FQA-API-235",
+      "name": "WebSocket ping/pong keepalive",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Connect and wait",
+          "action": "Establish WebSocket connection and hold it open for 30 seconds",
+          "expected": "Connection stays alive with ping/pong frames"
+        }
+      ],
+      "tags": [
+        "websocket",
+        "keepalive",
+        "ping-pong"
+      ],
+      "estimated_duration": "35s",
+      "expected_result": "WebSocket connection maintained via ping/pong"
+    },
+    {
+      "id": "FQA-API-236",
+      "name": "WebSocket connection count tracked",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Connect two clients",
+          "action": "Establish two WebSocket connections",
+          "expected": "Both connected"
+        },
+        {
+          "name": "Check metrics",
+          "action": "GET /metrics and look for WebSocket connection count",
+          "expected": "Connection count reflects 2 active connections"
+        }
+      ],
+      "tags": [
+        "websocket",
+        "metrics",
+        "connection-count"
+      ],
+      "estimated_duration": "15s",
+      "expected_result": "WebSocket connection count accurately tracked in metrics"
+    },
+    {
+      "id": "FQA-API-237",
+      "name": "WebSocket graceful close",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Connect",
+          "action": "Establish WebSocket connection",
+          "expected": "Connected"
+        },
+        {
+          "name": "Send close frame",
+          "action": "Send WebSocket close frame from client",
+          "expected": "Server acknowledges close, connection terminated cleanly"
+        }
+      ],
+      "tags": [
+        "websocket",
+        "close",
+        "graceful"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "WebSocket closes gracefully with proper close handshake"
+    },
+    {
+      "id": "FQA-API-238",
+      "name": "WebSocket oversized message rejected",
+      "category": "security",
+      "priority": "medium",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Connect",
+          "action": "Establish WebSocket connection",
+          "expected": "Connected"
+        },
+        {
+          "name": "Send oversized message",
+          "action": "Send 10MB WebSocket message",
+          "expected": "Connection closed with message too large error"
+        }
+      ],
+      "tags": [
+        "websocket",
+        "oversized",
+        "message-limit",
+        "security"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Oversized WebSocket messages rejected"
+    },
+    {
+      "id": "FQA-API-239",
+      "name": "Multiple WebSocket clients receive same events",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Connect client A and client B",
+          "action": "Establish two WebSocket connections",
+          "expected": "Both connected"
+        },
+        {
+          "name": "Trigger an event",
+          "action": "Queue a scan via HTTP",
+          "expected": "Scan started"
+        },
+        {
+          "name": "Verify both receive",
+          "action": "Read messages on both clients",
+          "expected": "Both client A and B receive the scan event"
+        }
+      ],
+      "tags": [
+        "websocket",
+        "broadcast",
+        "multiple-clients",
+        "events"
+      ],
+      "estimated_duration": "20s",
+      "expected_result": "Events broadcast to all connected WebSocket clients"
+    },
+    {
+      "id": "FQA-API-240",
+      "name": "WebSocket reconnection after disconnect",
+      "category": "functional",
+      "priority": "high",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Connect",
+          "action": "Establish WebSocket connection",
+          "expected": "Connected"
+        },
+        {
+          "name": "Force disconnect",
+          "action": "Close the connection abruptly",
+          "expected": "Connection dropped"
+        },
+        {
+          "name": "Reconnect",
+          "action": "Establish new WebSocket connection with same auth",
+          "expected": "New connection established successfully"
+        }
+      ],
+      "tags": [
+        "websocket",
+        "reconnect",
+        "recovery"
+      ],
+      "estimated_duration": "15s",
+      "expected_result": "WebSocket reconnection works after disconnect"
+    },
+    {
+      "id": "FQA-API-241",
+      "name": "Admin get system info",
+      "category": "functional",
+      "priority": "critical",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Authenticate as admin",
+          "action": "POST /api/v1/auth/login with admin credentials",
+          "expected": "200 OK with token"
+        },
+        {
+          "name": "Get system info",
+          "action": "GET /api/v1/admin/system-info with admin token",
+          "expected": "200 OK with version, build number, build date, Go version, OS info"
+        }
+      ],
+      "tags": [
+        "admin",
+        "system-info",
+        "version",
+        "happy-path"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "System info returned with build metadata"
+    },
+    {
+      "id": "FQA-API-242",
+      "name": "Admin list users",
+      "category": "functional",
+      "priority": "critical",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "List users",
+          "action": "GET /api/v1/admin/users with admin token",
+          "expected": "200 OK with array of user objects (no password fields)"
+        }
+      ],
+      "tags": [
+        "admin",
+        "users",
+        "list"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "User list returned without password fields"
+    },
+    {
+      "id": "FQA-API-243",
+      "name": "Admin update user",
+      "category": "functional",
+      "priority": "high",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Update user role",
+          "action": "PUT /api/v1/admin/users/{id} with body {\"role\":\"admin\"}",
+          "expected": "200 OK with updated user"
+        }
+      ],
+      "tags": [
+        "admin",
+        "users",
+        "update",
+        "role"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "User role updated by admin"
+    },
+    {
+      "id": "FQA-API-244",
+      "name": "Create user via users endpoint",
+      "category": "functional",
+      "priority": "high",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Create user",
+          "action": "POST /api/v1/users with body {\"username\":\"admin_created_user\",\"password\":\"SecurePass456!\",\"role\":\"user\"}",
+          "expected": "201 Created with new user ID"
+        }
+      ],
+      "tags": [
+        "admin",
+        "users",
+        "create"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "New user created via users endpoint"
+    },
+    {
+      "id": "FQA-API-245",
+      "name": "List users via users endpoint",
+      "category": "functional",
+      "priority": "high",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "List users",
+          "action": "GET /api/v1/users with auth token",
+          "expected": "200 OK with list of users"
+        }
+      ],
+      "tags": [
+        "users",
+        "list"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Users listed via /users endpoint"
+    },
+    {
+      "id": "FQA-API-246",
+      "name": "Get user by ID",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Get user",
+          "action": "GET /api/v1/users/{id} with auth token",
+          "expected": "200 OK with user details"
+        }
+      ],
+      "tags": [
+        "users",
+        "get",
+        "by-id"
+      ],
+      "estimated_duration": "5s",
+      "expected_result": "User details returned by ID"
+    },
+    {
+      "id": "FQA-API-247",
+      "name": "Update user via users endpoint",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Update user",
+          "action": "PUT /api/v1/users/{id} with body {\"role\":\"admin\"}",
+          "expected": "200 OK"
+        }
+      ],
+      "tags": [
+        "users",
+        "update"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "User updated via /users endpoint"
+    },
+    {
+      "id": "FQA-API-248",
+      "name": "Delete user",
+      "category": "functional",
+      "priority": "high",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Create expendable user",
+          "action": "POST /api/v1/users with body {\"username\":\"todelete\",\"password\":\"Pass123!\"}",
+          "expected": "201 Created"
+        },
+        {
+          "name": "Delete user",
+          "action": "DELETE /api/v1/users/{id} with auth token",
+          "expected": "200 OK or 204 No Content"
+        }
+      ],
+      "tags": [
+        "users",
+        "delete"
+      ],
+      "estimated_duration": "15s",
+      "expected_result": "User deleted successfully"
+    },
+    {
+      "id": "FQA-API-249",
+      "name": "Reset user password",
+      "category": "functional",
+      "priority": "high",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Reset password",
+          "action": "POST /api/v1/users/{id}/reset-password with body {\"new_password\":\"NewPass789!\"}",
+          "expected": "200 OK"
+        }
+      ],
+      "tags": [
+        "users",
+        "password-reset",
+        "admin"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "User password reset by admin"
+    },
+    {
+      "id": "FQA-API-250",
+      "name": "Lock and unlock user account",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Lock account",
+          "action": "POST /api/v1/users/{id}/lock with auth token",
+          "expected": "200 OK"
+        },
+        {
+          "name": "Verify locked user cannot login",
+          "action": "POST /api/v1/auth/login with locked user credentials",
+          "expected": "403 Forbidden or 401 Unauthorized with account locked message"
+        },
+        {
+          "name": "Unlock account",
+          "action": "POST /api/v1/users/{id}/unlock with auth token",
+          "expected": "200 OK"
+        }
+      ],
+      "tags": [
+        "users",
+        "lock",
+        "unlock",
+        "account"
+      ],
+      "estimated_duration": "15s",
+      "expected_result": "User account locked and unlocked successfully"
+    },
+    {
+      "id": "FQA-API-251",
+      "name": "Admin get backups",
+      "category": "functional",
+      "priority": "high",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "List backups",
+          "action": "GET /api/v1/admin/backups with admin token",
+          "expected": "200 OK with list of available backups"
+        }
+      ],
+      "tags": [
+        "admin",
+        "backups",
+        "list"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Backup list returned"
+    },
+    {
+      "id": "FQA-API-252",
+      "name": "Admin create backup",
+      "category": "functional",
+      "priority": "high",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Create backup",
+          "action": "POST /api/v1/admin/backups with admin token",
+          "expected": "200 OK or 201 Created with backup file info"
+        }
+      ],
+      "tags": [
+        "admin",
+        "backups",
+        "create"
+      ],
+      "estimated_duration": "15s",
+      "expected_result": "Database backup created"
+    },
+    {
+      "id": "FQA-API-253",
+      "name": "Admin restore backup",
+      "category": "functional",
+      "priority": "high",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Restore from backup",
+          "action": "POST /api/v1/admin/backups/{id}/restore with admin token",
+          "expected": "200 OK with restoration confirmation"
+        }
+      ],
+      "tags": [
+        "admin",
+        "backups",
+        "restore"
+      ],
+      "estimated_duration": "30s",
+      "expected_result": "Database restored from backup"
+    },
+    {
+      "id": "FQA-API-254",
+      "name": "Role management - list roles",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "List roles",
+          "action": "GET /api/v1/roles with auth token",
+          "expected": "200 OK with list of roles"
+        }
+      ],
+      "tags": [
+        "roles",
+        "list"
+      ],
+      "estimated_duration": "5s",
+      "expected_result": "Roles listed"
+    },
+    {
+      "id": "FQA-API-255",
+      "name": "Role management - get role permissions",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Get permissions",
+          "action": "GET /api/v1/roles/permissions with auth token",
+          "expected": "200 OK with list of all permissions"
+        }
+      ],
+      "tags": [
+        "roles",
+        "permissions"
+      ],
+      "estimated_duration": "5s",
+      "expected_result": "All permissions listed"
+    },
+    {
+      "id": "FQA-API-256",
+      "name": "Configuration - get current config",
+      "category": "functional",
+      "priority": "high",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Get configuration",
+          "action": "GET /api/v1/configuration with auth token",
+          "expected": "200 OK with current system configuration"
+        }
+      ],
+      "tags": [
+        "configuration",
+        "get",
+        "current"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Current configuration returned"
+    },
+    {
+      "id": "FQA-API-257",
+      "name": "Configuration - get system status",
+      "category": "functional",
+      "priority": "high",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Get system status",
+          "action": "GET /api/v1/configuration/status with auth token",
+          "expected": "200 OK with system status info"
+        }
+      ],
+      "tags": [
+        "configuration",
+        "status",
+        "system"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "System status returned"
+    },
+    {
+      "id": "FQA-API-258",
+      "name": "Log management - collect logs",
+      "category": "functional",
+      "priority": "high",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Create log collection",
+          "action": "POST /api/v1/logs/collect with auth token",
+          "expected": "200 OK or 201 Created with log collection ID"
+        }
+      ],
+      "tags": [
+        "logs",
+        "collect",
+        "management"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Log collection created"
+    },
+    {
+      "id": "FQA-API-259",
+      "name": "Log management - list collections",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "List log collections",
+          "action": "GET /api/v1/logs/collections with auth token",
+          "expected": "200 OK with list of log collections"
+        }
+      ],
+      "tags": [
+        "logs",
+        "collections",
+        "list"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Log collections listed"
+    },
+    {
+      "id": "FQA-API-260",
+      "name": "Log management - get statistics",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Get log statistics",
+          "action": "GET /api/v1/logs/statistics with auth token",
+          "expected": "200 OK with log statistics (counts by level, time distribution)"
+        }
+      ],
+      "tags": [
+        "logs",
+        "statistics",
+        "management"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Log statistics returned"
+    },
+    {
+      "id": "FQA-API-261",
+      "name": "Request with max-length URL",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Send request with very long URL",
+          "action": "GET /api/v1/entities?search=AAAA...x2000 (URL over 8000 chars) with auth token",
+          "expected": "400 Bad Request or 414 URI Too Long (no server crash)"
+        }
+      ],
+      "tags": [
+        "edge-case",
+        "long-url",
+        "input-validation"
+      ],
+      "estimated_duration": "5s",
+      "expected_result": "Extremely long URL rejected gracefully"
+    },
+    {
+      "id": "FQA-API-262",
+      "name": "Request with malformed JSON body",
+      "category": "functional",
+      "priority": "high",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "POST with invalid JSON",
+          "action": "POST /api/v1/collections with body '{\"name: broken}' and auth token",
+          "expected": "400 Bad Request with JSON parse error"
+        }
+      ],
+      "tags": [
+        "edge-case",
+        "malformed-json",
+        "parsing"
+      ],
+      "estimated_duration": "5s",
+      "expected_result": "Malformed JSON rejected with 400"
+    },
+    {
+      "id": "FQA-API-263",
+      "name": "Request with wrong Content-Type",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "POST with XML content type",
+          "action": "POST /api/v1/collections with Content-Type: application/xml and JSON body",
+          "expected": "400 Bad Request or 415 Unsupported Media Type"
+        }
+      ],
+      "tags": [
+        "edge-case",
+        "content-type",
+        "wrong-mime"
+      ],
+      "estimated_duration": "5s",
+      "expected_result": "Wrong Content-Type rejected"
+    },
+    {
+      "id": "FQA-API-264",
+      "name": "Request to non-existent endpoint (404)",
+      "category": "functional",
+      "priority": "high",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Hit non-existent path",
+          "action": "GET /api/v1/this/does/not/exist with auth token",
+          "expected": "404 Not Found with generic error message (no stack trace)"
+        }
+      ],
+      "tags": [
+        "edge-case",
+        404,
+        "not-found"
+      ],
+      "estimated_duration": "5s",
+      "expected_result": "Non-existent endpoint returns 404 without leaking internals"
+    },
+    {
+      "id": "FQA-API-265",
+      "name": "Concurrent requests (5 simultaneous)",
+      "category": "functional",
+      "priority": "high",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Send 5 simultaneous requests",
+          "action": "Send 5 parallel GET /api/v1/entities requests with auth token",
+          "expected": "All 5 return 200 OK within reasonable time"
+        }
+      ],
+      "tags": [
+        "edge-case",
+        "concurrency",
+        "parallel",
+        "stress"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "All concurrent requests succeed without conflict"
+    },
+    {
+      "id": "FQA-API-266",
+      "name": "Request with negative page number",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Negative page",
+          "action": "GET /api/v1/entities?page=-5 with auth token",
+          "expected": "400 Bad Request or 200 OK with first page"
+        }
+      ],
+      "tags": [
+        "edge-case",
+        "pagination",
+        "negative",
+        "validation"
+      ],
+      "estimated_duration": "5s",
+      "expected_result": "Negative page number handled gracefully"
+    },
+    {
+      "id": "FQA-API-267",
+      "name": "Request with non-numeric ID",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "String ID for entity",
+          "action": "GET /api/v1/entities/not-a-number with auth token",
+          "expected": "400 Bad Request or 404 Not Found"
+        },
+        {
+          "name": "String ID for collection",
+          "action": "GET /api/v1/collections/xyz with auth token",
+          "expected": "400 Bad Request or 404 Not Found"
+        }
+      ],
+      "tags": [
+        "edge-case",
+        "non-numeric-id",
+        "validation"
+      ],
+      "estimated_duration": "5s",
+      "expected_result": "Non-numeric IDs rejected with appropriate error"
+    },
+    {
+      "id": "FQA-API-268",
+      "name": "PUT with empty body",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Update entity with empty body",
+          "action": "PUT /api/v1/entities/1/user-metadata with empty body and auth token",
+          "expected": "400 Bad Request"
+        }
+      ],
+      "tags": [
+        "edge-case",
+        "empty-body",
+        "put"
+      ],
+      "estimated_duration": "5s",
+      "expected_result": "PUT with empty body rejected"
+    },
+    {
+      "id": "FQA-API-269",
+      "name": "Request with oversized body",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Send 50MB JSON body",
+          "action": "POST /api/v1/collections with 50MB JSON body and auth token",
+          "expected": "413 Request Entity Too Large or connection reset"
+        }
+      ],
+      "tags": [
+        "edge-case",
+        "oversized-body",
+        "dos"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Oversized request body rejected"
+    },
+    {
+      "id": "FQA-API-270",
+      "name": "Request with method not allowed",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "PATCH on entities endpoint",
+          "action": "PATCH /api/v1/entities/1 with auth token",
+          "expected": "405 Method Not Allowed or 404 Not Found"
+        }
+      ],
+      "tags": [
+        "edge-case",
+        "method-not-allowed",
+        "http-method"
+      ],
+      "estimated_duration": "5s",
+      "expected_result": "Unsupported HTTP method rejected"
+    },
+    {
+      "id": "FQA-API-271",
+      "name": "Error reporting endpoint",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Report an error",
+          "action": "POST /api/v1/errors/report with body {\"message\":\"Test error\",\"stack_trace\":\"test\"}",
+          "expected": "200 OK or 201 Created"
+        }
+      ],
+      "tags": [
+        "errors",
+        "report",
+        "error-tracking"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Error report submitted successfully"
+    },
+    {
+      "id": "FQA-API-272",
+      "name": "Error reports list",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "List error reports",
+          "action": "GET /api/v1/errors/reports with auth token",
+          "expected": "200 OK with list of error reports"
+        }
+      ],
+      "tags": [
+        "errors",
+        "reports",
+        "list"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Error reports listed"
+    },
+    {
+      "id": "FQA-API-273",
+      "name": "Crash report endpoint",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Submit crash report",
+          "action": "POST /api/v1/errors/crash with body {\"app\":\"androidtv\",\"crash_log\":\"fatal exception\"}",
+          "expected": "200 OK or 201 Created"
+        }
+      ],
+      "tags": [
+        "errors",
+        "crash",
+        "report"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Crash report submitted"
+    },
+    {
+      "id": "FQA-API-274",
+      "name": "Error statistics",
+      "category": "functional",
+      "priority": "low",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Get error statistics",
+          "action": "GET /api/v1/errors/statistics with auth token",
+          "expected": "200 OK with error count statistics"
+        }
+      ],
+      "tags": [
+        "errors",
+        "statistics"
+      ],
+      "estimated_duration": "5s",
+      "expected_result": "Error statistics returned"
+    },
+    {
+      "id": "FQA-API-275",
+      "name": "Analytics - log media access",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Log access",
+          "action": "POST /api/v1/analytics/access with body {\"media_id\":1,\"action\":\"play\"}",
+          "expected": "200 OK"
+        }
+      ],
+      "tags": [
+        "analytics",
+        "access",
+        "log"
+      ],
+      "estimated_duration": "5s",
+      "expected_result": "Media access event logged"
+    },
+    {
+      "id": "FQA-API-276",
+      "name": "Analytics - system analytics",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Get system analytics",
+          "action": "GET /api/v1/analytics/system with auth token",
+          "expected": "200 OK with system-wide analytics"
+        }
+      ],
+      "tags": [
+        "analytics",
+        "system"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "System analytics returned"
+    },
+    {
+      "id": "FQA-API-277",
+      "name": "Reports - usage report",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Get usage report",
+          "action": "GET /api/v1/reports/usage with auth token",
+          "expected": "200 OK with usage report data"
+        }
+      ],
+      "tags": [
+        "reports",
+        "usage"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Usage report generated"
+    },
+    {
+      "id": "FQA-API-278",
+      "name": "Reports - performance report",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Get performance report",
+          "action": "GET /api/v1/reports/performance with auth token",
+          "expected": "200 OK with performance metrics"
+        }
+      ],
+      "tags": [
+        "reports",
+        "performance"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Performance report generated"
+    },
+    {
+      "id": "FQA-API-279",
+      "name": "Conversion - list supported formats",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Get formats",
+          "action": "GET /api/v1/conversion/formats with auth token",
+          "expected": "200 OK with list of supported conversion formats"
+        }
+      ],
+      "tags": [
+        "conversion",
+        "formats",
+        "supported"
+      ],
+      "estimated_duration": "5s",
+      "expected_result": "Supported conversion formats returned"
+    },
+    {
+      "id": "FQA-API-280",
+      "name": "Request timeout enforcement (60s limit)",
+      "category": "functional",
+      "priority": "high",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Note server timeout configuration",
+          "action": "Server configured with RequestTimeout(60 * time.Second)",
+          "expected": "Acknowledged"
+        },
+        {
+          "name": "Verify normal requests complete well within timeout",
+          "action": "GET /api/v1/entities with auth token",
+          "expected": "200 OK within 1 second (well under 60s timeout)"
+        }
+      ],
+      "tags": [
+        "edge-case",
+        "timeout",
+        "performance",
+        "configuration"
+      ],
+      "estimated_duration": "5s",
+      "expected_result": "Request timeout configured and normal requests complete quickly"
+    }
+  ]
+}

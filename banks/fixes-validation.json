@@ -1,0 +1,83 @@
+{
+  "version": "1.0",
+  "name": "Catalogizer Fixes Validation Suite",
+  "description": "Regression tests ensuring all discovered and fixed bugs never recur. Each entry maps to a specific bug fix with evidence.",
+  "metadata": {
+    "author": "vasic-digital",
+    "app": "Catalogizer",
+    "version": "2.3.0"
+  },
+  "test_cases": [
+    {
+      "id": "FIX-001",
+      "name": "Provider routing challenge whitespace tolerance",
+      "category": "regression",
+      "priority": "high",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Run provider-manager-routing challenge",
+          "action": "Execute CH-097 provider-manager-routing challenge via API",
+          "expected": "Challenge passes \u2014 detects providers map field despite Go struct alignment whitespace"
+        },
+        {
+          "name": "Verify all assertions pass",
+          "action": "Check all 9 assertions in challenge result",
+          "expected": "All assertions passed=true, including provider_map assertion"
+        }
+      ],
+      "tags": [
+        "regression",
+        "challenge",
+        "provider",
+        "whitespace"
+      ],
+      "estimated_duration": "5s",
+      "expected_result": "Challenge passes with regex-based whitespace-tolerant matching",
+      "fix_reference": {
+        "bug_id": "QA-2026-04-04-001",
+        "description": "provider-manager-routing challenge failed because string match did not tolerate Go struct field alignment whitespace",
+        "fix_file": "catalog-api/challenges/ch094_098_provider_verification.go",
+        "fix_commit": "pending"
+      }
+    },
+    {
+      "id": "FIX-002",
+      "name": "EntityDetail jsdom/undici unhandled rejection",
+      "category": "regression",
+      "priority": "medium",
+      "platforms": [
+        "web"
+      ],
+      "steps": [
+        {
+          "name": "Run EntityDetail test suite",
+          "action": "npm run test -- --reporter=verbose src/pages/__tests__/EntityDetail.test.tsx",
+          "expected": "All tests pass with zero unhandled rejections"
+        },
+        {
+          "name": "Check for InvalidArgumentError",
+          "action": "Verify no 'UND_ERR_INVALID_ARG' errors in test output",
+          "expected": "Zero InvalidArgumentError occurrences"
+        }
+      ],
+      "tags": [
+        "regression",
+        "frontend",
+        "jsdom",
+        "undici",
+        "entitydetail"
+      ],
+      "estimated_duration": "30s",
+      "expected_result": "EntityDetail tests pass without jsdom/undici compatibility errors",
+      "fix_reference": {
+        "bug_id": "QA-2026-04-04-002",
+        "description": "EntityDetail.test.tsx produces 174 InvalidArgumentError unhandled rejections from jsdom dispatcher",
+        "fix_file": "catalog-web/src/pages/__tests__/EntityDetail.test.tsx",
+        "fix_commit": "pending"
+      }
+    }
+  ]
+}

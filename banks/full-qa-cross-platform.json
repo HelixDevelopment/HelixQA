@@ -1,0 +1,695 @@
+{
+  "version": "1.0",
+  "name": "Catalogizer Full QA - Cross-Platform Consistency",
+  "description": "Cross-platform tests verifying data consistency, feature parity, and unified behavior across API, Web, Android TV, and Android Phone",
+  "metadata": {
+    "author": "vasic-digital",
+    "app": "Catalogizer",
+    "version": "2.3.0"
+  },
+  "test_cases": [
+    {
+      "id": "FQA-XP-001",
+      "name": "Login credentials work across all platforms",
+      "category": "cross-platform",
+      "priority": "critical",
+      "platforms": [
+        "api",
+        "web",
+        "androidtv",
+        "android"
+      ],
+      "steps": [
+        {
+          "name": "Login via API",
+          "action": "POST /api/v1/auth/login with admin/admin123",
+          "expected": "200 OK with session token"
+        },
+        {
+          "name": "Login via Web",
+          "action": "Navigate to login page, enter admin/admin123, click Login",
+          "expected": "Redirects to dashboard"
+        },
+        {
+          "name": "Login via Android TV",
+          "action": "Launch app, configure server, enter admin/admin123",
+          "expected": "Navigates to home screen"
+        },
+        {
+          "name": "Login via Android Phone",
+          "action": "Launch app, configure server, enter admin/admin123",
+          "expected": "Navigates to home screen"
+        }
+      ],
+      "tags": [
+        "cross-platform",
+        "auth",
+        "login"
+      ],
+      "estimated_duration": "60s",
+      "expected_result": "Same credentials authenticate on all platforms"
+    },
+    {
+      "id": "FQA-XP-002",
+      "name": "Media count consistent across platforms",
+      "category": "cross-platform",
+      "priority": "critical",
+      "platforms": [
+        "api",
+        "web",
+        "androidtv",
+        "android"
+      ],
+      "steps": [
+        {
+          "name": "Get media count from API",
+          "action": "GET /api/v1/entities?count=true",
+          "expected": "Returns total entity count"
+        },
+        {
+          "name": "Check Web dashboard count",
+          "action": "Navigate to dashboard, read media statistics",
+          "expected": "Count matches API response"
+        },
+        {
+          "name": "Check Android TV home",
+          "action": "Navigate to home screen, check category counts",
+          "expected": "Total items matches API count"
+        }
+      ],
+      "tags": [
+        "cross-platform",
+        "data-consistency",
+        "media-count"
+      ],
+      "estimated_duration": "30s",
+      "expected_result": "All platforms report the same media count"
+    },
+    {
+      "id": "FQA-XP-003",
+      "name": "Search returns same results across platforms",
+      "category": "cross-platform",
+      "priority": "critical",
+      "platforms": [
+        "api",
+        "web",
+        "androidtv",
+        "android"
+      ],
+      "steps": [
+        {
+          "name": "Search 'Matrix' via API",
+          "action": "GET /api/v1/entities/search?q=Matrix",
+          "expected": "Returns matching entities"
+        },
+        {
+          "name": "Search 'Matrix' on Web",
+          "action": "Use search bar, type 'Matrix'",
+          "expected": "Same results as API"
+        },
+        {
+          "name": "Search 'Matrix' on Android TV",
+          "action": "Open search, type 'Matrix' via DPAD",
+          "expected": "Same results as API"
+        }
+      ],
+      "tags": [
+        "cross-platform",
+        "search",
+        "consistency"
+      ],
+      "estimated_duration": "45s",
+      "expected_result": "Search results are identical across all platforms"
+    },
+    {
+      "id": "FQA-XP-004",
+      "name": "Favorites sync across platforms",
+      "category": "cross-platform",
+      "priority": "high",
+      "platforms": [
+        "api",
+        "web",
+        "androidtv",
+        "android"
+      ],
+      "steps": [
+        {
+          "name": "Add favorite via Web",
+          "action": "Navigate to a movie, click favorite star",
+          "expected": "Movie added to favorites"
+        },
+        {
+          "name": "Verify via API",
+          "action": "GET /api/v1/favorites",
+          "expected": "Movie appears in favorites list"
+        },
+        {
+          "name": "Verify on Android TV",
+          "action": "Navigate to Favorites screen",
+          "expected": "Same movie appears in favorites"
+        }
+      ],
+      "tags": [
+        "cross-platform",
+        "favorites",
+        "sync"
+      ],
+      "estimated_duration": "45s",
+      "expected_result": "Favorites are synchronized across all platforms"
+    },
+    {
+      "id": "FQA-XP-005",
+      "name": "Collections accessible across platforms",
+      "category": "cross-platform",
+      "priority": "high",
+      "platforms": [
+        "api",
+        "web",
+        "androidtv",
+        "android"
+      ],
+      "steps": [
+        {
+          "name": "Create collection via API",
+          "action": "POST /api/v1/collections with name 'Cross-Platform Test'",
+          "expected": "Collection created"
+        },
+        {
+          "name": "Verify on Web",
+          "action": "Navigate to Collections page",
+          "expected": "Collection 'Cross-Platform Test' visible"
+        },
+        {
+          "name": "Verify on Android TV",
+          "action": "Navigate to Collections",
+          "expected": "Same collection visible"
+        }
+      ],
+      "tags": [
+        "cross-platform",
+        "collections",
+        "sync"
+      ],
+      "estimated_duration": "45s",
+      "expected_result": "Collections created on one platform visible on all"
+    },
+    {
+      "id": "FQA-XP-006",
+      "name": "All 11 media types browsable on all platforms",
+      "category": "cross-platform",
+      "priority": "critical",
+      "platforms": [
+        "api",
+        "web",
+        "androidtv",
+        "android"
+      ],
+      "steps": [
+        {
+          "name": "List media types via API",
+          "action": "GET /api/v1/media-types",
+          "expected": "Returns 11 types: movie, tv_show, tv_season, tv_episode, music_artist, music_album, song, game, software, book, comic"
+        },
+        {
+          "name": "Verify Web shows all types",
+          "action": "Check media type filter dropdown",
+          "expected": "All 11 types listed"
+        },
+        {
+          "name": "Verify Android TV shows categories",
+          "action": "Check home screen category rows",
+          "expected": "Categories for available content types present"
+        }
+      ],
+      "tags": [
+        "cross-platform",
+        "media-types",
+        "feature-parity"
+      ],
+      "estimated_duration": "30s",
+      "expected_result": "All 11 media types accessible on every platform"
+    },
+    {
+      "id": "FQA-XP-007",
+      "name": "Playback works on all platforms",
+      "category": "cross-platform",
+      "priority": "critical",
+      "platforms": [
+        "web",
+        "androidtv",
+        "android"
+      ],
+      "steps": [
+        {
+          "name": "Play video on Web",
+          "action": "Navigate to a movie, click Play",
+          "expected": "Video player opens and plays"
+        },
+        {
+          "name": "Play video on Android TV",
+          "action": "Navigate to same movie, press Play",
+          "expected": "Video player opens and plays"
+        },
+        {
+          "name": "Play audio on Web",
+          "action": "Navigate to a song, click Play",
+          "expected": "Audio player plays track"
+        }
+      ],
+      "tags": [
+        "cross-platform",
+        "playback",
+        "media-player"
+      ],
+      "estimated_duration": "60s",
+      "expected_result": "Media playback works on all client platforms"
+    },
+    {
+      "id": "FQA-XP-008",
+      "name": "Entity detail shows same metadata on all platforms",
+      "category": "cross-platform",
+      "priority": "high",
+      "platforms": [
+        "api",
+        "web",
+        "androidtv",
+        "android"
+      ],
+      "steps": [
+        {
+          "name": "Get movie entity via API",
+          "action": "GET /api/v1/entities/{id} for a known movie",
+          "expected": "Returns title, year, type, metadata"
+        },
+        {
+          "name": "Check Web entity detail",
+          "action": "Navigate to same entity detail page",
+          "expected": "Title, year, type match API"
+        },
+        {
+          "name": "Check Android TV detail",
+          "action": "Navigate to same entity on TV",
+          "expected": "Same metadata displayed"
+        }
+      ],
+      "tags": [
+        "cross-platform",
+        "entity-detail",
+        "metadata"
+      ],
+      "estimated_duration": "45s",
+      "expected_result": "Entity metadata is identical across all platforms"
+    },
+    {
+      "id": "FQA-XP-009",
+      "name": "Cyrillic directory names display correctly",
+      "category": "cross-platform",
+      "priority": "high",
+      "platforms": [
+        "api",
+        "web",
+        "androidtv"
+      ],
+      "steps": [
+        {
+          "name": "Browse Cyrillic path via API",
+          "action": "GET /api/v1/browse with path containing Cyrillic (\u041c\u0443\u0437\u0438\u043a\u0430, \u0424\u0438\u043b\u043c\u043e\u0432\u0438)",
+          "expected": "Cyrillic characters in response are correct UTF-8"
+        },
+        {
+          "name": "Browse on Web",
+          "action": "Navigate to storage root, browse Cyrillic directories",
+          "expected": "Cyrillic names render correctly without mojibake"
+        },
+        {
+          "name": "Browse on Android TV",
+          "action": "Browse media browser for Cyrillic category",
+          "expected": "Cyrillic names display correctly"
+        }
+      ],
+      "tags": [
+        "cross-platform",
+        "cyrillic",
+        "utf8",
+        "i18n"
+      ],
+      "estimated_duration": "30s",
+      "expected_result": "Cyrillic content renders correctly on all platforms"
+    },
+    {
+      "id": "FQA-XP-010",
+      "name": "Search with Cyrillic works across platforms",
+      "category": "cross-platform",
+      "priority": "high",
+      "platforms": [
+        "api",
+        "web",
+        "androidtv"
+      ],
+      "steps": [
+        {
+          "name": "Search '\u041c\u0443\u0437\u0438\u043a\u0430' via API",
+          "action": "GET /api/v1/entities/search?q=\u041c\u0443\u0437\u0438\u043a\u0430",
+          "expected": "Returns Cyrillic-matching results"
+        },
+        {
+          "name": "Search '\u041c\u0443\u0437\u0438\u043a\u0430' on Web",
+          "action": "Type Cyrillic search term in web search",
+          "expected": "Results match API response"
+        }
+      ],
+      "tags": [
+        "cross-platform",
+        "search",
+        "cyrillic"
+      ],
+      "estimated_duration": "30s",
+      "expected_result": "Cyrillic search returns consistent results across platforms"
+    },
+    {
+      "id": "FQA-XP-011",
+      "name": "Invalid login shows error on all platforms",
+      "category": "cross-platform",
+      "priority": "high",
+      "platforms": [
+        "api",
+        "web",
+        "androidtv",
+        "android"
+      ],
+      "steps": [
+        {
+          "name": "Invalid login via API",
+          "action": "POST /api/v1/auth/login with wrong password",
+          "expected": "401 Unauthorized with error message"
+        },
+        {
+          "name": "Invalid login on Web",
+          "action": "Enter wrong password, click Login",
+          "expected": "Error message displayed, not a crash"
+        },
+        {
+          "name": "Invalid login on Android TV",
+          "action": "Enter wrong password via DPAD",
+          "expected": "Error message displayed, stays on login screen"
+        }
+      ],
+      "tags": [
+        "cross-platform",
+        "error-handling",
+        "auth"
+      ],
+      "estimated_duration": "30s",
+      "expected_result": "All platforms show user-friendly error for invalid login"
+    },
+    {
+      "id": "FQA-XP-012",
+      "name": "Non-existent entity shows 404 on all platforms",
+      "category": "cross-platform",
+      "priority": "medium",
+      "platforms": [
+        "api",
+        "web",
+        "androidtv"
+      ],
+      "steps": [
+        {
+          "name": "Request entity ID 999999 via API",
+          "action": "GET /api/v1/entities/999999",
+          "expected": "404 Not Found"
+        },
+        {
+          "name": "Navigate to entity/999999 on Web",
+          "action": "Open URL /entity/999999",
+          "expected": "Not found message displayed"
+        }
+      ],
+      "tags": [
+        "cross-platform",
+        "error-handling",
+        404
+      ],
+      "estimated_duration": "15s",
+      "expected_result": "All platforms handle missing entities gracefully"
+    },
+    {
+      "id": "FQA-XP-013",
+      "name": "TV channel content matches API data",
+      "category": "cross-platform",
+      "priority": "high",
+      "platforms": [
+        "api",
+        "androidtv"
+      ],
+      "steps": [
+        {
+          "name": "List entities via API",
+          "action": "GET /api/v1/entities?type=movie&limit=10",
+          "expected": "Returns list of movies"
+        },
+        {
+          "name": "Check Catalogizer Picks channel",
+          "action": "Navigate to Android TV home, find Catalogizer Picks channel",
+          "expected": "Channel programs match API movie list"
+        }
+      ],
+      "tags": [
+        "cross-platform",
+        "tv-channels",
+        "data-consistency"
+      ],
+      "estimated_duration": "30s",
+      "expected_result": "TV home screen channels reflect current API data"
+    },
+    {
+      "id": "FQA-XP-014",
+      "name": "Deep link from TV channel opens correct content",
+      "category": "cross-platform",
+      "priority": "high",
+      "platforms": [
+        "androidtv"
+      ],
+      "steps": [
+        {
+          "name": "Identify a channel program",
+          "action": "Note the title of a program in Catalogizer channel on TV home",
+          "expected": "Program title identified"
+        },
+        {
+          "name": "Click program",
+          "action": "DPAD_CENTER on the program",
+          "expected": "App opens to correct media detail screen"
+        },
+        {
+          "name": "Verify content matches",
+          "action": "Compare detail screen title with channel program title",
+          "expected": "Titles match exactly"
+        }
+      ],
+      "tags": [
+        "cross-platform",
+        "tv-channels",
+        "deep-link"
+      ],
+      "estimated_duration": "20s",
+      "expected_result": "Deep linking from TV channels opens correct content"
+    },
+    {
+      "id": "FQA-XP-015",
+      "name": "Playlist created on Web accessible on API",
+      "category": "cross-platform",
+      "priority": "high",
+      "platforms": [
+        "api",
+        "web"
+      ],
+      "steps": [
+        {
+          "name": "Create playlist on Web",
+          "action": "Navigate to Playlists, create 'Test Playlist'",
+          "expected": "Playlist created"
+        },
+        {
+          "name": "Verify via API",
+          "action": "GET /api/v1/playlists",
+          "expected": "Playlist 'Test Playlist' in response"
+        }
+      ],
+      "tags": [
+        "cross-platform",
+        "playlists",
+        "sync"
+      ],
+      "estimated_duration": "30s",
+      "expected_result": "Playlists sync between Web and API"
+    },
+    {
+      "id": "FQA-XP-016",
+      "name": "Logout on one platform does not affect others",
+      "category": "cross-platform",
+      "priority": "medium",
+      "platforms": [
+        "api",
+        "web",
+        "androidtv"
+      ],
+      "steps": [
+        {
+          "name": "Login on Web and Android TV",
+          "action": "Authenticate on both platforms",
+          "expected": "Both authenticated"
+        },
+        {
+          "name": "Logout on Web",
+          "action": "Click logout on Web",
+          "expected": "Web session ended"
+        },
+        {
+          "name": "Check Android TV",
+          "action": "Navigate on Android TV",
+          "expected": "Android TV session still active (independent tokens)"
+        }
+      ],
+      "tags": [
+        "cross-platform",
+        "auth",
+        "session-isolation"
+      ],
+      "estimated_duration": "45s",
+      "expected_result": "Sessions are independent per platform"
+    },
+    {
+      "id": "FQA-XP-017",
+      "name": "API rate limiting consistent across access methods",
+      "category": "cross-platform",
+      "priority": "medium",
+      "platforms": [
+        "api",
+        "web"
+      ],
+      "steps": [
+        {
+          "name": "Send 6 rapid login attempts via API",
+          "action": "POST /api/v1/auth/login 6 times in 1 second",
+          "expected": "Rate limit triggered (429)"
+        },
+        {
+          "name": "Check web login is also rate-limited",
+          "action": "Rapidly click login on web",
+          "expected": "Rate limit message displayed"
+        }
+      ],
+      "tags": [
+        "cross-platform",
+        "security",
+        "rate-limiting"
+      ],
+      "estimated_duration": "15s",
+      "expected_result": "Rate limiting applies consistently"
+    },
+    {
+      "id": "FQA-XP-018",
+      "name": "WebSocket events received on Web client",
+      "category": "cross-platform",
+      "priority": "high",
+      "platforms": [
+        "api",
+        "web"
+      ],
+      "steps": [
+        {
+          "name": "Connect Web to WebSocket",
+          "action": "Open Web app (WebSocket connects automatically)",
+          "expected": "WebSocket connected"
+        },
+        {
+          "name": "Trigger scan via API",
+          "action": "POST /api/v1/scans",
+          "expected": "Scan starts"
+        },
+        {
+          "name": "Check Web receives events",
+          "action": "Watch Web UI for scan progress updates",
+          "expected": "Progress indicators update in real-time"
+        }
+      ],
+      "tags": [
+        "cross-platform",
+        "websocket",
+        "real-time"
+      ],
+      "estimated_duration": "30s",
+      "expected_result": "API actions trigger real-time updates on Web"
+    },
+    {
+      "id": "FQA-XP-019",
+      "name": "Version info consistent across platforms",
+      "category": "cross-platform",
+      "priority": "low",
+      "platforms": [
+        "api",
+        "web",
+        "androidtv"
+      ],
+      "steps": [
+        {
+          "name": "Check API version",
+          "action": "GET /health",
+          "expected": "version=2.3.0, build_number=18"
+        },
+        {
+          "name": "Check Web about/footer",
+          "action": "Look for version in Web UI",
+          "expected": "Shows v2.3.0"
+        },
+        {
+          "name": "Check Android TV about",
+          "action": "Navigate to Settings > About",
+          "expected": "Shows v2.3.0"
+        }
+      ],
+      "tags": [
+        "cross-platform",
+        "version",
+        "consistency"
+      ],
+      "estimated_duration": "30s",
+      "expected_result": "All platforms report v2.3.0"
+    },
+    {
+      "id": "FQA-XP-020",
+      "name": "Concurrent platform access does not cause data corruption",
+      "category": "cross-platform",
+      "priority": "critical",
+      "platforms": [
+        "api",
+        "web",
+        "androidtv"
+      ],
+      "steps": [
+        {
+          "name": "Login on all platforms simultaneously",
+          "action": "Open Web, Android TV, and send API request at same time",
+          "expected": "All authenticate successfully"
+        },
+        {
+          "name": "Add different favorites from each",
+          "action": "Favorite different items from Web and Android TV",
+          "expected": "Both favorites saved"
+        },
+        {
+          "name": "Verify all favorites from API",
+          "action": "GET /api/v1/favorites",
+          "expected": "Both favorites present, no corruption"
+        }
+      ],
+      "tags": [
+        "cross-platform",
+        "concurrency",
+        "data-integrity"
+      ],
+      "estimated_duration": "60s",
+      "expected_result": "Concurrent multi-platform access is safe"
+    }
+  ]
+}

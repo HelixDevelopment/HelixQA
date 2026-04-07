@@ -1,0 +1,897 @@
+{
+  "version": "1.0",
+  "name": "AIChat & Bash Tools Comprehensive Test Bank",
+  "description": "Tests AIChat CLI agent and 50+ bash tools integration with HelixAgent",
+  "metadata": {
+    "author": "vasic-digital",
+    "app": "HelixAgent",
+    "version": "1.0.0",
+    "coverage": {
+      "tools": "50+",
+      "categories": 7,
+      "sources": [
+        "aichat",
+        "claude_code",
+        "cline",
+        "helixagent"
+      ]
+    }
+  },
+  "test_cases": [
+    {
+      "id": "AICHAT-001",
+      "name": "AIChat configuration generation",
+      "category": "configuration",
+      "priority": "critical",
+      "steps": [
+        {
+          "name": "Generate AIChat config",
+          "action": "./bin/helixagent --generate-agent-config=aichat",
+          "expected": "Config file created at cli_agents_configs/aichat.yaml"
+        },
+        {
+          "name": "Validate config structure",
+          "action": "Check config contains helixagent endpoint, ensemble model, MCP settings",
+          "expected": "All required sections present"
+        },
+        {
+          "name": "Verify 22+ provider configurations",
+          "action": "Count clients in config",
+          "expected": "22+ providers configured"
+        }
+      ],
+      "tags": [
+        "aichat",
+        "configuration",
+        "providers"
+      ],
+      "estimated_duration": "15s",
+      "expected_result": "AIChat config generated with all HelixAgent integrations"
+    },
+    {
+      "id": "AICHAT-002",
+      "name": "AIChat connects to HelixAgent ensemble",
+      "category": "integration",
+      "priority": "critical",
+      "steps": [
+        {
+          "name": "Start HelixAgent",
+          "action": "Ensure HelixAgent running on :7061",
+          "expected": "Healthy"
+        },
+        {
+          "name": "Configure AIChat",
+          "action": "Set AICHAT_CONFIG_DIR and use generated config",
+          "expected": "Config loaded"
+        },
+        {
+          "name": "Send test message",
+          "action": "aichat --model helixagent/ensemble 'Hello'",
+          "expected": "Response received via ensemble"
+        }
+      ],
+      "tags": [
+        "aichat",
+        "ensemble",
+        "integration"
+      ],
+      "estimated_duration": "30s",
+      "expected_result": "AIChat successfully uses HelixAgent ensemble"
+    },
+    {
+      "id": "AICHAT-003",
+      "name": "AIChat REPL with HelixAgent backend",
+      "category": "functional",
+      "priority": "high",
+      "steps": [
+        {
+          "name": "Start REPL",
+          "action": "echo 'Hello' | aichat --model helixagent/ensemble",
+          "expected": "REPL responds"
+        },
+        {
+          "name": "Test session persistence",
+          "action": "Use .session command",
+          "expected": "Session saved"
+        },
+        {
+          "name": "Test .file command",
+          "action": ".file README.md",
+          "expected": "File loaded into context"
+        }
+      ],
+      "tags": [
+        "aichat",
+        "repl",
+        "session"
+      ],
+      "estimated_duration": "45s",
+      "expected_result": "AIChat REPL fully functional with HelixAgent"
+    },
+    {
+      "id": "AICHAT-004",
+      "name": "AIChat serve mode as HelixAgent microservice",
+      "category": "integration",
+      "priority": "critical",
+      "steps": [
+        {
+          "name": "Start AIChat server",
+          "action": "aichat --serve --port 8001 &",
+          "expected": "Server starts on :8001"
+        },
+        {
+          "name": "Test OpenAI-compatible API",
+          "action": "curl http://localhost:8001/v1/chat/completions",
+          "expected": "Valid response"
+        },
+        {
+          "name": "Test via HelixAgent",
+          "action": "Configure as provider, send request",
+          "expected": "Request proxied through HelixAgent"
+        }
+      ],
+      "tags": [
+        "aichat",
+        "serve",
+        "microservice",
+        "api"
+      ],
+      "estimated_duration": "30s",
+      "expected_result": "AIChat serve mode integrates with HelixAgent"
+    },
+    {
+      "id": "AICHAT-005",
+      "name": "AIChat RAG with HelixAgent NVIDIA RAG",
+      "category": "functional",
+      "priority": "high",
+      "steps": [
+        {
+          "name": "Configure RAG",
+          "action": "Enable use_helixagent_rag in config",
+          "expected": "RAG configured"
+        },
+        {
+          "name": "Add documents",
+          "action": "aichat --rebuild-rag with documents",
+          "expected": "Documents indexed"
+        },
+        {
+          "name": "Query RAG",
+          "action": "Ask question about documents",
+          "expected": "Contextual response using RAG"
+        }
+      ],
+      "tags": [
+        "aichat",
+        "rag",
+        "nvidia"
+      ],
+      "estimated_duration": "60s",
+      "expected_result": "AIChat RAG uses HelixAgent NVIDIA pipeline"
+    },
+    {
+      "id": "FS-001",
+      "name": "fs_cat reads file contents",
+      "category": "tools",
+      "priority": "critical",
+      "steps": [
+        {
+          "name": "Create test file",
+          "action": "echo 'test content' > /tmp/test.txt",
+          "expected": "File created"
+        },
+        {
+          "name": "Call fs_cat",
+          "action": "./internal/tools/bash_providers/fs_cat.sh --path /tmp/test.txt",
+          "expected": "Output: test content"
+        },
+        {
+          "name": "Verify via MCP",
+          "action": "POST /v1/mcp/tools/call with fs_cat",
+          "expected": "Same result via API"
+        }
+      ],
+      "tags": [
+        "tools",
+        "filesystem",
+        "fs_cat"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "fs_cat tool works correctly"
+    },
+    {
+      "id": "FS-002",
+      "name": "fs_ls lists directory contents",
+      "category": "tools",
+      "priority": "critical",
+      "steps": [
+        {
+          "name": "List directory",
+          "action": "./internal/tools/bash_providers/fs_ls.sh --path /tmp",
+          "expected": "Directory contents listed"
+        },
+        {
+          "name": "Verify format",
+          "action": "Check output format",
+          "expected": "Proper listing format"
+        }
+      ],
+      "tags": [
+        "tools",
+        "filesystem",
+        "fs_ls"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "fs_ls works correctly"
+    },
+    {
+      "id": "FS-003",
+      "name": "fs_write creates and writes files",
+      "category": "tools",
+      "priority": "critical",
+      "steps": [
+        {
+          "name": "Write file",
+          "action": "fs_write --path /tmp/write_test.txt --content 'Hello World'",
+          "expected": "File written"
+        },
+        {
+          "name": "Verify content",
+          "action": "cat /tmp/write_test.txt",
+          "expected": "Hello World"
+        }
+      ],
+      "tags": [
+        "tools",
+        "filesystem",
+        "fs_write"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "fs_write creates files with content"
+    },
+    {
+      "id": "FS-004",
+      "name": "fs_patch applies patches",
+      "category": "tools",
+      "priority": "high",
+      "steps": [
+        {
+          "name": "Create original file",
+          "action": "echo 'old content' > /tmp/patch_test.txt",
+          "expected": "File created"
+        },
+        {
+          "name": "Apply patch",
+          "action": "fs_patch with diff",
+          "expected": "Patch applied"
+        },
+        {
+          "name": "Verify result",
+          "action": "cat /tmp/patch_test.txt",
+          "expected": "Content patched"
+        }
+      ],
+      "tags": [
+        "tools",
+        "filesystem",
+        "fs_patch"
+      ],
+      "estimated_duration": "15s",
+      "expected_result": "fs_patch applies diffs correctly"
+    },
+    {
+      "id": "FS-005",
+      "name": "fs_mkdir creates directories",
+      "category": "tools",
+      "priority": "high",
+      "steps": [
+        {
+          "name": "Create directory",
+          "action": "fs_mkdir --path /tmp/test_dir",
+          "expected": "Directory created"
+        },
+        {
+          "name": "Verify",
+          "action": "ls -la /tmp/test_dir",
+          "expected": "Directory exists"
+        }
+      ],
+      "tags": [
+        "tools",
+        "filesystem",
+        "fs_mkdir"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "fs_mkdir creates directories"
+    },
+    {
+      "id": "EXEC-001",
+      "name": "exec_command runs shell commands",
+      "category": "tools",
+      "priority": "critical",
+      "steps": [
+        {
+          "name": "Execute simple command",
+          "action": "exec_command --command 'echo hello'",
+          "expected": "Output: hello"
+        },
+        {
+          "name": "Execute with pipes",
+          "action": "exec_command --command 'echo test | wc -l'",
+          "expected": "Output: 1"
+        },
+        {
+          "name": "Verify security blocks",
+          "action": "Try rm -rf / (should be blocked)",
+          "expected": "Operation blocked"
+        }
+      ],
+      "tags": [
+        "tools",
+        "execution",
+        "exec_command",
+        "security"
+      ],
+      "estimated_duration": "15s",
+      "expected_result": "exec_command works with security guards"
+    },
+    {
+      "id": "EXEC-002",
+      "name": "exec_py runs Python code",
+      "category": "tools",
+      "priority": "high",
+      "steps": [
+        {
+          "name": "Execute Python",
+          "action": "exec_py --code 'print(2+2)'",
+          "expected": "Output: 4"
+        },
+        {
+          "name": "Use libraries",
+          "action": "exec_py --code 'import json; print(json.dumps({\"key\": \"value\"}))'",
+          "expected": "JSON output"
+        }
+      ],
+      "tags": [
+        "tools",
+        "execution",
+        "exec_py"
+      ],
+      "estimated_duration": "15s",
+      "expected_result": "exec_py executes Python code"
+    },
+    {
+      "id": "EXEC-003",
+      "name": "exec_js runs JavaScript",
+      "category": "tools",
+      "priority": "medium",
+      "steps": [
+        {
+          "name": "Execute JS",
+          "action": "exec_js --code 'console.log(1+1)'",
+          "expected": "Output: 2"
+        }
+      ],
+      "tags": [
+        "tools",
+        "execution",
+        "exec_js"
+      ],
+      "estimated_duration": "15s",
+      "expected_result": "exec_js executes JavaScript"
+    },
+    {
+      "id": "WEB-001",
+      "name": "web_fetch_curl retrieves URLs",
+      "category": "tools",
+      "priority": "high",
+      "steps": [
+        {
+          "name": "Fetch URL",
+          "action": "web_fetch_curl --url https://httpbin.org/get",
+          "expected": "JSON response received"
+        },
+        {
+          "name": "Verify content",
+          "action": "Check response contains 'url' field",
+          "expected": "Valid JSON"
+        }
+      ],
+      "tags": [
+        "tools",
+        "web",
+        "web_fetch"
+      ],
+      "estimated_duration": "20s",
+      "expected_result": "web_fetch retrieves URLs"
+    },
+    {
+      "id": "WEB-002",
+      "name": "web_search_perplexity performs search",
+      "category": "tools",
+      "priority": "high",
+      "env_vars": [
+        "PERPLEXITY_API_KEY"
+      ],
+      "steps": [
+        {
+          "name": "Search",
+          "action": "web_search_perplexity --query 'Go programming language'",
+          "expected": "Search results"
+        },
+        {
+          "name": "Verify content",
+          "action": "Check results contain relevant info",
+          "expected": "Accurate results"
+        }
+      ],
+      "tags": [
+        "tools",
+        "web",
+        "web_search",
+        "perplexity"
+      ],
+      "estimated_duration": "30s",
+      "expected_result": "web_search_perplexity works with valid API key"
+    },
+    {
+      "id": "WEB-003",
+      "name": "web_search_tavily performs search",
+      "category": "tools",
+      "priority": "medium",
+      "env_vars": [
+        "TAVILY_API_KEY"
+      ],
+      "steps": [
+        {
+          "name": "Search",
+          "action": "web_search_tavily --query 'latest AI news'",
+          "expected": "Search results"
+        }
+      ],
+      "tags": [
+        "tools",
+        "web",
+        "web_search",
+        "tavily"
+      ],
+      "estimated_duration": "30s",
+      "expected_result": "web_search_tavily works"
+    },
+    {
+      "id": "INFO-001",
+      "name": "info_arxiv searches papers",
+      "category": "tools",
+      "priority": "medium",
+      "steps": [
+        {
+          "name": "Search arXiv",
+          "action": "info_arxiv --query 'transformer architecture'",
+          "expected": "Paper listings"
+        },
+        {
+          "name": "Verify format",
+          "action": "Check for title, authors, abstract",
+          "expected": "Complete paper info"
+        }
+      ],
+      "tags": [
+        "tools",
+        "info",
+        "arxiv"
+      ],
+      "estimated_duration": "20s",
+      "expected_result": "info_arxiv searches academic papers"
+    },
+    {
+      "id": "INFO-002",
+      "name": "info_wikipedia searches encyclopedia",
+      "category": "tools",
+      "priority": "medium",
+      "steps": [
+        {
+          "name": "Search Wikipedia",
+          "action": "info_wikipedia --query 'Go programming language'",
+          "expected": "Article content"
+        },
+        {
+          "name": "Verify",
+          "action": "Check content relevance",
+          "expected": "Accurate article"
+        }
+      ],
+      "tags": [
+        "tools",
+        "info",
+        "wikipedia"
+      ],
+      "estimated_duration": "20s",
+      "expected_result": "info_wikipedia retrieves articles"
+    },
+    {
+      "id": "INFO-003",
+      "name": "info_weather gets weather",
+      "category": "tools",
+      "priority": "medium",
+      "steps": [
+        {
+          "name": "Get weather",
+          "action": "info_weather --location 'New York'",
+          "expected": "Weather data"
+        }
+      ],
+      "tags": [
+        "tools",
+        "info",
+        "weather"
+      ],
+      "estimated_duration": "20s",
+      "expected_result": "info_weather returns weather"
+    },
+    {
+      "id": "HX-001",
+      "name": "hx_health checks HelixAgent",
+      "category": "tools",
+      "priority": "critical",
+      "steps": [
+        {
+          "name": "Call hx_health",
+          "action": "./internal/tools/bash_providers/hx_health.sh",
+          "expected": "Health status JSON"
+        },
+        {
+          "name": "Verify status",
+          "action": "Check 'status' field",
+          "expected": "healthy"
+        }
+      ],
+      "tags": [
+        "tools",
+        "helixagent",
+        "hx_health"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "hx_health returns HelixAgent status"
+    },
+    {
+      "id": "HX-002",
+      "name": "hx_providers lists providers",
+      "category": "tools",
+      "priority": "high",
+      "steps": [
+        {
+          "name": "Call hx_providers",
+          "action": "./internal/tools/bash_providers/hx_providers.sh",
+          "expected": "Provider list"
+        },
+        {
+          "name": "Verify count",
+          "action": "Count lines",
+          "expected": "22+ providers"
+        }
+      ],
+      "tags": [
+        "tools",
+        "helixagent",
+        "hx_providers"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "hx_providers lists all LLM providers"
+    },
+    {
+      "id": "HX-003",
+      "name": "hx_ensemble calls ensemble",
+      "category": "tools",
+      "priority": "critical",
+      "steps": [
+        {
+          "name": "Call ensemble",
+          "action": "hx_ensemble --message 'Explain Go interfaces' --temperature 0.5",
+          "expected": "Ensemble response"
+        },
+        {
+          "name": "Verify quality",
+          "action": "Check response quality",
+          "expected": "Accurate explanation"
+        }
+      ],
+      "tags": [
+        "tools",
+        "helixagent",
+        "hx_ensemble",
+        "ensemble"
+      ],
+      "estimated_duration": "30s",
+      "expected_result": "hx_ensemble returns multi-provider response"
+    },
+    {
+      "id": "GIT-001",
+      "name": "git_status shows repository status",
+      "category": "tools",
+      "priority": "high",
+      "steps": [
+        {
+          "name": "Call git_status",
+          "action": "./internal/tools/bash_providers/git_status.sh",
+          "expected": "Git status output"
+        }
+      ],
+      "tags": [
+        "tools",
+        "git",
+        "git_status"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "git_status shows repository state"
+    },
+    {
+      "id": "GIT-002",
+      "name": "git_diff shows changes",
+      "category": "tools",
+      "priority": "high",
+      "steps": [
+        {
+          "name": "Make a change",
+          "action": "Modify test file",
+          "expected": "Change made"
+        },
+        {
+          "name": "Call git_diff",
+          "action": "git_diff",
+          "expected": "Diff output"
+        }
+      ],
+      "tags": [
+        "tools",
+        "git",
+        "git_diff"
+      ],
+      "estimated_duration": "15s",
+      "expected_result": "git_diff shows file changes"
+    },
+    {
+      "id": "INT-001",
+      "name": "Tool chaining - read and analyze",
+      "category": "integration",
+      "priority": "high",
+      "steps": [
+        {
+          "name": "Read file",
+          "action": "fs_cat README.md",
+          "expected": "Content retrieved"
+        },
+        {
+          "name": "Analyze via ensemble",
+          "action": "Pass content to hx_ensemble for summary",
+          "expected": "Summary generated"
+        },
+        {
+          "name": "Write result",
+          "action": "fs_write summary.txt",
+          "expected": "Result saved"
+        }
+      ],
+      "tags": [
+        "integration",
+        "chaining",
+        "tools"
+      ],
+      "estimated_duration": "45s",
+      "expected_result": "Multiple tools work together"
+    },
+    {
+      "id": "INT-002",
+      "name": "MCP tool registration",
+      "category": "integration",
+      "priority": "critical",
+      "steps": [
+        {
+          "name": "List MCP tools",
+          "action": "GET /v1/mcp/tools/list",
+          "expected": "50+ tools registered"
+        },
+        {
+          "name": "Call each category",
+          "action": "Test one tool from each category",
+          "expected": "All categories work"
+        }
+      ],
+      "tags": [
+        "integration",
+        "mcp",
+        "registration"
+      ],
+      "estimated_duration": "60s",
+      "expected_result": "All bash tools available via MCP"
+    },
+    {
+      "id": "INT-003",
+      "name": "AIChat uses HelixAgent tools via MCP",
+      "category": "integration",
+      "priority": "critical",
+      "steps": [
+        {
+          "name": "Configure AIChat MCP",
+          "action": "Set MCP server to HelixAgent",
+          "expected": "Connected"
+        },
+        {
+          "name": "Use tool",
+          "action": "Ask AIChat to use fs_cat",
+          "expected": "Tool invoked via HelixAgent"
+        },
+        {
+          "name": "Verify",
+          "action": "Check tool was called",
+          "expected": "Tool execution logged"
+        }
+      ],
+      "tags": [
+        "integration",
+        "aichat",
+        "mcp",
+        "tools"
+      ],
+      "estimated_duration": "45s",
+      "expected_result": "AIChat leverages HelixAgent bash tools"
+    },
+    {
+      "id": "PERF-001",
+      "name": "Tool execution performance",
+      "category": "performance",
+      "priority": "medium",
+      "steps": [
+        {
+          "name": "Measure fs_cat",
+          "action": "Time 100 fs_cat executions",
+          "expected": "< 10s total"
+        },
+        {
+          "name": "Measure exec_command",
+          "action": "Time 100 exec_command",
+          "expected": "< 15s total"
+        },
+        {
+          "name": "Measure MCP overhead",
+          "action": "Compare direct vs MCP",
+          "expected": "< 50ms overhead"
+        }
+      ],
+      "tags": [
+        "performance",
+        "tools"
+      ],
+      "estimated_duration": "60s",
+      "expected_result": "Tools execute within performance budget"
+    },
+    {
+      "id": "PERF-002",
+      "name": "Concurrent tool execution",
+      "category": "performance",
+      "priority": "medium",
+      "steps": [
+        {
+          "name": "Run 10 tools concurrently",
+          "action": "Parallel execution",
+          "expected": "All complete successfully"
+        },
+        {
+          "name": "Check resource usage",
+          "action": "Monitor CPU/memory",
+          "expected": "Within limits"
+        }
+      ],
+      "tags": [
+        "performance",
+        "concurrency"
+      ],
+      "estimated_duration": "30s",
+      "expected_result": "Concurrent execution works"
+    },
+    {
+      "id": "SEC-001",
+      "name": "Dangerous command blocking",
+      "category": "security",
+      "priority": "critical",
+      "steps": [
+        {
+          "name": "Try rm -rf /",
+          "action": "exec_command --command 'rm -rf /'",
+          "expected": "Blocked by guard_operation"
+        },
+        {
+          "name": "Try mkfs",
+          "action": "exec_command --command 'mkfs.ext4 /dev/sda'",
+          "expected": "Blocked"
+        },
+        {
+          "name": "Verify log",
+          "action": "Check security log",
+          "expected": "Block logged"
+        }
+      ],
+      "tags": [
+        "security",
+        "guard_operation",
+        "dangerous"
+      ],
+      "estimated_duration": "15s",
+      "expected_result": "Dangerous operations blocked"
+    },
+    {
+      "id": "SEC-002",
+      "name": "Environment variable protection",
+      "category": "security",
+      "priority": "high",
+      "steps": [
+        {
+          "name": "Check API keys not logged",
+          "action": "Run tool with API key, check logs",
+          "expected": "Key redacted in logs"
+        },
+        {
+          "name": "Verify .env loading",
+          "action": "Test .env file loading",
+          "expected": "Loaded securely"
+        }
+      ],
+      "tags": [
+        "security",
+        "env_vars",
+        "api_keys"
+      ],
+      "estimated_duration": "15s",
+      "expected_result": "Sensitive data protected"
+    },
+    {
+      "id": "STRESS-001",
+      "name": "50 tools simultaneous execution",
+      "category": "stress",
+      "priority": "medium",
+      "steps": [
+        {
+          "name": "Execute all tools",
+          "action": "Run all 50+ tools simultaneously",
+          "expected": "All complete without error"
+        },
+        {
+          "name": "Verify results",
+          "action": "Check all outputs",
+          "expected": "All successful"
+        }
+      ],
+      "tags": [
+        "stress",
+        "tools",
+        "concurrent"
+      ],
+      "estimated_duration": "120s",
+      "expected_result": "System handles load"
+    },
+    {
+      "id": "STRESS-002",
+      "name": "Rapid tool registration",
+      "category": "stress",
+      "priority": "low",
+      "steps": [
+        {
+          "name": "Restart HelixAgent 10 times",
+          "action": "Restart and discover tools",
+          "expected": "Consistent registration"
+        },
+        {
+          "name": "Check for leaks",
+          "action": "Monitor memory",
+          "expected": "No leaks"
+        }
+      ],
+      "tags": [
+        "stress",
+        "registration",
+        "memory"
+      ],
+      "estimated_duration": "180s",
+      "expected_result": "Stable under repeated registration"
+    }
+  ]
+}

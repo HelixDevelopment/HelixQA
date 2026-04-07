@@ -1,0 +1,5120 @@
+{
+  "version": "1.0",
+  "name": "Catalogizer Full QA - Android Phone",
+  "description": "Comprehensive test bank for Catalogizer Android phone app covering all screens, features, and edge cases",
+  "metadata": {
+    "author": "vasic-digital",
+    "app": "Catalogizer",
+    "version": "2.3.0"
+  },
+  "test_cases": [
+    {
+      "id": "FQA-AND-001",
+      "name": "Cold launch displays login screen",
+      "category": "functional",
+      "priority": "critical",
+      "platforms": [
+        "android"
+      ],
+      "steps": [
+        {
+          "name": "Launch app from launcher",
+          "action": "Tap Catalogizer icon on home screen or app drawer",
+          "expected": "Splash screen appears briefly, then login screen is displayed"
+        },
+        {
+          "name": "Verify login screen elements",
+          "action": "Inspect login screen layout",
+          "expected": "Catalogizer title, 'Sign in to your account' subtitle, username/password fields, Sign In button, Server Connection section, Vasic Digital branding footer all visible"
+        }
+      ],
+      "tags": [
+        "launch",
+        "login",
+        "cold-start",
+        "ui"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "App cold-launches to login screen with all UI elements visible"
+    },
+    {
+      "id": "FQA-AND-002",
+      "name": "Server URL configuration and connect",
+      "category": "functional",
+      "priority": "critical",
+      "platforms": [
+        "android"
+      ],
+      "steps": [
+        {
+          "name": "Locate server URL field",
+          "action": "Scroll to Server Connection section on login screen",
+          "expected": "Server URL text field visible with placeholder 'http://192.168.0.100:8080'"
+        },
+        {
+          "name": "Enter server URL",
+          "action": "Tap server URL field and type 'http://192.168.0.100:8080'",
+          "expected": "URL text appears in the field"
+        },
+        {
+          "name": "Tap Connect",
+          "action": "Tap the Connect button",
+          "expected": "Server saved, connection status shown as 'Connected: http://192.168.0.100:8080'"
+        }
+      ],
+      "tags": [
+        "server",
+        "config",
+        "connect",
+        "setup"
+      ],
+      "estimated_duration": "15s",
+      "expected_result": "Server URL configured and connection confirmed"
+    },
+    {
+      "id": "FQA-AND-003",
+      "name": "Server discovery on local network",
+      "category": "functional",
+      "priority": "high",
+      "platforms": [
+        "android"
+      ],
+      "steps": [
+        {
+          "name": "Tap Discover button",
+          "action": "Tap the Discover button in Server Connection section",
+          "expected": "Loading spinner appears in server URL field trailing icon"
+        },
+        {
+          "name": "Wait for discovery results",
+          "action": "Wait for network scan to complete (up to 30s)",
+          "expected": "Either discovered server URLs appear as selectable buttons below, or 'No servers found on the network' error shown"
+        },
+        {
+          "name": "Select discovered server",
+          "action": "If servers found, tap one of the discovered server URLs",
+          "expected": "Server URL field populated with selected URL, connection established"
+        }
+      ],
+      "tags": [
+        "server",
+        "discovery",
+        "network",
+        "mdns"
+      ],
+      "estimated_duration": "35s",
+      "expected_result": "Server discovery completes and discovered servers are selectable"
+    },
+    {
+      "id": "FQA-AND-004",
+      "name": "Login with valid credentials",
+      "category": "functional",
+      "priority": "critical",
+      "platforms": [
+        "android"
+      ],
+      "steps": [
+        {
+          "name": "Enter username",
+          "action": "Tap username field and type 'admin'",
+          "expected": "Username text appears in field"
+        },
+        {
+          "name": "Enter password",
+          "action": "Tap password field and type valid password",
+          "expected": "Password masked with dots"
+        },
+        {
+          "name": "Tap Sign In",
+          "action": "Tap the Sign In button",
+          "expected": "Loading spinner appears on button, then navigates to home screen"
+        },
+        {
+          "name": "Verify home screen",
+          "action": "Check that home screen is displayed",
+          "expected": "Home screen with 'Catalogizer' title in top bar, search and settings icons visible"
+        }
+      ],
+      "tags": [
+        "login",
+        "auth",
+        "credentials",
+        "happy-path"
+      ],
+      "estimated_duration": "15s",
+      "expected_result": "Successful login navigates to home screen"
+    },
+    {
+      "id": "FQA-AND-005",
+      "name": "Login with invalid credentials",
+      "category": "negative",
+      "priority": "critical",
+      "platforms": [
+        "android"
+      ],
+      "steps": [
+        {
+          "name": "Enter wrong username",
+          "action": "Type 'wronguser' in username field",
+          "expected": "Text entered"
+        },
+        {
+          "name": "Enter wrong password",
+          "action": "Type 'wrongpassword' in password field",
+          "expected": "Password masked"
+        },
+        {
+          "name": "Tap Sign In",
+          "action": "Tap Sign In button",
+          "expected": "Error message displayed below password field, user remains on login screen"
+        }
+      ],
+      "tags": [
+        "login",
+        "auth",
+        "invalid",
+        "negative"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Error message shown, user stays on login screen"
+    },
+    {
+      "id": "FQA-AND-006",
+      "name": "Login with empty username",
+      "category": "negative",
+      "priority": "high",
+      "platforms": [
+        "android"
+      ],
+      "steps": [
+        {
+          "name": "Leave username empty",
+          "action": "Ensure username field is empty",
+          "expected": "Username field is blank"
+        },
+        {
+          "name": "Enter password",
+          "action": "Type a password in password field",
+          "expected": "Password entered"
+        },
+        {
+          "name": "Check Sign In button state",
+          "action": "Inspect Sign In button",
+          "expected": "Sign In button is disabled (username is blank)"
+        }
+      ],
+      "tags": [
+        "login",
+        "validation",
+        "empty-field",
+        "negative"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Sign In button disabled when username is empty"
+    },
+    {
+      "id": "FQA-AND-007",
+      "name": "Login with empty password",
+      "category": "negative",
+      "priority": "high",
+      "platforms": [
+        "android"
+      ],
+      "steps": [
+        {
+          "name": "Enter username",
+          "action": "Type 'admin' in username field",
+          "expected": "Username entered"
+        },
+        {
+          "name": "Leave password empty",
+          "action": "Ensure password field is empty",
+          "expected": "Password field is blank"
+        },
+        {
+          "name": "Check Sign In button state",
+          "action": "Inspect Sign In button",
+          "expected": "Sign In button is disabled (password is blank)"
+        }
+      ],
+      "tags": [
+        "login",
+        "validation",
+        "empty-field",
+        "negative"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Sign In button disabled when password is empty"
+    },
+    {
+      "id": "FQA-AND-008",
+      "name": "Password visibility toggle",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "android"
+      ],
+      "steps": [
+        {
+          "name": "Enter password",
+          "action": "Type 'testpassword' in password field",
+          "expected": "Password shown as dots (masked)"
+        },
+        {
+          "name": "Tap visibility icon",
+          "action": "Tap the eye icon (trailing icon) on password field",
+          "expected": "Password text becomes visible as plain text, icon changes to eye-off"
+        },
+        {
+          "name": "Tap visibility icon again",
+          "action": "Tap the eye-off icon",
+          "expected": "Password masked again with dots, icon reverts to eye"
+        }
+      ],
+      "tags": [
+        "login",
+        "password",
+        "visibility",
+        "toggle"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Password visibility toggles correctly between masked and visible"
+    },
+    {
+      "id": "FQA-AND-009",
+      "name": "Keyboard IME action next moves to password",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "android"
+      ],
+      "steps": [
+        {
+          "name": "Tap username field",
+          "action": "Focus the username field",
+          "expected": "Keyboard appears with Next IME action"
+        },
+        {
+          "name": "Press Next on keyboard",
+          "action": "Tap the Next/arrow button on soft keyboard",
+          "expected": "Focus moves to password field"
+        }
+      ],
+      "tags": [
+        "login",
+        "keyboard",
+        "ime",
+        "navigation"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "IME Next action moves focus from username to password field"
+    },
+    {
+      "id": "FQA-AND-010",
+      "name": "Keyboard IME action done triggers login",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "android"
+      ],
+      "steps": [
+        {
+          "name": "Enter credentials",
+          "action": "Type valid username and password",
+          "expected": "Both fields populated"
+        },
+        {
+          "name": "Press Done on keyboard",
+          "action": "Tap the Done button on soft keyboard while password field is focused",
+          "expected": "Login attempt initiated (same as tapping Sign In button)"
+        }
+      ],
+      "tags": [
+        "login",
+        "keyboard",
+        "ime",
+        "submit"
+      ],
+      "estimated_duration": "15s",
+      "expected_result": "IME Done action on password field triggers login"
+    },
+    {
+      "id": "FQA-AND-011",
+      "name": "Login without server configured",
+      "category": "negative",
+      "priority": "high",
+      "platforms": [
+        "android"
+      ],
+      "steps": [
+        {
+          "name": "Clear server URL",
+          "action": "Ensure server URL field is empty and no server is connected",
+          "expected": "No connection status shown"
+        },
+        {
+          "name": "Check field states",
+          "action": "Inspect username and password fields",
+          "expected": "Username and password fields are disabled (server not connected)"
+        },
+        {
+          "name": "Check Sign In button",
+          "action": "Inspect Sign In button",
+          "expected": "Sign In button is disabled"
+        }
+      ],
+      "tags": [
+        "login",
+        "server",
+        "no-config",
+        "negative"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Login fields and button disabled without server configuration"
+    },
+    {
+      "id": "FQA-AND-012",
+      "name": "Biometric authentication availability check",
+      "category": "functional",
+      "priority": "high",
+      "platforms": [
+        "android"
+      ],
+      "steps": [
+        {
+          "name": "Check biometric support",
+          "action": "Verify device has biometric hardware (fingerprint sensor)",
+          "expected": "BiometricHelper.isAvailable() returns true on supported devices"
+        },
+        {
+          "name": "Trigger biometric prompt",
+          "action": "Invoke biometric authentication flow",
+          "expected": "System biometric dialog appears with title 'Biometric Login' and subtitle 'Use your fingerprint to sign in'"
+        }
+      ],
+      "tags": [
+        "biometric",
+        "fingerprint",
+        "auth",
+        "security"
+      ],
+      "estimated_duration": "15s",
+      "expected_result": "Biometric prompt displayed on supported devices"
+    },
+    {
+      "id": "FQA-AND-013",
+      "name": "Biometric authentication success",
+      "category": "functional",
+      "priority": "high",
+      "platforms": [
+        "android"
+      ],
+      "steps": [
+        {
+          "name": "Trigger biometric login",
+          "action": "Initiate biometric authentication from login screen",
+          "expected": "Biometric prompt displayed"
+        },
+        {
+          "name": "Authenticate with fingerprint",
+          "action": "Place registered fingerprint on sensor",
+          "expected": "Authentication succeeds, navigates to home screen"
+        }
+      ],
+      "tags": [
+        "biometric",
+        "fingerprint",
+        "success",
+        "happy-path"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Successful fingerprint auth navigates to home screen"
+    },
+    {
+      "id": "FQA-AND-014",
+      "name": "Biometric authentication cancel falls back to password",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "android"
+      ],
+      "steps": [
+        {
+          "name": "Trigger biometric login",
+          "action": "Initiate biometric authentication",
+          "expected": "Biometric prompt shown"
+        },
+        {
+          "name": "Tap 'Use password' button",
+          "action": "Tap the negative button ('Use password') on biometric dialog",
+          "expected": "Dialog dismissed, login screen remains active with password fields"
+        }
+      ],
+      "tags": [
+        "biometric",
+        "cancel",
+        "fallback",
+        "password"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Cancelling biometric returns to password login"
+    },
+    {
+      "id": "FQA-AND-015",
+      "name": "Session persistence across app restart",
+      "category": "functional",
+      "priority": "critical",
+      "platforms": [
+        "android"
+      ],
+      "steps": [
+        {
+          "name": "Login successfully",
+          "action": "Login with valid credentials",
+          "expected": "Home screen displayed"
+        },
+        {
+          "name": "Kill and relaunch app",
+          "action": "Force-stop the app and relaunch from launcher",
+          "expected": "App opens directly to home screen (session token persisted via DataStore)"
+        }
+      ],
+      "tags": [
+        "session",
+        "persistence",
+        "token",
+        "restart"
+      ],
+      "estimated_duration": "20s",
+      "expected_result": "App remembers authentication across restarts"
+    },
+    {
+      "id": "FQA-AND-016",
+      "name": "Server URL persists across app restart",
+      "category": "functional",
+      "priority": "high",
+      "platforms": [
+        "android"
+      ],
+      "steps": [
+        {
+          "name": "Configure server URL",
+          "action": "Set server URL to 'http://192.168.0.100:8080' and connect",
+          "expected": "Connection established"
+        },
+        {
+          "name": "Kill and relaunch app",
+          "action": "Force-stop and relaunch",
+          "expected": "Server URL restored from DataStore, connection status shows saved URL"
+        }
+      ],
+      "tags": [
+        "server",
+        "persistence",
+        "datastore",
+        "restart"
+      ],
+      "estimated_duration": "20s",
+      "expected_result": "Server URL persisted via DataStore and restored on relaunch"
+    },
+    {
+      "id": "FQA-AND-017",
+      "name": "Logout returns to login screen",
+      "category": "functional",
+      "priority": "critical",
+      "platforms": [
+        "android"
+      ],
+      "steps": [
+        {
+          "name": "Navigate to settings",
+          "action": "Tap settings icon in home screen top bar",
+          "expected": "Settings screen displayed"
+        },
+        {
+          "name": "Tap Sign Out",
+          "action": "Tap the Sign Out button in the red sign-out card",
+          "expected": "User logged out, navigation stack cleared, login screen displayed"
+        },
+        {
+          "name": "Verify login screen",
+          "action": "Check that login screen is showing",
+          "expected": "Login screen visible with empty credential fields"
+        }
+      ],
+      "tags": [
+        "logout",
+        "auth",
+        "navigation",
+        "session"
+      ],
+      "estimated_duration": "15s",
+      "expected_result": "Logout clears session and navigates to login screen"
+    },
+    {
+      "id": "FQA-AND-018",
+      "name": "Login screen scrollable when keyboard covers content",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "android"
+      ],
+      "steps": [
+        {
+          "name": "Tap username field",
+          "action": "Focus the username text field",
+          "expected": "Soft keyboard appears"
+        },
+        {
+          "name": "Scroll login form",
+          "action": "Scroll the login card content vertically",
+          "expected": "Content scrolls to reveal server configuration section and branding footer below keyboard"
+        }
+      ],
+      "tags": [
+        "login",
+        "scroll",
+        "keyboard",
+        "layout"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Login form scrollable when keyboard is visible"
+    },
+    {
+      "id": "FQA-AND-019",
+      "name": "Vasic Digital branding footer on login",
+      "category": "visual",
+      "priority": "low",
+      "platforms": [
+        "android"
+      ],
+      "steps": [
+        {
+          "name": "Scroll to bottom of login card",
+          "action": "Scroll down on login screen",
+          "expected": "'Made with heart by Vasic Digital' text visible"
+        },
+        {
+          "name": "Verify copyright",
+          "action": "Check copyright text below branding",
+          "expected": "Copyright year matches current year, 'Vasic Digital. All rights reserved.' shown"
+        }
+      ],
+      "tags": [
+        "branding",
+        "footer",
+        "vasic-digital",
+        "visual"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Vasic Digital branding and copyright displayed on login screen"
+    },
+    {
+      "id": "FQA-AND-020",
+      "name": "Invalid server URL shows warning",
+      "category": "negative",
+      "priority": "medium",
+      "platforms": [
+        "android"
+      ],
+      "steps": [
+        {
+          "name": "Enter invalid URL",
+          "action": "Type 'not-a-url' in server URL field",
+          "expected": "Text entered"
+        },
+        {
+          "name": "Tap Connect",
+          "action": "Tap Connect button",
+          "expected": "Server saved with warning: 'Server saved (could not verify - check URL if login fails)'"
+        }
+      ],
+      "tags": [
+        "server",
+        "invalid-url",
+        "warning",
+        "negative"
+      ],
+      "estimated_duration": "15s",
+      "expected_result": "Invalid server URL accepted with verification warning"
+    },
+    {
+      "id": "FQA-AND-021",
+      "name": "Home screen displays recently added media",
+      "category": "functional",
+      "priority": "critical",
+      "platforms": [
+        "android"
+      ],
+      "steps": [
+        {
+          "name": "Login and reach home",
+          "action": "Login with valid credentials",
+          "expected": "Home screen displayed"
+        },
+        {
+          "name": "Verify Recently Added section",
+          "action": "Check for 'Recently Added' section",
+          "expected": "Horizontal carousel of media cards under 'Recently Added' title"
+        }
+      ],
+      "tags": [
+        "home",
+        "recently-added",
+        "carousel",
+        "content"
+      ],
+      "estimated_duration": "15s",
+      "expected_result": "Recently Added media section visible with horizontal carousel"
+    },
+    {
+      "id": "FQA-AND-022",
+      "name": "Home screen displays favorites section",
+      "category": "functional",
+      "priority": "critical",
+      "platforms": [
+        "android"
+      ],
+      "steps": [
+        {
+          "name": "Verify Favorites section",
+          "action": "Scroll down on home screen to find 'Favorites' section",
+          "expected": "Horizontal carousel of favorited media cards under 'Favorites' title"
+        }
+      ],
+      "tags": [
+        "home",
+        "favorites",
+        "carousel",
+        "content"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Favorites section visible with horizontal carousel of favorited items"
+    },
+    {
+      "id": "FQA-AND-023",
+      "name": "Home screen empty state",
+      "category": "functional",
+      "priority": "high",
+      "platforms": [
+        "android"
+      ],
+      "steps": [
+        {
+          "name": "Login to account with no media",
+          "action": "Login to a fresh account with empty library",
+          "expected": "Home screen loads"
+        },
+        {
+          "name": "Verify empty state",
+          "action": "Check content area",
+          "expected": "'No media found' title with message 'Your media library is empty. Configure storage sources to get started.'"
+        }
+      ],
+      "tags": [
+        "home",
+        "empty-state",
+        "first-run"
+      ],
+      "estimated_duration": "15s",
+      "expected_result": "Empty state displayed with helpful guidance message"
+    },
+    {
+      "id": "FQA-AND-024",
+      "name": "Home screen loading indicator",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "android"
+      ],
+      "steps": [
+        {
+          "name": "Navigate to home",
+          "action": "Trigger home data load",
+          "expected": "CircularProgressIndicator centered on screen while data loads"
+        },
+        {
+          "name": "Wait for load",
+          "action": "Wait for data to arrive",
+          "expected": "Loading indicator disappears, content sections appear"
+        }
+      ],
+      "tags": [
+        "home",
+        "loading",
+        "progress",
+        "indicator"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Loading spinner shown during data fetch, replaced by content"
+    },
+    {
+      "id": "FQA-AND-025",
+      "name": "Home screen error state",
+      "category": "negative",
+      "priority": "high",
+      "platforms": [
+        "android"
+      ],
+      "steps": [
+        {
+          "name": "Simulate server error",
+          "action": "Disconnect from server or make API fail",
+          "expected": "Home screen loads with error card"
+        },
+        {
+          "name": "Verify error card",
+          "action": "Check error display",
+          "expected": "Red/error-colored card with error message text visible"
+        }
+      ],
+      "tags": [
+        "home",
+        "error",
+        "server-down",
+        "negative"
+      ],
+      "estimated_duration": "15s",
+      "expected_result": "Error message displayed in error-colored card on home screen"
+    },
+    {
+      "id": "FQA-AND-026",
+      "name": "Home screen search icon navigates to search",
+      "category": "functional",
+      "priority": "critical",
+      "platforms": [
+        "android"
+      ],
+      "steps": [
+        {
+          "name": "Tap search icon",
+          "action": "Tap the search icon in the top app bar",
+          "expected": "Search screen opens with text input field and back button"
+        }
+      ],
+      "tags": [
+        "home",
+        "navigation",
+        "search",
+        "toolbar"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Search icon navigates to search screen"
+    },
+    {
+      "id": "FQA-AND-027",
+      "name": "Home screen settings icon navigates to settings",
+      "category": "functional",
+      "priority": "critical",
+      "platforms": [
+        "android"
+      ],
+      "steps": [
+        {
+          "name": "Tap settings icon",
+          "action": "Tap the settings icon in the top app bar",
+          "expected": "Settings screen opens with 'Settings' title and back button"
+        }
+      ],
+      "tags": [
+        "home",
+        "navigation",
+        "settings",
+        "toolbar"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Settings icon navigates to settings screen"
+    },
+    {
+      "id": "FQA-AND-028",
+      "name": "Media card displays title and year",
+      "category": "functional",
+      "priority": "high",
+      "platforms": [
+        "android"
+      ],
+      "steps": [
+        {
+          "name": "View a media card in carousel",
+          "action": "Look at a media card in Recently Added or Favorites",
+          "expected": "Card shows media type initial letter in placeholder, title text (max 2 lines with ellipsis), year if available"
+        }
+      ],
+      "tags": [
+        "home",
+        "media-card",
+        "title",
+        "year",
+        "ui"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Media card displays type initial, title, and year"
+    },
+    {
+      "id": "FQA-AND-029",
+      "name": "Media card displays rating",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "android"
+      ],
+      "steps": [
+        {
+          "name": "Find a rated media card",
+          "action": "Scroll through carousels to find a card with rating",
+          "expected": "Rating displayed as formatted decimal (e.g., '8.5') in primary color"
+        }
+      ],
+      "tags": [
+        "home",
+        "media-card",
+        "rating",
+        "ui"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Media card rating displayed in primary color"
+    },
+    {
+      "id": "FQA-AND-030",
+      "name": "Horizontal carousel scrolls with swipe",
+      "category": "functional",
+      "priority": "high",
+      "platforms": [
+        "android"
+      ],
+      "steps": [
+        {
+          "name": "Swipe carousel left",
+          "action": "Swipe left on the Recently Added carousel",
+          "expected": "Carousel scrolls to reveal more media cards to the right"
+        },
+        {
+          "name": "Swipe carousel right",
+          "action": "Swipe right on the carousel",
+          "expected": "Carousel scrolls back to the beginning"
+        }
+      ],
+      "tags": [
+        "home",
+        "carousel",
+        "scroll",
+        "swipe",
+        "gesture"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Horizontal carousels scroll smoothly with swipe gestures"
+    },
+    {
+      "id": "FQA-AND-031",
+      "name": "Tap media card navigates to detail",
+      "category": "functional",
+      "priority": "critical",
+      "platforms": [
+        "android"
+      ],
+      "steps": [
+        {
+          "name": "Tap a media card",
+          "action": "Tap on any media card in a carousel",
+          "expected": "Navigation to media detail screen triggered (onNavigateToMediaDetail callback)"
+        }
+      ],
+      "tags": [
+        "home",
+        "media-card",
+        "tap",
+        "navigation",
+        "detail"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Tapping a media card navigates to its detail screen"
+    },
+    {
+      "id": "FQA-AND-032",
+      "name": "Home screen vertical scroll between sections",
+      "category": "functional",
+      "priority": "high",
+      "platforms": [
+        "android"
+      ],
+      "steps": [
+        {
+          "name": "Scroll down",
+          "action": "Scroll down on home screen past Recently Added section",
+          "expected": "Favorites section scrolls into view"
+        },
+        {
+          "name": "Scroll up",
+          "action": "Scroll back to the top",
+          "expected": "Recently Added section visible again with top bar"
+        }
+      ],
+      "tags": [
+        "home",
+        "scroll",
+        "vertical",
+        "sections"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Vertical scrolling between media sections works smoothly"
+    },
+    {
+      "id": "FQA-AND-033",
+      "name": "Home screen media type initial in card placeholder",
+      "category": "visual",
+      "priority": "medium",
+      "platforms": [
+        "android"
+      ],
+      "steps": [
+        {
+          "name": "Observe card placeholders",
+          "action": "Look at media cards without cover art",
+          "expected": "Each card shows the first character of the media type uppercased (e.g., 'M' for movie, 'T' for tv_show) in surfaceVariant background"
+        }
+      ],
+      "tags": [
+        "home",
+        "placeholder",
+        "media-type",
+        "visual"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Media type initial displayed as placeholder in card image area"
+    },
+    {
+      "id": "FQA-AND-034",
+      "name": "Home screen carousel card spacing",
+      "category": "visual",
+      "priority": "low",
+      "platforms": [
+        "android"
+      ],
+      "steps": [
+        {
+          "name": "Inspect carousel layout",
+          "action": "Observe horizontal spacing between media cards",
+          "expected": "Cards have 12dp horizontal spacing, 16dp padding from screen edges"
+        }
+      ],
+      "tags": [
+        "home",
+        "layout",
+        "spacing",
+        "visual"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Carousel cards properly spaced with padding"
+    },
+    {
+      "id": "FQA-AND-035",
+      "name": "Home screen section title typography",
+      "category": "visual",
+      "priority": "low",
+      "platforms": [
+        "android"
+      ],
+      "steps": [
+        {
+          "name": "Check section titles",
+          "action": "Verify 'Recently Added' and 'Favorites' text style",
+          "expected": "Titles use titleLarge typography with 16dp horizontal padding and 8dp vertical padding"
+        }
+      ],
+      "tags": [
+        "home",
+        "typography",
+        "section-title",
+        "visual"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Section titles use correct typography"
+    },
+    {
+      "id": "FQA-AND-036",
+      "name": "Home screen card width and image height",
+      "category": "visual",
+      "priority": "low",
+      "platforms": [
+        "android"
+      ],
+      "steps": [
+        {
+          "name": "Inspect media card dimensions",
+          "action": "Check card layout measurements",
+          "expected": "Card width is 140dp, image area height is 180dp"
+        }
+      ],
+      "tags": [
+        "home",
+        "card",
+        "dimensions",
+        "visual"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Media cards have correct width (140dp) and image height (180dp)"
+    },
+    {
+      "id": "FQA-AND-037",
+      "name": "Home screen top app bar title",
+      "category": "visual",
+      "priority": "medium",
+      "platforms": [
+        "android"
+      ],
+      "steps": [
+        {
+          "name": "Verify top bar",
+          "action": "Check the top app bar content",
+          "expected": "Title shows 'Catalogizer', search and settings action icons present"
+        }
+      ],
+      "tags": [
+        "home",
+        "appbar",
+        "title",
+        "visual"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Top app bar shows Catalogizer title with action icons"
+    },
+    {
+      "id": "FQA-AND-038",
+      "name": "Home screen data refreshes on re-navigation",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "android"
+      ],
+      "steps": [
+        {
+          "name": "Navigate away from home",
+          "action": "Go to search screen",
+          "expected": "Search screen displayed"
+        },
+        {
+          "name": "Navigate back to home",
+          "action": "Tap back button",
+          "expected": "Home screen displayed with data reload triggered (LaunchedEffect on Unit)"
+        }
+      ],
+      "tags": [
+        "home",
+        "refresh",
+        "navigation",
+        "data"
+      ],
+      "estimated_duration": "15s",
+      "expected_result": "Home data reloads when screen is re-composed"
+    },
+    {
+      "id": "FQA-AND-039",
+      "name": "Home screen handles large number of media cards",
+      "category": "stress",
+      "priority": "medium",
+      "platforms": [
+        "android"
+      ],
+      "steps": [
+        {
+          "name": "Load library with many items",
+          "action": "Ensure server has 100+ media items",
+          "expected": "Recently Added carousel loads without lag"
+        },
+        {
+          "name": "Scroll through all items",
+          "action": "Swipe carousel to the end",
+          "expected": "All items accessible via horizontal scroll, no jank or dropped frames"
+        }
+      ],
+      "tags": [
+        "home",
+        "stress",
+        "performance",
+        "many-items"
+      ],
+      "estimated_duration": "30s",
+      "expected_result": "Large carousels render and scroll smoothly"
+    },
+    {
+      "id": "FQA-AND-040",
+      "name": "Home screen Material 3 theme colors",
+      "category": "visual",
+      "priority": "low",
+      "platforms": [
+        "android"
+      ],
+      "steps": [
+        {
+          "name": "Verify color scheme",
+          "action": "Observe home screen color usage",
+          "expected": "Material 3 color scheme applied: primary color for ratings, surfaceVariant for card placeholders, errorContainer for error cards"
+        }
+      ],
+      "tags": [
+        "home",
+        "theme",
+        "material3",
+        "colors",
+        "visual"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Material 3 color scheme correctly applied throughout home screen"
+    },
+    {
+      "id": "FQA-AND-041",
+      "name": "Search screen initial state",
+      "category": "functional",
+      "priority": "critical",
+      "platforms": [
+        "android"
+      ],
+      "steps": [
+        {
+          "name": "Navigate to search",
+          "action": "Tap search icon from home screen",
+          "expected": "Search screen with text field in top bar, back arrow, and prompt 'Enter a search term to find media'"
+        }
+      ],
+      "tags": [
+        "search",
+        "initial-state",
+        "prompt"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Search screen shows empty state with helpful prompt"
+    },
+    {
+      "id": "FQA-AND-042",
+      "name": "Search for movie by title - The Matrix",
+      "category": "functional",
+      "priority": "critical",
+      "platforms": [
+        "android"
+      ],
+      "steps": [
+        {
+          "name": "Type search query",
+          "action": "Type 'Matrix' in the search field",
+          "expected": "Debounced search triggers after typing"
+        },
+        {
+          "name": "Verify results",
+          "action": "Check search results list",
+          "expected": "Results containing 'Matrix' displayed in scrollable list with title, media type, year, and quality"
+        }
+      ],
+      "tags": [
+        "search",
+        "movie",
+        "matrix",
+        "query",
+        "happy-path"
+      ],
+      "estimated_duration": "15s",
+      "expected_result": "Matrix search returns relevant movie results"
+    },
+    {
+      "id": "FQA-AND-043",
+      "name": "Search for music artist - Metallica",
+      "category": "functional",
+      "priority": "high",
+      "platforms": [
+        "android"
+      ],
+      "steps": [
+        {
+          "name": "Type search query",
+          "action": "Type 'Metallica' in the search field",
+          "expected": "Search triggers"
+        },
+        {
+          "name": "Verify results",
+          "action": "Check for music results",
+          "expected": "Metallica-related media items shown with music media type"
+        }
+      ],
+      "tags": [
+        "search",
+        "music",
+        "metallica",
+        "query"
+      ],
+      "estimated_duration": "15s",
+      "expected_result": "Metallica search returns music-related results"
+    },
+    {
+      "id": "FQA-AND-044",
+      "name": "Search with Cyrillic characters",
+      "category": "functional",
+      "priority": "high",
+      "platforms": [
+        "android"
+      ],
+      "steps": [
+        {
+          "name": "Switch to Cyrillic keyboard",
+          "action": "Switch input method to Russian/Cyrillic layout",
+          "expected": "Cyrillic keyboard active"
+        },
+        {
+          "name": "Type Cyrillic query",
+          "action": "Type a Cyrillic search term (e.g., a movie title in Russian)",
+          "expected": "Search executes with Cyrillic characters"
+        },
+        {
+          "name": "Verify results or empty state",
+          "action": "Check results",
+          "expected": "Results matching Cyrillic query shown, or proper 'No results found' message"
+        }
+      ],
+      "tags": [
+        "search",
+        "cyrillic",
+        "unicode",
+        "i18n"
+      ],
+      "estimated_duration": "15s",
+      "expected_result": "Search handles Cyrillic input correctly"
+    },
+    {
+      "id": "FQA-AND-045",
+      "name": "Search results list displays correctly",
+      "category": "functional",
+      "priority": "high",
+      "platforms": [
+        "android"
+      ],
+      "steps": [
+        {
+          "name": "Search for a common term",
+          "action": "Type 'the' in search field",
+          "expected": "Multiple results appear"
+        },
+        {
+          "name": "Verify result card layout",
+          "action": "Inspect a search result item",
+          "expected": "Each result shows: 48dp type icon placeholder, title (1 line, ellipsis), media type label, year, quality badge, and rating if available"
+        }
+      ],
+      "tags": [
+        "search",
+        "results",
+        "list",
+        "card",
+        "layout"
+      ],
+      "estimated_duration": "15s",
+      "expected_result": "Search result items display all metadata fields correctly"
+    },
+    {
+      "id": "FQA-AND-046",
+      "name": "Search no results state",
+      "category": "functional",
+      "priority": "high",
+      "platforms": [
+        "android"
+      ],
+      "steps": [
+        {
+          "name": "Type nonsense query",
+          "action": "Type 'xyzzy12345nonexistent' in search field",
+          "expected": "Search completes with no matches"
+        },
+        {
+          "name": "Verify empty results",
+          "action": "Check display",
+          "expected": "'No results found for \"xyzzy12345nonexistent\"' message centered on screen"
+        }
+      ],
+      "tags": [
+        "search",
+        "no-results",
+        "empty",
+        "query"
+      ],
+      "estimated_duration": "15s",
+      "expected_result": "No results message shown with the search query text"
+    },
+    {
+      "id": "FQA-AND-047",
+      "name": "Search loading indicator",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "android"
+      ],
+      "steps": [
+        {
+          "name": "Type query",
+          "action": "Type a search term",
+          "expected": "CircularProgressIndicator appears centered while searching"
+        },
+        {
+          "name": "Wait for results",
+          "action": "Wait for API response",
+          "expected": "Spinner replaced by results list"
+        }
+      ],
+      "tags": [
+        "search",
+        "loading",
+        "spinner",
+        "progress"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Loading spinner shown during search, replaced by results"
+    },
+    {
+      "id": "FQA-AND-048",
+      "name": "Search clear button clears query",
+      "category": "functional",
+      "priority": "high",
+      "platforms": [
+        "android"
+      ],
+      "steps": [
+        {
+          "name": "Enter query",
+          "action": "Type 'Matrix' in search field",
+          "expected": "Clear (X) icon appears as trailing icon"
+        },
+        {
+          "name": "Tap clear",
+          "action": "Tap the X clear button",
+          "expected": "Search field cleared, results cleared, initial prompt 'Enter a search term to find media' shown again"
+        }
+      ],
+      "tags": [
+        "search",
+        "clear",
+        "button",
+        "reset"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Clear button resets search field and shows initial prompt"
+    },
+    {
+      "id": "FQA-AND-049",
+      "name": "Search back button returns to home",
+      "category": "functional",
+      "priority": "high",
+      "platforms": [
+        "android"
+      ],
+      "steps": [
+        {
+          "name": "Tap back arrow",
+          "action": "Tap the back arrow icon in search screen top bar",
+          "expected": "Navigation pops back to home screen"
+        }
+      ],
+      "tags": [
+        "search",
+        "back",
+        "navigation"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Back arrow navigates from search back to home"
+    },
+    {
+      "id": "FQA-AND-050",
+      "name": "Search result tap navigates to detail",
+      "category": "functional",
+      "priority": "critical",
+      "platforms": [
+        "android"
+      ],
+      "steps": [
+        {
+          "name": "Search and find results",
+          "action": "Type 'Matrix' and wait for results",
+          "expected": "Results displayed"
+        },
+        {
+          "name": "Tap a result",
+          "action": "Tap on a search result card",
+          "expected": "Navigation to media detail screen for that item (onNavigateToMediaDetail callback fired with item ID)"
+        }
+      ],
+      "tags": [
+        "search",
+        "tap",
+        "navigate",
+        "detail"
+      ],
+      "estimated_duration": "15s",
+      "expected_result": "Tapping search result navigates to media detail"
+    },
+    {
+      "id": "FQA-AND-051",
+      "name": "Search debounce prevents excessive API calls",
+      "category": "performance",
+      "priority": "medium",
+      "platforms": [
+        "android"
+      ],
+      "steps": [
+        {
+          "name": "Type rapidly",
+          "action": "Quickly type 'Matrix' one character at a time",
+          "expected": "Search does not trigger on every keystroke"
+        },
+        {
+          "name": "Pause typing",
+          "action": "Stop typing and wait 500ms",
+          "expected": "Single search request fires after debounce period"
+        }
+      ],
+      "tags": [
+        "search",
+        "debounce",
+        "performance",
+        "api"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Search debounced to prevent excessive API calls"
+    },
+    {
+      "id": "FQA-AND-052",
+      "name": "Browse movies category",
+      "category": "functional",
+      "priority": "critical",
+      "platforms": [
+        "android"
+      ],
+      "steps": [
+        {
+          "name": "Search by media type",
+          "action": "Search with media type filter set to 'movie'",
+          "expected": "Only movie-type results returned"
+        },
+        {
+          "name": "Verify results",
+          "action": "Check media type labels on all results",
+          "expected": "All results show 'movie' as media type"
+        }
+      ],
+      "tags": [
+        "browse",
+        "movies",
+        "category",
+        "filter"
+      ],
+      "estimated_duration": "15s",
+      "expected_result": "Movie category filter returns only movies"
+    },
+    {
+      "id": "FQA-AND-053",
+      "name": "Browse TV shows category",
+      "category": "functional",
+      "priority": "critical",
+      "platforms": [
+        "android"
+      ],
+      "steps": [
+        {
+          "name": "Filter by TV shows",
+          "action": "Search with media type filter set to 'tv_show'",
+          "expected": "Only TV show results returned"
+        }
+      ],
+      "tags": [
+        "browse",
+        "tv-shows",
+        "category",
+        "filter"
+      ],
+      "estimated_duration": "15s",
+      "expected_result": "TV show filter returns only TV shows"
+    },
+    {
+      "id": "FQA-AND-054",
+      "name": "Browse music category",
+      "category": "functional",
+      "priority": "high",
+      "platforms": [
+        "android"
+      ],
+      "steps": [
+        {
+          "name": "Filter by music",
+          "action": "Search with media type filter set to 'music'",
+          "expected": "Only music results returned"
+        }
+      ],
+      "tags": [
+        "browse",
+        "music",
+        "category",
+        "filter"
+      ],
+      "estimated_duration": "15s",
+      "expected_result": "Music filter returns only music items"
+    },
+    {
+      "id": "FQA-AND-055",
+      "name": "Browse games category",
+      "category": "functional",
+      "priority": "high",
+      "platforms": [
+        "android"
+      ],
+      "steps": [
+        {
+          "name": "Filter by games",
+          "action": "Search with media type filter set to 'game'",
+          "expected": "Only game results returned"
+        }
+      ],
+      "tags": [
+        "browse",
+        "games",
+        "category",
+        "filter"
+      ],
+      "estimated_duration": "15s",
+      "expected_result": "Game filter returns only games"
+    },
+    {
+      "id": "FQA-AND-056",
+      "name": "Browse software category",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "android"
+      ],
+      "steps": [
+        {
+          "name": "Filter by software",
+          "action": "Search with media type filter set to 'software'",
+          "expected": "Only software results returned"
+        }
+      ],
+      "tags": [
+        "browse",
+        "software",
+        "category",
+        "filter"
+      ],
+      "estimated_duration": "15s",
+      "expected_result": "Software filter returns only software items"
+    },
+    {
+      "id": "FQA-AND-057",
+      "name": "Browse ebooks category",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "android"
+      ],
+      "steps": [
+        {
+          "name": "Filter by ebooks",
+          "action": "Search with media type filter set to 'ebook'",
+          "expected": "Only ebook results returned"
+        }
+      ],
+      "tags": [
+        "browse",
+        "ebooks",
+        "category",
+        "filter"
+      ],
+      "estimated_duration": "15s",
+      "expected_result": "Ebook filter returns only ebooks"
+    },
+    {
+      "id": "FQA-AND-058",
+      "name": "Browse anime category",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "android"
+      ],
+      "steps": [
+        {
+          "name": "Filter by anime",
+          "action": "Search with media type filter set to 'anime'",
+          "expected": "Only anime results returned"
+        }
+      ],
+      "tags": [
+        "browse",
+        "anime",
+        "category",
+        "filter"
+      ],
+      "estimated_duration": "15s",
+      "expected_result": "Anime filter returns only anime items"
+    },
+    {
+      "id": "FQA-AND-059",
+      "name": "Browse documentaries category",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "android"
+      ],
+      "steps": [
+        {
+          "name": "Filter by documentaries",
+          "action": "Search with media type filter set to 'documentary'",
+          "expected": "Only documentary results returned"
+        }
+      ],
+      "tags": [
+        "browse",
+        "documentary",
+        "category",
+        "filter"
+      ],
+      "estimated_duration": "15s",
+      "expected_result": "Documentary filter returns only documentaries"
+    },
+    {
+      "id": "FQA-AND-060",
+      "name": "Sort results by title ascending",
+      "category": "functional",
+      "priority": "high",
+      "platforms": [
+        "android"
+      ],
+      "steps": [
+        {
+          "name": "Apply sort",
+          "action": "Search with sort_by='title' and sort_order='asc'",
+          "expected": "Results ordered alphabetically A-Z by title"
+        }
+      ],
+      "tags": [
+        "sort",
+        "title",
+        "ascending",
+        "alphabetical"
+      ],
+      "estimated_duration": "15s",
+      "expected_result": "Results sorted alphabetically by title (ascending)"
+    },
+    {
+      "id": "FQA-AND-061",
+      "name": "Sort results by year descending",
+      "category": "functional",
+      "priority": "high",
+      "platforms": [
+        "android"
+      ],
+      "steps": [
+        {
+          "name": "Apply sort",
+          "action": "Search with sort_by='year' and sort_order='desc'",
+          "expected": "Results ordered by year, newest first"
+        }
+      ],
+      "tags": [
+        "sort",
+        "year",
+        "descending",
+        "chronological"
+      ],
+      "estimated_duration": "15s",
+      "expected_result": "Results sorted by year (newest first)"
+    },
+    {
+      "id": "FQA-AND-062",
+      "name": "Sort results by rating descending",
+      "category": "functional",
+      "priority": "high",
+      "platforms": [
+        "android"
+      ],
+      "steps": [
+        {
+          "name": "Apply sort",
+          "action": "Search with sort_by='rating' and sort_order='desc'",
+          "expected": "Results ordered by rating, highest first"
+        }
+      ],
+      "tags": [
+        "sort",
+        "rating",
+        "descending"
+      ],
+      "estimated_duration": "15s",
+      "expected_result": "Results sorted by rating (highest first)"
+    },
+    {
+      "id": "FQA-AND-063",
+      "name": "Sort results by recently added",
+      "category": "functional",
+      "priority": "high",
+      "platforms": [
+        "android"
+      ],
+      "steps": [
+        {
+          "name": "Apply sort",
+          "action": "Search with sort_by='created_at' and sort_order='desc'",
+          "expected": "Results ordered by creation date, most recent first"
+        }
+      ],
+      "tags": [
+        "sort",
+        "recent",
+        "created-at",
+        "descending"
+      ],
+      "estimated_duration": "15s",
+      "expected_result": "Results sorted by creation date (most recent first)"
+    },
+    {
+      "id": "FQA-AND-064",
+      "name": "Sort results by file size",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "android"
+      ],
+      "steps": [
+        {
+          "name": "Apply sort",
+          "action": "Search with sort_by='file_size' and sort_order='desc'",
+          "expected": "Results ordered by file size, largest first"
+        }
+      ],
+      "tags": [
+        "sort",
+        "file-size",
+        "descending"
+      ],
+      "estimated_duration": "15s",
+      "expected_result": "Results sorted by file size (largest first)"
+    },
+    {
+      "id": "FQA-AND-065",
+      "name": "Filter by quality 1080p",
+      "category": "functional",
+      "priority": "high",
+      "platforms": [
+        "android"
+      ],
+      "steps": [
+        {
+          "name": "Apply quality filter",
+          "action": "Search with quality filter set to '1080p'",
+          "expected": "Only 1080p quality items returned"
+        }
+      ],
+      "tags": [
+        "filter",
+        "quality",
+        "1080p"
+      ],
+      "estimated_duration": "15s",
+      "expected_result": "Quality filter returns only 1080p items"
+    },
+    {
+      "id": "FQA-AND-066",
+      "name": "Filter by quality 4K",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "android"
+      ],
+      "steps": [
+        {
+          "name": "Apply quality filter",
+          "action": "Search with quality filter set to '4k'",
+          "expected": "Only 4K quality items returned"
+        }
+      ],
+      "tags": [
+        "filter",
+        "quality",
+        "4k",
+        "uhd"
+      ],
+      "estimated_duration": "15s",
+      "expected_result": "Quality filter returns only 4K items"
+    },
+    {
+      "id": "FQA-AND-067",
+      "name": "Filter by year range",
+      "category": "functional",
+      "priority": "high",
+      "platforms": [
+        "android"
+      ],
+      "steps": [
+        {
+          "name": "Apply year range filter",
+          "action": "Search with year_min=2020 and year_max=2025",
+          "expected": "Only items from 2020-2025 returned"
+        },
+        {
+          "name": "Verify year range",
+          "action": "Check years on all results",
+          "expected": "All results have year between 2020 and 2025 inclusive"
+        }
+      ],
+      "tags": [
+        "filter",
+        "year",
+        "range",
+        "date"
+      ],
+      "estimated_duration": "15s",
+      "expected_result": "Year range filter returns items within specified range"
+    },
+    {
+      "id": "FQA-AND-068",
+      "name": "Filter by minimum rating",
+      "category": "functional",
+      "priority": "high",
+      "platforms": [
+        "android"
+      ],
+      "steps": [
+        {
+          "name": "Apply rating filter",
+          "action": "Search with rating_min=8.0",
+          "expected": "Only items rated 8.0 or higher returned"
+        }
+      ],
+      "tags": [
+        "filter",
+        "rating",
+        "minimum"
+      ],
+      "estimated_duration": "15s",
+      "expected_result": "Minimum rating filter returns only highly rated items"
+    },
+    {
+      "id": "FQA-AND-069",
+      "name": "Pagination loads more results on scroll",
+      "category": "functional",
+      "priority": "critical",
+      "platforms": [
+        "android"
+      ],
+      "steps": [
+        {
+          "name": "Search with many results",
+          "action": "Perform a broad search that returns more than 20 items",
+          "expected": "First page of 20 results displayed"
+        },
+        {
+          "name": "Scroll to bottom",
+          "action": "Scroll to the bottom of the results list",
+          "expected": "Next page loads automatically (Paging 3 prefetch), additional results appear"
+        }
+      ],
+      "tags": [
+        "pagination",
+        "paging",
+        "infinite-scroll",
+        "load-more"
+      ],
+      "estimated_duration": "20s",
+      "expected_result": "Paging loads additional results when scrolling to bottom"
+    },
+    {
+      "id": "FQA-AND-070",
+      "name": "Pagination handles end of results",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "android"
+      ],
+      "steps": [
+        {
+          "name": "Scroll to very end",
+          "action": "Scroll through all pages until no more results",
+          "expected": "Last page loads, no further loading triggers"
+        }
+      ],
+      "tags": [
+        "pagination",
+        "end-of-list",
+        "boundary"
+      ],
+      "estimated_duration": "30s",
+      "expected_result": "Pagination stops gracefully at end of results"
+    },
+    {
+      "id": "FQA-AND-071",
+      "name": "Search combined with type filter",
+      "category": "functional",
+      "priority": "high",
+      "platforms": [
+        "android"
+      ],
+      "steps": [
+        {
+          "name": "Search with query and filter",
+          "action": "Type 'action' in search and filter by media_type='movie'",
+          "expected": "Only movies matching 'action' query returned"
+        }
+      ],
+      "tags": [
+        "search",
+        "filter",
+        "combined",
+        "multi-criteria"
+      ],
+      "estimated_duration": "15s",
+      "expected_result": "Combined search query and type filter returns correct results"
+    },
+    {
+      "id": "FQA-AND-072",
+      "name": "Search with special characters",
+      "category": "negative",
+      "priority": "medium",
+      "platforms": [
+        "android"
+      ],
+      "steps": [
+        {
+          "name": "Type special characters",
+          "action": "Type '!@#$%^&*()' in search field",
+          "expected": "Search handles gracefully, no crash"
+        },
+        {
+          "name": "Check results",
+          "action": "Verify app state",
+          "expected": "Empty results or matching results, no error crash"
+        }
+      ],
+      "tags": [
+        "search",
+        "special-characters",
+        "robustness",
+        "negative"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Special characters in search handled without crash"
+    },
+    {
+      "id": "FQA-AND-073",
+      "name": "Search with very long query",
+      "category": "negative",
+      "priority": "low",
+      "platforms": [
+        "android"
+      ],
+      "steps": [
+        {
+          "name": "Type extremely long query",
+          "action": "Type a 500-character string in search field",
+          "expected": "Input accepted, search completes without crash or ANR"
+        }
+      ],
+      "tags": [
+        "search",
+        "long-input",
+        "boundary",
+        "stress"
+      ],
+      "estimated_duration": "15s",
+      "expected_result": "Very long search queries handled gracefully"
+    },
+    {
+      "id": "FQA-AND-074",
+      "name": "Search with single character",
+      "category": "functional",
+      "priority": "low",
+      "platforms": [
+        "android"
+      ],
+      "steps": [
+        {
+          "name": "Type single character",
+          "action": "Type 'a' in search field",
+          "expected": "Search executes, returns items starting with or containing 'a'"
+        }
+      ],
+      "tags": [
+        "search",
+        "single-char",
+        "minimal-query"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Single character search returns matching results"
+    },
+    {
+      "id": "FQA-AND-075",
+      "name": "Search results scroll performance",
+      "category": "performance",
+      "priority": "medium",
+      "platforms": [
+        "android"
+      ],
+      "steps": [
+        {
+          "name": "Load many results",
+          "action": "Search with broad query returning 50+ results",
+          "expected": "Results loaded"
+        },
+        {
+          "name": "Rapidly scroll up and down",
+          "action": "Fling scroll list rapidly in both directions",
+          "expected": "Smooth 60fps scrolling, no dropped frames or jank"
+        }
+      ],
+      "tags": [
+        "search",
+        "scroll",
+        "performance",
+        "fps"
+      ],
+      "estimated_duration": "20s",
+      "expected_result": "Search results scroll at 60fps without jank"
+    },
+    {
+      "id": "FQA-AND-076",
+      "name": "Search for TV show - Breaking Bad",
+      "category": "functional",
+      "priority": "high",
+      "platforms": [
+        "android"
+      ],
+      "steps": [
+        {
+          "name": "Search for TV show",
+          "action": "Type 'Breaking Bad' in search field",
+          "expected": "Results include Breaking Bad with tv_show media type"
+        }
+      ],
+      "tags": [
+        "search",
+        "tv-show",
+        "breaking-bad",
+        "query"
+      ],
+      "estimated_duration": "15s",
+      "expected_result": "Breaking Bad found in search results as TV show"
+    },
+    {
+      "id": "FQA-AND-077",
+      "name": "Search for audiobook",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "android"
+      ],
+      "steps": [
+        {
+          "name": "Search audiobooks",
+          "action": "Search with media_type='audiobook' filter",
+          "expected": "Only audiobook results returned"
+        }
+      ],
+      "tags": [
+        "search",
+        "audiobook",
+        "filter"
+      ],
+      "estimated_duration": "15s",
+      "expected_result": "Audiobook filter returns only audiobooks"
+    },
+    {
+      "id": "FQA-AND-078",
+      "name": "Search for podcast",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "android"
+      ],
+      "steps": [
+        {
+          "name": "Search podcasts",
+          "action": "Search with media_type='podcast' filter",
+          "expected": "Only podcast results returned"
+        }
+      ],
+      "tags": [
+        "search",
+        "podcast",
+        "filter"
+      ],
+      "estimated_duration": "15s",
+      "expected_result": "Podcast filter returns only podcasts"
+    },
+    {
+      "id": "FQA-AND-079",
+      "name": "Search for training/tutorial content",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "android"
+      ],
+      "steps": [
+        {
+          "name": "Search training",
+          "action": "Search with media_type='training' filter",
+          "expected": "Only training content returned"
+        }
+      ],
+      "tags": [
+        "search",
+        "training",
+        "tutorial",
+        "filter"
+      ],
+      "estimated_duration": "15s",
+      "expected_result": "Training filter returns only training content"
+    },
+    {
+      "id": "FQA-AND-080",
+      "name": "Search for YouTube videos",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "android"
+      ],
+      "steps": [
+        {
+          "name": "Search YouTube",
+          "action": "Search with media_type='youtube_video' filter",
+          "expected": "Only YouTube video results returned"
+        }
+      ],
+      "tags": [
+        "search",
+        "youtube",
+        "filter"
+      ],
+      "estimated_duration": "15s",
+      "expected_result": "YouTube video filter returns only YouTube content"
+    },
+    {
+      "id": "FQA-AND-081",
+      "name": "Movie detail screen displays metadata",
+      "category": "functional",
+      "priority": "critical",
+      "platforms": [
+        "android"
+      ],
+      "steps": [
+        {
+          "name": "Navigate to movie detail",
+          "action": "Tap a movie result from search",
+          "expected": "Detail screen loads for the movie"
+        },
+        {
+          "name": "Verify metadata fields",
+          "action": "Check displayed information",
+          "expected": "Title, year, media type, description, rating, quality, file size, and duration visible"
+        }
+      ],
+      "tags": [
+        "detail",
+        "movie",
+        "metadata",
+        "content"
+      ],
+      "estimated_duration": "15s",
+      "expected_result": "Movie detail displays all metadata fields"
+    },
+    {
+      "id": "FQA-AND-082",
+      "name": "TV show detail displays episode hierarchy",
+      "category": "functional",
+      "priority": "critical",
+      "platforms": [
+        "android"
+      ],
+      "steps": [
+        {
+          "name": "Navigate to TV show detail",
+          "action": "Tap a TV show result",
+          "expected": "Detail screen loads"
+        },
+        {
+          "name": "Check episode listing",
+          "action": "Scroll down for episode/season information",
+          "expected": "TV show hierarchy (seasons and episodes) visible"
+        }
+      ],
+      "tags": [
+        "detail",
+        "tv-show",
+        "episodes",
+        "hierarchy"
+      ],
+      "estimated_duration": "15s",
+      "expected_result": "TV show detail displays season/episode hierarchy"
+    },
+    {
+      "id": "FQA-AND-083",
+      "name": "Music album detail displays track list",
+      "category": "functional",
+      "priority": "high",
+      "platforms": [
+        "android"
+      ],
+      "steps": [
+        {
+          "name": "Navigate to music detail",
+          "action": "Tap a music album result",
+          "expected": "Detail screen loads"
+        },
+        {
+          "name": "Check track listing",
+          "action": "Scroll for track/song information",
+          "expected": "Track list or album details visible"
+        }
+      ],
+      "tags": [
+        "detail",
+        "music",
+        "album",
+        "tracks"
+      ],
+      "estimated_duration": "15s",
+      "expected_result": "Music album detail shows track list"
+    },
+    {
+      "id": "FQA-AND-084",
+      "name": "Detail screen shows cover art placeholder",
+      "category": "visual",
+      "priority": "high",
+      "platforms": [
+        "android"
+      ],
+      "steps": [
+        {
+          "name": "Open detail for item without cover",
+          "action": "Navigate to media item with no coverImage",
+          "expected": "Placeholder with media type initial letter displayed instead of missing image"
+        }
+      ],
+      "tags": [
+        "detail",
+        "cover-art",
+        "placeholder",
+        "visual"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Placeholder shown when cover art is unavailable"
+    },
+    {
+      "id": "FQA-AND-085",
+      "name": "Detail screen shows cover art from URL",
+      "category": "functional",
+      "priority": "high",
+      "platforms": [
+        "android"
+      ],
+      "steps": [
+        {
+          "name": "Open detail for item with cover",
+          "action": "Navigate to media item with coverImage or posterUrl",
+          "expected": "Cover art image loaded and displayed (via Coil image loader)"
+        }
+      ],
+      "tags": [
+        "detail",
+        "cover-art",
+        "image",
+        "coil"
+      ],
+      "estimated_duration": "15s",
+      "expected_result": "Cover art loaded from URL and displayed"
+    },
+    {
+      "id": "FQA-AND-086",
+      "name": "Detail screen shows external metadata from TMDB",
+      "category": "functional",
+      "priority": "high",
+      "platforms": [
+        "android"
+      ],
+      "steps": [
+        {
+          "name": "Open a movie with TMDB metadata",
+          "action": "Navigate to a movie that has external TMDB metadata",
+          "expected": "External metadata section shows TMDB data: genres, cast, crew, description"
+        }
+      ],
+      "tags": [
+        "detail",
+        "metadata",
+        "tmdb",
+        "external"
+      ],
+      "estimated_duration": "15s",
+      "expected_result": "TMDB external metadata displayed on detail screen"
+    },
+    {
+      "id": "FQA-AND-087",
+      "name": "Detail screen play button",
+      "category": "functional",
+      "priority": "critical",
+      "platforms": [
+        "android"
+      ],
+      "steps": [
+        {
+          "name": "Open media detail",
+          "action": "Navigate to a playable media item",
+          "expected": "Detail screen loaded"
+        },
+        {
+          "name": "Tap play button",
+          "action": "Tap the Play or Start button",
+          "expected": "Playback initiated, navigates to media player"
+        }
+      ],
+      "tags": [
+        "detail",
+        "play",
+        "button",
+        "playback"
+      ],
+      "estimated_duration": "15s",
+      "expected_result": "Play button launches media playback"
+    },
+    {
+      "id": "FQA-AND-088",
+      "name": "Detail screen favorite toggle",
+      "category": "functional",
+      "priority": "critical",
+      "platforms": [
+        "android"
+      ],
+      "steps": [
+        {
+          "name": "Open media detail",
+          "action": "Navigate to a media item",
+          "expected": "Detail screen loaded with favorite icon/button"
+        },
+        {
+          "name": "Tap favorite",
+          "action": "Tap the favorite/heart button",
+          "expected": "Optimistic local update: favorite status toggles immediately, sync with server in background"
+        },
+        {
+          "name": "Verify toggle",
+          "action": "Tap again to unfavorite",
+          "expected": "Favorite status reverts, server sync triggered"
+        }
+      ],
+      "tags": [
+        "detail",
+        "favorite",
+        "toggle",
+        "optimistic"
+      ],
+      "estimated_duration": "15s",
+      "expected_result": "Favorite toggle works with optimistic local update"
+    },
+    {
+      "id": "FQA-AND-089",
+      "name": "Detail screen favorite revert on server error",
+      "category": "negative",
+      "priority": "high",
+      "platforms": [
+        "android"
+      ],
+      "steps": [
+        {
+          "name": "Disconnect server",
+          "action": "Ensure server is unreachable",
+          "expected": "Server offline"
+        },
+        {
+          "name": "Toggle favorite",
+          "action": "Tap favorite button on a media item",
+          "expected": "Optimistic toggle shown, then reverted when server sync fails"
+        }
+      ],
+      "tags": [
+        "detail",
+        "favorite",
+        "revert",
+        "offline",
+        "negative"
+      ],
+      "estimated_duration": "15s",
+      "expected_result": "Favorite reverted when server sync fails"
+    },
+    {
+      "id": "FQA-AND-090",
+      "name": "Detail screen rating display",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "android"
+      ],
+      "steps": [
+        {
+          "name": "Open rated media",
+          "action": "Navigate to a media item with a rating",
+          "expected": "Rating displayed as formatted decimal (e.g., '8.5')"
+        }
+      ],
+      "tags": [
+        "detail",
+        "rating",
+        "display"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Rating displayed correctly on detail screen"
+    },
+    {
+      "id": "FQA-AND-091",
+      "name": "Detail screen quality badge",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "android"
+      ],
+      "steps": [
+        {
+          "name": "Open media with quality info",
+          "action": "Navigate to a media item with quality field set",
+          "expected": "Quality badge visible (e.g., '1080p HD', '4K UHD', 'HDR')"
+        }
+      ],
+      "tags": [
+        "detail",
+        "quality",
+        "badge",
+        "resolution"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Quality badge displayed for items with quality info"
+    },
+    {
+      "id": "FQA-AND-092",
+      "name": "Detail screen file size display",
+      "category": "functional",
+      "priority": "low",
+      "platforms": [
+        "android"
+      ],
+      "steps": [
+        {
+          "name": "Open media with file size",
+          "action": "Navigate to a media item with fileSize set",
+          "expected": "File size displayed in human-readable format (MB/GB)"
+        }
+      ],
+      "tags": [
+        "detail",
+        "file-size",
+        "display"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "File size displayed in readable format"
+    },
+    {
+      "id": "FQA-AND-093",
+      "name": "Detail screen duration display",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "android"
+      ],
+      "steps": [
+        {
+          "name": "Open media with duration",
+          "action": "Navigate to a video/audio item with duration",
+          "expected": "Duration displayed in human-readable format (e.g., '1h 45m')"
+        }
+      ],
+      "tags": [
+        "detail",
+        "duration",
+        "time",
+        "display"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Duration displayed in readable format on detail screen"
+    },
+    {
+      "id": "FQA-AND-094",
+      "name": "Detail screen description text",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "android"
+      ],
+      "steps": [
+        {
+          "name": "Open media with description",
+          "action": "Navigate to a media item with description field",
+          "expected": "Full description text displayed, scrollable if long"
+        }
+      ],
+      "tags": [
+        "detail",
+        "description",
+        "text",
+        "content"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Description text displayed on detail screen"
+    },
+    {
+      "id": "FQA-AND-095",
+      "name": "Detail screen media versions",
+      "category": "functional",
+      "priority": "high",
+      "platforms": [
+        "android"
+      ],
+      "steps": [
+        {
+          "name": "Open media with multiple versions",
+          "action": "Navigate to a media item that has multiple versions (different qualities/codecs)",
+          "expected": "Version list displayed with quality, codec, resolution, and file size for each"
+        }
+      ],
+      "tags": [
+        "detail",
+        "versions",
+        "quality",
+        "multi-version"
+      ],
+      "estimated_duration": "15s",
+      "expected_result": "Media versions displayed with quality and codec info"
+    },
+    {
+      "id": "FQA-AND-096",
+      "name": "Detail screen refresh metadata",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "android"
+      ],
+      "steps": [
+        {
+          "name": "Open media detail",
+          "action": "Navigate to a media item",
+          "expected": "Detail screen loaded"
+        },
+        {
+          "name": "Trigger metadata refresh",
+          "action": "Tap refresh metadata button or pull-to-refresh",
+          "expected": "Metadata refreshed from external providers (TMDB, MusicBrainz, etc.)"
+        }
+      ],
+      "tags": [
+        "detail",
+        "refresh",
+        "metadata",
+        "providers"
+      ],
+      "estimated_duration": "20s",
+      "expected_result": "Metadata refreshed from external providers"
+    },
+    {
+      "id": "FQA-AND-097",
+      "name": "Game detail screen",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "android"
+      ],
+      "steps": [
+        {
+          "name": "Navigate to game detail",
+          "action": "Tap a game media item",
+          "expected": "Detail screen shows game-specific metadata"
+        }
+      ],
+      "tags": [
+        "detail",
+        "game",
+        "metadata"
+      ],
+      "estimated_duration": "15s",
+      "expected_result": "Game detail screen displays correctly"
+    },
+    {
+      "id": "FQA-AND-098",
+      "name": "Software detail screen",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "android"
+      ],
+      "steps": [
+        {
+          "name": "Navigate to software detail",
+          "action": "Tap a software media item",
+          "expected": "Detail screen shows software metadata"
+        }
+      ],
+      "tags": [
+        "detail",
+        "software",
+        "metadata"
+      ],
+      "estimated_duration": "15s",
+      "expected_result": "Software detail screen displays correctly"
+    },
+    {
+      "id": "FQA-AND-099",
+      "name": "Documentary detail screen",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "android"
+      ],
+      "steps": [
+        {
+          "name": "Navigate to documentary detail",
+          "action": "Tap a documentary media item",
+          "expected": "Detail screen with documentary metadata including description and year"
+        }
+      ],
+      "tags": [
+        "detail",
+        "documentary",
+        "metadata"
+      ],
+      "estimated_duration": "15s",
+      "expected_result": "Documentary detail screen displays correctly"
+    },
+    {
+      "id": "FQA-AND-100",
+      "name": "Detail screen watch progress indicator",
+      "category": "functional",
+      "priority": "high",
+      "platforms": [
+        "android"
+      ],
+      "steps": [
+        {
+          "name": "Open partially watched media",
+          "action": "Navigate to a media item with watchProgress > 0",
+          "expected": "Watch progress bar or percentage indicator visible"
+        }
+      ],
+      "tags": [
+        "detail",
+        "watch-progress",
+        "indicator",
+        "resume"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Watch progress displayed for partially watched content"
+    },
+    {
+      "id": "FQA-AND-101",
+      "name": "Detail screen SMB path info",
+      "category": "functional",
+      "priority": "low",
+      "platforms": [
+        "android"
+      ],
+      "steps": [
+        {
+          "name": "Open media from SMB source",
+          "action": "Navigate to a media item with smbPath set",
+          "expected": "SMB path or storage source information visible"
+        }
+      ],
+      "tags": [
+        "detail",
+        "smb",
+        "path",
+        "storage"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "SMB path information shown for network-sourced media"
+    },
+    {
+      "id": "FQA-AND-102",
+      "name": "Detail screen genre tags from external metadata",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "android"
+      ],
+      "steps": [
+        {
+          "name": "Open media with genres",
+          "action": "Navigate to a media item with genre data in externalMetadata",
+          "expected": "Genre tags/chips displayed (e.g., 'Action', 'Sci-Fi', 'Drama')"
+        }
+      ],
+      "tags": [
+        "detail",
+        "genres",
+        "tags",
+        "external-metadata"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Genre tags from external metadata displayed"
+    },
+    {
+      "id": "FQA-AND-103",
+      "name": "Detail screen cast list",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "android"
+      ],
+      "steps": [
+        {
+          "name": "Open media with cast info",
+          "action": "Navigate to a movie/show with cast data in externalMetadata",
+          "expected": "Cast list displayed with actor names"
+        }
+      ],
+      "tags": [
+        "detail",
+        "cast",
+        "actors",
+        "external-metadata"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Cast list from external metadata displayed"
+    },
+    {
+      "id": "FQA-AND-104",
+      "name": "Detail screen backdrop image",
+      "category": "visual",
+      "priority": "medium",
+      "platforms": [
+        "android"
+      ],
+      "steps": [
+        {
+          "name": "Open media with backdrop",
+          "action": "Navigate to a media item with backdropUrl in externalMetadata",
+          "expected": "Backdrop image displayed as header/background"
+        }
+      ],
+      "tags": [
+        "detail",
+        "backdrop",
+        "image",
+        "visual"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Backdrop image loaded and displayed on detail screen"
+    },
+    {
+      "id": "FQA-AND-105",
+      "name": "Detail screen handles missing optional fields",
+      "category": "negative",
+      "priority": "high",
+      "platforms": [
+        "android"
+      ],
+      "steps": [
+        {
+          "name": "Open minimal media item",
+          "action": "Navigate to a media item with only required fields (id, title, mediaType, directoryPath, createdAt, updatedAt)",
+          "expected": "Detail screen renders without crash; optional fields (year, description, coverImage, rating, quality, duration, fileSize) are absent without blank/broken sections"
+        }
+      ],
+      "tags": [
+        "detail",
+        "optional-fields",
+        "robustness",
+        "null-handling"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Detail screen gracefully handles missing optional fields"
+    },
+    {
+      "id": "FQA-AND-106",
+      "name": "Video playback starts from stream URL",
+      "category": "functional",
+      "priority": "critical",
+      "platforms": [
+        "android"
+      ],
+      "steps": [
+        {
+          "name": "Open video item",
+          "action": "Navigate to a movie/video and tap play",
+          "expected": "Stream URL fetched from API"
+        },
+        {
+          "name": "Verify playback",
+          "action": "Check ExoPlayer state",
+          "expected": "Video starts playing with visual content and audio"
+        }
+      ],
+      "tags": [
+        "playback",
+        "video",
+        "stream",
+        "exoplayer",
+        "happy-path"
+      ],
+      "estimated_duration": "20s",
+      "expected_result": "Video playback starts from server stream URL"
+    },
+    {
+      "id": "FQA-AND-107",
+      "name": "Audio playback for music",
+      "category": "functional",
+      "priority": "critical",
+      "platforms": [
+        "android"
+      ],
+      "steps": [
+        {
+          "name": "Open music item",
+          "action": "Navigate to a music/song and tap play",
+          "expected": "Audio stream URL fetched"
+        },
+        {
+          "name": "Verify audio playback",
+          "action": "Listen for audio output",
+          "expected": "Audio plays, player controls visible"
+        }
+      ],
+      "tags": [
+        "playback",
+        "audio",
+        "music",
+        "stream"
+      ],
+      "estimated_duration": "20s",
+      "expected_result": "Audio playback starts for music items"
+    },
+    {
+      "id": "FQA-AND-108",
+      "name": "Video player controls - play/pause",
+      "category": "functional",
+      "priority": "critical",
+      "platforms": [
+        "android"
+      ],
+      "steps": [
+        {
+          "name": "Start video playback",
+          "action": "Play a video",
+          "expected": "Video playing"
+        },
+        {
+          "name": "Tap pause",
+          "action": "Tap the pause button on player controls",
+          "expected": "Playback pauses, button changes to play icon"
+        },
+        {
+          "name": "Tap play",
+          "action": "Tap the play button",
+          "expected": "Playback resumes from paused position"
+        }
+      ],
+      "tags": [
+        "playback",
+        "controls",
+        "play-pause",
+        "video"
+      ],
+      "estimated_duration": "15s",
+      "expected_result": "Play/pause controls toggle video playback"
+    },
+    {
+      "id": "FQA-AND-109",
+      "name": "Video player seek forward",
+      "category": "functional",
+      "priority": "high",
+      "platforms": [
+        "android"
+      ],
+      "steps": [
+        {
+          "name": "Start video playback",
+          "action": "Play a video",
+          "expected": "Video playing"
+        },
+        {
+          "name": "Drag seek bar forward",
+          "action": "Drag the seek/progress bar forward 30 seconds",
+          "expected": "Playback position jumps forward, video continues from new position"
+        }
+      ],
+      "tags": [
+        "playback",
+        "seek",
+        "forward",
+        "progress"
+      ],
+      "estimated_duration": "15s",
+      "expected_result": "Seek bar allows forward seeking in video"
+    },
+    {
+      "id": "FQA-AND-110",
+      "name": "Video player seek backward",
+      "category": "functional",
+      "priority": "high",
+      "platforms": [
+        "android"
+      ],
+      "steps": [
+        {
+          "name": "Play and advance",
+          "action": "Play a video and let it advance 60+ seconds",
+          "expected": "Video at 60+ second mark"
+        },
+        {
+          "name": "Drag seek bar backward",
+          "action": "Drag seek bar backward 30 seconds",
+          "expected": "Playback position jumps backward, video plays from new position"
+        }
+      ],
+      "tags": [
+        "playback",
+        "seek",
+        "backward",
+        "rewind"
+      ],
+      "estimated_duration": "20s",
+      "expected_result": "Seek bar allows backward seeking in video"
+    },
+    {
+      "id": "FQA-AND-111",
+      "name": "Volume control during playback",
+      "category": "functional",
+      "priority": "high",
+      "platforms": [
+        "android"
+      ],
+      "steps": [
+        {
+          "name": "Start playback",
+          "action": "Play a media item with audio",
+          "expected": "Audio playing"
+        },
+        {
+          "name": "Press volume up",
+          "action": "Press hardware volume up button",
+          "expected": "Volume increases, system volume indicator appears"
+        },
+        {
+          "name": "Press volume down",
+          "action": "Press hardware volume down button",
+          "expected": "Volume decreases"
+        }
+      ],
+      "tags": [
+        "playback",
+        "volume",
+        "hardware-buttons",
+        "audio"
+      ],
+      "estimated_duration": "15s",
+      "expected_result": "Hardware volume buttons control playback volume"
+    },
+    {
+      "id": "FQA-AND-112",
+      "name": "Video player fullscreen mode",
+      "category": "functional",
+      "priority": "high",
+      "platforms": [
+        "android"
+      ],
+      "steps": [
+        {
+          "name": "Start video playback",
+          "action": "Play a video",
+          "expected": "Video playing in normal mode"
+        },
+        {
+          "name": "Enter fullscreen",
+          "action": "Tap fullscreen button or rotate device to landscape",
+          "expected": "Video fills entire screen, system bars hidden"
+        },
+        {
+          "name": "Exit fullscreen",
+          "action": "Tap exit fullscreen or rotate back to portrait",
+          "expected": "Video returns to normal mode"
+        }
+      ],
+      "tags": [
+        "playback",
+        "fullscreen",
+        "landscape",
+        "immersive"
+      ],
+      "estimated_duration": "15s",
+      "expected_result": "Fullscreen toggle works for video player"
+    },
+    {
+      "id": "FQA-AND-113",
+      "name": "Watch progress saved during playback",
+      "category": "functional",
+      "priority": "critical",
+      "platforms": [
+        "android"
+      ],
+      "steps": [
+        {
+          "name": "Play video for 30 seconds",
+          "action": "Start video and let it play for 30+ seconds",
+          "expected": "Video playing, position advancing"
+        },
+        {
+          "name": "Exit playback",
+          "action": "Navigate back from player",
+          "expected": "Watch progress saved locally and synced to server"
+        },
+        {
+          "name": "Reopen same video",
+          "action": "Navigate back to the same media item",
+          "expected": "Watch progress indicator shows previous position"
+        }
+      ],
+      "tags": [
+        "playback",
+        "watch-progress",
+        "save",
+        "resume"
+      ],
+      "estimated_duration": "45s",
+      "expected_result": "Watch progress persisted locally and to server"
+    },
+    {
+      "id": "FQA-AND-114",
+      "name": "Resume playback from saved position",
+      "category": "functional",
+      "priority": "critical",
+      "platforms": [
+        "android"
+      ],
+      "steps": [
+        {
+          "name": "Open partially watched media",
+          "action": "Navigate to a media item with previous watch progress",
+          "expected": "Resume prompt or auto-resume"
+        },
+        {
+          "name": "Resume playback",
+          "action": "Confirm resume or tap play",
+          "expected": "Playback starts from last saved position, not from the beginning"
+        }
+      ],
+      "tags": [
+        "playback",
+        "resume",
+        "position",
+        "continue-watching"
+      ],
+      "estimated_duration": "20s",
+      "expected_result": "Playback resumes from last saved position"
+    },
+    {
+      "id": "FQA-AND-115",
+      "name": "Picture-in-Picture mode",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "android"
+      ],
+      "steps": [
+        {
+          "name": "Start video playback",
+          "action": "Play a video",
+          "expected": "Video playing"
+        },
+        {
+          "name": "Trigger PiP",
+          "action": "Press home button or swipe up to go home",
+          "expected": "Video continues in a small floating PiP window"
+        },
+        {
+          "name": "Return from PiP",
+          "action": "Tap the PiP window",
+          "expected": "App returns to fullscreen player"
+        }
+      ],
+      "tags": [
+        "playback",
+        "pip",
+        "picture-in-picture",
+        "multitask"
+      ],
+      "estimated_duration": "15s",
+      "expected_result": "Picture-in-Picture mode works for video playback"
+    },
+    {
+      "id": "FQA-AND-116",
+      "name": "Background audio playback",
+      "category": "functional",
+      "priority": "high",
+      "platforms": [
+        "android"
+      ],
+      "steps": [
+        {
+          "name": "Start music playback",
+          "action": "Play a music/audio item",
+          "expected": "Audio playing"
+        },
+        {
+          "name": "Minimize app",
+          "action": "Press home button",
+          "expected": "Audio continues playing in the background"
+        },
+        {
+          "name": "Check notification",
+          "action": "Pull down notification shade",
+          "expected": "Media notification with playback controls visible"
+        }
+      ],
+      "tags": [
+        "playback",
+        "background",
+        "audio",
+        "notification",
+        "service"
+      ],
+      "estimated_duration": "20s",
+      "expected_result": "Audio continues playing when app is backgrounded"
+    },
+    {
+      "id": "FQA-AND-117",
+      "name": "Image viewer for image media",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "android"
+      ],
+      "steps": [
+        {
+          "name": "Open image media",
+          "action": "Navigate to an image/photo media item",
+          "expected": "Image displayed in viewer"
+        },
+        {
+          "name": "Pinch to zoom",
+          "action": "Pinch-to-zoom gesture on image",
+          "expected": "Image zooms in and out"
+        }
+      ],
+      "tags": [
+        "playback",
+        "image",
+        "viewer",
+        "zoom",
+        "gesture"
+      ],
+      "estimated_duration": "15s",
+      "expected_result": "Image viewer supports pinch-to-zoom"
+    },
+    {
+      "id": "FQA-AND-118",
+      "name": "Stream URL error handling",
+      "category": "negative",
+      "priority": "high",
+      "platforms": [
+        "android"
+      ],
+      "steps": [
+        {
+          "name": "Try to play unavailable media",
+          "action": "Attempt to play a media item whose stream URL is unreachable",
+          "expected": "Error message displayed (e.g., 'Stream URL not found in response' or 'Failed to get stream URL')"
+        }
+      ],
+      "tags": [
+        "playback",
+        "error",
+        "stream-url",
+        "negative"
+      ],
+      "estimated_duration": "15s",
+      "expected_result": "Error shown when stream URL is unavailable"
+    },
+    {
+      "id": "FQA-AND-119",
+      "name": "Download URL request",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "android"
+      ],
+      "steps": [
+        {
+          "name": "Open media detail",
+          "action": "Navigate to a downloadable media item",
+          "expected": "Download option available"
+        },
+        {
+          "name": "Request download",
+          "action": "Tap download button",
+          "expected": "Download URL fetched from API, download initiated"
+        }
+      ],
+      "tags": [
+        "playback",
+        "download",
+        "url",
+        "offline"
+      ],
+      "estimated_duration": "20s",
+      "expected_result": "Download URL fetched and download starts"
+    },
+    {
+      "id": "FQA-AND-120",
+      "name": "Player handles network interruption",
+      "category": "negative",
+      "priority": "high",
+      "platforms": [
+        "android"
+      ],
+      "steps": [
+        {
+          "name": "Start streaming playback",
+          "action": "Play a video via streaming",
+          "expected": "Video playing"
+        },
+        {
+          "name": "Disable network",
+          "action": "Turn off WiFi and mobile data",
+          "expected": "Playback buffers, then shows error or pauses"
+        },
+        {
+          "name": "Restore network",
+          "action": "Turn WiFi back on",
+          "expected": "Playback resumes or retry option available"
+        }
+      ],
+      "tags": [
+        "playback",
+        "network",
+        "interruption",
+        "buffering",
+        "negative"
+      ],
+      "estimated_duration": "30s",
+      "expected_result": "Player handles network interruption gracefully"
+    },
+    {
+      "id": "FQA-AND-121",
+      "name": "Multiple media version selection",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "android"
+      ],
+      "steps": [
+        {
+          "name": "Open media with versions",
+          "action": "Navigate to a media item with multiple versions",
+          "expected": "Version list displayed"
+        },
+        {
+          "name": "Select a specific version",
+          "action": "Tap a different quality version",
+          "expected": "Selected version plays with its specific quality, codec, and resolution"
+        }
+      ],
+      "tags": [
+        "playback",
+        "versions",
+        "quality-selection"
+      ],
+      "estimated_duration": "20s",
+      "expected_result": "Specific media version can be selected for playback"
+    },
+    {
+      "id": "FQA-AND-122",
+      "name": "Player controls auto-hide",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "android"
+      ],
+      "steps": [
+        {
+          "name": "Start video playback",
+          "action": "Play a video and tap screen to show controls",
+          "expected": "Player controls overlay visible"
+        },
+        {
+          "name": "Wait for auto-hide",
+          "action": "Do not interact for 3-5 seconds",
+          "expected": "Controls fade out, video plays in unobstructed view"
+        },
+        {
+          "name": "Tap to show again",
+          "action": "Tap the video area",
+          "expected": "Controls reappear"
+        }
+      ],
+      "tags": [
+        "playback",
+        "controls",
+        "auto-hide",
+        "overlay"
+      ],
+      "estimated_duration": "15s",
+      "expected_result": "Player controls auto-hide after inactivity"
+    },
+    {
+      "id": "FQA-AND-123",
+      "name": "Playback handles unsupported codec",
+      "category": "negative",
+      "priority": "medium",
+      "platforms": [
+        "android"
+      ],
+      "steps": [
+        {
+          "name": "Try to play unsupported format",
+          "action": "Attempt to play a media file with an unsupported codec",
+          "expected": "ExoPlayer shows codec error, user-friendly error message displayed"
+        }
+      ],
+      "tags": [
+        "playback",
+        "codec",
+        "unsupported",
+        "error",
+        "negative"
+      ],
+      "estimated_duration": "15s",
+      "expected_result": "Unsupported codec shows user-friendly error"
+    },
+    {
+      "id": "FQA-AND-124",
+      "name": "Concurrent audio and video switching",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "android"
+      ],
+      "steps": [
+        {
+          "name": "Play audio",
+          "action": "Start playing a music item",
+          "expected": "Audio playing"
+        },
+        {
+          "name": "Switch to video",
+          "action": "Navigate to a video and tap play",
+          "expected": "Audio stops, video starts playing"
+        }
+      ],
+      "tags": [
+        "playback",
+        "switch",
+        "concurrent",
+        "audio-video"
+      ],
+      "estimated_duration": "20s",
+      "expected_result": "Switching from audio to video stops previous playback"
+    },
+    {
+      "id": "FQA-AND-125",
+      "name": "Playback respects audio focus",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "android"
+      ],
+      "steps": [
+        {
+          "name": "Start audio playback",
+          "action": "Play a music item",
+          "expected": "Audio playing"
+        },
+        {
+          "name": "Receive phone call",
+          "action": "Simulate incoming call or notification with audio",
+          "expected": "Playback pauses or ducks audio"
+        },
+        {
+          "name": "End interruption",
+          "action": "Dismiss the call/notification",
+          "expected": "Playback resumes"
+        }
+      ],
+      "tags": [
+        "playback",
+        "audio-focus",
+        "interruption",
+        "phone"
+      ],
+      "estimated_duration": "20s",
+      "expected_result": "Playback respects Android audio focus rules"
+    },
+    {
+      "id": "FQA-AND-126",
+      "name": "Add item to favorites from detail",
+      "category": "functional",
+      "priority": "critical",
+      "platforms": [
+        "android"
+      ],
+      "steps": [
+        {
+          "name": "Open media detail",
+          "action": "Navigate to a media item that is not favorited",
+          "expected": "Favorite button shows unfavorited state"
+        },
+        {
+          "name": "Tap favorite",
+          "action": "Tap favorite/heart button",
+          "expected": "Button transitions to favorited state, optimistic update applied"
+        }
+      ],
+      "tags": [
+        "favorites",
+        "add",
+        "toggle",
+        "optimistic"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Item added to favorites with optimistic local update"
+    },
+    {
+      "id": "FQA-AND-127",
+      "name": "Remove item from favorites",
+      "category": "functional",
+      "priority": "critical",
+      "platforms": [
+        "android"
+      ],
+      "steps": [
+        {
+          "name": "Open favorited item",
+          "action": "Navigate to a media item that is already favorited",
+          "expected": "Favorite button shows favorited state"
+        },
+        {
+          "name": "Tap to unfavorite",
+          "action": "Tap favorite button",
+          "expected": "Button transitions to unfavorited state, API sync in background"
+        }
+      ],
+      "tags": [
+        "favorites",
+        "remove",
+        "toggle",
+        "unfavorite"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Item removed from favorites"
+    },
+    {
+      "id": "FQA-AND-128",
+      "name": "Favorites section on home screen updates",
+      "category": "functional",
+      "priority": "high",
+      "platforms": [
+        "android"
+      ],
+      "steps": [
+        {
+          "name": "Favorite an item",
+          "action": "Add a media item to favorites",
+          "expected": "Favorite toggled"
+        },
+        {
+          "name": "Return to home",
+          "action": "Navigate back to home screen",
+          "expected": "Favorites section updated to include the newly favorited item"
+        }
+      ],
+      "tags": [
+        "favorites",
+        "home",
+        "update",
+        "sync"
+      ],
+      "estimated_duration": "15s",
+      "expected_result": "Home screen favorites section reflects changes"
+    },
+    {
+      "id": "FQA-AND-129",
+      "name": "Browse favorites list",
+      "category": "functional",
+      "priority": "high",
+      "platforms": [
+        "android"
+      ],
+      "steps": [
+        {
+          "name": "Access favorites",
+          "action": "Navigate to favorites list (via home section or dedicated screen)",
+          "expected": "Paginated list of favorited items displayed"
+        },
+        {
+          "name": "Scroll through favorites",
+          "action": "Scroll the favorites list",
+          "expected": "All favorited items visible with titles and metadata"
+        }
+      ],
+      "tags": [
+        "favorites",
+        "browse",
+        "list",
+        "paging"
+      ],
+      "estimated_duration": "15s",
+      "expected_result": "Favorites browsable as paginated list"
+    },
+    {
+      "id": "FQA-AND-130",
+      "name": "Favorites empty state",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "android"
+      ],
+      "steps": [
+        {
+          "name": "Remove all favorites",
+          "action": "Ensure no items are favorited",
+          "expected": "Favorites section/list empty"
+        },
+        {
+          "name": "Verify empty state",
+          "action": "Check favorites display",
+          "expected": "Empty state message or section hidden on home screen"
+        }
+      ],
+      "tags": [
+        "favorites",
+        "empty-state",
+        "no-items"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Favorites empty state handled gracefully"
+    },
+    {
+      "id": "FQA-AND-131",
+      "name": "Add to watchlist",
+      "category": "functional",
+      "priority": "high",
+      "platforms": [
+        "android"
+      ],
+      "steps": [
+        {
+          "name": "Open media detail",
+          "action": "Navigate to a media item",
+          "expected": "Detail screen loaded"
+        },
+        {
+          "name": "Tap add to watchlist",
+          "action": "Tap watchlist/bookmark button",
+          "expected": "Item added to watchlist via API (POST user/watchlist/{mediaId})"
+        }
+      ],
+      "tags": [
+        "watchlist",
+        "add",
+        "collection",
+        "bookmark"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Item added to watchlist"
+    },
+    {
+      "id": "FQA-AND-132",
+      "name": "Remove from watchlist",
+      "category": "functional",
+      "priority": "high",
+      "platforms": [
+        "android"
+      ],
+      "steps": [
+        {
+          "name": "Open watchlisted item",
+          "action": "Navigate to a media item on the watchlist",
+          "expected": "Watchlist button shows active state"
+        },
+        {
+          "name": "Remove from watchlist",
+          "action": "Tap watchlist button to remove",
+          "expected": "Item removed from watchlist via API (DELETE user/watchlist/{mediaId})"
+        }
+      ],
+      "tags": [
+        "watchlist",
+        "remove",
+        "collection"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Item removed from watchlist"
+    },
+    {
+      "id": "FQA-AND-133",
+      "name": "Browse watchlist",
+      "category": "functional",
+      "priority": "high",
+      "platforms": [
+        "android"
+      ],
+      "steps": [
+        {
+          "name": "Navigate to watchlist",
+          "action": "Open the watchlist section",
+          "expected": "Paginated list of watchlisted items displayed"
+        }
+      ],
+      "tags": [
+        "watchlist",
+        "browse",
+        "list"
+      ],
+      "estimated_duration": "15s",
+      "expected_result": "Watchlist items browsable as paginated list"
+    },
+    {
+      "id": "FQA-AND-134",
+      "name": "Continue watching section",
+      "category": "functional",
+      "priority": "critical",
+      "platforms": [
+        "android"
+      ],
+      "steps": [
+        {
+          "name": "Have partially watched items",
+          "action": "Ensure some media items have watch progress > 0",
+          "expected": "Continue watching data available"
+        },
+        {
+          "name": "View continue watching",
+          "action": "Check for continue watching section or navigate to it",
+          "expected": "Partially watched items displayed with progress indicators"
+        }
+      ],
+      "tags": [
+        "continue-watching",
+        "resume",
+        "progress",
+        "section"
+      ],
+      "estimated_duration": "15s",
+      "expected_result": "Continue watching section shows partially watched items"
+    },
+    {
+      "id": "FQA-AND-135",
+      "name": "Continue watching paging",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "android"
+      ],
+      "steps": [
+        {
+          "name": "Have many partially watched items",
+          "action": "Ensure 20+ items have watch progress",
+          "expected": "Continue watching data available"
+        },
+        {
+          "name": "Scroll through list",
+          "action": "Scroll the continue watching list",
+          "expected": "Paging loads additional partially watched items"
+        }
+      ],
+      "tags": [
+        "continue-watching",
+        "paging",
+        "scroll"
+      ],
+      "estimated_duration": "20s",
+      "expected_result": "Continue watching list supports pagination"
+    },
+    {
+      "id": "FQA-AND-136",
+      "name": "Rate a media item",
+      "category": "functional",
+      "priority": "high",
+      "platforms": [
+        "android"
+      ],
+      "steps": [
+        {
+          "name": "Open media detail",
+          "action": "Navigate to a media item",
+          "expected": "Detail screen loaded"
+        },
+        {
+          "name": "Submit rating",
+          "action": "Tap rating control and select a rating value",
+          "expected": "Rating submitted via API (PUT media/{id}/rating), local display updated"
+        }
+      ],
+      "tags": [
+        "rating",
+        "submit",
+        "user-interaction"
+      ],
+      "estimated_duration": "15s",
+      "expected_result": "User rating submitted and displayed"
+    },
+    {
+      "id": "FQA-AND-137",
+      "name": "Favorite persists across app restart",
+      "category": "functional",
+      "priority": "high",
+      "platforms": [
+        "android"
+      ],
+      "steps": [
+        {
+          "name": "Favorite an item",
+          "action": "Add an item to favorites",
+          "expected": "Favorite saved locally and synced"
+        },
+        {
+          "name": "Restart app",
+          "action": "Force-stop and relaunch",
+          "expected": "Favorited item still shows as favorited (persisted in Room DB)"
+        }
+      ],
+      "tags": [
+        "favorites",
+        "persistence",
+        "restart",
+        "room"
+      ],
+      "estimated_duration": "20s",
+      "expected_result": "Favorite status persisted in Room database across restarts"
+    },
+    {
+      "id": "FQA-AND-138",
+      "name": "Watch progress persists offline",
+      "category": "functional",
+      "priority": "high",
+      "platforms": [
+        "android"
+      ],
+      "steps": [
+        {
+          "name": "Watch a video partially",
+          "action": "Play a video for 60 seconds then exit",
+          "expected": "Watch progress saved to local Room DB"
+        },
+        {
+          "name": "Go offline",
+          "action": "Disable network",
+          "expected": "Offline mode active"
+        },
+        {
+          "name": "Check watch progress",
+          "action": "Navigate to the same media item",
+          "expected": "Watch progress indicator shows saved position from local cache"
+        }
+      ],
+      "tags": [
+        "watch-progress",
+        "offline",
+        "persistence",
+        "room"
+      ],
+      "estimated_duration": "30s",
+      "expected_result": "Watch progress available from local cache when offline"
+    },
+    {
+      "id": "FQA-AND-139",
+      "name": "Favorites filter by media type",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "android"
+      ],
+      "steps": [
+        {
+          "name": "Have mixed favorites",
+          "action": "Favorite items of different media types (movies, music, shows)",
+          "expected": "Multiple types favorited"
+        },
+        {
+          "name": "Filter favorites by type",
+          "action": "Apply media type filter to favorites list",
+          "expected": "Only favorites of selected type shown"
+        }
+      ],
+      "tags": [
+        "favorites",
+        "filter",
+        "media-type"
+      ],
+      "estimated_duration": "15s",
+      "expected_result": "Favorites filterable by media type"
+    },
+    {
+      "id": "FQA-AND-140",
+      "name": "Popular media display",
+      "category": "functional",
+      "priority": "high",
+      "platforms": [
+        "android"
+      ],
+      "steps": [
+        {
+          "name": "Check popular section",
+          "action": "View popular/top-rated media section",
+          "expected": "Items ordered by rating, highest first"
+        }
+      ],
+      "tags": [
+        "popular",
+        "top-rated",
+        "section",
+        "browse"
+      ],
+      "estimated_duration": "15s",
+      "expected_result": "Popular media section displays highest-rated items"
+    },
+    {
+      "id": "FQA-AND-141",
+      "name": "Bulk favorite multiple items",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "android"
+      ],
+      "steps": [
+        {
+          "name": "Favorite first item",
+          "action": "Navigate to and favorite item 1",
+          "expected": "Item 1 favorited"
+        },
+        {
+          "name": "Favorite second item",
+          "action": "Navigate to and favorite item 2",
+          "expected": "Item 2 favorited"
+        },
+        {
+          "name": "Favorite third item",
+          "action": "Navigate to and favorite item 3",
+          "expected": "Item 3 favorited"
+        },
+        {
+          "name": "Verify all favorites",
+          "action": "View favorites list",
+          "expected": "All three items present in favorites"
+        }
+      ],
+      "tags": [
+        "favorites",
+        "bulk",
+        "multiple",
+        "add"
+      ],
+      "estimated_duration": "30s",
+      "expected_result": "Multiple items can be favorited sequentially"
+    },
+    {
+      "id": "FQA-AND-142",
+      "name": "Dashboard analytics data",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "android"
+      ],
+      "steps": [
+        {
+          "name": "Access dashboard",
+          "action": "Navigate to analytics/dashboard screen",
+          "expected": "Dashboard data fetched from /api/v1/analytics/dashboard"
+        },
+        {
+          "name": "Verify data display",
+          "action": "Check charts and statistics",
+          "expected": "Statistics displayed including total items, items by type, total size"
+        }
+      ],
+      "tags": [
+        "dashboard",
+        "analytics",
+        "statistics"
+      ],
+      "estimated_duration": "15s",
+      "expected_result": "Dashboard analytics data displayed correctly"
+    },
+    {
+      "id": "FQA-AND-143",
+      "name": "Media statistics overview",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "android"
+      ],
+      "steps": [
+        {
+          "name": "View media stats",
+          "action": "Access media statistics via API (/api/v1/media/stats)",
+          "expected": "Stats loaded"
+        },
+        {
+          "name": "Verify stats",
+          "action": "Check totalItems, byType, byQuality, totalSize, recentAdditions",
+          "expected": "All statistics fields populated with meaningful data"
+        }
+      ],
+      "tags": [
+        "stats",
+        "overview",
+        "media-count",
+        "size"
+      ],
+      "estimated_duration": "15s",
+      "expected_result": "Media statistics overview with all fields populated"
+    },
+    {
+      "id": "FQA-AND-144",
+      "name": "Refresh all media cache",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "android"
+      ],
+      "steps": [
+        {
+          "name": "Trigger full refresh",
+          "action": "Call refreshAllMedia() to sync all items",
+          "expected": "All media items fetched from server (up to 1000) and inserted into Room DB"
+        }
+      ],
+      "tags": [
+        "cache",
+        "refresh",
+        "sync",
+        "room"
+      ],
+      "estimated_duration": "30s",
+      "expected_result": "Full media cache refresh completes successfully"
+    },
+    {
+      "id": "FQA-AND-145",
+      "name": "Clear media cache",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "android"
+      ],
+      "steps": [
+        {
+          "name": "Clear cache",
+          "action": "Trigger cache clear via settings or clearCache()",
+          "expected": "All media items deleted from local Room database"
+        },
+        {
+          "name": "Verify empty local DB",
+          "action": "Check media count",
+          "expected": "Zero items in local database"
+        }
+      ],
+      "tags": [
+        "cache",
+        "clear",
+        "delete",
+        "room"
+      ],
+      "estimated_duration": "15s",
+      "expected_result": "Media cache cleared from local database"
+    },
+    {
+      "id": "FQA-AND-146",
+      "name": "Media types enumeration",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "android"
+      ],
+      "steps": [
+        {
+          "name": "Get all media types",
+          "action": "Query getAllMediaTypes() from DAO",
+          "expected": "Returns list of all distinct media types in local database"
+        }
+      ],
+      "tags": [
+        "media-types",
+        "enum",
+        "database",
+        "dao"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "All media types enumerated from local database"
+    },
+    {
+      "id": "FQA-AND-147",
+      "name": "Count by media type",
+      "category": "functional",
+      "priority": "low",
+      "platforms": [
+        "android"
+      ],
+      "steps": [
+        {
+          "name": "Get count for movies",
+          "action": "Query getCountByType('movie')",
+          "expected": "Returns count of movie items in local database"
+        }
+      ],
+      "tags": [
+        "count",
+        "media-type",
+        "statistics",
+        "dao"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Correct count returned for specific media type"
+    },
+    {
+      "id": "FQA-AND-148",
+      "name": "SMB source status check",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "android"
+      ],
+      "steps": [
+        {
+          "name": "Check SMB status",
+          "action": "Fetch /api/v1/smb/sources/status",
+          "expected": "SMB source status information returned"
+        }
+      ],
+      "tags": [
+        "smb",
+        "status",
+        "source",
+        "network"
+      ],
+      "estimated_duration": "15s",
+      "expected_result": "SMB source status retrieved from server"
+    },
+    {
+      "id": "FQA-AND-149",
+      "name": "SMB health check",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "android"
+      ],
+      "steps": [
+        {
+          "name": "Check SMB health",
+          "action": "Fetch /api/v1/smb/health",
+          "expected": "SMB health information returned"
+        }
+      ],
+      "tags": [
+        "smb",
+        "health",
+        "check"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "SMB health status retrieved"
+    },
+    {
+      "id": "FQA-AND-150",
+      "name": "Reconnect SMB source",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "android"
+      ],
+      "steps": [
+        {
+          "name": "Trigger SMB reconnect",
+          "action": "POST /api/v1/smb/sources/{id}/reconnect",
+          "expected": "Reconnection initiated, status updated"
+        }
+      ],
+      "tags": [
+        "smb",
+        "reconnect",
+        "source",
+        "recovery"
+      ],
+      "estimated_duration": "15s",
+      "expected_result": "SMB source reconnection triggered successfully"
+    },
+    {
+      "id": "FQA-AND-151",
+      "name": "Settings screen layout and sections",
+      "category": "functional",
+      "priority": "critical",
+      "platforms": [
+        "android"
+      ],
+      "steps": [
+        {
+          "name": "Navigate to settings",
+          "action": "Tap settings icon from home screen",
+          "expected": "Settings screen with 'Settings' title, back arrow, About card, and Sign Out card"
+        }
+      ],
+      "tags": [
+        "settings",
+        "layout",
+        "sections",
+        "navigation"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Settings screen displays with proper layout and sections"
+    },
+    {
+      "id": "FQA-AND-152",
+      "name": "Settings back button navigation",
+      "category": "functional",
+      "priority": "high",
+      "platforms": [
+        "android"
+      ],
+      "steps": [
+        {
+          "name": "Tap back arrow",
+          "action": "Tap the back arrow in settings top bar",
+          "expected": "Navigates back to home screen (popBackStack)"
+        }
+      ],
+      "tags": [
+        "settings",
+        "back",
+        "navigation"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Back arrow navigates from settings to home"
+    },
+    {
+      "id": "FQA-AND-153",
+      "name": "Settings about section content",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "android"
+      ],
+      "steps": [
+        {
+          "name": "Check about card",
+          "action": "Read the About card content in settings",
+          "expected": "Title 'About', text 'Catalogizer for Android', subtitle 'Multi-platform media collection manager'"
+        }
+      ],
+      "tags": [
+        "settings",
+        "about",
+        "content",
+        "version"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "About section shows correct app name and description"
+    },
+    {
+      "id": "FQA-AND-154",
+      "name": "Settings sign out card styling",
+      "category": "visual",
+      "priority": "low",
+      "platforms": [
+        "android"
+      ],
+      "steps": [
+        {
+          "name": "Check sign out card",
+          "action": "Inspect the Sign Out card",
+          "expected": "Card uses errorContainer background color, Sign Out title and subtitle in onErrorContainer color, red-styled button with logout icon"
+        }
+      ],
+      "tags": [
+        "settings",
+        "sign-out",
+        "styling",
+        "visual",
+        "material3"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Sign Out card styled with error container colors"
+    },
+    {
+      "id": "FQA-AND-155",
+      "name": "Settings sign out confirmation",
+      "category": "functional",
+      "priority": "critical",
+      "platforms": [
+        "android"
+      ],
+      "steps": [
+        {
+          "name": "Tap Sign Out button",
+          "action": "Tap the Sign Out button in settings",
+          "expected": "User logged out, entire navigation stack cleared (popUpTo 0 inclusive), login screen displayed"
+        }
+      ],
+      "tags": [
+        "settings",
+        "sign-out",
+        "logout",
+        "navigation"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Sign out clears auth state and navigation stack"
+    },
+    {
+      "id": "FQA-AND-156",
+      "name": "Theme follows Material 3 dynamic colors",
+      "category": "visual",
+      "priority": "medium",
+      "platforms": [
+        "android"
+      ],
+      "steps": [
+        {
+          "name": "Check theme on Android 12+",
+          "action": "Verify Material 3 dynamic colors applied from wallpaper",
+          "expected": "App colors derived from system wallpaper (dynamic theming on API 31+)"
+        },
+        {
+          "name": "Check theme on older Android",
+          "action": "Verify fallback Material 3 theme",
+          "expected": "Default Material 3 color scheme applied"
+        }
+      ],
+      "tags": [
+        "theme",
+        "material3",
+        "dynamic-colors",
+        "visual"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Material 3 dynamic theming applied based on Android version"
+    },
+    {
+      "id": "FQA-AND-157",
+      "name": "Dark theme support",
+      "category": "visual",
+      "priority": "high",
+      "platforms": [
+        "android"
+      ],
+      "steps": [
+        {
+          "name": "Enable dark mode",
+          "action": "Set system theme to dark mode via system settings",
+          "expected": "App switches to dark Material 3 theme"
+        },
+        {
+          "name": "Verify colors",
+          "action": "Check background, text, and card colors",
+          "expected": "Dark backgrounds, light text, proper contrast ratios"
+        }
+      ],
+      "tags": [
+        "theme",
+        "dark-mode",
+        "material3",
+        "visual"
+      ],
+      "estimated_duration": "15s",
+      "expected_result": "Dark theme properly applied with correct contrast"
+    },
+    {
+      "id": "FQA-AND-158",
+      "name": "Light theme support",
+      "category": "visual",
+      "priority": "high",
+      "platforms": [
+        "android"
+      ],
+      "steps": [
+        {
+          "name": "Enable light mode",
+          "action": "Set system theme to light mode",
+          "expected": "App switches to light Material 3 theme"
+        },
+        {
+          "name": "Verify colors",
+          "action": "Check background, text, and card colors",
+          "expected": "Light backgrounds, dark text, proper contrast"
+        }
+      ],
+      "tags": [
+        "theme",
+        "light-mode",
+        "material3",
+        "visual"
+      ],
+      "estimated_duration": "15s",
+      "expected_result": "Light theme properly applied with correct contrast"
+    },
+    {
+      "id": "FQA-AND-159",
+      "name": "Server URL reconfiguration from settings",
+      "category": "functional",
+      "priority": "high",
+      "platforms": [
+        "android"
+      ],
+      "steps": [
+        {
+          "name": "Logout to access server config",
+          "action": "Sign out from settings",
+          "expected": "Login screen with server configuration section"
+        },
+        {
+          "name": "Change server URL",
+          "action": "Enter a different server URL and tap Connect",
+          "expected": "New server URL saved and connected"
+        },
+        {
+          "name": "Login to new server",
+          "action": "Login with credentials for the new server",
+          "expected": "Authentication succeeds against new server"
+        }
+      ],
+      "tags": [
+        "settings",
+        "server",
+        "reconfigure",
+        "switch"
+      ],
+      "estimated_duration": "25s",
+      "expected_result": "Server URL can be reconfigured after logout"
+    },
+    {
+      "id": "FQA-AND-160",
+      "name": "System health status check",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "android"
+      ],
+      "steps": [
+        {
+          "name": "Check system health",
+          "action": "Fetch /api/v1/health endpoint",
+          "expected": "Health status returned (200 OK)"
+        }
+      ],
+      "tags": [
+        "settings",
+        "health",
+        "status",
+        "api"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "System health endpoint returns 200 OK"
+    },
+    {
+      "id": "FQA-AND-161",
+      "name": "System status check",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "android"
+      ],
+      "steps": [
+        {
+          "name": "Check system status",
+          "action": "Fetch /api/v1/status endpoint",
+          "expected": "System status information returned including version and component status"
+        }
+      ],
+      "tags": [
+        "settings",
+        "status",
+        "system",
+        "api"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "System status information retrieved"
+    },
+    {
+      "id": "FQA-AND-162",
+      "name": "Auth permissions check",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "android"
+      ],
+      "steps": [
+        {
+          "name": "Check permissions",
+          "action": "Fetch /api/v1/auth/permissions",
+          "expected": "User permissions map returned"
+        }
+      ],
+      "tags": [
+        "settings",
+        "permissions",
+        "auth",
+        "rbac"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "User permissions retrieved successfully"
+    },
+    {
+      "id": "FQA-AND-163",
+      "name": "User profile fetch",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "android"
+      ],
+      "steps": [
+        {
+          "name": "Get profile",
+          "action": "Fetch /api/v1/auth/profile",
+          "expected": "User profile data returned including username and role"
+        }
+      ],
+      "tags": [
+        "settings",
+        "profile",
+        "user",
+        "auth"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "User profile data retrieved"
+    },
+    {
+      "id": "FQA-AND-164",
+      "name": "Change password",
+      "category": "functional",
+      "priority": "high",
+      "platforms": [
+        "android"
+      ],
+      "steps": [
+        {
+          "name": "Submit password change",
+          "action": "POST /api/v1/auth/change-password with current and new password",
+          "expected": "Password changed successfully (200 OK)"
+        },
+        {
+          "name": "Login with new password",
+          "action": "Logout and login with new password",
+          "expected": "Authentication succeeds with new password"
+        }
+      ],
+      "tags": [
+        "settings",
+        "password",
+        "change",
+        "security"
+      ],
+      "estimated_duration": "20s",
+      "expected_result": "Password change completes and new password works"
+    },
+    {
+      "id": "FQA-AND-165",
+      "name": "Update user profile",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "android"
+      ],
+      "steps": [
+        {
+          "name": "Update profile",
+          "action": "PUT /api/v1/auth/profile with updated profile data",
+          "expected": "Profile updated, response contains updated user object"
+        }
+      ],
+      "tags": [
+        "settings",
+        "profile",
+        "update",
+        "user"
+      ],
+      "estimated_duration": "15s",
+      "expected_result": "User profile updated successfully"
+    },
+    {
+      "id": "FQA-AND-166",
+      "name": "Offline mode - app launches without network",
+      "category": "negative",
+      "priority": "critical",
+      "platforms": [
+        "android"
+      ],
+      "steps": [
+        {
+          "name": "Disable all network",
+          "action": "Turn off WiFi and mobile data",
+          "expected": "Device offline"
+        },
+        {
+          "name": "Launch app",
+          "action": "Open Catalogizer",
+          "expected": "App launches with cached data from Room database; error card for failed API calls but no crash"
+        }
+      ],
+      "tags": [
+        "offline",
+        "launch",
+        "cache",
+        "room",
+        "negative"
+      ],
+      "estimated_duration": "15s",
+      "expected_result": "App launches offline with cached data, no crash"
+    },
+    {
+      "id": "FQA-AND-167",
+      "name": "Offline mode - browsing cached content",
+      "category": "functional",
+      "priority": "high",
+      "platforms": [
+        "android"
+      ],
+      "steps": [
+        {
+          "name": "Load data online first",
+          "action": "Browse media while online to populate Room cache",
+          "expected": "Media items cached locally"
+        },
+        {
+          "name": "Go offline",
+          "action": "Disable network",
+          "expected": "Offline mode"
+        },
+        {
+          "name": "Browse cached content",
+          "action": "Navigate home, scroll through items",
+          "expected": "Cached media items displayed from local Room database"
+        }
+      ],
+      "tags": [
+        "offline",
+        "browse",
+        "cache",
+        "room",
+        "fallback"
+      ],
+      "estimated_duration": "20s",
+      "expected_result": "Cached content accessible while offline"
+    },
+    {
+      "id": "FQA-AND-168",
+      "name": "Offline mode - search uses local data",
+      "category": "functional",
+      "priority": "high",
+      "platforms": [
+        "android"
+      ],
+      "steps": [
+        {
+          "name": "Go offline with cached data",
+          "action": "Ensure items cached, then disable network",
+          "expected": "Offline"
+        },
+        {
+          "name": "Search locally",
+          "action": "Type a search query matching cached items",
+          "expected": "Results from local Room database (searchMediaPaging)"
+        }
+      ],
+      "tags": [
+        "offline",
+        "search",
+        "local",
+        "room"
+      ],
+      "estimated_duration": "15s",
+      "expected_result": "Search works offline against local Room database"
+    },
+    {
+      "id": "FQA-AND-169",
+      "name": "Background to foreground transition",
+      "category": "functional",
+      "priority": "high",
+      "platforms": [
+        "android"
+      ],
+      "steps": [
+        {
+          "name": "Login and browse",
+          "action": "Login and navigate to home screen",
+          "expected": "Home screen visible"
+        },
+        {
+          "name": "Background app",
+          "action": "Press home button",
+          "expected": "App moves to background"
+        },
+        {
+          "name": "Resume app",
+          "action": "Tap Catalogizer in recent apps",
+          "expected": "App resumes on same screen with state preserved"
+        }
+      ],
+      "tags": [
+        "lifecycle",
+        "background",
+        "foreground",
+        "resume"
+      ],
+      "estimated_duration": "15s",
+      "expected_result": "App state preserved across background/foreground transitions"
+    },
+    {
+      "id": "FQA-AND-170",
+      "name": "Device rotation preserves state",
+      "category": "functional",
+      "priority": "high",
+      "platforms": [
+        "android"
+      ],
+      "steps": [
+        {
+          "name": "Navigate to search with results",
+          "action": "Search for 'Matrix' and see results",
+          "expected": "Search results displayed"
+        },
+        {
+          "name": "Rotate to landscape",
+          "action": "Rotate device to landscape orientation",
+          "expected": "Screen recomposes, search query and results preserved (ViewModel survives rotation)"
+        },
+        {
+          "name": "Rotate back to portrait",
+          "action": "Rotate back to portrait",
+          "expected": "State preserved again"
+        }
+      ],
+      "tags": [
+        "rotation",
+        "configuration-change",
+        "state",
+        "viewmodel"
+      ],
+      "estimated_duration": "15s",
+      "expected_result": "State preserved across device rotation via ViewModel"
+    },
+    {
+      "id": "FQA-AND-171",
+      "name": "Deep link to media item",
+      "category": "functional",
+      "priority": "high",
+      "platforms": [
+        "android"
+      ],
+      "steps": [
+        {
+          "name": "Trigger deep link",
+          "action": "Open deep link URL pointing to a specific media item",
+          "expected": "App opens (or comes to foreground) and navigates to the media detail screen for the linked item"
+        }
+      ],
+      "tags": [
+        "deep-link",
+        "navigation",
+        "media",
+        "intent"
+      ],
+      "estimated_duration": "15s",
+      "expected_result": "Deep link navigates directly to media detail"
+    },
+    {
+      "id": "FQA-AND-172",
+      "name": "Rapid tapping does not duplicate navigation",
+      "category": "stress",
+      "priority": "high",
+      "platforms": [
+        "android"
+      ],
+      "steps": [
+        {
+          "name": "Rapidly tap search icon",
+          "action": "Quickly tap the search icon 5 times in rapid succession",
+          "expected": "Only one search screen pushed to navigation stack, no duplicates"
+        }
+      ],
+      "tags": [
+        "stress",
+        "rapid-tap",
+        "navigation",
+        "debounce"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Rapid tapping does not create duplicate navigation destinations"
+    },
+    {
+      "id": "FQA-AND-173",
+      "name": "Rapid back button presses",
+      "category": "stress",
+      "priority": "medium",
+      "platforms": [
+        "android"
+      ],
+      "steps": [
+        {
+          "name": "Navigate deep",
+          "action": "Go to home > search > result detail",
+          "expected": "3 screens in back stack"
+        },
+        {
+          "name": "Rapidly press back",
+          "action": "Press back button rapidly 5 times",
+          "expected": "Navigation pops cleanly to home or login, no crash"
+        }
+      ],
+      "tags": [
+        "stress",
+        "back-button",
+        "rapid",
+        "navigation"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Rapid back presses navigate cleanly without crash"
+    },
+    {
+      "id": "FQA-AND-174",
+      "name": "System back gesture",
+      "category": "functional",
+      "priority": "high",
+      "platforms": [
+        "android"
+      ],
+      "steps": [
+        {
+          "name": "Navigate to settings",
+          "action": "Go to settings screen",
+          "expected": "Settings displayed"
+        },
+        {
+          "name": "Swipe back gesture",
+          "action": "Swipe from left edge to navigate back (Android gesture navigation)",
+          "expected": "Navigates back to home screen"
+        }
+      ],
+      "tags": [
+        "gesture",
+        "back",
+        "navigation",
+        "system"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "System back gesture navigates correctly"
+    },
+    {
+      "id": "FQA-AND-175",
+      "name": "Long press on media card",
+      "category": "functional",
+      "priority": "low",
+      "platforms": [
+        "android"
+      ],
+      "steps": [
+        {
+          "name": "Long press a media card",
+          "action": "Long press on a media card in home carousel",
+          "expected": "Context menu or haptic feedback (if implemented), or no crash if not implemented"
+        }
+      ],
+      "tags": [
+        "gesture",
+        "long-press",
+        "context-menu"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Long press handled gracefully"
+    },
+    {
+      "id": "FQA-AND-176",
+      "name": "WebSocket connection for real-time updates",
+      "category": "functional",
+      "priority": "high",
+      "platforms": [
+        "android"
+      ],
+      "steps": [
+        {
+          "name": "Login and observe WebSocket",
+          "action": "Login and check WebSocket connection status",
+          "expected": "WebSocket connected event received"
+        },
+        {
+          "name": "Trigger server-side change",
+          "action": "Add a new media item via API from another client",
+          "expected": "WebSocket MediaUpdate event received, UI refreshes with new data"
+        }
+      ],
+      "tags": [
+        "websocket",
+        "real-time",
+        "update",
+        "push"
+      ],
+      "estimated_duration": "20s",
+      "expected_result": "WebSocket receives real-time media update events"
+    },
+    {
+      "id": "FQA-AND-177",
+      "name": "WebSocket reconnection on disconnect",
+      "category": "negative",
+      "priority": "high",
+      "platforms": [
+        "android"
+      ],
+      "steps": [
+        {
+          "name": "Establish WebSocket",
+          "action": "Login and wait for WebSocket connection",
+          "expected": "WebSocket connected"
+        },
+        {
+          "name": "Simulate disconnect",
+          "action": "Briefly disable and re-enable network",
+          "expected": "WebSocket disconnected event, then automatic reconnection attempt"
+        }
+      ],
+      "tags": [
+        "websocket",
+        "reconnect",
+        "disconnect",
+        "recovery"
+      ],
+      "estimated_duration": "30s",
+      "expected_result": "WebSocket automatically reconnects after disconnect"
+    },
+    {
+      "id": "FQA-AND-178",
+      "name": "WorkManager sync runs periodically",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "android"
+      ],
+      "steps": [
+        {
+          "name": "Check sync worker",
+          "action": "Verify SyncWorker is enqueued with WorkManager",
+          "expected": "Periodic sync work request scheduled"
+        },
+        {
+          "name": "Verify sync execution",
+          "action": "Check WorkManager work status",
+          "expected": "Sync worker runs on schedule and syncs data with server"
+        }
+      ],
+      "tags": [
+        "sync",
+        "workmanager",
+        "background",
+        "periodic"
+      ],
+      "estimated_duration": "30s",
+      "expected_result": "WorkManager periodic sync worker runs correctly"
+    },
+    {
+      "id": "FQA-AND-179",
+      "name": "Sync operations queued offline",
+      "category": "functional",
+      "priority": "high",
+      "platforms": [
+        "android"
+      ],
+      "steps": [
+        {
+          "name": "Go offline",
+          "action": "Disable network",
+          "expected": "Offline"
+        },
+        {
+          "name": "Toggle favorite",
+          "action": "Favorite a media item while offline",
+          "expected": "Favorite toggled locally, sync operation queued in SyncOperationDao"
+        },
+        {
+          "name": "Go online",
+          "action": "Re-enable network",
+          "expected": "Queued sync operations executed, favorite synced to server"
+        }
+      ],
+      "tags": [
+        "sync",
+        "offline",
+        "queue",
+        "sync-operation",
+        "room"
+      ],
+      "estimated_duration": "25s",
+      "expected_result": "Offline operations queued and synced when network returns"
+    },
+    {
+      "id": "FQA-AND-180",
+      "name": "Memory pressure does not crash app",
+      "category": "stress",
+      "priority": "high",
+      "platforms": [
+        "android"
+      ],
+      "steps": [
+        {
+          "name": "Open many screens",
+          "action": "Navigate through login > home > search > settings > back > search multiple times",
+          "expected": "No OOM crash"
+        },
+        {
+          "name": "Load many items",
+          "action": "Search with broad query, scroll through 100+ results",
+          "expected": "Paging keeps memory bounded, no crash"
+        }
+      ],
+      "tags": [
+        "stress",
+        "memory",
+        "oom",
+        "paging"
+      ],
+      "estimated_duration": "30s",
+      "expected_result": "App handles memory pressure without OOM crash"
+    },
+    {
+      "id": "FQA-AND-181",
+      "name": "Process death and restoration",
+      "category": "functional",
+      "priority": "high",
+      "platforms": [
+        "android"
+      ],
+      "steps": [
+        {
+          "name": "Login and navigate",
+          "action": "Login, navigate to search, type a query",
+          "expected": "Search results visible"
+        },
+        {
+          "name": "Kill process",
+          "action": "Kill app process via developer options or adb",
+          "expected": "Process terminated"
+        },
+        {
+          "name": "Restore from recents",
+          "action": "Tap Catalogizer in recent apps",
+          "expected": "App restores, navigation state recovered (or graceful restart to login if token expired)"
+        }
+      ],
+      "tags": [
+        "process-death",
+        "restoration",
+        "state",
+        "lifecycle"
+      ],
+      "estimated_duration": "20s",
+      "expected_result": "App recovers gracefully from process death"
+    },
+    {
+      "id": "FQA-AND-182",
+      "name": "Notification tap opens app",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "android"
+      ],
+      "steps": [
+        {
+          "name": "Receive notification",
+          "action": "Server sends a notification event via WebSocket",
+          "expected": "System notification appears"
+        },
+        {
+          "name": "Tap notification",
+          "action": "Tap the notification in the notification shade",
+          "expected": "App opens to relevant screen based on notification type"
+        }
+      ],
+      "tags": [
+        "notification",
+        "tap",
+        "intent",
+        "navigation"
+      ],
+      "estimated_duration": "15s",
+      "expected_result": "Notification tap opens app to relevant screen"
+    },
+    {
+      "id": "FQA-AND-183",
+      "name": "Share intent for media item",
+      "category": "functional",
+      "priority": "low",
+      "platforms": [
+        "android"
+      ],
+      "steps": [
+        {
+          "name": "Open media detail",
+          "action": "Navigate to a media item",
+          "expected": "Detail screen"
+        },
+        {
+          "name": "Tap share",
+          "action": "Tap share button (if available)",
+          "expected": "Android share sheet opens with media title and deep link URL"
+        }
+      ],
+      "tags": [
+        "share",
+        "intent",
+        "android",
+        "social"
+      ],
+      "estimated_duration": "10s",
+      "expected_result": "Share intent launches Android share sheet"
+    },
+    {
+      "id": "FQA-AND-184",
+      "name": "Cleartext traffic restricted to local networks",
+      "category": "security",
+      "priority": "high",
+      "platforms": [
+        "android"
+      ],
+      "steps": [
+        {
+          "name": "Verify network security config",
+          "action": "Check network_security_config.xml",
+          "expected": "Cleartext only allowed for 10.x.x.x, 192.168.x.x, 127.x.x.x domains"
+        },
+        {
+          "name": "Try remote cleartext",
+          "action": "Attempt connection to non-local HTTP (cleartext) URL",
+          "expected": "Connection blocked by network security config"
+        }
+      ],
+      "tags": [
+        "security",
+        "cleartext",
+        "network-config",
+        "tls"
+      ],
+      "estimated_duration": "15s",
+      "expected_result": "Cleartext traffic restricted to local network ranges"
+    },
+    {
+      "id": "FQA-AND-185",
+      "name": "App handles server version mismatch",
+      "category": "negative",
+      "priority": "medium",
+      "platforms": [
+        "android"
+      ],
+      "steps": [
+        {
+          "name": "Connect to older server",
+          "action": "Configure server URL to an older API version",
+          "expected": "Connection established"
+        },
+        {
+          "name": "Use app features",
+          "action": "Browse, search, and interact with media",
+          "expected": "App handles missing endpoints or changed response shapes gracefully with error messages, no crashes"
+        }
+      ],
+      "tags": [
+        "compatibility",
+        "version-mismatch",
+        "api",
+        "negative"
+      ],
+      "estimated_duration": "20s",
+      "expected_result": "App handles server API version mismatch without crashing"
+    }
+  ]
+}

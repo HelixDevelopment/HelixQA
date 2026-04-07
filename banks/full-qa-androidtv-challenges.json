@@ -1,0 +1,1834 @@
+{
+  "version": "1.0",
+  "name": "Catalogizer Full QA - Android TV",
+  "description": "Comprehensive end-to-end QA test bank for the Catalogizer Android TV app (v2.3.0) on Xiaomi Mi Box 4. Covers all screens, DPAD navigation, media playback, TV home screen channels, deep linking, Watch Next, favorites, settings, search, and edge cases.",
+  "generated": "2026-04-07T12:07:52.703916",
+  "categories": {
+    "functional": "Functional tests for core features",
+    "negative": "Negative test cases",
+    "edge-case": "Edge case scenarios",
+    "stress": "Stress and performance tests"
+  },
+  "challenges": [
+    {
+      "id": "FQA-ATV-001",
+      "name": "App launches from Android TV home screen",
+      "category": "functional",
+      "severity": "critical",
+      "description": "Catalogizer app launches successfully from the Android TV home screen"
+    },
+    {
+      "id": "FQA-ATV-002",
+      "name": "App displays splash or loading screen on launch",
+      "category": "functional",
+      "severity": "high",
+      "description": "Splash/loading screen displays with correct Catalogizer branding"
+    },
+    {
+      "id": "FQA-ATV-003",
+      "name": "First launch shows server configuration",
+      "category": "functional",
+      "severity": "critical",
+      "description": "First launch presents server URL configuration on the login screen"
+    },
+    {
+      "id": "FQA-ATV-004",
+      "name": "Configure server URL via DPAD",
+      "category": "functional",
+      "severity": "critical",
+      "description": "Server URL is successfully entered via DPAD navigation"
+    },
+    {
+      "id": "FQA-ATV-005",
+      "name": "Connect button tests server connectivity",
+      "category": "functional",
+      "severity": "high",
+      "description": "Connect button tests and confirms server connectivity"
+    },
+    {
+      "id": "FQA-ATV-006",
+      "name": "Discover button finds servers on network",
+      "category": "functional",
+      "severity": "high",
+      "description": "Discover button initiates network discovery for Catalogizer API instances"
+    },
+    {
+      "id": "FQA-ATV-007",
+      "name": "Auto-discovery selects single server",
+      "category": "functional",
+      "severity": "medium",
+      "description": "Single discovered server is automatically selected and connected"
+    },
+    {
+      "id": "FQA-ATV-008",
+      "name": "Server URL persists across app restarts",
+      "category": "functional",
+      "severity": "high",
+      "description": "Server URL configuration persists across app restarts"
+    },
+    {
+      "id": "FQA-ATV-009",
+      "name": "Login screen displays correctly on launch",
+      "category": "functional",
+      "severity": "critical",
+      "description": "Login screen displays correctly with all form elements and branding"
+    },
+    {
+      "id": "FQA-ATV-010",
+      "name": "Username field auto-focused on launch",
+      "category": "functional",
+      "severity": "high",
+      "description": "Username field receives auto-focus on login screen load"
+    },
+    {
+      "id": "FQA-ATV-011",
+      "name": "Login with valid credentials",
+      "category": "functional",
+      "severity": "critical",
+      "description": "Valid credentials authenticate successfully and navigate to home screen"
+    },
+    {
+      "id": "FQA-ATV-012",
+      "name": "DPAD navigate to username field",
+      "category": "functional",
+      "severity": "high",
+      "description": "Username field is focusable and shows visible focus indicator via DPAD"
+    },
+    {
+      "id": "FQA-ATV-013",
+      "name": "DPAD_CENTER opens keyboard on username field",
+      "category": "functional",
+      "severity": "critical",
+      "description": "DPAD_CENTER activates the keyboard for text entry in username field"
+    },
+    {
+      "id": "FQA-ATV-014",
+      "name": "Type username via keyboard",
+      "category": "functional",
+      "severity": "critical",
+      "description": "Username text is entered successfully into the field"
+    },
+    {
+      "id": "FQA-ATV-015",
+      "name": "KEYCODE_TAB moves to password field",
+      "category": "functional",
+      "severity": "critical",
+      "description": "KEYCODE_TAB successfully moves focus from username to password field"
+    },
+    {
+      "id": "FQA-ATV-016",
+      "name": "Type password with masking",
+      "category": "functional",
+      "severity": "critical",
+      "description": "Password is entered and masked with dots for security"
+    },
+    {
+      "id": "FQA-ATV-017",
+      "name": "DPAD to Sign In button and press center",
+      "category": "functional",
+      "severity": "critical",
+      "description": "DPAD navigation to Sign In button works and DPAD_CENTER triggers login"
+    },
+    {
+      "id": "FQA-ATV-018",
+      "name": "Login success navigates to home screen",
+      "category": "functional",
+      "severity": "critical",
+      "description": "Successful login navigates to home screen with login screen removed from back stack"
+    },
+    {
+      "id": "FQA-ATV-019",
+      "name": "Login with wrong password shows error",
+      "category": "negative",
+      "severity": "high",
+      "description": "Wrong password displays error message and remains on login screen"
+    },
+    {
+      "id": "FQA-ATV-020",
+      "name": "Login with empty username shows validation error",
+      "category": "negative",
+      "severity": "high",
+      "description": "Empty username triggers client-side validation error"
+    },
+    {
+      "id": "FQA-ATV-021",
+      "name": "Login with empty password shows validation error",
+      "category": "negative",
+      "severity": "high",
+      "description": "Empty password triggers client-side validation error"
+    },
+    {
+      "id": "FQA-ATV-022",
+      "name": "Login with short username shows validation error",
+      "category": "negative",
+      "severity": "medium",
+      "description": "Username under 2 characters triggers validation error"
+    },
+    {
+      "id": "FQA-ATV-023",
+      "name": "Login with short password shows validation error",
+      "category": "negative",
+      "severity": "medium",
+      "description": "Password under 4 characters triggers validation error"
+    },
+    {
+      "id": "FQA-ATV-024",
+      "name": "Saved username restored on login screen",
+      "category": "functional",
+      "severity": "medium",
+      "description": "Previously used username is restored on the login screen"
+    },
+    {
+      "id": "FQA-ATV-025",
+      "name": "Server URL change flow",
+      "category": "functional",
+      "severity": "medium",
+      "description": "Server URL can be changed and tested from the login screen"
+    },
+    {
+      "id": "FQA-ATV-026",
+      "name": "Home screen loads after login",
+      "category": "functional",
+      "severity": "critical",
+      "description": "Home screen loads with TopBar displaying Catalogizer branding and action icons"
+    },
+    {
+      "id": "FQA-ATV-027",
+      "name": "Category rows display on home screen",
+      "category": "functional",
+      "severity": "critical",
+      "description": "Home screen displays category rows with media content"
+    },
+    {
+      "id": "FQA-ATV-028",
+      "name": "Continue Watching rail displays",
+      "category": "functional",
+      "severity": "high",
+      "description": "Continue Watching rail shows partially watched media items"
+    },
+    {
+      "id": "FQA-ATV-029",
+      "name": "Recently Added Movies rail",
+      "category": "functional",
+      "severity": "high",
+      "description": "Recently Added Movies rail displays with movie content cards"
+    },
+    {
+      "id": "FQA-ATV-030",
+      "name": "Recently Added TV Shows rail",
+      "category": "functional",
+      "severity": "high",
+      "description": "Recently Added TV Shows rail displays with TV show content cards"
+    },
+    {
+      "id": "FQA-ATV-031",
+      "name": "Recently Added Music Albums rail",
+      "category": "functional",
+      "severity": "high",
+      "description": "Recently Added Music Albums rail displays with album content cards"
+    },
+    {
+      "id": "FQA-ATV-032",
+      "name": "DPAD left/right scrolls within category row",
+      "category": "functional",
+      "severity": "critical",
+      "description": "DPAD left/right navigates and scrolls within category rows"
+    },
+    {
+      "id": "FQA-ATV-033",
+      "name": "DPAD up/down navigates between rows",
+      "category": "functional",
+      "severity": "critical",
+      "description": "DPAD up/down moves focus between content rails vertically"
+    },
+    {
+      "id": "FQA-ATV-034",
+      "name": "Focus ring visible on selected media card",
+      "category": "functional",
+      "severity": "critical",
+      "description": "Focused media card has a clearly visible focus indicator"
+    },
+    {
+      "id": "FQA-ATV-035",
+      "name": "Poster images load on media cards",
+      "category": "functional",
+      "severity": "high",
+      "description": "Media card poster images load correctly from the server"
+    },
+    {
+      "id": "FQA-ATV-036",
+      "name": "Title text readable on media cards",
+      "category": "functional",
+      "severity": "high",
+      "description": "Media card titles are readable at TV viewing distance"
+    },
+    {
+      "id": "FQA-ATV-037",
+      "name": "Category section headers visible",
+      "category": "functional",
+      "severity": "high",
+      "description": "Category section headers are visible above each content rail"
+    },
+    {
+      "id": "FQA-ATV-038",
+      "name": "Catalog stats header displays",
+      "category": "functional",
+      "severity": "medium",
+      "description": "Catalog stats header shows total items and per-type breakdown chips"
+    },
+    {
+      "id": "FQA-ATV-039",
+      "name": "Top Rated Movies rail",
+      "category": "functional",
+      "severity": "medium",
+      "description": "Top Rated Movies rail appears with rated content"
+    },
+    {
+      "id": "FQA-ATV-040",
+      "name": "Recommended for You rail",
+      "category": "functional",
+      "severity": "medium",
+      "description": "Recommended for You rail displays with suggested content"
+    },
+    {
+      "id": "FQA-ATV-041",
+      "name": "Trending rail",
+      "category": "functional",
+      "severity": "medium",
+      "description": "Trending rail displays with popular content"
+    },
+    {
+      "id": "FQA-ATV-042",
+      "name": "Recently Added Games rail",
+      "category": "functional",
+      "severity": "medium",
+      "description": "Recently Added Games rail displays when games are in the catalog"
+    },
+    {
+      "id": "FQA-ATV-043",
+      "name": "Recently Added Books rail",
+      "category": "functional",
+      "severity": "medium",
+      "description": "Recently Added Books rail displays when books are in the catalog"
+    },
+    {
+      "id": "FQA-ATV-044",
+      "name": "Recently Added Comics rail",
+      "category": "functional",
+      "severity": "medium",
+      "description": "Recently Added Comics rail displays when comics are in the catalog"
+    },
+    {
+      "id": "FQA-ATV-045",
+      "name": "Recently Added Software rail",
+      "category": "functional",
+      "severity": "medium",
+      "description": "Recently Added Software rail displays when software items are in the catalog"
+    },
+    {
+      "id": "FQA-ATV-046",
+      "name": "Search icon navigates to search screen",
+      "category": "functional",
+      "severity": "high",
+      "description": "Search icon in TopBar navigates to the search screen"
+    },
+    {
+      "id": "FQA-ATV-047",
+      "name": "Settings icon navigates to settings screen",
+      "category": "functional",
+      "severity": "high",
+      "description": "Settings icon in TopBar navigates to the settings screen"
+    },
+    {
+      "id": "FQA-ATV-048",
+      "name": "Home screen loading state",
+      "category": "functional",
+      "severity": "high",
+      "description": "Home screen shows loading indicator with descriptive text while data loads"
+    },
+    {
+      "id": "FQA-ATV-049",
+      "name": "Home screen error state with retry",
+      "category": "negative",
+      "severity": "high",
+      "description": "Home screen error state shows retry button that reloads data"
+    },
+    {
+      "id": "FQA-ATV-050",
+      "name": "Empty library state",
+      "category": "functional",
+      "severity": "medium",
+      "description": "Empty catalog shows helpful empty state with guidance to add storage roots"
+    },
+    {
+      "id": "FQA-ATV-051",
+      "name": "Navigate into Movies category",
+      "category": "functional",
+      "severity": "critical",
+      "description": "Selecting a movie card from the Movies rail opens its detail screen"
+    },
+    {
+      "id": "FQA-ATV-052",
+      "name": "Browse movie cards in LazyRow",
+      "category": "functional",
+      "severity": "high",
+      "description": "Movie cards are browsable with DPAD_RIGHT in a horizontally scrolling LazyRow"
+    },
+    {
+      "id": "FQA-ATV-053",
+      "name": "DPAD navigation through media items",
+      "category": "functional",
+      "severity": "critical",
+      "description": "DPAD navigation moves focus correctly through media cards in both directions"
+    },
+    {
+      "id": "FQA-ATV-054",
+      "name": "Select movie opens detail screen",
+      "category": "functional",
+      "severity": "critical",
+      "description": "Pressing DPAD_CENTER on a movie card navigates to its detail screen"
+    },
+    {
+      "id": "FQA-ATV-055",
+      "name": "Navigate back from detail returns to home",
+      "category": "functional",
+      "severity": "critical",
+      "description": "BACK button returns from detail screen to home screen"
+    },
+    {
+      "id": "FQA-ATV-056",
+      "name": "Browse TV Shows category",
+      "category": "functional",
+      "severity": "high",
+      "description": "TV Shows category rail is browsable with DPAD navigation"
+    },
+    {
+      "id": "FQA-ATV-057",
+      "name": "Browse Music category",
+      "category": "functional",
+      "severity": "high",
+      "description": "Music Albums category rail is browsable with DPAD navigation"
+    },
+    {
+      "id": "FQA-ATV-058",
+      "name": "Browse Books category",
+      "category": "functional",
+      "severity": "medium",
+      "description": "Books category rail is browsable"
+    },
+    {
+      "id": "FQA-ATV-059",
+      "name": "Browse Comics category",
+      "category": "functional",
+      "severity": "medium",
+      "description": "Comics category rail is browsable"
+    },
+    {
+      "id": "FQA-ATV-060",
+      "name": "Browse Games category",
+      "category": "functional",
+      "severity": "medium",
+      "description": "Games category rail is browsable"
+    },
+    {
+      "id": "FQA-ATV-061",
+      "name": "Browse Software category",
+      "category": "functional",
+      "severity": "low",
+      "description": "Software category rail is browsable"
+    },
+    {
+      "id": "FQA-ATV-062",
+      "name": "Browse Concerts category",
+      "category": "functional",
+      "severity": "low",
+      "description": "Concerts category rail is browsable"
+    },
+    {
+      "id": "FQA-ATV-063",
+      "name": "Continue Watching item opens player directly",
+      "category": "functional",
+      "severity": "high",
+      "description": "Continue Watching items navigate directly to the media player"
+    },
+    {
+      "id": "FQA-ATV-064",
+      "name": "Top Rated TV Shows rail browsable",
+      "category": "functional",
+      "severity": "medium",
+      "description": "Top Rated TV Shows rail is browsable"
+    },
+    {
+      "id": "FQA-ATV-065",
+      "name": "Top Rated Music rail browsable",
+      "category": "functional",
+      "severity": "medium",
+      "description": "Top Rated Music rail is browsable"
+    },
+    {
+      "id": "FQA-ATV-066",
+      "name": "Top Rated Documents rail browsable",
+      "category": "functional",
+      "severity": "low",
+      "description": "Top Rated Documents rail is browsable"
+    },
+    {
+      "id": "FQA-ATV-067",
+      "name": "Only non-empty rails shown on home",
+      "category": "functional",
+      "severity": "medium",
+      "description": "Home screen only shows category rails that have content"
+    },
+    {
+      "id": "FQA-ATV-068",
+      "name": "Search from home screen via search icon",
+      "category": "functional",
+      "severity": "high",
+      "description": "Search icon on home screen opens the search screen"
+    },
+    {
+      "id": "FQA-ATV-069",
+      "name": "Search with movie title Matrix",
+      "category": "functional",
+      "severity": "high",
+      "description": "Searching for Matrix returns relevant movie results"
+    },
+    {
+      "id": "FQA-ATV-070",
+      "name": "Search with Cyrillic text",
+      "category": "functional",
+      "severity": "medium",
+      "description": "Search accepts and processes Cyrillic text input"
+    },
+    {
+      "id": "FQA-ATV-071",
+      "name": "Search with empty query does nothing",
+      "category": "negative",
+      "severity": "medium",
+      "description": "Empty search query keeps search button disabled"
+    },
+    {
+      "id": "FQA-ATV-072",
+      "name": "Search with long text",
+      "category": "edge-case",
+      "severity": "low",
+      "description": "Long search queries are handled gracefully without crashes"
+    },
+    {
+      "id": "FQA-ATV-073",
+      "name": "Search loading state with overlay",
+      "category": "functional",
+      "severity": "medium",
+      "description": "Search shows a loading overlay with progress indicator"
+    },
+    {
+      "id": "FQA-ATV-074",
+      "name": "Search no results state",
+      "category": "functional",
+      "severity": "medium",
+      "description": "No results state shows helpful message with search tips"
+    },
+    {
+      "id": "FQA-ATV-075",
+      "name": "Search results count display",
+      "category": "functional",
+      "severity": "medium",
+      "description": "Search results count is displayed above the results list"
+    },
+    {
+      "id": "FQA-ATV-076",
+      "name": "Navigate search results with DPAD",
+      "category": "functional",
+      "severity": "high",
+      "description": "Search results are navigable with DPAD and selectable to open detail"
+    },
+    {
+      "id": "FQA-ATV-077",
+      "name": "Clear search results",
+      "category": "functional",
+      "severity": "medium",
+      "description": "Clear button resets search query and results"
+    },
+    {
+      "id": "FQA-ATV-078",
+      "name": "Search field initial state",
+      "category": "functional",
+      "severity": "medium",
+      "description": "Search screen shows initial state with placeholder and instructions"
+    },
+    {
+      "id": "FQA-ATV-079",
+      "name": "Search field auto-focus on open",
+      "category": "functional",
+      "severity": "high",
+      "description": "Search text field receives auto-focus when search screen opens"
+    },
+    {
+      "id": "FQA-ATV-080",
+      "name": "Search with music artist Metallica",
+      "category": "functional",
+      "severity": "medium",
+      "description": "Searching for Metallica returns relevant music results"
+    },
+    {
+      "id": "FQA-ATV-081",
+      "name": "Search with TV show Breaking Bad",
+      "category": "functional",
+      "severity": "medium",
+      "description": "Searching for Breaking Bad returns relevant TV show results"
+    },
+    {
+      "id": "FQA-ATV-082",
+      "name": "Search with Inception",
+      "category": "functional",
+      "severity": "medium",
+      "description": "Searching for Inception returns relevant movie results"
+    },
+    {
+      "id": "FQA-ATV-083",
+      "name": "Search error handling",
+      "category": "negative",
+      "severity": "medium",
+      "description": "Search error is displayed in error container when API fails"
+    },
+    {
+      "id": "FQA-ATV-084",
+      "name": "DPAD_RIGHT from search field to Search button",
+      "category": "functional",
+      "severity": "high",
+      "description": "DPAD_RIGHT from search field moves focus to the Search button"
+    },
+    {
+      "id": "FQA-ATV-085",
+      "name": "DPAD_LEFT from Search button to search field",
+      "category": "functional",
+      "severity": "high",
+      "description": "DPAD_LEFT from Search button returns focus to search field"
+    },
+    {
+      "id": "FQA-ATV-086",
+      "name": "Enter key submits search from text field",
+      "category": "functional",
+      "severity": "high",
+      "description": "Enter key triggers search directly from the text field"
+    },
+    {
+      "id": "FQA-ATV-087",
+      "name": "IME Search action submits search",
+      "category": "functional",
+      "severity": "medium",
+      "description": "IME Search action on keyboard triggers search"
+    },
+    {
+      "id": "FQA-ATV-088",
+      "name": "Search back navigation",
+      "category": "functional",
+      "severity": "high",
+      "description": "BACK button from search screen returns to home screen"
+    },
+    {
+      "id": "FQA-ATV-089",
+      "name": "Stats chips show type breakdown",
+      "category": "functional",
+      "severity": "medium",
+      "description": "Stats chips display per-type entity counts in descending order"
+    },
+    {
+      "id": "FQA-ATV-090",
+      "name": "Media card 240dp width and spacing",
+      "category": "functional",
+      "severity": "medium",
+      "description": "Media cards maintain correct 240dp width with 16dp spacing"
+    },
+    {
+      "id": "FQA-ATV-091",
+      "name": "Detail screen loads for movie",
+      "category": "functional",
+      "severity": "critical",
+      "description": "Movie detail screen loads with complete movie information"
+    },
+    {
+      "id": "FQA-ATV-092",
+      "name": "Detail screen loads for TV show",
+      "category": "functional",
+      "severity": "high",
+      "description": "TV show detail screen loads with correct type badge and metadata"
+    },
+    {
+      "id": "FQA-ATV-093",
+      "name": "Detail screen loads for music album",
+      "category": "functional",
+      "severity": "high",
+      "description": "Music album detail screen loads with correct information"
+    },
+    {
+      "id": "FQA-ATV-094",
+      "name": "Cover art/poster displayed in hero section",
+      "category": "functional",
+      "severity": "high",
+      "description": "Hero section displays cover art image with gradient overlay"
+    },
+    {
+      "id": "FQA-ATV-095",
+      "name": "Title and metadata badges visible",
+      "category": "functional",
+      "severity": "high",
+      "description": "Title and metadata badges display correctly on detail screen"
+    },
+    {
+      "id": "FQA-ATV-096",
+      "name": "Description/synopsis visible",
+      "category": "functional",
+      "severity": "high",
+      "description": "Synopsis section displays the media description"
+    },
+    {
+      "id": "FQA-ATV-097",
+      "name": "Play button focused by default",
+      "category": "functional",
+      "severity": "critical",
+      "description": "Play button receives auto-focus when detail screen content loads"
+    },
+    {
+      "id": "FQA-ATV-098",
+      "name": "Favorite button toggles state",
+      "category": "functional",
+      "severity": "high",
+      "description": "Favorite button toggles between filled and outline heart icons"
+    },
+    {
+      "id": "FQA-ATV-099",
+      "name": "Back button in hero section",
+      "category": "functional",
+      "severity": "high",
+      "description": "Back button in hero section navigates to previous screen"
+    },
+    {
+      "id": "FQA-ATV-100",
+      "name": "Back to Library button works",
+      "category": "functional",
+      "severity": "high",
+      "description": "Back to Library button returns to previous screen"
+    },
+    {
+      "id": "FQA-ATV-101",
+      "name": "Rating display with star icon",
+      "category": "functional",
+      "severity": "medium",
+      "description": "Rating displays with gold star icon and numeric value"
+    },
+    {
+      "id": "FQA-ATV-102",
+      "name": "Media type badge display",
+      "category": "functional",
+      "severity": "medium",
+      "description": "Media type badge displays correctly with uppercase text"
+    },
+    {
+      "id": "FQA-ATV-103",
+      "name": "Quality badge display",
+      "category": "functional",
+      "severity": "medium",
+      "description": "Quality badge displays in green with uppercase quality value"
+    },
+    {
+      "id": "FQA-ATV-104",
+      "name": "File size information",
+      "category": "functional",
+      "severity": "low",
+      "description": "File size information displays in human-readable format"
+    },
+    {
+      "id": "FQA-ATV-105",
+      "name": "Detail screen gradient overlay for hero",
+      "category": "functional",
+      "severity": "medium",
+      "description": "Hero poster has gradient overlay ensuring metadata text readability"
+    },
+    {
+      "id": "FQA-ATV-106",
+      "name": "Detail screen without cover art shows gradient fallback",
+      "category": "functional",
+      "severity": "medium",
+      "description": "Items without cover art show gradient color fallback in hero section"
+    },
+    {
+      "id": "FQA-ATV-107",
+      "name": "Detail screen error state with retry",
+      "category": "negative",
+      "severity": "high",
+      "description": "Detail screen error state shows retry option that reloads data"
+    },
+    {
+      "id": "FQA-ATV-108",
+      "name": "Detail screen scrollable with long content",
+      "category": "functional",
+      "severity": "medium",
+      "description": "Detail screen scrolls smoothly with long content"
+    },
+    {
+      "id": "FQA-ATV-109",
+      "name": "Play button starts playback",
+      "category": "functional",
+      "severity": "critical",
+      "description": "Play button navigates to the media player screen"
+    },
+    {
+      "id": "FQA-ATV-110",
+      "name": "Favorite toggle handles API error gracefully",
+      "category": "negative",
+      "severity": "medium",
+      "description": "Favorite toggle reverts on API failure with optimistic UI rollback"
+    },
+    {
+      "id": "FQA-ATV-111",
+      "name": "Year display in metadata",
+      "category": "functional",
+      "severity": "medium",
+      "description": "Year metadata displays correctly on detail screen"
+    },
+    {
+      "id": "FQA-ATV-112",
+      "name": "Detail screen responsive layout (compact)",
+      "category": "functional",
+      "severity": "medium",
+      "description": "Detail screen adapts to compact layout on smaller screens"
+    },
+    {
+      "id": "FQA-ATV-113",
+      "name": "Detail screen dark background",
+      "category": "functional",
+      "severity": "low",
+      "description": "Detail screen uses near-black background for optimal TV viewing"
+    },
+    {
+      "id": "FQA-ATV-114",
+      "name": "Cover URL resolution with server base",
+      "category": "functional",
+      "severity": "medium",
+      "description": "Relative cover URLs are resolved with server base URL for correct image loading"
+    },
+    {
+      "id": "FQA-ATV-115",
+      "name": "Media not found detail error",
+      "category": "negative",
+      "severity": "medium",
+      "description": "Non-existent media ID shows not found error state"
+    },
+    {
+      "id": "FQA-ATV-116",
+      "name": "Play video file from detail screen",
+      "category": "functional",
+      "severity": "critical",
+      "description": "Video playback starts from the detail screen Play button"
+    },
+    {
+      "id": "FQA-ATV-117",
+      "name": "Player controls appear on any key press",
+      "category": "functional",
+      "severity": "critical",
+      "description": "Player controls overlay appears on any key press"
+    },
+    {
+      "id": "FQA-ATV-118",
+      "name": "Play/pause via DPAD_CENTER",
+      "category": "functional",
+      "severity": "critical",
+      "description": "DPAD_CENTER toggles play/pause during video playback"
+    },
+    {
+      "id": "FQA-ATV-119",
+      "name": "Seek forward via DPAD_RIGHT",
+      "category": "functional",
+      "severity": "high",
+      "description": "DPAD_RIGHT seeks forward 10 seconds"
+    },
+    {
+      "id": "FQA-ATV-120",
+      "name": "Seek backward via DPAD_LEFT",
+      "category": "functional",
+      "severity": "high",
+      "description": "DPAD_LEFT seeks backward 10 seconds"
+    },
+    {
+      "id": "FQA-ATV-121",
+      "name": "Playback speed control",
+      "category": "functional",
+      "severity": "medium",
+      "description": "Playback speed can be changed via the speed menu"
+    },
+    {
+      "id": "FQA-ATV-122",
+      "name": "Subtitle toggle",
+      "category": "functional",
+      "severity": "medium",
+      "description": "Subtitles can be toggled on/off from the subtitle menu"
+    },
+    {
+      "id": "FQA-ATV-123",
+      "name": "Audio track selection",
+      "category": "functional",
+      "severity": "medium",
+      "description": "Audio track can be switched from the audio menu"
+    },
+    {
+      "id": "FQA-ATV-124",
+      "name": "Exit playback via BACK",
+      "category": "functional",
+      "severity": "critical",
+      "description": "BACK button exits playback and returns to previous screen"
+    },
+    {
+      "id": "FQA-ATV-125",
+      "name": "BACK closes overlay menus before exiting",
+      "category": "functional",
+      "severity": "high",
+      "description": "BACK first closes open menus, then exits player on second press"
+    },
+    {
+      "id": "FQA-ATV-126",
+      "name": "Seekbar position and duration display",
+      "category": "functional",
+      "severity": "high",
+      "description": "Seekbar shows position and duration in correct time format"
+    },
+    {
+      "id": "FQA-ATV-127",
+      "name": "Buffer progress indicator",
+      "category": "functional",
+      "severity": "medium",
+      "description": "Buffer progress indicator shows how much content is buffered ahead"
+    },
+    {
+      "id": "FQA-ATV-128",
+      "name": "Controls auto-hide after 5 seconds",
+      "category": "functional",
+      "severity": "high",
+      "description": "Player controls auto-hide after 5 seconds of inactivity during playback"
+    },
+    {
+      "id": "FQA-ATV-129",
+      "name": "Controls do not auto-hide when paused",
+      "category": "functional",
+      "severity": "medium",
+      "description": "Controls stay visible when playback is paused"
+    },
+    {
+      "id": "FQA-ATV-130",
+      "name": "VLC-style orange accent on player controls",
+      "category": "functional",
+      "severity": "low",
+      "description": "Player controls use VLC-style orange accent color"
+    },
+    {
+      "id": "FQA-ATV-131",
+      "name": "Title displayed in player top bar",
+      "category": "functional",
+      "severity": "medium",
+      "description": "Player top bar displays the correct media title"
+    },
+    {
+      "id": "FQA-ATV-132",
+      "name": "Stream error handling",
+      "category": "negative",
+      "severity": "high",
+      "description": "Stream error shows friendly error UI with retry option"
+    },
+    {
+      "id": "FQA-ATV-133",
+      "name": "Stream loading state",
+      "category": "functional",
+      "severity": "high",
+      "description": "Player shows loading indicator while stream URL resolves"
+    },
+    {
+      "id": "FQA-ATV-134",
+      "name": "Buffering state display",
+      "category": "functional",
+      "severity": "medium",
+      "description": "Player shows buffering indicator while content buffers"
+    },
+    {
+      "id": "FQA-ATV-135",
+      "name": "Stream retry after error",
+      "category": "functional",
+      "severity": "medium",
+      "description": "Retry button re-attempts stream resolution"
+    },
+    {
+      "id": "FQA-ATV-136",
+      "name": "Auth token included in stream requests",
+      "category": "functional",
+      "severity": "high",
+      "description": "Stream requests include Bearer token for authenticated playback"
+    },
+    {
+      "id": "FQA-ATV-137",
+      "name": "Seek via slider interaction",
+      "category": "functional",
+      "severity": "medium",
+      "description": "Slider interaction seeks to the selected position"
+    },
+    {
+      "id": "FQA-ATV-138",
+      "name": "Speed display updates in title bar",
+      "category": "functional",
+      "severity": "low",
+      "description": "Non-1.0x speed is displayed in the title bar area"
+    },
+    {
+      "id": "FQA-ATV-139",
+      "name": "Seek forward/backward buttons in control row",
+      "category": "functional",
+      "severity": "medium",
+      "description": "Seek forward/backward buttons in control row work correctly"
+    },
+    {
+      "id": "FQA-ATV-140",
+      "name": "Player disposes ExoPlayer on exit",
+      "category": "functional",
+      "severity": "medium",
+      "description": "ExoPlayer is properly released when leaving the player screen"
+    },
+    {
+      "id": "FQA-ATV-141",
+      "name": "Catalogizer Picks channel appears on TV home",
+      "category": "functional",
+      "severity": "critical",
+      "description": "Catalogizer Picks default channel appears on the Android TV home screen"
+    },
+    {
+      "id": "FQA-ATV-142",
+      "name": "Default channel has program content",
+      "category": "functional",
+      "severity": "critical",
+      "description": "Catalogizer Picks channel contains program cards with media content"
+    },
+    {
+      "id": "FQA-ATV-143",
+      "name": "DPAD navigate to channel programs",
+      "category": "functional",
+      "severity": "high",
+      "description": "DPAD navigation works within channel program cards on TV home"
+    },
+    {
+      "id": "FQA-ATV-144",
+      "name": "Select program deep-links to app",
+      "category": "functional",
+      "severity": "critical",
+      "description": "Selecting a channel program deep-links into the Catalogizer app"
+    },
+    {
+      "id": "FQA-ATV-145",
+      "name": "Per-category Movies channel exists",
+      "category": "functional",
+      "severity": "high",
+      "description": "Per-category Movies channel appears on TV home when movies exist"
+    },
+    {
+      "id": "FQA-ATV-146",
+      "name": "Per-category TV Shows channel exists",
+      "category": "functional",
+      "severity": "high",
+      "description": "Per-category TV Shows channel appears when TV shows exist"
+    },
+    {
+      "id": "FQA-ATV-147",
+      "name": "Per-category Music channel exists",
+      "category": "functional",
+      "severity": "high",
+      "description": "Per-category Music channel appears when music exists in catalog"
+    },
+    {
+      "id": "FQA-ATV-148",
+      "name": "Category channel has relevant content",
+      "category": "functional",
+      "severity": "high",
+      "description": "Per-category channel only contains media items of the correct type"
+    },
+    {
+      "id": "FQA-ATV-149",
+      "name": "Watch Next row shows partially-watched items",
+      "category": "functional",
+      "severity": "critical",
+      "description": "Partially watched items appear in the Watch Next row on TV home"
+    },
+    {
+      "id": "FQA-ATV-150",
+      "name": "Watch Next shows next episode for TV shows",
+      "category": "functional",
+      "severity": "high",
+      "description": "Watch Next auto-surfaces the next episode for TV shows"
+    },
+    {
+      "id": "FQA-ATV-151",
+      "name": "Deep link opens correct media detail",
+      "category": "functional",
+      "severity": "critical",
+      "description": "Deep link with media ID routes to the correct detail screen"
+    },
+    {
+      "id": "FQA-ATV-152",
+      "name": "Deep link with type=movie opens movie detail",
+      "category": "functional",
+      "severity": "high",
+      "description": "Movie deep link opens the movie detail screen"
+    },
+    {
+      "id": "FQA-ATV-153",
+      "name": "Deep link with type=tv_episode plays episode",
+      "category": "functional",
+      "severity": "high",
+      "description": "TV episode deep link with IMMEDIATE_PLAY opens player directly"
+    },
+    {
+      "id": "FQA-ATV-154",
+      "name": "Deep link with type=music plays music",
+      "category": "functional",
+      "severity": "high",
+      "description": "Music deep link with IMMEDIATE_PLAY opens player for audio"
+    },
+    {
+      "id": "FQA-ATV-155",
+      "name": "Deep link with action=play overrides settings",
+      "category": "functional",
+      "severity": "high",
+      "description": "URI action=play parameter overrides per-category launch settings"
+    },
+    {
+      "id": "FQA-ATV-156",
+      "name": "Deep link with action=detail overrides settings",
+      "category": "functional",
+      "severity": "medium",
+      "description": "URI action=detail parameter overrides IMMEDIATE_PLAY setting"
+    },
+    {
+      "id": "FQA-ATV-157",
+      "name": "Channel Tap Behavior settings accessible",
+      "category": "functional",
+      "severity": "high",
+      "description": "Channel Tap Behavior settings section is accessible in Settings"
+    },
+    {
+      "id": "FQA-ATV-158",
+      "name": "Configure per-category launch action detail",
+      "category": "functional",
+      "severity": "high",
+      "description": "Per-category launch action can be set to Detail Screen"
+    },
+    {
+      "id": "FQA-ATV-159",
+      "name": "Configure per-category launch action play immediately",
+      "category": "functional",
+      "severity": "high",
+      "description": "Per-category launch action can be set to Play Immediately"
+    },
+    {
+      "id": "FQA-ATV-160",
+      "name": "Channels update after content changes",
+      "category": "functional",
+      "severity": "high",
+      "description": "Channel programs update when catalog content changes"
+    },
+    {
+      "id": "FQA-ATV-161",
+      "name": "Channels cleaned up on logout",
+      "category": "functional",
+      "severity": "critical",
+      "description": "Logout removes all channels, Watch Next entries, and cancels sync worker"
+    },
+    {
+      "id": "FQA-ATV-162",
+      "name": "Re-login recreates channels",
+      "category": "functional",
+      "severity": "high",
+      "description": "Channels are recreated after re-login"
+    },
+    {
+      "id": "FQA-ATV-163",
+      "name": "WorkManager sync triggers channel update",
+      "category": "functional",
+      "severity": "medium",
+      "description": "WorkManager periodic sync updates channel content"
+    },
+    {
+      "id": "FQA-ATV-164",
+      "name": "Channel program images load",
+      "category": "functional",
+      "severity": "high",
+      "description": "Channel program cards display poster images correctly"
+    },
+    {
+      "id": "FQA-ATV-165",
+      "name": "Channel program titles correct",
+      "category": "functional",
+      "severity": "high",
+      "description": "Channel program titles match their corresponding media entities"
+    },
+    {
+      "id": "FQA-ATV-166",
+      "name": "Deep link without auth redirects to login",
+      "category": "functional",
+      "severity": "high",
+      "description": "Deep link without authentication redirects to login with pending link"
+    },
+    {
+      "id": "FQA-ATV-167",
+      "name": "Deep link invalid URI handled gracefully",
+      "category": "negative",
+      "severity": "medium",
+      "description": "Invalid deep link URI is handled gracefully without crash"
+    },
+    {
+      "id": "FQA-ATV-168",
+      "name": "Audio without external metadata plays immediately",
+      "category": "functional",
+      "severity": "medium",
+      "description": "Audio without external metadata deep-links to immediate playback"
+    },
+    {
+      "id": "FQA-ATV-169",
+      "name": "App launch triggers channel sync",
+      "category": "functional",
+      "severity": "medium",
+      "description": "App launch triggers channel content sync"
+    },
+    {
+      "id": "FQA-ATV-170",
+      "name": "Multiple media types create separate channels",
+      "category": "functional",
+      "severity": "medium",
+      "description": "Each media type with content gets its own TV home channel"
+    },
+    {
+      "id": "FQA-ATV-171",
+      "name": "Channel settings show only active media types",
+      "category": "functional",
+      "severity": "medium",
+      "description": "Channel settings only show media types that have actual content"
+    },
+    {
+      "id": "FQA-ATV-172",
+      "name": "Channel settings radio buttons focusable via DPAD",
+      "category": "functional",
+      "severity": "medium",
+      "description": "Channel settings radio buttons are DPAD-focusable with visible focus indicators"
+    },
+    {
+      "id": "FQA-ATV-173",
+      "name": "Watch Next cleared on logout",
+      "category": "functional",
+      "severity": "high",
+      "description": "Watch Next entries from Catalogizer are cleared on logout"
+    },
+    {
+      "id": "FQA-ATV-174",
+      "name": "Sync worker cancelled on logout",
+      "category": "functional",
+      "severity": "medium",
+      "description": "Periodic sync worker is cancelled on logout"
+    },
+    {
+      "id": "FQA-ATV-175",
+      "name": "Deep link with non-existent type falls back to DETAIL",
+      "category": "negative",
+      "severity": "medium",
+      "description": "Unknown media type in deep link falls back to detail screen"
+    },
+    {
+      "id": "FQA-ATV-176",
+      "name": "Add movie to favorites from detail",
+      "category": "functional",
+      "severity": "high",
+      "description": "Movie is added to favorites from detail screen"
+    },
+    {
+      "id": "FQA-ATV-177",
+      "name": "Add music to favorites from detail",
+      "category": "functional",
+      "severity": "high",
+      "description": "Music item is added to favorites from detail screen"
+    },
+    {
+      "id": "FQA-ATV-178",
+      "name": "Remove from favorites",
+      "category": "functional",
+      "severity": "high",
+      "description": "Item is removed from favorites when Favorite button toggled again"
+    },
+    {
+      "id": "FQA-ATV-179",
+      "name": "Favorite state persists across screen transitions",
+      "category": "functional",
+      "severity": "medium",
+      "description": "Favorite state persists when navigating away and returning"
+    },
+    {
+      "id": "FQA-ATV-180",
+      "name": "Favorite toggle optimistic update",
+      "category": "functional",
+      "severity": "medium",
+      "description": "Favorite toggle applies optimistic UI update before API confirmation"
+    },
+    {
+      "id": "FQA-ATV-181",
+      "name": "Favorite revert on API error",
+      "category": "negative",
+      "severity": "medium",
+      "description": "Favorite toggle reverts on API failure"
+    },
+    {
+      "id": "FQA-ATV-182",
+      "name": "Add TV show to favorites",
+      "category": "functional",
+      "severity": "medium",
+      "description": "TV show can be added to favorites"
+    },
+    {
+      "id": "FQA-ATV-183",
+      "name": "Add game to favorites",
+      "category": "functional",
+      "severity": "low",
+      "description": "Game can be added to favorites"
+    },
+    {
+      "id": "FQA-ATV-184",
+      "name": "Add book to favorites",
+      "category": "functional",
+      "severity": "low",
+      "description": "Book can be added to favorites"
+    },
+    {
+      "id": "FQA-ATV-185",
+      "name": "Favorite multiple items sequentially",
+      "category": "functional",
+      "severity": "medium",
+      "description": "Multiple items can be favorited sequentially with persistent state"
+    },
+    {
+      "id": "FQA-ATV-186",
+      "name": "Favorite button DPAD accessible",
+      "category": "functional",
+      "severity": "high",
+      "description": "Favorite button is accessible via DPAD navigation on detail screen"
+    },
+    {
+      "id": "FQA-ATV-187",
+      "name": "Favorite with different entity types",
+      "category": "functional",
+      "severity": "medium",
+      "description": "Favorite toggle correctly passes entity type to API for different media types"
+    },
+    {
+      "id": "FQA-ATV-188",
+      "name": "Favorite icon state reflects API check",
+      "category": "functional",
+      "severity": "medium",
+      "description": "Favorite icon reflects server-side favorite status on load"
+    },
+    {
+      "id": "FQA-ATV-189",
+      "name": "Unfavorited item shows outline heart",
+      "category": "functional",
+      "severity": "medium",
+      "description": "Non-favorited items show outline heart icon"
+    },
+    {
+      "id": "FQA-ATV-190",
+      "name": "Favorite null entity type defaults to movie",
+      "category": "edge-case",
+      "severity": "low",
+      "description": "Null mediaType defaults to movie for favorite API calls"
+    },
+    {
+      "id": "FQA-ATV-191",
+      "name": "Favorite button visual states",
+      "category": "functional",
+      "severity": "medium",
+      "description": "Favorite button shows correct icon for both states"
+    },
+    {
+      "id": "FQA-ATV-192",
+      "name": "Multiple rapid favorite toggles",
+      "category": "edge-case",
+      "severity": "medium",
+      "description": "Rapid favorite toggles do not cause crashes or inconsistent state"
+    },
+    {
+      "id": "FQA-ATV-193",
+      "name": "Favorite check on detail load",
+      "category": "functional",
+      "severity": "medium",
+      "description": "Favorite status is checked from API when detail screen loads"
+    },
+    {
+      "id": "FQA-ATV-194",
+      "name": "Favorite from search result detail",
+      "category": "functional",
+      "severity": "medium",
+      "description": "Items can be favorited from detail screens accessed via search"
+    },
+    {
+      "id": "FQA-ATV-195",
+      "name": "Favorite from deep link detail",
+      "category": "functional",
+      "severity": "medium",
+      "description": "Items can be favorited from detail screens accessed via deep link"
+    },
+    {
+      "id": "FQA-ATV-196",
+      "name": "Navigate to Settings screen",
+      "category": "functional",
+      "severity": "high",
+      "description": "Settings screen accessible from home screen TopBar"
+    },
+    {
+      "id": "FQA-ATV-197",
+      "name": "Playback Settings section",
+      "category": "functional",
+      "severity": "high",
+      "description": "Playback Settings section displays with auto-play toggle and quality selector"
+    },
+    {
+      "id": "FQA-ATV-198",
+      "name": "Auto Play Next Episode toggle",
+      "category": "functional",
+      "severity": "high",
+      "description": "Auto Play Next Episode toggle works correctly"
+    },
+    {
+      "id": "FQA-ATV-199",
+      "name": "Streaming Quality selector",
+      "category": "functional",
+      "severity": "high",
+      "description": "Streaming quality can be changed between Auto, High, Medium, Low"
+    },
+    {
+      "id": "FQA-ATV-200",
+      "name": "Subtitle Settings section",
+      "category": "functional",
+      "severity": "high",
+      "description": "Subtitle Settings section displays with toggle and language options"
+    },
+    {
+      "id": "FQA-ATV-201",
+      "name": "Enable Subtitles toggle",
+      "category": "functional",
+      "severity": "medium",
+      "description": "Enable Subtitles toggle controls subtitle feature and language selector state"
+    },
+    {
+      "id": "FQA-ATV-202",
+      "name": "Subtitle language selection",
+      "category": "functional",
+      "severity": "medium",
+      "description": "Subtitle language can be selected from available options"
+    },
+    {
+      "id": "FQA-ATV-203",
+      "name": "Language options disabled when subtitles off",
+      "category": "functional",
+      "severity": "medium",
+      "description": "Language options are visually disabled when subtitles are turned off"
+    },
+    {
+      "id": "FQA-ATV-204",
+      "name": "Notifications section",
+      "category": "functional",
+      "severity": "medium",
+      "description": "Notifications section allows toggling notification preferences"
+    },
+    {
+      "id": "FQA-ATV-205",
+      "name": "Account section with Logout button",
+      "category": "functional",
+      "severity": "high",
+      "description": "Account section displays with red Logout button"
+    },
+    {
+      "id": "FQA-ATV-206",
+      "name": "Logout flow",
+      "category": "functional",
+      "severity": "critical",
+      "description": "Logout navigates to login screen with cleared back stack"
+    },
+    {
+      "id": "FQA-ATV-207",
+      "name": "Logout cleans up channels",
+      "category": "functional",
+      "severity": "high",
+      "description": "Logout removes all Catalogizer channels from TV home screen"
+    },
+    {
+      "id": "FQA-ATV-208",
+      "name": "Settings persist after app restart",
+      "category": "functional",
+      "severity": "high",
+      "description": "All settings persist across app restarts via DataStore"
+    },
+    {
+      "id": "FQA-ATV-209",
+      "name": "DPAD navigation in settings forms",
+      "category": "functional",
+      "severity": "high",
+      "description": "DPAD navigation works correctly through all settings form elements"
+    },
+    {
+      "id": "FQA-ATV-210",
+      "name": "Settings Back button",
+      "category": "functional",
+      "severity": "high",
+      "description": "Settings Back button returns to home screen"
+    },
+    {
+      "id": "FQA-ATV-211",
+      "name": "Settings focus indicators on toggle rows",
+      "category": "functional",
+      "severity": "medium",
+      "description": "Toggle rows show visible focus border indicator"
+    },
+    {
+      "id": "FQA-ATV-212",
+      "name": "Settings focus indicator on Logout button",
+      "category": "functional",
+      "severity": "medium",
+      "description": "Logout button has distinct error-tone focus ring"
+    },
+    {
+      "id": "FQA-ATV-213",
+      "name": "Settings section titles visible",
+      "category": "functional",
+      "severity": "medium",
+      "description": "All settings sections have visible white section title headers"
+    },
+    {
+      "id": "FQA-ATV-214",
+      "name": "Settings WCAG AA contrast compliance",
+      "category": "functional",
+      "severity": "medium",
+      "description": "Settings text colors meet WCAG AA contrast requirements"
+    },
+    {
+      "id": "FQA-ATV-215",
+      "name": "Settings auto-save via LaunchedEffect",
+      "category": "functional",
+      "severity": "medium",
+      "description": "Settings are auto-saved immediately on change via LaunchedEffect"
+    },
+    {
+      "id": "FQA-ATV-216",
+      "name": "Open search screen from home",
+      "category": "functional",
+      "severity": "high",
+      "description": "Search screen opens from home screen"
+    },
+    {
+      "id": "FQA-ATV-217",
+      "name": "Type search query via keyboard",
+      "category": "functional",
+      "severity": "critical",
+      "description": "Search query can be typed via keyboard input"
+    },
+    {
+      "id": "FQA-ATV-218",
+      "name": "Search returns results",
+      "category": "functional",
+      "severity": "critical",
+      "description": "Search with valid query returns and displays results"
+    },
+    {
+      "id": "FQA-ATV-219",
+      "name": "Navigate results with DPAD",
+      "category": "functional",
+      "severity": "high",
+      "description": "Search results are navigable with DPAD_DOWN"
+    },
+    {
+      "id": "FQA-ATV-220",
+      "name": "Select result opens detail",
+      "category": "functional",
+      "severity": "high",
+      "description": "Selecting a search result opens the media detail screen"
+    },
+    {
+      "id": "FQA-ATV-221",
+      "name": "Search for movie title Inception",
+      "category": "functional",
+      "severity": "medium",
+      "description": "Searching Inception returns the movie in results"
+    },
+    {
+      "id": "FQA-ATV-222",
+      "name": "Search for music artist Metallica",
+      "category": "functional",
+      "severity": "medium",
+      "description": "Searching Metallica returns music-related results"
+    },
+    {
+      "id": "FQA-ATV-223",
+      "name": "Search for TV show Breaking Bad",
+      "category": "functional",
+      "severity": "medium",
+      "description": "Searching Breaking Bad returns TV show results"
+    },
+    {
+      "id": "FQA-ATV-224",
+      "name": "Search with Cyrillic query",
+      "category": "functional",
+      "severity": "medium",
+      "description": "Cyrillic search queries are handled without crashes"
+    },
+    {
+      "id": "FQA-ATV-225",
+      "name": "Search with no results",
+      "category": "functional",
+      "severity": "medium",
+      "description": "No results state displays with helpful suggestion"
+    },
+    {
+      "id": "FQA-ATV-226",
+      "name": "Clear search field and results",
+      "category": "functional",
+      "severity": "medium",
+      "description": "Clear resets search to initial state"
+    },
+    {
+      "id": "FQA-ATV-227",
+      "name": "Search limit of 50 results",
+      "category": "functional",
+      "severity": "low",
+      "description": "Search results are limited to 50 items"
+    },
+    {
+      "id": "FQA-ATV-228",
+      "name": "Search placeholder text",
+      "category": "functional",
+      "severity": "low",
+      "description": "Search field shows descriptive placeholder text"
+    },
+    {
+      "id": "FQA-ATV-229",
+      "name": "Search field single line",
+      "category": "functional",
+      "severity": "low",
+      "description": "Search field is single-line with horizontal scroll for long text"
+    },
+    {
+      "id": "FQA-ATV-230",
+      "name": "Search button disabled when empty",
+      "category": "functional",
+      "severity": "medium",
+      "description": "Search button is disabled when query is blank"
+    },
+    {
+      "id": "FQA-ATV-231",
+      "name": "Search button disabled during loading",
+      "category": "functional",
+      "severity": "medium",
+      "description": "Search button is disabled and shows spinner during loading"
+    },
+    {
+      "id": "FQA-ATV-232",
+      "name": "Search result CompactMediaCard layout",
+      "category": "functional",
+      "severity": "medium",
+      "description": "Search result cards display with full width and proper media information"
+    },
+    {
+      "id": "FQA-ATV-233",
+      "name": "Search back navigation preserves query",
+      "category": "functional",
+      "severity": "low",
+      "description": "Back navigation from detail preserves search query and results"
+    },
+    {
+      "id": "FQA-ATV-234",
+      "name": "Search field colors match TV theme",
+      "category": "functional",
+      "severity": "low",
+      "description": "Search field colors match the TV material theme"
+    },
+    {
+      "id": "FQA-ATV-235",
+      "name": "Search leading icon visible",
+      "category": "functional",
+      "severity": "low",
+      "description": "Search field has visible magnifying glass leading icon"
+    },
+    {
+      "id": "FQA-ATV-236",
+      "name": "Rapid DPAD navigation on home screen",
+      "category": "stress",
+      "severity": "high",
+      "description": "Rapid DPAD navigation does not cause crashes or ANR"
+    },
+    {
+      "id": "FQA-ATV-237",
+      "name": "Press BACK from home screen shows exit dialog",
+      "category": "functional",
+      "severity": "high",
+      "description": "BACK from home screen handles app exit gracefully"
+    },
+    {
+      "id": "FQA-ATV-238",
+      "name": "Network disconnection handling on home screen",
+      "category": "negative",
+      "severity": "high",
+      "description": "Network disconnection shows error state with retry option on home screen"
+    },
+    {
+      "id": "FQA-ATV-239",
+      "name": "API server down handling",
+      "category": "negative",
+      "severity": "high",
+      "description": "App handles API server down gracefully with error states"
+    },
+    {
+      "id": "FQA-ATV-240",
+      "name": "Play unavailable media file",
+      "category": "negative",
+      "severity": "high",
+      "description": "Playing unavailable media shows stream error with retry option"
+    },
+    {
+      "id": "FQA-ATV-241",
+      "name": "Very long title display on detail screen",
+      "category": "edge-case",
+      "severity": "medium",
+      "description": "Very long titles are truncated with ellipsis on detail screen"
+    },
+    {
+      "id": "FQA-ATV-242",
+      "name": "Special characters in metadata",
+      "category": "edge-case",
+      "severity": "medium",
+      "description": "Special characters in metadata render correctly"
+    },
+    {
+      "id": "FQA-ATV-243",
+      "name": "Re-launch app from background",
+      "category": "functional",
+      "severity": "high",
+      "description": "App resumes correctly from background with preserved state"
+    },
+    {
+      "id": "FQA-ATV-244",
+      "name": "Deep link with invalid media ID",
+      "category": "negative",
+      "severity": "medium",
+      "description": "Non-numeric media ID in deep link is handled gracefully"
+    },
+    {
+      "id": "FQA-ATV-245",
+      "name": "Deep link with non-existent media ID",
+      "category": "negative",
+      "severity": "medium",
+      "description": "Non-existent media ID shows error state on detail screen"
+    },
+    {
+      "id": "FQA-ATV-246",
+      "name": "Multiple rapid DPAD_CENTER presses on login",
+      "category": "stress",
+      "severity": "medium",
+      "description": "Rapid presses on Sign In do not cause multiple login attempts"
+    },
+    {
+      "id": "FQA-ATV-247",
+      "name": "Multiple rapid DPAD_CENTER on media card",
+      "category": "stress",
+      "severity": "medium",
+      "description": "Rapid DPAD_CENTER on media card does not cause duplicate navigation"
+    },
+    {
+      "id": "FQA-ATV-248",
+      "name": "Player handles very short video",
+      "category": "edge-case",
+      "severity": "low",
+      "description": "Player handles very short videos without issues"
+    },
+    {
+      "id": "FQA-ATV-249",
+      "name": "Player handles very long video",
+      "category": "edge-case",
+      "severity": "low",
+      "description": "Player correctly shows hours format for long videos"
+    },
+    {
+      "id": "FQA-ATV-250",
+      "name": "Focus navigation between home screen sections",
+      "category": "functional",
+      "severity": "high",
+      "description": "Focus navigates smoothly between TopBar and content sections"
+    },
+    {
+      "id": "FQA-ATV-251",
+      "name": "ADB auto-login via intent extras",
+      "category": "functional",
+      "severity": "medium",
+      "description": "ADB intent extras trigger automatic login for QA testing"
+    },
+    {
+      "id": "FQA-ATV-252",
+      "name": "Connection status indicator in login",
+      "category": "functional",
+      "severity": "medium",
+      "description": "Login screen shows correct connection status indicators"
+    },
+    {
+      "id": "FQA-ATV-253",
+      "name": "Focus glow animation on login fields",
+      "category": "functional",
+      "severity": "low",
+      "description": "Login field focus transitions include smooth glow animation"
+    },
+    {
+      "id": "FQA-ATV-254",
+      "name": "Multiple discovered servers list",
+      "category": "functional",
+      "severity": "low",
+      "description": "Multiple discovered servers are listed and selectable"
+    },
+    {
+      "id": "FQA-ATV-255",
+      "name": "Speed menu closes on BACK",
+      "category": "functional",
+      "severity": "medium",
+      "description": "BACK button closes player speed menu without exiting player"
+    },
+    {
+      "id": "FQA-ATV-256",
+      "name": "Audio menu closes on BACK",
+      "category": "functional",
+      "severity": "medium",
+      "description": "BACK button closes player audio menu without exiting player"
+    },
+    {
+      "id": "FQA-ATV-257",
+      "name": "Subtitle menu closes on BACK",
+      "category": "functional",
+      "severity": "medium",
+      "description": "BACK button closes player subtitle menu without exiting player"
+    },
+    {
+      "id": "FQA-ATV-258",
+      "name": "Concurrent search and navigation",
+      "category": "stress",
+      "severity": "medium",
+      "description": "Navigating away during search does not cause crashes"
+    },
+    {
+      "id": "FQA-ATV-259",
+      "name": "Deep link while app is in background",
+      "category": "edge-case",
+      "severity": "medium",
+      "description": "Deep link correctly brings backgrounded app to foreground with correct screen"
+    },
+    {
+      "id": "FQA-ATV-260",
+      "name": "Settings scroll through all sections",
+      "category": "functional",
+      "severity": "medium",
+      "description": "All settings sections are scrollable and accessible via DPAD"
+    }
+  ]
+}
