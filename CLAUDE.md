@@ -398,3 +398,11 @@ If any script or command suggests using `sudo`:
 
 **VIOLATION OF THIS CONSTRAINT IS STRICTLY PROHIBITED.**
 
+## MANDATORY API KEY & SECRETS CONSTRAINTS
+
+- **NEVER commit `.env` files** — they contain real API keys for LLM providers
+- **NEVER add API keys to source code** — use environment variables or `.env` files only
+- **ALWAYS verify `.gitignore` protects `.env`** before committing
+- `.env.example` files (templates with placeholder keys) are OK to commit
+- `.env` file permissions MUST be `chmod 600` (owner read/write only)
+- Before every commit: verify `git ls-files --cached | grep ".env"` shows NO `.env` files

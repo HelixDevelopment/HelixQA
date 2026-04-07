@@ -141,3 +141,8 @@ If any script or command suggests using `sudo`:
 
 **VIOLATION OF THIS CONSTRAINT IS STRICTLY PROHIBITED.**
 
+## API Keys & Secrets
+- **NEVER commit `.env` files** — real API keys
+- **NEVER add keys to source code** — use `.env` only
+- `.env.example` (templates) OK to commit
+- Before commit: `git ls-files --cached | grep ".env"` must show NO `.env`
