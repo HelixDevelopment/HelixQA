@@ -284,10 +284,44 @@ async function handleAction(cmd) {
   try {
     switch (cmd.action) {
       case 'screenshot': {
+        // Wait for page to be fully loaded and stable before screenshot
+        await page.waitForLoadState('networkidle', { timeout: 5000 }).catch(() => {});
+        await page.waitForTimeout(500); // Extra delay for any animations/rendering
+        
         const buf = await page.screenshot({
           type: 'png',
           fullPage: false,
         });
+        
+        // Verify screenshot is not blank (has meaningful content)
+        if (buf.length < 1000) {
+          // Too small - likely blank or error
+          process.stderr.write('warning: screenshot appears blank (' + buf.length + ' bytes)\n');
+        }
+        
+        // Check for all-white screenshot by sampling pixels
+        const hasContent = await page.evaluate(() => {
+          const canvas = document.createElement('canvas');
+          canvas.width = 100;
+          canvas.height = 100;
+          const ctx = canvas.getContext('2d');
+          try {
+            ctx.drawWindow(window, 0, 0, 100, 100, 'rgb(255,255,255)');
+            const data = ctx.getImageData(0, 0, 100, 100).data;
+            let total = 0;
+            for (let i = 0; i < data.length; i += 4) {
+              total += data[i] + data[i+1] + data[i+2];
+            }
+            return total < (255 * 3 * 100 * 100 * 0.99); // Not all white
+          } catch (e) {
+            return true; // Can't check, assume content exists
+          }
+        }).catch(() => true);
+        
+        if (!hasContent) {
+          process.stderr.write('warning: screenshot detected as all-white/blank\n');
+        }
+        
         process.stdout.write(buf);
         break;
       }

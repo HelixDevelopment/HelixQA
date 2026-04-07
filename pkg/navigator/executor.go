@@ -224,15 +224,75 @@ func (a *ADBExecutor) Home(ctx context.Context) error {
 }
 
 // Screenshot captures via adb shell screencap and returns
-// the raw PNG data.
+// the raw PNG data. It validates the screenshot is not blank
+// and retries up to 3 times if necessary.
 func (a *ADBExecutor) Screenshot(
 	ctx context.Context,
 ) ([]byte, error) {
-	data, err := a.cmdRunner.Run(ctx,
-		"adb", "-s", a.device, "shell", "screencap", "-p",
-	)
-	if err != nil {
-		return nil, fmt.Errorf("adb screenshot: %w", err)
+	var lastErr error
+	for attempt := 1; attempt <= 3; attempt++ {
+		data, err := a.cmdRunner.Run(ctx,
+			"adb", "-s", a.device, "shell", "screencap", "-p",
+		)
+		if err != nil {
+			lastErr = err
+			time.Sleep(500 * time.Millisecond)
+			continue
+		}
+
+		// Validate screenshot has content (not blank)
+		if len(data) < 1000 {
+			// Too small to be a valid screenshot
+			lastErr = fmt.Errorf("screenshot too small (%d bytes), likely blank", len(data))
+			time.Sleep(500 * time.Millisecond)
+			continue
+		}
+
+		// Check if all bytes are the same (blank/uniform color)
+		if isUniformImage(data) {
+			lastErr = fmt.Errorf("screenshot appears to be uniform/blank")
+			time.Sleep(500 * time.Millisecond)
+			continue
+		}
+
+		return data, nil
 	}
-	return data, nil
+	return nil, fmt.Errorf("adb screenshot failed after 3 attempts: %w", lastErr)
+}
+
+// isUniformImage checks if image data is uniform (all same color)
+// by sampling bytes from the PNG data.
+func isUniformImage(data []byte) bool {
+	if len(data) < 100 {
+		return true
+	}
+	// Sample pixels from different parts of the image
+	// Skip PNG header (first 33 bytes)
+	sampleStart := 33
+	if len(data) <= sampleStart+100 {
+		return false // Can't determine, assume valid
+	}
+
+	// Compare samples - if all same, likely blank
+	sample1 := data[sampleStart]
+	sample2 := data[sampleStart+len(data)/4]
+	sample3 := data[sampleStart+len(data)/2]
+	sample4 := data[sampleStart+3*len(data)/4]
+
+	// Allow some variance for compression
+	threshold := byte(10)
+	if absDiff(sample1, sample2) < threshold &&
+		absDiff(sample2, sample3) < threshold &&
+		absDiff(sample3, sample4) < threshold {
+		return true
+	}
+	return false
+}
+
+// absDiff returns absolute difference between two bytes
+func absDiff(a, b byte) byte {
+	if a > b {
+		return a - b
+	}
+	return b - a
 }

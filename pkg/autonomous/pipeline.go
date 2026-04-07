@@ -1280,6 +1280,15 @@ func (sp *SessionPipeline) Run(
 				)
 				continue
 			}
+			// Check if screenshot is blank/uniform color
+			if IsBlankScreenshot(screenshot) {
+				fmt.Printf(
+					"    [%s] screenshot appears blank/uniform, "+
+						"skipping (%v)\n",
+					platform, ssDur.Round(time.Millisecond),
+				)
+				continue
+			}
 			fmt.Printf(
 				"    [%s] screenshot OK "+
 					"(%dKB, %v)\n",
@@ -1781,6 +1790,28 @@ func (sp *SessionPipeline) Run(
 						"  [curiosity %s #%d] "+
 							"screenshot failed: %v\n",
 						platform, i+1, err,
+					)
+					// Fall back to blind navigation.
+					_ = executor.KeyPress(
+						stepCtx,
+						"KEYCODE_DPAD_DOWN",
+					)
+					time.Sleep(1 * time.Second)
+					if sp.processController != nil {
+						sp.processController.CompleteStep(
+							"curiosity", platform, i+1,
+						)
+					}
+					stepCancel()
+					continue
+				}
+				// Check if screenshot is blank/uniform color
+				if IsBlankScreenshot(screenshot) {
+					fmt.Printf(
+						"  [curiosity %s #%d] "+
+							"screenshot appears blank, "+
+							"skipping analysis\n",
+						platform, i+1,
 					)
 					// Fall back to blind navigation.
 					_ = executor.KeyPress(

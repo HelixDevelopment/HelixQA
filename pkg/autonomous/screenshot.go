@@ -14,6 +14,72 @@ import (
 	_ "image/jpeg"
 )
 
+// IsBlankScreenshot checks if a screenshot is blank/uniform color.
+// It returns true if the image is all white, all black, or uniform color.
+func IsBlankScreenshot(data []byte) bool {
+	if len(data) < 1000 {
+		// Too small to contain meaningful content
+		return true
+	}
+
+	img, _, err := image.Decode(bytes.NewReader(data))
+	if err != nil {
+		// Can't decode, assume it's blank to be safe
+		return true
+	}
+
+	bounds := img.Bounds()
+	width := bounds.Dx()
+	height := bounds.Dy()
+
+	if width < 10 || height < 10 {
+		return true
+	}
+
+	// Sample pixels at different positions
+	samplePoints := []struct{ x, y int }{
+		{width / 4, height / 4},
+		{width / 2, height / 4},
+		{3 * width / 4, height / 4},
+		{width / 4, height / 2},
+		{width / 2, height / 2},
+		{3 * width / 4, height / 2},
+		{width / 4, 3 * height / 4},
+		{width / 2, 3 * height / 4},
+		{3 * width / 4, 3 * height / 4},
+	}
+
+	// Get color of first sample point
+	r0, g0, b0, _ := img.At(bounds.Min.X+samplePoints[0].x, bounds.Min.Y+samplePoints[0].y).RGBA()
+	// Convert to 8-bit
+	r0, g0, b0 = r0>>8, g0>>8, b0>>8
+
+	var totalDiff uint32
+	for i, pt := range samplePoints {
+		if i == 0 {
+			continue
+		}
+		r, g, b, _ := img.At(bounds.Min.X+pt.x, bounds.Min.Y+pt.y).RGBA()
+		r, g, b = r>>8, g>>8, b>>8
+		diff := absDiff(r, r0) + absDiff(g, g0) + absDiff(b, b0)
+		totalDiff += uint32(diff)
+	}
+
+	// If average difference across samples is less than threshold,
+	// image is likely blank/uniform
+	avgDiff := totalDiff / uint32(len(samplePoints)-1)
+	// Threshold: average difference less than 10 per channel = uniform
+	return avgDiff < 30
+}
+
+// absDiff returns absolute difference
+func absDiff(a, b uint32) uint32 {
+	if a > b {
+		return a - b
+	}
+	return b - a
+}
+
 // maxScreenshotWidth is the maximum width (in pixels) for
 // screenshots sent to the LLM vision API. Larger images
 // are downscaled proportionally using nearest-neighbour

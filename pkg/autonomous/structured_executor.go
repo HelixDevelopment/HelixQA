@@ -228,7 +228,7 @@ func (ste *StructuredTestExecutor) executeStep(
 
 	// Take screenshot before action
 	beforeSS, _ := executor.Screenshot(ctx)
-	if len(beforeSS) > 0 && ste.onScreenshot != nil {
+	if len(beforeSS) > 0 && !IsBlankScreenshot(beforeSS) && ste.onScreenshot != nil {
 		ste.onScreenshot(platform, beforeSS)
 	}
 
@@ -238,7 +238,7 @@ func (ste *StructuredTestExecutor) executeStep(
 	// Take screenshot after action
 	time.Sleep(500 * time.Millisecond) // Small delay for UI to update
 	afterSS, _ := executor.Screenshot(ctx)
-	if len(afterSS) > 0 && ste.onScreenshot != nil {
+	if len(afterSS) > 0 && !IsBlankScreenshot(afterSS) && ste.onScreenshot != nil {
 		ste.onScreenshot(platform, afterSS)
 	}
 
