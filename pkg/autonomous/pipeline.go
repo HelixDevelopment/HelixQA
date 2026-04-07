@@ -1471,7 +1471,41 @@ func (sp *SessionPipeline) Run(
 		time.Since(phaseStart).Round(time.Millisecond),
 	)
 
-	// ── Phase 3.5: Curiosity-Driven Exploration ────────
+	// ── Phase 3.5: Structured Test Bank Execution ──────
+	sp.setPhase("structured")
+	fmt.Println("[pipeline] Phase 3.5: Structured test bank execution")
+	structuredStart := time.Now()
+
+	structuredExec := NewStructuredTestExecutor(
+		*sp.config,
+		execFactory,
+		sp.selectProviderForPhase("structured"),
+		func(f analysis.AnalysisFinding) {
+			allFindings = append(allFindings, f)
+		},
+		func(platform string, data []byte) {
+			allScreenshots = append(allScreenshots, platform)
+			_ = data
+		},
+	)
+
+	structuredResult, err := structuredExec.Execute(ctx)
+	if err != nil {
+		fmt.Printf(
+			"  [structured] Execution error: %v\n", err,
+		)
+	} else {
+		fmt.Printf(
+			"  [structured] Completed: %d/%d passed, "+
+				"%d steps executed in %v\n",
+			structuredResult.TestCasesPassed,
+			structuredResult.TestCasesRun,
+			structuredResult.StepsExecuted,
+			time.Since(structuredStart).Round(time.Millisecond),
+		)
+	}
+
+	// ── Phase 3.6: Curiosity-Driven Exploration ────────
 	if sp.config.CuriosityEnabled {
 		sp.setPhase("curiosity")
 		phaseStart = time.Now()
