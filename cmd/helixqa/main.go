@@ -605,7 +605,7 @@ func cmdAutonomous(args []string) {
 		Timeout:          *timeout,
 		PassNumber:       passNumber,
 		AndroidDevice:    os.Getenv("HELIX_ANDROID_DEVICE"),
-		AndroidDevices:   detectADBDevices(),
+		AndroidDevices:   detectADBDevices(*project),
 		AndroidPackage:   os.Getenv("HELIX_ANDROID_PACKAGE"),
 		WebURL:           os.Getenv("HELIX_WEB_URL"),
 		DesktopDisplay:   os.Getenv("HELIX_DESKTOP_DISPLAY"),
@@ -731,7 +731,8 @@ func cmdAutonomous(args []string) {
 // detectADBDevices runs `adb devices` and returns all
 // connected device serials. Falls back to HELIX_ANDROID_DEVICE
 // env var if no devices are detected.
-func detectADBDevices() []string {
+// The projectRoot parameter is used to locate the .devignore file.
+func detectADBDevices(projectRoot string) []string {
 	out, err := osexec.Command(
 		"adb", "devices",
 	).Output()
@@ -748,7 +749,14 @@ func detectADBDevices() []string {
 	var excludeModels []string
 
 	// Read .devignore from project root (try multiple locations).
-	for _, path := range []string{".devignore", "../.devignore", "../../.devignore"} {
+	// First try the project root, then relative paths from working directory.
+	devignorePaths := []string{
+		filepath.Join(projectRoot, ".devignore"),
+		".devignore",
+		"../.devignore",
+		"../../.devignore",
+	}
+	for _, path := range devignorePaths {
 		if data, err := os.ReadFile(path); err == nil {
 			for _, line := range strings.Split(string(data), "\n") {
 				line = strings.TrimSpace(line)
