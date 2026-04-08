@@ -15,7 +15,8 @@ import (
 // being killed. This prevents hung ADB sessions (e.g.
 // uiautomator dump returning "null root node") from
 // blocking the entire pipeline.
-const DefaultCommandTimeout = 15 * time.Second
+// REDUCED for aggressive performance - fail fast, recover fast.
+const DefaultCommandTimeout = 5 * time.Second
 
 // execRunner implements CommandRunner using os/exec.
 // Every command is wrapped with a per-command timeout
@@ -62,9 +63,15 @@ func (r *execRunner) Run(
 	defer cancel()
 
 	cmd := exec.CommandContext(cmdCtx, name, args...)
+	
+	// Performance optimization: Set process group for faster cleanup on timeout
+	setProcessGroup(cmd)
+	
 	out, err := cmd.CombinedOutput()
 	if cmdCtx.Err() == context.DeadlineExceeded &&
 		ctx.Err() == nil {
+		// Kill the process group aggressively
+		killProcessGroup(cmd)
 		// The per-command timeout fired, not the parent
 		// context. Return a clear error so callers can
 		// distinguish a hung command from a pipeline

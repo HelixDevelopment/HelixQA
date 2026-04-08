@@ -436,11 +436,13 @@ func (sp *SessionPipeline) selectProviderForPhase(
 // allowed to take before being abandoned. This prevents a
 // hung ADB screencap or crash-check from blocking the
 // entire pipeline.
-const perTestTimeout = 2 * time.Minute
+// REDUCED for aggressive performance.
+const perTestTimeout = 30 * time.Second
 
 // perMaestroFlowTimeout limits individual Maestro flow
 // runs so a single stuck flow cannot consume the session.
-const perMaestroFlowTimeout = 3 * time.Minute
+// REDUCED for aggressive performance.
+const perMaestroFlowTimeout = 1 * time.Minute
 
 // maxVisionScreenshots caps how many screenshots are sent
 // to the LLM vision API during the analysis phase.
@@ -459,7 +461,8 @@ const maxCuriositySteps = 50
 
 // logcatTimeout limits the logcat dump so a large log
 // buffer cannot stall the pipeline.
-const logcatTimeout = 15 * time.Second
+// REDUCED for aggressive performance.
+const logcatTimeout = 5 * time.Second
 
 // Run executes the four pipeline phases in order:
 //  1. Learn  — build a knowledge base from the project

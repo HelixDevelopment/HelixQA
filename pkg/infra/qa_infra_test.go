@@ -68,5 +68,6 @@ func TestServiceConfig_Fields(t *testing.T) {
 
 func TestQAInfraConfig_HealthTimeout(t *testing.T) {
 	cfg := DefaultQAInfraConfig("")
-	assert.Equal(t, 15*time.Second, cfg.HealthTimeout)
+	// Health timeout reduced to 5s for aggressive performance optimization
+	assert.Equal(t, 5*time.Second, cfg.HealthTimeout)
 }
