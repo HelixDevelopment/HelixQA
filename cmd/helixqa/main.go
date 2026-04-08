@@ -898,11 +898,9 @@ func loadEnvFile(path string) error {
 			}
 		}
 
-		// Only set if not already in the environment so
-		// explicit exports take precedence.
-		if os.Getenv(key) == "" {
-			os.Setenv(key, val)
-		}
+		// .env file values override existing environment variables
+		// to ensure configuration from file takes precedence.
+		os.Setenv(key, val)
 	}
 	return scanner.Err()
 }
