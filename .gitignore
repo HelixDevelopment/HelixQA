@@ -43,3 +43,8 @@ Thumbs.db
 # Vendor (optional)
 /vendor/
 data/memory.db.bak
+data/memory.db-shm
+data/memory.db-wal
+.env.androidtv
+HelixQA/
+docs/issues/HELIX-*.md
