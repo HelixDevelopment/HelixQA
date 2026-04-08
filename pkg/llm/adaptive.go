@@ -14,12 +14,14 @@ import (
 // provider is allowed per call during adaptive fallback.
 // This prevents N slow providers from compounding into
 // N * timeout total latency.
-const adaptivePerProviderTimeout = 15 * time.Second
+// INCREASED to 120s: Google Gemini 2.5 Flash can take 45-60s
+// for complex prompts, and we need time for fallback providers.
+const adaptivePerProviderTimeout = 120 * time.Second
 
 // adaptiveVisionTimeout is longer than the chat timeout
 // to allow native vision providers (Gemini, Anthropic)
 // time for their internal retry/backoff on rate limits.
-const adaptiveVisionTimeout = 20 * time.Second
+const adaptiveVisionTimeout = 90 * time.Second
 
 // AdaptiveProvider wraps a slice of Provider implementations and
 // tries them in order, falling back to the next on failure. It
