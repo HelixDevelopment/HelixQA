@@ -12,7 +12,8 @@ import (
 
 // commandTimeout is the maximum time a single ADB/dumpsys
 // command is allowed to run before being killed.
-const commandTimeout = 15 * time.Second
+// REDUCED for aggressive performance - fail fast, recover fast.
+const commandTimeout = 5 * time.Second
 
 // execRunner implements CommandRunner using os/exec with
 // a per-command timeout to prevent hung ADB sessions.
@@ -33,9 +34,15 @@ func (r *execRunner) Run(
 	defer cancel()
 
 	cmd := exec.CommandContext(cmdCtx, name, args...)
+	
+	// Performance optimization: Set process group for faster cleanup on timeout
+	setProcessGroup(cmd)
+	
 	out, err := cmd.CombinedOutput()
 	if cmdCtx.Err() == context.DeadlineExceeded &&
 		ctx.Err() == nil {
+		// Kill the process group aggressively
+		killProcessGroup(cmd)
 		return out, fmt.Errorf(
 			"command timed out after %v: %s",
 			commandTimeout, name,

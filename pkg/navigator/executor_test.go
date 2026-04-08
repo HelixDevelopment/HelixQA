@@ -176,12 +176,18 @@ func TestADBExecutor_Home(t *testing.T) {
 
 func TestADBExecutor_Screenshot(t *testing.T) {
 	runner := newMockRunner()
-	runner.response = []byte("PNG-DATA")
+	// Return a larger response with varied content to pass validation
+	// (>1000 bytes, non-uniform)
+	var response []byte
+	for i := 0; i < 2000; i++ {
+		response = append(response, byte(i%256))
+	}
+	runner.response = response
 	exec := NewADBExecutor("emulator-5554", runner)
 
 	data, err := exec.Screenshot(context.Background())
 	require.NoError(t, err)
-	assert.Equal(t, []byte("PNG-DATA"), data)
+	assert.Equal(t, response, data)
 }
 
 func TestADBExecutor_Screenshot_Error(t *testing.T) {

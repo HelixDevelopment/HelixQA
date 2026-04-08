@@ -81,7 +81,7 @@ func DefaultQAInfraConfig(host string) QAInfraConfig {
 				Remote:     true,
 			},
 		},
-		HealthTimeout: 15 * time.Second,
+		HealthTimeout: 5 * time.Second,
 	}
 }
 

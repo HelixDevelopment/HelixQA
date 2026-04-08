@@ -226,32 +226,41 @@ func (a *ADBExecutor) Home(ctx context.Context) error {
 // Screenshot captures via adb shell screencap and returns
 // the raw PNG data. It validates the screenshot is not blank
 // and retries up to 3 times if necessary.
+// OPTIMIZED: Reduced retry delay from 500ms to 100ms for FLASHING FAST performance.
 func (a *ADBExecutor) Screenshot(
 	ctx context.Context,
 ) ([]byte, error) {
 	var lastErr error
 	for attempt := 1; attempt <= 3; attempt++ {
+		// Use exec-out for faster direct output (bypasses /sdcard)
 		data, err := a.cmdRunner.Run(ctx,
-			"adb", "-s", a.device, "shell", "screencap", "-p",
+			"adb", "-s", a.device, "exec-out", "screencap", "-p",
 		)
 		if err != nil {
 			lastErr = err
-			time.Sleep(500 * time.Millisecond)
-			continue
+			// FALLBACK: Try shell method if exec-out fails (some devices don't support it)
+			data, err = a.cmdRunner.Run(ctx,
+				"adb", "-s", a.device, "shell", "screencap", "-p",
+			)
+			if err != nil {
+				lastErr = err
+				time.Sleep(100 * time.Millisecond)
+				continue
+			}
 		}
 
 		// Validate screenshot has content (not blank)
 		if len(data) < 1000 {
 			// Too small to be a valid screenshot
 			lastErr = fmt.Errorf("screenshot too small (%d bytes), likely blank", len(data))
-			time.Sleep(500 * time.Millisecond)
+			time.Sleep(100 * time.Millisecond)
 			continue
 		}
 
 		// Check if all bytes are the same (blank/uniform color)
 		if isUniformImage(data) {
 			lastErr = fmt.Errorf("screenshot appears to be uniform/blank")
-			time.Sleep(500 * time.Millisecond)
+			time.Sleep(100 * time.Millisecond)
 			continue
 		}
 
