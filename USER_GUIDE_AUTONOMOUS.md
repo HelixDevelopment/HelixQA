@@ -150,6 +150,21 @@ HELIX_ANDROID_DEVICE=emulator-5554
 HELIX_ANDROID_PACKAGE=digital.vasic.yole
 ```
 
+For Android TV (with Channels support):
+
+```bash
+HELIX_ANDROIDTV_DEVICE=192.168.0.214:5555
+HELIX_ANDROIDTV_PACKAGE=com.catalogizer.androidtv
+```
+
+The Android TV platform automatically detects and tests Android TV Home Screen Channels features including:
+- Default channel creation and content population
+- Category channels (Movies, TV Shows, Music, etc.)
+- Watch Next row integration (continue watching, next episode)
+- Deep link handling from home screen
+- Channel sync mechanisms (WorkManager, launch sync, manual)
+- Channel cleanup on logout
+
 For Web:
 
 ```bash

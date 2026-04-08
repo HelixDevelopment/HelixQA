@@ -63,20 +63,24 @@ type KnowledgeBase struct {
 	// ADMIN_PASSWORD). Used by navigation prompts so the
 	// LLM knows how to log in without hardcoding.
 	Credentials map[string]string
+	// PlatformFeatures holds detected platform-specific capabilities
+	// (e.g., Android TV Channels, iOS widgets, etc.)
+	PlatformFeatures []PlatformFeature
 }
 
 // NewKnowledgeBase returns a KnowledgeBase with all slice fields initialised
 // to empty (not nil) slices.
 func NewKnowledgeBase() *KnowledgeBase {
 	return &KnowledgeBase{
-		Credentials:   map[string]string{},
-		Screens:       []Screen{},
-		APIEndpoints:  []APIEndpoint{},
-		Docs:          []DocEntry{},
-		RecentChanges: []ChangeEntry{},
-		Components:    []string{},
-		Constraints:   []string{},
-		KnownIssues:   []string{},
+		Credentials:      map[string]string{},
+		Screens:          []Screen{},
+		APIEndpoints:     []APIEndpoint{},
+		Docs:             []DocEntry{},
+		RecentChanges:    []ChangeEntry{},
+		Components:       []string{},
+		Constraints:      []string{},
+		KnownIssues:      []string{},
+		PlatformFeatures: []PlatformFeature{},
 	}
 }
 
@@ -183,6 +187,10 @@ func BuildKnowledgeBase(projectRoot string, store *memory.Store) (*KnowledgeBase
 
 	// ── components ───────────────────────────────────────────────────────────
 	kb.Components = mapper.DiscoverComponents()
+
+	// ── platform-specific features ────────────────────────────────────────────
+	featureDetector := NewPlatformFeatureDetector(projectRoot)
+	kb.PlatformFeatures = featureDetector.DetectAllPlatformFeatures()
 
 	// ── recent git history ───────────────────────────────────────────────────
 	git := NewGitAnalyzer(projectRoot)

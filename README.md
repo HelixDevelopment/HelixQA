@@ -6,7 +6,8 @@ Built on [digital.vasic.challenges](../Challenges) and [digital.vasic.containers
 
 ## Features
 
-- **Cross-platform testing**: Android, Web, and Desktop
+- **Cross-platform testing**: Android, Android TV, Web, and Desktop
+- **Android TV Channels testing**: Automatic detection and comprehensive testing of Android TV Home Screen Channels (default channel, category channels, Watch Next row, deep links)
 - **Real-time crash detection**: ADB-based Android crash/ANR detection, browser and JVM process monitoring
 - **Step-by-step validation**: Evidence collection at each test step to prevent false positives
 - **YAML test banks**: QA-specific test case definitions with platform targeting, priority, and documentation references
@@ -98,6 +99,8 @@ pkg/
   autonomous/         SessionCoordinator, PlatformWorker, PhaseManager
   navigator/          NavigationEngine, ActionExecutor (ADB, Playwright, X11)
   issuedetector/      LLM-powered bug detection (visual, UX, accessibility, functional)
+  planning/           Test plan generation with platform-specific test cases
+    androidtv_channels_framework.go  Generic Android TV Channels testing framework
   session/            SessionRecorder, Timeline, VideoManager
 ```
 

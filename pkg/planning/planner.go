@@ -31,6 +31,13 @@ Return ONLY a valid JSON array of test case objects. Each object must have:
 - "steps": array of strings (ordered test steps)
 - "expected": string (expected outcome)
 
+IMPORTANT: For Android TV apps, you MUST include comprehensive test cases for:
+- Android TV Home Screen Channels (default channel, category channels)
+- Watch Next row integration (continue watching, next episode)
+- Deep link handling from channels (catalogizer://media/{id}?type={type})
+- WorkManager periodic sync
+- Channel cleanup on logout
+
 Do not include any explanation, markdown, or text outside the JSON array.`
 
 // TestPlanGenerator generates a TestPlan by querying an LLM with a
@@ -72,6 +79,13 @@ func (g *TestPlanGenerator) Generate(
 		tests[i].IsNew = true
 	}
 
+	// Inject mandatory Android TV Channels tests if platform is androidtv
+	// and channels feature is detected in codebase
+	if g.shouldInjectAndroidTVChannelsTests(platforms, kb) {
+		channelSpec := g.buildChannelFeatureSpec(kb)
+		tests = InjectAndroidTVChannelsTests(tests, platforms, channelSpec.AppName, channelSpec.DeepLink.Scheme)
+	}
+
 	newCount := 0
 	for _, t := range tests {
 		if t.IsNew {
@@ -90,6 +104,47 @@ func (g *TestPlanGenerator) Generate(
 	}
 
 	return plan, nil
+}
+
+// shouldInjectAndroidTVChannelsTests checks if we should inject channel tests
+func (g *TestPlanGenerator) shouldInjectAndroidTVChannelsTests(platforms []string, kb *learning.KnowledgeBase) bool {
+	if !HasAndroidTVChannelsSupport(platforms) {
+		return false
+	}
+	
+	// Check if channels feature is detected in codebase
+	for _, f := range kb.PlatformFeatures {
+		if f.Name == "androidtv_channels" && f.Platform == "androidtv" {
+			return true
+		}
+	}
+	
+	return false
+}
+
+// buildChannelFeatureSpec builds a ChannelFeatureSpec from detected features
+func (g *TestPlanGenerator) buildChannelFeatureSpec(kb *learning.KnowledgeBase) ChannelFeatureSpec {
+	spec := DefaultChannelFeatureSpec(kb.ProjectName, "", strings.ToLower(kb.ProjectName))
+	
+	// Override with detected metadata from codebase
+	for _, f := range kb.PlatformFeatures {
+		if f.Name == "androidtv_channels" {
+			if scheme, ok := f.Metadata["uri_scheme"]; ok && scheme != "" {
+				spec.DeepLink.Scheme = scheme
+			}
+			if name, ok := f.Metadata["default_channel"]; ok && name != "" {
+				spec.DefaultChannelName = name
+			}
+			if f.Metadata["has_watch_next"] == "true" {
+				spec.WatchNext.Enabled = true
+			}
+			if f.Metadata["has_deep_linking"] == "true" {
+				spec.DeepLink.SupportsUnauthenticated = false
+			}
+		}
+	}
+	
+	return spec
 }
 
 // buildPrompt constructs a human-readable prompt that includes the
@@ -143,8 +198,27 @@ func (g *TestPlanGenerator) buildPrompt(
 		sb.WriteString("\n")
 	}
 
+	// Add Android TV Channels feature info if detected
+	for _, f := range kb.PlatformFeatures {
+		if f.Name == "androidtv_channels" {
+			sb.WriteString("\n--- Android TV Channels Feature Detected ---\n")
+			sb.WriteString(fmt.Sprintf("Feature: %s\n", f.Description))
+			sb.WriteString(fmt.Sprintf("Implementation files: %d\n", len(f.SourceFiles)))
+			for k, v := range f.Metadata {
+				sb.WriteString(fmt.Sprintf("  %s: %s\n", k, v))
+			}
+			sb.WriteString("\nREQUIRED: Include comprehensive Android TV Channels test cases covering:\n")
+			sb.WriteString("- Default channel creation and content\n")
+			sb.WriteString("- Category channels (movies, tv shows, etc.)\n")
+			sb.WriteString("- Watch Next row (continue watching, next episode)\n")
+			sb.WriteString("- Deep link handling from home screen\n")
+			sb.WriteString("- Channel sync (WorkManager, launch, manual)\n")
+			sb.WriteString("- Cleanup on logout\n")
+		}
+	}
+
 	sb.WriteString(
-		"Generate a comprehensive set of test cases covering " +
+		"\nGenerate a comprehensive set of test cases covering " +
 			"functional correctness, edge cases, and integration " +
 			"scenarios for these platforms and screens.\n",
 	)
