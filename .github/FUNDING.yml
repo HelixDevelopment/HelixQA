@@ -1,0 +1,10 @@
+# GitHub Sponsors configuration for HelixQA
+# https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/displaying-a-sponsor-button-in-your-repository
+
+# GitHub Sponsors - HelixDevelopment
+github:
+  - HelixDevelopment
+
+# Custom sponsorship link
+custom:
+  - "https://github.com/sponsors/HelixDevelopment"
