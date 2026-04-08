@@ -60,7 +60,7 @@ func (d *PlatformFeatureDetector) DetectAndroidTVChannels() *PlatformFeature {
 	watchNextRegex := regexp.MustCompile(`WatchNextPrograms|WatchNextManager`)
 	deepLinkRegex := regexp.MustCompile(`ChannelDeepLinkActivity|Intent\.ACTION_VIEW.*tvprovider`)
 	uriSchemeRegex := regexp.MustCompile(`"([a-z]+)://[^"]*"`)
-	channelNameRegex := regexp.MustCompile(`COLUMN_DISPLAY_NAME.*"([^"]+)"|DEFAULT_CHANNEL_DISPLAY_NAME.*"([^"]+)"`)
+	channelNameRegex := regexp.MustCompile(`COLUMN_DISPLAY_NAME[^"]*"([^"]+)"|DEFAULT_CHANNEL_DISPLAY_NAME[^"]*"([^"]+)"`)
 	
 	err := filepath.WalkDir(androidTVPath, func(path string, entry fs.DirEntry, walkErr error) error {
 		if walkErr != nil || entry.IsDir() {

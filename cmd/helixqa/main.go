@@ -544,23 +544,24 @@ func cmdAutonomous(args []string) {
 			},
 		)
 	}
-	provider, err := llm.NewAdaptiveFromConfigs(providerConfigs)
+	// Use enhanced adaptive provider with rate limiting and prompt optimization
+	provider, err := llm.NewEnhancedAdaptiveProvider(providerConfigs)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "error: LLM setup: %v\n", err)
 		os.Exit(1)
 	}
 
 	// Build dedicated vision provider from vision-capable configs.
-	var visionProvider *llm.AdaptiveProvider
+	var visionProvider llm.Provider
 	if len(visionConfigs) > 0 {
-		visionProvider, _ = llm.NewAdaptiveFromConfigs(visionConfigs)
+		visionProvider, _ = llm.NewEnhancedAdaptiveProvider(visionConfigs)
 	}
 
 	// Build dedicated chat provider from all configs (chat
 	// models prioritize reasoning quality over vision).
-	var chatProvider *llm.AdaptiveProvider
+	var chatProvider llm.Provider
 	if len(chatConfigs) > 0 {
-		chatProvider, _ = llm.NewAdaptiveFromConfigs(chatConfigs)
+		chatProvider, _ = llm.NewEnhancedAdaptiveProvider(chatConfigs)
 	}
 
 	// ── Memory store setup ────────────────────────────────────────
@@ -652,13 +653,31 @@ func cmdAutonomous(args []string) {
 	// automatically picks the best model for each phase.
 	var allProviders []llm.Provider
 	if visionProvider != nil {
-		for _, p := range visionProvider.Providers() {
-			allProviders = append(allProviders, p)
+		// Try to get underlying providers from enhanced adaptive provider
+		if eap, ok := visionProvider.(*llm.EnhancedAdaptiveProvider); ok {
+			for _, p := range eap.Providers() {
+				allProviders = append(allProviders, p)
+			}
+		} else if ap, ok := visionProvider.(*llm.AdaptiveProvider); ok {
+			for _, p := range ap.Providers() {
+				allProviders = append(allProviders, p)
+			}
+		} else {
+			allProviders = append(allProviders, visionProvider)
 		}
 	}
 	if chatProvider != nil {
-		for _, p := range chatProvider.Providers() {
-			allProviders = append(allProviders, p)
+		// Try to get underlying providers from enhanced adaptive provider
+		if eap, ok := chatProvider.(*llm.EnhancedAdaptiveProvider); ok {
+			for _, p := range eap.Providers() {
+				allProviders = append(allProviders, p)
+			}
+		} else if ap, ok := chatProvider.(*llm.AdaptiveProvider); ok {
+			for _, p := range ap.Providers() {
+				allProviders = append(allProviders, p)
+			}
+		} else {
+			allProviders = append(allProviders, chatProvider)
 		}
 	}
 	// Add bridged CLI providers to the allProviders pool.
