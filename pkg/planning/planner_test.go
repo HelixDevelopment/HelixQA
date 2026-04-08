@@ -156,3 +156,81 @@ func TestTestPlanGenerator_MalformedLLMResponse(t *testing.T) {
 		"malformed response should produce 0 tests")
 	assert.Empty(t, plan.Tests)
 }
+
+// duplicateTestJSON contains duplicate test names to verify deduplication.
+const duplicateTestJSON = `[
+  {
+    "id": "GEN-001",
+    "name": "Login Test",
+    "description": "First login test",
+    "category": "functional",
+    "priority": 1,
+    "platforms": ["web"],
+    "screen": "Login",
+    "steps": ["Step 1"],
+    "expected": "Success"
+  },
+  {
+    "id": "GEN-002",
+    "name": "Login Test",
+    "description": "Duplicate login test",
+    "category": "functional",
+    "priority": 2,
+    "platforms": ["android"],
+    "screen": "Login",
+    "steps": ["Step 1"],
+    "expected": "Success"
+  },
+  {
+    "id": "GEN-003",
+    "name": "login test",
+    "description": "Case variant duplicate",
+    "category": "edge_case",
+    "priority": 3,
+    "platforms": ["ios"],
+    "screen": "Login",
+    "steps": ["Step 1"],
+    "expected": "Success"
+  },
+  {
+    "id": "GEN-004",
+    "name": "Unique Test",
+    "description": "This one should be kept",
+    "category": "functional",
+    "priority": 1,
+    "platforms": ["web"],
+    "screen": "Home",
+    "steps": ["Step 1"],
+    "expected": "Success"
+  }
+]`
+
+func TestTestPlanGenerator_Deduplication(t *testing.T) {
+	mock := &mockLLM{response: duplicateTestJSON}
+	gen := NewTestPlanGenerator(mock)
+
+	kb := learning.NewKnowledgeBase()
+	kb.ProjectName = "Catalogizer"
+
+	plan, err := gen.Generate(
+		context.Background(),
+		kb,
+		[]string{"web", "android", "ios"},
+	)
+
+	require.NoError(t, err)
+	require.NotNil(t, plan)
+
+	// Should have only 2 tests: "Login Test" (first occurrence) and "Unique Test"
+	assert.Equal(t, 2, plan.TotalTests,
+		"duplicate tests should be removed")
+	assert.Equal(t, 2, plan.NewTests)
+
+	// Verify which tests were kept (first occurrence wins)
+	names := make([]string, len(plan.Tests))
+	for i, t := range plan.Tests {
+		names[i] = t.Name
+	}
+	assert.Contains(t, names, "Login Test")
+	assert.Contains(t, names, "Unique Test")
+}

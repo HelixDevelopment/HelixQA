@@ -153,8 +153,9 @@ func (g *TestPlanGenerator) buildPrompt(
 }
 
 // parseTests extracts a JSON array of PlannedTest from the LLM response.
-// It handles responses wrapped in markdown code fences and returns an
-// empty slice (not nil) on any parse failure.
+// It handles responses wrapped in markdown code fences, deduplicates tests
+// by name (case-insensitive), and returns an empty slice (not nil) on any
+// parse failure.
 func (g *TestPlanGenerator) parseTests(content string) []PlannedTest {
 	content = strings.TrimSpace(content)
 
@@ -185,5 +186,28 @@ func (g *TestPlanGenerator) parseTests(content string) []PlannedTest {
 		return []PlannedTest{}
 	}
 
-	return tests
+	// DEDUPLICATION: Ensure same test name never appears twice.
+	// Case-insensitive matching to catch variations like "Login Test" vs "login test".
+	seen := make(map[string]bool)
+	unique := make([]PlannedTest, 0, len(tests))
+	duplicates := 0
+	
+	for _, t := range tests {
+		key := strings.ToLower(strings.TrimSpace(t.Name))
+		if key == "" {
+			continue // Skip tests with empty names
+		}
+		if seen[key] {
+			duplicates++
+			continue // Skip duplicate
+		}
+		seen[key] = true
+		unique = append(unique, t)
+	}
+	
+	if duplicates > 0 {
+		fmt.Printf("  [planner] deduplicated %d duplicate test(s)\n", duplicates)
+	}
+
+	return unique
 }
