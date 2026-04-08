@@ -154,7 +154,7 @@ func (eap *EnhancedAdaptiveProvider) Chat(
 		// Try the provider with extended timeout
 		timeout := 45 * time.Second
 		if config.Name == "google" || config.Name == ProviderAnthropic {
-			timeout = 60 * time.Second // Give native providers more time
+			timeout = 120 * time.Second // Give native providers more time (Google can take 45-60s)
 		}
 
 		pCtx, cancel := context.WithTimeout(ctx, timeout)
@@ -255,7 +255,7 @@ func (eap *EnhancedAdaptiveProvider) Vision(
 
 		timeout := 30 * time.Second
 		if config.Name == "google" {
-			timeout = 45 * time.Second // Gemini needs more time for vision
+			timeout = 90 * time.Second // Gemini needs more time for vision
 		}
 
 		pCtx, cancel := context.WithTimeout(ctx, timeout)
