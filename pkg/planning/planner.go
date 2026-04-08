@@ -62,7 +62,9 @@ func (g *TestPlanGenerator) Generate(
 	kb *learning.KnowledgeBase,
 	platforms []string,
 ) (*TestPlan, error) {
-	prompt := g.buildPrompt(kb, platforms)
+	// Use optimized prompt with reduced context for better compatibility
+	// with providers that have token limits (GitHub Models, Groq, etc.)
+	prompt := buildOptimizedPrompt(kb, platforms)
 
 	messages := []llm.Message{
 		{Role: llm.RoleSystem, Content: systemPrompt},
@@ -284,4 +286,51 @@ func (g *TestPlanGenerator) parseTests(content string) []PlannedTest {
 	}
 
 	return unique
+}
+
+// buildOptimizedPrompt creates a compact prompt optimized for providers
+// with strict token limits (GitHub Models 8k, Groq 12k, etc.)
+func buildOptimizedPrompt(kb *learning.KnowledgeBase, platforms []string) string {
+	var sb strings.Builder
+
+	sb.WriteString("Project: ")
+	sb.WriteString(kb.ProjectName)
+	sb.WriteString("\n")
+
+	sb.WriteString("Platforms: ")
+	sb.WriteString(strings.Join(platforms, ", "))
+	sb.WriteString("\n\n")
+
+	// Compact summary instead of full details
+	sb.WriteString(fmt.Sprintf("Screens: %d | Endpoints: %d | Issues: %d\n",
+		len(kb.Screens), len(kb.APIEndpoints), len(kb.KnownIssues)))
+
+	// Add only first 10 screens (most important)
+	if len(kb.Screens) > 0 {
+		sb.WriteString("\nKey Screens:\n")
+		limit := 10
+		if len(kb.Screens) < limit {
+			limit = len(kb.Screens)
+		}
+		for i := 0; i < limit; i++ {
+			s := kb.Screens[i]
+			sb.WriteString(fmt.Sprintf("- %s (%s)\n", s.Name, s.Platform))
+		}
+		if len(kb.Screens) > limit {
+			sb.WriteString(fmt.Sprintf("... and %d more\n", len(kb.Screens)-limit))
+		}
+	}
+
+	// Add Android TV Channels feature if detected
+	for _, f := range kb.PlatformFeatures {
+		if f.Name == "androidtv_channels" {
+			sb.WriteString("\n[Android TV Channels Detected]\n")
+			sb.WriteString("REQUIRED: Test default channel, category channels, Watch Next, deep links, sync\n")
+			break
+		}
+	}
+
+	sb.WriteString("\nGenerate test cases covering functional, edge, integration scenarios.")
+
+	return sb.String()
 }
