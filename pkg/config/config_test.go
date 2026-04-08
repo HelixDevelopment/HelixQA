@@ -120,13 +120,13 @@ func TestConfig_ExpandedPlatforms_Single(t *testing.T) {
 func TestConfig_StepDelay_Slow(t *testing.T) {
 	cfg := DefaultConfig()
 	cfg.Speed = SpeedSlow
-	assert.Equal(t, 2*time.Second, cfg.StepDelay())
+	assert.Equal(t, 1*time.Second, cfg.StepDelay()) // Optimized from 2s
 }
 
 func TestConfig_StepDelay_Normal(t *testing.T) {
 	cfg := DefaultConfig()
 	cfg.Speed = SpeedNormal
-	assert.Equal(t, 500*time.Millisecond, cfg.StepDelay())
+	assert.Equal(t, 100*time.Millisecond, cfg.StepDelay()) // Optimized from 500ms
 }
 
 func TestConfig_StepDelay_Fast(t *testing.T) {

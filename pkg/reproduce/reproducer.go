@@ -24,11 +24,13 @@ const defaultMaxRetries = 3
 
 // defaultActionDelay is the pause between actions during
 // replay to let the UI settle.
-const defaultActionDelay = 1 * time.Second
+// REDUCED for FLASHING FAST performance (was 1s).
+const defaultActionDelay = 200 * time.Millisecond
 
 // defaultScreenshotDelay is the pause after all actions
 // are replayed before taking the verification screenshot.
-const defaultScreenshotDelay = 500 * time.Millisecond
+// REDUCED for FLASHING FAST performance (was 500ms).
+const defaultScreenshotDelay = 100 * time.Millisecond
 
 // BugReproducer attempts to reproduce bugs found during
 // analysis by replaying the action sequence that led to

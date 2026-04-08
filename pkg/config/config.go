@@ -342,14 +342,15 @@ func (c *Config) ExpandedPlatforms() []Platform {
 }
 
 // StepDelay returns the delay between steps based on speed.
+// REDUCED for FLASHING FAST performance.
 func (c *Config) StepDelay() time.Duration {
 	switch c.Speed {
 	case SpeedSlow:
-		return 2 * time.Second
+		return 1 * time.Second // was 2s
 	case SpeedFast:
 		return 0
 	default:
-		return 500 * time.Millisecond
+		return 100 * time.Millisecond // was 500ms
 	}
 }
 

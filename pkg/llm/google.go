@@ -168,8 +168,8 @@ func (p *googleProvider) Vision(
 
 // geminiMaxRetries is the maximum number of retries for
 // rate-limited requests. With 5 retries and exponential
-// backoff (5s, 10s, 15s, 20s, 25s) the total retry window
-// is ~75 seconds, which handles most Gemini rate limits.
+// backoff (1s, 2s, 3s, 4s, 5s) the total retry window
+// is ~15 seconds for FLASHING FAST performance.
 const geminiMaxRetries = 5
 
 // doRequest serialises req, POSTs to generateContent, and
@@ -183,7 +183,8 @@ func (p *googleProvider) doRequest(
 	var lastErr error
 	for attempt := 0; attempt <= geminiMaxRetries; attempt++ {
 		if attempt > 0 {
-			backoff := time.Duration(attempt*5) * time.Second
+			// REDUCED for FLASHING FAST performance (was attempt*5s).
+			backoff := time.Duration(attempt) * time.Second
 			fmt.Printf(
 				"  [gemini] retry %d/%d after %v\n",
 				attempt, geminiMaxRetries, backoff,
@@ -217,6 +218,25 @@ func isRateLimitError(err error) bool {
 	return bytes.Contains([]byte(s), []byte("429")) ||
 		bytes.Contains([]byte(s), []byte("RESOURCE_EXHAUSTED")) ||
 		bytes.Contains([]byte(s), []byte("quota"))
+}
+
+// redactKeyFromError redacts the API key from an error message
+// to prevent sensitive information leakage in logs.
+func redactKeyFromError(err error, key string) error {
+	if err == nil {
+		return nil
+	}
+	if key == "" {
+		return err
+	}
+	msg := err.Error()
+	if !bytes.Contains([]byte(msg), []byte(key)) {
+		return err
+	}
+	redacted := bytes.ReplaceAll(
+		[]byte(msg), []byte(key), []byte("REDACTED"),
+	)
+	return fmt.Errorf("%s", redacted)
 }
 
 // doRequestURL is the internal implementation that posts the

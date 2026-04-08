@@ -237,7 +237,8 @@ func (r *ScrcpyRecorder) pullFromDevice() {
 
 	// Wait for screenrecord to flush the moov atom and
 	// finalize the MP4 file on the device.
-	time.Sleep(3 * time.Second)
+	// REDUCED for FLASHING FAST performance (was 3s).
+	time.Sleep(1 * time.Second)
 
 	pull := exec.Command(
 		"adb", "-s", r.device,

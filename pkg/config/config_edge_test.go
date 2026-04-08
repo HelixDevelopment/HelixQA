@@ -12,8 +12,8 @@ import (
 
 func TestConfig_StepDelay_UnknownSpeed(t *testing.T) {
 	cfg := &Config{Speed: "unknown"}
-	// Default case returns normal delay.
-	assert.Equal(t, 500*time.Millisecond, cfg.StepDelay())
+	// Default case returns normal delay (optimized to 100ms).
+	assert.Equal(t, 100*time.Millisecond, cfg.StepDelay())
 }
 
 func TestConfig_ExpandedPlatforms_EmptySlice(t *testing.T) {

@@ -1623,7 +1623,8 @@ func (sp *SessionPipeline) Run(
 					sp.config.AndroidPackage,
 				).CombinedOutput()
 				sc()
-				time.Sleep(1 * time.Second)
+				// REDUCED for FLASHING FAST performance (was 1s).
+				time.Sleep(200 * time.Millisecond)
 
 				launchCtx, lc := context.WithTimeout(
 					ctx, 10*time.Second,
@@ -1645,7 +1646,8 @@ func (sp *SessionPipeline) Run(
 					launchCtx, "adb", args...,
 				).CombinedOutput()
 				lc()
-				time.Sleep(5 * time.Second)
+				// REDUCED for FLASHING FAST performance (was 5s).
+				time.Sleep(1 * time.Second)
 				fmt.Printf(
 					"  [curiosity] launched %s on %s\n",
 					sp.config.AndroidPackage, ct.device,
@@ -2080,9 +2082,10 @@ func (sp *SessionPipeline) Run(
 								"retrying (%d/3)\n",
 							platform, i+1, retryN,
 						)
+						// REDUCED for FLASHING FAST performance (was N seconds).
 						time.Sleep(
 							time.Duration(retryN) *
-								time.Second,
+								200 * time.Millisecond,
 						)
 						retryShot, _ :=
 							executor.Screenshot(
@@ -2154,13 +2157,14 @@ func (sp *SessionPipeline) Run(
 					// Pause between actions. Typing
 					// and keyboard dismiss need extra
 					// time on Android TV.
+					// REDUCED for FLASHING FAST performance.
 					switch action.Type {
 					case "type":
-						time.Sleep(2 * time.Second)
+						time.Sleep(500 * time.Millisecond)
 					case "back":
-						time.Sleep(2 * time.Second)
+						time.Sleep(500 * time.Millisecond)
 					default:
-						time.Sleep(1 * time.Second)
+						time.Sleep(200 * time.Millisecond)
 					}
 				}
 				// Record what was done for context.
@@ -2179,7 +2183,8 @@ func (sp *SessionPipeline) Run(
 				// (captured at top of loop) and the after-state
 				// for every curiosity step.
 				if len(stepActions) > 0 {
-					time.Sleep(500 * time.Millisecond)
+					// REDUCED for FLASHING FAST performance (was 500ms).
+					time.Sleep(100 * time.Millisecond)
 					postShot, postErr := executor.Screenshot(
 						stepCtx,
 					)
@@ -3561,7 +3566,8 @@ func executeAction(
 	case "wait":
 		// Allow the LLM to insert deliberate pauses for
 		// screen transitions, login processing, etc.
-		time.Sleep(3 * time.Second)
+		// REDUCED for FLASHING FAST performance (was 3s).
+		time.Sleep(500 * time.Millisecond)
 		return nil
 	case "clear":
 		// Delegate to the platform-specific Clear method which
