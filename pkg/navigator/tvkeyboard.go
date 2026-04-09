@@ -13,7 +13,9 @@ import (
 // the on-screen keyboard (Gboard) using DPAD keys. This works with ANY
 // Android TV app, not just Catalogizer.
 type TVKeyboard struct {
-	executor *ADBExecutor
+	executor  *ADBExecutor
+	cursorRow int
+	cursorCol int
 }
 
 // NewTVKeyboard creates a new TV keyboard navigator

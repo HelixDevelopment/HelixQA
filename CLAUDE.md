@@ -15,6 +15,21 @@
 
 Violations of this constitution void the entire QA session's results.
 
+## CONSTITUTION: Video App Geo-Restriction / VPN Detection (MANDATORY)
+
+**Before ANY automated test attempts to play content in a video application, the test MUST verify the app can actually reach its content servers. This is NON-NEGOTIABLE.**
+
+- **Probe connectivity FIRST**: Before launching a video app for playback testing, perform an HTTP connectivity check to the app's content API (e.g., `curl -s -o /dev/null -w "%{http_code}" --connect-timeout 5 https://www.youtube.com/` or app-specific endpoint via `adb shell`)
+- **If probe fails** (timeout, HTTP 403, connection refused, DNS failure): mark the app as **GEO_RESTRICTED** for this device session
+- **Automatically substitute an alternative app**: RuTube (`ru.rutube.app`) for YouTube, VK Video (`com.vk.vkvideo`) for other geo-blocked streaming services
+- **NEVER report geo-restriction as a test FAILURE** — report it as **SKIPPED** with the restriction reason and the alternative app used
+- **Cache the result per device per session** — check once per app per device, reuse the result for all subsequent tests in that session
+- **Known geo-restricted apps** (Russia/Serbia region): YouTube (needs VPN), Netflix, Hulu, Disney+, HBO Max, Pluto TV, Paramount+
+- **Alternative apps by category**: Video streaming → RuTube, VK Video, Kinopoisk; Music → VK Music, Yandex Music
+- A QA session that reports "FAIL: video did not play" when the real cause is geo-restriction is a **critical test infrastructure failure**
+
+Violations of this constitution void the entire QA session's results for the affected app category.
+
 ## CONSTITUTION: QA Testing Priority Order (MANDATORY)
 
 **The LLM MUST follow this testing priority, in this exact order:**

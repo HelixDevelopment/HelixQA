@@ -6,7 +6,7 @@ import (
 	"encoding/base64"
 	"fmt"
 	"image"
-	"image/png"
+	_ "image/png"
 	"os"
 )
 
