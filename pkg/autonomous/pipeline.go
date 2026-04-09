@@ -1284,6 +1284,10 @@ func (sp *SessionPipeline) Run(
 				continue
 			}
 
+			// CRITICAL: Wait for UI to render before screenshot
+			// Especially important after app launch/cold start
+			time.Sleep(1500 * time.Millisecond)
+
 			ssStart := time.Now()
 			screenshot, err :=
 				executor.Screenshot(testCtx)

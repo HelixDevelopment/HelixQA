@@ -225,13 +225,14 @@ func (a *ADBExecutor) Home(ctx context.Context) error {
 
 // Screenshot captures via adb shell screencap and returns
 // the raw PNG data. It validates the screenshot is not blank
-// and retries up to 3 times if necessary.
-// OPTIMIZED: Reduced retry delay from 500ms to 100ms for FLASHING FAST performance.
+// and retries up to 5 times if necessary.
+// CRITICAL: Increased retry delay to 500ms for apps that need time to render
+// after cold start (ANR prevention and splash screen handling).
 func (a *ADBExecutor) Screenshot(
 	ctx context.Context,
 ) ([]byte, error) {
 	var lastErr error
-	for attempt := 1; attempt <= 3; attempt++ {
+	for attempt := 1; attempt <= 5; attempt++ {
 		// Use exec-out for faster direct output (bypasses /sdcard)
 		data, err := a.cmdRunner.Run(ctx,
 			"adb", "-s", a.device, "exec-out", "screencap", "-p",
@@ -244,29 +245,29 @@ func (a *ADBExecutor) Screenshot(
 			)
 			if err != nil {
 				lastErr = err
-				time.Sleep(100 * time.Millisecond)
+				time.Sleep(500 * time.Millisecond)
 				continue
 			}
 		}
 
 		// Validate screenshot has content (not blank)
-		if len(data) < 1000 {
-			// Too small to be a valid screenshot
+		if len(data) < 5000 {
+			// Too small to be a valid screenshot (increased threshold for Android TV)
 			lastErr = fmt.Errorf("screenshot too small (%d bytes), likely blank", len(data))
-			time.Sleep(100 * time.Millisecond)
+			time.Sleep(500 * time.Millisecond)
 			continue
 		}
 
 		// Check if all bytes are the same (blank/uniform color)
 		if isUniformImage(data) {
 			lastErr = fmt.Errorf("screenshot appears to be uniform/blank")
-			time.Sleep(100 * time.Millisecond)
+			time.Sleep(500 * time.Millisecond)
 			continue
 		}
 
 		return data, nil
 	}
-	return nil, fmt.Errorf("adb screenshot failed after 3 attempts: %w", lastErr)
+	return nil, fmt.Errorf("adb screenshot failed after 5 attempts: %w", lastErr)
 }
 
 // isUniformImage checks if image data is uniform (all same color)

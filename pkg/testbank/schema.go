@@ -9,6 +9,8 @@
 package testbank
 
 import (
+	"strings"
+
 	"digital.vasic.challenges/pkg/challenge"
 	"digital.vasic.helixqa/pkg/config"
 )
@@ -67,12 +69,41 @@ type TestCase struct {
 	ExpectedResult string `yaml:"expected_result" json:"expected_result"`
 }
 
+// ActionType identifies the type of action to execute.
+type ActionType string
+
+const (
+	// ActionTypeDescription is a text-only action (legacy, non-executable).
+	ActionTypeDescription ActionType = "description"
+	// ActionTypeADBShell executes an ADB shell command.
+	ActionTypeADBShell ActionType = "adb_shell"
+	// ActionTypeSleep waits for a specified duration.
+	ActionTypeSleep ActionType = "sleep"
+	// ActionTypeScreenshot captures a screenshot.
+	ActionTypeScreenshot ActionType = "screenshot"
+	// ActionTypeKeyPress simulates a key press.
+	ActionTypeKeyPress ActionType = "keypress"
+	// ActionTypeTap taps at coordinates.
+	ActionTypeTap ActionType = "tap"
+	// ActionTypeSwipe performs a swipe gesture.
+	ActionTypeSwipe ActionType = "swipe"
+	// ActionTypeText enters text.
+	ActionTypeText ActionType = "text"
+)
+
 // TestStep is a single step within a test case.
 type TestStep struct {
 	// Name identifies this step.
 	Name string `yaml:"name" json:"name"`
 
 	// Action describes what to do.
+	// For executable actions, use format: "type: value"
+	// Examples:
+	//   "adb_shell: input keyevent KEYCODE_ENTER"
+	//   "sleep: 5000" (milliseconds)
+	//   "screenshot"
+	//   "keypress: KEYCODE_DPAD_DOWN"
+	//   "text: admin"
 	Action string `yaml:"action" json:"action"`
 
 	// Expected describes the expected outcome.
@@ -81,6 +112,47 @@ type TestStep struct {
 	// Platform limits this step to a specific platform.
 	// Empty means it applies to all.
 	Platform config.Platform `yaml:"platform,omitempty" json:"platform,omitempty"`
+
+	// Timeout is the maximum time to wait for this step (in seconds).
+	// Default is 30 seconds.
+	Timeout int `yaml:"timeout,omitempty" json:"timeout,omitempty"`
+
+	// VisionVerify enables LLM vision verification of the result.
+	VisionVerify bool `yaml:"vision_verify,omitempty" json:"vision_verify,omitempty"`
+}
+
+// ParseAction parses the action string and returns the type and value.
+// Format: "type: value" or just "description" for legacy text actions.
+func (ts *TestStep) ParseAction() (ActionType, string) {
+	if ts.Action == "" {
+		return ActionTypeDescription, ""
+	}
+
+	// Check for explicit type prefix
+	if idx := strings.Index(ts.Action, ":"); idx > 0 {
+		prefix := ts.Action[:idx]
+		value := strings.TrimSpace(ts.Action[idx+1:])
+
+		switch ActionType(prefix) {
+		case ActionTypeADBShell:
+			return ActionTypeADBShell, value
+		case ActionTypeSleep:
+			return ActionTypeSleep, value
+		case ActionTypeScreenshot:
+			return ActionTypeScreenshot, ""
+		case ActionTypeKeyPress:
+			return ActionTypeKeyPress, value
+		case ActionTypeTap:
+			return ActionTypeTap, value
+		case ActionTypeSwipe:
+			return ActionTypeSwipe, value
+		case ActionTypeText:
+			return ActionTypeText, value
+		}
+	}
+
+	// Legacy: treat as description
+	return ActionTypeDescription, ts.Action
 }
 
 // DocRef references a documentation source for consistency

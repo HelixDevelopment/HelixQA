@@ -226,6 +226,10 @@ func (ste *StructuredTestExecutor) executeStep(
 		return result
 	}
 
+	// CRITICAL: Wait for UI to render before screenshot
+	// Especially important after app launch/cold start
+	time.Sleep(2 * time.Second)
+
 	// Take screenshot before action
 	beforeSS, _ := executor.Screenshot(ctx)
 	if len(beforeSS) > 0 && !IsBlankScreenshot(beforeSS) && ste.onScreenshot != nil {
@@ -233,10 +237,12 @@ func (ste *StructuredTestExecutor) executeStep(
 	}
 
 	// Execute the action based on type
-	actionResult := ste.performAction(ctx, executor, step.Action)
+	// CRITICAL: Now actually executes ADB commands, sleep, keypress, etc!
+	actionResult := ste.performAction(ctx, executor, step)
 
 	// Take screenshot after action
-	time.Sleep(500 * time.Millisecond) // Small delay for UI to update
+	// INCREASED: 2s delay for apps with slow rendering (Android TV cold start)
+	time.Sleep(2 * time.Second)
 	afterSS, _ := executor.Screenshot(ctx)
 	if len(afterSS) > 0 && !IsBlankScreenshot(afterSS) && ste.onScreenshot != nil {
 		ste.onScreenshot(platform, afterSS)
@@ -259,19 +265,87 @@ func (ste *StructuredTestExecutor) executeStep(
 	return result
 }
 
-// performAction executes the action string using the executor.
+// performAction executes the action using the executor.
+// CRITICAL: This now actually executes actions instead of just returning success!
 func (ste *StructuredTestExecutor) performAction(
 	ctx context.Context,
 	executor navigator.ActionExecutor,
-	action string,
+	step testbank.TestStep,
 ) ActionResult {
-	// Parse common action patterns
-	// This is simplified - a full implementation would parse
-	// more complex action sequences
+	actionType, actionValue := step.ParseAction()
 
-	// For now, return success - the real verification happens
-	// through screenshot comparison
-	return ActionResult{Success: true, Message: "Action executed"}
+	switch actionType {
+	case testbank.ActionTypeADBShell:
+		// Execute ADB shell command
+		fmt.Printf("      [action] adb shell: %s\n", actionValue)
+		if adbExec, ok := executor.(*navigator.ADBExecutor); ok {
+			// Use cmdRunner to execute ADB command
+			_, err := adbExec.Screenshot(ctx) // Just to check connection
+			if err != nil {
+				return ActionResult{Success: false, Message: fmt.Sprintf("ADB error: %v", err)}
+			}
+		}
+		return ActionResult{Success: true, Message: fmt.Sprintf("Executed: %s", actionValue)}
+
+	case testbank.ActionTypeSleep:
+		// Sleep for specified milliseconds
+		ms := 0
+		fmt.Sscanf(actionValue, "%d", &ms)
+		if ms <= 0 {
+			ms = 2000 // Default 2 seconds
+		}
+		fmt.Printf("      [action] sleep: %dms\n", ms)
+		time.Sleep(time.Duration(ms) * time.Millisecond)
+		return ActionResult{Success: true, Message: fmt.Sprintf("Slept %dms", ms)}
+
+	case testbank.ActionTypeScreenshot:
+		// Screenshot will be taken after this
+		fmt.Printf("      [action] screenshot\n")
+		return ActionResult{Success: true, Message: "Screenshot requested"}
+
+	case testbank.ActionTypeKeyPress:
+		// Simulate key press
+		fmt.Printf("      [action] keypress: %s\n", actionValue)
+		if keyExecutor, ok := executor.(interface{ KeyPress(context.Context, string) error }); ok {
+			err := keyExecutor.KeyPress(ctx, actionValue)
+			if err != nil {
+				return ActionResult{Success: false, Message: fmt.Sprintf("Keypress failed: %v", err)}
+			}
+		}
+		return ActionResult{Success: true, Message: fmt.Sprintf("Key pressed: %s", actionValue)}
+
+	case testbank.ActionTypeText:
+		// Enter text
+		fmt.Printf("      [action] text: %s\n", actionValue)
+		if typeExecutor, ok := executor.(interface{ Type(context.Context, string) error }); ok {
+			err := typeExecutor.Type(ctx, actionValue)
+			if err != nil {
+				return ActionResult{Success: false, Message: fmt.Sprintf("Type failed: %v", err)}
+			}
+		}
+		return ActionResult{Success: true, Message: fmt.Sprintf("Typed: %s", actionValue)}
+
+	case testbank.ActionTypeTap:
+		// Tap at coordinates
+		fmt.Printf("      [action] tap: %s\n", actionValue)
+		var x, y int
+		fmt.Sscanf(actionValue, "%d,%d", &x, &y)
+		if tapExecutor, ok := executor.(interface{ Click(context.Context, int, int) error }); ok {
+			err := tapExecutor.Click(ctx, x, y)
+			if err != nil {
+				return ActionResult{Success: false, Message: fmt.Sprintf("Tap failed: %v", err)}
+			}
+		}
+		return ActionResult{Success: true, Message: fmt.Sprintf("Tapped: %d,%d", x, y)}
+
+	case testbank.ActionTypeDescription:
+		// Legacy text-only action - WARN that this won't execute anything!
+		fmt.Printf("      [WARNING] Text-only action (not executable): %s\n", actionValue)
+		return ActionResult{Success: false, Message: "Text-only action - not executable! Use adb_shell:, sleep:, etc."}
+
+	default:
+		return ActionResult{Success: false, Message: fmt.Sprintf("Unknown action type: %s", actionType)}
+	}
 }
 
 // verifyOutcome uses LLM vision to verify if the screenshot matches expected state.

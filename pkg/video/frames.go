@@ -141,3 +141,56 @@ func (f *FrameExtractor) listFrames(
 	}
 	return matches, nil
 }
+
+// ExtractFrameAt extracts a single frame at the given timestamp
+// from videoPath and saves it to outputPath.
+// Timestamp format: "00:00:05.000" or seconds as float.
+// This is used for screenshot replacement - capture video continuously,
+// then extract frames at specific timestamps for analysis.
+func (f *FrameExtractor) ExtractFrameAt(
+	ctx context.Context,
+	videoPath, outputPath string,
+	timestamp string,
+) error {
+	args := []string{
+		"-ss", timestamp, // Seek to timestamp
+		"-i", videoPath,
+		"-frames:v", "1", // Extract 1 frame
+		"-q:v", "1", // Highest quality
+		"-y", // Overwrite output
+		outputPath,
+	}
+	cmd := exec.CommandContext(ctx, f.ffmpegPath, args...)
+	if out, err := cmd.CombinedOutput(); err != nil {
+		return fmt.Errorf(
+			"ffmpeg extract frame at %s: %w: %s", timestamp, err, out,
+		)
+	}
+	return nil
+}
+
+// ExtractLatestFrame extracts the most recent frame from a video
+// that's currently being recorded. It seeks to near the end and
+// extracts the last available frame.
+func (f *FrameExtractor) ExtractLatestFrame(
+	ctx context.Context,
+	videoPath, outputPath string,
+) error {
+	// Seek to 1 second before end to get a recent frame
+	// Uses -sseof (seek from end) for partially written files
+	args := []string{
+		"-sseof", "-1", // 1 second from end
+		"-i", videoPath,
+		"-frames:v", "1",
+		"-q:v", "1",
+		"-y",
+		outputPath,
+	}
+	cmd := exec.CommandContext(ctx, f.ffmpegPath, args...)
+	if _, err := cmd.CombinedOutput(); err != nil {
+		// Fallback: try extracting from start if seeking fails
+		// (file might be too short)
+		return f.ExtractFrameAt(ctx, videoPath, outputPath, "00:00:00")
+	}
+	return nil
+}

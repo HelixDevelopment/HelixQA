@@ -40,7 +40,8 @@ const (
 )
 
 // defaultBitRate is the default recording bit rate in bps.
-const defaultBitRate = 4_000_000
+// INCREASED: 16Mbps for high-quality frame extraction
+const defaultBitRate = 16_000_000
 
 // defaultMaxSecs is the default maximum recording duration
 // in seconds (3 minutes).
@@ -301,11 +302,13 @@ func (r *ScrcpyRecorder) buildScrcpyArgs() []string {
 
 // buildADBArgs constructs the argument slice for the
 // `adb shell screenrecord` command.
+// INCREASED QUALITY: Using 16Mbps bitrate for high-quality frame extraction.
 func (r *ScrcpyRecorder) buildADBArgs() []string {
 	return []string{
 		"-s", r.device,
 		"shell", "screenrecord",
 		"--bit-rate", fmt.Sprintf("%d", r.bitRate),
+		"--size", "1920x1080", // Full HD for better frame extraction
 		"--time-limit", fmt.Sprintf("%d", r.maxSecs),
 		"/sdcard/helixqa_record.mp4",
 	}
