@@ -253,11 +253,16 @@ func (ste *StructuredTestExecutor) executeStep(
 		verified, actual := ste.verifyOutcome(
 			ctx, afterSS, step.Expected,
 		)
-		result.Passed = verified
-		result.Actual = actual
+		// CRITICAL FIX: Action must succeed BEFORE vision verification matters
+		// If action failed, test fails regardless of what vision says
+		result.Passed = actionResult.Success && verified
+		if actionResult.Success {
+			result.Actual = actual
+		} else {
+			result.Actual = actionResult.Message + " | Vision: " + actual
+		}
 	} else {
-		// Without vision, assume action succeeded
-		// This is a limitation - we can't verify UI state
+		// Without vision, rely solely on action success
 		result.Passed = actionResult.Success
 		result.Actual = actionResult.Message
 	}
@@ -355,7 +360,9 @@ func (ste *StructuredTestExecutor) verifyOutcome(
 	expected string,
 ) (bool, string) {
 	if ste.vision == nil || !ste.vision.SupportsVision() {
-		return true, "No vision provider available"
+		// CRITICAL FIX: Return FALSE, not true, when vision unavailable
+		// We cannot verify the outcome without vision
+		return false, "No vision provider available - cannot verify outcome"
 	}
 
 	prompt := fmt.Sprintf(

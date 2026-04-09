@@ -13,12 +13,18 @@ import (
 // the on-screen keyboard (Gboard) using DPAD keys. This works with ANY
 // Android TV app, not just Catalogizer.
 type TVKeyboard struct {
-	executor *ADBExecutor
+	executor  *ADBExecutor
+	cursorRow int // Current cursor row position
+	cursorCol int // Current cursor column position
 }
 
 // NewTVKeyboard creates a new TV keyboard navigator
 func NewTVKeyboard(executor *ADBExecutor) *TVKeyboard {
-	return &TVKeyboard{executor: executor}
+	return &TVKeyboard{
+		executor:  executor,
+		cursorRow: 0, // Start at home position (q key)
+		cursorCol: 0,
+	}
 }
 
 // GboardLayout represents the standard Gboard QWERTY layout for Android TV
