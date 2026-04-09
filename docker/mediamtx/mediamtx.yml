@@ -1,0 +1,244 @@
+# MediaMTX Configuration for HelixQA
+# RTSP/RTMP/WebRTC streaming server
+
+###############################################
+# General settings
+###############################################
+
+# Verbosity level
+logLevel: info
+
+# Log destination
+logDestinations: [stdout]
+
+# Enable Prometheus metrics
+metrics: yes
+metricsAddress: 0.0.0.0:9998
+
+# Enable pprof
+pprof: no
+pprofAddress: 0.0.0.0:9999
+
+# Number of read buffers
+readBufferCount: 512
+
+# UDP packet buffer size
+readBufferSize: 2048
+
+# Enable RTSP
+rtsp: yes
+rtspAddress: :8554
+rtspTLSCert: 
+rtspTLSKey: 
+rtspAuthMethods: [basic, digest]
+
+# Enable RTMP
+rtmp: yes
+rtmpAddress: :1935
+rtmpEncryption: no
+rtmpTLSCert: 
+rtmpTLSKey: 
+
+# Enable HLS
+hls: yes
+hlsAddress: :8888
+hlsEncryption: no
+hlsServerKey: 
+hlsServerCert: 
+hlsAlwaysRemux: no
+hlsVariant: fmp4
+hlsSegmentCount: 3
+hlsSegmentDuration: 1s
+hlsPartDuration: 200ms
+hlsSegmentMaxSize: 50M
+hlsAllowOrigin: '*'
+hlsTrustedProxies: []
+
+# Enable WebRTC
+webrtc: yes
+webrtcAddress: :8889
+webrtcEncryption: no
+webrtcServerKey: 
+webrtcServerCert: 
+webrtcAllowOrigin: '*'
+webrtcTrustedProxies: []
+
+# ICE servers for WebRTC
+webrtcICEServers: [stun:stun.l.google.com:19302]
+
+# Local UDP address for WebRTC
+webrtcLocalUDPAddress: :8189
+
+# Local TCP address for WebRTC
+webrtcLocalTCPAddress: :8189
+
+###############################################
+# Authentication
+###############################################
+
+# External authentication command
+# authInternalUsers:
+#   - user: admin
+#     password: admin
+#     permissions:
+#       - action: publish
+#       - action: read
+#       - action: playback
+
+# IP-based access control
+# authHTTPAddress: 
+
+###############################################
+# Stream paths
+###############################################
+
+paths:
+  # Default settings for all paths
+  all:
+    # Source of the stream
+    source: publisher
+    
+    # Source fingerprint for authentication
+    sourceFingerprint: 
+    
+    # Source on-demand
+    sourceOnDemand: no
+    
+    # Source on-demand start timeout
+    sourceOnDemandStartTimeout: 10s
+    
+    # Source on-demand close after
+    sourceOnDemandCloseAfter: 10s
+    
+    # Maximum readers
+    maxReaders: 100
+    
+    # SRT publish passphase
+    srtPublishPassphrase: 
+    
+    # SRT read passphrase
+    srtReadPassphrase: 
+    
+    # Fallback stream
+    fallback: 
+    
+    # Run on ready command
+    runOnReady: 
+    
+    # Run on not ready command
+    runOnNotReady: 
+    
+    # Run on read command
+    runOnRead: 
+    
+    # Run on unread command
+    runOnUnread: 
+    
+    # Run on demand command
+    runOnDemand: 
+    
+    # Run on demand restart
+    runOnDemandRestart: no
+    
+    # Run on demand start timeout
+    runOnDemandStartTimeout: 10s
+    
+    # Run on demand close after
+    runOnDemandCloseAfter: 10s
+
+  #############################################
+  # Android TV stream
+  #############################################
+  android_tv:
+    source: publisher
+    maxReaders: 50
+    runOnReady: |
+      echo "Android TV stream ready: $RTSP_PATH"
+    runOnNotReady: |
+      echo "Android TV stream not ready: $RTSP_PATH"
+
+  #############################################
+  # Android Mobile stream
+  #############################################
+  android_mobile:
+    source: publisher
+    maxReaders: 50
+    runOnReady: |
+      echo "Android Mobile stream ready: $RTSP_PATH"
+
+  #############################################
+  # Desktop stream (Linux)
+  #############################################
+  desktop_linux:
+    source: publisher
+    maxReaders: 50
+    runOnReady: |
+      echo "Desktop Linux stream ready: $RTSP_PATH"
+
+  #############################################
+  # Desktop stream (Windows)
+  #############################################
+  desktop_windows:
+    source: publisher
+    maxReaders: 50
+    runOnReady: |
+      echo "Desktop Windows stream ready: $RTSP_PATH"
+
+  #############################################
+  # Desktop stream (macOS)
+  #############################################
+  desktop_macos:
+    source: publisher
+    maxReaders: 50
+    runOnReady: |
+      echo "Desktop macOS stream ready: $RTSP_PATH"
+
+  #############################################
+  # Web browser stream (WebRTC)
+  #############################################
+  web_browser:
+    source: publisher
+    maxReaders: 50
+    runOnReady: |
+      echo "Web browser stream ready: $RTSP_PATH"
+
+  #############################################
+  # Processed output stream
+  #############################################
+  processed:
+    source: publisher
+    maxReaders: 100
+    runOnReady: |
+      echo "Processed stream ready: $RTSP_PATH"
+
+  #############################################
+  # Test pattern stream
+  #############################################
+  test_pattern:
+    source: rtsp://localhost:8554/test
+    maxReaders: 10
+
+###############################################
+# Recording
+###############################################
+
+# Enable recording
+record: no
+recordPath: ./recordings/%path/%Y-%m-%d_%H-%M-%S-%f
+recordFormat: fmp4
+recordPartDuration: 100ms
+recordSegmentDuration: 1h
+recordDeleteAfter: 24h
+
+###############################################
+# Server hooks
+###############################################
+
+# Run on connect
+runOnConnect: 
+
+# Run on disconnect
+runOnDisconnect: 
+
+# Restart on connect
+runOnConnectRestart: no

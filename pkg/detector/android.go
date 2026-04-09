@@ -15,16 +15,41 @@ import (
 
 // checkAndroid performs Android-specific crash and ANR detection
 // using ADB commands. It checks:
-// 1. Whether the app process is alive
-// 2. AndroidRuntime fatal errors in logcat
-// 3. ANR events in logcat
-// 4. Takes a screenshot as evidence
+// 1. Whether the app is in the foreground
+// 2. Whether the app process is alive
+// 3. AndroidRuntime fatal errors in logcat
+// 4. ANR events in logcat
+// 5. Takes a screenshot as evidence
 func (d *Detector) checkAndroid(
 	ctx context.Context,
 ) (*DetectionResult, error) {
 	result := &DetectionResult{
 		Platform:  config.PlatformAndroid,
 		Timestamp: time.Now(),
+	}
+
+	// CRITICAL: First check if app is in foreground
+	inForeground, err := d.isAppInForeground(ctx)
+	if err != nil {
+		result.Error = fmt.Sprintf(
+			"failed to check foreground: %v", err,
+		)
+		return result, nil
+	}
+	
+	// If app is not in foreground, this is a critical failure
+	// Tests cannot pass if the app isn't even running
+	if !inForeground {
+		result.HasCrash = true
+		result.LogEntries = append(
+			result.LogEntries,
+			fmt.Sprintf("APP NOT IN FOREGROUND: %s is not the current activity", d.packageName),
+			"TEST INVALID: Screenshots are of launcher/home, not the app",
+		)
+		// Take screenshot to prove what's actually showing
+		screenshotPath, _ := d.takeAndroidScreenshot(ctx)
+		result.ScreenshotPath = screenshotPath
+		return result, nil
 	}
 
 	// 1. Check if app process is alive.
@@ -191,6 +216,26 @@ func (d *Detector) takeAndroidScreenshot(
 	}
 
 	return localPath, nil
+}
+
+// isAppInForeground checks if the app is the current foreground activity
+// by querying the activity manager's resumed activity.
+func (d *Detector) isAppInForeground(ctx context.Context) (bool, error) {
+	args := d.adbArgs("shell", "dumpsys", "activity", "activities")
+	output, err := d.cmdRunner.Run(ctx, "adb", args...)
+	if err != nil {
+		return false, fmt.Errorf("dumpsys activity: %w", err)
+	}
+
+	// Parse output to find mResumedActivity
+	lines := strings.Split(string(output), "\n")
+	for _, line := range lines {
+		if strings.Contains(line, "mResumedActivity") {
+			// Check if our package is in the resumed activity
+			return strings.Contains(line, d.packageName), nil
+		}
+	}
+	return false, nil
 }
 
 // adbArgs prepends the -s device flag if a device is

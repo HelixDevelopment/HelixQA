@@ -1,0 +1,231 @@
+# HelixQA Production Stack
+# Complete video processing pipeline with all components
+
+version: '3.8'
+
+services:
+  # MediaMTX - RTSP/RTMP/HLS/WebRTC streaming server
+  mediamtx:
+    build:
+      context: ./docker/mediamtx
+      dockerfile: Dockerfile
+    container_name: helixqa-mediamtx
+    ports:
+      - "8554:8554"     # RTSP
+      - "1935:1935"     # RTMP
+      - "8888:8888"     # HLS
+      - "8889:8889"     # WebRTC
+      - "8189:8189/udp" # WebRTC ICE UDP
+      - "8189:8189/tcp" # WebRTC ICE TCP
+      - "9998:9998"     # Prometheus metrics
+    volumes:
+      - mediamtx-data:/data
+      - ./docker/mediamtx/mediamtx.yml:/mediamtx.yml:ro
+    environment:
+      - MTX_PROTOCOLS=tcp
+    restart: unless-stopped
+    networks:
+      - helixqa-network
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:9998/metrics"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # NATS JetStream - Distributed state management
+  nats:
+    image: nats:2.10-alpine
+    container_name: helixqa-nats
+    ports:
+      - "4222:4222"     # Client port
+      - "8222:8222"     # HTTP monitoring
+      - "6222:6222"     # Cluster port
+    volumes:
+      - nats-data:/data/jetstream
+    command: >
+      --js
+      --store_dir /data/jetstream
+      --http_port 8222
+    restart: unless-stopped
+    networks:
+      - helixqa-network
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8222/healthz"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Ollama - LLM serving
+  ollama:
+    image: ollama/ollama:latest
+    container_name: helixqa-ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama-data:/root/.ollama
+    environment:
+      - OLLAMA_HOST=0.0.0.0
+      - OLLAMA_ORIGINS=*
+    restart: unless-stopped
+    networks:
+      - helixqa-network
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:11434/api/tags"]
+      interval: 60s
+      timeout: 10s
+      retries: 3
+      start_period: 120s
+
+  # HelixQA API Server
+  helixqa-api:
+    build:
+      context: .
+      dockerfile: docker/api/Dockerfile
+    container_name: helixqa-api
+    ports:
+      - "8080:8080"
+    environment:
+      - NATS_URL=nats://nats:4222
+      - MEDIAMTX_URL=rtsp://mediamtx:8554
+      - OLLAMA_URL=http://ollama:11434
+      - LOG_LEVEL=info
+      - METRICS_ENABLED=true
+    volumes:
+      - ./config:/app/config:ro
+      - helixqa-data:/app/data
+    depends_on:
+      nats:
+        condition: service_healthy
+      mediamtx:
+        condition: service_healthy
+      ollama:
+        condition: service_started
+    restart: unless-stopped
+    networks:
+      - helixqa-network
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # HelixQA Vision Worker
+  helixqa-vision:
+    build:
+      context: .
+      dockerfile: docker/vision/Dockerfile
+    container_name: helixqa-vision
+    environment:
+      - NATS_URL=nats://nats:4222
+      - OLLAMA_URL=http://ollama:11434
+      - WORKER_ID=vision-1
+      - MAX_CONCURRENT=4
+      - LOG_LEVEL=info
+    volumes:
+      - helixqa-data:/app/data
+    depends_on:
+      nats:
+        condition: service_healthy
+      ollama:
+        condition: service_started
+    restart: unless-stopped
+    networks:
+      - helixqa-network
+    deploy:
+      resources:
+        limits:
+          cpus: '4'
+          memory: 8G
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+
+  # Prometheus - Metrics collection
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: helixqa-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./docker/monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--storage.tsdb.retention.time=30d'
+      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
+      - '--web.console.templates=/usr/share/prometheus/consoles'
+      - '--web.enable-lifecycle'
+    restart: unless-stopped
+    networks:
+      - helixqa-network
+
+  # Grafana - Metrics visualization
+  grafana:
+    image: grafana/grafana:latest
+    container_name: helixqa-grafana
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./docker/monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards:ro
+      - ./docker/monitoring/grafana/datasources:/etc/grafana/provisioning/datasources:ro
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_USERS_ALLOW_SIGN_UP=false
+    restart: unless-stopped
+    networks:
+      - helixqa-network
+    depends_on:
+      - prometheus
+
+  # Redis - Caching layer
+  redis:
+    image: redis:7-alpine
+    container_name: helixqa-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    command: redis-server --appendonly yes --maxmemory 512mb --maxmemory-policy allkeys-lru
+    restart: unless-stopped
+    networks:
+      - helixqa-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+volumes:
+  mediamtx-data:
+    driver: local
+  nats-data:
+    driver: local
+  ollama-data:
+    driver: local
+  helixqa-data:
+    driver: local
+  prometheus-data:
+    driver: local
+  grafana-data:
+    driver: local
+  redis-data:
+    driver: local
+
+networks:
+  helixqa-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16

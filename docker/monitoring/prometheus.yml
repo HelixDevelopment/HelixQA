@@ -1,0 +1,32 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+alerting:
+  alertmanagers: []
+
+rule_files: []
+
+scrape_configs:
+  # Prometheus itself
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  # MediaMTX streaming server
+  - job_name: 'mediamtx'
+    static_configs:
+      - targets: ['mediamtx:9998']
+    metrics_path: /metrics
+
+  # HelixQA API
+  - job_name: 'helixqa-api'
+    static_configs:
+      - targets: ['helixqa-api:8080']
+    metrics_path: /metrics
+
+  # NATS
+  - job_name: 'nats'
+    static_configs:
+      - targets: ['nats:8222']
+    metrics_path: /metrics
