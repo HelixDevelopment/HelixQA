@@ -426,8 +426,7 @@
       ],
       "tags": [
         "cross-platform",
-        "error-handling",
-        404
+        "error-handling"
       ],
       "estimated_duration": "15s",
       "expected_result": "All platforms handle missing entities gracefully"

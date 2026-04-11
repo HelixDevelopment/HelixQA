@@ -7644,7 +7644,6 @@
       ],
       "tags": [
         "edge-case",
-        404,
         "routing",
         "catch-all"
       ],

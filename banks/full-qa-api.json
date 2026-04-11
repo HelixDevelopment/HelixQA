@@ -4634,7 +4634,6 @@
       "tags": [
         "collection",
         "create",
-        null,
         "negative"
       ],
       "estimated_duration": "5s",
@@ -6609,7 +6608,6 @@
       ],
       "tags": [
         "edge-case",
-        404,
         "not-found"
       ],
       "estimated_duration": "5s",
