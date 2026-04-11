@@ -261,5 +261,31 @@ test_cases:
       fix_file: "catalogizer-androidtv/app/src/main/java/com/catalogizer/androidtv/ui/screens/media/MediaDetailScreen.kt"
       fix_commit: "already-fixed-in-source"
 
+  - id: FIX-010
+    name: "Auth login rate limiter actually rejects floods"
+    category: security
+    priority: critical
+    platforms: [api]
+    steps:
+      - name: "Flood /auth/login with 300 requests"
+        action: "k6 run tests/k6/ddos_ratelimit_test.js"
+        expected: "rate_limit_rejections rate > 0.90 — at least 90% of flood requests return 429"
+      - name: "Recovery health check"
+        action: "After flood stops, GET /health every 1s for 30s"
+        expected: "Every response returns 200 healthy, p95 latency < 500ms — limiter doesn't permanently brick the server"
+      - name: "Brute force locked after 6 attempts"
+        action: "Single VU hammers /auth/login with wrong creds"
+        expected: "Attempts 7..20 all return 401 or 429, never 5xx"
+    tags: [security, ddos, rate-limit, brute-force, login]
+    estimated_duration: "90s"
+    expected_result: "loginRateLimiter (30/min per IP) on /login + /register actively rejects hostile bursts while letting legitimate traffic recover"
+    fix_reference:
+      bug_id: "phase-d-ddos-hardening"
+      description: "Previously /login and /register used the shared authRateLimiter at 600/min per IP — 10 rps per IP is too lax for brute-force protection. Tiered limits now split login (30/min), token ops (600/min), and default (2000/min) so the challenge runner still works but attackers are rejected."
+      fix_files:
+        - "catalog-api/main.go"
+        - "tests/k6/ddos_ratelimit_test.js"
+      fix_commit: "pending"
+
   # Placeholder for fixes discovered during this QA campaign
   # New entries will be added as bugs are found and fixed
