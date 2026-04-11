@@ -78,6 +78,188 @@
         "fix_file": "catalog-web/src/pages/__tests__/EntityDetail.test.tsx",
         "fix_commit": "pending"
       }
+    },
+    {
+      "id": "FIX-003",
+      "name": "Playback history UI on all four apps",
+      "category": "regression",
+      "priority": "high",
+      "platforms": [
+        "androidtv",
+        "android",
+        "web",
+        "desktop"
+      ],
+      "steps": [
+        {
+          "name": "Android TV: verify ProgressBadge on home card",
+          "action": "Launch com.catalogizer.androidtv, navigate to first movie rail card with progress data",
+          "expected": "ProgressBadge visible at BottomStart of cover art showing duration, current, last session, play count"
+        },
+        {
+          "name": "Android TV: open HistoryDialog from detail screen",
+          "action": "DPAD_CENTER on focused card, navigate to History button in detail, DPAD_CENTER",
+          "expected": "Reproduction History dialog opens with 5-row summary + session list"
+        },
+        {
+          "name": "Android phone: verify ProgressBadge on MediaCard",
+          "action": "Launch com.catalogizer.android home screen",
+          "expected": "ProgressBadge overlay rendered on cards with playback data"
+        },
+        {
+          "name": "Android phone: long-press card opens history",
+          "action": "Long-press any media card on home screen",
+          "expected": "HistoryDialog (Material 3 AlertDialog) opens with summary + sessions"
+        },
+        {
+          "name": "Web: verify ProgressBadge overlay",
+          "action": "Open catalog-web, navigate to any grid page using MediaGrid",
+          "expected": "ProgressBadge visible at bottom of each cover, data-testid=progress-badge-{id}"
+        },
+        {
+          "name": "Web: click badge opens HistoryDrawer",
+          "action": "Click ProgressBadge on any card",
+          "expected": "HistoryDrawer modal opens, shows summary rows + sessions, ESC closes"
+        },
+        {
+          "name": "Desktop: verify ProgressBadge on HomePage",
+          "action": "Launch catalogizer-desktop, open Home route",
+          "expected": "ProgressBadge visible on cards in Continue Watching / Recent / Highly Rated sections"
+        },
+        {
+          "name": "Desktop: click badge opens HistoryDrawer",
+          "action": "Click ProgressBadge on any card",
+          "expected": "HistoryDrawer modal opens with summary + sessions, click outside closes"
+        }
+      ],
+      "tags": [
+        "regression",
+        "playback",
+        "badge",
+        "history",
+        "cross-platform"
+      ],
+      "estimated_duration": "4m",
+      "expected_result": "ProgressBadge renders on all four apps with matching strings; HistoryDialog/HistoryDrawer opens and shows real session data",
+      "fix_reference": {
+        "bug_id": "N4-playback-history-ui",
+        "description": "Playback history tracked by backend + TV PlaybackTracker but no user-visible UI existed on any app",
+        "fix_files": [
+          "catalogizer-androidtv/app/src/main/java/com/catalogizer/androidtv/ui/components/ProgressBadge.kt",
+          "catalogizer-androidtv/app/src/main/java/com/catalogizer/androidtv/ui/components/HistoryDialog.kt",
+          "catalogizer-android/app/src/main/java/com/catalogizer/android/ui/components/ProgressBadge.kt",
+          "catalog-web/src/components/media/ProgressBadge.tsx",
+          "catalog-web/src/components/media/HistoryDrawer.tsx",
+          "catalogizer-desktop/src/components/ProgressBadge.tsx",
+          "catalogizer-desktop/src/components/HistoryDrawer.tsx"
+        ],
+        "fix_commits": [
+          "7a9d6cac",
+          "0f447e22",
+          "8595b013",
+          "2a73e02e",
+          "9f411a4b",
+          "71a68e6d",
+          "22380e77"
+        ]
+      }
+    },
+    {
+      "id": "FIX-004",
+      "name": "Android TV search IME input accumulation",
+      "category": "regression",
+      "priority": "high",
+      "platforms": [
+        "androidtv"
+      ],
+      "steps": [
+        {
+          "name": "Open search screen",
+          "action": "Launch com.catalogizer.androidtv, navigate to Search",
+          "expected": "Search field focused"
+        },
+        {
+          "name": "Type first query via DPAD_CENTER then text",
+          "action": "DPAD_CENTER to open IME, then `input text matrix`",
+          "expected": "Field shows 'matrix' exactly, no leading garbage"
+        },
+        {
+          "name": "Clear and type second query",
+          "action": "Clear field, type `die hard`",
+          "expected": "Field shows 'die hard' exactly, no accumulated text from first query"
+        },
+        {
+          "name": "Submit second query",
+          "action": "DPAD_CENTER again to submit",
+          "expected": "Results grid loads matching 'die hard'"
+        }
+      ],
+      "tags": [
+        "regression",
+        "androidtv",
+        "search",
+        "ime"
+      ],
+      "estimated_duration": "30s",
+      "expected_result": "Each query replaces the previous one cleanly; DPAD_CENTER open/submit flow works",
+      "fix_reference": {
+        "bug_id": "TICKET-001-androidtv-search-text-accumulation",
+        "description": "Text from prior search accumulated because DPAD_CENTER did not open IME before input text",
+        "fix_file": "catalogizer-androidtv/app/src/main/java/com/catalogizer/androidtv/ui/screens/search/SearchScreen.kt",
+        "fix_commit": "91637738"
+      }
+    },
+    {
+      "id": "FIX-005",
+      "name": "Android TV auth token persisted across relaunch",
+      "category": "regression",
+      "priority": "high",
+      "platforms": [
+        "androidtv"
+      ],
+      "steps": [
+        {
+          "name": "Log in fresh",
+          "action": "Launch app, log in with admin/admin123 via form",
+          "expected": "Home screen loads with library items"
+        },
+        {
+          "name": "Force-stop app",
+          "action": "adb shell am force-stop com.catalogizer.androidtv",
+          "expected": "Process killed"
+        },
+        {
+          "name": "Cold-start without intent extras",
+          "action": "adb shell am start -n com.catalogizer.androidtv/.ui.MainActivity",
+          "expected": "App lands directly on home screen without showing login"
+        },
+        {
+          "name": "Verify library content",
+          "action": "Screenshot home",
+          "expected": "174+ items visible, no 'Sign In' text in UI dump"
+        }
+      ],
+      "tags": [
+        "regression",
+        "androidtv",
+        "auth",
+        "token-persistence"
+      ],
+      "estimated_duration": "45s",
+      "expected_result": "JWT is persisted via TokenStore / EncryptedSharedPreferences and rehydrated on cold start",
+      "fix_reference": {
+        "bug_id": "N1-auth-token-persistence",
+        "description": "JWT was not written to EncryptedSharedPreferences so relaunch lost authenticated state",
+        "fix_files": [
+          "catalogizer-androidtv/app/src/main/java/com/catalogizer/androidtv/data/auth/TokenStore.kt",
+          "catalogizer-androidtv/app/src/main/java/com/catalogizer/androidtv/data/repository/AuthRepository.kt"
+        ],
+        "fix_commits": [
+          "7d206ae9",
+          "acb66c76",
+          "07d1c8c4"
+        ]
+      }
     }
   ]
 }
