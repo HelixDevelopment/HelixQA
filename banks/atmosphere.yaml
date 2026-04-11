@@ -367,6 +367,241 @@ test_cases:
     estimated_duration: "600s"
     expected_result: "All 50+ video/streaming apps successfully play video with secondary display redirect"
 
+  # ==================== Dual-Surface BufferQueue Model - Fix #111 (DS-xxx) ====================
+
+  - id: DS-001
+    name: "YouTube AD→video transition plays correctly on secondary display"
+    category: functional
+    priority: critical
+    platforms: [android]
+    steps:
+      - name: "Verify dual surfaces registered"
+        action: "adb shell service call video_output 10 — hasSecondaryDisplay must return 1"
+        expected: "hasSecondaryDisplay() returns true (both surfaces A and B registered)"
+      - name: "Play YouTube video with AD"
+        action: "Open YouTube, tap a video that has a pre-roll advertisement"
+        expected: "Advertisement begins playing"
+      - name: "Verify AD on secondary display"
+        action: "Observe TV — AD should appear with correct aspect ratio (no stretching)"
+        expected: "AD plays on TV with correct aspect ratio, no deformation"
+      - name: "Skip or wait for AD to finish"
+        action: "Skip the AD or wait for it to complete"
+        expected: "Transition from AD to actual video"
+      - name: "Verify actual video on secondary display"
+        action: "Observe TV — actual video must appear on secondary display"
+        expected: "Video plays on TV with correct aspect ratio, no stale AD frame visible"
+      - name: "Verify surface alternation in logcat"
+        action: "adb logcat -d | grep VideoOutputManager | grep 'surface'"
+        expected: "Logs show surface alternation: first video on surface A, second on surface B (or vice versa)"
+    tags: [dual-surface, fix-111, youtube, ad-transition, critical]
+    documentation_refs:
+      - type: architecture
+        section: "Fix #111"
+        path: "CLAUDE.md"
+    estimated_duration: "60s"
+    expected_result: "YouTube AD→video transition works cleanly with dual-surface alternation, no deformation, no stale frame"
+
+  - id: DS-002
+    name: "VK Video same-package video switching on secondary display"
+    category: functional
+    priority: critical
+    platforms: [android]
+    steps:
+      - name: "Launch VK Video and play first video"
+        action: "Open VK Video app, select and play any video"
+        expected: "First video plays on secondary display"
+      - name: "Navigate back and play second video"
+        action: "Go back in VK Video, select a different video"
+        expected: "Second video begins playing"
+      - name: "Verify second video on secondary display"
+        action: "Observe TV — second video must appear on secondary display"
+        expected: "Second video plays on TV with correct aspect ratio, no first video frame visible"
+      - name: "Verify surface switch"
+        action: "Check logcat for Same-package transition and surface alternation"
+        expected: "Logs show same-package transition with surface A→B or B→A switch"
+    tags: [dual-surface, fix-111, vk-video, same-package, critical]
+    estimated_duration: "45s"
+    expected_result: "VK Video same-package video switch works with dual-surface alternation"
+
+  - id: DS-003
+    name: "Cross-app video switching (YouTube → VK Video)"
+    category: functional
+    priority: critical
+    platforms: [android]
+    steps:
+      - name: "Play video in YouTube"
+        action: "Open YouTube, play any video"
+        expected: "YouTube video plays on secondary display"
+      - name: "Switch to VK Video and play video"
+        action: "Press home, open VK Video, play a video"
+        expected: "VK Video starts playing"
+      - name: "Verify VK Video on secondary display"
+        action: "Observe TV — VK Video content must replace YouTube content"
+        expected: "VK Video plays on TV, no YouTube frame visible, correct aspect ratio"
+      - name: "Verify cross-package transition in logcat"
+        action: "Check logcat for Cross-package transition"
+        expected: "Logs show cross-package transition from YouTube to VK Video"
+    tags: [dual-surface, fix-111, cross-app, critical]
+    estimated_duration: "60s"
+    expected_result: "Cross-app video switch works cleanly between YouTube and VK Video"
+
+  - id: DS-004
+    name: "Video aspect ratio preserved across different resolutions"
+    category: functional
+    priority: critical
+    platforms: [android]
+    steps:
+      - name: "Play 16:9 video"
+        action: "Play a standard 16:9 (1920x1080) video in any app"
+        expected: "Video fills TV width with no vertical distortion"
+      - name: "Play 4:3 video"
+        action: "Switch to a 4:3 (640x480) video"
+        expected: "Video has pillarbox (black bars on sides), no horizontal stretch"
+      - name: "Play vertical video"
+        action: "Play a vertical video (1080x1920 or 9:16)"
+        expected: "Video has wide pillarbox, content not stretched or deformed"
+      - name: "Verify updateVideoDecoderSize"
+        action: "Check logcat for updateVideoDecoderSize entries"
+        expected: "Each resolution change triggers aspect ratio update on correct surface"
+    tags: [dual-surface, fix-111, aspect-ratio, critical]
+    estimated_duration: "90s"
+    expected_result: "All video aspect ratios preserved correctly with dual-surface model"
+
+  - id: DS-005
+    name: "No stale frame visible during video transitions"
+    category: functional
+    priority: critical
+    platforms: [android]
+    steps:
+      - name: "Play first video"
+        action: "Play any video in YouTube or VK Video on secondary display"
+        expected: "Video playing on TV"
+      - name: "Trigger rapid transition"
+        action: "Quickly switch to another video (skip AD, change video, or switch apps)"
+        expected: "New video appears on TV"
+      - name: "Observe transition"
+        action: "Watch the TV carefully during the transition moment"
+        expected: "No flash of previous video frame, no ghosting, clean transition"
+      - name: "Verify inactive surface is 1x1"
+        action: "adb shell dumpsys SurfaceFlinger --list | grep SurfaceView"
+        expected: "Two SurfaceViews exist, inactive one has 1x1 dimensions"
+    tags: [dual-surface, fix-111, stale-frame, critical]
+    estimated_duration: "45s"
+    expected_result: "No stale frame visible during any video transition"
+
+  - id: DS-006
+    name: "Dual SurfaceViews registered in SurfaceFlinger"
+    category: smoke
+    priority: critical
+    platforms: [android]
+    steps:
+      - name: "Check SurfaceFlinger layers"
+        action: "adb shell dumpsys SurfaceFlinger --list | grep SurfaceView"
+        expected: "Two SurfaceView entries under the Presenter window"
+      - name: "Check VOM surface registration"
+        action: "adb shell service call video_output 10"
+        expected: "Returns 1 (hasSecondaryDisplay = true)"
+      - name: "Check surface A registration"
+        action: "adb logcat -d | grep 'Surface A set'"
+        expected: "Log confirms Surface A registered with VOM"
+      - name: "Check surface B registration"
+        action: "adb logcat -d | grep 'Surface B set'"
+        expected: "Log confirms Surface B registered with VOM"
+    tags: [dual-surface, fix-111, smoke, infrastructure]
+    estimated_duration: "15s"
+    expected_result: "Both surfaces registered and VOM reports secondary display available"
+
+  - id: DS-007
+    name: "Surface callback ordering: onSurfaceSwitch before onVideoStarted"
+    category: functional
+    priority: high
+    platforms: [android]
+    steps:
+      - name: "Play a video to trigger surface registration"
+        action: "Start any video that plays on secondary display"
+        expected: "Video redirected to secondary display"
+      - name: "Check callback ordering in logcat"
+        action: "adb logcat -d | grep -E 'Surface switch|Video started' | tail -5"
+        expected: "Surface switch log appears BEFORE Video started log for each video"
+      - name: "Verify aspect ratio applied to correct surface"
+        action: "Check logcat for 'Video surface A aspect' or 'Video surface B aspect'"
+        expected: "Aspect ratio log references the same surface that was switched to"
+    tags: [dual-surface, fix-111, callback-ordering, high]
+    estimated_duration: "30s"
+    expected_result: "onSurfaceSwitch always fires before onVideoStarted"
+
+  - id: DS-008
+    name: "Video returns to black screen after playback stops"
+    category: functional
+    priority: high
+    platforms: [android]
+    steps:
+      - name: "Play video on secondary display"
+        action: "Start any video that plays on secondary display"
+        expected: "Video playing on TV"
+      - name: "Stop playback"
+        action: "Press back or navigate away from the video"
+        expected: "Video stops"
+      - name: "Verify black screen on TV"
+        action: "Observe TV — should show black screen, no stale frame"
+        expected: "TV shows black screen (both surfaces shrunk to 1x1 by showBlackScreen)"
+      - name: "Verify surfaces preserved"
+        action: "adb shell service call video_output 10"
+        expected: "hasSecondaryDisplay still returns true (surfaces alive at 1x1)"
+    tags: [dual-surface, fix-111, cleanup, high]
+    estimated_duration: "30s"
+    expected_result: "Clean black screen after video stops, no stale frames, surfaces preserved"
+
+  - id: DS-009
+    name: "Rapid video switching stress test (5 videos in 30 seconds)"
+    category: stress
+    priority: high
+    platforms: [android]
+    steps:
+      - name: "Open YouTube"
+        action: "Launch YouTube app"
+        expected: "YouTube opens"
+      - name: "Rapidly switch videos"
+        action: "Play a video, skip after 3-5s, play another, repeat 5 times"
+        expected: "Each video begins playing"
+      - name: "Verify each video appears on secondary"
+        action: "Observe TV during rapid switching"
+        expected: "Each video appears on TV, no crashes, no permanent stale frames"
+      - name: "Check for crashes"
+        action: "adb logcat -d | grep -E 'FATAL|ANR|died'"
+        expected: "No crashes or ANRs during rapid switching"
+    tags: [dual-surface, fix-111, stress, rapid-switching]
+    estimated_duration: "45s"
+    expected_result: "Rapid video switching works without crashes or permanent display issues"
+
+  - id: DS-010
+    name: "Multi-app video cycle (YouTube→VK→RuTube→Kinopoisk→YouTube)"
+    category: integration
+    priority: high
+    platforms: [android]
+    steps:
+      - name: "Play YouTube video"
+        action: "Open YouTube, play a video"
+        expected: "YouTube video on secondary display"
+      - name: "Switch to VK Video"
+        action: "Home → open VK Video → play video"
+        expected: "VK Video replaces YouTube on secondary display"
+      - name: "Switch to RuTube"
+        action: "Home → open RuTube → play video"
+        expected: "RuTube replaces VK Video on secondary display"
+      - name: "Switch to Kinopoisk"
+        action: "Home → open Kinopoisk → play video"
+        expected: "Kinopoisk replaces RuTube on secondary display"
+      - name: "Return to YouTube"
+        action: "Home → open YouTube → play video"
+        expected: "YouTube video back on secondary display"
+      - name: "Verify no cumulative issues"
+        action: "Check logcat for errors, verify TV shows correct video"
+        expected: "Clean cycle through all apps, no stale frames, no crashes"
+    tags: [dual-surface, fix-111, multi-app, integration]
+    estimated_duration: "120s"
+    expected_result: "Full multi-app video cycle completes without issues"
+
   # ==================== Frozen Frame Detection & Cleanup (FF-xxx) ====================
 
   - id: FF-001
