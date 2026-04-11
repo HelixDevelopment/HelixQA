@@ -36,40 +36,55 @@ func IsBlankScreenshot(data []byte) bool {
 		return true
 	}
 
-	// Sample pixels at different positions
-	samplePoints := []struct{ x, y int }{
-		{width / 4, height / 4},
-		{width / 2, height / 4},
-		{3 * width / 4, height / 4},
-		{width / 4, height / 2},
-		{width / 2, height / 2},
-		{3 * width / 4, height / 2},
-		{width / 4, 3 * height / 4},
-		{width / 2, 3 * height / 4},
-		{3 * width / 4, 3 * height / 4},
-	}
-
-	// Get color of first sample point
-	r0, g0, b0, _ := img.At(bounds.Min.X+samplePoints[0].x, bounds.Min.Y+samplePoints[0].y).RGBA()
-	// Convert to 8-bit
-	r0, g0, b0 = r0>>8, g0>>8, b0>>8
-
-	var totalDiff uint32
-	for i, pt := range samplePoints {
-		if i == 0 {
-			continue
+	// Sample pixels across a dense 9x9 grid (81 points) so we catch
+	// UI widgets even on dark-themed login screens where most of the
+	// background is near-black. Reference-to-first sampling gave false
+	// "uniform" verdicts when the reference pixel and most samples hit
+	// the background; we now compute the per-channel range (max - min)
+	// across all samples, which is robust to uniform backgrounds with
+	// small bright UI elements.
+	const gridN = 9
+	var rMin, gMin, bMin uint32 = 255, 255, 255
+	var rMax, gMax, bMax uint32
+	for iy := 1; iy <= gridN; iy++ {
+		for ix := 1; ix <= gridN; ix++ {
+			x := bounds.Min.X + width*ix/(gridN+1)
+			y := bounds.Min.Y + height*iy/(gridN+1)
+			r, g, b, _ := img.At(x, y).RGBA()
+			r, g, b = r>>8, g>>8, b>>8
+			if r < rMin {
+				rMin = r
+			}
+			if r > rMax {
+				rMax = r
+			}
+			if g < gMin {
+				gMin = g
+			}
+			if g > gMax {
+				gMax = g
+			}
+			if b < bMin {
+				bMin = b
+			}
+			if b > bMax {
+				bMax = b
+			}
 		}
-		r, g, b, _ := img.At(bounds.Min.X+pt.x, bounds.Min.Y+pt.y).RGBA()
-		r, g, b = r>>8, g>>8, b>>8
-		diff := absDiff(r, r0) + absDiff(g, g0) + absDiff(b, b0)
-		totalDiff += uint32(diff)
 	}
 
-	// If average difference across samples is less than threshold,
-	// image is likely blank/uniform
-	avgDiff := totalDiff / uint32(len(samplePoints)-1)
-	// Threshold: average difference less than 10 per channel = uniform
-	return avgDiff < 30
+	// If any single channel shows >= 20 levels of variation across
+	// the grid, there is real content on screen. The 20-level
+	// threshold catches faint widgets (input borders, subtle
+	// gradients) while still rejecting truly blank frames.
+	maxRange := rMax - rMin
+	if gMax-gMin > maxRange {
+		maxRange = gMax - gMin
+	}
+	if bMax-bMin > maxRange {
+		maxRange = bMax - bMin
+	}
+	return maxRange < 20
 }
 
 // absDiff returns absolute difference
