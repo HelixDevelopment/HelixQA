@@ -18,7 +18,7 @@ import (
 	"github.com/otiai10/gosseract/v2"
 	"gocv.io/x/gocv"
 
-	"github.com/catalogizer/HelixQA/pkg/vision/core"
+	"digital.vasic.helixqa/pkg/vision/core"
 )
 
 // TesseractExtractor implements text extraction using Tesseract OCR.

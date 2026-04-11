@@ -16,7 +16,7 @@ import (
 
 	"gocv.io/x/gocv"
 
-	"github.com/catalogizer/HelixQA/pkg/vision/core"
+	"digital.vasic.helixqa/pkg/vision/core"
 )
 
 // ORBDetector implements element detection using ORB features.
