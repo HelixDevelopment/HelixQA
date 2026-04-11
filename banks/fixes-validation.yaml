@@ -171,5 +171,29 @@ test_cases:
         - "acb66c76"
         - "07d1c8c4"
 
+  - id: FIX-006
+    name: "Web Dashboard: Something went wrong after login"
+    category: regression
+    priority: high
+    platforms: [web]
+    steps:
+      - name: "Run DashboardStats partial-payload tests"
+        action: "cd catalog-web && npx vitest run src/components/dashboard/__tests__/DashboardStats.test.tsx"
+        expected: "15 tests pass — including 3 partial-payload regressions"
+      - name: "Playwright: log in and land on Dashboard"
+        action: "Start catalog-api + catalog-web, open http://localhost:3000, log in as admin/admin123"
+        expected: "Dashboard renders stats cards without error boundary firing, no 'Something went wrong' message"
+      - name: "Verify even with empty backend payload"
+        action: "Stub /api/v1/media/stats to return empty {} and reload /"
+        expected: "Dashboard still renders, cards show 0 fallbacks, no thrown exceptions"
+    tags: [regression, web, dashboard, error-boundary]
+    estimated_duration: "2m"
+    expected_result: "Dashboard never throws when MediaStats / UserStats fields are partial or missing"
+    fix_reference:
+      bug_id: "TICKET-008-web-dashboard-error-after-login"
+      description: "DashboardStats used `mediaStats?.total_items.toLocaleString()` — the optional chain only guards the outer object, not the property. Any missing numeric field (total_items, total_size, active_users, total_users, sessions_today) threw TypeError and tripped the error boundary."
+      fix_file: "catalog-web/src/components/dashboard/DashboardStats.tsx"
+      fix_commit: "pending"
+
   # Placeholder for fixes discovered during this QA campaign
   # New entries will be added as bugs are found and fixed
