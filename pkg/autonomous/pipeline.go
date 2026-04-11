@@ -1538,9 +1538,12 @@ func (sp *SessionPipeline) Run(
 		)
 	} else {
 		fmt.Printf(
-			"  [structured] Completed: %d/%d passed, "+
+			"  [structured] Completed: %d passed, %d failed, "+
+				"%d skipped (bank placeholders), %d total, "+
 				"%d steps executed in %v\n",
 			structuredResult.TestCasesPassed,
+			structuredResult.TestCasesFailed,
+			structuredResult.TestCasesSkipped,
 			structuredResult.TestCasesRun,
 			structuredResult.StepsExecuted,
 			time.Since(structuredStart).Round(time.Millisecond),

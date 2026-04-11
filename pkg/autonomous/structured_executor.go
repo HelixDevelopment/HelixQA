@@ -7,6 +7,7 @@ import (
 	"context"
 	"fmt"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"digital.vasic.helixqa/pkg/analysis"
@@ -147,12 +148,20 @@ func (ste *StructuredTestExecutor) executeTestCase(
 	)
 
 	testPassed := true
+	executedSteps := 0
+	skippedSteps := 0
 	var stepResults []TestStepResult
 
 	for i, step := range tc.Steps {
 		stepResult := ste.executeStep(ctx, tc, step, i+1)
 		stepResults = append(stepResults, stepResult)
 		result.StepsExecuted++
+
+		if stepResult.Skipped {
+			skippedSteps++
+			continue
+		}
+		executedSteps++
 
 		if !stepResult.Passed {
 			testPassed = false
@@ -181,17 +190,33 @@ func (ste *StructuredTestExecutor) executeTestCase(
 		}
 	}
 
-	if testPassed {
-		result.TestCasesPassed++
+	switch {
+	case executedSteps == 0 && skippedSteps > 0:
+		// Every step was a bank placeholder — nothing actually ran
+		// against the app, so do not count as pass or fail.
+		result.TestCasesSkipped++
 		fmt.Printf(
-			"  [structured] [%s] ✓ PASSED (%d steps)\n",
-			tc.ID, len(stepResults),
+			"  [structured] [%s] ⊘ SKIPPED (%d placeholder steps)\n",
+			tc.ID, skippedSteps,
 		)
-	} else {
+	case testPassed:
+		result.TestCasesPassed++
+		if skippedSteps > 0 {
+			fmt.Printf(
+				"  [structured] [%s] ✓ PASSED (%d steps, %d placeholders skipped)\n",
+				tc.ID, executedSteps, skippedSteps,
+			)
+		} else {
+			fmt.Printf(
+				"  [structured] [%s] ✓ PASSED (%d steps)\n",
+				tc.ID, len(stepResults),
+			)
+		}
+	default:
 		result.TestCasesFailed++
 		fmt.Printf(
-			"  [structured] [%s] ✗ FAILED (%d/%d steps passed)\n",
-			tc.ID, len(stepResults)-1, len(tc.Steps),
+			"  [structured] [%s] ✗ FAILED (%d/%d steps passed, %d skipped)\n",
+			tc.ID, executedSteps-1, executedSteps, skippedSteps,
 		)
 	}
 
@@ -239,6 +264,15 @@ func (ste *StructuredTestExecutor) executeStep(
 	// Execute the action based on type
 	// CRITICAL: Now actually executes ADB commands, sleep, keypress, etc!
 	actionResult := ste.performAction(ctx, executor, step)
+
+	// Placeholder/skipped actions short-circuit — no verification,
+	// no failure, just propagate the Skipped flag so the test case
+	// loop can account for them separately.
+	if actionResult.Skipped {
+		result.Skipped = true
+		result.Actual = actionResult.Message
+		return result
+	}
 
 	// Take screenshot after action
 	// INCREASED: 2s delay for apps with slow rendering (Android TV cold start)
@@ -344,7 +378,16 @@ func (ste *StructuredTestExecutor) performAction(
 		return ActionResult{Success: true, Message: fmt.Sprintf("Tapped: %d,%d", x, y)}
 
 	case testbank.ActionTypeDescription:
-		// Legacy text-only action - WARN that this won't execute anything!
+		// Legacy text-only action. If the author marked it as an
+		// unfinished placeholder ("# TODO: Convert to executable ..."),
+		// treat the step as SKIPPED rather than FAILED — the bank
+		// entry is incomplete, not the app under test. This keeps
+		// real failures visible and prevents 1000+ false-negative
+		// findings from drowning out genuine issues.
+		if strings.HasPrefix(strings.TrimSpace(actionValue), "# TODO: Convert to executable") {
+			fmt.Printf("      [SKIP] Placeholder action (bank incomplete): %s\n", actionValue)
+			return ActionResult{Skipped: true, Message: "Bank placeholder — convert to adb_shell:/sleep:/key:/text:/tap: action"}
+		}
 		fmt.Printf("      [WARNING] Text-only action (not executable): %s\n", actionValue)
 		return ActionResult{Success: false, Message: "Text-only action - not executable! Use adb_shell:, sleep:, etc."}
 
@@ -441,23 +484,26 @@ func (ste *StructuredTestExecutor) priorityToSeverity(
 
 // StructuredExecutionResult holds the results of structured test execution.
 type StructuredExecutionResult struct {
-	TestCasesRun    int
-	TestCasesPassed int
-	TestCasesFailed int
-	StepsExecuted   int
-	Findings        []analysis.AnalysisFinding
+	TestCasesRun     int
+	TestCasesPassed  int
+	TestCasesFailed  int
+	TestCasesSkipped int
+	StepsExecuted    int
+	Findings         []analysis.AnalysisFinding
 }
 
 // TestStepResult represents the outcome of a single test step.
 type TestStepResult struct {
 	StepName string
 	Passed   bool
+	Skipped  bool
 	Actual   string
 }
 
 // ActionResult represents the outcome of performing an action.
 type ActionResult struct {
 	Success bool
+	Skipped bool
 	Message string
 }
 
