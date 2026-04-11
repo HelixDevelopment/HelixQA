@@ -195,5 +195,71 @@ test_cases:
       fix_file: "catalog-web/src/components/dashboard/DashboardStats.tsx"
       fix_commit: "pending"
 
+  - id: FIX-007
+    name: "Android TV: no black frame between login and home"
+    category: regression
+    priority: high
+    platforms: [androidtv]
+    steps:
+      - name: "Launch app + log in"
+        action: "Launch com.catalogizer.androidtv cleanly, log in with admin/admin123"
+        expected: "Login success → immediate transition to home"
+      - name: "Capture first post-login screenshot at <500ms"
+        action: "screencap 200ms after login submit"
+        expected: "Frame shows either the loading spinner+text OR populated home, NEVER fully black"
+      - name: "Capture five consecutive post-login frames"
+        action: "screencap every 300ms for 1.5s"
+        expected: "Every frame has non-black pixels covering >15% of the screen"
+    tags: [regression, androidtv, transition, black-frame]
+    estimated_duration: "10s"
+    expected_result: "Home screen's HomeUiState starts in isLoading=true so first compose renders the spinner — never empty content"
+    fix_reference:
+      bug_id: "TICKET-002-androidtv-black-screen-transition"
+      description: "HomeUiState() defaulted isLoading=false, so the first frame between initial composition and LaunchedEffect(loadHomeData) rendered no spinner AND no data — captured as a black screen."
+      fix_file: "catalogizer-androidtv/app/src/main/java/com/catalogizer/androidtv/ui/viewmodel/HomeViewModel.kt"
+      fix_commit: "pending"
+
+  - id: FIX-008
+    name: "Android TV: settings screen never shows home overlay behind it"
+    category: regression
+    priority: medium
+    platforms: [androidtv]
+    steps:
+      - name: "Start home data load"
+        action: "Launch app, log in, navigate to Settings while home is still loading"
+        expected: "Settings screen appears"
+      - name: "Capture screenshot mid-transition"
+        action: "screencap while the home loader may still be animating"
+        expected: "Screenshot shows only the settings UI — no 'Loading your media collection…' text or home spinner bleeding through"
+    tags: [regression, androidtv, settings, opacity]
+    estimated_duration: "8s"
+    expected_result: "Settings root Box has explicit opaque black background so sibling routes cannot bleed through during navigation"
+    fix_reference:
+      bug_id: "TICKET-003-androidtv-settings-loading-overlay"
+      description: "SettingsScreen root Box lacked a background modifier so transitions from the Home loading state could be captured through the settings composition."
+      fix_file: "catalogizer-androidtv/app/src/main/java/com/catalogizer/androidtv/ui/screens/settings/SettingsScreen.kt"
+      fix_commit: "pending"
+
+  - id: FIX-009
+    name: "Android TV: entity title uses ellipsis instead of abrupt truncation"
+    category: regression
+    priority: low
+    platforms: [androidtv]
+    steps:
+      - name: "Open detail for a long-titled media item"
+        action: "Search 'Lucky Luke', open any result"
+        expected: "Detail screen loads"
+      - name: "Inspect title Text"
+        action: "Dump UI hierarchy, find title Text element"
+        expected: "Text has maxLines=2 and overflow=Ellipsis — long titles show '…' not an abrupt cut"
+    tags: [regression, androidtv, detail, typography]
+    estimated_duration: "15s"
+    expected_result: "MediaDetailScreen title composable has maxLines=2, overflow=TextOverflow.Ellipsis"
+    fix_reference:
+      bug_id: "TICKET-004-androidtv-title-truncation"
+      description: "Originally raised when a long title appeared cut off. Already fixed in source — this regression test locks it in place."
+      fix_file: "catalogizer-androidtv/app/src/main/java/com/catalogizer/androidtv/ui/screens/media/MediaDetailScreen.kt"
+      fix_commit: "already-fixed-in-source"
+
   # Placeholder for fixes discovered during this QA campaign
   # New entries will be added as bugs are found and fixed
