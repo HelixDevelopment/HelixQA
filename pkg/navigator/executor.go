@@ -223,6 +223,20 @@ func (a *ADBExecutor) Home(ctx context.Context) error {
 	return a.KeyPress(ctx, "KEYCODE_HOME")
 }
 
+// Shell executes an arbitrary adb shell command and returns its
+// stdout. Used by playback_check and frame_diff actions that need
+// to run dumpsys/screencap pipelines beyond the fixed input
+// helpers above. The command string is passed verbatim as a single
+// shell argument to `adb -s <device> shell`, so callers can chain
+// with && / | just like an interactive shell.
+func (a *ADBExecutor) Shell(
+	ctx context.Context, cmd string,
+) ([]byte, error) {
+	return a.cmdRunner.Run(ctx,
+		"adb", "-s", a.device, "shell", cmd,
+	)
+}
+
 // Screenshot captures via adb shell screencap and returns
 // the raw PNG data. It validates the screenshot is not blank
 // and retries up to 5 times if necessary.

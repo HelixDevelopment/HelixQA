@@ -4,8 +4,14 @@
 package autonomous
 
 import (
+	"bytes"
 	"context"
 	"fmt"
+	"image"
+	// Register JPEG decoder for Screenshot() that returns
+	// JPEG on some ADB versions.
+	_ "image/jpeg"
+	_ "image/png"
 	"path/filepath"
 	"strings"
 	"time"
@@ -315,14 +321,19 @@ func (ste *StructuredTestExecutor) performAction(
 
 	switch actionType {
 	case testbank.ActionTypeADBShell:
-		// Execute ADB shell command
+		// Execute ADB shell command. Previous implementation only
+		// ran a connection check (Screenshot) and reported success
+		// without actually invoking the command, so every test that
+		// relied on adb_shell: silently no-oped. Fix: route through
+		// ADBExecutor.Shell so the device actually runs the command.
 		fmt.Printf("      [action] adb shell: %s\n", actionValue)
-		if adbExec, ok := executor.(*navigator.ADBExecutor); ok {
-			// Use cmdRunner to execute ADB command
-			_, err := adbExec.Screenshot(ctx) // Just to check connection
-			if err != nil {
-				return ActionResult{Success: false, Message: fmt.Sprintf("ADB error: %v", err)}
-			}
+		adbExec, ok := executor.(*navigator.ADBExecutor)
+		if !ok {
+			return ActionResult{Success: false, Message: "adb_shell requires an Android executor"}
+		}
+		out, err := adbExec.Shell(ctx, actionValue)
+		if err != nil {
+			return ActionResult{Success: false, Message: fmt.Sprintf("adb shell error: %v (out: %s)", err, truncateOutput(out, 200))}
 		}
 		return ActionResult{Success: true, Message: fmt.Sprintf("Executed: %s", actionValue)}
 
@@ -376,6 +387,55 @@ func (ste *StructuredTestExecutor) performAction(
 			}
 		}
 		return ActionResult{Success: true, Message: fmt.Sprintf("Tapped: %d,%d", x, y)}
+
+	case testbank.ActionTypePlaybackCheck:
+		// Query adb shell dumpsys media_session and assert that at
+		// least one active session is in PlaybackState PLAYING. The
+		// value format is "<package>" or "<package>:<minState>";
+		// the default package is "*" (any app) and the default
+		// minState is 3 (PLAYING).
+		fmt.Printf("      [action] playback_check: %s\n", actionValue)
+		adbExec, ok := executor.(*navigator.ADBExecutor)
+		if !ok {
+			return ActionResult{Success: false, Message: "playback_check requires an Android executor"}
+		}
+		pkg, minState := parsePlaybackCheckArgs(actionValue)
+		out, err := adbExec.Shell(ctx, "dumpsys media_session 2>/dev/null")
+		if err != nil {
+			return ActionResult{Success: false, Message: fmt.Sprintf("dumpsys failed: %v", err)}
+		}
+		ok2, reason := verifyPlaybackState(string(out), pkg, minState)
+		if !ok2 {
+			return ActionResult{Success: false, Message: fmt.Sprintf("playback not active: %s", reason)}
+		}
+		return ActionResult{Success: true, Message: fmt.Sprintf("playback verified: %s", reason)}
+
+	case testbank.ActionTypeFrameDiff:
+		// Capture two screenshots separated by waitMs milliseconds
+		// (default 2000 ms) and assert that they differ. Used to
+		// confirm that video playback is actually rendering frames
+		// rather than sitting on a frozen first frame.
+		fmt.Printf("      [action] frame_diff: %s\n", actionValue)
+		waitMs := 2000
+		if actionValue != "" {
+			if n, err := parseIntField(actionValue); err == nil && n > 0 {
+				waitMs = n
+			}
+		}
+		first, err := executor.Screenshot(ctx)
+		if err != nil || len(first) == 0 {
+			return ActionResult{Success: false, Message: fmt.Sprintf("first screenshot failed: %v", err)}
+		}
+		time.Sleep(time.Duration(waitMs) * time.Millisecond)
+		second, err := executor.Screenshot(ctx)
+		if err != nil || len(second) == 0 {
+			return ActionResult{Success: false, Message: fmt.Sprintf("second screenshot failed: %v", err)}
+		}
+		changed, diffPct := framesDiffer(first, second)
+		if !changed {
+			return ActionResult{Success: false, Message: fmt.Sprintf("frames identical (diff %.1f%%) — playback appears frozen", diffPct)}
+		}
+		return ActionResult{Success: true, Message: fmt.Sprintf("frames differ by %.1f%% — motion detected", diffPct)}
 
 	case testbank.ActionTypeDescription:
 		// Legacy text-only action. If the author marked it as an
@@ -516,4 +576,168 @@ func containsIgnoreCase(s, substr string) bool {
 func extractLine(text, prefix string) string {
 	// Simple extraction - would need proper implementation
 	return text
+}
+
+// truncateOutput clips command output to n runes so error messages
+// stay readable when a failing adb shell call produces a wall of
+// logcat or dumpsys text.
+func truncateOutput(b []byte, n int) string {
+	s := string(b)
+	if len(s) <= n {
+		return s
+	}
+	return s[:n] + "..."
+}
+
+// parseIntField parses a trimmed decimal integer. Returns error on
+// an empty or malformed input so callers can fall back to defaults.
+func parseIntField(s string) (int, error) {
+	s = strings.TrimSpace(s)
+	if s == "" {
+		return 0, fmt.Errorf("empty")
+	}
+	var n int
+	if _, err := fmt.Sscanf(s, "%d", &n); err != nil {
+		return 0, err
+	}
+	return n, nil
+}
+
+// parsePlaybackCheckArgs splits a playback_check value into a
+// package filter and a minimum PlaybackState integer. Accepts:
+//   - ""                  -> ("*", 3)
+//   - "com.example"       -> ("com.example", 3)
+//   - "com.example:2"     -> ("com.example", 2)
+//   - "*"                 -> ("*", 3)
+func parsePlaybackCheckArgs(s string) (string, int) {
+	s = strings.TrimSpace(s)
+	if s == "" {
+		return "*", 3
+	}
+	pkg := s
+	minState := 3
+	if idx := strings.Index(s, ":"); idx > 0 {
+		pkg = strings.TrimSpace(s[:idx])
+		if n, err := parseIntField(s[idx+1:]); err == nil && n >= 0 {
+			minState = n
+		}
+	}
+	if pkg == "" {
+		pkg = "*"
+	}
+	return pkg, minState
+}
+
+// verifyPlaybackState scans the full output of
+// `dumpsys media_session` looking for a session record whose
+// package matches (or any package if pkg == "*") AND whose
+// PlaybackState integer is >= minState. Returns (true, reason)
+// when a matching session is found and (false, reason) otherwise.
+//
+// The relevant dumpsys lines look like:
+//   package=com.catalogizer.androidtv
+//   state=PlaybackState {state=3, position=12345, ...
+//
+// PlaybackState integers: 0=NONE, 1=STOPPED, 2=PAUSED, 3=PLAYING,
+// 4=FAST_FORWARDING, 5=REWINDING, 6=BUFFERING, 7=ERROR, 8=CONNECTING,
+// 9=SKIPPING_TO_PREVIOUS, 10=SKIPPING_TO_NEXT, 11=SKIPPING_TO_QUEUE_ITEM.
+// We treat state >= minState (default 3) as "playing or better",
+// which matches the intent of "is the app actually playing something".
+func verifyPlaybackState(dump, pkg string, minState int) (bool, string) {
+	lines := strings.Split(dump, "\n")
+	var currentPkg string
+	var bestState = -1
+	var bestPkg string
+	for _, raw := range lines {
+		line := strings.TrimSpace(raw)
+		if strings.HasPrefix(line, "package=") {
+			currentPkg = strings.TrimPrefix(line, "package=")
+			continue
+		}
+		if !strings.Contains(line, "PlaybackState {state=") {
+			continue
+		}
+		// Extract the integer after "state="
+		idx := strings.Index(line, "state=")
+		if idx < 0 {
+			continue
+		}
+		rest := line[idx+len("state="):]
+		n := 0
+		for _, r := range rest {
+			if r < '0' || r > '9' {
+				break
+			}
+			n = n*10 + int(r-'0')
+		}
+		if pkg != "*" && currentPkg != pkg {
+			continue
+		}
+		if n > bestState {
+			bestState = n
+			bestPkg = currentPkg
+		}
+	}
+	if bestState < 0 {
+		if pkg == "*" {
+			return false, "no media session found in dumpsys media_session"
+		}
+		return false, fmt.Sprintf("no media session found for package %q", pkg)
+	}
+	if bestState < minState {
+		return false, fmt.Sprintf("%s state=%d (want >=%d)", bestPkg, bestState, minState)
+	}
+	return true, fmt.Sprintf("%s state=%d", bestPkg, bestState)
+}
+
+// framesDiffer compares two PNG screenshots and returns whether
+// they visually differ by more than ~1 % of sampled pixels. Uses
+// the same 9x9 grid as IsBlankScreenshot but aggregates across
+// 17x17 = 289 points for a tighter signal. Suitable for confirming
+// that a video player is actually rendering new frames.
+func framesDiffer(aBytes, bBytes []byte) (bool, float64) {
+	a, _, errA := image.Decode(bytes.NewReader(aBytes))
+	b, _, errB := image.Decode(bytes.NewReader(bBytes))
+	if errA != nil || errB != nil {
+		// If we can't decode, be conservative and say they differ
+		// so we do not block a test on a decoding bug.
+		return true, 100.0
+	}
+	ba := a.Bounds()
+	bb := b.Bounds()
+	w := ba.Dx()
+	h := ba.Dy()
+	if w != bb.Dx() || h != bb.Dy() {
+		return true, 100.0
+	}
+	const gridN = 17
+	var diffCount, total int
+	for iy := 1; iy <= gridN; iy++ {
+		for ix := 1; ix <= gridN; ix++ {
+			x := ba.Min.X + w*ix/(gridN+1)
+			y := ba.Min.Y + h*iy/(gridN+1)
+			ar, ag, ab, _ := a.At(x, y).RGBA()
+			br, bg, bb2, _ := b.At(x+(bb.Min.X-ba.Min.X), y+(bb.Min.Y-ba.Min.Y)).RGBA()
+			ar, ag, ab = ar>>8, ag>>8, ab>>8
+			br, bg, bb2 = br>>8, bg>>8, bb2>>8
+			d := absU32(ar, br) + absU32(ag, bg) + absU32(ab, bb2)
+			if d > 30 {
+				diffCount++
+			}
+			total++
+		}
+	}
+	if total == 0 {
+		return false, 0
+	}
+	pct := float64(diffCount) * 100.0 / float64(total)
+	// >=1 % of sample points differ by >30 per-channel = real motion
+	return pct >= 1.0, pct
+}
+
+func absU32(a, b uint32) uint32 {
+	if a > b {
+		return a - b
+	}
+	return b - a
 }

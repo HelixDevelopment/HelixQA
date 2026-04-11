@@ -89,6 +89,22 @@ const (
 	ActionTypeSwipe ActionType = "swipe"
 	// ActionTypeText enters text.
 	ActionTypeText ActionType = "text"
+	// ActionTypePlaybackCheck queries Android `dumpsys media_session`
+	// and verifies that at least one media session for the given
+	// package (or any package if the value is "*") is in the
+	// PlaybackState PLAYING (state=3). Used to confirm a test case
+	// that pressed a Play button actually caused playback to start.
+	// Value format: "<package>" or "<package>:<minState>" where
+	// minState is the minimum PlaybackState integer to accept
+	// (default 3 = PLAYING).
+	ActionTypePlaybackCheck ActionType = "playback_check"
+	// ActionTypeFrameDiff captures a screenshot, waits the given
+	// number of milliseconds, captures a second screenshot, and
+	// returns success if the two frames differ by more than the
+	// similarity threshold. Used to confirm video playback is
+	// actually rendering (not a frozen first frame). Value format:
+	// "<waitMs>" — defaults to 2000 ms.
+	ActionTypeFrameDiff ActionType = "frame_diff"
 )
 
 // TestStep is a single step within a test case.
@@ -148,6 +164,10 @@ func (ts *TestStep) ParseAction() (ActionType, string) {
 			return ActionTypeSwipe, value
 		case ActionTypeText:
 			return ActionTypeText, value
+		case ActionTypePlaybackCheck:
+			return ActionTypePlaybackCheck, value
+		case ActionTypeFrameDiff:
+			return ActionTypeFrameDiff, value
 		}
 	}
 
