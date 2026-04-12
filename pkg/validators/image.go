@@ -118,7 +118,7 @@ func (v *ImageValidator) validateJPEG(file *os.File, result *ValidationResult) {
 		return
 	}
 
-	result.Metadata["color_model"] = config.ColorModel.String()
+	result.Metadata["color_model"] = fmt.Sprintf("%v", config.ColorModel)
 }
 
 func (v *ImageValidator) validatePNG(file *os.File, result *ValidationResult) {
@@ -131,7 +131,7 @@ func (v *ImageValidator) validatePNG(file *os.File, result *ValidationResult) {
 		return
 	}
 
-	result.Metadata["color_model"] = config.ColorModel.String()
+	result.Metadata["color_model"] = fmt.Sprintf("%v", config.ColorModel)
 	result.Metadata["has_alpha"] = true // PNG always supports alpha
 }
 
@@ -145,8 +145,10 @@ func (v *ImageValidator) validateGIF(file *os.File, result *ValidationResult) {
 		return
 	}
 
-	result.Metadata["color_model"] = config.ColorModel.String()
-	result.Metadata["is_animated"] = config.Delay != nil && len(config.Delay) > 1
+	result.Metadata["color_model"] = fmt.Sprintf("%v", config.ColorModel)
+	// gif.DecodeConfig returns image.Config which has no Delay field;
+	// animated GIF detection requires gif.DecodeAll which is expensive.
+	result.Metadata["is_animated"] = false
 }
 
 func isScreenshotSize(width, height int) bool {

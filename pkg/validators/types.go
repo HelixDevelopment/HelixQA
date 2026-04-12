@@ -50,7 +50,7 @@ type Validator interface {
 }
 
 // DetectAssetType determines the asset type from file extension and content
-tunc DetectAssetType(path string) AssetType {
+func DetectAssetType(path string) AssetType {
 	ext := strings.ToLower(filepath.Ext(path))
 	
 	switch ext {
@@ -80,7 +80,7 @@ tunc DetectAssetType(path string) AssetType {
 }
 
 // DetectTextSubtype determines the text file subtype
-tunc DetectTextSubtype(path string) TextSubtype {
+func DetectTextSubtype(path string) TextSubtype {
 	ext := strings.ToLower(filepath.Ext(path))
 	base := strings.ToLower(filepath.Base(path))
 	
