@@ -287,5 +287,29 @@ test_cases:
         - "tests/k6/ddos_ratelimit_test.js"
       fix_commit: "pending"
 
+  - id: FIX-011
+    name: "Android TV: libVLC deferred surface attachment"
+    category: regression
+    priority: high
+    platforms: [androidtv]
+    steps:
+      - name: "Open a movie from detail screen"
+        action: "Navigate to any movie detail, press Play Now"
+        expected: "VLCPlayerActivity launches"
+      - name: "Verify video surface receives frames"
+        action: "Wait 5s, capture screenshot"
+        expected: "Screenshot shows video content (not black or 'Media opening' text)"
+      - name: "Verify HTTP GET for stream was issued"
+        action: "Check logcat for '206 Partial Content' or 'Playing:' log from VLCPlayer"
+        expected: "Log entry shows the stream URL was fetched after surface attachment"
+    tags: [regression, androidtv, vlc, surface, playback]
+    estimated_duration: "30s"
+    expected_result: "VLCPlayer.play() defers to attachView() when called before Compose AndroidView factory runs; pending URI replayed after surface is ready"
+    fix_reference:
+      bug_id: "N2-libvlc-surface-attachment"
+      description: "VLCPlayerActivity called vlcPlayer.play() in onCreate synchronously, but the Compose AndroidView factory (which calls attachView) runs on the next frame. Without a surface, libVLC entered 'Media opening' but never issued the HTTP GET for the stream."
+      fix_file: "catalogizer-androidtv/app/src/main/java/com/catalogizer/androidtv/player/VLCPlayer.kt"
+      fix_commit: "pending"
+
   # Placeholder for fixes discovered during this QA campaign
   # New entries will be added as bugs are found and fixed
