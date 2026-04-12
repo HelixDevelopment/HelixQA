@@ -48,3 +48,8 @@ data/memory.db-wal
 .env.androidtv
 HelixQA/
 docs/issues/HELIX-*.md
+
+# Runtime SQLite databases
+data/memory.db
+data/memory.db-shm
+data/memory.db-wal
