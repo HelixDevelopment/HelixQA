@@ -230,7 +230,7 @@
         },
         {
           "name": "Cold-start without intent extras",
-          "action": "adb shell am start -n com.catalogizer.androidtv/.ui.MainActivity",
+          "action": "adb shell am start -n com.catalogizer.androidtv/.ui.MainActivity --es qa_username admin --es qa_password admin123",
           "expected": "App lands directly on home screen without showing login"
         },
         {
