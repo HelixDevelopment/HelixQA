@@ -1,0 +1,86 @@
+version: "1.0"
+name: "CLI Agent E2E Flow"
+description: >
+  5-step end-to-end validation for every CLI agent. Each step sends a
+  real prompt through the agent's configured provider (HelixAgent or
+  HelixLLM) and validates the response contains the expected content.
+  NO transient-error passes — real content required.
+
+metadata:
+  author: "vasic-digital"
+  app: "HelixAgent"
+  category: "cli-agent-e2e"
+  priority: "critical"
+
+test_cases:
+  - id: CLI-E2E-001
+    name: "Hello greeting"
+    category: e2e
+    priority: 1
+    platforms: [api]
+    steps:
+      - action: send_prompt
+        prompt: "hello!"
+        validation:
+          - type: response_not_empty
+          - type: response_contains_any
+            values: ["hello", "hi", "hey", "greetings", "help", "assist"]
+        description: "Agent must respond with a friendly greeting"
+
+  - id: CLI-E2E-002
+    name: "Codebase awareness"
+    category: e2e
+    priority: 1
+    platforms: [api]
+    steps:
+      - action: send_prompt
+        prompt: "Do you see my codebase?"
+        validation:
+          - type: response_not_empty
+          - type: response_contains_any
+            values: ["yes", "I can see", "I see", "codebase", "project", "repository", "Go", "golang", "directory"]
+        description: "Agent must confirm it can see the codebase"
+
+  - id: CLI-E2E-003
+    name: "File read/write capability"
+    category: e2e
+    priority: 1
+    platforms: [api]
+    steps:
+      - action: send_prompt
+        prompt: "Can you read and modify my source code files?"
+        validation:
+          - type: response_not_empty
+          - type: response_contains_any
+            values: ["yes", "I can", "read", "modify", "edit", "write", "file", "code"]
+        description: "Agent must confirm read/write capability"
+
+  - id: CLI-E2E-004
+    name: "Init command — update AGENTS.md"
+    category: e2e
+    priority: 1
+    platforms: [api]
+    steps:
+      - action: send_command
+        command: "/init"
+        timeout: 300
+        validation:
+          - type: file_modified
+            path: "AGENTS.md"
+          - type: response_not_empty
+        description: "Agent must process /init and update AGENTS.md"
+
+  - id: CLI-E2E-005
+    name: "Commit and push to all upstreams"
+    category: e2e
+    priority: 1
+    platforms: [api]
+    steps:
+      - action: send_prompt
+        prompt: "Commit and push now all changes to all upstreams!"
+        timeout: 120
+        validation:
+          - type: response_not_empty
+          - type: response_contains_any
+            values: ["commit", "push", "committed", "pushed", "upstream", "remote", "main"]
+        description: "Agent must commit and push to git remotes"
