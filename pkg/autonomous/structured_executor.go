@@ -257,9 +257,10 @@ func (ste *StructuredTestExecutor) executeStep(
 		return result
 	}
 
-	// CRITICAL: Wait for UI to render before screenshot
-	// Especially important after app launch/cold start
-	time.Sleep(2 * time.Second)
+	// Wait for UI to render before screenshot.
+	// 500ms is sufficient for most UI transitions on Android TV.
+	// Cold start handled separately by the test step's own sleep action.
+	time.Sleep(500 * time.Millisecond)
 
 	// Take screenshot before action
 	beforeSS, _ := executor.Screenshot(ctx)
@@ -280,9 +281,9 @@ func (ste *StructuredTestExecutor) executeStep(
 		return result
 	}
 
-	// Take screenshot after action
-	// INCREASED: 2s delay for apps with slow rendering (Android TV cold start)
-	time.Sleep(2 * time.Second)
+	// Take screenshot after action.
+	// 500ms is enough for UI to settle after a keypress/tap.
+	time.Sleep(500 * time.Millisecond)
 	afterSS, _ := executor.Screenshot(ctx)
 	if len(afterSS) > 0 && !IsBlankScreenshot(afterSS) && ste.onScreenshot != nil {
 		ste.onScreenshot(platform, afterSS)
