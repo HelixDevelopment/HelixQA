@@ -55,8 +55,12 @@ var visionModelRegistry = []visionModelScore{
 	{Provider: "githubmodels", QualityScore: 0.78, ReliabilityScore: 0.85, CostPer1kTokens: 0.0, AvgLatencyMs: 1400},
 	{Provider: "xai", QualityScore: 0.80, ReliabilityScore: 0.88, CostPer1kTokens: 0.005, AvgLatencyMs: 1100},
 
-	// Tier 3: Local / open-source
+	// Tier 3: Local / open-source / cheaper
 	{Provider: ProviderOllama, QualityScore: 0.65, ReliabilityScore: 0.80, CostPer1kTokens: 0.0, AvgLatencyMs: 3000},
+	{Provider: "uitars", QualityScore: 0.82, ReliabilityScore: 0.75, CostPer1kTokens: 0.0, AvgLatencyMs: 2000},
+	{Provider: "showui", QualityScore: 0.70, ReliabilityScore: 0.70, CostPer1kTokens: 0.0, AvgLatencyMs: 500},
+	{Provider: "glm4v", QualityScore: 0.78, ReliabilityScore: 0.80, CostPer1kTokens: 0.0, AvgLatencyMs: 1000},
+	{Provider: "qwen25vl", QualityScore: 0.87, ReliabilityScore: 0.85, CostPer1kTokens: 0.0, AvgLatencyMs: 3000},
 }
 
 // visionRegistryByProvider indexes the registry for O(1) lookup.
