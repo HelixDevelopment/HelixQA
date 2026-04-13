@@ -19,12 +19,12 @@
       "steps": [
         {
           "name": "Navigate to Catalogizer on TV home",
-          "action": "Use DPAD to locate and select Catalogizer app icon on the Android TV launcher",
+          "action": "adb_shell: am start -n com.catalogizer.androidtv/.MainActivity",
           "expected": "App icon is visible and focusable on the home screen"
         },
         {
           "name": "Press DPAD_CENTER to launch",
-          "action": "Press DPAD_CENTER on the Catalogizer icon",
+          "action": "keypress: KEYCODE_DPAD_CENTER",
           "expected": "App begins launching, splash or loading screen appears"
         }
       ],
@@ -47,12 +47,12 @@
       "steps": [
         {
           "name": "Launch app",
-          "action": "Open Catalogizer from Android TV launcher",
+          "action": "adb_shell: am start -n com.catalogizer.androidtv/.MainActivity",
           "expected": "Splash screen or loading indicator is displayed"
         },
         {
           "name": "Verify branding",
-          "action": "Observe the splash/loading screen content",
+          "action": "screenshot",
           "expected": "CATALOGIZER branding text and Media Collection Manager subtitle visible"
         }
       ],
@@ -75,12 +75,12 @@
       "steps": [
         {
           "name": "Fresh install launch",
-          "action": "Launch the app after a fresh install with no prior configuration",
+          "action": "adb_shell: am start -n com.catalogizer.androidtv/.MainActivity",
           "expected": "Login screen displays with SERVER CONNECTION section visible"
         },
         {
           "name": "Verify server URL field",
-          "action": "Check that the Server URL field is present below the login form",
+          "action": "screenshot",
           "expected": "Server URL OutlinedTextField is visible with Discover and Connect buttons"
         }
       ],
@@ -103,17 +103,17 @@
       "steps": [
         {
           "name": "Navigate to server URL field",
-          "action": "Use DPAD_DOWN to navigate past username, password, and Sign In button to the Server URL field",
+          "action": "keypress: KEYCODE_DPAD_DOWN",
           "expected": "Server URL field receives focus with animated border highlight"
         },
         {
           "name": "Open keyboard",
-          "action": "Press DPAD_CENTER to activate the text field and open on-screen keyboard",
+          "action": "keypress: KEYCODE_DPAD_CENTER",
           "expected": "On-screen keyboard appears"
         },
         {
           "name": "Type server URL",
-          "action": "Type http://localhost:8080 using ADB input or on-screen keyboard",
+          "action": "text: http://localhost:8080",
           "expected": "Server URL field displays http://localhost:8080"
         }
       ],
@@ -137,17 +137,17 @@
       "steps": [
         {
           "name": "Enter server URL",
-          "action": "Set server URL to http://localhost:8080",
+          "action": "text: http://localhost:8080",
           "expected": "Server URL field populated"
         },
         {
           "name": "Press Connect",
-          "action": "DPAD navigate to Connect button and press DPAD_CENTER",
+          "action": "keypress: KEYCODE_DPAD_CENTER",
           "expected": "Connection test initiates, trailing icon shows loading spinner"
         },
         {
           "name": "Verify connection status",
-          "action": "Observe the connection result indicator",
+          "action": "screenshot",
           "expected": "Green checkmark icon appears on successful connection, Connected to server text below"
         }
       ],
@@ -170,12 +170,12 @@
       "steps": [
         {
           "name": "Press Discover",
-          "action": "DPAD navigate to Discover button and press DPAD_CENTER",
+          "action": "keypress: KEYCODE_DPAD_CENTER",
           "expected": "Discovery starts, Searching for server... status appears"
         },
         {
           "name": "Wait for discovery",
-          "action": "Wait up to 10 seconds for discovery to complete",
+          "action": "sleep: 10000",
           "expected": "Either discovered servers appear as selectable buttons or No servers found message"
         }
       ],
@@ -199,12 +199,12 @@
       "steps": [
         {
           "name": "Launch with auto-discovery enabled and no saved URL",
-          "action": "Fresh launch with autoDiscovery=true and blank serverUrl",
+          "action": "adb_shell: pm clear com.catalogizer.androidtv && am start -n com.catalogizer.androidtv/.MainActivity",
           "expected": "Auto-discovery runs on launch"
         },
         {
           "name": "Verify auto-selection",
-          "action": "If exactly one server found, verify it is auto-selected",
+          "action": "screenshot",
           "expected": "Server URL field auto-populated and Connected to {name} status shown"
         }
       ],
@@ -227,12 +227,12 @@
       "steps": [
         {
           "name": "Configure server URL",
-          "action": "Enter and connect to http://localhost:8080",
+          "action": "text: http://localhost:8080",
           "expected": "Server URL saved via DataStore"
         },
         {
           "name": "Kill and restart app",
-          "action": "Force stop the app and relaunch from Android TV home",
+          "action": "adb_shell: am force-stop com.catalogizer.androidtv && sleep 1 && am start -n com.catalogizer.androidtv/.MainActivity",
           "expected": "App launches with previously saved server URL pre-filled"
         }
       ],
@@ -255,17 +255,17 @@
       "steps": [
         {
           "name": "Launch app",
-          "action": "Open Catalogizer app",
+          "action": "adb_shell: am start -n com.catalogizer.androidtv/.MainActivity",
           "expected": "Login screen is the initial screen for unauthenticated users"
         },
         {
           "name": "Verify login form elements",
-          "action": "Check all form elements are visible",
+          "action": "screenshot",
           "expected": "Username field, Password field, Sign In button, SERVER CONNECTION section all visible"
         },
         {
           "name": "Verify branding",
-          "action": "Check header content",
+          "action": "screenshot",
           "expected": "CATALOGIZER title and Media Collection Manager subtitle displayed"
         }
       ],
@@ -288,12 +288,12 @@
       "steps": [
         {
           "name": "Launch app to login screen",
-          "action": "Open Catalogizer and wait for login screen",
+          "action": "adb_shell: am start -n com.catalogizer.androidtv/.MainActivity",
           "expected": "Login screen displayed"
         },
         {
           "name": "Verify initial focus",
-          "action": "Check which field has focus after 200ms launch delay",
+          "action": "screenshot",
           "expected": "Username field has focus with animated border highlight (ice-blue glow)"
         }
       ],
@@ -317,27 +317,27 @@
       "steps": [
         {
           "name": "Enter username",
-          "action": "With username field focused, press DPAD_CENTER to open keyboard, type admin",
+          "action": "text: admin",
           "expected": "Username field shows admin"
         },
         {
           "name": "Navigate to password",
-          "action": "Press KEYCODE_TAB or DPAD_DOWN to move to password field",
+          "action": "keypress: KEYCODE_TAB",
           "expected": "Password field receives focus"
         },
         {
           "name": "Enter password",
-          "action": "Press DPAD_CENTER to open keyboard, type admin123",
+          "action": "text: admin123",
           "expected": "Password field shows masked characters"
         },
         {
           "name": "Submit login",
-          "action": "DPAD_DOWN to Sign In button, press DPAD_CENTER",
+          "action": "keypress: KEYCODE_DPAD_DOWN",
           "expected": "Loading spinner appears on Sign In button"
         },
         {
           "name": "Verify navigation",
-          "action": "Wait for authentication to complete",
+          "action": "sleep: 3000",
           "expected": "Navigates to home screen, login screen removed from back stack"
         }
       ],
@@ -361,12 +361,12 @@
       "steps": [
         {
           "name": "Start from login screen",
-          "action": "Ensure login screen is displayed",
+          "action": "screenshot",
           "expected": "Login form visible"
         },
         {
           "name": "Focus username",
-          "action": "Press DPAD_UP until username field has focus",
+          "action": "keypress: KEYCODE_DPAD_UP",
           "expected": "Username field shows animated ice-blue border glow, background becomes slightly brighter"
         }
       ],
@@ -390,12 +390,12 @@
       "steps": [
         {
           "name": "Focus username field",
-          "action": "DPAD navigate to username field",
+          "action": "keypress: KEYCODE_DPAD_UP",
           "expected": "Username field focused"
         },
         {
           "name": "Open keyboard",
-          "action": "Press DPAD_CENTER",
+          "action": "keypress: KEYCODE_DPAD_CENTER",
           "expected": "On-screen keyboard or IME appears, field is ready for text input"
         }
       ],
@@ -419,12 +419,12 @@
       "steps": [
         {
           "name": "Activate username field",
-          "action": "Focus and press DPAD_CENTER on username field",
+          "action": "keypress: KEYCODE_DPAD_CENTER",
           "expected": "Keyboard active"
         },
         {
           "name": "Type username",
-          "action": "Input text admin via on-screen keyboard or ADB input text",
+          "action": "text: admin",
           "expected": "Username field displays admin in white text"
         }
       ],
@@ -447,12 +447,12 @@
       "steps": [
         {
           "name": "Enter username",
-          "action": "Type admin in username field",
+          "action": "text: admin",
           "expected": "Username populated"
         },
         {
           "name": "Tab to password",
-          "action": "Press KEYCODE_TAB to move focus to password field",
+          "action": "keypress: KEYCODE_TAB",
           "expected": "Password field receives focus with animated border glow"
         }
       ],
@@ -476,17 +476,17 @@
       "steps": [
         {
           "name": "Focus password field",
-          "action": "Navigate to password field",
+          "action": "keypress: KEYCODE_TAB",
           "expected": "Password field focused"
         },
         {
           "name": "Enter password",
-          "action": "Press DPAD_CENTER, type admin123",
+          "action": "text: admin123",
           "expected": "Password field displays masked dots, not plaintext"
         },
         {
           "name": "Verify masking",
-          "action": "Observe password field visual",
+          "action": "screenshot",
           "expected": "PasswordVisualTransformation applied, password icon visible as trailing icon"
         }
       ],
@@ -510,17 +510,17 @@
       "steps": [
         {
           "name": "Fill credentials",
-          "action": "Enter admin and admin123 in respective fields",
+          "action": "text: admin",
           "expected": "Both fields populated"
         },
         {
           "name": "Navigate to Sign In",
-          "action": "DPAD_DOWN from password field to Sign In button",
+          "action": "keypress: KEYCODE_DPAD_DOWN",
           "expected": "Sign In button receives focus"
         },
         {
           "name": "Press Sign In",
-          "action": "Press DPAD_CENTER or Enter key",
+          "action": "keypress: KEYCODE_DPAD_CENTER",
           "expected": "Login initiated, loading spinner replaces Sign In text"
         }
       ],
@@ -544,17 +544,17 @@
       "steps": [
         {
           "name": "Perform valid login",
-          "action": "Login with admin/admin123",
+          "action": "adb_shell: am start -n com.catalogizer.androidtv/.MainActivity --es qa_username admin --es qa_password admin123",
           "expected": "Authentication succeeds"
         },
         {
           "name": "Verify home screen",
-          "action": "Observe screen after login",
+          "action": "screenshot",
           "expected": "Home screen displayed with Catalogizer top bar, search icon, settings icon"
         },
         {
           "name": "Verify login screen removed",
-          "action": "Press BACK",
+          "action": "keypress: KEYCODE_BACK",
           "expected": "Does not return to login screen (popUpTo with inclusive=true)"
         }
       ],
@@ -578,22 +578,22 @@
       "steps": [
         {
           "name": "Enter valid username",
-          "action": "Type admin in username field",
+          "action": "text: admin",
           "expected": "Username populated"
         },
         {
           "name": "Enter wrong password",
-          "action": "Type wrongpassword in password field",
+          "action": "text: wrongpassword",
           "expected": "Password populated"
         },
         {
           "name": "Submit login",
-          "action": "Press Sign In button",
+          "action": "keypress: KEYCODE_DPAD_CENTER",
           "expected": "Error message appears in red error box below the login button"
         },
         {
           "name": "Verify still on login screen",
-          "action": "Check current screen",
+          "action": "screenshot",
           "expected": "Login screen still displayed, not navigated to home"
         }
       ],
@@ -617,17 +617,17 @@
       "steps": [
         {
           "name": "Leave username empty",
-          "action": "Do not enter any text in username field",
+          "action": "screenshot",
           "expected": "Username field blank"
         },
         {
           "name": "Enter password",
-          "action": "Type admin123 in password field",
+          "action": "text: admin123",
           "expected": "Password populated"
         },
         {
           "name": "Submit login",
-          "action": "Press Sign In",
+          "action": "keypress: KEYCODE_DPAD_CENTER",
           "expected": "Username is required validation error displayed below username field in red"
         }
       ],
@@ -651,17 +651,17 @@
       "steps": [
         {
           "name": "Enter username",
-          "action": "Type admin in username field",
+          "action": "text: admin",
           "expected": "Username populated"
         },
         {
           "name": "Leave password empty",
-          "action": "Do not enter text in password field",
+          "action": "screenshot",
           "expected": "Password field blank"
         },
         {
           "name": "Submit login",
-          "action": "Press Sign In",
+          "action": "keypress: KEYCODE_DPAD_CENTER",
           "expected": "Password is required validation error displayed below password field in red"
         }
       ],
@@ -685,17 +685,17 @@
       "steps": [
         {
           "name": "Enter single character username",
-          "action": "Type a in username field",
+          "action": "text: a",
           "expected": "Username contains single character"
         },
         {
           "name": "Enter valid password",
-          "action": "Type admin123 in password field",
+          "action": "text: admin123",
           "expected": "Password populated"
         },
         {
           "name": "Submit login",
-          "action": "Press Sign In",
+          "action": "keypress: KEYCODE_DPAD_CENTER",
           "expected": "Username must be at least 2 characters validation error displayed"
         }
       ],
@@ -719,17 +719,17 @@
       "steps": [
         {
           "name": "Enter valid username",
-          "action": "Type admin in username field",
+          "action": "text: admin",
           "expected": "Username populated"
         },
         {
           "name": "Enter short password",
-          "action": "Type abc in password field",
+          "action": "text: abc",
           "expected": "Password has 3 characters"
         },
         {
           "name": "Submit login",
-          "action": "Press Sign In",
+          "action": "keypress: KEYCODE_DPAD_CENTER",
           "expected": "Password must be at least 4 characters validation error displayed"
         }
       ],
@@ -753,17 +753,17 @@
       "steps": [
         {
           "name": "Login successfully",
-          "action": "Login with admin/admin123",
+          "action": "adb_shell: am start -n com.catalogizer.androidtv/.MainActivity --es qa_username admin --es qa_password admin123",
           "expected": "Navigated to home screen, username saved to DataStore"
         },
         {
           "name": "Logout and return to login",
-          "action": "Navigate to Settings > Logout",
+          "action": "keypress: KEYCODE_DPAD_DOWN",
           "expected": "Login screen displayed"
         },
         {
           "name": "Verify saved username",
-          "action": "Check username field content",
+          "action": "screenshot",
           "expected": "Username field pre-populated with admin from previous session"
         }
       ],
@@ -787,22 +787,22 @@
       "steps": [
         {
           "name": "Navigate to server URL field",
-          "action": "DPAD_DOWN past Sign In to Server URL field",
+          "action": "keypress: KEYCODE_DPAD_DOWN",
           "expected": "Server URL field focused"
         },
         {
           "name": "Clear existing URL",
-          "action": "Clear the field content",
+          "action": "adb_shell: input keyevent KEYCODE_MOVE_END && input keyevent --longpress KEYCODE_DEL",
           "expected": "Server URL field empty"
         },
         {
           "name": "Enter new URL",
-          "action": "Type http://192.168.0.100:8080",
+          "action": "text: http://192.168.0.100:8080",
           "expected": "New URL displayed in field"
         },
         {
           "name": "Test connection",
-          "action": "Press Connect button",
+          "action": "keypress: KEYCODE_DPAD_CENTER",
           "expected": "Connection test runs, result indicator updates"
         }
       ],
@@ -825,12 +825,12 @@
       "steps": [
         {
           "name": "Login successfully",
-          "action": "Login with admin/admin123",
+          "action": "adb_shell: am start -n com.catalogizer.androidtv/.MainActivity --es qa_username admin --es qa_password admin123",
           "expected": "Home screen displayed"
         },
         {
           "name": "Verify top bar",
-          "action": "Check top bar content",
+          "action": "screenshot",
           "expected": "Catalogizer title, search icon, and settings icon visible in TopBar"
         }
       ],
@@ -853,12 +853,12 @@
       "steps": [
         {
           "name": "Navigate to home screen",
-          "action": "Login and arrive at home screen",
+          "action": "adb_shell: am start -n com.catalogizer.androidtv/.MainActivity --es qa_username admin --es qa_password admin123",
           "expected": "Home screen content loading"
         },
         {
           "name": "Verify category rows",
-          "action": "Observe content rails in TvLazyColumn",
+          "action": "screenshot",
           "expected": "At least one content rail visible (e.g., Recently Added Movies, Recently Added TV Shows)"
         }
       ],
@@ -881,12 +881,12 @@
       "steps": [
         {
           "name": "With partially watched content",
-          "action": "After watching some media partially, navigate to home screen",
+          "action": "adb_shell: am start -n com.catalogizer.androidtv/.MainActivity --es qa_username admin --es qa_password admin123",
           "expected": "Home screen loads"
         },
         {
           "name": "Verify Continue Watching",
-          "action": "Check for Continue Watching rail",
+          "action": "screenshot",
           "expected": "Continue Watching rail appears at the top with items that have watch progress"
         }
       ],
@@ -909,12 +909,12 @@
       "steps": [
         {
           "name": "Home screen loaded",
-          "action": "Navigate to home screen with movies in catalog",
+          "action": "adb_shell: am start -n com.catalogizer.androidtv/.MainActivity --es qa_username admin --es qa_password admin123",
           "expected": "Home screen displayed"
         },
         {
           "name": "Verify movies rail",
-          "action": "Look for Recently Added Movies section header and content",
+          "action": "screenshot",
           "expected": "Recently Added Movies rail visible with movie cards in LazyRow"
         }
       ],
@@ -937,12 +937,12 @@
       "steps": [
         {
           "name": "Home screen loaded",
-          "action": "Navigate to home screen with TV shows in catalog",
+          "action": "adb_shell: am start -n com.catalogizer.androidtv/.MainActivity --es qa_username admin --es qa_password admin123",
           "expected": "Home screen displayed"
         },
         {
           "name": "Verify TV shows rail",
-          "action": "Look for Recently Added TV Shows section",
+          "action": "screenshot",
           "expected": "Recently Added TV Shows rail visible with show cards"
         }
       ],
@@ -965,12 +965,12 @@
       "steps": [
         {
           "name": "Home screen loaded",
-          "action": "Navigate to home screen with music in catalog",
+          "action": "adb_shell: am start -n com.catalogizer.androidtv/.MainActivity --es qa_username admin --es qa_password admin123",
           "expected": "Home screen displayed"
         },
         {
           "name": "Verify music rail",
-          "action": "Look for Recently Added Music Albums section",
+          "action": "screenshot",
           "expected": "Recently Added Music Albums rail visible with album cards"
         }
       ],
@@ -993,17 +993,17 @@
       "steps": [
         {
           "name": "Focus a media card in a row",
-          "action": "DPAD navigate to a media card in any content rail",
+          "action": "keypress: KEYCODE_DPAD_DOWN",
           "expected": "Media card receives focus"
         },
         {
           "name": "Scroll right",
-          "action": "Press DPAD_RIGHT multiple times",
+          "action": "keypress: KEYCODE_DPAD_RIGHT",
           "expected": "Focus moves to next cards in the LazyRow, row scrolls horizontally to reveal more items"
         },
         {
           "name": "Scroll left",
-          "action": "Press DPAD_LEFT multiple times",
+          "action": "keypress: KEYCODE_DPAD_LEFT",
           "expected": "Focus moves back to previous cards"
         }
       ],
@@ -1027,17 +1027,17 @@
       "steps": [
         {
           "name": "Focus item in first row",
-          "action": "DPAD navigate to an item in the first content rail",
+          "action": "keypress: KEYCODE_DPAD_DOWN",
           "expected": "First row item focused"
         },
         {
           "name": "Navigate down",
-          "action": "Press DPAD_DOWN",
+          "action": "keypress: KEYCODE_DPAD_DOWN",
           "expected": "Focus moves to an item in the next content rail below"
         },
         {
           "name": "Navigate up",
-          "action": "Press DPAD_UP",
+          "action": "keypress: KEYCODE_DPAD_UP",
           "expected": "Focus returns to the previous content rail above"
         }
       ],
@@ -1061,12 +1061,12 @@
       "steps": [
         {
           "name": "Navigate to a media card",
-          "action": "DPAD to any media card on home screen",
+          "action": "keypress: KEYCODE_DPAD_DOWN",
           "expected": "Media card is focused"
         },
         {
           "name": "Verify focus indicator",
-          "action": "Observe the focused card visual state",
+          "action": "screenshot",
           "expected": "Card shows visible focus ring/border or scale animation indicating it is selected"
         }
       ],
@@ -1090,12 +1090,12 @@
       "steps": [
         {
           "name": "Home screen with content",
-          "action": "Navigate to home screen with media items that have cover images",
+          "action": "adb_shell: am start -n com.catalogizer.androidtv/.MainActivity --es qa_username admin --es qa_password admin123",
           "expected": "Content rails visible"
         },
         {
           "name": "Verify image loading",
-          "action": "Observe media cards in content rails",
+          "action": "screenshot",
           "expected": "Poster/cover images load via Coil AsyncImage, not showing placeholder indefinitely"
         }
       ],
@@ -1119,12 +1119,12 @@
       "steps": [
         {
           "name": "View media cards",
-          "action": "Navigate to content rails on home screen",
+          "action": "keypress: KEYCODE_DPAD_DOWN",
           "expected": "Media cards displayed"
         },
         {
           "name": "Verify title visibility",
-          "action": "Check text on media cards",
+          "action": "screenshot",
           "expected": "Media title text is readable, properly sized for 10-foot TV viewing"
         }
       ],
@@ -1148,12 +1148,12 @@
       "steps": [
         {
           "name": "View home screen",
-          "action": "Navigate to home screen with multiple content rails",
+          "action": "adb_shell: am start -n com.catalogizer.androidtv/.MainActivity --es qa_username admin --es qa_password admin123",
           "expected": "Multiple rails visible"
         },
         {
           "name": "Verify section headers",
-          "action": "Check headlineMedium text above each rail",
+          "action": "screenshot",
           "expected": "Section headers like Recently Added Movies, Recently Added TV Shows clearly visible"
         }
       ],
@@ -1177,12 +1177,12 @@
       "steps": [
         {
           "name": "View home screen with entities",
-          "action": "Navigate to home screen when totalEntities > 0",
+          "action": "adb_shell: am start -n com.catalogizer.androidtv/.MainActivity --es qa_username admin --es qa_password admin123",
           "expected": "Stats header at top of TvLazyColumn"
         },
         {
           "name": "Verify stats content",
-          "action": "Check CatalogStatsHeader content",
+          "action": "screenshot",
           "expected": "Your Library -- N items text and stats chips showing counts per media type"
         }
       ],
@@ -1206,12 +1206,12 @@
       "steps": [
         {
           "name": "Scroll to top rated section",
-          "action": "DPAD_DOWN to scroll through home screen rails",
+          "action": "keypress: KEYCODE_DPAD_DOWN",
           "expected": "Scrolling through content"
         },
         {
           "name": "Verify top rated movies",
-          "action": "Find Top Rated Movies rail",
+          "action": "screenshot",
           "expected": "Top Rated Movies rail visible with highest-rated movie cards"
         }
       ],
@@ -1234,12 +1234,12 @@
       "steps": [
         {
           "name": "Scroll down home screen",
-          "action": "DPAD_DOWN through rails",
+          "action": "keypress: KEYCODE_DPAD_DOWN",
           "expected": "Scrolling through content"
         },
         {
           "name": "Find recommendations",
-          "action": "Locate Recommended for You rail",
+          "action": "screenshot",
           "expected": "Recommended for You section visible with personalized media suggestions"
         }
       ],
@@ -1262,12 +1262,12 @@
       "steps": [
         {
           "name": "Scroll down home screen",
-          "action": "DPAD_DOWN through rails",
+          "action": "keypress: KEYCODE_DPAD_DOWN",
           "expected": "Scrolling through content"
         },
         {
           "name": "Find trending",
-          "action": "Locate Trending rail",
+          "action": "screenshot",
           "expected": "Trending section visible with popular media items"
         }
       ],
@@ -1290,12 +1290,12 @@
       "steps": [
         {
           "name": "Home screen with games",
-          "action": "Navigate to home screen with games in catalog",
+          "action": "adb_shell: am start -n com.catalogizer.androidtv/.MainActivity --es qa_username admin --es qa_password admin123",
           "expected": "Home screen displayed"
         },
         {
           "name": "Find games rail",
-          "action": "Look for Recently Added Games section",
+          "action": "screenshot",
           "expected": "Recently Added Games rail visible if games exist in catalog"
         }
       ],
@@ -1318,12 +1318,12 @@
       "steps": [
         {
           "name": "Home screen with books",
-          "action": "Navigate to home screen with books in catalog",
+          "action": "adb_shell: am start -n com.catalogizer.androidtv/.MainActivity --es qa_username admin --es qa_password admin123",
           "expected": "Home screen displayed"
         },
         {
           "name": "Find books rail",
-          "action": "Look for Recently Added Books section",
+          "action": "screenshot",
           "expected": "Recently Added Books rail visible if books exist in catalog"
         }
       ],
@@ -1346,12 +1346,12 @@
       "steps": [
         {
           "name": "Home screen with comics",
-          "action": "Navigate to home screen with comics in catalog",
+          "action": "adb_shell: am start -n com.catalogizer.androidtv/.MainActivity --es qa_username admin --es qa_password admin123",
           "expected": "Home screen displayed"
         },
         {
           "name": "Find comics rail",
-          "action": "Look for Recently Added Comics section",
+          "action": "screenshot",
           "expected": "Recently Added Comics rail visible if comics exist in catalog"
         }
       ],
@@ -1374,12 +1374,12 @@
       "steps": [
         {
           "name": "Home screen with software",
-          "action": "Navigate to home screen with software in catalog",
+          "action": "adb_shell: am start -n com.catalogizer.androidtv/.MainActivity --es qa_username admin --es qa_password admin123",
           "expected": "Home screen displayed"
         },
         {
           "name": "Find software rail",
-          "action": "Look for Recently Added Software section",
+          "action": "screenshot",
           "expected": "Recently Added Software rail visible if software exists in catalog"
         }
       ],
@@ -1402,12 +1402,12 @@
       "steps": [
         {
           "name": "Focus search icon",
-          "action": "DPAD navigate to search icon in TopBar",
+          "action": "keypress: KEYCODE_DPAD_UP",
           "expected": "Search icon focused"
         },
         {
           "name": "Press search",
-          "action": "Press DPAD_CENTER",
+          "action": "keypress: KEYCODE_DPAD_CENTER",
           "expected": "Navigates to search screen"
         }
       ],
@@ -1431,12 +1431,12 @@
       "steps": [
         {
           "name": "Focus settings icon",
-          "action": "DPAD navigate to settings icon in TopBar",
+          "action": "keypress: KEYCODE_DPAD_UP",
           "expected": "Settings icon focused"
         },
         {
           "name": "Press settings",
-          "action": "Press DPAD_CENTER",
+          "action": "keypress: KEYCODE_DPAD_CENTER",
           "expected": "Navigates to settings screen"
         }
       ],
@@ -1460,12 +1460,12 @@
       "steps": [
         {
           "name": "Navigate to home screen",
-          "action": "Login and observe home screen loading",
+          "action": "adb_shell: am start -n com.catalogizer.androidtv/.MainActivity --es qa_username admin --es qa_password admin123",
           "expected": "CircularProgressIndicator displayed"
         },
         {
           "name": "Verify loading text",
-          "action": "Check loading message",
+          "action": "screenshot",
           "expected": "Loading your media collection... text visible below spinner"
         }
       ],
@@ -1489,17 +1489,17 @@
       "steps": [
         {
           "name": "Trigger error state",
-          "action": "Navigate to home screen when API is unreachable",
+          "action": "adb_shell: am start -n com.catalogizer.androidtv/.MainActivity --es qa_username admin --es qa_password admin123",
           "expected": "Error state displayed"
         },
         {
           "name": "Verify error UI",
-          "action": "Check error screen content",
+          "action": "screenshot",
           "expected": "Error loading content heading, network check message, error detail, and Retry button"
         },
         {
           "name": "Press Retry",
-          "action": "DPAD to Retry button and press DPAD_CENTER",
+          "action": "keypress: KEYCODE_DPAD_CENTER",
           "expected": "Data loading retries"
         }
       ],
@@ -1523,12 +1523,12 @@
       "steps": [
         {
           "name": "Navigate to home with empty catalog",
-          "action": "Login when catalog has no scanned media",
+          "action": "adb_shell: am start -n com.catalogizer.androidtv/.MainActivity --es qa_username admin --es qa_password admin123",
           "expected": "Empty state displayed"
         },
         {
           "name": "Verify empty state UI",
-          "action": "Check content",
+          "action": "screenshot",
           "expected": "Your Library is Empty heading, storage root setup instructions, and Refresh button"
         }
       ],
@@ -1551,12 +1551,12 @@
       "steps": [
         {
           "name": "Find movies rail",
-          "action": "DPAD navigate to Recently Added Movies rail on home screen",
+          "action": "keypress: KEYCODE_DPAD_DOWN",
           "expected": "Movies rail focused"
         },
         {
           "name": "Select a movie",
-          "action": "DPAD_RIGHT to a movie card and press DPAD_CENTER",
+          "action": "keypress: KEYCODE_DPAD_RIGHT",
           "expected": "Navigates to media detail screen for the selected movie"
         }
       ],
@@ -1580,17 +1580,17 @@
       "steps": [
         {
           "name": "Focus movies rail",
-          "action": "DPAD to the Recently Added Movies rail",
+          "action": "keypress: KEYCODE_DPAD_DOWN",
           "expected": "Movies rail focused"
         },
         {
           "name": "Browse cards",
-          "action": "Press DPAD_RIGHT repeatedly to scroll through movie cards",
+          "action": "keypress: KEYCODE_DPAD_RIGHT",
           "expected": "Each card receives focus sequentially, LazyRow scrolls to reveal more items"
         },
         {
           "name": "Verify card width",
-          "action": "Observe card dimensions",
+          "action": "screenshot",
           "expected": "Each MediaCard is 240dp wide with proper spacing"
         }
       ],
@@ -1614,17 +1614,17 @@
       "steps": [
         {
           "name": "Focus first item",
-          "action": "DPAD to the first media card in any rail",
+          "action": "keypress: KEYCODE_DPAD_DOWN",
           "expected": "First card focused"
         },
         {
           "name": "Navigate right",
-          "action": "DPAD_RIGHT 5 times",
+          "action": "keypress: KEYCODE_DPAD_RIGHT",
           "expected": "Focus moves through 5 consecutive cards"
         },
         {
           "name": "Navigate left",
-          "action": "DPAD_LEFT 5 times",
+          "action": "keypress: KEYCODE_DPAD_LEFT",
           "expected": "Focus returns to first card"
         }
       ],
@@ -1648,12 +1648,12 @@
       "steps": [
         {
           "name": "Focus a movie card",
-          "action": "DPAD to a movie card on home screen",
+          "action": "keypress: KEYCODE_DPAD_DOWN",
           "expected": "Movie card focused"
         },
         {
           "name": "Open detail",
-          "action": "Press DPAD_CENTER",
+          "action": "keypress: KEYCODE_DPAD_CENTER",
           "expected": "MediaDetailScreen opens showing the movie details"
         }
       ],
@@ -1677,12 +1677,12 @@
       "steps": [
         {
           "name": "Open media detail",
-          "action": "Select any media item to open detail screen",
+          "action": "keypress: KEYCODE_DPAD_CENTER",
           "expected": "Detail screen displayed"
         },
         {
           "name": "Press BACK",
-          "action": "Press BACK button on remote",
+          "action": "keypress: KEYCODE_BACK",
           "expected": "Returns to home screen at the same scroll position"
         }
       ],
@@ -1705,12 +1705,12 @@
       "steps": [
         {
           "name": "Find TV shows rail",
-          "action": "DPAD_DOWN to Recently Added TV Shows rail",
+          "action": "keypress: KEYCODE_DPAD_DOWN",
           "expected": "TV Shows rail focused"
         },
         {
           "name": "Browse shows",
-          "action": "DPAD_RIGHT through TV show cards",
+          "action": "keypress: KEYCODE_DPAD_RIGHT",
           "expected": "TV show cards are browsable with proper titles and posters"
         }
       ],
@@ -1733,12 +1733,12 @@
       "steps": [
         {
           "name": "Find music rail",
-          "action": "DPAD_DOWN to Recently Added Music Albums rail",
+          "action": "keypress: KEYCODE_DPAD_DOWN",
           "expected": "Music rail focused"
         },
         {
           "name": "Browse albums",
-          "action": "DPAD_RIGHT through music album cards",
+          "action": "keypress: KEYCODE_DPAD_RIGHT",
           "expected": "Music album cards are browsable with album art and titles"
         }
       ],
@@ -1761,12 +1761,12 @@
       "steps": [
         {
           "name": "Find books rail",
-          "action": "DPAD_DOWN to Recently Added Books rail",
+          "action": "keypress: KEYCODE_DPAD_DOWN",
           "expected": "Books rail focused"
         },
         {
           "name": "Browse books",
-          "action": "DPAD_RIGHT through book cards",
+          "action": "keypress: KEYCODE_DPAD_RIGHT",
           "expected": "Book cards displayed with covers and titles"
         }
       ],
@@ -1789,12 +1789,12 @@
       "steps": [
         {
           "name": "Find comics rail",
-          "action": "DPAD_DOWN to Recently Added Comics rail",
+          "action": "keypress: KEYCODE_DPAD_DOWN",
           "expected": "Comics rail focused"
         },
         {
           "name": "Browse comics",
-          "action": "DPAD_RIGHT through comic cards",
+          "action": "keypress: KEYCODE_DPAD_RIGHT",
           "expected": "Comic cards displayed with covers and titles"
         }
       ],
@@ -1817,12 +1817,12 @@
       "steps": [
         {
           "name": "Find games rail",
-          "action": "DPAD_DOWN to Recently Added Games rail",
+          "action": "keypress: KEYCODE_DPAD_DOWN",
           "expected": "Games rail focused"
         },
         {
           "name": "Browse games",
-          "action": "DPAD_RIGHT through game cards",
+          "action": "keypress: KEYCODE_DPAD_RIGHT",
           "expected": "Game cards displayed with covers and titles"
         }
       ],
@@ -1845,12 +1845,12 @@
       "steps": [
         {
           "name": "Find software rail",
-          "action": "DPAD_DOWN to Recently Added Software rail",
+          "action": "keypress: KEYCODE_DPAD_DOWN",
           "expected": "Software rail focused"
         },
         {
           "name": "Browse software",
-          "action": "DPAD_RIGHT through software cards",
+          "action": "keypress: KEYCODE_DPAD_RIGHT",
           "expected": "Software cards displayed with titles"
         }
       ],
@@ -1873,12 +1873,12 @@
       "steps": [
         {
           "name": "Find concerts rail",
-          "action": "DPAD_DOWN to Recently Added Concerts rail",
+          "action": "keypress: KEYCODE_DPAD_DOWN",
           "expected": "Concerts rail focused"
         },
         {
           "name": "Browse concerts",
-          "action": "DPAD_RIGHT through concert cards",
+          "action": "keypress: KEYCODE_DPAD_RIGHT",
           "expected": "Concert cards displayed with covers and titles"
         }
       ],
@@ -1901,12 +1901,12 @@
       "steps": [
         {
           "name": "Focus Continue Watching item",
-          "action": "DPAD to a card in Continue Watching rail",
+          "action": "keypress: KEYCODE_DPAD_DOWN",
           "expected": "Card focused"
         },
         {
           "name": "Select item",
-          "action": "Press DPAD_CENTER",
+          "action": "keypress: KEYCODE_DPAD_CENTER",
           "expected": "Navigates directly to player screen (navigateToPlayer=true), not detail screen"
         }
       ],
@@ -1930,12 +1930,12 @@
       "steps": [
         {
           "name": "Find top rated TV shows",
-          "action": "DPAD_DOWN to Top Rated TV Shows rail",
+          "action": "keypress: KEYCODE_DPAD_DOWN",
           "expected": "Rail focused"
         },
         {
           "name": "Browse items",
-          "action": "DPAD_RIGHT through cards",
+          "action": "keypress: KEYCODE_DPAD_RIGHT",
           "expected": "Top rated TV show cards browsable with ratings visible"
         }
       ],
@@ -1958,12 +1958,12 @@
       "steps": [
         {
           "name": "Find top rated music",
-          "action": "DPAD_DOWN to Top Rated Music rail",
+          "action": "keypress: KEYCODE_DPAD_DOWN",
           "expected": "Rail focused"
         },
         {
           "name": "Browse items",
-          "action": "DPAD_RIGHT through cards",
+          "action": "keypress: KEYCODE_DPAD_RIGHT",
           "expected": "Top rated music cards browsable"
         }
       ],
@@ -1986,12 +1986,12 @@
       "steps": [
         {
           "name": "Find top rated documents",
-          "action": "DPAD_DOWN to Top Rated Documents rail",
+          "action": "keypress: KEYCODE_DPAD_DOWN",
           "expected": "Rail focused"
         },
         {
           "name": "Browse items",
-          "action": "DPAD_RIGHT through cards",
+          "action": "keypress: KEYCODE_DPAD_RIGHT",
           "expected": "Top rated document cards browsable"
         }
       ],
@@ -2014,12 +2014,12 @@
       "steps": [
         {
           "name": "Load home screen",
-          "action": "Navigate to home screen",
+          "action": "adb_shell: am start -n com.catalogizer.androidtv/.MainActivity --es qa_username admin --es qa_password admin123",
           "expected": "Home screen displayed"
         },
         {
           "name": "Verify rail filtering",
-          "action": "Check that rails with zero items are not displayed",
+          "action": "screenshot",
           "expected": "Only content rails with non-empty item lists are rendered, no empty sections"
         }
       ],
@@ -2042,12 +2042,12 @@
       "steps": [
         {
           "name": "Press search icon",
-          "action": "DPAD navigate to search icon in TopBar and press DPAD_CENTER",
+          "action": "keypress: KEYCODE_DPAD_CENTER",
           "expected": "Search screen opens"
         },
         {
           "name": "Verify search screen",
-          "action": "Check search screen elements",
+          "action": "screenshot",
           "expected": "Search text field, Search button, placeholder text visible"
         }
       ],
@@ -2070,17 +2070,17 @@
       "steps": [
         {
           "name": "Open search",
-          "action": "Navigate to search screen",
+          "action": "keypress: KEYCODE_DPAD_UP",
           "expected": "Search screen displayed"
         },
         {
           "name": "Enter search query",
-          "action": "Press DPAD_CENTER on search field, type Matrix",
+          "action": "text: Matrix",
           "expected": "Search field shows Matrix"
         },
         {
           "name": "Execute search",
-          "action": "Press Search button or Enter key",
+          "action": "keypress: KEYCODE_ENTER",
           "expected": "Search results displayed with items matching Matrix"
         }
       ],
@@ -2104,17 +2104,17 @@
       "steps": [
         {
           "name": "Open search",
-          "action": "Navigate to search screen",
+          "action": "keypress: KEYCODE_DPAD_UP",
           "expected": "Search screen displayed"
         },
         {
           "name": "Enter Cyrillic query",
-          "action": "Type a Cyrillic query via ADB input",
+          "action": "text: \u041c\u0430\u0442\u0440\u0438\u0446\u0430",
           "expected": "Search field accepts Cyrillic characters"
         },
         {
           "name": "Execute search",
-          "action": "Press Search button",
+          "action": "keypress: KEYCODE_ENTER",
           "expected": "Search executes without error, results or no-results state shown"
         }
       ],
@@ -2138,12 +2138,12 @@
       "steps": [
         {
           "name": "Open search with empty field",
-          "action": "Navigate to search screen, leave search field empty",
+          "action": "keypress: KEYCODE_DPAD_UP",
           "expected": "Search field empty"
         },
         {
           "name": "Try to search",
-          "action": "Press Search button",
+          "action": "keypress: KEYCODE_ENTER",
           "expected": "Search button is disabled (enabled only when query isNotBlank), no search executed"
         }
       ],
@@ -2167,17 +2167,17 @@
       "steps": [
         {
           "name": "Open search",
-          "action": "Navigate to search screen",
+          "action": "keypress: KEYCODE_DPAD_UP",
           "expected": "Search screen displayed"
         },
         {
           "name": "Enter very long query",
-          "action": "Type a very long search string (100+ characters)",
+          "action": "text: abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz01234567890",
           "expected": "Search field accepts the text, single line with overflow"
         },
         {
           "name": "Execute search",
-          "action": "Press Search button",
+          "action": "keypress: KEYCODE_ENTER",
           "expected": "Search executes without crash, results or empty state displayed"
         }
       ],
@@ -2201,12 +2201,12 @@
       "steps": [
         {
           "name": "Trigger search",
-          "action": "Enter a search query and press Search",
+          "action": "text: Matrix",
           "expected": "Search initiates"
         },
         {
           "name": "Verify loading overlay",
-          "action": "Observe the UI during search",
+          "action": "screenshot",
           "expected": "Semi-transparent black overlay with CircularProgressIndicator and Searching... text"
         }
       ],
@@ -2230,12 +2230,12 @@
       "steps": [
         {
           "name": "Search for non-existent title",
-          "action": "Search for xyznonexistent12345",
+          "action": "text: xyznonexistent12345",
           "expected": "Search completes"
         },
         {
           "name": "Verify no results UI",
-          "action": "Observe the results area",
+          "action": "screenshot",
           "expected": "No results found for xyznonexistent12345 message with Try a different title suggestion"
         }
       ],
@@ -2259,12 +2259,12 @@
       "steps": [
         {
           "name": "Perform search with results",
-          "action": "Search for a term that returns results",
+          "action": "text: Matrix",
           "expected": "Results displayed"
         },
         {
           "name": "Verify count label",
-          "action": "Check label above results",
+          "action": "screenshot",
           "expected": "N results found label visible (labelLarge text)"
         }
       ],
@@ -2287,17 +2287,17 @@
       "steps": [
         {
           "name": "Get search results",
-          "action": "Perform a search that returns multiple results",
+          "action": "text: Matrix",
           "expected": "Results in LazyColumn"
         },
         {
           "name": "Navigate results",
-          "action": "DPAD_DOWN through CompactMediaCard items",
+          "action": "keypress: KEYCODE_DPAD_DOWN",
           "expected": "Focus moves through result items vertically"
         },
         {
           "name": "Select a result",
-          "action": "Press DPAD_CENTER on a focused result",
+          "action": "keypress: KEYCODE_DPAD_CENTER",
           "expected": "Navigates to media detail screen for that item"
         }
       ],
@@ -2322,12 +2322,12 @@
       "steps": [
         {
           "name": "Perform search",
-          "action": "Search for a term and get results",
+          "action": "text: Matrix",
           "expected": "Results displayed"
         },
         {
           "name": "Clear search",
-          "action": "Press the Clear (X) icon in the search field trailing icon",
+          "action": "keypress: KEYCODE_DPAD_CENTER",
           "expected": "Search query cleared, results cleared, search field empty, hasSearched reset"
         }
       ],
@@ -2351,12 +2351,12 @@
       "steps": [
         {
           "name": "Navigate to search screen",
-          "action": "Open search screen",
+          "action": "keypress: KEYCODE_DPAD_UP",
           "expected": "Search screen displayed"
         },
         {
           "name": "Verify initial state",
-          "action": "Check search field and content area",
+          "action": "screenshot",
           "expected": "Search text field with placeholder, Search for Media heading, instruction text visible"
         }
       ],
@@ -2380,12 +2380,12 @@
       "steps": [
         {
           "name": "Open search screen",
-          "action": "Navigate to search screen",
+          "action": "keypress: KEYCODE_DPAD_UP",
           "expected": "Search screen displayed"
         },
         {
           "name": "Verify focus",
-          "action": "Check which element has focus after 100ms delay",
+          "action": "screenshot",
           "expected": "Search text field has focus, ready for input"
         }
       ],
@@ -2409,12 +2409,12 @@
       "steps": [
         {
           "name": "Open search",
-          "action": "Navigate to search screen",
+          "action": "keypress: KEYCODE_DPAD_UP",
           "expected": "Search screen displayed"
         },
         {
           "name": "Search for artist",
-          "action": "Type Metallica and press Search",
+          "action": "text: Metallica",
           "expected": "Search results include music-related items matching Metallica"
         }
       ],
@@ -2438,12 +2438,12 @@
       "steps": [
         {
           "name": "Open search",
-          "action": "Navigate to search screen",
+          "action": "keypress: KEYCODE_DPAD_UP",
           "expected": "Search screen displayed"
         },
         {
           "name": "Search for TV show",
-          "action": "Type Breaking Bad and press Search",
+          "action": "text: Breaking Bad",
           "expected": "Search results include TV show items matching Breaking Bad"
         }
       ],
@@ -2466,12 +2466,12 @@
       "steps": [
         {
           "name": "Open search",
-          "action": "Navigate to search screen",
+          "action": "keypress: KEYCODE_DPAD_UP",
           "expected": "Search screen displayed"
         },
         {
           "name": "Search for movie",
-          "action": "Type Inception and press Search",
+          "action": "text: Inception",
           "expected": "Search results include movie items matching Inception"
         }
       ],
@@ -2494,7 +2494,7 @@
       "steps": [
         {
           "name": "Search when API unavailable",
-          "action": "Attempt search when server is unreachable",
+          "action": "text: Matrix",
           "expected": "Error container appears with Search failed: message"
         }
       ],
@@ -2518,12 +2518,12 @@
       "steps": [
         {
           "name": "Focus search field",
-          "action": "Navigate to search field",
+          "action": "keypress: KEYCODE_DPAD_UP",
           "expected": "Search field focused"
         },
         {
           "name": "Press DPAD_RIGHT",
-          "action": "Press DPAD_RIGHT key",
+          "action": "keypress: KEYCODE_DPAD_RIGHT",
           "expected": "Focus moves to the Search button (onKeyEvent handler transfers focus)"
         }
       ],
@@ -2547,12 +2547,12 @@
       "steps": [
         {
           "name": "Focus Search button",
-          "action": "Navigate to Search button",
+          "action": "keypress: KEYCODE_DPAD_RIGHT",
           "expected": "Search button focused"
         },
         {
           "name": "Press DPAD_LEFT",
-          "action": "Press DPAD_LEFT key",
+          "action": "keypress: KEYCODE_DPAD_LEFT",
           "expected": "Focus returns to search text field"
         }
       ],
@@ -2576,12 +2576,12 @@
       "steps": [
         {
           "name": "Enter query",
-          "action": "Type a search term in the search field",
+          "action": "text: Matrix",
           "expected": "Query entered"
         },
         {
           "name": "Press Enter",
-          "action": "Press Enter key while search field is focused",
+          "action": "keypress: KEYCODE_ENTER",
           "expected": "Search executes (onKeyEvent handles Key.Enter), keyboard hides"
         }
       ],
@@ -2605,12 +2605,12 @@
       "steps": [
         {
           "name": "Enter query with keyboard open",
-          "action": "Type a search term with on-screen keyboard active",
+          "action": "text: Matrix",
           "expected": "Query entered"
         },
         {
           "name": "Press IME Search action",
-          "action": "Tap the Search action on the on-screen keyboard",
+          "action": "keypress: KEYCODE_ENTER",
           "expected": "Search executes, keyboard hides"
         }
       ],
@@ -2634,12 +2634,12 @@
       "steps": [
         {
           "name": "Open search screen",
-          "action": "Navigate to search from home",
+          "action": "keypress: KEYCODE_DPAD_UP",
           "expected": "Search screen displayed"
         },
         {
           "name": "Press BACK",
-          "action": "Press BACK button",
+          "action": "keypress: KEYCODE_BACK",
           "expected": "Returns to home screen (navController.popBackStack)"
         }
       ],
@@ -2662,12 +2662,12 @@
       "steps": [
         {
           "name": "View home screen stats",
-          "action": "Navigate to home screen with populated catalog",
+          "action": "adb_shell: am start -n com.catalogizer.androidtv/.MainActivity --es qa_username admin --es qa_password admin123",
           "expected": "CatalogStatsHeader visible"
         },
         {
           "name": "Verify stats chips",
-          "action": "Check horizontal chip row",
+          "action": "screenshot",
           "expected": "Chips show count + type label (e.g. 42 Movies, 15 TV Shows) sorted by count descending"
         }
       ],
@@ -2691,12 +2691,12 @@
       "steps": [
         {
           "name": "View content rail",
-          "action": "Navigate to any content rail on home screen",
+          "action": "keypress: KEYCODE_DPAD_DOWN",
           "expected": "Media cards visible"
         },
         {
           "name": "Verify card layout",
-          "action": "Observe card sizing and spacing",
+          "action": "screenshot",
           "expected": "Cards are 240dp wide with 16dp horizontal spacing in LazyRow"
         }
       ],
@@ -2720,17 +2720,17 @@
       "steps": [
         {
           "name": "Select a movie",
-          "action": "Press DPAD_CENTER on a movie card from home screen",
+          "action": "keypress: KEYCODE_DPAD_CENTER",
           "expected": "MediaDetailScreen loads"
         },
         {
           "name": "Verify loading state",
-          "action": "Observe initial loading",
+          "action": "screenshot",
           "expected": "CircularProgressIndicator shown while data fetches"
         },
         {
           "name": "Verify content",
-          "action": "Wait for data to load",
+          "action": "sleep: 3000",
           "expected": "Movie title, metadata, hero poster, and action buttons displayed"
         }
       ],
@@ -2754,12 +2754,12 @@
       "steps": [
         {
           "name": "Select a TV show",
-          "action": "Navigate to and select a TV show card",
+          "action": "keypress: KEYCODE_DPAD_CENTER",
           "expected": "MediaDetailScreen opens"
         },
         {
           "name": "Verify TV show content",
-          "action": "Check detail screen content",
+          "action": "screenshot",
           "expected": "TV show title, type badge showing TV SHOW, metadata, and action buttons"
         }
       ],
@@ -2782,12 +2782,12 @@
       "steps": [
         {
           "name": "Select a music album",
-          "action": "Navigate to and select a music album card",
+          "action": "keypress: KEYCODE_DPAD_CENTER",
           "expected": "MediaDetailScreen opens"
         },
         {
           "name": "Verify music content",
-          "action": "Check detail screen content",
+          "action": "screenshot",
           "expected": "Album title, type badge, and action buttons displayed"
         }
       ],
@@ -2810,12 +2810,12 @@
       "steps": [
         {
           "name": "Open detail for item with cover",
-          "action": "Select a media item that has a posterUrl/coverUrl",
+          "action": "keypress: KEYCODE_DPAD_CENTER",
           "expected": "Detail screen displayed"
         },
         {
           "name": "Verify hero poster",
-          "action": "Check the hero section (top 400dp area)",
+          "action": "screenshot",
           "expected": "AsyncImage loads cover art with ContentScale.Crop, gradient overlay for readability"
         }
       ],
@@ -2839,17 +2839,17 @@
       "steps": [
         {
           "name": "Open detail screen",
-          "action": "Navigate to any media detail",
+          "action": "keypress: KEYCODE_DPAD_CENTER",
           "expected": "Detail screen loaded"
         },
         {
           "name": "Verify title",
-          "action": "Check title text",
+          "action": "screenshot",
           "expected": "Media title in headlineMedium, bold, white, max 2 lines with ellipsis"
         },
         {
           "name": "Verify metadata badges",
-          "action": "Check badges row",
+          "action": "screenshot",
           "expected": "Year, star rating (gold), type badge (white on translucent), quality badge (green) visible"
         }
       ],
@@ -2873,12 +2873,12 @@
       "steps": [
         {
           "name": "Open detail for item with description",
-          "action": "Select an item that has a non-blank description",
+          "action": "keypress: KEYCODE_DPAD_CENTER",
           "expected": "Detail screen loaded"
         },
         {
           "name": "Verify synopsis",
-          "action": "Scroll down and check Synopsis section",
+          "action": "keypress: KEYCODE_DPAD_DOWN",
           "expected": "Synopsis heading and description text visible in bodyMedium style"
         }
       ],
@@ -2901,12 +2901,12 @@
       "steps": [
         {
           "name": "Open detail screen",
-          "action": "Navigate to any media detail",
+          "action": "keypress: KEYCODE_DPAD_CENTER",
           "expected": "Detail screen loaded"
         },
         {
           "name": "Verify auto-focus",
-          "action": "Check which button has focus after 300ms delay",
+          "action": "screenshot",
           "expected": "Play button receives auto-focus via FocusRequester (playButtonFocus)"
         }
       ],
@@ -2930,17 +2930,17 @@
       "steps": [
         {
           "name": "Open detail screen",
-          "action": "Navigate to media detail",
+          "action": "keypress: KEYCODE_DPAD_CENTER",
           "expected": "Detail screen with Favorite button"
         },
         {
           "name": "Toggle favorite",
-          "action": "DPAD to Favorite button and press DPAD_CENTER",
+          "action": "keypress: KEYCODE_DPAD_CENTER",
           "expected": "Icon changes from FavoriteBorder to Favorite (filled heart), optimistic update"
         },
         {
           "name": "Toggle again",
-          "action": "Press DPAD_CENTER on Favorite button again",
+          "action": "keypress: KEYCODE_DPAD_CENTER",
           "expected": "Icon reverts to FavoriteBorder"
         }
       ],
@@ -2964,17 +2964,17 @@
       "steps": [
         {
           "name": "Open detail screen",
-          "action": "Navigate to media detail",
+          "action": "keypress: KEYCODE_DPAD_CENTER",
           "expected": "Detail screen displayed"
         },
         {
           "name": "Navigate to Back button",
-          "action": "DPAD to the Back button in the hero poster area",
+          "action": "keypress: KEYCODE_DPAD_UP",
           "expected": "Back button focused"
         },
         {
           "name": "Press Back",
-          "action": "Press DPAD_CENTER",
+          "action": "keypress: KEYCODE_DPAD_CENTER",
           "expected": "Returns to previous screen"
         }
       ],
@@ -2998,17 +2998,17 @@
       "steps": [
         {
           "name": "Open detail screen",
-          "action": "Navigate to media detail",
+          "action": "keypress: KEYCODE_DPAD_CENTER",
           "expected": "Detail screen displayed"
         },
         {
           "name": "Navigate to Back to Library",
-          "action": "DPAD to Back to Library button",
+          "action": "keypress: KEYCODE_DPAD_DOWN",
           "expected": "Button focused"
         },
         {
           "name": "Press button",
-          "action": "Press DPAD_CENTER",
+          "action": "keypress: KEYCODE_DPAD_CENTER",
           "expected": "Returns to previous screen (home screen)"
         }
       ],
@@ -3031,12 +3031,12 @@
       "steps": [
         {
           "name": "Open detail for rated item",
-          "action": "Select an item with rating > 0",
+          "action": "keypress: KEYCODE_DPAD_CENTER",
           "expected": "Detail screen loaded"
         },
         {
           "name": "Verify rating",
-          "action": "Check rating badge area",
+          "action": "screenshot",
           "expected": "Gold star icon with rating value in bold gold text (e.g., 7.5)"
         }
       ],
@@ -3060,12 +3060,12 @@
       "steps": [
         {
           "name": "Open detail screen",
-          "action": "Navigate to media detail",
+          "action": "keypress: KEYCODE_DPAD_CENTER",
           "expected": "Detail screen loaded"
         },
         {
           "name": "Verify type badge",
-          "action": "Check type badge in metadata row",
+          "action": "screenshot",
           "expected": "Type badge shows uppercase media type (e.g., MOVIE, TV SHOW) on translucent white background"
         }
       ],
@@ -3088,12 +3088,12 @@
       "steps": [
         {
           "name": "Open detail for item with quality",
-          "action": "Select an item that has a quality field (e.g., 1080p)",
+          "action": "keypress: KEYCODE_DPAD_CENTER",
           "expected": "Detail screen loaded"
         },
         {
           "name": "Verify quality badge",
-          "action": "Check quality badge in metadata row",
+          "action": "screenshot",
           "expected": "Green badge with uppercase quality text (e.g., 1080P)"
         }
       ],
@@ -3116,12 +3116,12 @@
       "steps": [
         {
           "name": "Open detail for item with file size",
-          "action": "Select an item with fileSize > 0",
+          "action": "keypress: KEYCODE_DPAD_CENTER",
           "expected": "Detail screen loaded"
         },
         {
           "name": "Verify file size",
-          "action": "Scroll down and check file info",
+          "action": "keypress: KEYCODE_DPAD_DOWN",
           "expected": "File Size: X.X GB/MB/KB text visible in bodySmall style"
         }
       ],
@@ -3144,12 +3144,12 @@
       "steps": [
         {
           "name": "Open detail with cover art",
-          "action": "Select media item with poster",
+          "action": "keypress: KEYCODE_DPAD_CENTER",
           "expected": "Detail screen with hero poster"
         },
         {
           "name": "Verify gradient",
-          "action": "Check bottom of hero section",
+          "action": "screenshot",
           "expected": "Vertical gradient from transparent to dark ensures text below is readable"
         }
       ],
@@ -3173,12 +3173,12 @@
       "steps": [
         {
           "name": "Open detail for item without cover",
-          "action": "Select media item with no posterUrl/coverUrl",
+          "action": "keypress: KEYCODE_DPAD_CENTER",
           "expected": "Detail screen loaded"
         },
         {
           "name": "Verify fallback",
-          "action": "Check hero section",
+          "action": "screenshot",
           "expected": "Vertical gradient from indigo to dark background instead of image"
         }
       ],
@@ -3202,17 +3202,17 @@
       "steps": [
         {
           "name": "Open detail when API fails",
-          "action": "Navigate to detail screen when server is unreachable",
+          "action": "keypress: KEYCODE_DPAD_CENTER",
           "expected": "Error state displayed"
         },
         {
           "name": "Verify error UI",
-          "action": "Check error state content",
+          "action": "screenshot",
           "expected": "Unable to Load Media heading, network check message, error detail, Retry and Back to Library buttons"
         },
         {
           "name": "Press Retry",
-          "action": "DPAD to Retry button and press",
+          "action": "keypress: KEYCODE_DPAD_CENTER",
           "expected": "retryCount increments, data fetch retries"
         }
       ],
@@ -3236,12 +3236,12 @@
       "steps": [
         {
           "name": "Open detail for item with long description",
-          "action": "Select item with extensive metadata and description",
+          "action": "keypress: KEYCODE_DPAD_CENTER",
           "expected": "Detail screen loaded"
         },
         {
           "name": "Scroll content",
-          "action": "DPAD_DOWN or scroll through verticalScroll content",
+          "action": "keypress: KEYCODE_DPAD_DOWN",
           "expected": "Content scrolls smoothly, all sections accessible"
         }
       ],
@@ -3264,12 +3264,12 @@
       "steps": [
         {
           "name": "Open media detail",
-          "action": "Navigate to detail screen with Play button focused",
+          "action": "keypress: KEYCODE_DPAD_CENTER",
           "expected": "Play button focused"
         },
         {
           "name": "Press Play",
-          "action": "Press DPAD_CENTER on Play button",
+          "action": "keypress: KEYCODE_DPAD_CENTER",
           "expected": "Navigates to player screen (TVScreen.Player route)"
         }
       ],
@@ -3293,17 +3293,17 @@
       "steps": [
         {
           "name": "Open detail screen",
-          "action": "Navigate to detail with favorite button visible",
+          "action": "keypress: KEYCODE_DPAD_CENTER",
           "expected": "Detail loaded"
         },
         {
           "name": "Disconnect from API",
-          "action": "Make API unreachable",
+          "action": "adb_shell: svc wifi disable",
           "expected": "API unavailable"
         },
         {
           "name": "Toggle favorite",
-          "action": "Press Favorite button",
+          "action": "keypress: KEYCODE_DPAD_CENTER",
           "expected": "Optimistic UI update occurs, then reverts on API failure (isFavorite reverted)"
         }
       ],
@@ -3327,12 +3327,12 @@
       "steps": [
         {
           "name": "Open detail for item with year",
-          "action": "Select item with year field populated",
+          "action": "keypress: KEYCODE_DPAD_CENTER",
           "expected": "Detail screen loaded"
         },
         {
           "name": "Verify year",
-          "action": "Check metadata row",
+          "action": "screenshot",
           "expected": "Year value displayed in white text (alpha 0.7)"
         }
       ],
@@ -3355,12 +3355,12 @@
       "steps": [
         {
           "name": "View on smaller screen",
-          "action": "Open detail on device with screenWidthDp < 600",
+          "action": "keypress: KEYCODE_DPAD_CENTER",
           "expected": "Detail screen in compact mode"
         },
         {
           "name": "Verify compact layout",
-          "action": "Check layout adjustments",
+          "action": "screenshot",
           "expected": "Hero height 280dp, headlineSmall title, reduced horizontal padding (24dp)"
         }
       ],
@@ -3384,12 +3384,12 @@
       "steps": [
         {
           "name": "Open detail",
-          "action": "Navigate to any media detail",
+          "action": "keypress: KEYCODE_DPAD_CENTER",
           "expected": "Detail screen displayed"
         },
         {
           "name": "Verify background",
-          "action": "Check screen background color",
+          "action": "screenshot",
           "expected": "Background is Color(0xFF0A0A0A) - near-black for TV-optimized viewing"
         }
       ],
@@ -3413,12 +3413,12 @@
       "steps": [
         {
           "name": "Open detail for item with relative cover URL",
-          "action": "Select item where thumbnailUrl starts with /",
+          "action": "keypress: KEYCODE_DPAD_CENTER",
           "expected": "Detail screen loaded"
         },
         {
           "name": "Verify image URL",
-          "action": "Check that cover image loads",
+          "action": "screenshot",
           "expected": "Relative URL correctly prefixed with server base URL, image loads from API"
         }
       ],
@@ -3442,12 +3442,12 @@
       "steps": [
         {
           "name": "Navigate to invalid media ID",
-          "action": "Deep link to media_detail/999999 (non-existent ID)",
+          "action": "adb_shell: am start -a android.intent.action.VIEW -d 'catalogizer://media/999999?type=movie' com.catalogizer.androidtv",
           "expected": "Detail screen attempts to load"
         },
         {
           "name": "Verify error",
-          "action": "Check detail screen state",
+          "action": "screenshot",
           "expected": "Media not found error displayed with Back to Library button"
         }
       ],
@@ -3471,17 +3471,17 @@
       "steps": [
         {
           "name": "Open movie detail",
-          "action": "Navigate to a movie detail screen",
+          "action": "keypress: KEYCODE_DPAD_CENTER",
           "expected": "Play button focused"
         },
         {
           "name": "Press Play",
-          "action": "Press DPAD_CENTER on Play button",
+          "action": "keypress: KEYCODE_DPAD_CENTER",
           "expected": "Player screen opens, stream URL resolved from /api/v1/entities/:id/stream"
         },
         {
           "name": "Verify playback",
-          "action": "Wait for stream to buffer and start",
+          "action": "sleep: 5000",
           "expected": "Video plays with ExoPlayer, VLC-style controls overlay shown"
         }
       ],
@@ -3505,17 +3505,17 @@
       "steps": [
         {
           "name": "Start video playback",
-          "action": "Play a video file",
+          "action": "keypress: KEYCODE_DPAD_CENTER",
           "expected": "Video playing"
         },
         {
           "name": "Wait for controls to auto-hide",
-          "action": "Wait 5 seconds for controls to auto-hide",
+          "action": "sleep: 5000",
           "expected": "Controls overlay disappears"
         },
         {
           "name": "Press any key",
-          "action": "Press any DPAD key",
+          "action": "keypress: KEYCODE_DPAD_CENTER",
           "expected": "Controls overlay reappears (showControls = true on any keyEvent)"
         }
       ],
@@ -3539,17 +3539,17 @@
       "steps": [
         {
           "name": "Start playback",
-          "action": "Play a video",
+          "action": "keypress: KEYCODE_DPAD_CENTER",
           "expected": "Video playing"
         },
         {
           "name": "Pause",
-          "action": "Press DPAD_CENTER",
+          "action": "keypress: KEYCODE_DPAD_CENTER",
           "expected": "Playback pauses, center icon changes to PlayArrow"
         },
         {
           "name": "Resume",
-          "action": "Press DPAD_CENTER again",
+          "action": "keypress: KEYCODE_DPAD_CENTER",
           "expected": "Playback resumes, center icon changes to Pause"
         }
       ],
@@ -3573,17 +3573,17 @@
       "steps": [
         {
           "name": "Start playback",
-          "action": "Play a video with controls visible",
+          "action": "keypress: KEYCODE_DPAD_CENTER",
           "expected": "Video playing"
         },
         {
           "name": "Seek forward",
-          "action": "Press DPAD_RIGHT",
+          "action": "keypress: KEYCODE_DPAD_RIGHT",
           "expected": "Playback seeks forward 10 seconds (seekForwardIncrementMs=10000)"
         },
         {
           "name": "Verify position",
-          "action": "Check seekbar position",
+          "action": "screenshot",
           "expected": "Current position advanced by approximately 10 seconds"
         }
       ],
@@ -3607,17 +3607,17 @@
       "steps": [
         {
           "name": "Start playback with progress",
-          "action": "Play a video and seek forward a few times",
+          "action": "keypress: KEYCODE_DPAD_CENTER",
           "expected": "Video playing with some progress"
         },
         {
           "name": "Seek backward",
-          "action": "Press DPAD_LEFT",
+          "action": "keypress: KEYCODE_DPAD_LEFT",
           "expected": "Playback seeks backward 10 seconds (seekBackIncrementMs=10000)"
         },
         {
           "name": "Verify position",
-          "action": "Check seekbar position",
+          "action": "screenshot",
           "expected": "Current position moved back by approximately 10 seconds"
         }
       ],
@@ -3641,17 +3641,17 @@
       "steps": [
         {
           "name": "Start playback",
-          "action": "Play a video with controls visible",
+          "action": "keypress: KEYCODE_DPAD_CENTER",
           "expected": "Video playing"
         },
         {
           "name": "Open speed menu",
-          "action": "DPAD to Speed button (1.0x) and press",
+          "action": "keypress: KEYCODE_DPAD_CENTER",
           "expected": "Speed menu overlay opens with options: 0.25x, 0.5x, 0.75x, 1.0x, 1.25x, 1.5x, 2.0x, 3.0x"
         },
         {
           "name": "Select 1.5x",
-          "action": "Navigate to 1.5x and press DPAD_CENTER",
+          "action": "keypress: KEYCODE_DPAD_CENTER",
           "expected": "Speed set to 1.5x, speed label updates to 1.5x, VlcOrange accent shown"
         }
       ],
@@ -3674,22 +3674,22 @@
       "steps": [
         {
           "name": "Start playback with subtitle tracks",
-          "action": "Play a video that has embedded subtitles",
+          "action": "keypress: KEYCODE_DPAD_CENTER",
           "expected": "Video playing"
         },
         {
           "name": "Open subtitle menu",
-          "action": "DPAD to Subtitles button and press",
+          "action": "keypress: KEYCODE_DPAD_CENTER",
           "expected": "Subtitle menu opens with Off + available subtitle tracks"
         },
         {
           "name": "Enable subtitles",
-          "action": "Select a subtitle track",
+          "action": "keypress: KEYCODE_DPAD_CENTER",
           "expected": "Subtitles enabled, TRACK_TYPE_TEXT no longer disabled"
         },
         {
           "name": "Disable subtitles",
-          "action": "Reopen menu and select Off",
+          "action": "keypress: KEYCODE_DPAD_CENTER",
           "expected": "Subtitles disabled (TRACK_TYPE_TEXT disabled)"
         }
       ],
@@ -3713,17 +3713,17 @@
       "steps": [
         {
           "name": "Start playback with multiple audio tracks",
-          "action": "Play a video with multiple audio tracks",
+          "action": "keypress: KEYCODE_DPAD_CENTER",
           "expected": "Video playing"
         },
         {
           "name": "Open audio menu",
-          "action": "DPAD to Audio button and press",
+          "action": "keypress: KEYCODE_DPAD_CENTER",
           "expected": "Audio track menu opens with available tracks"
         },
         {
           "name": "Switch track",
-          "action": "Select a different audio track",
+          "action": "keypress: KEYCODE_DPAD_CENTER",
           "expected": "Audio switches to selected track"
         }
       ],
@@ -3747,12 +3747,12 @@
       "steps": [
         {
           "name": "Start playback",
-          "action": "Play a video",
+          "action": "keypress: KEYCODE_DPAD_CENTER",
           "expected": "Video playing"
         },
         {
           "name": "Press BACK",
-          "action": "Press BACK button on remote",
+          "action": "keypress: KEYCODE_BACK",
           "expected": "Playback stops, navigates back to detail screen (onNavigateBack called)"
         }
       ],
@@ -3776,17 +3776,17 @@
       "steps": [
         {
           "name": "Open a menu during playback",
-          "action": "Open speed, audio, or subtitle menu",
+          "action": "keypress: KEYCODE_DPAD_CENTER",
           "expected": "Menu overlay displayed"
         },
         {
           "name": "Press BACK",
-          "action": "Press BACK button",
+          "action": "keypress: KEYCODE_BACK",
           "expected": "Menu closes but player remains (showSpeedMenu/showAudioMenu/showSubtitleMenu set to false)"
         },
         {
           "name": "Press BACK again",
-          "action": "Press BACK with no menu open",
+          "action": "keypress: KEYCODE_BACK",
           "expected": "Exits player, returns to previous screen"
         }
       ],
@@ -3810,17 +3810,17 @@
       "steps": [
         {
           "name": "Start playback",
-          "action": "Play a video with known duration",
+          "action": "keypress: KEYCODE_DPAD_CENTER",
           "expected": "Video playing with controls"
         },
         {
           "name": "Verify seekbar",
-          "action": "Check bottom control area",
+          "action": "screenshot",
           "expected": "Slider shows current position, time labels show MM:SS or H:MM:SS format"
         },
         {
           "name": "Verify duration",
-          "action": "Check right time label",
+          "action": "screenshot",
           "expected": "Total duration displayed correctly"
         }
       ],
@@ -3844,12 +3844,12 @@
       "steps": [
         {
           "name": "Start playback",
-          "action": "Play a video",
+          "action": "keypress: KEYCODE_DPAD_CENTER",
           "expected": "Video playing"
         },
         {
           "name": "Verify buffer indicator",
-          "action": "Check LinearProgressIndicator behind slider",
+          "action": "screenshot",
           "expected": "Buffer progress shown as lighter bar behind the seek slider"
         }
       ],
@@ -3873,12 +3873,12 @@
       "steps": [
         {
           "name": "Show controls",
-          "action": "Press any key to show controls during playback",
+          "action": "keypress: KEYCODE_DPAD_CENTER",
           "expected": "Controls visible"
         },
         {
           "name": "Wait 5 seconds",
-          "action": "Do not press any keys for 5 seconds while video is playing",
+          "action": "sleep: 5000",
           "expected": "Controls auto-hide (showControls set to false after 5000ms)"
         }
       ],
@@ -3902,12 +3902,12 @@
       "steps": [
         {
           "name": "Pause playback",
-          "action": "Press DPAD_CENTER to pause",
+          "action": "keypress: KEYCODE_DPAD_CENTER",
           "expected": "Video paused, controls visible"
         },
         {
           "name": "Wait 10 seconds",
-          "action": "Wait without pressing any keys",
+          "action": "sleep: 10000",
           "expected": "Controls remain visible (auto-hide only triggers when isPlaying=true)"
         }
       ],
@@ -3931,12 +3931,12 @@
       "steps": [
         {
           "name": "Open player",
-          "action": "Start video playback",
+          "action": "keypress: KEYCODE_DPAD_CENTER",
           "expected": "Player controls displayed"
         },
         {
           "name": "Verify VLC styling",
-          "action": "Check control button colors",
+          "action": "screenshot",
           "expected": "VlcOrange (0xFFFF6600) accent on play button, active seekbar, speed when != 1.0x"
         }
       ],
@@ -3960,12 +3960,12 @@
       "steps": [
         {
           "name": "Start playback",
-          "action": "Play a known media item",
+          "action": "keypress: KEYCODE_DPAD_CENTER",
           "expected": "Player opens"
         },
         {
           "name": "Verify title",
-          "action": "Check top bar text",
+          "action": "screenshot",
           "expected": "Resolved media title shown in headlineSmall bold white text"
         }
       ],
@@ -3988,12 +3988,12 @@
       "steps": [
         {
           "name": "Try to play unavailable stream",
-          "action": "Navigate to player for media without a valid stream",
+          "action": "keypress: KEYCODE_DPAD_CENTER",
           "expected": "Stream resolution fails"
         },
         {
           "name": "Verify error UI",
-          "action": "Check player screen",
+          "action": "screenshot",
           "expected": "Error icon, Unable to Play Media heading, error detail, Retry and Back to Library buttons"
         }
       ],
@@ -4017,12 +4017,12 @@
       "steps": [
         {
           "name": "Open player",
-          "action": "Navigate to player screen",
+          "action": "keypress: KEYCODE_DPAD_CENTER",
           "expected": "Stream URL resolution begins"
         },
         {
           "name": "Verify loading state",
-          "action": "Observe UI while stream resolves",
+          "action": "screenshot",
           "expected": "VlcOrange CircularProgressIndicator with Loading stream... text"
         }
       ],
@@ -4045,12 +4045,12 @@
       "steps": [
         {
           "name": "Start playback",
-          "action": "Begin playing a stream",
+          "action": "keypress: KEYCODE_DPAD_CENTER",
           "expected": "ExoPlayer initialized with URL but not yet playing"
         },
         {
           "name": "Verify buffering state",
-          "action": "Check player UI before playback starts",
+          "action": "screenshot",
           "expected": "VlcOrange CircularProgressIndicator with Buffering... text"
         }
       ],
@@ -4073,12 +4073,12 @@
       "steps": [
         {
           "name": "Trigger stream error",
-          "action": "Play media that fails to stream",
+          "action": "keypress: KEYCODE_DPAD_CENTER",
           "expected": "Error state displayed"
         },
         {
           "name": "Press Retry",
-          "action": "DPAD to Retry button and press",
+          "action": "keypress: KEYCODE_DPAD_CENTER",
           "expected": "streamError cleared, resolvedUrl reset, retryCount increments, stream resolution retries"
         }
       ],
@@ -4101,12 +4101,12 @@
       "steps": [
         {
           "name": "Start playback while authenticated",
-          "action": "Play a video after login",
+          "action": "keypress: KEYCODE_DPAD_CENTER",
           "expected": "ExoPlayer uses DefaultHttpDataSource with auth headers"
         },
         {
           "name": "Verify authorization",
-          "action": "Check that stream loads successfully",
+          "action": "screenshot",
           "expected": "Stream URL resolves and plays (Bearer token included in HTTP headers)"
         }
       ],
@@ -4130,12 +4130,12 @@
       "steps": [
         {
           "name": "Start playback",
-          "action": "Play a video with visible seekbar",
+          "action": "keypress: KEYCODE_DPAD_CENTER",
           "expected": "Video playing with seekbar"
         },
         {
           "name": "Interact with slider",
-          "action": "Use DPAD to manipulate the Slider control",
+          "action": "keypress: KEYCODE_DPAD_RIGHT",
           "expected": "exoPlayer.seekTo called with new position"
         }
       ],
@@ -4159,12 +4159,12 @@
       "steps": [
         {
           "name": "Change playback speed",
-          "action": "Set speed to 2.0x via speed menu",
+          "action": "keypress: KEYCODE_DPAD_CENTER",
           "expected": "Speed changed"
         },
         {
           "name": "Verify title bar",
-          "action": "Check below the title text",
+          "action": "screenshot",
           "expected": "2.0x speed text shown in VlcOrange below the media title"
         }
       ],
@@ -4188,17 +4188,17 @@
       "steps": [
         {
           "name": "Show controls",
-          "action": "Press any key to show player controls",
+          "action": "keypress: KEYCODE_DPAD_CENTER",
           "expected": "Control row visible"
         },
         {
           "name": "Use -10s button",
-          "action": "DPAD to -10s button and press",
+          "action": "keypress: KEYCODE_DPAD_CENTER",
           "expected": "Seeks backward 10 seconds"
         },
         {
           "name": "Use +10s button",
-          "action": "DPAD to +10s button and press",
+          "action": "keypress: KEYCODE_DPAD_CENTER",
           "expected": "Seeks forward 10 seconds"
         }
       ],
@@ -4222,12 +4222,12 @@
       "steps": [
         {
           "name": "Start and stop playback",
-          "action": "Play a video then press BACK to exit",
+          "action": "keypress: KEYCODE_DPAD_CENTER",
           "expected": "Player screen closes"
         },
         {
           "name": "Verify cleanup",
-          "action": "Check that no playback continues in background",
+          "action": "screenshot",
           "expected": "ExoPlayer released via DisposableEffect onDispose, no resource leak"
         }
       ],
@@ -4251,12 +4251,12 @@
       "steps": [
         {
           "name": "Login to app",
-          "action": "Login with valid credentials and return to TV home screen",
+          "action": "adb_shell: am start -n com.catalogizer.androidtv/.MainActivity --es qa_username admin --es qa_password admin123",
           "expected": "Catalogizer app runs, channels synced"
         },
         {
           "name": "Navigate TV home",
-          "action": "Go to Android TV home screen and look for Catalogizer Picks channel",
+          "action": "keypress: KEYCODE_HOME",
           "expected": "Catalogizer Picks channel visible in the TV home channels area"
         }
       ],
@@ -4280,12 +4280,12 @@
       "steps": [
         {
           "name": "Find Catalogizer Picks channel",
-          "action": "Locate the default channel on TV home",
+          "action": "screenshot",
           "expected": "Channel visible"
         },
         {
           "name": "Verify programs",
-          "action": "DPAD through programs in the channel row",
+          "action": "keypress: KEYCODE_DPAD_RIGHT",
           "expected": "Program cards with media titles and images displayed (up to 30 items)"
         }
       ],
@@ -4309,12 +4309,12 @@
       "steps": [
         {
           "name": "Focus a channel",
-          "action": "DPAD to the Catalogizer Picks channel on TV home",
+          "action": "keypress: KEYCODE_DPAD_DOWN",
           "expected": "Channel row focused"
         },
         {
           "name": "Navigate programs",
-          "action": "DPAD_RIGHT through program cards",
+          "action": "keypress: KEYCODE_DPAD_RIGHT",
           "expected": "Focus moves between program cards within the channel"
         }
       ],
@@ -4338,17 +4338,17 @@
       "steps": [
         {
           "name": "Focus a program card",
-          "action": "DPAD to a program in the Catalogizer channel",
+          "action": "keypress: KEYCODE_DPAD_DOWN",
           "expected": "Program card focused"
         },
         {
           "name": "Select program",
-          "action": "Press DPAD_CENTER",
+          "action": "keypress: KEYCODE_DPAD_CENTER",
           "expected": "Deep link URI catalogizer://media/{id}?type={type} triggered"
         },
         {
           "name": "Verify app opens",
-          "action": "Observe app launch",
+          "action": "screenshot",
           "expected": "ChannelDeepLinkActivity receives intent, routes to correct screen"
         }
       ],
@@ -4372,7 +4372,7 @@
       "steps": [
         {
           "name": "Check TV home channels",
-          "action": "Navigate TV home and look for a Movies category channel",
+          "action": "keypress: KEYCODE_HOME",
           "expected": "Per-category channel for Movies visible (if movies exist in catalog)"
         }
       ],
@@ -4395,7 +4395,7 @@
       "steps": [
         {
           "name": "Check TV home channels",
-          "action": "Navigate TV home and look for a TV Shows category channel",
+          "action": "keypress: KEYCODE_HOME",
           "expected": "Per-category channel for TV Shows visible (if TV shows exist)"
         }
       ],
@@ -4418,7 +4418,7 @@
       "steps": [
         {
           "name": "Check TV home channels",
-          "action": "Navigate TV home and look for a Music category channel",
+          "action": "keypress: KEYCODE_HOME",
           "expected": "Per-category channel for Music visible (if music exists)"
         }
       ],
@@ -4441,12 +4441,12 @@
       "steps": [
         {
           "name": "Open Movies channel",
-          "action": "Navigate to the Movies per-category channel on TV home",
+          "action": "keypress: KEYCODE_DPAD_DOWN",
           "expected": "Channel focused"
         },
         {
           "name": "Verify content relevance",
-          "action": "Check program cards in the channel",
+          "action": "screenshot",
           "expected": "All programs are movie-type media items, not mixed with other types"
         }
       ],
@@ -4470,12 +4470,12 @@
       "steps": [
         {
           "name": "Watch a video partially",
-          "action": "Play a video for at least 5% but less than 90% duration, then exit",
+          "action": "keypress: KEYCODE_DPAD_CENTER",
           "expected": "Watch progress saved"
         },
         {
           "name": "Check Watch Next row",
-          "action": "Go to TV home and look for Watch Next row",
+          "action": "keypress: KEYCODE_HOME",
           "expected": "Partially watched item appears in the system Watch Next row"
         }
       ],
@@ -4499,12 +4499,12 @@
       "steps": [
         {
           "name": "Complete a TV episode",
-          "action": "Watch a TV show episode to 90%+ completion",
+          "action": "keypress: KEYCODE_DPAD_CENTER",
           "expected": "Episode marked as completed"
         },
         {
           "name": "Check Watch Next",
-          "action": "Go to TV home Watch Next row",
+          "action": "keypress: KEYCODE_HOME",
           "expected": "Next episode of the TV show appears in Watch Next (auto-next-episode)"
         }
       ],
@@ -4528,12 +4528,12 @@
       "steps": [
         {
           "name": "Trigger deep link",
-          "action": "Open catalogizer://media/1?type=movie",
+          "action": "adb_shell: am start -a android.intent.action.VIEW -d 'catalogizer://media/1?type=movie' com.catalogizer.androidtv",
           "expected": "ChannelDeepLinkActivity processes the intent"
         },
         {
           "name": "Verify routing",
-          "action": "Check which screen opens",
+          "action": "screenshot",
           "expected": "MediaDetailScreen opens for media ID 1"
         }
       ],
@@ -4557,12 +4557,12 @@
       "steps": [
         {
           "name": "Deep link with movie type",
-          "action": "Open catalogizer://media/{id}?type=movie",
+          "action": "adb_shell: am start -a android.intent.action.VIEW -d 'catalogizer://media/{id}?type=movie' com.catalogizer.androidtv",
           "expected": "Intent processed"
         },
         {
           "name": "Verify detail screen",
-          "action": "Check screen content",
+          "action": "screenshot",
           "expected": "Movie detail screen displayed (default DETAIL launch action for movies)"
         }
       ],
@@ -4586,17 +4586,17 @@
       "steps": [
         {
           "name": "Configure launch action",
-          "action": "Set TV episodes launch action to IMMEDIATE_PLAY in settings",
+          "action": "keypress: KEYCODE_DPAD_CENTER",
           "expected": "Setting saved"
         },
         {
           "name": "Deep link with episode type",
-          "action": "Open catalogizer://media/{id}?type=tv_episode",
+          "action": "adb_shell: am start -a android.intent.action.VIEW -d 'catalogizer://media/{id}?type=tv_episode' com.catalogizer.androidtv",
           "expected": "Intent processed"
         },
         {
           "name": "Verify routing",
-          "action": "Check which screen opens",
+          "action": "screenshot",
           "expected": "Player screen opens directly (IMMEDIATE_PLAY action)"
         }
       ],
@@ -4620,17 +4620,17 @@
       "steps": [
         {
           "name": "Configure music launch",
-          "action": "Set music launch action to IMMEDIATE_PLAY in settings",
+          "action": "keypress: KEYCODE_DPAD_CENTER",
           "expected": "Setting saved"
         },
         {
           "name": "Deep link with music type",
-          "action": "Open catalogizer://media/{id}?type=music",
+          "action": "adb_shell: am start -a android.intent.action.VIEW -d 'catalogizer://media/{id}?type=music' com.catalogizer.androidtv",
           "expected": "Intent processed"
         },
         {
           "name": "Verify routing",
-          "action": "Check which screen opens",
+          "action": "screenshot",
           "expected": "Player screen opens for audio playback"
         }
       ],
@@ -4654,17 +4654,17 @@
       "steps": [
         {
           "name": "Set launch to DETAIL",
-          "action": "Configure movie launch action to DETAIL in settings",
+          "action": "keypress: KEYCODE_DPAD_CENTER",
           "expected": "Detail action set"
         },
         {
           "name": "Deep link with play action",
-          "action": "Open catalogizer://media/{id}?type=movie&action=play",
+          "action": "adb_shell: am start -a android.intent.action.VIEW -d 'catalogizer://media/{id}?type=movie&action=play' com.catalogizer.androidtv",
           "expected": "URI action parameter overrides per-category setting"
         },
         {
           "name": "Verify routing",
-          "action": "Check which screen opens",
+          "action": "screenshot",
           "expected": "Player screen opens (URI action=play takes precedence)"
         }
       ],
@@ -4688,17 +4688,17 @@
       "steps": [
         {
           "name": "Set launch to IMMEDIATE_PLAY",
-          "action": "Configure movie launch action to IMMEDIATE_PLAY",
+          "action": "keypress: KEYCODE_DPAD_CENTER",
           "expected": "Play action set"
         },
         {
           "name": "Deep link with detail action",
-          "action": "Open catalogizer://media/{id}?type=movie&action=detail",
+          "action": "adb_shell: am start -a android.intent.action.VIEW -d 'catalogizer://media/{id}?type=movie&action=detail' com.catalogizer.androidtv",
           "expected": "URI action=detail overrides setting"
         },
         {
           "name": "Verify routing",
-          "action": "Check screen",
+          "action": "screenshot",
           "expected": "Detail screen opens (not player)"
         }
       ],
@@ -4722,12 +4722,12 @@
       "steps": [
         {
           "name": "Navigate to Settings",
-          "action": "Go to Settings screen",
+          "action": "keypress: KEYCODE_DPAD_UP",
           "expected": "Settings screen displayed"
         },
         {
           "name": "Find Channel Tap Behavior",
-          "action": "Scroll down to Channel Tap Behavior section",
+          "action": "keypress: KEYCODE_DPAD_DOWN",
           "expected": "Section visible with description and per-type radio buttons"
         }
       ],
@@ -4750,12 +4750,12 @@
       "steps": [
         {
           "name": "Open Channel Tap Behavior",
-          "action": "Navigate to Channel Tap Behavior in Settings",
+          "action": "keypress: KEYCODE_DPAD_DOWN",
           "expected": "Per-type options visible"
         },
         {
           "name": "Select Detail Screen for Movies",
-          "action": "DPAD to Detail Screen radio button for Movies, press DPAD_CENTER",
+          "action": "keypress: KEYCODE_DPAD_CENTER",
           "expected": "Detail Screen radio button selected"
         }
       ],
@@ -4779,12 +4779,12 @@
       "steps": [
         {
           "name": "Open Channel Tap Behavior",
-          "action": "Navigate to Channel Tap Behavior in Settings",
+          "action": "keypress: KEYCODE_DPAD_DOWN",
           "expected": "Per-type options visible"
         },
         {
           "name": "Select Play Immediately for Movies",
-          "action": "DPAD to Play Immediately radio button for Movies, press DPAD_CENTER",
+          "action": "keypress: KEYCODE_DPAD_CENTER",
           "expected": "Play Immediately radio button selected"
         }
       ],
@@ -4808,17 +4808,17 @@
       "steps": [
         {
           "name": "Note current channel content",
-          "action": "Check programs in Catalogizer Picks channel",
+          "action": "screenshot",
           "expected": "Current programs noted"
         },
         {
           "name": "Trigger content sync",
-          "action": "Force a media sync or add new content via API",
+          "action": "screenshot",
           "expected": "Content updated"
         },
         {
           "name": "Verify channel update",
-          "action": "Check channel programs again",
+          "action": "screenshot",
           "expected": "Channel programs reflect the new content after sync"
         }
       ],
@@ -4842,17 +4842,17 @@
       "steps": [
         {
           "name": "Verify channels exist",
-          "action": "Check that Catalogizer channels are on TV home",
+          "action": "screenshot",
           "expected": "Channels present"
         },
         {
           "name": "Logout",
-          "action": "Navigate to Settings > Logout",
+          "action": "keypress: KEYCODE_DPAD_DOWN",
           "expected": "Logout initiated"
         },
         {
           "name": "Verify cleanup",
-          "action": "Check TV home for Catalogizer channels",
+          "action": "screenshot",
           "expected": "All Catalogizer channels removed, Watch Next entries cleared, sync worker cancelled"
         }
       ],
@@ -4876,17 +4876,17 @@
       "steps": [
         {
           "name": "Logout",
-          "action": "Perform logout to clean up channels",
+          "action": "keypress: KEYCODE_DPAD_CENTER",
           "expected": "Channels removed"
         },
         {
           "name": "Login again",
-          "action": "Login with admin/admin123",
+          "action": "adb_shell: am start -n com.catalogizer.androidtv/.MainActivity --es qa_username admin --es qa_password admin123",
           "expected": "Home screen displayed"
         },
         {
           "name": "Verify channels recreated",
-          "action": "Go to TV home and check for Catalogizer channels",
+          "action": "keypress: KEYCODE_HOME",
           "expected": "Catalogizer Picks and per-category channels recreated"
         }
       ],
@@ -4909,12 +4909,12 @@
       "steps": [
         {
           "name": "Verify sync worker scheduled",
-          "action": "Check WorkManager for TvChannelSyncWorker periodic work",
+          "action": "screenshot",
           "expected": "6-hour periodic sync work is enqueued"
         },
         {
           "name": "Trigger sync manually",
-          "action": "Force WorkManager to run the sync worker",
+          "action": "adb_shell: am broadcast -a androidx.work.diagnostics.REQUEST_DIAGNOSTICS -p com.catalogizer.androidtv",
           "expected": "Sync worker executes, channels updated with latest content"
         }
       ],
@@ -4938,12 +4938,12 @@
       "steps": [
         {
           "name": "View channel programs",
-          "action": "Navigate to a Catalogizer channel on TV home",
+          "action": "keypress: KEYCODE_DPAD_DOWN",
           "expected": "Program cards visible"
         },
         {
           "name": "Verify images",
-          "action": "Check program card poster images",
+          "action": "screenshot",
           "expected": "Poster images load from ChannelProgramMapper, not showing blank placeholders"
         }
       ],
@@ -4967,12 +4967,12 @@
       "steps": [
         {
           "name": "View channel programs",
-          "action": "Navigate to Catalogizer channel programs",
+          "action": "keypress: KEYCODE_DPAD_DOWN",
           "expected": "Programs visible"
         },
         {
           "name": "Verify titles",
-          "action": "Read program card titles",
+          "action": "screenshot",
           "expected": "Each program card shows the correct media title matching the linked entity"
         }
       ],
@@ -4996,17 +4996,17 @@
       "steps": [
         {
           "name": "Logout",
-          "action": "Ensure user is not authenticated",
+          "action": "adb_shell: pm clear com.catalogizer.androidtv",
           "expected": "User logged out"
         },
         {
           "name": "Trigger deep link",
-          "action": "Open catalogizer://media/1?type=movie",
+          "action": "adb_shell: am start -a android.intent.action.VIEW -d 'catalogizer://media/1?type=movie' com.catalogizer.androidtv",
           "expected": "ChannelDeepLinkActivity detects unauthenticated state"
         },
         {
           "name": "Verify redirect",
-          "action": "Check which screen opens",
+          "action": "screenshot",
           "expected": "Redirected to login screen with pending deep link extras (EXTRA_MEDIA_ID, EXTRA_MEDIA_TYPE)"
         }
       ],
@@ -5030,12 +5030,12 @@
       "steps": [
         {
           "name": "Trigger invalid deep link",
-          "action": "Open catalogizer://media/ (no ID in path)",
+          "action": "adb_shell: am start -a android.intent.action.VIEW -d 'catalogizer://media/' com.catalogizer.androidtv",
           "expected": "DeepLinkParser returns null mediaId"
         },
         {
           "name": "Verify fallback",
-          "action": "Check behavior",
+          "action": "screenshot",
           "expected": "Launches MainActivity normally without crash (launchMainActivity called)"
         }
       ],
@@ -5059,17 +5059,17 @@
       "steps": [
         {
           "name": "Setup",
-          "action": "Have an audio item (music/audiobook/podcast) without external metadata",
+          "action": "screenshot",
           "expected": "Audio item exists"
         },
         {
           "name": "Deep link to audio",
-          "action": "Open catalogizer://media/{id}?type=music",
+          "action": "adb_shell: am start -a android.intent.action.VIEW -d 'catalogizer://media/{id}?type=music' com.catalogizer.androidtv",
           "expected": "DeepLinkParser.isAudioWithoutContext returns true"
         },
         {
           "name": "Verify behavior",
-          "action": "Check routing",
+          "action": "screenshot",
           "expected": "Routes to player directly (audio without context goes to play)"
         }
       ],
@@ -5093,12 +5093,12 @@
       "steps": [
         {
           "name": "Launch app after being closed",
-          "action": "Open Catalogizer from launcher",
+          "action": "adb_shell: am start -n com.catalogizer.androidtv/.MainActivity",
           "expected": "App starts"
         },
         {
           "name": "Verify sync trigger",
-          "action": "Check that channel sync runs on app launch",
+          "action": "screenshot",
           "expected": "SyncService triggers channel update during app initialization"
         }
       ],
@@ -5122,12 +5122,12 @@
       "steps": [
         {
           "name": "Ensure diverse catalog",
-          "action": "Have media items across multiple types (movies, TV shows, music)",
+          "action": "screenshot",
           "expected": "Multiple media types in catalog"
         },
         {
           "name": "Check TV home",
-          "action": "Look for per-category channels",
+          "action": "screenshot",
           "expected": "Separate channels for each media type that has content"
         }
       ],
@@ -5150,12 +5150,12 @@
       "steps": [
         {
           "name": "Open Channel Tap Behavior settings",
-          "action": "Navigate to Settings > Channel Tap Behavior",
+          "action": "keypress: KEYCODE_DPAD_DOWN",
           "expected": "Settings section visible"
         },
         {
           "name": "Verify type list",
-          "action": "Check which media types are listed",
+          "action": "screenshot",
           "expected": "Only media types that have content in catalog are shown (activeMediaTypes)"
         }
       ],
@@ -5179,12 +5179,12 @@
       "steps": [
         {
           "name": "Open Channel Tap Behavior",
-          "action": "Navigate to Channel Tap Behavior section",
+          "action": "keypress: KEYCODE_DPAD_DOWN",
           "expected": "Per-type radio buttons visible"
         },
         {
           "name": "DPAD navigate between options",
-          "action": "DPAD through Detail Screen and Play Immediately radio buttons",
+          "action": "keypress: KEYCODE_DPAD_DOWN",
           "expected": "Each radio button row shows focus border (FocusBorderColor) when focused"
         }
       ],
@@ -5209,17 +5209,17 @@
       "steps": [
         {
           "name": "Add Watch Next entries",
-          "action": "Watch several items partially to populate Watch Next",
+          "action": "keypress: KEYCODE_DPAD_CENTER",
           "expected": "Watch Next entries created"
         },
         {
           "name": "Logout",
-          "action": "Navigate to Settings > Logout",
+          "action": "keypress: KEYCODE_DPAD_DOWN",
           "expected": "Logout completes"
         },
         {
           "name": "Check Watch Next",
-          "action": "Go to TV home Watch Next row",
+          "action": "keypress: KEYCODE_HOME",
           "expected": "Catalogizer entries cleared from Watch Next"
         }
       ],
@@ -5243,17 +5243,17 @@
       "steps": [
         {
           "name": "Verify sync worker running",
-          "action": "Check WorkManager for periodic sync work",
+          "action": "screenshot",
           "expected": "Sync worker scheduled"
         },
         {
           "name": "Logout",
-          "action": "Perform logout",
+          "action": "keypress: KEYCODE_DPAD_CENTER",
           "expected": "Logout completes"
         },
         {
           "name": "Verify worker cancelled",
-          "action": "Check WorkManager after logout",
+          "action": "screenshot",
           "expected": "TvChannelSyncWorker periodic work cancelled"
         }
       ],
@@ -5277,12 +5277,12 @@
       "steps": [
         {
           "name": "Deep link with unknown type",
-          "action": "Open catalogizer://media/{id}?type=unknown_type",
+          "action": "adb_shell: am start -a android.intent.action.VIEW -d 'catalogizer://media/{id}?type=unknown_type' com.catalogizer.androidtv",
           "expected": "Intent processed, no per-category setting found"
         },
         {
           "name": "Verify fallback",
-          "action": "Check routing",
+          "action": "screenshot",
           "expected": "Falls back to LaunchAction.DETAIL, opens detail screen"
         }
       ],
@@ -5306,12 +5306,12 @@
       "steps": [
         {
           "name": "Open movie detail",
-          "action": "Navigate to a movie detail screen",
+          "action": "keypress: KEYCODE_DPAD_CENTER",
           "expected": "Detail with Favorite button visible"
         },
         {
           "name": "Add to favorites",
-          "action": "DPAD to Favorite button and press DPAD_CENTER",
+          "action": "keypress: KEYCODE_DPAD_CENTER",
           "expected": "Heart icon changes to filled (Icons.Default.Favorite)"
         }
       ],
@@ -5335,12 +5335,12 @@
       "steps": [
         {
           "name": "Open music detail",
-          "action": "Navigate to a music album detail screen",
+          "action": "keypress: KEYCODE_DPAD_CENTER",
           "expected": "Detail with Favorite button"
         },
         {
           "name": "Add to favorites",
-          "action": "Press Favorite button",
+          "action": "keypress: KEYCODE_DPAD_CENTER",
           "expected": "Heart icon fills, music item favorited"
         }
       ],
@@ -5364,12 +5364,12 @@
       "steps": [
         {
           "name": "Open favorited item detail",
-          "action": "Navigate to detail of a previously favorited item",
+          "action": "keypress: KEYCODE_DPAD_CENTER",
           "expected": "Favorite button shows filled heart"
         },
         {
           "name": "Remove from favorites",
-          "action": "Press Favorite button",
+          "action": "keypress: KEYCODE_DPAD_CENTER",
           "expected": "Heart icon changes to outline (Icons.Default.FavoriteBorder)"
         }
       ],
@@ -5393,17 +5393,17 @@
       "steps": [
         {
           "name": "Favorite an item",
-          "action": "Toggle favorite on a media item",
+          "action": "keypress: KEYCODE_DPAD_CENTER",
           "expected": "Favorited"
         },
         {
           "name": "Navigate away and back",
-          "action": "Press BACK then re-open the same detail",
+          "action": "keypress: KEYCODE_BACK",
           "expected": "Detail screen reloads"
         },
         {
           "name": "Verify state",
-          "action": "Check Favorite button state",
+          "action": "screenshot",
           "expected": "Favorite state persisted, filled heart icon shown"
         }
       ],
@@ -5427,12 +5427,12 @@
       "steps": [
         {
           "name": "Toggle favorite",
-          "action": "Press Favorite button",
+          "action": "keypress: KEYCODE_DPAD_CENTER",
           "expected": "Icon changes immediately (optimistic update: isFavorite = !oldState)"
         },
         {
           "name": "Verify instant response",
-          "action": "Observe UI timing",
+          "action": "screenshot",
           "expected": "UI updates immediately without waiting for API response"
         }
       ],
@@ -5456,17 +5456,17 @@
       "steps": [
         {
           "name": "Disconnect API",
-          "action": "Make API unreachable",
+          "action": "adb_shell: svc wifi disable",
           "expected": "API down"
         },
         {
           "name": "Toggle favorite",
-          "action": "Press Favorite button",
+          "action": "keypress: KEYCODE_DPAD_CENTER",
           "expected": "Icon changes optimistically"
         },
         {
           "name": "Verify revert",
-          "action": "Wait for API call to fail",
+          "action": "sleep: 5000",
           "expected": "Icon reverts to previous state (isFavorite = oldState on exception)"
         }
       ],
@@ -5490,12 +5490,12 @@
       "steps": [
         {
           "name": "Open TV show detail",
-          "action": "Navigate to a TV show detail",
+          "action": "keypress: KEYCODE_DPAD_CENTER",
           "expected": "Detail displayed"
         },
         {
           "name": "Favorite TV show",
-          "action": "Press Favorite button",
+          "action": "keypress: KEYCODE_DPAD_CENTER",
           "expected": "TV show added to favorites"
         }
       ],
@@ -5518,12 +5518,12 @@
       "steps": [
         {
           "name": "Open game detail",
-          "action": "Navigate to a game detail",
+          "action": "keypress: KEYCODE_DPAD_CENTER",
           "expected": "Detail displayed"
         },
         {
           "name": "Favorite game",
-          "action": "Press Favorite button",
+          "action": "keypress: KEYCODE_DPAD_CENTER",
           "expected": "Game added to favorites"
         }
       ],
@@ -5546,12 +5546,12 @@
       "steps": [
         {
           "name": "Open book detail",
-          "action": "Navigate to a book detail",
+          "action": "keypress: KEYCODE_DPAD_CENTER",
           "expected": "Detail displayed"
         },
         {
           "name": "Favorite book",
-          "action": "Press Favorite button",
+          "action": "keypress: KEYCODE_DPAD_CENTER",
           "expected": "Book added to favorites"
         }
       ],
@@ -5574,17 +5574,17 @@
       "steps": [
         {
           "name": "Favorite first item",
-          "action": "Open a detail and favorite it",
+          "action": "keypress: KEYCODE_DPAD_CENTER",
           "expected": "First item favorited"
         },
         {
           "name": "Navigate back and favorite second",
-          "action": "Go back, open another item, and favorite it",
+          "action": "keypress: KEYCODE_BACK",
           "expected": "Second item favorited"
         },
         {
           "name": "Verify both persist",
-          "action": "Re-open each detail and verify favorite state",
+          "action": "keypress: KEYCODE_DPAD_CENTER",
           "expected": "Both items remain favorited"
         }
       ],
@@ -5608,17 +5608,17 @@
       "steps": [
         {
           "name": "Open detail screen",
-          "action": "Navigate to media detail",
+          "action": "keypress: KEYCODE_DPAD_CENTER",
           "expected": "Action buttons row visible"
         },
         {
           "name": "Navigate to Favorite",
-          "action": "DPAD_RIGHT from Play button past Back to Library to Favorite",
+          "action": "keypress: KEYCODE_DPAD_RIGHT",
           "expected": "Favorite button receives focus"
         },
         {
           "name": "Toggle",
-          "action": "Press DPAD_CENTER",
+          "action": "keypress: KEYCODE_DPAD_CENTER",
           "expected": "Favorite toggled successfully via DPAD"
         }
       ],
@@ -5642,22 +5642,22 @@
       "steps": [
         {
           "name": "Open movie detail",
-          "action": "Navigate to movie",
+          "action": "keypress: KEYCODE_DPAD_CENTER",
           "expected": "Detail with mediaType movie"
         },
         {
           "name": "Favorite",
-          "action": "Press Favorite",
+          "action": "keypress: KEYCODE_DPAD_CENTER",
           "expected": "API call uses entityType=movie"
         },
         {
           "name": "Open music detail",
-          "action": "Navigate to music item",
+          "action": "keypress: KEYCODE_DPAD_CENTER",
           "expected": "Detail with different mediaType"
         },
         {
           "name": "Favorite",
-          "action": "Press Favorite",
+          "action": "keypress: KEYCODE_DPAD_CENTER",
           "expected": "API call uses correct entityType"
         }
       ],
@@ -5681,12 +5681,12 @@
       "steps": [
         {
           "name": "Open detail for favorited item",
-          "action": "Navigate to an item that was previously favorited",
+          "action": "keypress: KEYCODE_DPAD_CENTER",
           "expected": "Detail screen loads"
         },
         {
           "name": "Verify icon",
-          "action": "Observe Favorite button after data load",
+          "action": "screenshot",
           "expected": "Filled heart displayed (checkFavorite returns true from API)"
         }
       ],
@@ -5710,12 +5710,12 @@
       "steps": [
         {
           "name": "Open detail for non-favorited item",
-          "action": "Navigate to item that is not favorited",
+          "action": "keypress: KEYCODE_DPAD_CENTER",
           "expected": "Detail loads"
         },
         {
           "name": "Verify icon",
-          "action": "Check Favorite button icon",
+          "action": "screenshot",
           "expected": "Outline heart (FavoriteBorder) displayed"
         }
       ],
@@ -5739,12 +5739,12 @@
       "steps": [
         {
           "name": "Open detail for item with null mediaType",
-          "action": "Navigate to item where mediaType is null",
+          "action": "keypress: KEYCODE_DPAD_CENTER",
           "expected": "Detail loaded"
         },
         {
           "name": "Toggle favorite",
-          "action": "Press Favorite",
+          "action": "keypress: KEYCODE_DPAD_CENTER",
           "expected": "API call uses entityType=movie as default (val entityType = item.mediaType ?: movie)"
         }
       ],
@@ -5768,12 +5768,12 @@
       "steps": [
         {
           "name": "View unfavorited state",
-          "action": "Open detail for non-favorited item",
+          "action": "keypress: KEYCODE_DPAD_CENTER",
           "expected": "FavoriteBorder icon with Favorite text"
         },
         {
           "name": "Toggle to favorited",
-          "action": "Press Favorite",
+          "action": "keypress: KEYCODE_DPAD_CENTER",
           "expected": "Favorite (filled) icon with Favorite text, icon size 24dp"
         }
       ],
@@ -5797,12 +5797,12 @@
       "steps": [
         {
           "name": "Open detail",
-          "action": "Navigate to media detail",
+          "action": "keypress: KEYCODE_DPAD_CENTER",
           "expected": "Favorite button visible"
         },
         {
           "name": "Rapid toggles",
-          "action": "Press DPAD_CENTER on Favorite rapidly 5 times",
+          "action": "keypress: KEYCODE_DPAD_CENTER",
           "expected": "UI toggles each time, final state matches last API result"
         }
       ],
@@ -5826,12 +5826,12 @@
       "steps": [
         {
           "name": "Open detail",
-          "action": "Navigate to media detail",
+          "action": "keypress: KEYCODE_DPAD_CENTER",
           "expected": "Detail loading"
         },
         {
           "name": "Verify API check",
-          "action": "Wait for content to load",
+          "action": "sleep: 3000",
           "expected": "checkFavorite called after entity data loads, isFavorite set correctly"
         }
       ],
@@ -5855,12 +5855,12 @@
       "steps": [
         {
           "name": "Search for media",
-          "action": "Search and select a result to open detail",
+          "action": "text: Matrix",
           "expected": "Detail screen from search"
         },
         {
           "name": "Favorite item",
-          "action": "Press Favorite button",
+          "action": "keypress: KEYCODE_DPAD_CENTER",
           "expected": "Item favorited successfully from search-navigated detail"
         }
       ],
@@ -5884,12 +5884,12 @@
       "steps": [
         {
           "name": "Deep link to detail",
-          "action": "Open detail via deep link",
+          "action": "keypress: KEYCODE_DPAD_CENTER",
           "expected": "Detail screen displayed"
         },
         {
           "name": "Favorite item",
-          "action": "Press Favorite button",
+          "action": "keypress: KEYCODE_DPAD_CENTER",
           "expected": "Item favorited from deep-linked detail screen"
         }
       ],
@@ -5912,12 +5912,12 @@
       "steps": [
         {
           "name": "Press settings icon",
-          "action": "DPAD to settings icon in TopBar and press DPAD_CENTER",
+          "action": "keypress: KEYCODE_DPAD_CENTER",
           "expected": "Settings screen displayed"
         },
         {
           "name": "Verify header",
-          "action": "Check Settings heading",
+          "action": "screenshot",
           "expected": "Settings heading and Back button visible in header row"
         }
       ],
@@ -5940,12 +5940,12 @@
       "steps": [
         {
           "name": "Open Settings",
-          "action": "Navigate to Settings screen",
+          "action": "keypress: KEYCODE_DPAD_UP",
           "expected": "Settings displayed"
         },
         {
           "name": "Verify Playback Settings",
-          "action": "Check first section",
+          "action": "screenshot",
           "expected": "Playback Settings section with Auto Play Next Episode toggle and Streaming Quality selector"
         }
       ],
@@ -5968,17 +5968,17 @@
       "steps": [
         {
           "name": "Find toggle",
-          "action": "DPAD to Auto Play Next Episode toggle in Playback Settings",
+          "action": "keypress: KEYCODE_DPAD_DOWN",
           "expected": "Toggle focused with visible border"
         },
         {
           "name": "Toggle on",
-          "action": "Press DPAD_CENTER",
+          "action": "keypress: KEYCODE_DPAD_CENTER",
           "expected": "Switch changes to on state"
         },
         {
           "name": "Toggle off",
-          "action": "Press DPAD_CENTER again",
+          "action": "keypress: KEYCODE_DPAD_CENTER",
           "expected": "Switch changes to off state"
         }
       ],
@@ -6002,17 +6002,17 @@
       "steps": [
         {
           "name": "Find quality chips",
-          "action": "DPAD to Streaming Quality options",
+          "action": "keypress: KEYCODE_DPAD_DOWN",
           "expected": "Auto, High, Medium, Low quality chips visible"
         },
         {
           "name": "Select High",
-          "action": "DPAD to High chip and press DPAD_CENTER",
+          "action": "keypress: KEYCODE_DPAD_CENTER",
           "expected": "High chip becomes selected (primary color), others deselected"
         },
         {
           "name": "Select Auto",
-          "action": "DPAD to Auto chip and press",
+          "action": "keypress: KEYCODE_DPAD_CENTER",
           "expected": "Auto chip selected"
         }
       ],
@@ -6036,7 +6036,7 @@
       "steps": [
         {
           "name": "Find Subtitle Settings",
-          "action": "Scroll down to Subtitle Settings section",
+          "action": "keypress: KEYCODE_DPAD_DOWN",
           "expected": "Section visible with Enable Subtitles toggle and language selector"
         }
       ],
@@ -6059,12 +6059,12 @@
       "steps": [
         {
           "name": "Find toggle",
-          "action": "DPAD to Enable Subtitles toggle",
+          "action": "keypress: KEYCODE_DPAD_DOWN",
           "expected": "Toggle focused"
         },
         {
           "name": "Toggle",
-          "action": "Press DPAD_CENTER",
+          "action": "keypress: KEYCODE_DPAD_CENTER",
           "expected": "Subtitles setting toggled, language options enable/disable accordingly"
         }
       ],
@@ -6087,17 +6087,17 @@
       "steps": [
         {
           "name": "Enable subtitles",
-          "action": "Ensure Enable Subtitles is on",
+          "action": "keypress: KEYCODE_DPAD_CENTER",
           "expected": "Subtitle language options enabled"
         },
         {
           "name": "Select language",
-          "action": "DPAD to a language radio button (English, Spanish, French, German, Japanese)",
+          "action": "keypress: KEYCODE_DPAD_DOWN",
           "expected": "Radio button focused with border"
         },
         {
           "name": "Choose language",
-          "action": "Press DPAD_CENTER on Spanish",
+          "action": "keypress: KEYCODE_DPAD_CENTER",
           "expected": "Spanish radio button selected"
         }
       ],
@@ -6121,12 +6121,12 @@
       "steps": [
         {
           "name": "Disable subtitles",
-          "action": "Turn off Enable Subtitles toggle",
+          "action": "keypress: KEYCODE_DPAD_CENTER",
           "expected": "Subtitles disabled"
         },
         {
           "name": "Check language options",
-          "action": "Observe language radio buttons",
+          "action": "screenshot",
           "expected": "Language labels and radio buttons show disabled state (TextDisabled color)"
         }
       ],
@@ -6150,12 +6150,12 @@
       "steps": [
         {
           "name": "Find Notifications section",
-          "action": "Scroll to Notifications section in Settings",
+          "action": "keypress: KEYCODE_DPAD_DOWN",
           "expected": "Notifications section visible"
         },
         {
           "name": "Toggle notifications",
-          "action": "DPAD to Enable Notifications toggle and press",
+          "action": "keypress: KEYCODE_DPAD_CENTER",
           "expected": "Notification setting toggled"
         }
       ],
@@ -6178,12 +6178,12 @@
       "steps": [
         {
           "name": "Find Account section",
-          "action": "Scroll to Account section in Settings",
+          "action": "keypress: KEYCODE_DPAD_DOWN",
           "expected": "Account section visible with description and Logout button"
         },
         {
           "name": "Verify button style",
-          "action": "Check Logout button",
+          "action": "screenshot",
           "expected": "Red error-colored button with Logout text"
         }
       ],
@@ -6207,12 +6207,12 @@
       "steps": [
         {
           "name": "Press Logout",
-          "action": "DPAD to Logout button and press DPAD_CENTER",
+          "action": "keypress: KEYCODE_DPAD_CENTER",
           "expected": "Logout initiated"
         },
         {
           "name": "Verify navigation",
-          "action": "Check which screen appears",
+          "action": "screenshot",
           "expected": "Navigates to Login screen with entire back stack cleared (popUpTo(0) inclusive=true)"
         }
       ],
@@ -6236,12 +6236,12 @@
       "steps": [
         {
           "name": "Logout via Settings",
-          "action": "Press Logout in Settings",
+          "action": "keypress: KEYCODE_DPAD_CENTER",
           "expected": "Logout process"
         },
         {
           "name": "Verify channel cleanup",
-          "action": "Check TV home screen",
+          "action": "screenshot",
           "expected": "All Catalogizer channels removed from TV home"
         }
       ],
@@ -6265,17 +6265,17 @@
       "steps": [
         {
           "name": "Change settings",
-          "action": "Set streaming quality to High, enable auto-play, select Spanish subtitles",
+          "action": "keypress: KEYCODE_DPAD_CENTER",
           "expected": "Settings changed"
         },
         {
           "name": "Restart app",
-          "action": "Force stop and relaunch",
+          "action": "adb_shell: am force-stop com.catalogizer.androidtv && sleep 1 && am start -n com.catalogizer.androidtv/.MainActivity",
           "expected": "App restarts"
         },
         {
           "name": "Verify persistence",
-          "action": "Navigate to Settings",
+          "action": "keypress: KEYCODE_DPAD_UP",
           "expected": "All settings restored to previously set values"
         }
       ],
@@ -6299,17 +6299,17 @@
       "steps": [
         {
           "name": "Open Settings",
-          "action": "Navigate to Settings",
+          "action": "keypress: KEYCODE_DPAD_UP",
           "expected": "Settings displayed"
         },
         {
           "name": "Navigate down through sections",
-          "action": "DPAD_DOWN through all settings sections",
+          "action": "keypress: KEYCODE_DPAD_DOWN",
           "expected": "Focus moves through toggles, chips, radio buttons, and buttons sequentially"
         },
         {
           "name": "Navigate up",
-          "action": "DPAD_UP back to top",
+          "action": "keypress: KEYCODE_DPAD_UP",
           "expected": "Focus returns to top elements"
         }
       ],
@@ -6333,12 +6333,12 @@
       "steps": [
         {
           "name": "Open Settings",
-          "action": "Navigate to Settings",
+          "action": "keypress: KEYCODE_DPAD_UP",
           "expected": "Settings displayed"
         },
         {
           "name": "Press Back button",
-          "action": "DPAD to Back button and press DPAD_CENTER",
+          "action": "keypress: KEYCODE_DPAD_CENTER",
           "expected": "Returns to home screen (onNavigateBack)"
         }
       ],
@@ -6361,12 +6361,12 @@
       "steps": [
         {
           "name": "Focus a toggle row",
-          "action": "DPAD to any ToggleRow in Settings",
+          "action": "keypress: KEYCODE_DPAD_DOWN",
           "expected": "ToggleRow focused"
         },
         {
           "name": "Verify focus indicator",
-          "action": "Check visual state",
+          "action": "screenshot",
           "expected": "FocusBorderColor (0xFF9ECAFF) border appears around the toggle row"
         }
       ],
@@ -6390,12 +6390,12 @@
       "steps": [
         {
           "name": "Focus Logout button",
-          "action": "DPAD to Logout button",
+          "action": "keypress: KEYCODE_DPAD_DOWN",
           "expected": "Button focused"
         },
         {
           "name": "Verify focus indicator",
-          "action": "Check visual state",
+          "action": "screenshot",
           "expected": "Error-tone focus ring (0xFFFFB4AB) border appears around Logout button"
         }
       ],
@@ -6419,12 +6419,12 @@
       "steps": [
         {
           "name": "View Settings screen",
-          "action": "Navigate to Settings",
+          "action": "keypress: KEYCODE_DPAD_UP",
           "expected": "Settings displayed"
         },
         {
           "name": "Verify section titles",
-          "action": "Check section headers",
+          "action": "screenshot",
           "expected": "Playback Settings, Subtitle Settings, Notifications, Channel Tap Behavior, Account titles visible in white titleMedium"
         }
       ],
@@ -6448,12 +6448,12 @@
       "steps": [
         {
           "name": "Inspect text colors",
-          "action": "Check text contrast in Settings screen",
+          "action": "screenshot",
           "expected": "Primary text white (0xFFFFFFFF), secondary near-white (0xFFE0E0E0), disabled gray (0xFF9E9E9E)"
         },
         {
           "name": "Verify readability",
-          "action": "Check that all text is readable on dark background",
+          "action": "screenshot",
           "expected": "All text passes WCAG AA contrast ratio on the dark surfaceVariant background"
         }
       ],
@@ -6477,17 +6477,17 @@
       "steps": [
         {
           "name": "Change a setting",
-          "action": "Toggle any setting (e.g., auto-play)",
+          "action": "keypress: KEYCODE_DPAD_CENTER",
           "expected": "Setting changed"
         },
         {
           "name": "Navigate away immediately",
-          "action": "Press Back without waiting",
+          "action": "keypress: KEYCODE_BACK",
           "expected": "LaunchedEffect triggers updateAllSettings on state change"
         },
         {
           "name": "Return to Settings",
-          "action": "Reopen Settings",
+          "action": "keypress: KEYCODE_DPAD_UP",
           "expected": "Changed setting persisted (auto-saved via LaunchedEffect)"
         }
       ],
@@ -6511,7 +6511,7 @@
       "steps": [
         {
           "name": "Navigate to search",
-          "action": "DPAD to search icon in TopBar and press DPAD_CENTER",
+          "action": "keypress: KEYCODE_DPAD_CENTER",
           "expected": "Search screen opens with Search for Media heading"
         }
       ],
@@ -6534,17 +6534,17 @@
       "steps": [
         {
           "name": "Focus search field",
-          "action": "Search field auto-focused on open",
+          "action": "screenshot",
           "expected": "Search field focused"
         },
         {
           "name": "Open keyboard",
-          "action": "Press DPAD_CENTER to activate text input",
+          "action": "keypress: KEYCODE_DPAD_CENTER",
           "expected": "On-screen keyboard or IME opens"
         },
         {
           "name": "Type query",
-          "action": "Type action via keyboard",
+          "action": "text: action",
           "expected": "Text action appears in search field"
         }
       ],
@@ -6568,12 +6568,12 @@
       "steps": [
         {
           "name": "Enter valid query",
-          "action": "Type a known media title in search field",
+          "action": "text: Matrix",
           "expected": "Query entered"
         },
         {
           "name": "Submit search",
-          "action": "Press Search button",
+          "action": "keypress: KEYCODE_ENTER",
           "expected": "Results appear in LazyColumn, N results found label visible"
         }
       ],
@@ -6597,12 +6597,12 @@
       "steps": [
         {
           "name": "Get results",
-          "action": "Perform search that returns multiple results",
+          "action": "text: Matrix",
           "expected": "Results in LazyColumn"
         },
         {
           "name": "DPAD through results",
-          "action": "DPAD_DOWN through CompactMediaCard items",
+          "action": "keypress: KEYCODE_DPAD_DOWN",
           "expected": "Focus moves through each result item"
         }
       ],
@@ -6626,12 +6626,12 @@
       "steps": [
         {
           "name": "Focus a result",
-          "action": "DPAD to a search result CompactMediaCard",
+          "action": "keypress: KEYCODE_DPAD_DOWN",
           "expected": "Result focused"
         },
         {
           "name": "Select it",
-          "action": "Press DPAD_CENTER",
+          "action": "keypress: KEYCODE_DPAD_CENTER",
           "expected": "Navigates to MediaDetailScreen for that item (onNavigateToMediaDetail(mediaItem.id))"
         }
       ],
@@ -6655,12 +6655,12 @@
       "steps": [
         {
           "name": "Search for Inception",
-          "action": "Enter Inception and search",
+          "action": "text: Inception",
           "expected": "Results displayed"
         },
         {
           "name": "Verify result",
-          "action": "Check results list",
+          "action": "screenshot",
           "expected": "Movie Inception appears in results"
         }
       ],
@@ -6683,12 +6683,12 @@
       "steps": [
         {
           "name": "Search for Metallica",
-          "action": "Enter Metallica and search",
+          "action": "text: Metallica",
           "expected": "Results displayed"
         },
         {
           "name": "Verify result",
-          "action": "Check results list",
+          "action": "screenshot",
           "expected": "Music items related to Metallica appear"
         }
       ],
@@ -6711,12 +6711,12 @@
       "steps": [
         {
           "name": "Search for Breaking Bad",
-          "action": "Enter Breaking Bad and search",
+          "action": "text: Breaking Bad",
           "expected": "Results displayed"
         },
         {
           "name": "Verify result",
-          "action": "Check results list",
+          "action": "screenshot",
           "expected": "TV show Breaking Bad appears in results"
         }
       ],
@@ -6739,12 +6739,12 @@
       "steps": [
         {
           "name": "Search Cyrillic",
-          "action": "Type a Cyrillic query and search",
+          "action": "text: \u041c\u0430\u0442\u0440\u0438\u0446\u0430",
           "expected": "Search processes Cyrillic text"
         },
         {
           "name": "Verify no crash",
-          "action": "Check results or empty state",
+          "action": "screenshot",
           "expected": "Results displayed or graceful no-results message"
         }
       ],
@@ -6767,12 +6767,12 @@
       "steps": [
         {
           "name": "Search non-existent",
-          "action": "Search for asdfgjklqwerty",
+          "action": "text: asdfgjklqwerty",
           "expected": "Search completes"
         },
         {
           "name": "Verify UI",
-          "action": "Check results area",
+          "action": "screenshot",
           "expected": "No results found for asdfgjklqwerty text, suggestion to try different terms"
         }
       ],
@@ -6795,12 +6795,12 @@
       "steps": [
         {
           "name": "Perform search",
-          "action": "Search and get results",
+          "action": "text: Matrix",
           "expected": "Results displayed"
         },
         {
           "name": "Clear",
-          "action": "Press Clear (X) icon",
+          "action": "keypress: KEYCODE_DPAD_CENTER",
           "expected": "Query cleared, results cleared, initial state shown"
         }
       ],
@@ -6823,12 +6823,12 @@
       "steps": [
         {
           "name": "Search broad term",
-          "action": "Search for a very common term",
+          "action": "text: Matrix",
           "expected": "Results displayed"
         },
         {
           "name": "Check limit",
-          "action": "Count results",
+          "action": "screenshot",
           "expected": "Maximum 50 results returned (MediaSearchRequest limit=50)"
         }
       ],
@@ -6851,12 +6851,12 @@
       "steps": [
         {
           "name": "Open search",
-          "action": "Navigate to search screen",
+          "action": "keypress: KEYCODE_DPAD_UP",
           "expected": "Search field visible"
         },
         {
           "name": "Verify placeholder",
-          "action": "Check placeholder text in empty field",
+          "action": "screenshot",
           "expected": "Search movies, shows, music, games, books... placeholder visible"
         }
       ],
@@ -6879,7 +6879,7 @@
       "steps": [
         {
           "name": "Enter long text",
-          "action": "Type a very long query in search field",
+          "action": "text: abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz01234567890",
           "expected": "Text stays on single line (singleLine=true), scrolls horizontally"
         }
       ],
@@ -6902,12 +6902,12 @@
       "steps": [
         {
           "name": "Open search with empty field",
-          "action": "Navigate to search screen",
+          "action": "keypress: KEYCODE_DPAD_UP",
           "expected": "Empty search field"
         },
         {
           "name": "Check button state",
-          "action": "Observe Search button",
+          "action": "screenshot",
           "expected": "Search button is disabled (enabled = searchQuery.isNotBlank() && !isLoading)"
         }
       ],
@@ -6931,12 +6931,12 @@
       "steps": [
         {
           "name": "Trigger search",
-          "action": "Enter query and press Search",
+          "action": "text: Matrix",
           "expected": "Search loading"
         },
         {
           "name": "Check button state",
-          "action": "Observe Search button during loading",
+          "action": "screenshot",
           "expected": "Button disabled, shows CircularProgressIndicator instead of text"
         }
       ],
@@ -6960,12 +6960,12 @@
       "steps": [
         {
           "name": "Get search results",
-          "action": "Perform search",
+          "action": "text: Matrix",
           "expected": "Results displayed"
         },
         {
           "name": "Verify card layout",
-          "action": "Check CompactMediaCard elements",
+          "action": "screenshot",
           "expected": "Each result card fills full width, shows media title and type info"
         }
       ],
@@ -6989,17 +6989,17 @@
       "steps": [
         {
           "name": "Search and get results",
-          "action": "Perform a search",
+          "action": "text: Matrix",
           "expected": "Results shown"
         },
         {
           "name": "Open a result detail",
-          "action": "Press DPAD_CENTER on a result",
+          "action": "keypress: KEYCODE_DPAD_CENTER",
           "expected": "Detail screen opens"
         },
         {
           "name": "Press BACK",
-          "action": "Return to search",
+          "action": "keypress: KEYCODE_BACK",
           "expected": "Search screen with previous query and results still visible"
         }
       ],
@@ -7022,12 +7022,12 @@
       "steps": [
         {
           "name": "View search field",
-          "action": "Navigate to search screen",
+          "action": "keypress: KEYCODE_DPAD_UP",
           "expected": "Search field visible"
         },
         {
           "name": "Check styling",
-          "action": "Verify text field colors",
+          "action": "screenshot",
           "expected": "Focus border uses primary color, text uses onSurface color, container uses surface color"
         }
       ],
@@ -7051,12 +7051,12 @@
       "steps": [
         {
           "name": "View search field",
-          "action": "Navigate to search screen",
+          "action": "keypress: KEYCODE_DPAD_UP",
           "expected": "Search field visible"
         },
         {
           "name": "Verify icon",
-          "action": "Check leading icon",
+          "action": "screenshot",
           "expected": "Search (magnifying glass) icon visible in the leading position"
         }
       ],
@@ -7080,12 +7080,12 @@
       "steps": [
         {
           "name": "Navigate home screen rapidly",
-          "action": "Press DPAD_DOWN and DPAD_RIGHT rapidly (10+ presses per second)",
+          "action": "keypress: KEYCODE_DPAD_DOWN",
           "expected": "Focus moves rapidly through items"
         },
         {
           "name": "Verify no crash",
-          "action": "Check app stability",
+          "action": "screenshot",
           "expected": "App remains responsive, no ANR, no crash"
         }
       ],
@@ -7109,12 +7109,12 @@
       "steps": [
         {
           "name": "On home screen",
-          "action": "Ensure home screen is displayed",
+          "action": "screenshot",
           "expected": "Home screen visible"
         },
         {
           "name": "Press BACK",
-          "action": "Press BACK button on remote",
+          "action": "keypress: KEYCODE_BACK",
           "expected": "App exits or shows confirmation dialog (Android system behavior)"
         }
       ],
@@ -7138,12 +7138,12 @@
       "steps": [
         {
           "name": "Disconnect network",
-          "action": "Disable network on Mi Box during home screen load",
+          "action": "adb_shell: svc wifi disable",
           "expected": "Network unavailable"
         },
         {
           "name": "Verify error handling",
-          "action": "Check home screen state",
+          "action": "screenshot",
           "expected": "Error state with Error loading content message and Retry button"
         }
       ],
@@ -7167,12 +7167,12 @@
       "steps": [
         {
           "name": "Stop API server",
-          "action": "Shut down catalog-api while app is running",
+          "action": "screenshot",
           "expected": "API unreachable"
         },
         {
           "name": "Navigate to a screen",
-          "action": "Try loading home screen or search",
+          "action": "adb_shell: am start -n com.catalogizer.androidtv/.MainActivity",
           "expected": "Error state displayed gracefully, no crash"
         }
       ],
@@ -7196,12 +7196,12 @@
       "steps": [
         {
           "name": "Open player for missing media",
-          "action": "Navigate to player for a media item whose file is no longer available",
+          "action": "keypress: KEYCODE_DPAD_CENTER",
           "expected": "Stream resolution fails"
         },
         {
           "name": "Verify error",
-          "action": "Check player screen",
+          "action": "screenshot",
           "expected": "Stream unavailable (404) or No stream URL in response error with Retry and Back buttons"
         }
       ],
@@ -7225,12 +7225,12 @@
       "steps": [
         {
           "name": "Open detail for item with very long title",
-          "action": "Navigate to media with title exceeding 100 characters",
+          "action": "keypress: KEYCODE_DPAD_CENTER",
           "expected": "Detail screen loaded"
         },
         {
           "name": "Verify title handling",
-          "action": "Check title text",
+          "action": "screenshot",
           "expected": "Title truncated with ellipsis (maxLines=2, overflow=TextOverflow.Ellipsis)"
         }
       ],
@@ -7254,12 +7254,12 @@
       "steps": [
         {
           "name": "Open detail with special chars",
-          "action": "Navigate to media with special characters in title/description (e.g., Unicode, CJK, emojis)",
+          "action": "keypress: KEYCODE_DPAD_CENTER",
           "expected": "Detail screen loaded"
         },
         {
           "name": "Verify rendering",
-          "action": "Check title and description display",
+          "action": "screenshot",
           "expected": "Special characters render correctly without garbled text"
         }
       ],
@@ -7283,17 +7283,17 @@
       "steps": [
         {
           "name": "Login and navigate",
-          "action": "Login and browse to a detail screen",
+          "action": "adb_shell: am start -n com.catalogizer.androidtv/.MainActivity --es qa_username admin --es qa_password admin123",
           "expected": "Detail screen visible"
         },
         {
           "name": "Press HOME",
-          "action": "Press HOME button to background the app",
+          "action": "keypress: KEYCODE_HOME",
           "expected": "App goes to background"
         },
         {
           "name": "Re-launch",
-          "action": "Open Catalogizer from launcher again",
+          "action": "adb_shell: am start -n com.catalogizer.androidtv/.MainActivity",
           "expected": "App resumes from where it was (detail screen), auth state preserved"
         }
       ],
@@ -7317,12 +7317,12 @@
       "steps": [
         {
           "name": "Trigger deep link with bad ID",
-          "action": "Open catalogizer://media/abc (non-numeric ID)",
+          "action": "adb_shell: am start -a android.intent.action.VIEW -d 'catalogizer://media/abc' com.catalogizer.androidtv",
           "expected": "DeepLinkParser returns null mediaId (toLongOrNull fails)"
         },
         {
           "name": "Verify handling",
-          "action": "Check behavior",
+          "action": "screenshot",
           "expected": "Invalid deep link logged, MainActivity launched normally"
         }
       ],
@@ -7346,12 +7346,12 @@
       "steps": [
         {
           "name": "Deep link to non-existent ID",
-          "action": "Open catalogizer://media/999999?type=movie",
+          "action": "adb_shell: am start -a android.intent.action.VIEW -d 'catalogizer://media/999999?type=movie' com.catalogizer.androidtv",
           "expected": "Deep link processed, detail screen attempts load"
         },
         {
           "name": "Verify error",
-          "action": "Check detail screen",
+          "action": "screenshot",
           "expected": "Media not found error state with Back to Library option"
         }
       ],
@@ -7375,12 +7375,12 @@
       "steps": [
         {
           "name": "Fill login form",
-          "action": "Enter admin/admin123",
+          "action": "adb_shell: am start -n com.catalogizer.androidtv/.MainActivity --es qa_username admin --es qa_password admin123",
           "expected": "Form filled"
         },
         {
           "name": "Rapid press Sign In",
-          "action": "Press DPAD_CENTER rapidly on Sign In button 5 times",
+          "action": "keypress: KEYCODE_DPAD_CENTER",
           "expected": "First press sets isLoading=true, subsequent presses are no-op (button disabled when loading)"
         }
       ],
@@ -7404,12 +7404,12 @@
       "steps": [
         {
           "name": "Focus a media card",
-          "action": "DPAD to a media card on home",
+          "action": "keypress: KEYCODE_DPAD_DOWN",
           "expected": "Card focused"
         },
         {
           "name": "Rapid press",
-          "action": "Press DPAD_CENTER rapidly 3 times",
+          "action": "keypress: KEYCODE_DPAD_CENTER",
           "expected": "First press navigates to detail, no duplicate navigation or crash"
         }
       ],
@@ -7433,12 +7433,12 @@
       "steps": [
         {
           "name": "Play very short video",
-          "action": "Start playback of a video under 5 seconds",
+          "action": "keypress: KEYCODE_DPAD_CENTER",
           "expected": "Player opens and plays"
         },
         {
           "name": "Verify handling",
-          "action": "Check seekbar and controls",
+          "action": "screenshot",
           "expected": "Seekbar shows correct short duration, controls work normally"
         }
       ],
@@ -7461,12 +7461,12 @@
       "steps": [
         {
           "name": "Play very long video",
-          "action": "Start playback of a multi-hour video",
+          "action": "keypress: KEYCODE_DPAD_CENTER",
           "expected": "Player opens and plays"
         },
         {
           "name": "Verify time format",
-          "action": "Check time labels",
+          "action": "screenshot",
           "expected": "Duration shows H:MM:SS format for hours-long content"
         }
       ],
@@ -7490,17 +7490,17 @@
       "steps": [
         {
           "name": "Focus TopBar",
-          "action": "DPAD_UP to TopBar area",
+          "action": "keypress: KEYCODE_DPAD_UP",
           "expected": "TopBar action icon focused"
         },
         {
           "name": "Navigate to content",
-          "action": "DPAD_DOWN to content area",
+          "action": "keypress: KEYCODE_DPAD_DOWN",
           "expected": "Focus moves from TopBar to stats header or first content rail"
         },
         {
           "name": "Continue down",
-          "action": "DPAD_DOWN through rails",
+          "action": "keypress: KEYCODE_DPAD_DOWN",
           "expected": "Focus traverses all visible content rails"
         }
       ],
@@ -7524,12 +7524,12 @@
       "steps": [
         {
           "name": "Launch with QA extras",
-          "action": "adb shell am start -n com.catalogizer.androidtv/.ui.MainActivity --es qa_username admin --es qa_password admin123",
+          "action": "adb_shell: am start -n com.catalogizer.androidtv/.ui.MainActivity --es qa_username admin --es qa_password admin123",
           "expected": "App launches"
         },
         {
           "name": "Verify auto-login",
-          "action": "Check that login is performed automatically",
+          "action": "screenshot",
           "expected": "After 500ms delay, validateAndLogin called with admin/admin123, navigates to home"
         }
       ],
@@ -7553,12 +7553,12 @@
       "steps": [
         {
           "name": "View connected state",
-          "action": "With successful server connection, check trailing icon",
+          "action": "screenshot",
           "expected": "Green CheckCircle icon and Connected to server text"
         },
         {
           "name": "View failed state",
-          "action": "Enter invalid server URL and Connect",
+          "action": "text: http://invalid:9999",
           "expected": "Red Warning icon and Unable to reach server text"
         }
       ],
@@ -7582,12 +7582,12 @@
       "steps": [
         {
           "name": "Focus username",
-          "action": "DPAD to username field",
+          "action": "keypress: KEYCODE_DPAD_UP",
           "expected": "Animated ice-blue border glow (220ms animateColorAsState transition)"
         },
         {
           "name": "Move focus away",
-          "action": "DPAD_DOWN",
+          "action": "keypress: KEYCODE_DPAD_DOWN",
           "expected": "Glow fades out smoothly (animates to dormantBorder)"
         }
       ],
@@ -7611,12 +7611,12 @@
       "steps": [
         {
           "name": "Discover multiple servers",
-          "action": "Press Discover when multiple Catalogizer instances are on network",
+          "action": "keypress: KEYCODE_DPAD_CENTER",
           "expected": "Multiple server buttons appear"
         },
         {
           "name": "Select one",
-          "action": "DPAD to a server button and press",
+          "action": "keypress: KEYCODE_DPAD_CENTER",
           "expected": "Selected server URL set, connected, list cleared"
         }
       ],
@@ -7639,12 +7639,12 @@
       "steps": [
         {
           "name": "Open speed menu in player",
-          "action": "Open the playback speed menu",
+          "action": "keypress: KEYCODE_DPAD_CENTER",
           "expected": "Speed menu overlay visible"
         },
         {
           "name": "Press BACK",
-          "action": "Press BACK button",
+          "action": "keypress: KEYCODE_BACK",
           "expected": "Speed menu closes, player remains (showSpeedMenu=false)"
         }
       ],
@@ -7668,12 +7668,12 @@
       "steps": [
         {
           "name": "Open audio menu",
-          "action": "Open audio track menu in player",
+          "action": "keypress: KEYCODE_DPAD_CENTER",
           "expected": "Audio menu visible"
         },
         {
           "name": "Press BACK",
-          "action": "Press BACK",
+          "action": "keypress: KEYCODE_BACK",
           "expected": "Audio menu closes, player remains"
         }
       ],
@@ -7697,12 +7697,12 @@
       "steps": [
         {
           "name": "Open subtitle menu",
-          "action": "Open subtitle menu in player",
+          "action": "keypress: KEYCODE_DPAD_CENTER",
           "expected": "Subtitle menu visible"
         },
         {
           "name": "Press BACK",
-          "action": "Press BACK",
+          "action": "keypress: KEYCODE_BACK",
           "expected": "Subtitle menu closes, player remains"
         }
       ],
@@ -7726,17 +7726,17 @@
       "steps": [
         {
           "name": "Start a search",
-          "action": "Enter query and press Search",
+          "action": "text: Matrix",
           "expected": "Search loading"
         },
         {
           "name": "Press BACK during loading",
-          "action": "Press BACK while search is in progress",
+          "action": "keypress: KEYCODE_BACK",
           "expected": "Returns to home screen without crash"
         },
         {
           "name": "Verify stability",
-          "action": "Navigate around",
+          "action": "keypress: KEYCODE_DPAD_DOWN",
           "expected": "App remains stable, no orphaned coroutines causing issues"
         }
       ],
@@ -7761,17 +7761,17 @@
       "steps": [
         {
           "name": "Background the app",
-          "action": "Press HOME to put app in background",
+          "action": "keypress: KEYCODE_HOME",
           "expected": "App in background"
         },
         {
           "name": "Trigger deep link",
-          "action": "Open catalogizer://media/{id}?type=movie from TV home channel",
+          "action": "adb_shell: am start -a android.intent.action.VIEW -d 'catalogizer://media/{id}?type=movie' com.catalogizer.androidtv",
           "expected": "ChannelDeepLinkActivity handles intent"
         },
         {
           "name": "Verify routing",
-          "action": "Check which screen opens",
+          "action": "screenshot",
           "expected": "App brought to foreground with correct screen (FLAG_ACTIVITY_NEW_TASK | FLAG_ACTIVITY_CLEAR_TOP)"
         }
       ],
@@ -7795,17 +7795,17 @@
       "steps": [
         {
           "name": "Open Settings",
-          "action": "Navigate to Settings screen",
+          "action": "keypress: KEYCODE_DPAD_UP",
           "expected": "Settings displayed"
         },
         {
           "name": "Scroll all sections",
-          "action": "DPAD_DOWN through all TvLazyColumn items",
+          "action": "keypress: KEYCODE_DPAD_DOWN",
           "expected": "All sections accessible: Playback Settings, Subtitle Settings, Notifications, Channel Tap Behavior, Account"
         },
         {
           "name": "Verify last section",
-          "action": "Reach Account section with Logout button",
+          "action": "keypress: KEYCODE_DPAD_DOWN",
           "expected": "Logout button visible and focusable"
         }
       ],
