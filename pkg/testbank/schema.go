@@ -144,6 +144,12 @@ func (ts *TestStep) ParseAction() (ActionType, string) {
 		return ActionTypeDescription, ""
 	}
 
+	// Handle standalone "screenshot" keyword (no colon needed)
+	trimmed := strings.TrimSpace(ts.Action)
+	if strings.EqualFold(trimmed, "screenshot") {
+		return ActionTypeScreenshot, ""
+	}
+
 	// Check for explicit type prefix
 	if idx := strings.Index(ts.Action, ":"); idx > 0 {
 		prefix := ts.Action[:idx]
