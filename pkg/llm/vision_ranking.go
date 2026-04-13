@@ -55,7 +55,15 @@ var visionModelRegistry = []visionModelScore{
 	{Provider: "githubmodels", QualityScore: 0.78, ReliabilityScore: 0.85, CostPer1kTokens: 0.0, AvgLatencyMs: 1400},
 	{Provider: "xai", QualityScore: 0.80, ReliabilityScore: 0.88, CostPer1kTokens: 0.005, AvgLatencyMs: 1100},
 
-	// Tier 3: Local / open-source / cheaper
+	// Tier 2.5: Cheaper API providers (free/low-cost via aggregators)
+	{Provider: "openrouter", QualityScore: 0.87, ReliabilityScore: 0.85, CostPer1kTokens: 0.0024, AvgLatencyMs: 2000},
+	{Provider: "huggingface", QualityScore: 0.82, ReliabilityScore: 0.75, CostPer1kTokens: 0.0, AvgLatencyMs: 2000},
+	{Provider: "chutes", QualityScore: 0.75, ReliabilityScore: 0.72, CostPer1kTokens: 0.0, AvgLatencyMs: 1500},
+	{Provider: "siliconflow", QualityScore: 0.80, ReliabilityScore: 0.78, CostPer1kTokens: 0.0, AvgLatencyMs: 1200},
+	{Provider: "replicate", QualityScore: 0.76, ReliabilityScore: 0.80, CostPer1kTokens: 0.0002, AvgLatencyMs: 2500},
+	{Provider: "zhipu", QualityScore: 0.78, ReliabilityScore: 0.80, CostPer1kTokens: 0.0, AvgLatencyMs: 1000},
+
+	// Tier 3: Local / open-source / self-hosted
 	{Provider: ProviderOllama, QualityScore: 0.65, ReliabilityScore: 0.80, CostPer1kTokens: 0.0, AvgLatencyMs: 3000},
 	{Provider: "uitars", QualityScore: 0.82, ReliabilityScore: 0.75, CostPer1kTokens: 0.0, AvgLatencyMs: 2000},
 	{Provider: "showui", QualityScore: 0.70, ReliabilityScore: 0.70, CostPer1kTokens: 0.0, AvgLatencyMs: 500},

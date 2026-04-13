@@ -27,17 +27,90 @@ const adaptiveVisionTimeout = 90 * time.Second
 // tries them in order, falling back to the next on failure. It
 // satisfies the Provider interface itself, so it can be used
 // anywhere a Provider is expected.
+//
+// Providers that return auth/credit errors (401, 403, 402,
+// "insufficient", "quota", "billing") are marked as unavailable
+// for the remainder of the session to avoid wasting time retrying
+// providers with no credits.
 type AdaptiveProvider struct {
-	providers   []Provider
-	costTracker *CostTracker
-	phase       string
+	providers     []Provider
+	costTracker   *CostTracker
+	phase         string
+	unavailable   map[string]string // provider name -> reason
 }
 
 // NewAdaptiveProvider constructs an AdaptiveProvider from an
 // explicit list of already-constructed Provider instances. The
 // providers are tried in the order supplied.
 func NewAdaptiveProvider(providers ...Provider) *AdaptiveProvider {
-	return &AdaptiveProvider{providers: providers}
+	return &AdaptiveProvider{
+		providers:   providers,
+		unavailable: make(map[string]string),
+	}
+}
+
+// isAuthOrCreditError returns true if the error indicates the
+// provider's API key is invalid, expired, or the account has
+// insufficient credits/quota. These errors are permanent for the
+// session — retrying will not help.
+func isAuthOrCreditError(err error) bool {
+	if err == nil {
+		return false
+	}
+	msg := strings.ToLower(err.Error())
+	// HTTP status codes in error messages
+	for _, code := range []string{"401", "402", "403"} {
+		if strings.Contains(msg, "status "+code) ||
+			strings.Contains(msg, "error "+code) ||
+			strings.Contains(msg, code+":") {
+			return true
+		}
+	}
+	// Common credit/auth error keywords from various providers
+	for _, kw := range []string{
+		"unauthorized", "authentication", "invalid api key",
+		"invalid_api_key", "api key", "apikey",
+		"insufficient", "quota exceeded", "billing",
+		"payment required", "credits", "limit exceeded",
+		"rate limit", "too many requests",
+		"forbidden", "access denied",
+		"subscription", "plan limit",
+	} {
+		if strings.Contains(msg, kw) {
+			return true
+		}
+	}
+	return false
+}
+
+// markUnavailable records that a provider should be skipped
+// for the remainder of this session.
+func (a *AdaptiveProvider) markUnavailable(name string, reason string) {
+	if a.unavailable == nil {
+		a.unavailable = make(map[string]string)
+	}
+	a.unavailable[name] = reason
+	fmt.Printf("  [llm] provider %s marked unavailable: %s\n", name, reason)
+}
+
+// isUnavailable checks if a provider has been marked as
+// unavailable due to auth/credit errors.
+func (a *AdaptiveProvider) isUnavailable(name string) bool {
+	if a.unavailable == nil {
+		return false
+	}
+	_, skip := a.unavailable[name]
+	return skip
+}
+
+// GetUnavailableProviders returns a copy of the unavailable
+// providers map for diagnostics.
+func (a *AdaptiveProvider) GetUnavailableProviders() map[string]string {
+	result := make(map[string]string, len(a.unavailable))
+	for k, v := range a.unavailable {
+		result[k] = v
+	}
+	return result
 }
 
 // NewAdaptiveFromConfigs constructs an AdaptiveProvider by
@@ -83,7 +156,10 @@ func NewAdaptiveFromConfigs(
 			"llm: NewAdaptiveFromConfigs: no valid providers produced",
 		)
 	}
-	return &AdaptiveProvider{providers: providers}, nil
+	return &AdaptiveProvider{
+		providers:   providers,
+		unavailable: make(map[string]string),
+	}, nil
 }
 
 // SetCostTracker attaches a CostTracker to this provider.
@@ -137,6 +213,9 @@ func (a *AdaptiveProvider) Chat(
 	}
 	var errs []string
 	for _, p := range a.providers {
+		if a.isUnavailable(p.Name()) {
+			continue
+		}
 		pCtx, pCancel := context.WithTimeout(
 			ctx, adaptivePerProviderTimeout,
 		)
@@ -147,6 +226,9 @@ func (a *AdaptiveProvider) Chat(
 				p.Name(), resp, "chat", true,
 			)
 			return resp, nil
+		}
+		if isAuthOrCreditError(err) {
+			a.markUnavailable(p.Name(), err.Error())
 		}
 		errs = append(errs, fmt.Sprintf("%s: %v", p.Name(), err))
 		if ctx.Err() != nil {
@@ -200,6 +282,9 @@ func (a *AdaptiveProvider) Vision(
 	}
 	var errs []string
 	for _, p := range capable {
+		if a.isUnavailable(p.Name()) {
+			continue
+		}
 		// Providers with known registry entries get the longer
 		// vision timeout to allow for internal retry/backoff.
 		timeout := adaptivePerProviderTimeout
@@ -214,6 +299,9 @@ func (a *AdaptiveProvider) Vision(
 				p.Name(), resp, "vision", true,
 			)
 			return resp, nil
+		}
+		if isAuthOrCreditError(err) {
+			a.markUnavailable(p.Name(), err.Error())
 		}
 		errs = append(errs, fmt.Sprintf("%s: %v", p.Name(), err))
 		// If the parent context is done, stop trying.

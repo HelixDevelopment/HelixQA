@@ -222,3 +222,86 @@ func TestNewAdaptiveFromConfigs_AllInvalid(t *testing.T) {
 		t.Fatal("expected error when all configs are invalid, got nil")
 	}
 }
+
+// TestAdaptiveProvider_SkipsUnavailableProviders verifies that
+// providers returning auth/credit errors are marked unavailable
+// and skipped on subsequent calls.
+func TestAdaptiveProvider_SkipsUnavailableProviders(t *testing.T) {
+	authErr := &mockProvider{
+		name:    "no-credits",
+		chatErr: errors.New("API error status 401: unauthorized - invalid api key"),
+	}
+	good := &mockProvider{
+		name:     "good",
+		chatResp: &Response{Content: "success", Model: "good-model"},
+	}
+
+	ap := NewAdaptiveProvider(authErr, good)
+
+	ctx := context.Background()
+	msgs := []Message{{Role: "user", Content: "test"}}
+
+	// First call: authErr fails with 401, marked unavailable, good succeeds
+	resp, err := ap.Chat(ctx, msgs)
+	if err != nil {
+		t.Fatalf("expected success, got: %v", err)
+	}
+	if resp.Content != "success" {
+		t.Errorf("expected 'success', got %q", resp.Content)
+	}
+
+	// authErr should be marked unavailable
+	if !ap.isUnavailable("no-credits") {
+		t.Error("expected no-credits to be unavailable")
+	}
+	unavail := ap.GetUnavailableProviders()
+	if _, ok := unavail["no-credits"]; !ok {
+		t.Error("expected no-credits in unavailable map")
+	}
+
+	// Second call: should skip authErr entirely
+	resp2, err := ap.Chat(ctx, msgs)
+	if err != nil {
+		t.Fatalf("second call failed: %v", err)
+	}
+	if resp2.Content != "success" {
+		t.Errorf("expected 'success', got %q", resp2.Content)
+	}
+}
+
+// TestIsAuthOrCreditError verifies detection of auth/credit
+// errors across various provider error message formats.
+func TestIsAuthOrCreditError(t *testing.T) {
+	tests := []struct {
+		msg    string
+		expect bool
+	}{
+		{"API error status 401: unauthorized", true},
+		{"error 403: forbidden", true},
+		{"insufficient credits remaining", true},
+		{"quota exceeded for this billing period", true},
+		{"payment required", true},
+		{"invalid api key provided", true},
+		{"rate limit exceeded", true},
+		{"access denied", true},
+		{"subscription plan limit reached", true},
+		{"connection timeout", false},
+		{"context deadline exceeded", false},
+		{"internal server error 500", false},
+		{"model not found", false},
+		{"EOF", false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.msg, func(t *testing.T) {
+			got := isAuthOrCreditError(errors.New(tt.msg))
+			if got != tt.expect {
+				t.Errorf("isAuthOrCreditError(%q) = %v, want %v",
+					tt.msg, got, tt.expect)
+			}
+		})
+	}
+	// nil error should return false
+	if isAuthOrCreditError(nil) {
+		t.Error("nil error should return false")
+	}
+}
