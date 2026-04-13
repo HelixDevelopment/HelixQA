@@ -26,7 +26,7 @@ test_cases:
     platforms: [androidtv]
     steps:
       - name: "Navigate to Catalogizer on TV home"
-        action: "adb_shell: am start -n com.catalogizer.androidtv/.MainActivity"
+        action: "adb_shell: am start -n com.catalogizer.androidtv/.ui.MainActivity"
         expected: "App icon is visible and focusable on the home screen"
       - name: "Press DPAD_CENTER to launch"
         action: "keypress: KEYCODE_DPAD_CENTER"
@@ -42,7 +42,7 @@ test_cases:
     platforms: [androidtv]
     steps:
       - name: "Launch app"
-        action: "adb_shell: am start -n com.catalogizer.androidtv/.MainActivity"
+        action: "adb_shell: am start -n com.catalogizer.androidtv/.ui.MainActivity"
         expected: "Splash screen or loading indicator is displayed"
       - name: "Verify branding"
         action: "screenshot"
@@ -58,7 +58,7 @@ test_cases:
     platforms: [androidtv]
     steps:
       - name: "Fresh install launch"
-        action: "adb_shell: am start -n com.catalogizer.androidtv/.MainActivity"
+        action: "adb_shell: am start -n com.catalogizer.androidtv/.ui.MainActivity"
         expected: "Login screen displays with SERVER CONNECTION section visible"
       - name: "Verify server URL field"
         action: "screenshot"
@@ -128,7 +128,7 @@ test_cases:
     platforms: [androidtv]
     steps:
       - name: "Launch with auto-discovery enabled and no saved URL"
-        action: "adb_shell: pm clear com.catalogizer.androidtv && am start -n com.catalogizer.androidtv/.MainActivity"
+        action: "adb_shell: pm clear com.catalogizer.androidtv && am start -n com.catalogizer.androidtv/.ui.MainActivity"
         expected: "Auto-discovery runs on launch"
       - name: "Verify auto-selection"
         action: "screenshot"
@@ -147,7 +147,7 @@ test_cases:
         action: "text: http://localhost:8080"
         expected: "Server URL saved via DataStore"
       - name: "Kill and restart app"
-        action: "adb_shell: am force-stop com.catalogizer.androidtv && sleep 1 && am start -n com.catalogizer.androidtv/.MainActivity"
+        action: "adb_shell: am force-stop com.catalogizer.androidtv && sleep 1 && am start -n com.catalogizer.androidtv/.ui.MainActivity"
         expected: "App launches with previously saved server URL pre-filled"
     tags: [launch, persistence, datastore]
     estimated_duration: "20s"
@@ -160,7 +160,7 @@ test_cases:
     platforms: [androidtv]
     steps:
       - name: "Launch app"
-        action: "adb_shell: am start -n com.catalogizer.androidtv/.MainActivity"
+        action: "adb_shell: am start -n com.catalogizer.androidtv/.ui.MainActivity"
         expected: "Login screen is the initial screen for unauthenticated users"
       - name: "Verify login form elements"
         action: "screenshot"
@@ -179,7 +179,7 @@ test_cases:
     platforms: [androidtv]
     steps:
       - name: "Launch app to login screen"
-        action: "adb_shell: am start -n com.catalogizer.androidtv/.MainActivity"
+        action: "adb_shell: am start -n com.catalogizer.androidtv/.ui.MainActivity"
         expected: "Login screen displayed"
       - name: "Verify initial focus"
         action: "screenshot"
@@ -324,7 +324,7 @@ test_cases:
     platforms: [androidtv]
     steps:
       - name: "Perform valid login"
-        action: "adb_shell: am start -n com.catalogizer.androidtv/.MainActivity --es qa_username admin --es qa_password admin123"
+        action: "adb_shell: am start -n com.catalogizer.androidtv/.ui.MainActivity --es qa_username admin --es qa_password admin123"
         expected: "Authentication succeeds"
       - name: "Verify home screen"
         action: "screenshot"
@@ -441,7 +441,7 @@ test_cases:
     platforms: [androidtv]
     steps:
       - name: "Login successfully"
-        action: "adb_shell: am start -n com.catalogizer.androidtv/.MainActivity --es qa_username admin --es qa_password admin123"
+        action: "adb_shell: am start -n com.catalogizer.androidtv/.ui.MainActivity --es qa_username admin --es qa_password admin123"
         expected: "Navigated to home screen, username saved to DataStore"
       - name: "Logout and return to login"
         action: "keypress: KEYCODE_DPAD_DOWN"
@@ -484,7 +484,7 @@ test_cases:
     platforms: [androidtv]
     steps:
       - name: "Login successfully"
-        action: "adb_shell: am start -n com.catalogizer.androidtv/.MainActivity --es qa_username admin --es qa_password admin123"
+        action: "adb_shell: am start -n com.catalogizer.androidtv/.ui.MainActivity --es qa_username admin --es qa_password admin123"
         expected: "Home screen displayed"
       - name: "Verify top bar"
         action: "screenshot"
@@ -500,7 +500,7 @@ test_cases:
     platforms: [androidtv]
     steps:
       - name: "Navigate to home screen"
-        action: "adb_shell: am start -n com.catalogizer.androidtv/.MainActivity --es qa_username admin --es qa_password admin123"
+        action: "adb_shell: am start -n com.catalogizer.androidtv/.ui.MainActivity --es qa_username admin --es qa_password admin123"
         expected: "Home screen content loading"
       - name: "Verify category rows"
         action: "screenshot"
@@ -516,7 +516,7 @@ test_cases:
     platforms: [androidtv]
     steps:
       - name: "With partially watched content"
-        action: "adb_shell: am start -n com.catalogizer.androidtv/.MainActivity --es qa_username admin --es qa_password admin123"
+        action: "adb_shell: am start -n com.catalogizer.androidtv/.ui.MainActivity --es qa_username admin --es qa_password admin123"
         expected: "Home screen loads"
       - name: "Verify Continue Watching"
         action: "screenshot"
@@ -532,7 +532,7 @@ test_cases:
     platforms: [androidtv]
     steps:
       - name: "Home screen loaded"
-        action: "adb_shell: am start -n com.catalogizer.androidtv/.MainActivity --es qa_username admin --es qa_password admin123"
+        action: "adb_shell: am start -n com.catalogizer.androidtv/.ui.MainActivity --es qa_username admin --es qa_password admin123"
         expected: "Home screen displayed"
       - name: "Verify movies rail"
         action: "screenshot"
@@ -548,7 +548,7 @@ test_cases:
     platforms: [androidtv]
     steps:
       - name: "Home screen loaded"
-        action: "adb_shell: am start -n com.catalogizer.androidtv/.MainActivity --es qa_username admin --es qa_password admin123"
+        action: "adb_shell: am start -n com.catalogizer.androidtv/.ui.MainActivity --es qa_username admin --es qa_password admin123"
         expected: "Home screen displayed"
       - name: "Verify TV shows rail"
         action: "screenshot"
@@ -564,7 +564,7 @@ test_cases:
     platforms: [androidtv]
     steps:
       - name: "Home screen loaded"
-        action: "adb_shell: am start -n com.catalogizer.androidtv/.MainActivity --es qa_username admin --es qa_password admin123"
+        action: "adb_shell: am start -n com.catalogizer.androidtv/.ui.MainActivity --es qa_username admin --es qa_password admin123"
         expected: "Home screen displayed"
       - name: "Verify music rail"
         action: "screenshot"
@@ -634,7 +634,7 @@ test_cases:
     platforms: [androidtv]
     steps:
       - name: "Home screen with content"
-        action: "adb_shell: am start -n com.catalogizer.androidtv/.MainActivity --es qa_username admin --es qa_password admin123"
+        action: "adb_shell: am start -n com.catalogizer.androidtv/.ui.MainActivity --es qa_username admin --es qa_password admin123"
         expected: "Content rails visible"
       - name: "Verify image loading"
         action: "screenshot"
@@ -666,7 +666,7 @@ test_cases:
     platforms: [androidtv]
     steps:
       - name: "View home screen"
-        action: "adb_shell: am start -n com.catalogizer.androidtv/.MainActivity --es qa_username admin --es qa_password admin123"
+        action: "adb_shell: am start -n com.catalogizer.androidtv/.ui.MainActivity --es qa_username admin --es qa_password admin123"
         expected: "Multiple rails visible"
       - name: "Verify section headers"
         action: "screenshot"
@@ -682,7 +682,7 @@ test_cases:
     platforms: [androidtv]
     steps:
       - name: "View home screen with entities"
-        action: "adb_shell: am start -n com.catalogizer.androidtv/.MainActivity --es qa_username admin --es qa_password admin123"
+        action: "adb_shell: am start -n com.catalogizer.androidtv/.ui.MainActivity --es qa_username admin --es qa_password admin123"
         expected: "Stats header at top of TvLazyColumn"
       - name: "Verify stats content"
         action: "screenshot"
@@ -746,7 +746,7 @@ test_cases:
     platforms: [androidtv]
     steps:
       - name: "Home screen with games"
-        action: "adb_shell: am start -n com.catalogizer.androidtv/.MainActivity --es qa_username admin --es qa_password admin123"
+        action: "adb_shell: am start -n com.catalogizer.androidtv/.ui.MainActivity --es qa_username admin --es qa_password admin123"
         expected: "Home screen displayed"
       - name: "Find games rail"
         action: "screenshot"
@@ -762,7 +762,7 @@ test_cases:
     platforms: [androidtv]
     steps:
       - name: "Home screen with books"
-        action: "adb_shell: am start -n com.catalogizer.androidtv/.MainActivity --es qa_username admin --es qa_password admin123"
+        action: "adb_shell: am start -n com.catalogizer.androidtv/.ui.MainActivity --es qa_username admin --es qa_password admin123"
         expected: "Home screen displayed"
       - name: "Find books rail"
         action: "screenshot"
@@ -778,7 +778,7 @@ test_cases:
     platforms: [androidtv]
     steps:
       - name: "Home screen with comics"
-        action: "adb_shell: am start -n com.catalogizer.androidtv/.MainActivity --es qa_username admin --es qa_password admin123"
+        action: "adb_shell: am start -n com.catalogizer.androidtv/.ui.MainActivity --es qa_username admin --es qa_password admin123"
         expected: "Home screen displayed"
       - name: "Find comics rail"
         action: "screenshot"
@@ -794,7 +794,7 @@ test_cases:
     platforms: [androidtv]
     steps:
       - name: "Home screen with software"
-        action: "adb_shell: am start -n com.catalogizer.androidtv/.MainActivity --es qa_username admin --es qa_password admin123"
+        action: "adb_shell: am start -n com.catalogizer.androidtv/.ui.MainActivity --es qa_username admin --es qa_password admin123"
         expected: "Home screen displayed"
       - name: "Find software rail"
         action: "screenshot"
@@ -842,7 +842,7 @@ test_cases:
     platforms: [androidtv]
     steps:
       - name: "Navigate to home screen"
-        action: "adb_shell: am start -n com.catalogizer.androidtv/.MainActivity --es qa_username admin --es qa_password admin123"
+        action: "adb_shell: am start -n com.catalogizer.androidtv/.ui.MainActivity --es qa_username admin --es qa_password admin123"
         expected: "CircularProgressIndicator displayed"
       - name: "Verify loading text"
         action: "screenshot"
@@ -858,7 +858,7 @@ test_cases:
     platforms: [androidtv]
     steps:
       - name: "Trigger error state"
-        action: "adb_shell: am start -n com.catalogizer.androidtv/.MainActivity --es qa_username admin --es qa_password admin123"
+        action: "adb_shell: am start -n com.catalogizer.androidtv/.ui.MainActivity --es qa_username admin --es qa_password admin123"
         expected: "Error state displayed"
       - name: "Verify error UI"
         action: "screenshot"
@@ -877,7 +877,7 @@ test_cases:
     platforms: [androidtv]
     steps:
       - name: "Navigate to home with empty catalog"
-        action: "adb_shell: am start -n com.catalogizer.androidtv/.MainActivity --es qa_username admin --es qa_password admin123"
+        action: "adb_shell: am start -n com.catalogizer.androidtv/.ui.MainActivity --es qa_username admin --es qa_password admin123"
         expected: "Empty state displayed"
       - name: "Verify empty state UI"
         action: "screenshot"
@@ -1157,7 +1157,7 @@ test_cases:
     platforms: [androidtv]
     steps:
       - name: "Load home screen"
-        action: "adb_shell: am start -n com.catalogizer.androidtv/.MainActivity --es qa_username admin --es qa_password admin123"
+        action: "adb_shell: am start -n com.catalogizer.androidtv/.ui.MainActivity --es qa_username admin --es qa_password admin123"
         expected: "Home screen displayed"
       - name: "Verify rail filtering"
         action: "screenshot"
@@ -1518,7 +1518,7 @@ test_cases:
     platforms: [androidtv]
     steps:
       - name: "View home screen stats"
-        action: "adb_shell: am start -n com.catalogizer.androidtv/.MainActivity --es qa_username admin --es qa_password admin123"
+        action: "adb_shell: am start -n com.catalogizer.androidtv/.ui.MainActivity --es qa_username admin --es qa_password admin123"
         expected: "CatalogStatsHeader visible"
       - name: "Verify stats chips"
         action: "screenshot"
@@ -2413,7 +2413,7 @@ test_cases:
     platforms: [androidtv]
     steps:
       - name: "Login to app"
-        action: "adb_shell: am start -n com.catalogizer.androidtv/.MainActivity --es qa_username admin --es qa_password admin123"
+        action: "adb_shell: am start -n com.catalogizer.androidtv/.ui.MainActivity --es qa_username admin --es qa_password admin123"
         expected: "Catalogizer app runs, channels synced"
       - name: "Navigate TV home"
         action: "keypress: KEYCODE_HOME"
@@ -2764,7 +2764,7 @@ test_cases:
         action: "keypress: KEYCODE_DPAD_CENTER"
         expected: "Channels removed"
       - name: "Login again"
-        action: "adb_shell: am start -n com.catalogizer.androidtv/.MainActivity --es qa_username admin --es qa_password admin123"
+        action: "adb_shell: am start -n com.catalogizer.androidtv/.ui.MainActivity --es qa_username admin --es qa_password admin123"
         expected: "Home screen displayed"
       - name: "Verify channels recreated"
         action: "keypress: KEYCODE_HOME"
@@ -2882,7 +2882,7 @@ test_cases:
     platforms: [androidtv]
     steps:
       - name: "Launch app after being closed"
-        action: "adb_shell: am start -n com.catalogizer.androidtv/.MainActivity"
+        action: "adb_shell: am start -n com.catalogizer.androidtv/.ui.MainActivity"
         expected: "App starts"
       - name: "Verify sync trigger"
         action: "screenshot"
@@ -3543,7 +3543,7 @@ test_cases:
         action: "keypress: KEYCODE_DPAD_CENTER"
         expected: "Settings changed"
       - name: "Restart app"
-        action: "adb_shell: am force-stop com.catalogizer.androidtv && sleep 1 && am start -n com.catalogizer.androidtv/.MainActivity"
+        action: "adb_shell: am force-stop com.catalogizer.androidtv && sleep 1 && am start -n com.catalogizer.androidtv/.ui.MainActivity"
         expected: "App restarts"
       - name: "Verify persistence"
         action: "keypress: KEYCODE_DPAD_UP"
@@ -4052,7 +4052,7 @@ test_cases:
         action: "screenshot"
         expected: "API unreachable"
       - name: "Navigate to a screen"
-        action: "adb_shell: am start -n com.catalogizer.androidtv/.MainActivity"
+        action: "adb_shell: am start -n com.catalogizer.androidtv/.ui.MainActivity"
         expected: "Error state displayed gracefully, no crash"
     tags: [edge-case, server-down, error, resilience]
     estimated_duration: "15s"
@@ -4113,13 +4113,13 @@ test_cases:
     platforms: [androidtv]
     steps:
       - name: "Login and navigate"
-        action: "adb_shell: am start -n com.catalogizer.androidtv/.MainActivity --es qa_username admin --es qa_password admin123"
+        action: "adb_shell: am start -n com.catalogizer.androidtv/.ui.MainActivity --es qa_username admin --es qa_password admin123"
         expected: "Detail screen visible"
       - name: "Press HOME"
         action: "keypress: KEYCODE_HOME"
         expected: "App goes to background"
       - name: "Re-launch"
-        action: "adb_shell: am start -n com.catalogizer.androidtv/.MainActivity"
+        action: "adb_shell: am start -n com.catalogizer.androidtv/.ui.MainActivity"
         expected: "App resumes from where it was (detail screen), auth state preserved"
     tags: [edge-case, background, resume, lifecycle]
     estimated_duration: "15s"
@@ -4164,7 +4164,7 @@ test_cases:
     platforms: [androidtv]
     steps:
       - name: "Fill login form"
-        action: "adb_shell: am start -n com.catalogizer.androidtv/.MainActivity --es qa_username admin --es qa_password admin123"
+        action: "adb_shell: am start -n com.catalogizer.androidtv/.ui.MainActivity --es qa_username admin --es qa_password admin123"
         expected: "Form filled"
       - name: "Rapid press Sign In"
         action: "keypress: KEYCODE_DPAD_CENTER"
