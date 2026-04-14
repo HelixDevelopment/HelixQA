@@ -311,5 +311,512 @@ test_cases:
       fix_file: "catalogizer-androidtv/app/src/main/java/com/catalogizer/androidtv/player/VLCPlayer.kt"
       fix_commit: "pending"
 
-  # Placeholder for fixes discovered during this QA campaign
-  # New entries will be added as bugs are found and fixed
+  # ==================== Phase 1-3 Concurrency & Lifecycle Fixes ====================
+
+  - id: FIX-012
+    name: "WorkerPool SubmitAsync goroutine tracking"
+    category: regression
+    priority: critical
+    platforms: [api]
+    steps:
+      - name: "Submit 100 async tasks via WorkerPool"
+        action: "Create WorkerPool with 10 workers, call SubmitAsync() 100 times with short tasks"
+        expected: "All 100 tasks accepted and queued"
+      - name: "Wait for all tasks to complete"
+        action: "Call WaitGroup-based completion or drain pool"
+        expected: "All 100 tasks complete without goroutine leak"
+      - name: "Check goroutine count"
+        action: "runtime.NumGoroutine() before and after pool shutdown"
+        expected: "Goroutine count returns to baseline (within 5 of pre-pool count)"
+      - name: "Verify no panic on double-submit after shutdown"
+        action: "Call SubmitAsync() after pool Stop()"
+        expected: "Returns error or silently drops task, no panic"
+    tags: [regression, concurrency, workerpool, goroutine-tracking, async]
+    estimated_duration: "10s"
+    expected_result: "SubmitAsync tracks all goroutines via WaitGroup; pool shutdown waits for completion"
+    fix_reference:
+      bug_id: "phase1-workerpool-goroutine-tracking"
+      description: "WorkerPool.SubmitAsync() launched goroutines without WaitGroup tracking, causing goroutine leaks on pool shutdown"
+      fix_file: "Concurrency/pool.go"
+
+  - id: FIX-013
+    name: "Throttler Stop() waits for goroutine"
+    category: regression
+    priority: high
+    platforms: [api]
+    steps:
+      - name: "Create Throttler and submit tasks"
+        action: "Create Throttler with rate limit, submit 20 throttled operations"
+        expected: "Operations execute at throttled rate"
+      - name: "Call Stop() during active throttling"
+        action: "Call Throttler.Stop() while tasks are still queued"
+        expected: "Stop() blocks until internal goroutine exits cleanly"
+      - name: "Verify goroutine exited"
+        action: "runtime.NumGoroutine() after Stop() returns"
+        expected: "No lingering throttler goroutine"
+      - name: "Verify double Stop() is safe"
+        action: "Call Stop() again"
+        expected: "No panic, no-op via sync.Once"
+    tags: [regression, concurrency, throttler, goroutine, stop, sync-once]
+    estimated_duration: "5s"
+    expected_result: "Throttler.Stop() waits for internal goroutine to exit before returning"
+    fix_reference:
+      bug_id: "phase1-throttler-stop-goroutine"
+      description: "Throttler.Stop() did not wait for the internal rate-limiting goroutine to exit, causing goroutine leak in tests"
+      fix_file: "Concurrency/throttler.go"
+
+  - id: FIX-014
+    name: "Debouncer Flush() no deadlock on reentrant call"
+    category: regression
+    priority: critical
+    platforms: [api]
+    steps:
+      - name: "Create Debouncer with callback that calls Flush()"
+        action: "Create Debouncer where the debounced function itself calls Flush() on a sibling debouncer"
+        expected: "Debouncer created without error"
+      - name: "Trigger debounce and wait"
+        action: "Call debouncer.Trigger() then debouncer.Flush()"
+        expected: "Flush() completes within 5 seconds (no deadlock)"
+      - name: "Verify callback executed exactly once"
+        action: "Check callback execution counter"
+        expected: "Counter equals 1 (debounce coalesced, flush triggered execution)"
+      - name: "Verify subsequent triggers work"
+        action: "Trigger debouncer again after flush"
+        expected: "New debounce cycle starts normally"
+    tags: [regression, concurrency, debouncer, flush, deadlock, reentrant]
+    estimated_duration: "10s"
+    expected_result: "Flush() never deadlocks even when called from related callback contexts"
+    fix_reference:
+      bug_id: "phase1-debouncer-flush-deadlock"
+      description: "Debouncer.Flush() acquired the same mutex as the timer callback, causing deadlock when Flush() was called in contexts triggered by related debouncers"
+      fix_file: "Concurrency/debouncer.go"
+
+  - id: FIX-015
+    name: "WebSocket handler no over-admission under concurrent connections"
+    category: regression
+    priority: critical
+    platforms: [api]
+    steps:
+      - name: "Set max WebSocket connections to 10"
+        action: "Configure WebSocket handler with MaxConnections=10"
+        expected: "Handler configured"
+      - name: "Open 20 concurrent WebSocket connections simultaneously"
+        action: "Launch 20 goroutines each opening ws:// connection with valid JWT"
+        expected: "Exactly 10 connections accepted, 10 rejected"
+      - name: "Verify connection count accuracy"
+        action: "Check handler.ConnectionCount()"
+        expected: "Returns exactly 10 (not 11+ from race condition)"
+      - name: "Close all connections and verify cleanup"
+        action: "Close all 10 accepted connections"
+        expected: "ConnectionCount() returns 0"
+    tags: [regression, websocket, concurrency, over-admission, max-connections, mutex]
+    estimated_duration: "10s"
+    expected_result: "Mutex-protected connection counter prevents over-admission beyond MaxConnections"
+    fix_reference:
+      bug_id: "phase1-websocket-over-admission"
+      description: "connCount check and increment were not atomic, allowing more than MaxConnections under concurrent connection bursts"
+      fix_file: "catalog-api/internal/handlers/websocket_handler.go"
+
+  - id: FIX-016
+    name: "Watcher Stop() drains debounce timers"
+    category: regression
+    priority: high
+    platforms: [api]
+    steps:
+      - name: "Create watcher on a directory"
+        action: "Create Watcher monitoring a temp directory with 500ms debounce"
+        expected: "Watcher started, monitoring directory"
+      - name: "Write files to trigger events"
+        action: "Create 10 files rapidly in the watched directory"
+        expected: "Events debounced and coalesced"
+      - name: "Call Stop() immediately after file writes"
+        action: "Call watcher.Stop() within 100ms of last file write (while debounce timer still pending)"
+        expected: "Stop() drains pending timers and returns within 2 seconds"
+      - name: "Verify no goroutine leak"
+        action: "runtime.NumGoroutine() after Stop()"
+        expected: "No lingering debounce timer goroutines"
+    tags: [regression, watcher, stop, debounce, timer-drain, goroutine]
+    estimated_duration: "5s"
+    expected_result: "Watcher.Stop() cancels all pending debounce timers before returning"
+    fix_reference:
+      bug_id: "phase1-watcher-stop-debounce"
+      description: "Watcher.Stop() did not cancel pending debounce timers, leaving goroutines running after Stop() returned"
+      fix_file: "Watcher/watcher.go"
+
+  - id: FIX-017
+    name: "CacheService cleanup cancels on shutdown"
+    category: regression
+    priority: high
+    platforms: [api]
+    steps:
+      - name: "Create CacheService with 1-second cleanup interval"
+        action: "NewCacheService(WithCleanupInterval(1*time.Second))"
+        expected: "Service started with background cleanup goroutine"
+      - name: "Add 100 entries with 500ms TTL"
+        action: "Set 100 cache entries with short TTL"
+        expected: "All entries added"
+      - name: "Call Close() immediately"
+        action: "Call cacheService.Close()"
+        expected: "Close() returns within 2 seconds (cleanup goroutine cancelled)"
+      - name: "Verify double Close() is safe"
+        action: "Call Close() again"
+        expected: "No panic, no-op via sync.Once"
+      - name: "Verify no goroutine leak"
+        action: "runtime.NumGoroutine() after Close()"
+        expected: "Cleanup goroutine exited"
+    tags: [regression, cache, cleanup, shutdown, goroutine, sync-once]
+    estimated_duration: "5s"
+    expected_result: "CacheService.Close() cancels cleanup goroutine via context and uses sync.Once for safety"
+    fix_reference:
+      bug_id: "phase1-cache-cleanup-shutdown"
+      description: "CacheService cleanup goroutine was not cancelled on Close(), running indefinitely after service shutdown"
+      fix_file: "Cache/cache.go"
+
+  - id: FIX-018
+    name: "WebSocket context no reconnection storm"
+    category: regression
+    priority: critical
+    platforms: [web]
+    steps:
+      - name: "Open web app and connect WebSocket"
+        action: "Navigate to http://localhost:3000, login, verify WebSocket connected"
+        expected: "Single WebSocket connection established"
+      - name: "Simulate server disconnect"
+        action: "Kill catalog-api process briefly (2 seconds) then restart"
+        expected: "WebSocket disconnects"
+      - name: "Verify reconnection with exponential backoff"
+        action: "Monitor browser network tab for WebSocket connection attempts"
+        expected: "Reconnection attempts spaced with increasing delays (1s, 2s, 4s, ...), not rapid-fire"
+      - name: "Verify single connection after reconnect"
+        action: "After server is back, check WebSocket connection count in browser"
+        expected: "Exactly 1 active WebSocket connection (not multiple from a reconnection storm)"
+    tags: [regression, websocket, reconnection, storm, exponential-backoff, web]
+    estimated_duration: "30s"
+    expected_result: "WebSocket reconnection uses exponential backoff; no storm of parallel reconnection attempts"
+    fix_reference:
+      bug_id: "phase2-websocket-reconnection-storm"
+      description: "WebSocketContext had no backoff on reconnection, causing rapid-fire connection attempts that overwhelmed the server after brief disconnects"
+      fix_file: "catalog-web/src/contexts/WebSocketContext.tsx"
+
+  - id: FIX-019
+    name: "AuthContext single permissions effect"
+    category: regression
+    priority: high
+    platforms: [web]
+    steps:
+      - name: "Login to web app"
+        action: "Navigate to http://localhost:3000, login as admin"
+        expected: "Dashboard loads"
+      - name: "Verify permissions loaded once"
+        action: "Open browser DevTools Network tab, filter for /api/v1/auth/permissions"
+        expected: "Exactly 1 request to permissions endpoint per login (not multiple from duplicate effects)"
+      - name: "Navigate to multiple pages"
+        action: "Click through Dashboard, Browse, Settings, back to Dashboard"
+        expected: "No additional /api/v1/auth/permissions requests (permissions cached in AuthContext)"
+      - name: "Verify no React strict mode double-fetch"
+        action: "Check Network tab for duplicate permission calls"
+        expected: "Zero duplicate permission requests"
+    tags: [regression, auth, permissions, react-effect, dedup, web]
+    estimated_duration: "20s"
+    expected_result: "AuthContext fetches permissions exactly once per login session"
+    fix_reference:
+      bug_id: "phase2-authcontext-duplicate-permissions"
+      description: "AuthContext useEffect for permissions had missing dependency array causing re-fetch on every render cycle"
+      fix_file: "Auth-Context-React/src/AuthContext.tsx"
+
+  - id: FIX-020
+    name: "UploadManager timer cleared on rapid calls"
+    category: regression
+    priority: high
+    platforms: [web]
+    steps:
+      - name: "Open upload dialog in web app"
+        action: "Navigate to a screen with upload functionality in catalog-web"
+        expected: "Upload area visible"
+      - name: "Trigger upload progress rapidly"
+        action: "Start an upload, then rapidly cancel and re-start 5 times within 3 seconds"
+        expected: "Each cancel clears the previous progress timer"
+      - name: "Verify no orphaned timers"
+        action: "After final cancel, wait 10 seconds"
+        expected: "No stale progress callbacks fire (no orphaned setInterval/setTimeout)"
+      - name: "Verify upload works after rapid cancel cycle"
+        action: "Start a clean upload"
+        expected: "Upload progresses normally from 0% to completion"
+    tags: [regression, upload, timer, rapid-cancel, memory-leak, web]
+    estimated_duration: "30s"
+    expected_result: "UploadManager clears previous timers on each new call, preventing orphaned callbacks"
+    fix_reference:
+      bug_id: "phase2-upload-timer-leak"
+      description: "UploadManager did not clearInterval on rapid start/cancel cycles, leaving orphaned timers that consumed memory and fired stale callbacks"
+      fix_file: "catalog-web/src/services/UploadManager.ts"
+
+  - id: FIX-021
+    name: "Android SyncManager cancelled on logout"
+    category: regression
+    priority: critical
+    platforms: [android, androidtv]
+    steps:
+      - name: "Login to Android app"
+        action: "Launch app, login with admin/admin123"
+        expected: "Home screen loads, SyncManager starts background sync"
+      - name: "Logout"
+        action: "Navigate to Settings, tap Logout"
+        expected: "Login screen appears"
+      - name: "Verify SyncManager coroutine cancelled"
+        action: "Check logcat for SyncManager cancellation log"
+        expected: "Log entry: 'SyncManager: cancelled' or 'SyncManager: scope cancelled'"
+      - name: "Verify no network requests after logout"
+        action: "Monitor logcat for API calls for 30 seconds after logout"
+        expected: "Zero API requests from SyncManager after logout"
+    tags: [regression, android, sync, logout, coroutine, cancellation]
+    estimated_duration: "60s"
+    expected_result: "SyncManager coroutine scope cancelled on logout; no post-logout API calls"
+    fix_reference:
+      bug_id: "phase2-android-sync-after-logout"
+      description: "SyncManager continued making API calls after logout because its coroutine scope was not cancelled in the logout flow"
+      fix_file: "catalogizer-android/app/src/main/java/com/catalogizer/android/data/sync/SyncManager.kt"
+
+  - id: FIX-022
+    name: "Android MediaRepository Flow.first() timeout"
+    category: regression
+    priority: high
+    platforms: [android, androidtv]
+    steps:
+      - name: "Login to Android app"
+        action: "Launch app, login with admin/admin123"
+        expected: "Home screen loads"
+      - name: "Navigate to entity detail with slow network"
+        action: "Open any media detail screen while simulating slow network (200ms+ latency)"
+        expected: "Detail screen loads within 5 seconds"
+      - name: "Verify Flow.first() has timeout"
+        action: "Check that MediaRepository does not hang indefinitely on Flow.first()"
+        expected: "Flow.first() wrapped with withTimeoutOrNull(5000) or similar bounded collection"
+      - name: "Verify timeout produces fallback UI"
+        action: "If flow times out, check screen state"
+        expected: "Error message or retry button shown, not infinite spinner"
+    tags: [regression, android, flow, timeout, first, media-repository]
+    estimated_duration: "30s"
+    expected_result: "Flow.first() collection has timeout to prevent indefinite hangs on slow/missing data"
+    fix_reference:
+      bug_id: "phase2-android-flow-first-hang"
+      description: "MediaRepository used Flow.first() without timeout, hanging indefinitely when the upstream flow never emitted"
+      fix_file: "catalogizer-android/app/src/main/java/com/catalogizer/android/data/repository/MediaRepository.kt"
+
+  - id: FIX-023
+    name: "Android AuthRepository shared DataStore flow"
+    category: regression
+    priority: high
+    platforms: [android, androidtv]
+    steps:
+      - name: "Login from main activity"
+        action: "Launch app, login with admin/admin123"
+        expected: "Token stored in DataStore"
+      - name: "Read auth state from two ViewModels simultaneously"
+        action: "Navigate to a screen where both HomeViewModel and ProfileViewModel read auth state"
+        expected: "Both ViewModels receive consistent auth state"
+      - name: "Verify single DataStore flow (shared, not duplicated)"
+        action: "Check logcat for DataStore read operations"
+        expected: "Single shared flow, not N independent flow collections"
+      - name: "Logout and verify both ViewModels see unauthenticated state"
+        action: "Logout from settings"
+        expected: "Both ViewModels transition to unauthenticated state simultaneously"
+    tags: [regression, android, datastore, shared-flow, auth, consistency]
+    estimated_duration: "30s"
+    expected_result: "AuthRepository shares a single DataStore flow across all collectors"
+    fix_reference:
+      bug_id: "phase2-android-auth-datastore-multi-collect"
+      description: "AuthRepository created a new DataStore flow per collector instead of sharing via shareIn, causing inconsistent state and excessive disk reads"
+      fix_file: "catalogizer-android/app/src/main/java/com/catalogizer/android/data/repository/AuthRepository.kt"
+
+  - id: FIX-024
+    name: "Android Room DB can close and reopen"
+    category: regression
+    priority: high
+    platforms: [android, androidtv]
+    steps:
+      - name: "Launch app and populate Room DB"
+        action: "Login, browse entities to populate local Room cache"
+        expected: "Entities cached in Room database"
+      - name: "Force close app"
+        action: "adb shell am force-stop com.catalogizer.android (or androidtv)"
+        expected: "App process killed, Room DB closed"
+      - name: "Relaunch app"
+        action: "adb shell am start -n com.catalogizer.android/.MainActivity"
+        expected: "App starts, Room DB reopened"
+      - name: "Verify cached data accessible"
+        action: "Navigate to previously cached screen"
+        expected: "Cached entities displayed immediately (from Room), then refreshed from API"
+      - name: "Verify no SQLite locked error"
+        action: "Check logcat for 'database is locked' or 'SQLiteException'"
+        expected: "Zero SQLite lock errors"
+    tags: [regression, android, room, close-reopen, sqlite-locked, lifecycle]
+    estimated_duration: "30s"
+    expected_result: "Room database closes cleanly on app termination and reopens without lock errors"
+    fix_reference:
+      bug_id: "phase2-android-room-reopen"
+      description: "Room database instance was cached in a singleton but close() was called on process death, and the singleton returned the closed instance on relaunch"
+      fix_file: "catalogizer-android/app/src/main/java/com/catalogizer/android/data/local/AppDatabase.kt"
+
+  - id: FIX-025
+    name: "Episode navigation next/previous works"
+    category: regression
+    priority: high
+    platforms: [api, web, androidtv, android]
+    steps:
+      - name: "Login as admin"
+        action: "POST /api/v1/auth/login with body {\"username\":\"admin\",\"password\":\"admin123\"}"
+        expected: "200 OK with JWT token"
+      - name: "Find a TV show with multiple episodes"
+        action: "GET /api/v1/entities?media_type=tv_episode&per_page=5"
+        expected: "200 OK with TV episode entities"
+      - name: "Get next episode via API"
+        action: "GET /api/v1/entities/{episode_id}/next"
+        expected: "200 OK with next episode in same season, or first episode of next season"
+      - name: "Get previous episode via API"
+        action: "GET /api/v1/entities/{episode_id}/previous"
+        expected: "200 OK with previous episode, or last episode of previous season"
+      - name: "Verify boundary: first episode has no previous"
+        action: "GET /api/v1/entities/{first_episode_id}/previous"
+        expected: "404 Not Found or empty response (no episode before S01E01)"
+      - name: "Verify boundary: last episode has no next"
+        action: "GET /api/v1/entities/{last_episode_id}/next"
+        expected: "404 Not Found or empty response"
+    tags: [regression, episode, navigation, next, previous, boundary, tv-show]
+    estimated_duration: "20s"
+    expected_result: "Episode next/previous navigation works across seasons with correct boundary handling"
+    fix_reference:
+      bug_id: "phase2-episode-navigation"
+      description: "Episode next/previous queries did not account for season boundaries, returning wrong episodes or crashing on first/last episode"
+      fix_file: "catalog-api/repository/media_item_repository.go"
+
+  - id: FIX-026
+    name: "Dead middleware deleted (advanced, enhanced)"
+    category: regression
+    priority: medium
+    platforms: [api]
+    steps:
+      - name: "Verify no advanced middleware in codebase"
+        action: "Search catalog-api source for 'AdvancedMiddleware' or 'advanced_middleware'"
+        expected: "Zero occurrences found"
+      - name: "Verify no enhanced middleware in codebase"
+        action: "Search catalog-api source for 'EnhancedMiddleware' or 'enhanced_middleware'"
+        expected: "Zero occurrences found"
+      - name: "Verify no dead middleware imported in main.go"
+        action: "Check catalog-api/main.go imports for dead middleware packages"
+        expected: "No imports referencing deleted middleware"
+      - name: "Verify API builds cleanly"
+        action: "cd catalog-api && go build ./..."
+        expected: "Build succeeds with zero errors (no broken imports)"
+    tags: [regression, dead-code, middleware, cleanup, build]
+    estimated_duration: "10s"
+    expected_result: "Dead advanced/enhanced middleware packages fully removed from codebase"
+    fix_reference:
+      bug_id: "phase3-dead-middleware-cleanup"
+      description: "Unused AdvancedMiddleware and EnhancedMiddleware packages remained in codebase after refactoring, adding dead code and confusion"
+      fix_file: "catalog-api/internal/middleware/"
+
+  - id: FIX-027
+    name: "Mock collections API removed"
+    category: regression
+    priority: high
+    platforms: [api]
+    steps:
+      - name: "Verify no hardcoded mock data in collections handler"
+        action: "Search catalog-api/handlers/ for hardcoded collection arrays or mock data"
+        expected: "Zero mock/hardcoded collection responses"
+      - name: "Verify collections come from database"
+        action: "POST /api/v1/auth/login as admin, then GET /api/v1/collections"
+        expected: "200 OK with collections from database (may be empty list, but not hardcoded mock data)"
+      - name: "Create and verify real collection"
+        action: "POST /api/v1/collections with body {\"name\":\"Real Collection\"}"
+        expected: "201 Created with database-generated ID"
+      - name: "Verify created collection persists"
+        action: "GET /api/v1/collections"
+        expected: "Response includes 'Real Collection' (persisted in database, not ephemeral mock)"
+    tags: [regression, mock-data, collections, database, cleanup]
+    estimated_duration: "15s"
+    expected_result: "Collections API returns real database data, no mock/hardcoded responses"
+    fix_reference:
+      bug_id: "phase3-mock-collections-removal"
+      description: "Collections handler returned hardcoded mock data instead of querying the database"
+      fix_file: "catalog-api/handlers/collection_handler.go"
+
+  - id: FIX-028
+    name: "Conversion API no mock fallback"
+    category: regression
+    priority: high
+    platforms: [api]
+    steps:
+      - name: "Login as admin"
+        action: "POST /api/v1/auth/login with body {\"username\":\"admin\",\"password\":\"admin123\"}"
+        expected: "200 OK with JWT token"
+      - name: "Request media conversion status"
+        action: "GET /api/v1/conversion/status"
+        expected: "200 OK with real conversion queue status (may be empty), not mock data"
+      - name: "Verify no fake conversion entries"
+        action: "Inspect response for fields with placeholder values like 'mock', 'test', or 'example'"
+        expected: "Zero placeholder/mock values in response"
+      - name: "Verify error case returns proper error"
+        action: "POST /api/v1/conversion with invalid parameters"
+        expected: "400 Bad Request with validation error, not a mock success response"
+    tags: [regression, mock-data, conversion, fallback, cleanup]
+    estimated_duration: "10s"
+    expected_result: "Conversion API returns real status from conversion service, no mock fallback"
+    fix_reference:
+      bug_id: "phase3-conversion-mock-fallback"
+      description: "Conversion handler fell back to mock data when the conversion service was unavailable instead of returning a proper error"
+      fix_file: "catalog-api/handlers/conversion_handler.go"
+
+  # ==================== Additional Phase Fixes ====================
+
+  - id: FIX-029
+    name: "Android TV deep link intent parsing"
+    category: regression
+    priority: high
+    platforms: [androidtv]
+    steps:
+      - name: "Send deep link intent for a movie"
+        action: "adb shell am start -a android.intent.action.VIEW -d 'catalogizer://media/42?type=movie' com.catalogizer.androidtv"
+        expected: "App opens directly to movie detail screen for entity ID 42"
+      - name: "Send deep link intent for a TV episode"
+        action: "adb shell am start -a android.intent.action.VIEW -d 'catalogizer://media/100?type=tv_episode' com.catalogizer.androidtv"
+        expected: "App opens directly to TV episode detail screen"
+      - name: "Send deep link with missing type parameter"
+        action: "adb shell am start -a android.intent.action.VIEW -d 'catalogizer://media/42' com.catalogizer.androidtv"
+        expected: "App opens to generic entity detail screen (graceful handling of missing type)"
+      - name: "Send deep link with invalid entity ID"
+        action: "adb shell am start -a android.intent.action.VIEW -d 'catalogizer://media/999999?type=movie' com.catalogizer.androidtv"
+        expected: "App shows error or 'not found' screen, does not crash"
+    tags: [regression, androidtv, deep-link, intent, parsing, navigation]
+    estimated_duration: "30s"
+    expected_result: "Deep link intents parsed correctly for all media types with graceful error handling"
+    fix_reference:
+      bug_id: "phase3-androidtv-deeplink-parsing"
+      description: "ChannelDeepLinkActivity did not handle missing 'type' query parameter, crashing with NullPointerException"
+      fix_file: "catalogizer-androidtv/app/src/main/java/com/catalogizer/androidtv/ui/ChannelDeepLinkActivity.kt"
+
+  - id: FIX-030
+    name: "Challenge runner uses background context not Gin request context"
+    category: regression
+    priority: critical
+    platforms: [api]
+    steps:
+      - name: "Start a long-running challenge via API"
+        action: "POST /api/v1/challenges/run with a challenge that takes >30 seconds"
+        expected: "Challenge starts execution"
+      - name: "Verify challenge continues after HTTP response timeout"
+        action: "Wait 60 seconds, GET /api/v1/challenges/status"
+        expected: "Challenge still running or completed (not cancelled by request context deadline)"
+      - name: "Verify RunAll works with background context"
+        action: "POST /api/v1/challenges/run-all"
+        expected: "RunAll starts and runs to completion without premature cancellation"
+      - name: "Verify challenge results persisted"
+        action: "GET /api/v1/challenges/results after RunAll completes"
+        expected: "All challenge results present with pass/fail status"
+    tags: [regression, challenges, context, background, gin, timeout]
+    estimated_duration: "120s"
+    expected_result: "Challenge runner uses context.Background() so challenges survive beyond HTTP request lifecycle"
+    fix_reference:
+      bug_id: "fullqa-challenge-runner-context"
+      description: "Challenge runner used Gin request context (c.Request.Context()) which was cancelled when the HTTP write timeout fired, killing long-running challenges"
+      fix_file: "catalog-api/handlers/challenge_handler.go"

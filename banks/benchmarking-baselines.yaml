@@ -1,0 +1,383 @@
+# SPDX-FileCopyrightText: 2026 Milos Vasic
+# SPDX-License-Identifier: Apache-2.0
+#
+# HelixQA Test Bank: Benchmarking Baselines (Constitution Article V, Category 8)
+# Establishes and verifies performance SLAs for API response times, throughput
+# minimums, memory ceilings, startup times, and database query performance.
+# Regression detection: any run exceeding these baselines is a defect.
+
+version: "1.0"
+name: "Catalogizer Benchmarking Baselines Test Bank"
+description: "Benchmarking test bank establishing performance baselines: API response time SLAs, throughput minimums, memory ceilings, startup times, and database query performance with regression detection"
+metadata:
+  author: "vasic-digital"
+  app: "Catalogizer"
+  version: "2.3.0"
+
+test_cases:
+  # ==================== API Response Time SLAs (BENCH-001 to 005) ====================
+
+  - id: BENCH-001
+    name: "Health endpoint response time: p95 < 50ms"
+    category: benchmarking
+    priority: critical
+    platforms: [api]
+    steps:
+      - name: "Warm up connection pool"
+        action: "Send 5 GET /api/v1/health requests (discard results)"
+        expected: "All return 200 OK"
+      - name: "Measure 100 requests"
+        action: "Send 100 GET /api/v1/health requests sequentially, record each response time"
+        expected: "All return 200 OK"
+      - name: "Calculate p95 latency"
+        action: "Sort response times, take 95th percentile value"
+        expected: "p95 < 50ms"
+      - name: "Calculate p99 latency"
+        action: "Take 99th percentile value"
+        expected: "p99 < 100ms"
+      - name: "Verify zero errors"
+        action: "Count non-200 responses"
+        expected: "0 errors across all 100 requests"
+    tags: [benchmarking, response-time, health, sla, p95, p99]
+    estimated_duration: "15s"
+    expected_result: "Health endpoint p95 < 50ms, p99 < 100ms, zero errors"
+
+  - id: BENCH-002
+    name: "Auth login response time: p95 < 200ms"
+    category: benchmarking
+    priority: critical
+    platforms: [api]
+    steps:
+      - name: "Measure 50 login requests"
+        action: "Send 50 POST /api/v1/auth/login with body {\"username\":\"admin\",\"password\":\"admin123\"}, record each response time"
+        expected: "All return 200 OK with JWT token"
+      - name: "Calculate p95 latency"
+        action: "Sort response times, take 95th percentile"
+        expected: "p95 < 200ms (bcrypt comparison is intentionally slow but bounded)"
+      - name: "Measure failed login response time"
+        action: "Send 20 POST /api/v1/auth/login with wrong password, record response times"
+        expected: "All return 401 Unauthorized"
+      - name: "Compare failed vs successful login timing"
+        action: "Compare p95 of failed vs successful logins"
+        expected: "Difference < 50ms (consistent timing prevents username enumeration)"
+    tags: [benchmarking, response-time, auth, login, sla, p95, bcrypt]
+    estimated_duration: "30s"
+    expected_result: "Auth login p95 < 200ms for both success and failure; timing consistent"
+
+  - id: BENCH-003
+    name: "Search endpoint response time: p95 < 500ms"
+    category: benchmarking
+    priority: critical
+    platforms: [api]
+    steps:
+      - name: "Login as admin"
+        action: "POST /api/v1/auth/login with body {\"username\":\"admin\",\"password\":\"admin123\"}"
+        expected: "200 OK with JWT token"
+      - name: "Measure short query search"
+        action: "Send 50 GET /api/v1/entities?search=matrix requests, record response times"
+        expected: "All return 200 OK"
+      - name: "Measure long query search"
+        action: "Send 50 GET /api/v1/entities?search=the+lord+of+the+rings+the+fellowship+of+the+ring requests"
+        expected: "All return 200 OK"
+      - name: "Measure Cyrillic query search"
+        action: "Send 20 GET /api/v1/entities?search=%D0%BC%D0%B0%D1%82%D1%80%D0%B8%D1%86%D0%B0 requests"
+        expected: "All return 200 OK"
+      - name: "Calculate combined p95"
+        action: "Take 95th percentile across all 120 search requests"
+        expected: "p95 < 500ms"
+    tags: [benchmarking, response-time, search, sla, p95, cyrillic, unicode]
+    estimated_duration: "30s"
+    expected_result: "Search p95 < 500ms across short, long, and Unicode queries"
+
+  - id: BENCH-004
+    name: "Browse/entity listing response time: p95 < 300ms"
+    category: benchmarking
+    priority: critical
+    platforms: [api]
+    steps:
+      - name: "Login as admin"
+        action: "POST /api/v1/auth/login with body {\"username\":\"admin\",\"password\":\"admin123\"}"
+        expected: "200 OK with JWT token"
+      - name: "Measure paginated entity listing (page 1)"
+        action: "Send 50 GET /api/v1/entities?per_page=20&page=1 requests, record response times"
+        expected: "All return 200 OK with up to 20 entities"
+      - name: "Measure paginated entity listing (page 5)"
+        action: "Send 50 GET /api/v1/entities?per_page=20&page=5 requests"
+        expected: "All return 200 OK"
+      - name: "Measure filtered listing"
+        action: "Send 50 GET /api/v1/entities?media_type=movie&per_page=20 requests"
+        expected: "All return 200 OK with movie-type entities only"
+      - name: "Calculate combined p95"
+        action: "Take 95th percentile across all 150 requests"
+        expected: "p95 < 300ms"
+    tags: [benchmarking, response-time, browse, listing, pagination, sla, p95]
+    estimated_duration: "30s"
+    expected_result: "Entity listing p95 < 300ms across pagination and filtering variants"
+
+  - id: BENCH-005
+    name: "Stream initiation response time: p95 < 1000ms"
+    category: benchmarking
+    priority: high
+    platforms: [api]
+    steps:
+      - name: "Login as admin"
+        action: "POST /api/v1/auth/login with body {\"username\":\"admin\",\"password\":\"admin123\"}"
+        expected: "200 OK with JWT token"
+      - name: "Identify a streamable file"
+        action: "GET /api/v1/entities?media_type=movie&per_page=1 to get a media item with files"
+        expected: "200 OK with at least one entity with associated file"
+      - name: "Measure stream initiation (HEAD request)"
+        action: "Send 20 HEAD requests to stream endpoint for the identified file"
+        expected: "All return 200 OK or 206 Partial Content"
+      - name: "Measure stream initiation (GET with Range header)"
+        action: "Send 20 GET requests with Range: bytes=0-1023 to stream endpoint"
+        expected: "All return 206 Partial Content with first 1KB"
+      - name: "Calculate p95"
+        action: "Take 95th percentile across all 40 stream initiation requests"
+        expected: "p95 < 1000ms (includes SMB/NFS/local file open overhead)"
+    tags: [benchmarking, response-time, streaming, sla, p95, range-request]
+    estimated_duration: "30s"
+    expected_result: "Stream initiation p95 < 1000ms including filesystem protocol overhead"
+
+  # ==================== Throughput Minimums (BENCH-006 to 008) ====================
+
+  - id: BENCH-006
+    name: "Sustained throughput: >100 requests per second"
+    category: benchmarking
+    priority: critical
+    platforms: [api]
+    steps:
+      - name: "Login as admin"
+        action: "POST /api/v1/auth/login with body {\"username\":\"admin\",\"password\":\"admin123\"}"
+        expected: "200 OK with JWT token"
+      - name: "Run 60-second sustained load test"
+        action: "k6 run with 10 VUs sending GET /api/v1/health for 60 seconds, targeting 100+ rps"
+        expected: "Achieved throughput recorded"
+      - name: "Verify throughput exceeds 100 rps"
+        action: "Check k6 output for http_reqs rate"
+        expected: "http_reqs rate > 100/s sustained over 60 seconds"
+      - name: "Verify error rate under load"
+        action: "Check k6 http_req_failed rate"
+        expected: "Error rate < 1% (exclude 429 rate-limit responses)"
+    tags: [benchmarking, throughput, rps, sustained, load-test, k6]
+    estimated_duration: "90s"
+    expected_result: "Server sustains >100 requests per second for 60 seconds with <1% error rate"
+
+  - id: BENCH-007
+    name: "Concurrent user support: >50 simultaneous users"
+    category: benchmarking
+    priority: high
+    platforms: [api]
+    steps:
+      - name: "Ramp to 50 concurrent users"
+        action: "k6 run with ramp-up: 0 to 50 VUs over 30 seconds, each VU performing login + browse + search loop"
+        expected: "All 50 VUs executing concurrently"
+      - name: "Hold at 50 VUs for 60 seconds"
+        action: "Maintain 50 concurrent VUs for 60 seconds"
+        expected: "Sustained operation without errors"
+      - name: "Verify p95 latency under concurrent load"
+        action: "Check k6 http_req_duration p(95)"
+        expected: "p95 < 1000ms for all endpoints"
+      - name: "Verify zero dropped connections"
+        action: "Check k6 for connection errors"
+        expected: "Zero connection refused or timeout errors"
+    tags: [benchmarking, throughput, concurrent-users, ramp-up, k6]
+    estimated_duration: "120s"
+    expected_result: "50+ concurrent users served with p95 < 1s and zero dropped connections"
+
+  - id: BENCH-008
+    name: "Concurrent scan support: >10 simultaneous scans"
+    category: benchmarking
+    priority: high
+    platforms: [api]
+    steps:
+      - name: "Login as admin"
+        action: "POST /api/v1/auth/login with body {\"username\":\"admin\",\"password\":\"admin123\"}"
+        expected: "200 OK with JWT token"
+      - name: "Create 10 small storage roots"
+        action: "Create or verify existence of 10 storage roots pointing to different paths"
+        expected: "10 storage roots available"
+      - name: "Trigger 10 concurrent scans"
+        action: "POST /api/v1/scan for each of 10 storage roots within 2 seconds"
+        expected: "All 10 scan requests accepted (200 or 202)"
+      - name: "Verify API responsiveness during scans"
+        action: "While scans running, send 20 GET /api/v1/entities requests"
+        expected: "All return 200 OK with p95 < 1000ms (scans don't starve API requests)"
+      - name: "Verify all scans complete"
+        action: "Poll GET /api/v1/scan/status until all 10 scans complete"
+        expected: "All 10 scans complete successfully (no deadlock or starvation)"
+    tags: [benchmarking, throughput, concurrent-scans, parallelism, starvation]
+    estimated_duration: "300s"
+    expected_result: "10+ concurrent scans execute without starving API responsiveness"
+
+  # ==================== Memory Ceilings (BENCH-009 to 011) ====================
+
+  - id: BENCH-009
+    name: "Idle memory usage: <500MB"
+    category: benchmarking
+    priority: high
+    platforms: [api]
+    steps:
+      - name: "Start catalog-api in clean state"
+        action: "Start catalog-api with empty database and no active connections"
+        expected: "Server starts and binds port"
+      - name: "Wait 30 seconds for initialization"
+        action: "Wait 30 seconds for all lazy services to initialize"
+        expected: "Server fully initialized"
+      - name: "Measure RSS memory"
+        action: "Check process RSS via /proc/{pid}/status or ps aux"
+        expected: "VmRSS < 500MB"
+      - name: "Measure Go heap via pprof"
+        action: "GET /debug/pprof/heap (if enabled) or check runtime.ReadMemStats"
+        expected: "HeapInuse < 200MB"
+    tags: [benchmarking, memory, idle, rss, heap, ceiling]
+    estimated_duration: "60s"
+    expected_result: "Idle catalog-api uses <500MB RSS and <200MB Go heap"
+
+  - id: BENCH-010
+    name: "Memory under load: <2GB"
+    category: benchmarking
+    priority: high
+    platforms: [api]
+    steps:
+      - name: "Login as admin"
+        action: "POST /api/v1/auth/login with body {\"username\":\"admin\",\"password\":\"admin123\"}"
+        expected: "200 OK with JWT token"
+      - name: "Generate sustained load for 5 minutes"
+        action: "k6 run with 20 VUs for 5 minutes: mixed search, browse, entity CRUD operations"
+        expected: "Load test running"
+      - name: "Measure peak memory during load"
+        action: "Sample RSS every 10 seconds during the 5-minute test, record peak"
+        expected: "Peak RSS < 2GB"
+      - name: "Measure memory after load stops"
+        action: "Wait 60 seconds after load stops, measure RSS"
+        expected: "RSS dropped from peak (GC reclaimed memory), current RSS < 1GB"
+    tags: [benchmarking, memory, under-load, peak, gc-recovery, ceiling]
+    estimated_duration: "420s"
+    expected_result: "Peak memory under load stays below 2GB; GC recovers memory after load"
+
+  - id: BENCH-011
+    name: "No memory growth over 1 hour steady state"
+    category: benchmarking
+    priority: high
+    platforms: [api]
+    steps:
+      - name: "Login as admin"
+        action: "POST /api/v1/auth/login with body {\"username\":\"admin\",\"password\":\"admin123\"}"
+        expected: "200 OK with JWT token"
+      - name: "Record initial memory baseline"
+        action: "Measure RSS after 5-minute warm-up period"
+        expected: "Baseline RSS recorded"
+      - name: "Run steady-state workload for 1 hour"
+        action: "k6 soak test: 5 VUs for 60 minutes, mixed API operations (browse, search, entity detail)"
+        expected: "Soak test running at steady 5 VUs"
+      - name: "Sample memory at 15-minute intervals"
+        action: "Record RSS at T+15m, T+30m, T+45m, T+60m"
+        expected: "All four samples recorded"
+      - name: "Calculate memory growth rate"
+        action: "Linear regression on 5 data points (baseline + 4 samples)"
+        expected: "Growth rate < 10MB/hour (effectively flat; no memory leak)"
+    tags: [benchmarking, memory, soak, leak-detection, steady-state, regression]
+    estimated_duration: "3900s"
+    expected_result: "No significant memory growth over 1 hour; growth < 10MB/hour confirms no leak"
+
+  # ==================== Startup Time (BENCH-012 to 013) ====================
+
+  - id: BENCH-012
+    name: "Cold start time: <5 seconds"
+    category: benchmarking
+    priority: high
+    platforms: [api]
+    steps:
+      - name: "Ensure catalog-api is not running"
+        action: "Kill any existing catalog-api process"
+        expected: "Process terminated"
+      - name: "Drop OS filesystem cache (user-level: reopen DB)"
+        action: "Ensure SQLite/PostgreSQL connection will be freshly opened"
+        expected: "No warm cache for database"
+      - name: "Start catalog-api and measure time to first health response"
+        action: "Start catalog-api, immediately poll GET /api/v1/health every 100ms, record time of first 200 OK"
+        expected: "First 200 OK received"
+      - name: "Verify cold start < 5 seconds"
+        action: "Calculate elapsed time from process start to first 200 OK"
+        expected: "Elapsed < 5 seconds"
+      - name: "Verify all routes registered"
+        action: "GET /api/v1/entities immediately after first health response"
+        expected: "200 OK or 401 (route registered, auth working)"
+    tags: [benchmarking, startup, cold-start, time-to-first-response, sla]
+    estimated_duration: "15s"
+    expected_result: "Cold start completes in under 5 seconds with all routes registered"
+
+  - id: BENCH-013
+    name: "Warm start time: <2 seconds"
+    category: benchmarking
+    priority: medium
+    platforms: [api]
+    steps:
+      - name: "Run catalog-api once to warm caches"
+        action: "Start catalog-api, wait for health, send 10 requests, then stop it"
+        expected: "Warm data in filesystem cache"
+      - name: "Restart catalog-api immediately"
+        action: "Start catalog-api again, poll GET /api/v1/health every 100ms"
+        expected: "First 200 OK received"
+      - name: "Verify warm start < 2 seconds"
+        action: "Calculate elapsed time from process start to first 200 OK"
+        expected: "Elapsed < 2 seconds (database/TLS already cached in OS)"
+      - name: "Verify lazy services load on demand"
+        action: "Check startup logs for lazy initialization messages"
+        expected: "Core services loaded during startup; optional services deferred"
+    tags: [benchmarking, startup, warm-start, restart, sla]
+    estimated_duration: "10s"
+    expected_result: "Warm restart completes in under 2 seconds"
+
+  # ==================== Database Performance (BENCH-014 to 015) ====================
+
+  - id: BENCH-014
+    name: "Database read query p95: <50ms"
+    category: benchmarking
+    priority: critical
+    platforms: [api]
+    steps:
+      - name: "Login as admin"
+        action: "POST /api/v1/auth/login with body {\"username\":\"admin\",\"password\":\"admin123\"}"
+        expected: "200 OK with JWT token"
+      - name: "Measure entity listing queries"
+        action: "Send 100 GET /api/v1/entities?per_page=20 requests, measure response time (proxy for DB query time)"
+        expected: "All return 200 OK"
+      - name: "Measure entity search queries"
+        action: "Send 100 GET /api/v1/entities?search=test requests"
+        expected: "All return 200 OK"
+      - name: "Measure entity detail queries"
+        action: "Send 100 GET /api/v1/entities/{id} for various entity IDs"
+        expected: "All return 200 OK"
+      - name: "Calculate combined read p95"
+        action: "Take 95th percentile across all 300 read operations"
+        expected: "p95 < 50ms (database read latency excluding network overhead)"
+    tags: [benchmarking, database, read, query, p95, sla]
+    estimated_duration: "30s"
+    expected_result: "Database read queries complete in p95 < 50ms"
+
+  - id: BENCH-015
+    name: "Database write query p95: <100ms"
+    category: benchmarking
+    priority: critical
+    platforms: [api]
+    steps:
+      - name: "Login as admin"
+        action: "POST /api/v1/auth/login with body {\"username\":\"admin\",\"password\":\"admin123\"}"
+        expected: "200 OK with JWT token"
+      - name: "Measure entity creation writes"
+        action: "Send 50 POST /api/v1/entities with unique titles, measure each response time"
+        expected: "All return 201 Created"
+      - name: "Measure entity update writes"
+        action: "Send 50 PUT /api/v1/entities/{id} with updated titles"
+        expected: "All return 200 OK"
+      - name: "Measure entity deletion writes"
+        action: "Send 50 DELETE /api/v1/entities/{id} for the created entities"
+        expected: "All return 200 OK or 204 No Content"
+      - name: "Calculate combined write p95"
+        action: "Take 95th percentile across all 150 write operations"
+        expected: "p95 < 100ms"
+    tags: [benchmarking, database, write, query, p95, sla, crud]
+    estimated_duration: "30s"
+    expected_result: "Database write queries complete in p95 < 100ms including WAL sync"

