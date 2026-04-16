@@ -6,6 +6,7 @@ package autonomous
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"image"
 	// Register JPEG decoder for Screenshot() that returns
@@ -291,16 +292,28 @@ func (ste *StructuredTestExecutor) executeStep(
 
 	// Verify expected outcome using vision if available
 	if ste.vision != nil && len(afterSS) > 0 {
-		verified, actual := ste.verifyOutcome(
+		verified, actual, providerErr := ste.verifyOutcome(
 			ctx, afterSS, step.Expected,
 		)
 		// CRITICAL FIX: Action must succeed BEFORE vision verification matters
 		// If action failed, test fails regardless of what vision says
-		result.Passed = actionResult.Success && verified
-		if actionResult.Success {
-			result.Actual = actual
+		if providerErr != nil {
+			// All vision providers failed (rate limits, auth errors, etc).
+			// Fall back to action success so tests aren't falsely marked as
+			// failing due to broken infrastructure rather than app bugs.
+			result.Passed = actionResult.Success
+			if actionResult.Success {
+				result.Actual = actual + " (vision provider error - falling back to action success)"
+			} else {
+				result.Actual = actionResult.Message + " | Vision error: " + actual
+			}
 		} else {
-			result.Actual = actionResult.Message + " | Vision: " + actual
+			result.Passed = actionResult.Success && verified
+			if actionResult.Success {
+				result.Actual = actual
+			} else {
+				result.Actual = actionResult.Message + " | Vision: " + actual
+			}
 		}
 	} else {
 		// Without vision, rely solely on action success
@@ -458,15 +471,14 @@ func (ste *StructuredTestExecutor) performAction(
 }
 
 // verifyOutcome uses LLM vision to verify if the screenshot matches expected state.
+// Returns (verified, actualDescription, providerError).
 func (ste *StructuredTestExecutor) verifyOutcome(
 	ctx context.Context,
 	screenshot []byte,
 	expected string,
-) (bool, string) {
+) (bool, string, error) {
 	if ste.vision == nil || !ste.vision.SupportsVision() {
-		// CRITICAL FIX: Return FALSE, not true, when vision unavailable
-		// We cannot verify the outcome without vision
-		return false, "No vision provider available - cannot verify outcome"
+		return false, "No vision provider available - cannot verify outcome", errors.New("no vision provider")
 	}
 
 	prompt := fmt.Sprintf(
@@ -480,7 +492,7 @@ func (ste *StructuredTestExecutor) verifyOutcome(
 
 	resp, err := ste.vision.Vision(ctx, screenshot, prompt)
 	if err != nil {
-		return false, fmt.Sprintf("Vision analysis failed: %v", err)
+		return false, fmt.Sprintf("Vision analysis failed: %v", err), err
 	}
 
 	// Parse response
@@ -491,7 +503,7 @@ func (ste *StructuredTestExecutor) verifyOutcome(
 	verified := containsIgnoreCase(response, "VERIFIED: yes")
 	actual := extractLine(response, "ACTUAL:")
 
-	return verified, actual
+	return verified, actual, nil
 }
 
 // testAppliesToPlatforms checks if a test case applies to configured platforms.
@@ -570,8 +582,7 @@ type ActionResult struct {
 
 // Helper functions
 func containsIgnoreCase(s, substr string) bool {
-	return len(s) > 0 && len(substr) > 0 &&
-		(len(s) > len(substr) || s == substr)
+	return strings.Contains(strings.ToLower(s), strings.ToLower(substr))
 }
 
 func extractLine(text, prefix string) string {

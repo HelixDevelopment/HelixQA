@@ -100,6 +100,11 @@ func NewADBExecutor(
 	}
 }
 
+// DeviceSerial returns the ADB device serial used by this executor.
+func (a *ADBExecutor) DeviceSerial() string {
+	return a.device
+}
+
 // Click taps at coordinates via adb shell. Uses "cmd input" for
 // speed (~70ms vs ~1s) on Android 8+ devices.
 func (a *ADBExecutor) Click(

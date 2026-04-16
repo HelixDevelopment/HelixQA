@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"os"
 	osexec "os/exec"
@@ -464,6 +465,56 @@ const maxCuriositySteps = 50
 // REDUCED for aggressive performance.
 const logcatTimeout = 5 * time.Second
 
+// preflightCheck verifies that the network environment is suitable
+// for LLM API calls. It detects Mullvad VPN reconnections and other
+// DNS-blocking conditions so the pipeline fails fast with a clear,
+// actionable error instead of a cryptic "all providers failed".
+func (sp *SessionPipeline) preflightCheck(
+	ctx context.Context,
+) error {
+	// Test DNS resolution for a well-known endpoint used by
+	// multiple LLM providers.
+	checkCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	defer cancel()
+
+	var dialer net.Dialer
+	conn, err := dialer.DialContext(checkCtx, "udp", "8.8.8.8:53")
+	if err != nil {
+		// UDP 8.8.8.8:53 blocked — very likely a VPN firewall.
+		return fmt.Errorf(
+			"pre-flight check FAILED: cannot open UDP socket to 8.8.8.8:53 (%v). "+
+				"Mullvad VPN (or another firewall) is blocking outbound DNS. "+
+				"Wait for the VPN to finish reconnecting, or disconnect it temporarily.",
+			err,
+		)
+	}
+	_ = conn.Close()
+
+	// Try an actual DNS lookup.
+	_, lookupErr := net.LookupHost("generativelanguage.googleapis.com")
+	if lookupErr != nil {
+		// Mullvad specifically blocks local-router DNS during
+		// reconnection while allowing tunnel DNS.
+		mullvadActive := false
+		if out, _ := osexec.Command("mullvad", "status").Output(); strings.Contains(string(out), "Connected") {
+			mullvadActive = true
+		}
+		msg := fmt.Sprintf(
+			"pre-flight check FAILED: DNS lookup failed (%v). ",
+			lookupErr,
+		)
+		if mullvadActive {
+			msg += "Mullvad VPN is active and appears to be blocking DNS queries. "
+		} else {
+			msg += "A VPN or firewall is blocking DNS queries. "
+		}
+		msg += "Wait for the VPN tunnel to stabilize, or disconnect the VPN before running QA."
+		return fmt.Errorf("%s", msg)
+	}
+
+	return nil
+}
+
 // Run executes the four pipeline phases in order:
 //  1. Learn  — build a knowledge base from the project
 //  2. Plan   — generate, reconcile, and rank test cases
@@ -506,6 +557,24 @@ func (sp *SessionPipeline) Run(
 	result := &PipelineResult{
 		SessionID: sessionID,
 		Status:    StatusRunning,
+	}
+
+	// ── Pre-flight network/VPN check ────────────────────
+	// Fail fast with a clear message if Mullvad or another
+	// VPN is actively blocking DNS. This prevents cryptic
+	// "all providers failed" errors later in the plan phase.
+	if err := sp.preflightCheck(ctx); err != nil {
+		result.Status = StatusFailed
+		result.Error = err.Error()
+		result.Duration = time.Since(start)
+		now := time.Now()
+		dur := int(result.Duration.Seconds())
+		_ = sp.store.UpdateSession(sessionID, memory.SessionUpdate{
+			EndedAt:  &now,
+			Duration: dur,
+			Notes:    fmt.Sprintf("status=%s error=%s", result.Status, result.Error),
+		})
+		return result, nil
 	}
 
 	// ── Initialize revolutionary features ────────────────
@@ -1020,8 +1089,14 @@ func (sp *SessionPipeline) Run(
 	fmt.Println("[pipeline] Phase 3/4: Execute")
 
 	// Create executor factory from config.
+	// Fall back to the first auto-detected device if AndroidDevice
+	// is not explicitly configured.
+	androidDevice := sp.config.AndroidDevice
+	if androidDevice == "" && len(sp.config.AndroidDevices) > 0 {
+		androidDevice = sp.config.AndroidDevices[0]
+	}
 	execFactory := NewRealExecutorFactory(RealExecutorConfig{
-		AndroidDevice:  sp.config.AndroidDevice,
+		AndroidDevice:  androidDevice,
 		AndroidPackage: sp.config.AndroidPackage,
 		WebURL:         sp.config.WebURL,
 		DesktopDisplay: sp.config.DesktopDisplay,

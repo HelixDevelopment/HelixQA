@@ -177,9 +177,9 @@ func TestADBExecutor_Home(t *testing.T) {
 func TestADBExecutor_Screenshot(t *testing.T) {
 	runner := newMockRunner()
 	// Return a larger response with varied content to pass validation
-	// (>1000 bytes, non-uniform)
+	// (>=5000 bytes, non-uniform — matches Screenshot threshold)
 	var response []byte
-	for i := 0; i < 2000; i++ {
+	for i := 0; i < 6000; i++ {
 		response = append(response, byte(i%256))
 	}
 	runner.response = response

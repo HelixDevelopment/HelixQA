@@ -15,8 +15,9 @@ import (
 // being killed. This prevents hung ADB sessions (e.g.
 // uiautomator dump returning "null root node") from
 // blocking the entire pipeline.
-// REDUCED for aggressive performance - fail fast, recover fast.
-const DefaultCommandTimeout = 5 * time.Second
+// 30s allows structured test steps with long sleeps (e.g. app launch)
+// to complete without failing the command prematurely.
+const DefaultCommandTimeout = 30 * time.Second
 
 // execRunner implements CommandRunner using os/exec.
 // Every command is wrapped with a per-command timeout

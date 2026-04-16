@@ -17,6 +17,11 @@ import (
 func TestCheckAndroid_ProcessAlive_NoCrash(t *testing.T) {
 	mock := newMockRunner()
 	mock.On(
+		"adb shell dumpsys activity activities",
+		[]byte("mResumedActivity=ActivityRecord{com.test.app/.MainActivity}"),
+		nil,
+	)
+	mock.On(
 		"adb shell pidof com.test.app",
 		[]byte("12345"),
 		nil,
@@ -48,6 +53,11 @@ func TestCheckAndroid_ProcessAlive_NoCrash(t *testing.T) {
 
 func TestCheckAndroid_ProcessDead_CrashDetected(t *testing.T) {
 	mock := newMockRunner()
+	mock.On(
+		"adb shell dumpsys activity activities",
+		[]byte("mResumedActivity=ActivityRecord{com.test.app/.MainActivity}"),
+		nil,
+	)
 	mock.On(
 		"adb shell pidof com.test.app",
 		[]byte(""),
@@ -91,6 +101,11 @@ func TestCheckAndroid_ProcessDead_CrashDetected(t *testing.T) {
 
 func TestCheckAndroid_FatalException(t *testing.T) {
 	mock := newMockRunner()
+	mock.On(
+		"adb shell dumpsys activity activities",
+		[]byte("mResumedActivity=ActivityRecord{com.test.app/.MainActivity}"),
+		nil,
+	)
 	mock.On(
 		"adb shell pidof com.test.app",
 		[]byte("12345"),
@@ -137,6 +152,11 @@ func TestCheckAndroid_FatalException(t *testing.T) {
 func TestCheckAndroid_ANRDetected(t *testing.T) {
 	mock := newMockRunner()
 	mock.On(
+		"adb shell dumpsys activity activities",
+		[]byte("mResumedActivity=ActivityRecord{com.test.app/.MainActivity}"),
+		nil,
+	)
+	mock.On(
 		"adb shell pidof com.test.app",
 		[]byte("12345"),
 		nil,
@@ -180,6 +200,11 @@ func TestCheckAndroid_ANRDetected(t *testing.T) {
 func TestCheckAndroid_WithDevice(t *testing.T) {
 	mock := newMockRunner()
 	mock.On(
+		"adb -s emulator-5554 shell dumpsys activity activities",
+		[]byte("mResumedActivity=ActivityRecord{com.test/.MainActivity}"),
+		nil,
+	)
+	mock.On(
 		"adb -s emulator-5554 shell pidof com.test",
 		[]byte("12345"),
 		nil,
@@ -209,6 +234,11 @@ func TestCheckAndroid_WithDevice(t *testing.T) {
 
 func TestCheckAndroid_ProcessCheckError(t *testing.T) {
 	mock := newMockRunner()
+	mock.On(
+		"adb shell dumpsys activity activities",
+		[]byte("mResumedActivity=ActivityRecord{com.test/.MainActivity}"),
+		nil,
+	)
 	mock.On(
 		"adb shell pidof com.test",
 		nil,
@@ -252,6 +282,11 @@ func TestCheckAndroid_ProcessCheckError(t *testing.T) {
 func TestCheckAndroid_CrashLogError(t *testing.T) {
 	mock := newMockRunner()
 	mock.On(
+		"adb shell dumpsys activity activities",
+		[]byte("mResumedActivity=ActivityRecord{com.test/.MainActivity}"),
+		nil,
+	)
+	mock.On(
 		"adb shell pidof com.test",
 		[]byte("12345"),
 		nil,
@@ -275,6 +310,11 @@ func TestCheckAndroid_CrashLogError(t *testing.T) {
 
 func TestCheckAndroid_ANRLogError(t *testing.T) {
 	mock := newMockRunner()
+	mock.On(
+		"adb shell dumpsys activity activities",
+		[]byte("mResumedActivity=ActivityRecord{com.test/.MainActivity}"),
+		nil,
+	)
 	mock.On(
 		"adb shell pidof com.test",
 		[]byte("12345"),
@@ -318,6 +358,11 @@ func TestAdbArgs_WithoutDevice(t *testing.T) {
 
 func TestCheckAndroid_CrashAndANR(t *testing.T) {
 	mock := newMockRunner()
+	mock.On(
+		"adb shell dumpsys activity activities",
+		[]byte("mResumedActivity=ActivityRecord{com.test/.MainActivity}"),
+		nil,
+	)
 	mock.On(
 		"adb shell pidof com.test",
 		[]byte("12345"),

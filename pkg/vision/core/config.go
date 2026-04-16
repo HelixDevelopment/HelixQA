@@ -10,6 +10,8 @@ import (
 	"fmt"
 	"os"
 	"time"
+
+	"gopkg.in/yaml.v3"
 )
 
 // Config holds all vision system configuration.
@@ -632,8 +634,9 @@ func LoadConfig(path string) (*Config, error) {
 
 	// Try JSON first, then YAML
 	if err := json.Unmarshal(data, config); err != nil {
-		// TODO: Add YAML parsing
-		return nil, fmt.Errorf("parsing config: %w", err)
+		if yamlErr := yaml.Unmarshal(data, config); yamlErr != nil {
+			return nil, fmt.Errorf("parsing config (tried JSON and YAML): %w", err)
+		}
 	}
 
 	return config, nil
