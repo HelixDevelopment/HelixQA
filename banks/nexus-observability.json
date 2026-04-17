@@ -1,0 +1,180 @@
+{
+  "name": "Helix Nexus \u2014 Observability",
+  "description": "CH-NX-OBS-* bank covering the observability tracer, the OTel contract guarantees, Grafana dashboard sanity, and the extended Phase-1 browser actions surface.",
+  "metadata": {
+    "feature": "helix-nexus-observability",
+    "phase": 5
+  },
+  "test_cases": [
+    {
+      "id": "NX-OBS-001",
+      "name": "InMemoryTracer records start+end",
+      "category": "functional",
+      "priority": "critical",
+      "platforms": [
+        "web-nexus"
+      ],
+      "steps": [
+        {
+          "name": "Start span, call End",
+          "action": "Tracer.Start then Span.End",
+          "expected": "Finished()==1; duration >= 0"
+        }
+      ],
+      "expected_result": "Tracer captures spans"
+    },
+    {
+      "id": "NX-OBS-002",
+      "name": "Double End is idempotent",
+      "category": "robustness",
+      "priority": "high",
+      "platforms": [
+        "web-nexus"
+      ],
+      "steps": [
+        {
+          "name": "Call End twice",
+          "action": "span.End; span.End",
+          "expected": "Finished()==1"
+        }
+      ],
+      "expected_result": "Double-close safe"
+    },
+    {
+      "id": "NX-OBS-003",
+      "name": "Mutations after End are ignored",
+      "category": "security",
+      "priority": "high",
+      "platforms": [
+        "web-nexus"
+      ],
+      "steps": [
+        {
+          "name": "SetAttribute after End",
+          "action": "span.SetAttribute(...)",
+          "expected": "snapshot unchanged"
+        }
+      ],
+      "expected_result": "Snapshot stability"
+    },
+    {
+      "id": "NX-OBS-004",
+      "name": "NoopTracer produces no spans",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "web-nexus"
+      ],
+      "steps": [
+        {
+          "name": "Start+End via Noop",
+          "action": "NoopTracer.Start",
+          "expected": "Finished() empty"
+        }
+      ],
+      "expected_result": "Noop path zero-cost"
+    },
+    {
+      "id": "NX-OBS-005",
+      "name": "SetDefault(nil) restores Noop",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "web-nexus"
+      ],
+      "steps": [
+        {
+          "name": "SetDefault(nil)",
+          "action": "observability.SetDefault(nil)",
+          "expected": "Default() is NoopTracer"
+        }
+      ],
+      "expected_result": "Reset path safe"
+    },
+    {
+      "id": "NX-OBS-006",
+      "name": "Instrument records fn error",
+      "category": "functional",
+      "priority": "critical",
+      "platforms": [
+        "web-nexus"
+      ],
+      "steps": [
+        {
+          "name": "fn returns error",
+          "action": "observability.Instrument(...)",
+          "expected": "span.Err != nil"
+        }
+      ],
+      "expected_result": "Errors always surface in spans"
+    },
+    {
+      "id": "NX-OBS-007",
+      "name": "Instrument happy path records attributes",
+      "category": "functional",
+      "priority": "high",
+      "platforms": [
+        "web-nexus"
+      ],
+      "steps": [
+        {
+          "name": "SetAttribute inside fn",
+          "action": "Instrument",
+          "expected": "attributes preserved"
+        }
+      ],
+      "expected_result": "Attribute round-trip"
+    },
+    {
+      "id": "NX-OBS-008",
+      "name": "Grafana dashboard JSON validates",
+      "category": "functional",
+      "priority": "high",
+      "platforms": [
+        "web-nexus"
+      ],
+      "steps": [
+        {
+          "name": "Parse monitoring/grafana/helix-nexus-dashboard.json",
+          "action": "jq . monitoring/grafana/helix-nexus-dashboard.json",
+          "expected": "exit 0 + schemaVersion 38"
+        }
+      ],
+      "expected_result": "Dashboard JSON is well-formed"
+    },
+    {
+      "id": "NX-OBS-009",
+      "name": "Extended actions registered for chromedp driver",
+      "category": "functional",
+      "priority": "high",
+      "platforms": [
+        "web-nexus"
+      ],
+      "steps": [
+        {
+          "name": "DoExtended hover/drag/select/wait_for/tab_open/tab_close/pdf/console_read",
+          "action": "Engine.DoExtended",
+          "expected": "each succeeds via ExtendedHandle"
+        }
+      ],
+      "expected_result": "Full Phase 1 action surface reachable"
+    },
+    {
+      "id": "NX-OBS-010",
+      "name": "DoExtended unsupported for handle without ExtendedHandle",
+      "category": "robustness",
+      "priority": "high",
+      "platforms": [
+        "web-nexus"
+      ],
+      "steps": [
+        {
+          "name": "call DoExtended on mockHandle",
+          "action": "Engine.DoExtended",
+          "expected": "errors.Is(err, ErrActionUnsupported)"
+        }
+      ],
+      "expected_result": "Callers can probe capability explicitly"
+    }
+  ]
+}

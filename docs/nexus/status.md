@@ -16,14 +16,14 @@ Legend: `[ ]` pending, `[~]` in progress, `[x]` done, `[-]` deferred.
 - [x] P1-02 rod_driver.go (tag-gated nexus_rod)
 - [x] P1-03 engine.go unified interface
 - [x] P1-04 snapshot.go with OpenClaw-style e1..eN refs
-- [~] P1-05 actions.go — click/type/scroll/screenshot in; drag/hover/select/wait_for/tab_open/tab_close/pdf/console_read in P1 follow-up
+- [x] P1-05 actions.go — click/type/scroll/screenshot + extended drag/hover/select/wait_for/tab_open/tab_close/pdf/console_read via ExtendedHandle + DoExtended
 - [x] P1-06 errors.go `ToAIFriendlyError`
 - [x] P1-07 pool.go warm pool
 - [x] P1-08 security hardening (security_test.go)
 - [x] P1-09 `CH-NX-BROWSER-*` (15 cases `banks/nexus-browser.{yaml,json}`)
 - [x] P1-10 BrowserAdapter wrapper (`pkg/nexus/userflow`)
 - [x] P1-11 `docs/nexus/browser.md`
-- [-] P1-12 video module 01 (content-production)
+- [x] P1-12 video module 01 (shot list + VO + exercise at docs/nexus/video-course/01-browser.md; MP4 pending content-guild)
 - [x] P1-13 `helixqa_browser_sessions` schema
 
 ## Phase 2 — Mobile engine
@@ -38,7 +38,7 @@ Legend: `[ ]` pending, `[~]` in progress, `[x]` done, `[-]` deferred.
 - [x] P2-09 `CH-NX-MOBILE-*` scenarios (in banks below)
 - [x] P2-10 `banks/nexus-mobile-{android,ios}.{yaml,json}` (30 cases total)
 - [x] P2-11 `docs/nexus/mobile.md`
-- [-] P2-12 video module 02 (content-production)
+- [-] P2-12 video module 02 (shot-list + VO + exercise shipped under docs/nexus/video-course/; MP4 pending)
 
 ## Phase 3 — Desktop engine
 - [x] P3-01 Windows WinAppDriver HTTP client
@@ -51,7 +51,7 @@ Legend: `[ ]` pending, `[~]` in progress, `[x]` done, `[-]` deferred.
 - [x] P3-08 `CH-NX-DESKTOP-*` (in banks below)
 - [x] P3-09 `banks/nexus-desktop-{windows,macos,linux}.{yaml,json}` (36 cases total)
 - [x] P3-10 `docs/nexus/desktop.md`
-- [-] P3-11 video module 03 (content-production)
+- [-] P3-11 video module 03 (shot-list + VO + exercise shipped under docs/nexus/video-course/; MP4 pending)
 
 ## Phase 4 — AI navigation + self-healing
 - [x] P4-01 Navigator.Decide
@@ -64,7 +64,7 @@ Legend: `[ ]` pending, `[~]` in progress, `[x]` done, `[-]` deferred.
 - [x] P4-08 `CH-NX-AI-*` (12 cases)
 - [x] P4-09 `banks/nexus-ai.{yaml,json}`
 - [x] P4-10 `docs/nexus/ai.md`
-- [-] P4-11 video module 04 (content-production)
+- [-] P4-11 video module 04 (shot-list + VO + exercise shipped under docs/nexus/video-course/; MP4 pending)
 
 ## Phase 5 — A11y, perf, cross-platform, enterprise
 - [x] P5-01 axe.go axe-core Report + Parse + Assert + Section508 + InjectionScript
@@ -74,14 +74,14 @@ Legend: `[ ]` pending, `[~]` in progress, `[x]` done, `[-]` deferred.
 - [x] P5-05 orchestrator cross_platform.go (Flow / Step / ExecutionContext)
 - [x] P5-06 `helixqa_cross_flows` + `helixqa_flow_steps` schema
 - [x] P5-07 RBAC + audit log (`rbac.go`)
-- [-] P5-08 Grafana dashboards JSON (SRE delivery)
+- [x] P5-08 Grafana dashboard JSON at monitoring/grafana/helix-nexus-dashboard.json
 - [x] P5-09 EvidenceStore interface + FileEvidenceStore default
-- [-] P5-10 OpenTelemetry spans (SRE delivery)
+- [x] P5-10 OpenTelemetry-shaped Tracer + Span + Instrument at pkg/nexus/observability
 - [x] P5-11 `CH-NX-A11Y/PERF/XFLOW/OBS-*` (30 cases in banks below)
 - [x] P5-12 `banks/nexus-{a11y,perf,xflow}.{yaml,json}`
 - [x] P5-13 `docs/nexus/{a11y,perf,cross-platform,enterprise}.md`
-- [-] P5-14 video modules 05-08 (content-production)
-- [-] P5-15 `/nexus` website section (web guild)
+- [-] P5-14 video modules 05-08 (shot-list + VO + exercise shipped under docs/nexus/video-course/; MP4 pending)
+- [x] P5-15 `/nexus` website section at website/src/nexus/ (VitePress config shipped)
 
 All code-deliverable tasks across Phases 0-5 are complete. The remaining
 items are content-production (videos), operator-delivered (Grafana /

@@ -1,0 +1,132 @@
+{
+  "annotations": { "list": [] },
+  "description": "Helix Nexus runtime dashboard: session throughput, AI cost, a11y/perf regressions, cross-platform flow duration, evidence-vault growth.",
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 0,
+  "id": null,
+  "liveNow": false,
+  "schemaVersion": 38,
+  "style": "dark",
+  "tags": ["helix-nexus", "qa"],
+  "templating": {
+    "list": [
+      {
+        "name": "platform",
+        "type": "custom",
+        "query": "web-nexus, mobile-android, mobile-ios, desktop-windows, desktop-macos, desktop-linux",
+        "current": { "text": "All", "value": "$__all" },
+        "includeAll": true,
+        "multi": true
+      }
+    ]
+  },
+  "time": { "from": "now-6h", "to": "now" },
+  "timepicker": {},
+  "timezone": "",
+  "title": "Helix Nexus",
+  "uid": "helix-nexus",
+  "version": 1,
+  "weekStart": "",
+  "panels": [
+    {
+      "id": 1,
+      "type": "stat",
+      "title": "Active browser sessions",
+      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 0 },
+      "targets": [{ "expr": "sum(helix_nexus_browser_active_sessions)" }],
+      "fieldConfig": { "defaults": { "unit": "short", "thresholds": { "mode": "absolute", "steps": [{ "color": "green" }, { "color": "red", "value": 50 }] } } }
+    },
+    {
+      "id": 2,
+      "type": "stat",
+      "title": "Active mobile sessions",
+      "gridPos": { "h": 4, "w": 6, "x": 6, "y": 0 },
+      "targets": [{ "expr": "sum(helix_nexus_mobile_active_sessions)" }]
+    },
+    {
+      "id": 3,
+      "type": "stat",
+      "title": "Active desktop sessions",
+      "gridPos": { "h": 4, "w": 6, "x": 12, "y": 0 },
+      "targets": [{ "expr": "sum(helix_nexus_desktop_active_sessions)" }]
+    },
+    {
+      "id": 4,
+      "type": "stat",
+      "title": "AI spend (last 1h, USD)",
+      "gridPos": { "h": 4, "w": 6, "x": 18, "y": 0 },
+      "targets": [{ "expr": "sum(increase(helix_nexus_ai_cost_cents[1h])) / 100" }],
+      "fieldConfig": { "defaults": { "unit": "currencyUSD" } }
+    },
+    {
+      "id": 10,
+      "type": "timeseries",
+      "title": "Session open/close rate",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 4 },
+      "targets": [
+        { "expr": "rate(helix_nexus_session_opens_total[5m])", "legendFormat": "opens" },
+        { "expr": "rate(helix_nexus_session_closes_total[5m])", "legendFormat": "closes" }
+      ]
+    },
+    {
+      "id": 11,
+      "type": "timeseries",
+      "title": "Snapshot latency (p50 / p95) ms",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 4 },
+      "targets": [
+        { "expr": "histogram_quantile(0.5, rate(helix_nexus_snapshot_duration_ms_bucket[5m]))", "legendFormat": "p50" },
+        { "expr": "histogram_quantile(0.95, rate(helix_nexus_snapshot_duration_ms_bucket[5m]))", "legendFormat": "p95" }
+      ],
+      "fieldConfig": { "defaults": { "unit": "ms", "thresholds": { "mode": "absolute", "steps": [{ "color": "green" }, { "color": "orange", "value": 250 }, { "color": "red", "value": 500 }] } } }
+    },
+    {
+      "id": 20,
+      "type": "timeseries",
+      "title": "a11y violations (by severity)",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 12 },
+      "targets": [
+        { "expr": "sum by (impact) (helix_nexus_a11y_violations_total{platform=~\"$platform\"})" }
+      ]
+    },
+    {
+      "id": 21,
+      "type": "timeseries",
+      "title": "Core Web Vitals LCP (p95 ms)",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 12 },
+      "targets": [
+        { "expr": "histogram_quantile(0.95, rate(helix_nexus_cwv_lcp_ms_bucket[15m]))", "legendFormat": "LCP p95" }
+      ],
+      "fieldConfig": { "defaults": { "unit": "ms", "thresholds": { "mode": "absolute", "steps": [{ "color": "green" }, { "color": "orange", "value": 2000 }, { "color": "red", "value": 2500 }] } } }
+    },
+    {
+      "id": 30,
+      "type": "timeseries",
+      "title": "Cross-platform flow duration (p95 s)",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 20 },
+      "targets": [
+        { "expr": "histogram_quantile(0.95, rate(helix_nexus_flow_duration_seconds_bucket[15m]))", "legendFormat": "flow p95" }
+      ],
+      "fieldConfig": { "defaults": { "unit": "s" } }
+    },
+    {
+      "id": 31,
+      "type": "timeseries",
+      "title": "Evidence vault size (MB)",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 20 },
+      "targets": [
+        { "expr": "helix_nexus_evidence_bytes / (1024 * 1024)" }
+      ],
+      "fieldConfig": { "defaults": { "unit": "decmbytes" } }
+    },
+    {
+      "id": 40,
+      "type": "table",
+      "title": "Recent RBAC denials",
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 28 },
+      "targets": [
+        { "expr": "topk(20, sum by (user_email, action, resource) (increase(helix_nexus_rbac_denials_total[1h])))" }
+      ]
+    }
+  ]
+}
