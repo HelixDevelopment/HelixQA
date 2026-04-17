@@ -51,6 +51,18 @@ func (p *AuditPersister) Save(ctx context.Context, entry AuditEntry) error {
 	return nil
 }
 
+// AsSink adapts the persister into an AuditSink so callers can wire
+// RBAC decisions straight into helixqa_audit_log via
+// AccessControl.SetSink. The returned closure uses context.Background
+// because the RBAC decision path is synchronous and sink errors are
+// intentionally swallowed — an outage of the persistence layer must
+// never open nor close the access gate.
+func (p *AuditPersister) AsSink() AuditSink {
+	return func(entry AuditEntry) {
+		_ = p.Save(context.Background(), entry)
+	}
+}
+
 // Flush drains every entry from log into the db. Entries are written
 // in order; a failed entry aborts the flush so callers can retry with
 // their own backoff.
