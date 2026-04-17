@@ -1,0 +1,190 @@
+{
+  "name": "Helix Nexus \u2014 Cross-Platform Flows",
+  "description": "Bank covering the cross-platform orchestrator, evidence vault, and RBAC policy.",
+  "metadata": {
+    "feature": "helix-nexus-xflow",
+    "phase": 5
+  },
+  "test_cases": [
+    {
+      "id": "NX-XFLOW-001",
+      "name": "Flow executes every step in order",
+      "category": "functional",
+      "priority": "critical",
+      "platforms": [
+        "cross"
+      ],
+      "steps": [
+        {
+          "name": "Run",
+          "action": "Flow.Run with 3 steps",
+          "expected": "all executed"
+        }
+      ],
+      "expected_result": "Sequential semantics"
+    },
+    {
+      "id": "NX-XFLOW-002",
+      "name": "First error aborts the flow",
+      "category": "functional",
+      "priority": "critical",
+      "platforms": [
+        "cross"
+      ],
+      "steps": [
+        {
+          "name": "Run",
+          "action": "step 2 errors",
+          "expected": "step 3 not executed"
+        }
+      ],
+      "expected_result": "Fail-fast"
+    },
+    {
+      "id": "NX-XFLOW-003",
+      "name": "Verify error also aborts",
+      "category": "functional",
+      "priority": "high",
+      "platforms": [
+        "cross"
+      ],
+      "steps": [
+        {
+          "name": "Run",
+          "action": "verify returns error",
+          "expected": "flow aborted"
+        }
+      ],
+      "expected_result": "Verify is authoritative"
+    },
+    {
+      "id": "NX-XFLOW-004",
+      "name": "ExecutionContext propagates state",
+      "category": "functional",
+      "priority": "critical",
+      "platforms": [
+        "cross"
+      ],
+      "steps": [
+        {
+          "name": "Step 1",
+          "action": "Set token",
+          "expected": "ok"
+        },
+        {
+          "name": "Step 2",
+          "action": "Get token",
+          "expected": "value matches"
+        }
+      ],
+      "expected_result": "Shared state works"
+    },
+    {
+      "id": "NX-XFLOW-005",
+      "name": "Snapshot is a copy",
+      "category": "security",
+      "priority": "high",
+      "platforms": [
+        "cross"
+      ],
+      "steps": [
+        {
+          "name": "Mutate snapshot",
+          "action": "Snapshot then mutate",
+          "expected": "original unchanged"
+        }
+      ],
+      "expected_result": "Cross-goroutine mutation guarded"
+    },
+    {
+      "id": "NX-XFLOW-006",
+      "name": "File evidence store writes + lists",
+      "category": "functional",
+      "priority": "high",
+      "platforms": [
+        "cross"
+      ],
+      "steps": [
+        {
+          "name": "Put",
+          "action": "Store.Put(png)",
+          "expected": "non-empty url"
+        },
+        {
+          "name": "List",
+          "action": "Store.List",
+          "expected": "one item"
+        }
+      ],
+      "expected_result": "Artefacts retrievable"
+    },
+    {
+      "id": "NX-XFLOW-007",
+      "name": "Empty evidence root rejected",
+      "category": "security",
+      "priority": "medium",
+      "platforms": [
+        "cross"
+      ],
+      "steps": [
+        {
+          "name": "Construct",
+          "action": "NewFileEvidenceStore('')",
+          "expected": "error"
+        }
+      ],
+      "expected_result": "Misconfiguration guarded"
+    },
+    {
+      "id": "NX-XFLOW-008",
+      "name": "RBAC viewer cannot edit banks",
+      "category": "security",
+      "priority": "critical",
+      "platforms": [
+        "cross"
+      ],
+      "steps": [
+        {
+          "name": "Check",
+          "action": "AccessControl.Check(viewer, EditBank)",
+          "expected": "error"
+        }
+      ],
+      "expected_result": "Role ladder enforced"
+    },
+    {
+      "id": "NX-XFLOW-009",
+      "name": "RBAC operator can edit banks",
+      "category": "functional",
+      "priority": "high",
+      "platforms": [
+        "cross"
+      ],
+      "steps": [
+        {
+          "name": "Check",
+          "action": "AccessControl.Check(operator, EditBank)",
+          "expected": "nil"
+        }
+      ],
+      "expected_result": "Operators empowered"
+    },
+    {
+      "id": "NX-XFLOW-010",
+      "name": "Audit log records every check",
+      "category": "security",
+      "priority": "critical",
+      "platforms": [
+        "cross"
+      ],
+      "steps": [
+        {
+          "name": "Allow + Deny",
+          "action": "two checks",
+          "expected": "AuditLog.Len==2"
+        }
+      ],
+      "expected_result": "Audit trail complete"
+    }
+  ]
+}

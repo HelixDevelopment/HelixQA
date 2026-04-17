@@ -1,0 +1,82 @@
+name: "Helix Nexus — Accessibility"
+description: "Bank covering axe-core integration, WCAG A/AA/AAA assertion, Section 508 filter, and injection script vendoring."
+metadata:
+  feature: "helix-nexus-a11y"
+  phase: 5
+test_cases:
+  - id: NX-A11Y-001
+    name: "Parse empty axe output errors"
+    category: functional
+    priority: high
+    platforms: [web-nexus]
+    steps:
+      - name: "Parse(nil)"
+        action: "a11y.Parse"
+        expected: "error: empty axe output"
+    expected_result: "No silent empty parse"
+  - id: NX-A11Y-002
+    name: "Level A fails on critical"
+    category: functional
+    priority: critical
+    platforms: [web-nexus]
+    steps:
+      - name: "Assert(LevelA) on report with critical violation"
+        action: "Report.Assert"
+        expected: "error names the violation id"
+    expected_result: "Critical breaches always flagged"
+  - id: NX-A11Y-003
+    name: "Level AA fails on serious"
+    category: functional
+    priority: critical
+    platforms: [web-nexus]
+    steps: [{name: "Assert", action: "Report.Assert(LevelAA)", expected: "error names serious rule"}]
+    expected_result: "Serious breaches surface at AA"
+  - id: NX-A11Y-004
+    name: "Level AAA fails on moderate"
+    category: functional
+    priority: high
+    platforms: [web-nexus]
+    steps: [{name: "Assert", action: "Report.Assert(LevelAAA)", expected: "error includes moderate rule"}]
+    expected_result: "AAA catches moderate"
+  - id: NX-A11Y-005
+    name: "Clean report passes all levels"
+    category: functional
+    priority: medium
+    platforms: [web-nexus]
+    steps: [{name: "Assert", action: "empty Report.Assert(LevelAAA)", expected: "nil"}]
+    expected_result: "Happy path green"
+  - id: NX-A11Y-006
+    name: "Section508 filter returns subset"
+    category: functional
+    priority: medium
+    platforms: [web-nexus]
+    steps: [{name: "Filter", action: "Report.Section508", expected: "only violations tagged section508"}]
+    expected_result: "Compliance reports scoped"
+  - id: NX-A11Y-007
+    name: "Unknown level rejected"
+    category: security
+    priority: medium
+    platforms: [web-nexus]
+    steps: [{name: "Assert", action: "Report.Assert('Z')", expected: "error"}]
+    expected_result: "Guard against typos"
+  - id: NX-A11Y-008
+    name: "Injection script includes vendored path"
+    category: security
+    priority: high
+    platforms: [web-nexus]
+    steps: [{name: "Script", action: "InjectionScript('https://cdn/x')", expected: "contains https://cdn/x/axe.min.js"}]
+    expected_result: "No CDN fetch allowed"
+  - id: NX-A11Y-009
+    name: "Summary maps all severities"
+    category: functional
+    priority: low
+    platforms: [web-nexus]
+    steps: [{name: "Summary", action: "Report.Summary", expected: "keys minor/moderate/serious/critical all present"}]
+    expected_result: "Summary stable"
+  - id: NX-A11Y-010
+    name: "Nil receiver Assert returns error"
+    category: functional
+    priority: low
+    platforms: [web-nexus]
+    steps: [{name: "Assert", action: "(*Report)(nil).Assert(LevelAA)", expected: "error"}]
+    expected_result: "Nil-safe"

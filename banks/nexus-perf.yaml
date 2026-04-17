@@ -1,0 +1,76 @@
+name: "Helix Nexus — Performance"
+description: "Bank covering k6 browser script generation + Core Web Vitals parsing + threshold enforcement."
+metadata:
+  feature: "helix-nexus-perf"
+  phase: 5
+test_cases:
+  - id: NX-PERF-001
+    name: "Metrics.Assert under default thresholds"
+    category: functional
+    priority: critical
+    platforms: [web-nexus]
+    steps: [{name: "Assert", action: "good metrics vs DefaultThresholds", expected: "nil"}]
+    expected_result: "Core Web Vitals good bar passes"
+  - id: NX-PERF-002
+    name: "Assert fails on LCP breach"
+    category: functional
+    priority: critical
+    platforms: [web-nexus]
+    steps: [{name: "Assert", action: "LCP 3000 vs 2500", expected: "error"}]
+    expected_result: "LCP regressions surface"
+  - id: NX-PERF-003
+    name: "Zero thresholds are skipped"
+    category: functional
+    priority: medium
+    platforms: [web-nexus]
+    steps: [{name: "Assert", action: "huge LCP, only INPMax set", expected: "nil"}]
+    expected_result: "Operators can relax individual metrics"
+  - id: NX-PERF-004
+    name: "ParseK6JSON extracts vitals stream"
+    category: functional
+    priority: high
+    platforms: [web-nexus]
+    steps: [{name: "Parse", action: "ParseK6JSON(stream)", expected: "LCP/CLS filled"}]
+    expected_result: "k6 output maps into typed struct"
+  - id: NX-PERF-005
+    name: "ParseK6JSON rejects empty"
+    category: functional
+    priority: medium
+    platforms: [web-nexus]
+    steps: [{name: "Parse", action: "ParseK6JSON(nil)", expected: "error"}]
+    expected_result: "Guarded"
+  - id: NX-PERF-006
+    name: "GenerateScript rejects empty URL"
+    category: security
+    priority: medium
+    platforms: [web-nexus]
+    steps: [{name: "Generate", action: "GenerateScript(Scenario{})", expected: "error"}]
+    expected_result: "No empty-URL scripts"
+  - id: NX-PERF-007
+    name: "GenerateScript bakes in vitals thresholds"
+    category: functional
+    priority: high
+    platforms: [web-nexus]
+    steps: [{name: "Generate", action: "GenerateScript happy", expected: "contains browser_web_vital_lcp"}]
+    expected_result: "Thresholds baked into scripts"
+  - id: NX-PERF-008
+    name: "GenerateScript wires WaitSelector + ClickSelector"
+    category: functional
+    priority: high
+    platforms: [web-nexus]
+    steps: [{name: "Generate", action: "GenerateScript with selectors", expected: "script contains waitForSelector + locator"}]
+    expected_result: "Scenario fields honoured"
+  - id: NX-PERF-009
+    name: "DefaultThresholds match CWV good"
+    category: functional
+    priority: low
+    platforms: [web-nexus]
+    steps: [{name: "Default", action: "DefaultThresholds()", expected: "LCP 2500 INP 200 CLS 0.1"}]
+    expected_result: "No drift from Google baseline"
+  - id: NX-PERF-010
+    name: "Assert messages list every breach"
+    category: functional
+    priority: medium
+    platforms: [web-nexus]
+    steps: [{name: "Assert", action: "two breaches", expected: "error message lists both"}]
+    expected_result: "Operators see all breaches at once"
