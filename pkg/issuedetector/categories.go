@@ -106,6 +106,10 @@ type Issue struct {
 	// Suggestion is a recommended fix.
 	Suggestion string `json:"suggestion,omitempty"`
 
+	// AcceptanceCriteria defines specific, measurable
+	// conditions to verify the fix.
+	AcceptanceCriteria string `json:"acceptance_criteria,omitempty"`
+
 	// Confidence is the detection confidence (0-1).
 	Confidence float64 `json:"confidence"`
 

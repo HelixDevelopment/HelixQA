@@ -88,18 +88,19 @@ func (b *FindingsBridge) Process(
 		}
 
 		mf := memory.Finding{
-			ID:            id,
-			SessionID:     b.sessionID,
-			Severity:      string(af.Severity),
-			Category:      string(af.Category),
-			Title:         af.Title,
-			Description:   af.Description,
-			ReproSteps:    af.ReproSteps,
-			EvidencePaths: af.Evidence,
-			Platform:      af.Platform,
-			Screen:        af.Screen,
-			Status:        "open",
-			FoundDate:     today,
+			ID:                 id,
+			SessionID:          b.sessionID,
+			Severity:           string(af.Severity),
+			Category:           string(af.Category),
+			Title:              af.Title,
+			Description:        af.Description,
+			ReproSteps:         af.ReproSteps,
+			EvidencePaths:      af.Evidence,
+			Platform:           af.Platform,
+			Screen:             af.Screen,
+			Status:             "open",
+			FoundDate:          today,
+			AcceptanceCriteria: af.AcceptanceCriteria,
 		}
 
 		if err := b.store.CreateFinding(mf); err != nil {

@@ -189,6 +189,9 @@ func (s *Store) migrate() error {
 
 		`CREATE INDEX IF NOT EXISTS idx_metrics_session_id
 			ON metrics(session_id)`,
+
+		// ── schema migrations (idempotent) ──────────────────────────
+		`ALTER TABLE findings ADD COLUMN acceptance_criteria TEXT`,
 	}
 
 	for _, stmt := range stmts {

@@ -25,10 +25,11 @@ type Finding struct {
 	EvidencePaths string
 	Platform      string
 	Screen        string
-	Status        string
-	FoundDate     string
-	FixedDate     string
-	VerifiedDate  string
+	Status             string
+	FoundDate          string
+	FixedDate          string
+	VerifiedDate       string
+	AcceptanceCriteria string
 }
 
 // CreateFinding inserts a new finding row. The ID must be unique.
@@ -37,8 +38,9 @@ func (s *Store) CreateFinding(f Finding) error {
 		INSERT INTO findings
 			(id, session_id, severity, category, title, description,
 			 repro_steps, evidence_paths, platform, screen, status,
-			 found_date, fixed_date, verified_date, created_at, updated_at)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+			 found_date, fixed_date, verified_date, acceptance_criteria,
+			 created_at, updated_at)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
 
 	now := time.Now().UTC().Format(time.RFC3339)
 	_, err := s.db.Exec(q,
@@ -48,6 +50,7 @@ func (s *Store) CreateFinding(f Finding) error {
 		nullableString(f.FoundDate),
 		nullableString(f.FixedDate),
 		nullableString(f.VerifiedDate),
+		nullableString(f.AcceptanceCriteria),
 		now, now,
 	)
 	if err != nil {
@@ -61,7 +64,7 @@ func (s *Store) GetFinding(id string) (*Finding, error) {
 	const q = `
 		SELECT id, session_id, severity, category, title, description,
 		       repro_steps, evidence_paths, platform, screen, status,
-		       found_date, fixed_date, verified_date
+		       found_date, fixed_date, verified_date, acceptance_criteria
 		FROM findings WHERE id = ?`
 
 	row := s.db.QueryRow(q, id)
@@ -91,7 +94,7 @@ func (s *Store) ListFindingsByStatus(status string) ([]Finding, error) {
 	const q = `
 		SELECT id, session_id, severity, category, title, description,
 		       repro_steps, evidence_paths, platform, screen, status,
-		       found_date, fixed_date, verified_date
+		       found_date, fixed_date, verified_date, acceptance_criteria
 		FROM findings
 		WHERE status = ?
 		ORDER BY id ASC`
@@ -127,7 +130,7 @@ func (s *Store) FindDuplicateByTitle(
 		SELECT id, session_id, severity, category, title,
 		       description, repro_steps, evidence_paths,
 		       platform, screen, status,
-		       found_date, fixed_date, verified_date
+		       found_date, fixed_date, verified_date, acceptance_criteria
 		FROM findings
 		WHERE title = ? AND status != 'fixed'
 		LIMIT 1`
@@ -154,7 +157,7 @@ func (s *Store) FindRelatedByCategory(
 		SELECT id, session_id, severity, category, title,
 		       description, repro_steps, evidence_paths,
 		       platform, screen, status,
-		       found_date, fixed_date, verified_date
+		       found_date, fixed_date, verified_date, acceptance_criteria
 		FROM findings
 		WHERE category = ? AND platform = ?
 		  AND status != 'fixed'
@@ -245,6 +248,13 @@ func (f *Finding) ToMarkdown() string {
 		b.WriteString("\n\n")
 	}
 
+	// Acceptance criteria.
+	if f.AcceptanceCriteria != "" {
+		b.WriteString("## Acceptance Criteria\n\n")
+		b.WriteString(f.AcceptanceCriteria)
+		b.WriteString("\n\n")
+	}
+
 	// Reproduction steps.
 	if f.ReproSteps != "" {
 		b.WriteString("## Reproduction Steps\n\n")
@@ -302,22 +312,23 @@ func nullableString(v string) sql.NullString {
 
 func scanFinding(r rowScanner) (*Finding, error) {
 	var (
-		f            Finding
-		description  sql.NullString
-		reproSteps   sql.NullString
-		evidencePaths sql.NullString
-		platform     sql.NullString
-		screen       sql.NullString
-		foundDate    sql.NullString
-		fixedDate    sql.NullString
-		verifiedDate sql.NullString
+		f                 Finding
+		description       sql.NullString
+		reproSteps        sql.NullString
+		evidencePaths     sql.NullString
+		platform          sql.NullString
+		screen            sql.NullString
+		foundDate         sql.NullString
+		fixedDate         sql.NullString
+		verifiedDate      sql.NullString
+		acceptanceCriteria sql.NullString
 	)
 
 	err := r.Scan(
 		&f.ID, &f.SessionID, &f.Severity, &f.Category, &f.Title,
 		&description, &reproSteps, &evidencePaths,
 		&platform, &screen, &f.Status,
-		&foundDate, &fixedDate, &verifiedDate,
+		&foundDate, &fixedDate, &verifiedDate, &acceptanceCriteria,
 	)
 	if err != nil {
 		return nil, err
@@ -331,6 +342,7 @@ func scanFinding(r rowScanner) (*Finding, error) {
 	f.FoundDate = foundDate.String
 	f.FixedDate = fixedDate.String
 	f.VerifiedDate = verifiedDate.String
+	f.AcceptanceCriteria = acceptanceCriteria.String
 
 	return &f, nil
 }

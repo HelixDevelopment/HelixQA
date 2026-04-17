@@ -43,12 +43,15 @@ Look for:
 4. Performance issues (slow response)
 5. Crashes or errors
 
-Return a JSON array of issues found (empty if none):
+Return a JSON array of issues found (empty if none).
+MANDATORY: Every issue MUST include specific, measurable acceptance_criteria describing exactly how a fix will be validated.
+
 [{
   "category": "visual|ux|accessibility|functional|performance|crash",
   "severity": "critical|high|medium|low",
   "title": "brief issue title",
   "description": "detailed description",
+  "acceptance_criteria": "specific, measurable criteria to verify the fix",
   "confidence": 0.0-1.0,
   "suggestion": "recommended fix"
 }]`,
@@ -65,7 +68,8 @@ Identify UX issues such as:
 - Poor information hierarchy
 - Accessibility problems
 
-Return UX issues as JSON array.`,
+Return UX issues as JSON array.
+MANDATORY: Every issue MUST include specific, measurable acceptance_criteria describing exactly how a fix will be validated.`,
 		VisualPrompt: `Analyze this screenshot for visual bugs:
 
 Description: %s
@@ -78,7 +82,8 @@ Look for:
 - Color/contrast issues
 - Responsive layout problems
 
-Return visual issues as JSON array.`,
+Return visual issues as JSON array.
+MANDATORY: Every issue MUST include specific, measurable acceptance_criteria describing exactly how a fix will be validated.`,
 		FixPrompt: `Suggest a fix for this issue:
 
 Title: %s

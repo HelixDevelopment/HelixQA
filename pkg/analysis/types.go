@@ -110,6 +110,12 @@ type AnalysisFinding struct {
 	// Set automatically by the analyser from call
 	// arguments; not expected in the LLM response.
 	Screen string `json:"screen,omitempty"`
+
+	// AcceptanceCriteria defines the specific,
+	// measurable conditions that must be met for this
+	// finding to be considered resolved. Required for
+	// every ticket to ensure fix validation.
+	AcceptanceCriteria string `json:"acceptance_criteria,omitempty"`
 }
 
 // AnalysisReport aggregates all findings from a QA
