@@ -83,5 +83,34 @@ func validateYAML(raw string) error {
 			return fmt.Errorf("missing field %q", required)
 		}
 	}
+	stepsRaw, ok := m["steps"].([]any)
+	if !ok {
+		return errors.New("field \"steps\" must be a list")
+	}
+	if len(stepsRaw) == 0 {
+		return errors.New("field \"steps\" must contain at least one entry")
+	}
+	for i, entry := range stepsRaw {
+		step, ok := entry.(map[string]any)
+		if !ok {
+			return fmt.Errorf("steps[%d] must be a mapping", i)
+		}
+		for _, field := range []string{"name", "action", "expected"} {
+			v, present := step[field]
+			if !present {
+				return fmt.Errorf("steps[%d] missing field %q", i, field)
+			}
+			s, ok := v.(string)
+			if !ok {
+				return fmt.Errorf("steps[%d].%s must be a string", i, field)
+			}
+			if strings.TrimSpace(s) == "" {
+				return fmt.Errorf("steps[%d].%s is empty", i, field)
+			}
+		}
+	}
+	if idStr, ok := m["id"].(string); ok && !strings.HasPrefix(idStr, "NX-") {
+		return fmt.Errorf("id %q must start with NX-", idStr)
+	}
 	return nil
 }
