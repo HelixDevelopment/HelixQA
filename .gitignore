@@ -58,3 +58,4 @@ docs/issues/HELIX-*.md
 data/memory.db
 data/memory.db-shm
 data/memory.db-wal
+.env.validation

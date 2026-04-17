@@ -1,0 +1,201 @@
+{
+  "version": "1.0",
+  "name": "Android TV Validation (Channels + Deep Links)",
+  "description": "Focused validation run for acceptance criteria enforcement",
+  "metadata": {
+    "author": "vasic-digital",
+    "app": "Catalogizer",
+    "version": "2.3.0"
+  },
+  "test_cases": [
+    {
+      "id": "FQA-ATV-141",
+      "name": "Catalogizer Picks channel appears on TV home",
+      "category": "functional",
+      "priority": "critical",
+      "platforms": [
+        "androidtv"
+      ],
+      "steps": [
+        {
+          "name": "Login to app",
+          "action": "adb_shell: am start -n com.catalogizer.androidtv/.ui.MainActivity --es qa_username admin --es qa_password admin123",
+          "expected": "Catalogizer app runs, channels synced"
+        },
+        {
+          "name": "Navigate TV home",
+          "action": "keypress: KEYCODE_HOME",
+          "expected": "Catalogizer Picks channel visible in the TV home channels area"
+        }
+      ],
+      "tags": [
+        "channels",
+        "default-channel",
+        "tv-home",
+        "critical-path"
+      ],
+      "estimated_duration": "20s",
+      "expected_result": "Catalogizer Picks default channel appears on the Android TV home screen"
+    },
+    {
+      "id": "FQA-ATV-142",
+      "name": "Default channel has program content",
+      "category": "functional",
+      "priority": "critical",
+      "platforms": [
+        "androidtv"
+      ],
+      "steps": [
+        {
+          "name": "Find Catalogizer Picks channel",
+          "action": "screenshot",
+          "expected": "Channel visible"
+        },
+        {
+          "name": "Verify programs",
+          "action": "keypress: KEYCODE_DPAD_RIGHT",
+          "expected": "Program cards with media titles and images displayed (up to 30 items)"
+        }
+      ],
+      "tags": [
+        "channels",
+        "programs",
+        "content",
+        "default-channel"
+      ],
+      "estimated_duration": "15s",
+      "expected_result": "Catalogizer Picks channel contains program cards with media content"
+    },
+    {
+      "id": "FQA-ATV-151",
+      "name": "Deep link opens correct media detail",
+      "category": "functional",
+      "priority": "critical",
+      "platforms": [
+        "androidtv"
+      ],
+      "steps": [
+        {
+          "name": "Trigger deep link",
+          "action": "adb_shell: am start -a android.intent.action.VIEW -d 'catalogizer://media/1?type=movie' com.catalogizer.androidtv",
+          "expected": "ChannelDeepLinkActivity processes the intent"
+        },
+        {
+          "name": "Verify routing",
+          "action": "screenshot",
+          "expected": "MediaDetailScreen opens for media ID 1"
+        }
+      ],
+      "tags": [
+        "channels",
+        "deep-link",
+        "routing",
+        "detail"
+      ],
+      "estimated_duration": "15s",
+      "expected_result": "Deep link with media ID routes to the correct detail screen"
+    },
+    {
+      "id": "FQA-ATV-161",
+      "name": "Channels cleaned up on logout",
+      "category": "functional",
+      "priority": "critical",
+      "platforms": [
+        "androidtv"
+      ],
+      "steps": [
+        {
+          "name": "Verify channels exist",
+          "action": "screenshot",
+          "expected": "Channels present"
+        },
+        {
+          "name": "Logout",
+          "action": "keypress: KEYCODE_DPAD_DOWN",
+          "expected": "Logout initiated"
+        },
+        {
+          "name": "Verify cleanup",
+          "action": "screenshot",
+          "expected": "All Catalogizer channels removed, Watch Next entries cleared, sync worker cancelled"
+        }
+      ],
+      "tags": [
+        "channels",
+        "logout",
+        "cleanup",
+        "critical-path"
+      ],
+      "estimated_duration": "20s",
+      "expected_result": "Logout removes all channels, Watch Next entries, and cancels sync worker"
+    },
+    {
+      "id": "FQA-ATV-166",
+      "name": "Deep link without auth redirects to login",
+      "category": "functional",
+      "priority": "high",
+      "platforms": [
+        "androidtv"
+      ],
+      "steps": [
+        {
+          "name": "Logout",
+          "action": "adb_shell: pm clear com.catalogizer.androidtv",
+          "expected": "User logged out"
+        },
+        {
+          "name": "Trigger deep link",
+          "action": "adb_shell: am start -a android.intent.action.VIEW -d 'catalogizer://media/1?type=movie' com.catalogizer.androidtv",
+          "expected": "ChannelDeepLinkActivity detects unauthenticated state"
+        },
+        {
+          "name": "Verify redirect",
+          "action": "screenshot",
+          "expected": "Redirected to login screen with pending deep link extras (EXTRA_MEDIA_ID, EXTRA_MEDIA_TYPE)"
+        }
+      ],
+      "tags": [
+        "channels",
+        "deep-link",
+        "auth",
+        "redirect"
+      ],
+      "estimated_duration": "15s",
+      "expected_result": "Deep link without authentication redirects to login with pending link"
+    },
+    {
+      "id": "FQA-ATV-259",
+      "name": "Deep link while app is in background",
+      "category": "edge-case",
+      "priority": "medium",
+      "platforms": [
+        "androidtv"
+      ],
+      "steps": [
+        {
+          "name": "Background the app",
+          "action": "keypress: KEYCODE_HOME",
+          "expected": "App in background"
+        },
+        {
+          "name": "Trigger deep link",
+          "action": "adb_shell: am start -a android.intent.action.VIEW -d 'catalogizer://media/{id}?type=movie' com.catalogizer.androidtv",
+          "expected": "ChannelDeepLinkActivity handles intent"
+        },
+        {
+          "name": "Verify routing",
+          "action": "screenshot",
+          "expected": "App brought to foreground with correct screen (FLAG_ACTIVITY_NEW_TASK | FLAG_ACTIVITY_CLEAR_TOP)"
+        }
+      ],
+      "tags": [
+        "edge-case",
+        "deep-link",
+        "background",
+        "lifecycle"
+      ],
+      "estimated_duration": "15s",
+      "expected_result": "Deep link correctly brings backgrounded app to foreground with correct screen"
+    }
+  ]
+}
