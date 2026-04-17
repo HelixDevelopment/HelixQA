@@ -175,6 +175,89 @@
         }
       ],
       "expected_result": "Nil-safe"
+    },
+    {
+      "id": "NX-A11Y-011",
+      "name": "Auditor.RunAndAssert green path against demo page",
+      "category": "functional",
+      "priority": "critical",
+      "platforms": [
+        "web-nexus"
+      ],
+      "tags": [
+        "a11y",
+        "auditor",
+        "e2e",
+        "fixes-validation"
+      ],
+      "steps": [
+        {
+          "name": "Open demo page",
+          "action": "browser.Open https://demo.test/accessible.html",
+          "expected": "Session opened with Elements > 0"
+        },
+        {
+          "name": "auditor := NewAuditor(vendoredAxePath, LevelAA)",
+          "action": "a11y.NewAuditor",
+          "expected": "non-nil Auditor"
+        },
+        {
+          "name": "auditor.RunAndAssert(ctx, browserEvaluator)",
+          "action": "a11y.Auditor.RunAndAssert",
+          "expected": "nil error AND Report.Summary has zero critical/serious violations"
+        }
+      ],
+      "expected_result": "Green E2E \u2014 confirms the axe-core injection, Evaluator.Eval, Parse, and level assertion chain all wired together"
+    },
+    {
+      "id": "NX-A11Y-012",
+      "name": "Auditor.RunAndAssert fails on seeded critical violation",
+      "category": "functional",
+      "priority": "critical",
+      "platforms": [
+        "web-nexus"
+      ],
+      "tags": [
+        "a11y",
+        "auditor",
+        "e2e",
+        "fixes-validation"
+      ],
+      "steps": [
+        {
+          "name": "Open seeded-violation page (<img src=x>)",
+          "action": "browser.Open https://demo.test/broken.html",
+          "expected": "Page loaded"
+        },
+        {
+          "name": "auditor.RunAndAssert(ctx, browserEvaluator)",
+          "action": "a11y.Auditor.RunAndAssert",
+          "expected": "non-nil error naming the missing-alt rule"
+        }
+      ],
+      "expected_result": "Critical violations surface at LevelAA \u2014 regression guard for W9"
+    },
+    {
+      "id": "NX-A11Y-013",
+      "name": "Auditor.RunAndAssert surfaces Evaluator errors",
+      "category": "functional",
+      "priority": "high",
+      "platforms": [
+        "web-nexus"
+      ],
+      "tags": [
+        "a11y",
+        "auditor",
+        "error-path"
+      ],
+      "steps": [
+        {
+          "name": "Pass evaluator that returns error",
+          "action": "a11y.Auditor.RunAndAssert(ctx, failingEvaluator)",
+          "expected": "error wrapping 'eval axe: ...'"
+        }
+      ],
+      "expected_result": "Evaluator failures bubble up unchanged"
     }
   ]
 }

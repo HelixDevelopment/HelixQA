@@ -175,6 +175,114 @@
         }
       ],
       "expected_result": "Operators see all breaches at once"
+    },
+    {
+      "id": "NX-PERF-011",
+      "name": "K6Runner.RunScenario executes generated script",
+      "category": "performance",
+      "priority": "critical",
+      "platforms": [
+        "web-nexus"
+      ],
+      "tags": [
+        "k6",
+        "perf",
+        "runner",
+        "e2e",
+        "fixes-validation"
+      ],
+      "steps": [
+        {
+          "name": "scenario := Scenario{URL: https://demo.test/, WaitSelector: 'main'}",
+          "action": "perf.Scenario",
+          "expected": "valid scenario"
+        },
+        {
+          "name": "runner := NewK6Runner()",
+          "action": "perf.NewK6Runner",
+          "expected": "non-nil runner"
+        },
+        {
+          "name": "metrics, err := runner.RunScenario(ctx, scenario)",
+          "action": "perf.K6Runner.RunScenario",
+          "expected": "nil error AND metrics.LCP > 0"
+        }
+      ],
+      "expected_result": "Green E2E proving GenerateScript + k6 shell-out + ParseK6JSON are wired end-to-end"
+    },
+    {
+      "id": "NX-PERF-012",
+      "name": "RunScenario rejects empty URL without shelling out",
+      "category": "performance",
+      "priority": "high",
+      "platforms": [
+        "web-nexus"
+      ],
+      "tags": [
+        "k6",
+        "perf",
+        "runner",
+        "validation"
+      ],
+      "steps": [
+        {
+          "name": "runner.RunScenario(ctx, Scenario{})",
+          "action": "perf.K6Runner.RunScenario",
+          "expected": "error without invoking k6"
+        }
+      ],
+      "expected_result": "Input validation short-circuits before shell-out"
+    },
+    {
+      "id": "NX-PERF-013",
+      "name": "RunScenario surfaces k6 missing error clearly",
+      "category": "performance",
+      "priority": "high",
+      "platforms": [
+        "web-nexus"
+      ],
+      "tags": [
+        "k6",
+        "perf",
+        "runner",
+        "error-path"
+      ],
+      "steps": [
+        {
+          "name": "PATH without k6 -> RunScenario",
+          "action": "perf.K6Runner.RunScenario",
+          "expected": "error naming missing k6 binary"
+        }
+      ],
+      "expected_result": "Actionable error on missing k6 install"
+    },
+    {
+      "id": "NX-PERF-014",
+      "name": "RunScenario threshold assertion vs DefaultThresholds",
+      "category": "performance",
+      "priority": "high",
+      "platforms": [
+        "web-nexus"
+      ],
+      "tags": [
+        "k6",
+        "perf",
+        "runner",
+        "thresholds"
+      ],
+      "steps": [
+        {
+          "name": "metrics := runner.RunScenario(...)",
+          "action": "perf.K6Runner.RunScenario",
+          "expected": "metrics populated"
+        },
+        {
+          "name": "metrics.Assert(DefaultThresholds())",
+          "action": "perf.Metrics.Assert",
+          "expected": "nil (good CWV) or error naming LCP/INP/CLS breach"
+        }
+      ],
+      "expected_result": "Full pipeline: generate -> run -> parse -> assert"
     }
   ]
 }

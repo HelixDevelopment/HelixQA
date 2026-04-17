@@ -27,6 +27,23 @@ func Instrument(eng *Engine, metrics *observability.NexusMetrics) *InstrumentedE
 	return &InstrumentedEngine{Engine: eng, metrics: metrics}
 }
 
+// NewInstrumentedEngine is the recommended constructor for runtime
+// wiring: it calls NewEngine and immediately wraps the result with
+// Instrument so NexusMetrics counters start populating as soon as
+// the first browser session opens. Callers that do not want metrics
+// yet still get spans when they pass nil for metrics.
+//
+// Operators should prefer this factory over NewEngine + manual
+// Instrument() so no production code path accidentally ships an
+// un-instrumented browser engine.
+func NewInstrumentedEngine(d Driver, cfg Config, metrics *observability.NexusMetrics) (*InstrumentedEngine, error) {
+	eng, err := NewEngine(d, cfg)
+	if err != nil {
+		return nil, err
+	}
+	return Instrument(eng, metrics), nil
+}
+
 // Open delegates to Engine.Open while recording a span + session-open
 // counter + active-session gauge.
 func (i *InstrumentedEngine) Open(ctx context.Context, opts nexus.SessionOptions) (nexus.Session, error) {

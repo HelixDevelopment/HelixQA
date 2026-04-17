@@ -72,3 +72,50 @@ func TestInstrumentedEngine_NilMetricsStillWorks(t *testing.T) {
 	}
 	_ = sess.Close()
 }
+
+// TestNewInstrumentedEngine_W5_RecommendedRuntimeFactory locks in W5
+// from docs/nexus/remaining-work.md: the recommended runtime entry
+// point must produce an InstrumentedEngine so production code never
+// accidentally ships an un-instrumented browser engine.
+func TestNewInstrumentedEngine_W5_RecommendedRuntimeFactory(t *testing.T) {
+	reg := observability.NewRegistry()
+	metrics := observability.DefaultMetrics(reg)
+
+	eng, err := NewInstrumentedEngine(
+		&mockDriver{kind: EngineChromedp},
+		Config{Engine: EngineChromedp},
+		metrics,
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if eng == nil {
+		t.Fatal("expected non-nil InstrumentedEngine")
+	}
+
+	sess, err := eng.Open(context.Background(), nexus.SessionOptions{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if metrics.SessionOpensTotal.Value() != 1 {
+		t.Errorf("SessionOpensTotal = %d, want 1 — NewInstrumentedEngine must wire metrics",
+			metrics.SessionOpensTotal.Value())
+	}
+	_ = sess.Close()
+
+	// A nil metrics argument is valid — the factory should still
+	// return spans-only instrumentation.
+	eng2, err := NewInstrumentedEngine(
+		&mockDriver{kind: EngineChromedp},
+		Config{Engine: EngineChromedp},
+		nil,
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	sess2, err := eng2.Open(context.Background(), nexus.SessionOptions{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	_ = sess2.Close()
+}
