@@ -1,0 +1,106 @@
+# SPDX-FileCopyrightText: 2026 Milos Vasic
+# SPDX-License-Identifier: Apache-2.0
+#
+# HelixQA fixes-validation bank — observability domain.
+# Regression cases for pkg/nexus/observability + the catalog-api
+# metrics/tracing wiring.
+
+version: "1.0"
+name: "HelixQA Fixes Validation — Observability"
+description: "Regression suite covering W1 SecurityHeaders, W4 /metrics, W5 NewInstrumentedEngine, W7 AuditPersister sink, and B7 OTel semconv pin."
+metadata:
+  author: "vasic-digital"
+  domain: "observability"
+
+test_cases:
+  - id: FIX-OBS-001
+    name: "catalog-api mounts SecurityHeaders before route registration (W1)"
+    category: regression
+    priority: critical
+    platforms: [api]
+    steps:
+      - name: "curl -I http://catalog-api/api/v1/health"
+        action: "http request"
+        expected: "Response includes X-Content-Type-Options, X-Frame-Options, Referrer-Policy, and CSP headers"
+    expected_result: "Every route ships secure defaults"
+    fix_reference:
+      id: W1
+      file: "catalog-api/main.go:882"
+      rationale: "router.Use(root_middleware.SecurityHeaders()) mounted before route registration"
+
+  - id: FIX-OBS-002
+    name: "catalog-api exposes Prometheus /metrics (W4)"
+    category: regression
+    priority: critical
+    platforms: [api]
+    steps:
+      - name: "curl http://catalog-api/metrics"
+        action: "http request"
+        expected: "Content-Type: text/plain; response contains go_gc_duration_seconds + process_* counters"
+    expected_result: "Grafana scrape endpoint populated"
+    fix_reference:
+      id: W4
+      file: "catalog-api/main.go:897"
+      rationale: "router.GET('/metrics', gin.WrapH(promhttp.Handler())) registered"
+
+  - id: FIX-OBS-003
+    name: "NewInstrumentedEngine populates NexusMetrics (W5)"
+    category: regression
+    priority: high
+    platforms: [web-nexus]
+    steps:
+      - name: "eng := browser.NewInstrumentedEngine(driver, cfg, metrics)"
+        action: "pkg/nexus/browser.NewInstrumentedEngine"
+        expected: "returns *InstrumentedEngine, metrics wired"
+      - name: "eng.Open(ctx, opts)"
+        action: "nexus.Adapter.Open"
+        expected: "metrics.SessionOpensTotal.Value() == 1"
+    expected_result: "Browser session activity is observable from first Open"
+    fix_reference:
+      id: W5
+      file: "pkg/nexus/browser/instrumentation.go"
+
+  - id: FIX-OBS-004
+    name: "AuditPersister.AsSink bridges RBAC to helixqa_audit_log (W7)"
+    category: regression
+    priority: critical
+    platforms: [api]
+    steps:
+      - name: "ac := NewAccessControl(nil); ac.SetSink(persister.AsSink())"
+        action: "pkg/nexus/orchestrator.AccessControl.SetSink"
+        expected: "sink installed"
+      - name: "ac.Check(user, ActionEditBank, 'bank/1')"
+        action: "pkg/nexus/orchestrator.AccessControl.Check"
+        expected: "INSERT into helixqa_audit_log observed via fakeDB.execs"
+    expected_result: "Every RBAC decision lands in the SQL audit table AND the in-memory log"
+    fix_reference:
+      id: W7
+      file: "pkg/nexus/orchestrator/rbac.go + persistence.go"
+
+  - id: FIX-OBS-005
+    name: "OTel semconv compile-check guards the v1.26.0 pin (B7)"
+    category: regression
+    priority: medium
+    platforms: [api]
+    steps:
+      - name: "go build ./pkg/nexus/observability/..."
+        action: "go build"
+        expected: "compiles — semconv.SchemaURL + semconv.ServiceName still exist"
+    expected_result: "semconv rename fails to compile here before reaching runtime"
+    fix_reference:
+      id: B7
+      file: "pkg/nexus/observability/otel_tracer.go"
+
+  - id: FIX-OBS-006
+    name: "PrometheusBridge exposes Nexus registry via /metrics"
+    category: regression
+    priority: high
+    platforms: [web-nexus]
+    steps:
+      - name: "nexusRegistry.Expose()"
+        action: "pkg/nexus/observability.Registry.Expose"
+        expected: "bytes contain '# HELP nexus_browser_active_sessions' and other nexus_* metrics"
+    expected_result: "Scrape endpoint surfaces every Nexus metric"
+    fix_reference:
+      id: observability-bridge
+      file: "pkg/nexus/observability/prometheus.go"

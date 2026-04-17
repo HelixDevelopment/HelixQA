@@ -1,0 +1,96 @@
+{
+  "version": "1.0",
+  "name": "HelixQA Fixes Validation \u2014 AI",
+  "description": "Nexus AI-layer regression suite covering B10 AUC sort crossover and W6 OrchestratorClient wiring.",
+  "metadata": {
+    "author": "vasic-digital",
+    "domain": "ai"
+  },
+  "test_cases": [
+    {
+      "id": "FIX-AI-001",
+      "name": "Predictor AUC uses sort.Slice above cutoff (B10)",
+      "category": "regression",
+      "priority": "high",
+      "platforms": [
+        "ai"
+      ],
+      "steps": [
+        {
+          "name": "Build holdout with 4*aucSortInsertionCutoff samples",
+          "action": "ai.FlakeSample fixture generator",
+          "expected": "2000+ samples balanced across classes"
+        },
+        {
+          "name": "predictor.AUC(samples)",
+          "action": "pkg/nexus/ai.Predictor.AUC",
+          "expected": "returns >= 0.75 within standard test timeout"
+        }
+      ],
+      "expected_result": "Large-holdout AUC is tractable; no quadratic slowdown",
+      "fix_reference": {
+        "id": "B10",
+        "file": "pkg/nexus/ai/predictor_training.go",
+        "rationale": "Insertion-sort path retained for small inputs; sort.Slice above cutoff (500)"
+      }
+    },
+    {
+      "id": "FIX-AI-002",
+      "name": "OrchestratorClient satisfies LLMClient (W6)",
+      "category": "regression",
+      "priority": "critical",
+      "platforms": [
+        "ai"
+      ],
+      "steps": [
+        {
+          "name": "NewNavigator(&OrchestratorClient{...}, cost, model)",
+          "action": "pkg/nexus/ai.NewNavigator",
+          "expected": "compiles \u2014 Chat(ctx, req) method set matches LLMClient interface"
+        },
+        {
+          "name": "NewHealer(&OrchestratorClient{...}, cost, model)",
+          "action": "pkg/nexus/ai.NewHealer",
+          "expected": "compiles"
+        },
+        {
+          "name": "NewGenerator(&OrchestratorClient{...}, cost, model)",
+          "action": "pkg/nexus/ai.NewGenerator",
+          "expected": "compiles"
+        }
+      ],
+      "expected_result": "Navigator/Healer/Generator can use OrchestratorClient without an HTTP fallback",
+      "fix_reference": {
+        "id": "W6",
+        "file": "pkg/nexus/ai/orchestrator_client.go",
+        "rationale": "Client implements Chat, satisfying the LLMClient interface the three consumers accept"
+      }
+    },
+    {
+      "id": "FIX-AI-003",
+      "name": "Predictor AUC handles empty and single-class gracefully",
+      "category": "regression",
+      "priority": "medium",
+      "platforms": [
+        "ai"
+      ],
+      "steps": [
+        {
+          "name": "predictor.AUC(nil)",
+          "action": "pkg/nexus/ai.Predictor.AUC",
+          "expected": "returns 0 without panic"
+        },
+        {
+          "name": "predictor.AUC(all-pass samples)",
+          "action": "pkg/nexus/ai.Predictor.AUC",
+          "expected": "returns NaN"
+        }
+      ],
+      "expected_result": "B10 sort change does not regress empty/single-class semantics",
+      "fix_reference": {
+        "id": "B10",
+        "file": "pkg/nexus/ai/predictor_training.go"
+      }
+    }
+  ]
+}

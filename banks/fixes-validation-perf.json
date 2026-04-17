@@ -1,0 +1,105 @@
+{
+  "version": "1.0",
+  "name": "HelixQA Fixes Validation \u2014 Performance",
+  "description": "Nexus perf-layer regression suite covering W8 K6Runner.RunScenario end-to-end wiring.",
+  "metadata": {
+    "author": "vasic-digital",
+    "domain": "perf"
+  },
+  "test_cases": [
+    {
+      "id": "FIX-PERF-001",
+      "name": "K6Runner.RunScenario executes generated script (W8)",
+      "category": "regression",
+      "priority": "critical",
+      "platforms": [
+        "web-nexus"
+      ],
+      "steps": [
+        {
+          "name": "scenario := Scenario{URL: 'https://demo.test/', WaitSelector: 'main'}",
+          "action": "pkg/nexus/perf.Scenario",
+          "expected": "valid scenario"
+        },
+        {
+          "name": "runner := NewK6Runner()",
+          "action": "pkg/nexus/perf.NewK6Runner",
+          "expected": "non-nil runner"
+        },
+        {
+          "name": "metrics, err := runner.RunScenario(ctx, scenario)",
+          "action": "pkg/nexus/perf.K6Runner.RunScenario",
+          "expected": "nil error AND metrics.LCP > 0"
+        }
+      ],
+      "expected_result": "GenerateScript + k6 shell-out + ParseK6JSON all wired end-to-end",
+      "fix_reference": {
+        "id": "W8",
+        "file": "banks/nexus-perf.yaml NX-PERF-011"
+      }
+    },
+    {
+      "id": "FIX-PERF-002",
+      "name": "RunScenario rejects empty URL before shelling out",
+      "category": "regression",
+      "priority": "high",
+      "platforms": [
+        "web-nexus"
+      ],
+      "steps": [
+        {
+          "name": "runner.RunScenario(ctx, Scenario{})",
+          "action": "pkg/nexus/perf.K6Runner.RunScenario",
+          "expected": "error without invoking k6 binary"
+        }
+      ],
+      "expected_result": "Input validation short-circuits fast",
+      "fix_reference": {
+        "id": "W8",
+        "file": "banks/nexus-perf.yaml NX-PERF-012"
+      }
+    },
+    {
+      "id": "FIX-PERF-003",
+      "name": "RunScenario surfaces missing-k6 error clearly",
+      "category": "regression",
+      "priority": "high",
+      "platforms": [
+        "web-nexus"
+      ],
+      "steps": [
+        {
+          "name": "Clear PATH; runner.RunScenario(...)",
+          "action": "pkg/nexus/perf.K6Runner.RunScenario",
+          "expected": "actionable error naming missing k6 binary"
+        }
+      ],
+      "expected_result": "Operators get a debuggable error instead of a silent exit code",
+      "fix_reference": {
+        "id": "W8",
+        "file": "banks/nexus-perf.yaml NX-PERF-013"
+      }
+    },
+    {
+      "id": "FIX-PERF-004",
+      "name": "Metrics.Assert threshold comparison end-to-end",
+      "category": "regression",
+      "priority": "high",
+      "platforms": [
+        "web-nexus"
+      ],
+      "steps": [
+        {
+          "name": "Run scenario; metrics.Assert(DefaultThresholds())",
+          "action": "pkg/nexus/perf.Metrics.Assert",
+          "expected": "nil on good CWV OR error enumerating every breach"
+        }
+      ],
+      "expected_result": "Generate \u2192 run \u2192 parse \u2192 assert loop is observable",
+      "fix_reference": {
+        "id": "W8",
+        "file": "banks/nexus-perf.yaml NX-PERF-014"
+      }
+    }
+  ]
+}

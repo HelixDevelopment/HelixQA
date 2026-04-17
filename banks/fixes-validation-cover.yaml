@@ -1,0 +1,128 @@
+# SPDX-FileCopyrightText: 2026 Milos Vasic
+# SPDX-License-Identifier: Apache-2.0
+#
+# HelixQA fixes-validation bank — cover-quality domain.
+# Regression cases for W2 CSRF on admin, W3 sanitizer, B1 Fanart IDs,
+# B2 IGDB v4 headers, and the catalog-api cover pipeline.
+
+version: "1.0"
+name: "HelixQA Fixes Validation — Cover Quality"
+description: "Regression suite covering W2 CSRF admin guard, W3 provider-string sanitizer, B1 Fanart IMDB/TVDB routing, B2 IGDB v4 headers, and B5 CSRF insecure-dev toggle."
+metadata:
+  author: "vasic-digital"
+  domain: "cover"
+
+test_cases:
+  - id: FIX-COVER-001
+    name: "CSRF guard rejects cross-origin POST on /admin (W2)"
+    category: regression
+    priority: critical
+    platforms: [api]
+    steps:
+      - name: "GET /api/v1/admin/probe"
+        action: "http"
+        expected: "Response mints X-CSRF-Token header + __Host-csrf cookie"
+      - name: "POST /api/v1/admin/mutate without token"
+        action: "http"
+        expected: "403 — missing csrf header"
+      - name: "POST /api/v1/admin/mutate with mismatched token"
+        action: "http"
+        expected: "403 — csrf token mismatch"
+      - name: "POST /api/v1/admin/mutate with valid token + cookie"
+        action: "http"
+        expected: "200 OK"
+    expected_result: "Admin surface refuses CSRF attacks"
+    fix_reference:
+      id: W2
+      file: "catalog-api/main.go + catalog-api/middleware/csrf.go"
+
+  - id: FIX-COVER-002
+    name: "CSRF insecure-dev toggle drops __Host- + Secure (B5)"
+    category: regression
+    priority: high
+    platforms: [api]
+    steps:
+      - name: "NewCSRF(secret, WithCSRFInsecureDev(true))"
+        action: "catalog-api/middleware.NewCSRF"
+        expected: "cookie name = 'csrf-dev'"
+      - name: "GET /admin/probe"
+        action: "http"
+        expected: "Set-Cookie has csrf-dev but NOT 'Secure'; keeps HttpOnly"
+    expected_result: "Plain-HTTP dev stacks accept the CSRF cookie without __Host- prefix pain"
+    fix_reference:
+      id: B5
+      file: "catalog-api/middleware/csrf.go"
+
+  - id: FIX-COVER-003
+    name: "QualityGate.persist sanitizes every provider string (W3)"
+    category: security
+    priority: critical
+    platforms: [api]
+    steps:
+      - name: "Resolve with SourceHint containing <script>alert(1)</script>"
+        action: "QualityGate.Resolve"
+        expected: "ProviderRef stored without <script> tag — bluemonday.StrictPolicy applied"
+      - name: "EntityType '<img src=x onerror=alert(1)>'"
+        action: "repo.Find after sanitize"
+        expected: "EntityType stored as sanitized form"
+      - name: "variant='primary<b>bold</b>'"
+        action: "repo.Find with SanitizeMetadataString"
+        expected: "Variant holds no HTML"
+    expected_result: "Compromised upstreams cannot inject HTML/JS into image_quality_assessments"
+    fix_reference:
+      id: W3
+      file: "catalog-api/internal/services/quality_gate.go"
+
+  - id: FIX-COVER-004
+    name: "FanartTVResolver requires IMDB id for movies (B1)"
+    category: regression
+    priority: high
+    platforms: [api]
+    steps:
+      - name: "CanResolve(tmdb_id only, movie)"
+        action: "catalog-api/internal/services.FanartTVResolver.CanResolve"
+        expected: "false — Fanart.tv movie endpoint needs IMDB id"
+      - name: "CanResolve(imdb_id=tt0133093, movie)"
+        action: "catalog-api/internal/services.FanartTVResolver.CanResolve"
+        expected: "true"
+      - name: "CanResolve(imdb_id only, tv_show)"
+        action: "catalog-api/internal/services.FanartTVResolver.CanResolve"
+        expected: "false — TV endpoint needs TVDB id"
+      - name: "CanResolve(tvdb_id=81189, tv_show)"
+        action: "catalog-api/internal/services.FanartTVResolver.CanResolve"
+        expected: "true"
+    expected_result: "No more silent 404s from Fanart.tv with wrong provider id"
+    fix_reference:
+      id: B1
+      file: "catalog-api/internal/services/fanart_resolver.go"
+
+  - id: FIX-COVER-005
+    name: "IGDBResolver sends Client-ID + Bearer headers (B2)"
+    category: regression
+    priority: critical
+    platforms: [api]
+    steps:
+      - name: "Resolve(entity=game, title='Portal') against stub IGDB v4 server"
+        action: "catalog-api/internal/services.IGDBResolver.Resolve"
+        expected: "Stub observes both Client-ID AND Authorization: Bearer headers on every request"
+      - name: "Apicalypse body is non-empty and escaped"
+        action: "inspect captured body"
+        expected: "Quotes and backslashes escaped per Apicalypse rules"
+    expected_result: "IGDB v4 auth matches spec"
+    fix_reference:
+      id: B2
+      file: "catalog-api/internal/services/igdb_resolver.go"
+
+  - id: FIX-COVER-006
+    name: "IGDBResolver rejects missing ID with platform-appropriate error"
+    category: regression
+    priority: high
+    platforms: [api]
+    steps:
+      - name: "Resolve with tmdb_id for movie (no imdb_id)"
+        action: "catalog-api/internal/services.FanartTVResolver.Resolve"
+        expected: "error contains 'platform-appropriate'"
+    expected_result: "Operators get actionable error instead of confusing upstream 404"
+    fix_reference:
+      id: B1
+      file: "catalog-api/internal/services/fanart_resolver.go"

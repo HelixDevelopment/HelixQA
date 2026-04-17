@@ -1,0 +1,81 @@
+# SPDX-FileCopyrightText: 2026 Milos Vasic
+# SPDX-License-Identifier: Apache-2.0
+#
+# HelixQA fixes-validation bank — browser domain.
+# Regression cases for every W/B fix that touched pkg/nexus/browser.
+# Each entry pins the fix commit + exercises the scenario that broke
+# in the first place so accidental reversions never re-ship silently.
+
+version: "1.0"
+name: "HelixQA Fixes Validation — Browser"
+description: "Nexus browser-layer regression suite covering B3 chromedp Hover, B4 rod SavePDF, B8 selector HTML entity decode, and W5 instrumented-engine factory."
+metadata:
+  author: "vasic-digital"
+  domain: "browser"
+
+test_cases:
+  - id: FIX-BROWSER-001
+    name: "chromedp Hover dispatches real mouse events (B3)"
+    category: regression
+    priority: critical
+    platforms: [web-nexus]
+    steps:
+      - name: "Load fixture page with hover-sensitive element"
+        action: "browser.Open https://demo.test/hover.html"
+        expected: "Element #menu present"
+      - name: "engine.Hover({Ref:e1})"
+        action: "nexus.Adapter.Hover"
+        expected: "Dispatches mouseover+mouseenter+mousemove JS events (no panic, no silent no-op)"
+    expected_result: "Hover is observable via page CSS :hover state"
+    fix_reference:
+      id: B3
+      file: "pkg/nexus/browser/chromedp_driver.go"
+      rationale: "Original code called non-existent chromedp.MouseEvent; replacement dispatches JS events explicitly"
+
+  - id: FIX-BROWSER-002
+    name: "rod SavePDF does not deadlock on StreamReader (B4)"
+    category: regression
+    priority: high
+    platforms: [web-nexus]
+    steps:
+      - name: "engine.SavePDF(ctx, session)"
+        action: "nexus.ExtendedHandle.SavePDF"
+        expected: "Returns complete PDF bytes inside the 30s ctx budget"
+    expected_result: "PDF written via io.ReadAll — no manual chunked loop"
+    fix_reference:
+      id: B4
+      file: "pkg/nexus/browser/rod_driver.go"
+      rationale: "Manual Read loop on go-rod StreamReader could deadlock; io.ReadAll drains cleanly"
+
+  - id: FIX-BROWSER-003
+    name: "Element.Selector decodes HTML entities (B8)"
+    category: regression
+    priority: high
+    platforms: [web-nexus]
+    steps:
+      - name: "Snapshot page containing id=\"save&amp;close\""
+        action: "browser.Snapshot"
+        expected: "Element.Selector contains the literal '&' (not '&amp;')"
+    expected_result: "Downstream CSS/JS lookups round-trip the real id"
+    fix_reference:
+      id: B8
+      file: "pkg/nexus/browser/snapshot.go"
+      rationale: "decodeHTMLEntities was applied to Name but not Selector; now both share the same path"
+
+  - id: FIX-BROWSER-004
+    name: "NewInstrumentedEngine wires metrics on first Open (W5)"
+    category: regression
+    priority: critical
+    platforms: [web-nexus]
+    steps:
+      - name: "eng, _ := browser.NewInstrumentedEngine(driver, cfg, metrics)"
+        action: "pkg/nexus/browser.NewInstrumentedEngine"
+        expected: "Non-nil InstrumentedEngine"
+      - name: "eng.Open(ctx, SessionOptions{})"
+        action: "nexus.Adapter.Open"
+        expected: "metrics.SessionOpensTotal increments to 1"
+    expected_result: "Runtime callers always ship instrumented engines"
+    fix_reference:
+      id: W5
+      file: "pkg/nexus/browser/instrumentation.go"
+      rationale: "Factory guarantees NexusMetrics wiring; no path ships an un-instrumented Engine"

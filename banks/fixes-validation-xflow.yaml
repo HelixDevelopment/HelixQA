@@ -1,0 +1,65 @@
+# SPDX-FileCopyrightText: 2026 Milos Vasic
+# SPDX-License-Identifier: Apache-2.0
+#
+# HelixQA fixes-validation bank — cross-platform flow domain.
+# Regression cases for pkg/nexus/userflow + cross-platform adapters.
+
+version: "1.0"
+name: "HelixQA Fixes Validation — Cross-Platform Flow"
+description: "Regression suite for cross-platform flow runs (web + mobile + desktop composed) — covers FlowPersister, CrossFlows, and generic PlatformGroup loading."
+metadata:
+  author: "vasic-digital"
+  domain: "xflow"
+
+test_cases:
+  - id: FIX-XFLOW-001
+    name: "Challenges userflow-runner loads caller-supplied platform groups"
+    category: regression
+    priority: critical
+    platforms: [cross-platform]
+    steps:
+      - name: "userflow-runner --platform api --platform-groups config/userflow-platform-groups.json"
+        action: "Challenges/cmd/userflow-runner"
+        expected: "CLI loads groups from JSON, logs 'platform_groups_loaded=6'"
+      - name: "userflow-runner --platform api (no --platform-groups)"
+        action: "Challenges/cmd/userflow-runner"
+        expected: "CLI exits with actionable error — hardcoded Catalogizer default no longer exists"
+    expected_result: "CLI is project-agnostic; callers must declare their topology explicitly"
+    fix_reference:
+      id: decoupling-challenges
+      file: "Challenges/cmd/userflow-runner/main.go"
+      rationale: "Removed hardcoded catalog-api/catalog-web service lists; loaded from JSON per --platform-groups"
+
+  - id: FIX-XFLOW-002
+    name: "FlowPersister.StartFlow + Step + EndFlow round-trips"
+    category: regression
+    priority: high
+    platforms: [cross-platform]
+    steps:
+      - name: "flowPersister.StartFlow(ctx, 'f-1', 'login→browse')"
+        action: "pkg/nexus/orchestrator.FlowPersister.StartFlow"
+        expected: "Row inserted into helixqa_cross_flows"
+      - name: "flowPersister.Step(ctx, 'f-1', 1, 'open app', 'android', 'pass', '', start, end)"
+        action: "pkg/nexus/orchestrator.FlowPersister.Step"
+        expected: "Row inserted into helixqa_flow_steps"
+      - name: "flowPersister.EndFlow(ctx, 'f-1', 'pass', 0, '')"
+        action: "pkg/nexus/orchestrator.FlowPersister.EndFlow"
+        expected: "Update lands with ended_at set"
+    expected_result: "Full cross-flow persistence round-trips through the FlowPersister"
+    fix_reference:
+      id: persistence
+      file: "pkg/nexus/orchestrator/persistence.go"
+
+  - id: FIX-XFLOW-003
+    name: "Distributed-test CLI skips tiers cleanly on empty flags"
+    category: regression
+    priority: high
+    platforms: [cross-platform]
+    steps:
+      - name: "distributed-test (no --go-api-dir / --js-projects / --android-projects)"
+        action: "Containers/cmd/distributed-test"
+        expected: "Go tier skipped with 'no --go-api-dir supplied'; JS+Android tiers return nil"
+    expected_result: "CLI doesn't blow up on a minimal invocation — project decides what to run"
+    fix_reference:
+      id: decoupling-containers
+      file: "Containers/cmd/distributed-test/main.go"

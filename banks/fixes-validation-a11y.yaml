@@ -1,0 +1,79 @@
+# SPDX-FileCopyrightText: 2026 Milos Vasic
+# SPDX-License-Identifier: Apache-2.0
+#
+# HelixQA fixes-validation bank — accessibility domain.
+# Regression cases for pkg/nexus/a11y (Auditor + Report + injection).
+
+version: "1.0"
+name: "HelixQA Fixes Validation — Accessibility"
+description: "Nexus a11y-layer regression suite covering W9 Auditor.RunAndAssert end-to-end wiring."
+metadata:
+  author: "vasic-digital"
+  domain: "a11y"
+
+test_cases:
+  - id: FIX-A11Y-001
+    name: "Auditor.RunAndAssert drives a live page green path (W9)"
+    category: regression
+    priority: critical
+    platforms: [web-nexus]
+    steps:
+      - name: "Open demo accessible page"
+        action: "browser.Open https://demo.test/accessible.html"
+        expected: "Session opened"
+      - name: "auditor := NewAuditor(vendoredAxePath, LevelAA)"
+        action: "pkg/nexus/a11y.NewAuditor"
+        expected: "Non-nil Auditor"
+      - name: "auditor.RunAndAssert(ctx, browserEvaluator)"
+        action: "pkg/nexus/a11y.Auditor.RunAndAssert"
+        expected: "nil error AND Report.Summary has zero serious/critical violations"
+    expected_result: "End-to-end axe-core injection + Evaluator.Eval + Parse + level assertion"
+    fix_reference:
+      id: W9
+      file: "banks/nexus-a11y.yaml NX-A11Y-011"
+      rationale: "Auditor existed but no bank drove it against a running page"
+
+  - id: FIX-A11Y-002
+    name: "Auditor.RunAndAssert surfaces seeded critical violation"
+    category: regression
+    priority: critical
+    platforms: [web-nexus]
+    steps:
+      - name: "Open demo page with <img src=x> (missing alt)"
+        action: "browser.Open https://demo.test/broken.html"
+        expected: "Page loaded"
+      - name: "auditor.RunAndAssert(ctx, browserEvaluator)"
+        action: "pkg/nexus/a11y.Auditor.RunAndAssert"
+        expected: "non-nil error that names the missing-alt rule"
+    expected_result: "Critical violations never pass silently at LevelAA"
+    fix_reference:
+      id: W9
+      file: "banks/nexus-a11y.yaml NX-A11Y-012"
+
+  - id: FIX-A11Y-003
+    name: "Auditor.RunAndAssert surfaces Evaluator errors"
+    category: regression
+    priority: high
+    platforms: [web-nexus]
+    steps:
+      - name: "Pass Evaluator that returns error"
+        action: "pkg/nexus/a11y.Auditor.RunAndAssert"
+        expected: "error wrapping 'a11y: eval axe:' — original evaluator error preserved"
+    expected_result: "Evaluator failures bubble up instead of masquerading as parse failures"
+    fix_reference:
+      id: W9
+      file: "banks/nexus-a11y.yaml NX-A11Y-013"
+
+  - id: FIX-A11Y-004
+    name: "Injection script contains vendored path, not CDN URL"
+    category: security
+    priority: high
+    platforms: [web-nexus]
+    steps:
+      - name: "InjectionScript('https://cdn/x')"
+        action: "pkg/nexus/a11y.InjectionScript"
+        expected: "script embeds '<base>/axe.min.js' from vendored path — no CDN fetch"
+    expected_result: "axe-core never loaded from public CDN at test time"
+    fix_reference:
+      id: NX-A11Y-008
+      file: "pkg/nexus/a11y/inject.go"

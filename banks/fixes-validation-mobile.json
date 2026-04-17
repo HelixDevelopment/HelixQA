@@ -1,0 +1,39 @@
+{
+  "version": "1.0",
+  "name": "HelixQA Fixes Validation \u2014 Mobile",
+  "description": "Nexus mobile-layer regression suite. Empty-by-design for now \u2014 future mobile fixes land here with their fix_reference commits.",
+  "metadata": {
+    "author": "vasic-digital",
+    "domain": "mobile"
+  },
+  "test_cases": [
+    {
+      "id": "FIX-MOBILE-001",
+      "name": "Mobile Capabilities require Platform field",
+      "category": "regression",
+      "priority": "high",
+      "platforms": [
+        "android",
+        "ios"
+      ],
+      "steps": [
+        {
+          "name": "mobile.NewEngine(appiumURL, Capabilities{})",
+          "action": "pkg/nexus/mobile.NewEngine",
+          "expected": "error: capabilities: platform is required"
+        },
+        {
+          "name": "mobile.NewEngine(appiumURL, Capabilities{Platform: PlatformAndroid})",
+          "action": "pkg/nexus/mobile.NewEngine",
+          "expected": "non-nil Engine"
+        }
+      ],
+      "expected_result": "Callers cannot accidentally spin up a mobile Engine without declaring Android vs iOS",
+      "fix_reference": {
+        "id": "W10-mobile",
+        "file": "pkg/nexus/mobile/adapter.go",
+        "rationale": "Discovered during CLI W10 regression tests \u2014 engine now fails loudly on missing Platform instead of defaulting"
+      }
+    }
+  ]
+}

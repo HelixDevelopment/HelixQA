@@ -1,0 +1,83 @@
+{
+  "version": "1.0",
+  "name": "HelixQA Fixes Validation \u2014 Desktop",
+  "description": "Nexus desktop-layer regression suite covering B9 Linux X11 empty-element refusal and AT-SPI path assertions.",
+  "metadata": {
+    "author": "vasic-digital",
+    "domain": "desktop"
+  },
+  "test_cases": [
+    {
+      "id": "FIX-DESKTOP-001",
+      "name": "Linux Click refuses empty Element on X11 (B9)",
+      "category": "regression",
+      "priority": "critical",
+      "platforms": [
+        "linux-x11",
+        "linux-wayland"
+      ],
+      "steps": [
+        {
+          "name": "engine.Click(ctx, Element{})",
+          "action": "pkg/nexus/desktop.LinuxEngine.Click",
+          "expected": "error names 'empty Element' and refuses to shell out to xdotool"
+        },
+        {
+          "name": "Verify no xdotool invocation in fakeRunner calls",
+          "action": "inspect fakeRunner.calls",
+          "expected": "no call starts with 'xdotool'"
+        }
+      ],
+      "expected_result": "No false-positive QA passes from clicks at the current cursor",
+      "fix_reference": {
+        "id": "B9",
+        "file": "pkg/nexus/desktop/linux.go",
+        "rationale": "X11 fallback used to click the cursor position; guard rejects empty Element before shell-out"
+      }
+    },
+    {
+      "id": "FIX-DESKTOP-002",
+      "name": "Linux Click still works with handle + AT-SPI",
+      "category": "regression",
+      "priority": "high",
+      "platforms": [
+        "linux-x11"
+      ],
+      "steps": [
+        {
+          "name": "engine.Click(ctx, Element{Handle: 'atspi-handle-1'})",
+          "action": "pkg/nexus/desktop.LinuxEngine.Click",
+          "expected": "atspi-action invoked with --handle atspi-handle-1 --action click"
+        }
+      ],
+      "expected_result": "Non-empty Element + configured bundleID still takes the AT-SPI fast path",
+      "fix_reference": {
+        "id": "B9",
+        "file": "pkg/nexus/desktop/linux.go",
+        "rationale": "B9 guard must not regress the happy AT-SPI path"
+      }
+    },
+    {
+      "id": "FIX-DESKTOP-003",
+      "name": "Linux Click refuses on Wayland without xdotool",
+      "category": "regression",
+      "priority": "high",
+      "platforms": [
+        "linux-wayland"
+      ],
+      "steps": [
+        {
+          "name": "engine.AsWayland(); engine.Click(ctx, Element{Handle: 'h'})",
+          "action": "pkg/nexus/desktop.LinuxEngine.Click",
+          "expected": "error names 'Wayland' \u2014 xdotool not available"
+        }
+      ],
+      "expected_result": "Wayland fallback remains loud instead of silently no-op",
+      "fix_reference": {
+        "id": "B9",
+        "file": "pkg/nexus/desktop/linux.go",
+        "rationale": "B9 empty-element guard must not short-circuit the pre-existing Wayland refusal"
+      }
+    }
+  ]
+}

@@ -1,0 +1,152 @@
+{
+  "version": "1.0",
+  "name": "HelixQA Fixes Validation \u2014 Project Agnosticism",
+  "description": "Regression suite that asserts HelixQA + every submodule library stays 100% decoupled from any specific consuming project.",
+  "metadata": {
+    "author": "vasic-digital",
+    "domain": "decoupling"
+  },
+  "test_cases": [
+    {
+      "id": "FIX-DECOUPLE-001",
+      "name": "HelixQA learning pipeline works on arbitrary project names",
+      "category": "regression",
+      "priority": "critical",
+      "platforms": [
+        "cross-platform"
+      ],
+      "steps": [
+        {
+          "name": "Build fake project with components 'alphaservice', 'betafrontend', 'gamma-tv'",
+          "action": "fixture builder",
+          "expected": "test dir created"
+        },
+        {
+          "name": "BuildKnowledgeBase(root, nil)",
+          "action": "pkg/learning.BuildKnowledgeBase",
+          "expected": "Components={alphaservice, betafrontend, gamma-tv} \u2014 no catalog-* invented"
+        }
+      ],
+      "expected_result": "Auto-discovery is marker-file driven, not name-driven",
+      "fix_reference": {
+        "id": "decoupling-helixqa",
+        "file": "pkg/learning/manifest.go + manifest_test.go"
+      }
+    },
+    {
+      "id": "FIX-DECOUPLE-002",
+      "name": "Discovery Announcer/Listener honour custom MessageNamespace",
+      "category": "regression",
+      "priority": "critical",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "NewAnnouncer(info, Config{MessageNamespace: 'custom'})",
+          "action": "Discovery/pkg/broadcast.NewAnnouncer",
+          "expected": "info.Type = MessageType('custom-announce')"
+        },
+        {
+          "name": "NewResponderWithConfig(info, Config{MessageNamespace: 'catalogizer'})",
+          "action": "Discovery/pkg/broadcast.NewResponderWithConfig",
+          "expected": "probeBody = 'CATALOGIZER_DISCOVER'"
+        }
+      ],
+      "expected_result": "Wire protocol namespace is caller-owned",
+      "fix_reference": {
+        "id": "decoupling-discovery",
+        "file": "Discovery/pkg/broadcast/broadcast.go"
+      }
+    },
+    {
+      "id": "FIX-DECOUPLE-003",
+      "name": "Config NewGitConfig ships generic author defaults",
+      "category": "regression",
+      "priority": "medium",
+      "platforms": [
+        "cross-platform"
+      ],
+      "steps": [
+        {
+          "name": "cfg := NewGitConfig(...)",
+          "action": "Config/pkg/storageconfig.NewGitConfig",
+          "expected": "CommitAuthorEmail != 'catalogizer@vasic.digital'; == DefaultCommitAuthorEmail"
+        }
+      ],
+      "expected_result": "Library has no project-specific default identity",
+      "fix_reference": {
+        "id": "decoupling-config",
+        "file": "Config/pkg/storageconfig/storageconfig.go"
+      }
+    },
+    {
+      "id": "FIX-DECOUPLE-004",
+      "name": "Containers Planner takes caller-supplied component catalogue",
+      "category": "regression",
+      "priority": "high",
+      "platforms": [
+        "cross-platform"
+      ],
+      "steps": [
+        {
+          "name": "NewPlanner(hostMgr, []BuildComponent{{Name:'svc-api',HasGo:true}})",
+          "action": "Containers/internal/buildpkg.NewPlanner",
+          "expected": "Planner exposes .Components() returning the same slice"
+        },
+        {
+          "name": "planner.PlanAll(ctx)",
+          "action": "Containers/internal/buildpkg.Planner.PlanAll",
+          "expected": "Schedules only svc-api \u2014 no catalog-api leaked"
+        }
+      ],
+      "expected_result": "Library no longer knows Catalogizer component names",
+      "fix_reference": {
+        "id": "decoupling-containers",
+        "file": "Containers/internal/buildpkg/planner.go"
+      }
+    },
+    {
+      "id": "FIX-DECOUPLE-005",
+      "name": "Challenges userflow-runner fails without --platform-groups",
+      "category": "regression",
+      "priority": "high",
+      "platforms": [
+        "cross-platform"
+      ],
+      "steps": [
+        {
+          "name": "userflow-runner --platform api (no --platform-groups)",
+          "action": "Challenges/cmd/userflow-runner",
+          "expected": "Exits with 'invalid platform' error \u2014 no hardcoded default fell through"
+        }
+      ],
+      "expected_result": "CLI forces caller to declare their topology",
+      "fix_reference": {
+        "id": "decoupling-challenges",
+        "file": "Challenges/cmd/userflow-runner/main.go"
+      }
+    },
+    {
+      "id": "FIX-DECOUPLE-006",
+      "name": "Grep gate \u2014 top-level submodule production code",
+      "category": "regression",
+      "priority": "critical",
+      "platforms": [
+        "cross-platform"
+      ],
+      "steps": [
+        {
+          "name": "grep -rn 'catalog-api|catalogizer' --include='*.go' --exclude='*_test.go' {submodule}/",
+          "action": "CI grep gate",
+          "expected": "zero matches across Assets Auth Cache Challenges Concurrency Config Containers Database Discovery DocProcessor Entities EventBus Filesystem Lazy LLMOrchestrator LLMProvider Media Memory Middleware Observability RateLimiter Recovery ReplayBuffer ScreenDiff Security Storage Streaming TrainingCollector VisionEngine VisualRegression Watcher HelixQA"
+        }
+      ],
+      "expected_result": "Any regression is caught by a single grep",
+      "fix_reference": {
+        "id": "decoupling-audit",
+        "file": "memory/feedback_helixqa_decoupling.md"
+      }
+    }
+  ]
+}
