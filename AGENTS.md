@@ -1,5 +1,17 @@
 # AGENTS.md - HelixQA Development Guide
 
+## MANDATORY: Project-Agnostic / 100% Decoupled
+
+**This module MUST remain 100% decoupled from any consuming project. It is designed for generic use with ANY project, not one specific consumer.**
+
+- NEVER hardcode project-specific package names, endpoints, device serials, or region-specific data
+- NEVER import anything from a consuming project
+- NEVER add project-specific defaults, presets, or fixtures into source code
+- All project-specific data MUST be registered by the caller via public APIs — never baked into the library
+- Default values MUST be empty or generic
+
+Violations void the release. Refactor to restore generic behaviour before any commit.
+
 ## MANDATORY: No CI/CD Pipelines
 
 **NO GitHub Actions, GitLab CI/CD, or any automated pipeline may exist in this repository!**
