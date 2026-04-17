@@ -175,6 +175,35 @@ func TestFinding_ToMarkdown(t *testing.T) {
 	assert.Contains(t, md, "2. Open")
 }
 
+// TestStore_CreateFinding_WithAcceptanceCriteria verifies the acceptance
+// criteria field is persisted and rendered in markdown.
+func TestStore_CreateFinding_WithAcceptanceCriteria(t *testing.T) {
+	s := newTestStore(t)
+	seedSession(t, s, "sess-ac")
+
+	f := memory.Finding{
+		ID:                 "HELIX-AC-001",
+		SessionID:          "sess-ac",
+		Severity:           "high",
+		Category:           "functional",
+		Title:              "Missing acceptance criteria test",
+		Description:        "Test description",
+		AcceptanceCriteria: "The feature works when X returns 200 OK",
+		Status:             "open",
+	}
+
+	require.NoError(t, s.CreateFinding(f))
+
+	got, err := s.GetFinding("HELIX-AC-001")
+	require.NoError(t, err)
+	require.NotNil(t, got)
+	assert.Equal(t, "The feature works when X returns 200 OK", got.AcceptanceCriteria)
+
+	md := got.ToMarkdown()
+	assert.Contains(t, md, "## Acceptance Criteria")
+	assert.Contains(t, md, "The feature works when X returns 200 OK")
+}
+
 // TestFinding_WriteToDir verifies the file is created with the expected name
 // and non-empty content.
 func TestFinding_WriteToDir(t *testing.T) {

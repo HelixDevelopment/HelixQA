@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 
 	_ "github.com/mattn/go-sqlite3"
@@ -115,22 +116,23 @@ func (s *Store) migrate() error {
 
 		// ── findings ────────────────────────────────────────────────
 		`CREATE TABLE IF NOT EXISTS findings (
-			id             TEXT    PRIMARY KEY,
-			session_id     TEXT    NOT NULL REFERENCES sessions(id),
-			severity       TEXT    NOT NULL,
-			category       TEXT    NOT NULL,
-			title          TEXT    NOT NULL,
-			description    TEXT,
-			repro_steps    TEXT,
-			evidence_paths TEXT,
-			platform       TEXT,
-			screen         TEXT,
-			status         TEXT    NOT NULL DEFAULT 'open',
-			found_date     TEXT,
-			fixed_date     TEXT,
-			verified_date  TEXT,
-			created_at     TEXT    NOT NULL,
-			updated_at     TEXT    NOT NULL
+			id                  TEXT    PRIMARY KEY,
+			session_id          TEXT    NOT NULL REFERENCES sessions(id),
+			severity            TEXT    NOT NULL,
+			category            TEXT    NOT NULL,
+			title               TEXT    NOT NULL,
+			description         TEXT,
+			repro_steps         TEXT,
+			acceptance_criteria TEXT,
+			evidence_paths      TEXT,
+			platform            TEXT,
+			screen              TEXT,
+			status              TEXT    NOT NULL DEFAULT 'open',
+			found_date          TEXT,
+			fixed_date          TEXT,
+			verified_date       TEXT,
+			created_at          TEXT    NOT NULL,
+			updated_at          TEXT    NOT NULL
 		)`,
 
 		// ── screenshots ─────────────────────────────────────────────
@@ -196,6 +198,11 @@ func (s *Store) migrate() error {
 
 	for _, stmt := range stmts {
 		if _, err := s.db.Exec(stmt); err != nil {
+			// SQLite ALTER TABLE ADD COLUMN is not natively
+			// idempotent; ignore duplicate column errors.
+			if strings.Contains(err.Error(), "duplicate column name") {
+				continue
+			}
 			return fmt.Errorf("execute migration statement: %w", err)
 		}
 	}

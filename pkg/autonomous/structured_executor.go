@@ -185,7 +185,8 @@ func (ste *StructuredTestExecutor) executeTestCase(
 					step.Name, step.Action,
 					step.Expected, stepResult.Actual,
 				),
-				Platform: ste.getPlatformForStep(step),
+				Platform:           ste.getPlatformForStep(step),
+				AcceptanceCriteria: fmt.Sprintf("Step '%s' executes successfully and produces the expected outcome: %s", step.Name, step.Expected),
 			}
 			result.Findings = append(result.Findings, finding)
 			if ste.onFinding != nil {

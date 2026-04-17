@@ -6,13 +6,14 @@ package llm
 import (
 	"os"
 	"sort"
+
+	"digital.vasic.llmsverifier/pkg/helixqa"
 )
 
 // visionModelScore holds the scoring metrics for a vision-capable
-// model. These values are derived from the LLMsVerifier
-// VisionModelRegistry and kept in sync manually. Adding a direct
-// import of LLMsVerifier would introduce a heavyweight dependency
-// chain that is unnecessary at runtime.
+// model. These values are sourced dynamically from LLMsVerifier's
+// VisionModelRegistry so HelixQA always uses validated, up-to-date
+// provider scores.
 type visionModelScore struct {
 	// Provider matches a Provider.Name() value.
 	Provider string
@@ -30,56 +31,23 @@ type visionModelScore struct {
 	AvgLatencyMs int
 }
 
-// visionModelRegistry mirrors the essential scoring data from
-// LLMsVerifier's VisionModelRegistry() (pkg/helixqa/models.go).
-// Each entry represents the best vision model available from a
-// given provider. The LLMsVerifier VisionStrategy (pkg/vision/)
-// uses the same data for its scoring dimensions.
-//
-// When LLMsVerifier adds or updates models, this table should
-// be updated to match. Both registries MUST stay in sync.
-var visionModelRegistry = []visionModelScore{
-	// Tier 0: Premium multi-modal vision (validated in 50+ QA sessions)
-	{Provider: ProviderGoogle, QualityScore: 0.93, ReliabilityScore: 0.95, CostPer1kTokens: 0.0005, AvgLatencyMs: 2000},
-	{Provider: ProviderOpenAI, QualityScore: 0.95, ReliabilityScore: 0.98, CostPer1kTokens: 0.020, AvgLatencyMs: 1200},
-	{Provider: ProviderAnthropic, QualityScore: 0.94, ReliabilityScore: 0.97, CostPer1kTokens: 0.018, AvgLatencyMs: 1500},
-
-	// Specialized vision API (quality high but availability varies)
-	{Provider: "astica", QualityScore: 0.90, ReliabilityScore: 0.70, CostPer1kTokens: 0.001, AvgLatencyMs: 800},
-
-	// Tier 2: Cost-effective
-	{Provider: "qwen", QualityScore: 0.87, ReliabilityScore: 0.88, CostPer1kTokens: 0.003, AvgLatencyMs: 1100},
-	{Provider: "kimi", QualityScore: 0.85, ReliabilityScore: 0.90, CostPer1kTokens: 0.0009, AvgLatencyMs: 1000},
-	{Provider: "stepfun", QualityScore: 0.82, ReliabilityScore: 0.85, CostPer1kTokens: 0.0, AvgLatencyMs: 900},
-	{Provider: "nvidia", QualityScore: 0.80, ReliabilityScore: 0.82, CostPer1kTokens: 0.0, AvgLatencyMs: 1000},
-	{Provider: "githubmodels", QualityScore: 0.78, ReliabilityScore: 0.85, CostPer1kTokens: 0.0, AvgLatencyMs: 1400},
-	{Provider: "xai", QualityScore: 0.80, ReliabilityScore: 0.88, CostPer1kTokens: 0.005, AvgLatencyMs: 1100},
-
-	// Tier 2.5: Cheaper API providers (free/low-cost via aggregators)
-	{Provider: "openrouter", QualityScore: 0.87, ReliabilityScore: 0.85, CostPer1kTokens: 0.0024, AvgLatencyMs: 2000},
-	{Provider: "huggingface", QualityScore: 0.82, ReliabilityScore: 0.75, CostPer1kTokens: 0.0, AvgLatencyMs: 2000},
-	{Provider: "chutes", QualityScore: 0.75, ReliabilityScore: 0.72, CostPer1kTokens: 0.0, AvgLatencyMs: 1500},
-	{Provider: "siliconflow", QualityScore: 0.80, ReliabilityScore: 0.78, CostPer1kTokens: 0.0, AvgLatencyMs: 1200},
-	{Provider: "replicate", QualityScore: 0.76, ReliabilityScore: 0.80, CostPer1kTokens: 0.0002, AvgLatencyMs: 2500},
-	{Provider: "zhipu", QualityScore: 0.78, ReliabilityScore: 0.80, CostPer1kTokens: 0.0, AvgLatencyMs: 1000},
-
-	// Tier 3: Local / open-source / self-hosted
-	{Provider: ProviderOllama, QualityScore: 0.65, ReliabilityScore: 0.80, CostPer1kTokens: 0.0, AvgLatencyMs: 3000},
-	{Provider: "uitars", QualityScore: 0.82, ReliabilityScore: 0.75, CostPer1kTokens: 0.0, AvgLatencyMs: 2000},
-	{Provider: "showui", QualityScore: 0.70, ReliabilityScore: 0.70, CostPer1kTokens: 0.0, AvgLatencyMs: 500},
-	{Provider: "glm4v", QualityScore: 0.78, ReliabilityScore: 0.80, CostPer1kTokens: 0.0, AvgLatencyMs: 1000},
-	{Provider: "qwen25vl", QualityScore: 0.87, ReliabilityScore: 0.85, CostPer1kTokens: 0.0, AvgLatencyMs: 3000},
-}
-
 // visionRegistryByProvider indexes the registry for O(1) lookup.
 var visionRegistryByProvider map[string]visionModelScore
 
 func init() {
-	visionRegistryByProvider = make(
-		map[string]visionModelScore, len(visionModelRegistry),
-	)
-	for _, m := range visionModelRegistry {
-		visionRegistryByProvider[m.Provider] = m
+	visionRegistryByProvider = make(map[string]visionModelScore)
+	for _, m := range helixqa.VisionModelRegistry() {
+		// Keep the highest-scoring model per provider.
+		existing, ok := visionRegistryByProvider[m.Provider]
+		if !ok || m.QualityScore > existing.QualityScore {
+			visionRegistryByProvider[m.Provider] = visionModelScore{
+				Provider:         m.Provider,
+				QualityScore:     m.QualityScore,
+				ReliabilityScore: m.ReliabilityScore,
+				CostPer1kTokens:  m.InputCostPer1k + m.OutputCostPer1k,
+				AvgLatencyMs:     m.AvgLatencyMs,
+			}
+		}
 	}
 }
 

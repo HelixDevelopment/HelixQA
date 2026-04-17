@@ -60,13 +60,18 @@ replace (
 )
 
 require (
+	digital.vasic.llmsverifier v0.0.0
 	github.com/failsafe-go/failsafe-go v0.9.6
 	github.com/google/uuid v1.6.0
 	github.com/gorilla/websocket v1.5.3
 	github.com/nats-io/nats.go v1.37.0
+	github.com/otiai10/gosseract/v2 v2.4.1
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/philippgille/chromem-go v0.7.0
 	github.com/pion/webrtc/v4 v4.2.11
 	github.com/prometheus/client_golang v1.23.2
 	github.com/prometheus/client_model v0.6.2
+	gocv.io/x/gocv v0.43.0
 )
+
+replace digital.vasic.llmsverifier => ../LLMsVerifier

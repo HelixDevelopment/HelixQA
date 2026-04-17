@@ -207,12 +207,12 @@ func TestRankVisionProviders_PreservesAllVisionProviders(t *testing.T) {
 }
 
 // TestVisionRegistryByProvider_Indexed verifies the init()
-// function correctly indexes all registry entries.
+// function correctly indexes entries from LLMsVerifier.
 func TestVisionRegistryByProvider_Indexed(t *testing.T) {
-	assert.Len(t, visionRegistryByProvider, len(visionModelRegistry),
-		"Index should contain every registry entry")
-	for _, m := range visionModelRegistry {
-		_, ok := visionRegistryByProvider[m.Provider]
-		assert.True(t, ok, "Provider %q should be indexed", m.Provider)
+	assert.NotEmpty(t, visionRegistryByProvider,
+		"Index should contain providers from LLMsVerifier")
+	for _, name := range []string{ProviderGoogle, ProviderOpenAI, ProviderOllama, "nvidia"} {
+		_, ok := visionRegistryByProvider[name]
+		assert.True(t, ok, "Provider %q should be indexed", name)
 	}
 }
