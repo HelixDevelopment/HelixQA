@@ -117,7 +117,28 @@ func (h *chromedpHandle) Scroll(ctx context.Context, dx, dy int) error {
 // --- ExtendedHandle implementation ---
 
 func (h *chromedpHandle) Hover(ctx context.Context, ref nexus.ElementRef) error {
-	return chromedp.Run(h.ctx, chromedp.MouseEvent("", chromedp.NodeVisible), chromedp.WaitVisible(string(ref)))
+	// Fixes B3 from docs/nexus/remaining-work.md: the previous
+	// implementation called chromedp.MouseEvent("", chromedp.NodeVisible)
+	// which is not a real chromedp action signature. The correct
+	// approach is to JS-dispatch a mouseover event on the matched
+	// element after waiting for visibility. This keeps the hover
+	// synchronous and testable without reaching into cdp's Input
+	// domain directly.
+	script := fmt.Sprintf(`(() => {
+      const el = document.querySelector(%q);
+      if (!el) return false;
+      const r = el.getBoundingClientRect();
+      const opts = { bubbles: true, cancelable: true, clientX: r.x + r.width/2, clientY: r.y + r.height/2 };
+      el.dispatchEvent(new MouseEvent('mouseover', opts));
+      el.dispatchEvent(new MouseEvent('mouseenter', opts));
+      el.dispatchEvent(new MouseEvent('mousemove', opts));
+      return true;
+    })()`, string(ref))
+	var ok bool
+	return chromedp.Run(h.ctx,
+		chromedp.WaitVisible(string(ref)),
+		chromedp.Evaluate(script, &ok),
+	)
 }
 
 func (h *chromedpHandle) Drag(ctx context.Context, from, to nexus.ElementRef) error {

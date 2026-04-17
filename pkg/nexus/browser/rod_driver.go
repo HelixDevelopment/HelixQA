@@ -5,6 +5,7 @@ package browser
 import (
 	"context"
 	"fmt"
+	"io"
 	"time"
 
 	"github.com/go-rod/rod"
@@ -168,22 +169,16 @@ func (h *rodHandle) CloseTab(_ context.Context, tabID string) error {
 }
 
 func (h *rodHandle) SavePDF(_ context.Context) ([]byte, error) {
+	// Fixes B4 from docs/nexus/remaining-work.md: the previous manual
+	// chunked Read loop could deadlock on go-rod's StreamReader when
+	// the stream had no more data but had not yet returned io.EOF.
+	// io.ReadAll is the documented idiomatic call — it drains the
+	// stream correctly across go-rod v0.114+ versions.
 	reader, err := h.page.PDF(&proto.PagePrintToPDF{})
 	if err != nil {
 		return nil, err
 	}
-	var buf []byte
-	b := make([]byte, 32*1024)
-	for {
-		n, err := reader.Read(b)
-		if n > 0 {
-			buf = append(buf, b[:n]...)
-		}
-		if err != nil {
-			break
-		}
-	}
-	return buf, nil
+	return io.ReadAll(reader)
 }
 
 func (h *rodHandle) ConsoleMessages(_ context.Context) ([]ConsoleMessage, error) {
