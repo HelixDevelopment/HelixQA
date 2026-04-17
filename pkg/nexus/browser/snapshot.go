@@ -89,6 +89,7 @@ func parseInteractive(html string) []nexus.Element {
 		if name == "" {
 			name = attrs["id"]
 		}
+		name = decodeHTMLEntities(name)
 		if role == "" {
 			role = defaultRoleForTag(tag, attrs)
 		}
