@@ -1,0 +1,205 @@
+name: "Helix Nexus — Mobile Android"
+description: "Android phone + emulator bank covering the Phase 2 mobile engine. Exercises login, share sheet, notifications, deep links, permission dialogs, battery-saver, airplane-mode, and core gestures."
+metadata:
+  author: "vasic-digital"
+  feature: "helix-nexus-mobile-android"
+  phase: 2
+
+test_cases:
+  - id: NX-MOBILE-ANDROID-001
+    name: "Appium session lifecycle"
+    category: functional
+    priority: critical
+    platforms: [android]
+    steps:
+      - name: "NewSession with Pixel capabilities"
+        action: "mobile.NewAndroidCaps + AppiumClient.NewSession"
+        expected: "non-empty SessionID"
+      - name: "DeleteSession"
+        action: "AppiumClient.DeleteSession"
+        expected: "SessionID becomes empty"
+    expected_result: "Session open + close round-trips cleanly"
+
+  - id: NX-MOBILE-ANDROID-002
+    name: "Hardware back key returns to previous screen"
+    category: functional
+    priority: high
+    platforms: [android]
+    steps:
+      - name: "Launch app + drill into detail"
+        action: "startActivity + Click(detail)"
+        expected: "Detail screen visible"
+      - name: "Press back"
+        action: "Gestures.Key(back)"
+        expected: "Previous screen visible"
+    expected_result: "Key mapping reaches UiAutomator2"
+
+  - id: NX-MOBILE-ANDROID-003
+    name: "Permission dialog: allow"
+    category: functional
+    priority: high
+    platforms: [android]
+    steps:
+      - name: "Trigger runtime permission"
+        action: "Click(requestPermissions)"
+        expected: "System permission dialog visible"
+      - name: "Tap Allow"
+        action: "Click(allow button via accessibility id)"
+        expected: "Dialog dismisses; app proceeds"
+    expected_result: "Permission flow completes without human intervention"
+
+  - id: NX-MOBILE-ANDROID-004
+    name: "Deep link opens correct activity"
+    category: functional
+    priority: high
+    platforms: [android]
+    steps:
+      - name: "Invoke deep link catalogizer://media/42?type=movie"
+        action: "Engine.Navigate(..., deep link URL)"
+        expected: "MediaDetailActivity foreground + title set"
+    expected_result: "Nexus deep-linking reaches target activity"
+
+  - id: NX-MOBILE-ANDROID-005
+    name: "Swipe gesture scrolls list"
+    category: functional
+    priority: medium
+    platforms: [android]
+    steps:
+      - name: "Open list view"
+        action: "Navigate to list"
+        expected: "Visible"
+      - name: "Swipe up 500px"
+        action: "Gestures.Swipe(500,1200,500,700,400)"
+        expected: "List scrolls; next items visible"
+    expected_result: "Swipe reaches device as expected"
+
+  - id: NX-MOBILE-ANDROID-006
+    name: "Screen recording captures session"
+    category: functional
+    priority: medium
+    platforms: [android]
+    steps:
+      - name: "StartRecording"
+        action: "AppiumClient.StartRecording(RecordingOptions{BitRate: 4000000})"
+        expected: "no error"
+      - name: "Perform test flow"
+        action: "sequence of taps + swipes"
+        expected: "flow ok"
+      - name: "StopRecording"
+        action: "AppiumClient.StopRecording"
+        expected: "non-zero byte buffer returned"
+    expected_result: "Base64-decoded MP4 available for the evidence vault"
+
+  - id: NX-MOBILE-ANDROID-007
+    name: "Notification center contains expected item"
+    category: functional
+    priority: low
+    platforms: [android]
+    steps:
+      - name: "Trigger push via mobile: sendSMS shim"
+        action: "script"
+        expected: "notification delivered"
+      - name: "Open status bar"
+        action: "Gestures.Swipe top-to-middle"
+        expected: "Notification visible"
+    expected_result: "Notification UI driven end to end"
+
+  - id: NX-MOBILE-ANDROID-008
+    name: "Rotate to landscape preserves state"
+    category: functional
+    priority: medium
+    platforms: [android]
+    steps:
+      - name: "Rotate"
+        action: "Gestures.Rotate(landscape)"
+        expected: "no error"
+      - name: "Assert content still visible"
+        action: "Snapshot + Find"
+        expected: "target element visible"
+    expected_result: "Rotation covered by the gestures helper"
+
+  - id: NX-MOBILE-ANDROID-009
+    name: "Airplane-mode toggle"
+    category: functional
+    priority: low
+    platforms: [android]
+    steps:
+      - name: "Enable airplane mode"
+        action: "ExecuteScript 'mobile: setConnectivity' {airplaneMode: true}"
+        expected: "connectivity flips"
+      - name: "App reports offline"
+        action: "Snapshot + Find('No network')"
+        expected: "message visible"
+    expected_result: "Offline UX verified"
+
+  - id: NX-MOBILE-ANDROID-010
+    name: "Accessibility tree parser round-trip"
+    category: functional
+    priority: high
+    platforms: [android]
+    steps:
+      - name: "PageSource + ParseAccessibilityTree"
+        action: "mobile.ParseAccessibilityTree(c.PageSource(ctx))"
+        expected: "Root non-nil; children captured"
+    expected_result: "Tree is navigable from tests"
+
+  - id: NX-MOBILE-ANDROID-011
+    name: "Pinch zoom in + out"
+    category: functional
+    priority: medium
+    platforms: [android]
+    steps:
+      - name: "Zoom in"
+        action: "Gestures.Pinch(x,y,1.5)"
+        expected: "no error"
+      - name: "Zoom out"
+        action: "Gestures.Pinch(x,y,0.5)"
+        expected: "no error"
+    expected_result: "Pinch percentages parsed correctly"
+
+  - id: NX-MOBILE-ANDROID-012
+    name: "Long-press opens context menu"
+    category: functional
+    priority: medium
+    platforms: [android]
+    steps:
+      - name: "LongPress target"
+        action: "Gestures.LongPress(x,y,800)"
+        expected: "context menu visible"
+    expected_result: "Long-press reaches driver"
+
+  - id: NX-MOBILE-ANDROID-013
+    name: "Battery-saver mode does not crash"
+    category: robustness
+    priority: low
+    platforms: [android]
+    steps:
+      - name: "Enable battery-saver"
+        action: "adb shell settings put global low_power 1"
+        expected: "ok"
+      - name: "Run core flow"
+        action: "login + browse"
+        expected: "flow passes"
+    expected_result: "App tolerant of OS-throttled lanes"
+
+  - id: NX-MOBILE-ANDROID-014
+    name: "FindElement by accessibility id"
+    category: functional
+    priority: high
+    platforms: [android]
+    steps:
+      - name: "FindElement('accessibility id','loginButton')"
+        action: "AppiumClient.FindElement"
+        expected: "non-empty element id"
+    expected_result: "Strategy 'accessibility id' honoured"
+
+  - id: NX-MOBILE-ANDROID-015
+    name: "Capabilities.Validate rejects missing package"
+    category: functional
+    priority: high
+    platforms: [android]
+    steps:
+      - name: "Validate empty-package caps"
+        action: "Capabilities{Platform: Android, DeviceName: X}.Validate()"
+        expected: "non-nil error mentioning appPackage"
+    expected_result: "Misconfigured caps fail fast"

@@ -1,0 +1,175 @@
+name: "Helix Nexus — Mobile iOS"
+description: "iOS simulator + real-device bank covering the Phase 2 mobile engine. Exercises XCUITest profile building, gestures, accessibility, deep links, biometric simulator toggles, and recording."
+metadata:
+  author: "vasic-digital"
+  feature: "helix-nexus-mobile-ios"
+  phase: 2
+
+test_cases:
+  - id: NX-MOBILE-IOS-001
+    name: "Simulator session lifecycle"
+    category: functional
+    priority: critical
+    platforms: [ios]
+    steps:
+      - name: "NewSession with iPhone 15 Pro simulator caps"
+        action: "mobile.NewIOSCaps + AppiumClient.NewSession"
+        expected: "non-empty SessionID"
+    expected_result: "Simulator session opens via XCUITest"
+
+  - id: NX-MOBILE-IOS-002
+    name: "Real-device caps require team + signing together"
+    category: functional
+    priority: high
+    platforms: [ios]
+    steps:
+      - name: "Construct caps with only XcodeOrgID set"
+        action: "Capabilities{... XcodeOrgID: T, XcodeSigningID: ''}.Validate()"
+        expected: "error"
+    expected_result: "Partial signing configuration refused"
+
+  - id: NX-MOBILE-IOS-003
+    name: "mobile: tap reaches device"
+    category: functional
+    priority: critical
+    platforms: [ios]
+    steps:
+      - name: "Gestures.Tap on iOS platform"
+        action: "Gestures{platform: ios}.Tap(ctx, 100, 200)"
+        expected: "mobile: tap script dispatched"
+    expected_result: "iOS-specific script invoked"
+
+  - id: NX-MOBILE-IOS-004
+    name: "LongPress uses touchAndHold on iOS"
+    category: functional
+    priority: high
+    platforms: [ios]
+    steps:
+      - name: "Gestures.LongPress on iOS"
+        action: "Gestures.LongPress(ctx, x, y, 800)"
+        expected: "script 'mobile: touchAndHold' dispatched with seconds"
+    expected_result: "Duration converted to seconds for iOS"
+
+  - id: NX-MOBILE-IOS-005
+    name: "Accessibility tree parser handles XCUIElement classes"
+    category: functional
+    priority: high
+    platforms: [ios]
+    steps:
+      - name: "ParseAccessibilityTree(iOS XML)"
+        action: "mobile.ParseAccessibilityTree"
+        expected: "Find(Button) returns the Save element with Label=Save"
+    expected_result: "Parser recognises both Android and iOS class names"
+
+  - id: NX-MOBILE-IOS-006
+    name: "Biometric simulator toggle"
+    category: functional
+    priority: medium
+    platforms: [ios]
+    steps:
+      - name: "Toggle Face ID matching"
+        action: "ExecuteScript 'mobile: sendBiometricMatch' {type:'faceId',match:true}"
+        expected: "ok"
+      - name: "Trigger biometric login"
+        action: "Click(authButton)"
+        expected: "home screen visible"
+    expected_result: "Face ID + Touch ID simulator lanes covered"
+
+  - id: NX-MOBILE-IOS-007
+    name: "Deep link launches app"
+    category: functional
+    priority: high
+    platforms: [ios]
+    steps:
+      - name: "Deep link catalogizer://media/42"
+        action: "Engine.Navigate"
+        expected: "app foreground on MediaDetailViewController"
+    expected_result: "Universal links + custom schemes work"
+
+  - id: NX-MOBILE-IOS-008
+    name: "Pinch zoom scale 1.5"
+    category: functional
+    priority: medium
+    platforms: [ios]
+    steps:
+      - name: "Gestures.Pinch(x,y,1.5)"
+        action: "dispatch mobile: pinch"
+        expected: "no error"
+    expected_result: "iOS pinch accepts raw scale"
+
+  - id: NX-MOBILE-IOS-009
+    name: "Rotate to landscape"
+    category: functional
+    priority: medium
+    platforms: [ios]
+    steps:
+      - name: "Gestures.Rotate(landscape)"
+        action: "mobile: setOrientation"
+        expected: "rotation occurred"
+    expected_result: "Orientation API works on XCUITest"
+
+  - id: NX-MOBILE-IOS-010
+    name: "Swipe via dragFromToForDuration"
+    category: functional
+    priority: high
+    platforms: [ios]
+    steps:
+      - name: "Gestures.Swipe(100,600,100,200,400)"
+        action: "dispatch iOS drag script"
+        expected: "duration in seconds passed"
+    expected_result: "iOS swipe duration correctly divided by 1000"
+
+  - id: NX-MOBILE-IOS-011
+    name: "Screen recording produces MP4"
+    category: functional
+    priority: medium
+    platforms: [ios]
+    steps:
+      - name: "StartRecording + StopRecording"
+        action: "AppiumClient methods"
+        expected: "non-empty MP4 bytes"
+    expected_result: "Base64 payload decoded correctly"
+
+  - id: NX-MOBILE-IOS-012
+    name: "Home button press"
+    category: functional
+    priority: low
+    platforms: [ios]
+    steps:
+      - name: "Gestures.Key(home)"
+        action: "mobile: pressButton"
+        expected: "ok"
+    expected_result: "Hardware button abstraction reaches iOS"
+
+  - id: NX-MOBILE-IOS-013
+    name: "Real-device WDA URL override"
+    category: functional
+    priority: medium
+    platforms: [ios]
+    steps:
+      - name: "Caps with WebDriverAgentURL=http://192.168.1.50:8100"
+        action: "NewIOSCaps + set field"
+        expected: "serialised capabilities contain appium:webDriverAgentUrl"
+    expected_result: "Reused WDA avoids rebuild"
+
+  - id: NX-MOBILE-IOS-014
+    name: "Locale capability is applied"
+    category: functional
+    priority: low
+    platforms: [ios]
+    steps:
+      - name: "caps.Locale = 'en_GB'"
+        action: "Capabilities"
+        expected: "serialised appium:locale=en_GB"
+    expected_result: "Locale makes it through"
+
+  - id: NX-MOBILE-IOS-015
+    name: "Unknown mobile: script surfaces clear HTTP error"
+    category: functional
+    priority: medium
+    platforms: [ios]
+    steps:
+      - name: "ExecuteScript('mobile: bogus', {})"
+        action: "AppiumClient.ExecuteScript"
+        expected: "error includes HTTP 4xx and body"
+    expected_result: "Failure modes translate to actionable logs"
