@@ -1,0 +1,214 @@
+{
+  "name": "Helix Nexus \u2014 AI Navigation + Self-Healing",
+  "description": "Bank covering the Phase 4 AI layer: Navigator picks next action, Healer rewrites broken selectors, Generator converts stories to YAML, Predictor flags flakes, CostTracker enforces budgets.",
+  "metadata": {
+    "feature": "helix-nexus-ai",
+    "phase": 4
+  },
+  "test_cases": [
+    {
+      "id": "NX-AI-001",
+      "name": "Navigator returns valid Action JSON",
+      "category": "functional",
+      "priority": "critical",
+      "platforms": [
+        "web-nexus"
+      ],
+      "steps": [
+        {
+          "name": "Call Navigator.Decide",
+          "action": "Navigator.Decide(VisualContext)",
+          "expected": "kind \u2208 {click,type,scroll,wait,done}"
+        }
+      ],
+      "expected_result": "JSON contract honoured"
+    },
+    {
+      "id": "NX-AI-002",
+      "name": "Navigator strips fenced JSON responses",
+      "category": "robustness",
+      "priority": "high",
+      "platforms": [
+        "web-nexus"
+      ],
+      "steps": [
+        {
+          "name": "LLM returns ```json {...} ```",
+          "action": "Navigator parses",
+          "expected": "valid Action"
+        }
+      ],
+      "expected_result": "Tolerant parser"
+    },
+    {
+      "id": "NX-AI-003",
+      "name": "Navigator aborts on budget breach",
+      "category": "security",
+      "priority": "critical",
+      "platforms": [
+        "web-nexus"
+      ],
+      "steps": [
+        {
+          "name": "CostTracker budget 0.5; call costs 2.0",
+          "action": "Reserve",
+          "expected": "ErrBudgetExceeded"
+        }
+      ],
+      "expected_result": "Session cannot exceed operator budget"
+    },
+    {
+      "id": "NX-AI-004",
+      "name": "Healer returns non-empty selector on match",
+      "category": "functional",
+      "priority": "high",
+      "platforms": [
+        "web-nexus"
+      ],
+      "steps": [
+        {
+          "name": "Call Healer.Heal",
+          "action": "Healer.Heal(failed, description, tree)",
+          "expected": "non-empty selector"
+        }
+      ],
+      "expected_result": "Healer recovers from drift"
+    },
+    {
+      "id": "NX-AI-005",
+      "name": "Healer returns empty when no safe replacement",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "web-nexus"
+      ],
+      "steps": [
+        {
+          "name": "LLM returns whitespace",
+          "action": "Healer.Heal",
+          "expected": "empty string, no error"
+        }
+      ],
+      "expected_result": "Safe refusal pattern"
+    },
+    {
+      "id": "NX-AI-006",
+      "name": "Generator produces valid YAML",
+      "category": "functional",
+      "priority": "high",
+      "platforms": [
+        "web-nexus"
+      ],
+      "steps": [
+        {
+          "name": "Generator.Generate(story, 'web')",
+          "action": "Generator",
+          "expected": "YAML with id/name/steps"
+        }
+      ],
+      "expected_result": "Story-to-bank round trip"
+    },
+    {
+      "id": "NX-AI-007",
+      "name": "Generator refuses empty story",
+      "category": "security",
+      "priority": "medium",
+      "platforms": [
+        "web-nexus"
+      ],
+      "steps": [
+        {
+          "name": "Generator.Generate('', 'web')",
+          "action": "Generator",
+          "expected": "error: empty story"
+        }
+      ],
+      "expected_result": "No silent-empty behaviour"
+    },
+    {
+      "id": "NX-AI-008",
+      "name": "Predictor flags obvious flake",
+      "category": "functional",
+      "priority": "high",
+      "platforms": [
+        "web-nexus"
+      ],
+      "steps": [
+        {
+          "name": "Sample: retries=9, late night, big RSS",
+          "action": "Predictor.Decide(s, 0.5)",
+          "expected": "true"
+        }
+      ],
+      "expected_result": "Predictor catches the easy case"
+    },
+    {
+      "id": "NX-AI-009",
+      "name": "Predictor avoids false positives on clean run",
+      "category": "functional",
+      "priority": "high",
+      "platforms": [
+        "web-nexus"
+      ],
+      "steps": [
+        {
+          "name": "Sample: retries=0, midday, low RSS",
+          "action": "Predictor.Decide(s, 0.9)",
+          "expected": "false"
+        }
+      ],
+      "expected_result": "<2% false-positive rate target"
+    },
+    {
+      "id": "NX-AI-010",
+      "name": "Predictor Observe moves bias monotonically",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "web-nexus"
+      ],
+      "steps": [
+        {
+          "name": "Observe 10 failures",
+          "action": "Predictor.Observe",
+          "expected": "bias increases; never past clamp"
+        }
+      ],
+      "expected_result": "Online update safe"
+    },
+    {
+      "id": "NX-AI-011",
+      "name": "CostTracker entries audit-queryable",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "web-nexus"
+      ],
+      "steps": [
+        {
+          "name": "Reserve + Record",
+          "action": "CostTracker.Record",
+          "expected": "Entries() returns the row"
+        }
+      ],
+      "expected_result": "Audit log present"
+    },
+    {
+      "id": "NX-AI-012",
+      "name": "CostTracker.Disable makes session uncapped",
+      "category": "functional",
+      "priority": "low",
+      "platforms": [
+        "web-nexus"
+      ],
+      "steps": [
+        {
+          "name": "Disable + Reserve($99)",
+          "action": "CostTracker",
+          "expected": "no error"
+        }
+      ],
+      "expected_result": "Escape hatch available"
+    }
+  ]
+}
