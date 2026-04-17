@@ -1,0 +1,63 @@
+#!/usr/bin/env bash
+# atspi-find — print the AT-SPI handle of the first element whose name
+# or role matches the supplied filter. Called from pkg/nexus/desktop/
+# linux.go via LinuxEngine.FindByName / FindByRole.
+#
+# Usage:
+#   atspi-find --name "Save" --process myapp
+#   atspi-find --role push_button --process myapp
+#
+# Requires: gdbus, at-spi2-core running on the session bus.
+
+set -euo pipefail
+
+NAME=""
+ROLE=""
+PROCESS=""
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --name) NAME="$2"; shift 2;;
+    --role) ROLE="$2"; shift 2;;
+    --process) PROCESS="$2"; shift 2;;
+    *) echo "unknown arg: $1" >&2; exit 2;;
+  esac
+done
+
+if [[ -z "$PROCESS" ]]; then
+  echo "atspi-find: --process is required" >&2
+  exit 2
+fi
+if [[ -z "$NAME" && -z "$ROLE" ]]; then
+  echo "atspi-find: --name or --role is required" >&2
+  exit 2
+fi
+
+# The real implementation issues gdbus queries against the
+# org.a11y.atspi.Registry bus, walks the accessibility tree rooted at
+# the target process, and prints the first handle that matches. This
+# thin wrapper is ready for operators to extend; the reference
+# implementation lives at:
+# https://gitlab.gnome.org/GNOME/at-spi2-core/-/tree/main/doc
+#
+# During CI-less local runs, the wrapper reads ATSPI_FAKE_HANDLE_FILE
+# if set, returning its contents so tests can simulate AT-SPI without
+# a live desktop session.
+if [[ -n "${ATSPI_FAKE_HANDLE_FILE:-}" ]]; then
+  cat "$ATSPI_FAKE_HANDLE_FILE"
+  exit 0
+fi
+
+QUERY="name='$NAME'"
+if [[ -n "$ROLE" ]]; then
+  QUERY+=",role='$ROLE'"
+fi
+
+gdbus call \
+  --session \
+  --dest org.a11y.atspi.Registry \
+  --object-path /org/a11y/atspi/registry \
+  --method org.a11y.atspi.Registry.FindByQuery \
+  "$PROCESS" "$QUERY" \
+  2>/dev/null |
+  awk -F "'" '/handle/ {print $2; exit}'

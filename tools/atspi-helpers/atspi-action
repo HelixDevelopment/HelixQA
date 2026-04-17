@@ -1,0 +1,40 @@
+#!/usr/bin/env bash
+# atspi-action — invoke a named accessible action (click, press,
+# activate, etc.) on the handle returned by atspi-find.
+#
+# Usage:
+#   atspi-action --handle <handle> --action click
+#
+# Requires: gdbus, at-spi2-core.
+
+set -euo pipefail
+
+HANDLE=""
+ACTION=""
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --handle) HANDLE="$2"; shift 2;;
+    --action) ACTION="$2"; shift 2;;
+    *) echo "unknown arg: $1" >&2; exit 2;;
+  esac
+done
+
+if [[ -z "$HANDLE" ]]; then
+  echo "atspi-action: --handle is required" >&2
+  exit 2
+fi
+if [[ -z "$ACTION" ]]; then
+  ACTION="click"
+fi
+
+if [[ -n "${ATSPI_FAKE_OK:-}" ]]; then
+  exit 0
+fi
+
+gdbus call \
+  --session \
+  --dest org.a11y.atspi.Registry \
+  --object-path "$HANDLE" \
+  --method org.a11y.atspi.Action.DoActionByName "$ACTION" \
+  >/dev/null

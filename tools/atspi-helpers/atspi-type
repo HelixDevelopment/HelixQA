@@ -1,0 +1,64 @@
+#!/usr/bin/env bash
+# atspi-type — deliver a string of text to the currently focused
+# element of a target process. Prefers DBus AT-SPI under GNOME; falls
+# back to xdotool on X11 or wtype on Wayland.
+#
+# Usage:
+#   atspi-type --process myapp --text "hello"
+
+set -euo pipefail
+
+PROCESS=""
+TEXT=""
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --process) PROCESS="$2"; shift 2;;
+    --text) TEXT="$2"; shift 2;;
+    *) echo "unknown arg: $1" >&2; exit 2;;
+  esac
+done
+
+if [[ -z "$PROCESS" || -z "$TEXT" ]]; then
+  echo "atspi-type: --process and --text are required" >&2
+  exit 2
+fi
+
+if [[ -n "${ATSPI_FAKE_OK:-}" ]]; then
+  exit 0
+fi
+
+# Prefer AT-SPI set-focus + Caret insertion via gdbus.
+if gdbus call \
+  --session \
+  --dest org.a11y.atspi.Registry \
+  --object-path /org/a11y/atspi/registry \
+  --method org.a11y.atspi.Registry.FocusedIn "$PROCESS" \
+  >/dev/null 2>&1; then
+  gdbus call \
+    --session \
+    --dest org.a11y.atspi.Registry \
+    --object-path /org/a11y/atspi/registry \
+    --method org.a11y.atspi.EditableText.InsertText "$TEXT" \
+    >/dev/null
+  exit 0
+fi
+
+# Wayland fallback.
+if [[ "${WAYLAND_DISPLAY:-}" != "" ]]; then
+  if command -v wtype >/dev/null 2>&1; then
+    wtype -- "$TEXT"
+    exit 0
+  fi
+  echo "atspi-type: Wayland detected but wtype not installed" >&2
+  exit 3
+fi
+
+# X11 fallback.
+if command -v xdotool >/dev/null 2>&1; then
+  xdotool type --delay 10 -- "$TEXT"
+  exit 0
+fi
+
+echo "atspi-type: no input path available (atspi / wtype / xdotool missing)" >&2
+exit 4
