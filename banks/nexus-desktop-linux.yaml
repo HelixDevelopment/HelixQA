@@ -1,0 +1,126 @@
+name: "Helix Nexus — Desktop Linux"
+description: "Linux desktop bank via AT-SPI primary + X11/xdotool fallback + Wayland/wtype. Covers launcher, tray, menu, and shortcut paths."
+metadata:
+  feature: "helix-nexus-desktop-linux"
+  phase: 3
+test_cases:
+  - id: NX-DESKTOP-LIN-001
+    name: "Launch binary path"
+    category: functional
+    priority: critical
+    platforms: [linux]
+    steps:
+      - name: "Launch /usr/bin/gnome-calculator"
+        action: "LinuxEngine.Launch"
+        expected: "process visible"
+    expected_result: "App starts"
+  - id: NX-DESKTOP-LIN-002
+    name: "Launch refuses empty path"
+    category: security
+    priority: high
+    platforms: [linux]
+    steps:
+      - name: "Launch('', nil)"
+        action: "LinuxEngine.Launch"
+        expected: "error: empty app path"
+    expected_result: "Guarded"
+  - id: NX-DESKTOP-LIN-003
+    name: "FindByName via atspi-find"
+    category: functional
+    priority: high
+    platforms: [linux]
+    steps:
+      - name: "FindByName('Save')"
+        action: "atspi-find --name Save --process myapp"
+        expected: "handle returned"
+    expected_result: "AT-SPI path works"
+  - id: NX-DESKTOP-LIN-004
+    name: "Wayland rejects xdotool click"
+    category: robustness
+    priority: high
+    platforms: [linux]
+    steps:
+      - name: "LinuxEngine.AsWayland().Click(Element{})"
+        action: "Click"
+        expected: "error mentions Wayland"
+    expected_result: "No silent fallback on Wayland"
+  - id: NX-DESKTOP-LIN-005
+    name: "Wayland shortcut uses wtype"
+    category: functional
+    priority: high
+    platforms: [linux]
+    steps:
+      - name: "Shortcut(['ctrl', 's'])"
+        action: "LinuxEngine.AsWayland().Shortcut"
+        expected: "wtype --key ctrl+s"
+    expected_result: "Wayland-safe input path"
+  - id: NX-DESKTOP-LIN-006
+    name: "X11 shortcut uses xdotool"
+    category: functional
+    priority: high
+    platforms: [linux]
+    steps:
+      - name: "Shortcut(['ctrl', 's'])"
+        action: "LinuxEngine.Shortcut"
+        expected: "xdotool key ctrl+s"
+    expected_result: "X11 path works"
+  - id: NX-DESKTOP-LIN-007
+    name: "Menu walk via atspi-find/action"
+    category: functional
+    priority: high
+    platforms: [linux]
+    steps:
+      - name: "PickMenu([File, Open])"
+        action: "LinuxEngine.PickMenu"
+        expected: "two finds + two actions"
+    expected_result: "Menu path driven via AT-SPI"
+  - id: NX-DESKTOP-LIN-008
+    name: "Screenshot falls back to ImageMagick"
+    category: robustness
+    priority: medium
+    platforms: [linux]
+    steps:
+      - name: "LinuxEngine.Screenshot when gnome-screenshot missing"
+        action: "import -window root png:-"
+        expected: "png bytes"
+    expected_result: "Degrades gracefully"
+  - id: NX-DESKTOP-LIN-009
+    name: "Close sends SIGTERM"
+    category: functional
+    priority: medium
+    platforms: [linux]
+    steps:
+      - name: "LinuxEngine.Close"
+        action: "pkill -f myapp"
+        expected: "no error"
+    expected_result: "Process cleanup works"
+  - id: NX-DESKTOP-LIN-010
+    name: "FindByRole via atspi-find"
+    category: functional
+    priority: medium
+    platforms: [linux]
+    steps:
+      - name: "FindByRole('push_button')"
+        action: "atspi-find --role push_button"
+        expected: "handle returned"
+    expected_result: "Role-based query works"
+  - id: NX-DESKTOP-LIN-011
+    name: "AppImage Tauri wizard"
+    category: functional
+    priority: medium
+    platforms: [linux]
+    steps:
+      - name: "Launch AppImage + walk wizard"
+        action: "sequence of find + click"
+        expected: "5-screen wizard completes"
+    expected_result: "AppImage lane works"
+  - id: NX-DESKTOP-LIN-012
+    name: "Empty shortcut refused"
+    category: security
+    priority: medium
+    platforms: [linux]
+    steps:
+      - name: "Shortcut([])"
+        action: "LinuxEngine.Shortcut"
+        expected: "error"
+    expected_result: "Shortcut guard"

@@ -1,0 +1,126 @@
+name: "Helix Nexus — Desktop macOS"
+description: "macOS desktop bank via AppleScript / osascript + screencapture. Covers menu navigation, shortcuts, keystrokes, and launcher flows."
+metadata:
+  feature: "helix-nexus-desktop-macos"
+  phase: 3
+test_cases:
+  - id: NX-DESKTOP-MAC-001
+    name: "Launch bundleID via `open -b`"
+    category: functional
+    priority: critical
+    platforms: [macos]
+    steps:
+      - name: "MacOSEngine.Launch('', nil)"
+        action: "open -b com.example.app"
+        expected: "app foreground"
+    expected_result: "open command dispatched"
+  - id: NX-DESKTOP-MAC-002
+    name: "Cmd+Shift+P opens quick palette"
+    category: functional
+    priority: high
+    platforms: [macos]
+    steps:
+      - name: "Shortcut(['cmd', 'shift', 'p'])"
+        action: "keystroke using command down,shift down"
+        expected: "palette visible"
+    expected_result: "Modifier mapping honoured"
+  - id: NX-DESKTOP-MAC-003
+    name: "PickMenu([File, New Document])"
+    category: functional
+    priority: high
+    platforms: [macos]
+    steps:
+      - name: "MacOSEngine.PickMenu"
+        action: "System Events menu walk"
+        expected: "new document open"
+    expected_result: "Menu bar reachable"
+  - id: NX-DESKTOP-MAC-004
+    name: "Keystroke escaping works for quotes"
+    category: security
+    priority: high
+    platforms: [macos]
+    steps:
+      - name: "Type `he\"llo` text"
+        action: "MacOSEngine.Type"
+        expected: "osascript receives he\\\"llo"
+    expected_result: "Untrusted input cannot escape AppleScript"
+  - id: NX-DESKTOP-MAC-005
+    name: "Screenshot via screencapture"
+    category: functional
+    priority: medium
+    platforms: [macos]
+    steps:
+      - name: "MacOSEngine.Screenshot"
+        action: "screencapture -x -t png -"
+        expected: "PNG stream emitted"
+    expected_result: "Screenshot pipeline works"
+  - id: NX-DESKTOP-MAC-006
+    name: "Close quits target bundle"
+    category: functional
+    priority: medium
+    platforms: [macos]
+    steps:
+      - name: "MacOSEngine.Close"
+        action: "osascript tell ... quit"
+        expected: "no error"
+    expected_result: "Process termination works"
+  - id: NX-DESKTOP-MAC-007
+    name: "Notarised .dmg assessment"
+    category: functional
+    priority: medium
+    platforms: [macos]
+    steps:
+      - name: "Assess app"
+        action: "spctl --assess app.bundle"
+        expected: "ok (notarised)"
+    expected_result: "Gatekeeper assessment covered"
+  - id: NX-DESKTOP-MAC-008
+    name: "FindByRole returns handle"
+    category: functional
+    priority: medium
+    platforms: [macos]
+    steps:
+      - name: "FindByRole('AXButton')"
+        action: "MacOSEngine.FindByRole"
+        expected: "non-empty handle"
+    expected_result: "Role queries supported"
+  - id: NX-DESKTOP-MAC-009
+    name: "Empty element handle is refused"
+    category: security
+    priority: high
+    platforms: [macos]
+    steps:
+      - name: "Click(Element{})"
+        action: "MacOSEngine.Click"
+        expected: "error: nil element"
+    expected_result: "Guard against nil handles"
+  - id: NX-DESKTOP-MAC-010
+    name: "Unknown modifier stays literal"
+    category: functional
+    priority: low
+    platforms: [macos]
+    steps:
+      - name: "Shortcut(['fn', 'left'])"
+        action: "macModifier('fn')"
+        expected: "`fn down`"
+    expected_result: "Unknown modifiers pass through"
+  - id: NX-DESKTOP-MAC-011
+    name: "Launch with args"
+    category: functional
+    priority: low
+    platforms: [macos]
+    steps:
+      - name: "Launch('/Applications/MyApp.app', ['--debug'])"
+        action: "MacOSEngine.Launch"
+        expected: "open -a MyApp.app --args --debug"
+    expected_result: "Args threaded to open"
+  - id: NX-DESKTOP-MAC-012
+    name: "PickMenu rejects empty path"
+    category: security
+    priority: medium
+    platforms: [macos]
+    steps:
+      - name: "MacOSEngine.PickMenu([])"
+        action: "PickMenu"
+        expected: "error"
+    expected_result: "Empty menu path refused"

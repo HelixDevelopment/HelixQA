@@ -1,0 +1,229 @@
+{
+  "name": "Helix Nexus \u2014 Desktop Windows",
+  "description": "Windows desktop bank targeting WinAppDriver for UWP / WPF / WinForms apps.",
+  "metadata": {
+    "feature": "helix-nexus-desktop-windows",
+    "phase": 3
+  },
+  "test_cases": [
+    {
+      "id": "NX-DESKTOP-WIN-001",
+      "name": "Launch calc.exe and press 1+2=",
+      "category": "functional",
+      "priority": "critical",
+      "platforms": [
+        "windows"
+      ],
+      "steps": [
+        {
+          "name": "Launch calc.exe",
+          "action": "WindowsEngine.Launch('calc.exe', nil)",
+          "expected": "session id returned"
+        },
+        {
+          "name": "Click buttons 1, +, 2, =",
+          "action": "FindByName + Click",
+          "expected": "display shows 3"
+        }
+      ],
+      "expected_result": "W3C click path validated"
+    },
+    {
+      "id": "NX-DESKTOP-WIN-002",
+      "name": "MSI installer happy path",
+      "category": "functional",
+      "priority": "high",
+      "platforms": [
+        "windows"
+      ],
+      "steps": [
+        {
+          "name": "Launch installer",
+          "action": "WindowsEngine.Launch('installer.msi', nil)",
+          "expected": "wizard visible"
+        },
+        {
+          "name": "Walk wizard",
+          "action": "PickMenu([Next, Agree, Install, Finish])",
+          "expected": "app installed"
+        }
+      ],
+      "expected_result": "Installer completes"
+    },
+    {
+      "id": "NX-DESKTOP-WIN-003",
+      "name": "Ctrl+S shortcut saves file",
+      "category": "functional",
+      "priority": "high",
+      "platforms": [
+        "windows"
+      ],
+      "steps": [
+        {
+          "name": "Shortcut",
+          "action": "WindowsEngine.Shortcut([ctrl, s])",
+          "expected": "save dialog appears"
+        }
+      ],
+      "expected_result": "Keyboard actions sent over W3C"
+    },
+    {
+      "id": "NX-DESKTOP-WIN-004",
+      "name": "Screenshot captures session",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "windows"
+      ],
+      "steps": [
+        {
+          "name": "Screenshot",
+          "action": "WindowsEngine.Screenshot",
+          "expected": "non-empty bytes"
+        }
+      ],
+      "expected_result": "PNG retrieved"
+    },
+    {
+      "id": "NX-DESKTOP-WIN-005",
+      "name": "Tray icon interactions",
+      "category": "functional",
+      "priority": "low",
+      "platforms": [
+        "windows"
+      ],
+      "steps": [
+        {
+          "name": "FindByRole('System.Tray')",
+          "action": "FindByRole",
+          "expected": "element found"
+        }
+      ],
+      "expected_result": "Tray reachable"
+    },
+    {
+      "id": "NX-DESKTOP-WIN-006",
+      "name": "Crash-on-launch detection",
+      "category": "robustness",
+      "priority": "high",
+      "platforms": [
+        "windows"
+      ],
+      "steps": [
+        {
+          "name": "Launch broken app",
+          "action": "WindowsEngine.Launch(broken.exe, nil)",
+          "expected": "error surfaced within 10s"
+        }
+      ],
+      "expected_result": "HelixQA reports the crash rather than hanging"
+    },
+    {
+      "id": "NX-DESKTOP-WIN-007",
+      "name": "Attach to an already-running session",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "windows"
+      ],
+      "steps": [
+        {
+          "name": "Attach('pre-existing-id')",
+          "action": "WindowsEngine.Attach",
+          "expected": "session id set"
+        }
+      ],
+      "expected_result": "External sessions can be driven"
+    },
+    {
+      "id": "NX-DESKTOP-WIN-008",
+      "name": "File-open dialog navigation",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "windows"
+      ],
+      "steps": [
+        {
+          "name": "PickMenu([File, Open])",
+          "action": "WindowsEngine.PickMenu",
+          "expected": "dialog visible"
+        },
+        {
+          "name": "Type path",
+          "action": "WindowsEngine.Type(addressBar, path)",
+          "expected": "file loaded"
+        }
+      ],
+      "expected_result": "Dialog handling proven"
+    },
+    {
+      "id": "NX-DESKTOP-WIN-009",
+      "name": "Multi-window focus switch",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "windows"
+      ],
+      "steps": [
+        {
+          "name": "Alt+Tab",
+          "action": "WindowsEngine.Shortcut([alt, tab])",
+          "expected": "focus swaps"
+        }
+      ],
+      "expected_result": "Multi-window workflows supported"
+    },
+    {
+      "id": "NX-DESKTOP-WIN-010",
+      "name": "Empty session-id attach is refused",
+      "category": "security",
+      "priority": "high",
+      "platforms": [
+        "windows"
+      ],
+      "steps": [
+        {
+          "name": "Attach('')",
+          "action": "WindowsEngine.Attach",
+          "expected": "error: empty session id"
+        }
+      ],
+      "expected_result": "Misuse guarded"
+    },
+    {
+      "id": "NX-DESKTOP-WIN-011",
+      "name": "Double-Close is a no-op",
+      "category": "functional",
+      "priority": "low",
+      "platforms": [
+        "windows"
+      ],
+      "steps": [
+        {
+          "name": "Close twice",
+          "action": "WindowsEngine.Close x2",
+          "expected": "no error"
+        }
+      ],
+      "expected_result": "Close idempotent"
+    },
+    {
+      "id": "NX-DESKTOP-WIN-012",
+      "name": "HTTP 4xx surfaces descriptive error",
+      "category": "robustness",
+      "priority": "medium",
+      "platforms": [
+        "windows"
+      ],
+      "steps": [
+        {
+          "name": "Call against a broken hub",
+          "action": "WindowsEngine.Launch against 500-returning server",
+          "expected": "error contains status + body"
+        }
+      ],
+      "expected_result": "Failures are actionable"
+    }
+  ]
+}
