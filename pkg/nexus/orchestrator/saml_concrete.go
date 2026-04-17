@@ -25,8 +25,13 @@ import (
 //
 // possibleRequestIDs is the list of AuthnRequest ids the caller stored
 // in the user's cookie / session so the SP can match InResponseTo.
-// Pass an empty slice if the deployment uses SP-initiated SSO without
-// InResponseTo tracking.
+// The slice MUST be non-empty; a strict-mode SAML library rejects
+// InResponseTo validation against an empty-string id, which used to
+// produce confusing "InResponseTo id must be non-empty" errors deep
+// inside ParseXMLResponse. B6 fix (docs/nexus/remaining-work.md):
+// require a non-empty slice explicitly — callers that want to skip
+// InResponseTo validation pass a single `"-"` sentinel the library
+// treats as "anything goes".
 func SAMLVerifierFromCrewjam(sp *samllib.ServiceProvider, groupsAttr, teamAttr string, possibleRequestIDs []string) func(context.Context, string) (SAMLAttributes, error) {
 	if groupsAttr == "" {
 		groupsAttr = "Groups"
@@ -34,12 +39,17 @@ func SAMLVerifierFromCrewjam(sp *samllib.ServiceProvider, groupsAttr, teamAttr s
 	if teamAttr == "" {
 		teamAttr = "Team"
 	}
-	if possibleRequestIDs == nil {
-		possibleRequestIDs = []string{""}
-	}
 	return func(_ context.Context, raw string) (SAMLAttributes, error) {
 		if sp == nil {
 			return SAMLAttributes{}, errors.New("saml: nil service provider")
+		}
+		if len(possibleRequestIDs) == 0 {
+			return SAMLAttributes{}, errors.New("saml: possibleRequestIDs must be non-empty — pass the stored AuthnRequest ids or a single \"-\" sentinel if InResponseTo validation is skipped")
+		}
+		for _, id := range possibleRequestIDs {
+			if id == "" {
+				return SAMLAttributes{}, errors.New("saml: possibleRequestIDs must not contain empty strings")
+			}
 		}
 		if raw == "" {
 			return SAMLAttributes{}, errors.New("saml: empty assertion")

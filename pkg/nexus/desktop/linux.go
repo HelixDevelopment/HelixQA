@@ -103,10 +103,20 @@ func (l *LinuxEngine) FindByRole(ctx context.Context, role string) (Element, err
 
 // Click uses AT-SPI's default action on the handle; falls back to
 // `xdotool` on X11 if the bundleID is unset.
+//
+// B9 fix (docs/nexus/remaining-work.md): when the caller provides an
+// empty Element and the AT-SPI path is not available, the X11
+// fallback clicks the current cursor position — which is almost never
+// useful and silently produces false-positive QA passes. Refuse
+// Click in that shape so the caller must either supply a targeted
+// Element or switch to an explicit cursor-move + Click flow.
 func (l *LinuxEngine) Click(ctx context.Context, el Element) error {
 	if el.Handle != "" && l.bundleID != "" {
 		_, err := l.commandRunner(ctx, "atspi-action", "--handle", el.Handle, "--action", "click")
 		return err
+	}
+	if el.Handle == "" {
+		return errors.New("linux: refusing to Click with empty Element — AT-SPI path unavailable and the X11 fallback would click at the current cursor (supply an Element or move the cursor explicitly)")
 	}
 	if l.waylandNative {
 		return errors.New("linux: xdotool fallback unavailable under Wayland")

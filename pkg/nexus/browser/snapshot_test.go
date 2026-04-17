@@ -108,6 +108,33 @@ func TestParseAttrs_ToleratesMissingQuotes(t *testing.T) {
 	}
 }
 
+// TestSnapshot_B8_DecodesSelectorHTMLEntities locks in B8 from
+// docs/nexus/remaining-work.md: element selectors must round-trip
+// through decodeHTMLEntities so downstream CSS/JS lookups see the
+// decoded identifier, not `&amp;` or `&quot;`.
+func TestSnapshot_B8_DecodesSelectorHTMLEntities(t *testing.T) {
+	html := `<button id="save&amp;close" aria-label="Save &amp; close">OK</button>`
+	snap, err := SnapshotFromHTML(html, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(snap.Elements) != 1 {
+		t.Fatalf("expected 1 element, got %d", len(snap.Elements))
+	}
+	sel := string(snap.Elements[0].Selector)
+	if strings.Contains(sel, "&amp;") || strings.Contains(sel, "&quot;") {
+		t.Errorf("Selector still carries HTML entities: %q", sel)
+	}
+	if !strings.Contains(sel, "save&close") {
+		t.Errorf("Selector did not decode `&amp;` → `&`: %q", sel)
+	}
+	// Name already decoded by the existing code path — test serves
+	// as a sanity cross-check so the two fields stay in sync.
+	if snap.Elements[0].Name != "Save & close" {
+		t.Errorf("Name = %q, want decoded form", snap.Elements[0].Name)
+	}
+}
+
 // itoa is a local minimal int-to-string helper so we avoid importing strconv
 // in the test and keep compile speed tight.
 func itoa(i int) string {

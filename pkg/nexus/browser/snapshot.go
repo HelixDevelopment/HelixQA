@@ -94,11 +94,14 @@ func parseInteractive(html string) []nexus.Element {
 			role = defaultRoleForTag(tag, attrs)
 		}
 
+		// B8 fix: Selector built from raw attrs may still carry
+		// HTML entities (&amp;, &quot;, etc.). Decode before
+		// exposing so downstream JS / CSS lookups round-trip.
 		el := nexus.Element{
 			Ref:      nexus.ElementRef(fmt.Sprintf("e%d", len(out)+1)),
 			Role:     role,
 			Name:     name,
-			Selector: buildSelector(tag, attrs),
+			Selector: decodeHTMLEntities(buildSelector(tag, attrs)),
 		}
 		out = append(out, el)
 	}

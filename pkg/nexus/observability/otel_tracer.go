@@ -13,6 +13,16 @@ import (
 	oteltrace "go.opentelemetry.io/otel/trace"
 )
 
+// B7 fix (docs/nexus/remaining-work.md): compile-time check that the
+// semconv package we imported still exposes the constants we rely on.
+// If the upstream schema renames ServiceName or SchemaURL the build
+// fails here instead of in a hard-to-trace runtime panic. Any semconv
+// version migration must update this gate.
+var (
+	_ string                = semconv.SchemaURL
+	_ attribute.KeyValue    = semconv.ServiceName("compile-time-check")
+)
+
 // OTelTracer adapts an OpenTelemetry TracerProvider into our Tracer
 // interface so Nexus spans reach Jaeger / Tempo / OpenSearch / any
 // OTLP-capable backend without callers having to know about OTel.

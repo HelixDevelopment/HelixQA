@@ -265,13 +265,37 @@ func TestLinuxEngine_FindByName(t *testing.T) {
 func TestLinuxEngine_WaylandRefusesXdotool(t *testing.T) {
 	r := &fakeRunner{}
 	e := NewLinuxEngine("").AsWayland().WithCommandRunner(r.run)
-	err := e.Click(context.Background(), Element{})
+	// Supply a non-empty Handle so the B9 empty-element guard does
+	// not short-circuit before the Wayland check runs.
+	err := e.Click(context.Background(), Element{Handle: "handle-1"})
 	if err == nil || !strings.Contains(err.Error(), "Wayland") {
 		t.Errorf("expected wayland refusal, got %v", err)
 	}
 	err = e.Type(context.Background(), Element{}, "hi")
 	if err == nil || !strings.Contains(err.Error(), "Wayland") {
 		t.Errorf("expected wayland refusal on type, got %v", err)
+	}
+}
+
+// TestLinuxEngine_B9_RefusesEmptyElement locks in B9 from
+// docs/nexus/remaining-work.md: the X11 fallback used to click at the
+// current cursor whenever the caller supplied Element{}, producing
+// false-positive QA passes. The guard must now refuse that shape
+// with an actionable error BEFORE xdotool ever runs.
+func TestLinuxEngine_B9_RefusesEmptyElement(t *testing.T) {
+	r := &fakeRunner{}
+	e := NewLinuxEngine("").WithCommandRunner(r.run)
+	err := e.Click(context.Background(), Element{})
+	if err == nil {
+		t.Fatal("expected empty-element refusal")
+	}
+	if !strings.Contains(err.Error(), "empty Element") {
+		t.Errorf("error must explain empty-element refusal: %v", err)
+	}
+	for _, call := range r.calls {
+		if len(call) > 0 && call[0] == "xdotool" {
+			t.Errorf("xdotool must NOT be invoked on empty element: %v", r.calls)
+		}
 	}
 }
 

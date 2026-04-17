@@ -56,3 +56,32 @@ func TestSAMLVerifierFromCrewjam_NilServiceProvider(t *testing.T) {
 		t.Errorf("nil SP must error with nil hint, got %v", err)
 	}
 }
+
+// TestSAMLVerifierFromCrewjam_B6_RejectsEmptyRequestIDSlice locks in
+// B6 from docs/nexus/remaining-work.md: the verifier must refuse an
+// empty possibleRequestIDs slice with an actionable error instead of
+// letting a strict ParseXMLResponse fail deep inside the library.
+func TestSAMLVerifierFromCrewjam_B6_RejectsEmptyRequestIDSlice(t *testing.T) {
+	sp := &samllib.ServiceProvider{}
+
+	// nil slice
+	verifier := SAMLVerifierFromCrewjam(sp, "Groups", "Team", nil)
+	_, err := verifier(nil, "some-assertion")
+	if err == nil || !strings.Contains(err.Error(), "possibleRequestIDs") {
+		t.Errorf("nil slice must mention possibleRequestIDs, got %v", err)
+	}
+
+	// explicit empty slice
+	verifier = SAMLVerifierFromCrewjam(sp, "Groups", "Team", []string{})
+	_, err = verifier(nil, "some-assertion")
+	if err == nil || !strings.Contains(err.Error(), "possibleRequestIDs") {
+		t.Errorf("empty slice must mention possibleRequestIDs, got %v", err)
+	}
+
+	// slice containing an empty string (the old default)
+	verifier = SAMLVerifierFromCrewjam(sp, "Groups", "Team", []string{""})
+	_, err = verifier(nil, "some-assertion")
+	if err == nil || !strings.Contains(err.Error(), "empty strings") {
+		t.Errorf("slice with empty entry must reject, got %v", err)
+	}
+}

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"math"
+	"sort"
 	"strconv"
 	"strings"
 )
@@ -110,7 +111,20 @@ type aucSample struct {
 	pos  bool
 }
 
+// sortAsc keeps the insertion-sort path for small holdouts (where
+// the O(n²) cost is measured in microseconds) and switches to
+// sort.Slice for anything larger. B10 fix from
+// docs/nexus/remaining-work.md: the original O(n²) insertion sort
+// stalled AUC computation on large holdout datasets; the crossover
+// at 500 samples keeps cache-friendly behaviour for the common
+// cases while making training on real datasets tractable.
+const aucSortInsertionCutoff = 500
+
 func sortAsc(s []aucSample) {
+	if len(s) > aucSortInsertionCutoff {
+		sort.Slice(s, func(i, j int) bool { return s[i].prob < s[j].prob })
+		return
+	}
 	for i := 1; i < len(s); i++ {
 		for j := i; j > 0 && s[j].prob < s[j-1].prob; j-- {
 			s[j], s[j-1] = s[j-1], s[j]

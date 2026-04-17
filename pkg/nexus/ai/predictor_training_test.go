@@ -99,3 +99,33 @@ func TestPredictor_AUC_SingleClass(t *testing.T) {
 }
 
 func isNaN(v float64) bool { return v != v }
+
+// TestPredictor_AUC_B10_LargeHoldoutSwitchesToSortSlice locks in B10
+// from docs/nexus/remaining-work.md: the AUC sort used to be an
+// O(n²) insertion sort that stalled on large holdout datasets. The
+// fix switches to sort.Slice for inputs above aucSortInsertionCutoff.
+// This test asserts large-input AUC still separates classes and
+// completes without the old quadratic slowdown (implicitly covered
+// by the standard Go test timeout).
+func TestPredictor_AUC_B10_LargeHoldoutSwitchesToSortSlice(t *testing.T) {
+	p := NewPredictor()
+	// Synthesize a holdout >> aucSortInsertionCutoff so the sort path
+	// switches into sort.Slice territory.
+	n := aucSortInsertionCutoff*4 + 17
+	samples := make([]FlakeSample, 0, n)
+	for i := 0; i < n/2; i++ {
+		samples = append(samples, FlakeSample{
+			Retries: 8, DurationS: 200, HourOfDay: 3,
+			RunnerRSS: 8 * 1 << 30, Pass: false,
+		})
+	}
+	for i := 0; i < n/2; i++ {
+		samples = append(samples, FlakeSample{
+			Retries: 0, DurationS: 1, HourOfDay: 12, Pass: true,
+		})
+	}
+	auc := p.AUC(samples)
+	if auc < 0.75 {
+		t.Errorf("AUC on large holdout = %f, want >= 0.75", auc)
+	}
+}
