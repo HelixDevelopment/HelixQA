@@ -19,19 +19,19 @@ Legend: `[ ]` pending, `[~]` in progress, `[x]` done, `[-]` deferred.
 
 ## Phase 1 — Browser engine
 
-- [~] P1-01 chromedp_driver.go
-- [~] P1-02 rod_driver.go
-- [~] P1-03 engine.go unified interface
-- [~] P1-04 snapshot.go role-based refs
-- [~] P1-05 actions.go
-- [~] P1-06 errors.go (ToAIFriendlyError)
-- [~] P1-07 pool.go warm pool
-- [ ] P1-08 Security hardening pass
-- [~] P1-09 `CH-NX-BROWSER-*` challenges
-- [ ] P1-10 Integrate as BrowserAdapter in pkg/userflow
-- [~] P1-11 `docs/nexus/browser.md`
-- [ ] P1-12 Video module 01
-- [ ] P1-13 `helixqa_browser_sessions` migration
+- [x] P1-01 chromedp_driver.go (build-tagged nexus_chromedp)
+- [x] P1-02 rod_driver.go (build-tagged nexus_rod)
+- [x] P1-03 engine.go unified interface
+- [x] P1-04 snapshot.go role-based refs
+- [~] P1-05 actions.go (click, type, scroll, screenshot landed; drag/hover/select/wait_for/tab_open/tab_close/pdf/console_read pending)
+- [x] P1-06 errors.go (ToAIFriendlyError)
+- [x] P1-07 pool.go warm pool
+- [x] P1-08 Security hardening pass (scheme blocks + allowlist + max-body cap + empty-URL refuser, security_test.go)
+- [x] P1-09 `CH-NX-BROWSER-*` challenges (15 cases in banks/nexus-browser.{yaml,json})
+- [x] P1-10 Integrate as BrowserAdapter in pkg/nexus/userflow (NexusBrowserAdapter satisfies uf.BrowserAdapter)
+- [x] P1-11 `docs/nexus/browser.md`
+- [ ] P1-12 Video module 01 (content-production task)
+- [x] P1-13 `helixqa_browser_sessions` schema in docs/nexus/sql/
 
 ## Phase 2 — Mobile engine
 Pending.
