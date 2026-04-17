@@ -1,0 +1,386 @@
+{
+  "name": "Helix Nexus \u2014 Browser Engine",
+  "description": "HelixQA bank covering the Phase 1 browser engine (Adapter, Engine, Snapshot, Pool, security hardening, AI-friendly errors). Every case validates a user-facing promise of the new CDP-native automation layer.",
+  "metadata": {
+    "author": "vasic-digital",
+    "feature": "helix-nexus-browser",
+    "phase": 1,
+    "version": "1.0.0"
+  },
+  "test_cases": [
+    {
+      "id": "NX-BROWSER-001",
+      "name": "Engine opens a session and reports ActiveSessions=1",
+      "category": "functional",
+      "priority": "critical",
+      "platforms": [
+        "web-nexus"
+      ],
+      "steps": [
+        {
+          "name": "Construct Engine with a mock driver",
+          "action": "browser.NewEngine(mockDriver, Config{Engine: EngineChromedp})",
+          "expected": "no error"
+        },
+        {
+          "name": "Open a session",
+          "action": "engine.Open(ctx, SessionOptions{})",
+          "expected": "ActiveSessions() returns 1"
+        }
+      ],
+      "tags": [
+        "nexus",
+        "engine",
+        "session"
+      ],
+      "expected_result": "Opening a session increments the active counter by one"
+    },
+    {
+      "id": "NX-BROWSER-002",
+      "name": "Snapshot assigns stable e1..eN refs in document order",
+      "category": "functional",
+      "priority": "critical",
+      "platforms": [
+        "web-nexus"
+      ],
+      "steps": [
+        {
+          "name": "Feed fixture HTML to SnapshotFromHTML",
+          "action": "SnapshotFromHTML(fixture, nil)",
+          "expected": "Elements[i].Ref == sprintf(\"e%d\", i+1)"
+        }
+      ],
+      "tags": [
+        "nexus",
+        "snapshot",
+        "refs"
+      ],
+      "expected_result": "Refs are sequential and stable in document order"
+    },
+    {
+      "id": "NX-BROWSER-003",
+      "name": "Navigate blocks file:// and javascript: schemes",
+      "category": "security",
+      "priority": "critical",
+      "platforms": [
+        "web-nexus"
+      ],
+      "steps": [
+        {
+          "name": "Call Engine.Navigate(ctx, s, \"file:///etc/passwd\")",
+          "action": "engine.Navigate(...)",
+          "expected": "error contains 'blocked' or 'scheme'"
+        },
+        {
+          "name": "Call Engine.Navigate(ctx, s, \"javascript:alert(1)\")",
+          "action": "engine.Navigate(...)",
+          "expected": "error contains 'blocked' or 'scheme'"
+        }
+      ],
+      "tags": [
+        "nexus",
+        "security",
+        "ssrf"
+      ],
+      "expected_result": "Unsafe schemes refused before they touch the driver"
+    },
+    {
+      "id": "NX-BROWSER-004",
+      "name": "Host allowlist rejects disallowed hosts",
+      "category": "security",
+      "priority": "critical",
+      "platforms": [
+        "web-nexus"
+      ],
+      "steps": [
+        {
+          "name": "Configure Engine with AllowedHosts=[catalogizer.local]",
+          "action": "NewEngine(d, Config{AllowedHosts: ['catalogizer.local']})",
+          "expected": "engine constructed"
+        },
+        {
+          "name": "Navigate to https://evil.test/",
+          "action": "engine.Navigate(...)",
+          "expected": "error rejecting the host"
+        },
+        {
+          "name": "Navigate to https://catalogizer.local/home",
+          "action": "engine.Navigate(...)",
+          "expected": "no error"
+        }
+      ],
+      "tags": [
+        "nexus",
+        "security",
+        "allowlist"
+      ],
+      "expected_result": "Only allow-listed hosts are reachable"
+    },
+    {
+      "id": "NX-BROWSER-005",
+      "name": "Pool caps concurrency at configured size",
+      "category": "stress",
+      "priority": "high",
+      "platforms": [
+        "web-nexus"
+      ],
+      "steps": [
+        {
+          "name": "Create Pool(engine, 3)",
+          "action": "NewPool(engine, 3)",
+          "expected": "no error"
+        },
+        {
+          "name": "Launch 10 concurrent Acquire calls",
+          "action": "parallel Acquire",
+          "expected": "after brief delay, exactly 3 are granted; remaining block"
+        },
+        {
+          "name": "Release sequentially",
+          "action": "pool.Release",
+          "expected": "blocked goroutines unblock in FIFO order"
+        }
+      ],
+      "tags": [
+        "nexus",
+        "pool",
+        "stress"
+      ],
+      "expected_result": "Pool size strictly bounded; no starvation"
+    },
+    {
+      "id": "NX-BROWSER-006",
+      "name": "ToAIFriendlyError translates common driver errors",
+      "category": "functional",
+      "priority": "high",
+      "platforms": [
+        "web-nexus"
+      ],
+      "steps": [
+        {
+          "name": "Feed ctx.DeadlineExceeded to ToAIFriendlyError",
+          "action": "ToAIFriendlyError(context.DeadlineExceeded)",
+          "expected": "contains 'took too long'"
+        },
+        {
+          "name": "Feed 'net::ERR_NAME_NOT_RESOLVED' wrapped error",
+          "action": "ToAIFriendlyError(errors.New('net::ERR_NAME_NOT_RESOLVED'))",
+          "expected": "contains 'could not be resolved'"
+        }
+      ],
+      "tags": [
+        "nexus",
+        "errors",
+        "ai"
+      ],
+      "expected_result": "LLM receives concise, actionable error messages"
+    },
+    {
+      "id": "NX-BROWSER-007",
+      "name": "Engine rejects foreign Session implementations",
+      "category": "security",
+      "priority": "medium",
+      "platforms": [
+        "web-nexus"
+      ],
+      "steps": [
+        {
+          "name": "Call Snapshot with a session not produced by this Engine",
+          "action": "engine.Snapshot(ctx, foreignSession)",
+          "expected": "error mentions 'foreign session type'"
+        }
+      ],
+      "tags": [
+        "nexus",
+        "safety"
+      ],
+      "expected_result": "Type-confusion attacks cannot bypass Engine state"
+    },
+    {
+      "id": "NX-BROWSER-008",
+      "name": "Parallel Open+Close leave no leaked sessions",
+      "category": "stress",
+      "priority": "high",
+      "platforms": [
+        "web-nexus"
+      ],
+      "steps": [
+        {
+          "name": "Spawn 50 goroutines, each Open+Close once",
+          "action": "sync.WaitGroup over 50 Open/Close pairs",
+          "expected": "ActiveSessions() == 0 after WaitGroup done"
+        }
+      ],
+      "tags": [
+        "nexus",
+        "concurrency",
+        "leak"
+      ],
+      "expected_result": "No session leaks under concurrency"
+    },
+    {
+      "id": "NX-BROWSER-009",
+      "name": "Closed pool rejects further Acquire",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "web-nexus"
+      ],
+      "steps": [
+        {
+          "name": "Close the pool",
+          "action": "pool.Close()",
+          "expected": "no error"
+        },
+        {
+          "name": "Acquire",
+          "action": "pool.Acquire(ctx, opts)",
+          "expected": "error mentions 'closed'"
+        }
+      ],
+      "tags": [
+        "nexus",
+        "pool",
+        "lifecycle"
+      ],
+      "expected_result": "Closed pool is final"
+    },
+    {
+      "id": "NX-BROWSER-010",
+      "name": "Pool Acquire honours context deadline",
+      "category": "functional",
+      "priority": "high",
+      "platforms": [
+        "web-nexus"
+      ],
+      "steps": [
+        {
+          "name": "Fill the pool to capacity",
+          "action": "acquire size times",
+          "expected": "no error"
+        },
+        {
+          "name": "Call Acquire with 10ms deadline",
+          "action": "ctx, cancel := context.WithTimeout(...)",
+          "expected": "returns ctx.Err() == DeadlineExceeded"
+        }
+      ],
+      "tags": [
+        "nexus",
+        "pool",
+        "context"
+      ],
+      "expected_result": "Back-pressure respects caller deadlines"
+    },
+    {
+      "id": "NX-BROWSER-011",
+      "name": "Default build compiles without browser drivers",
+      "category": "functional",
+      "priority": "high",
+      "platforms": [
+        "web-nexus"
+      ],
+      "steps": [
+        {
+          "name": "go build ./pkg/nexus/...",
+          "action": "go build",
+          "expected": "exit 0"
+        }
+      ],
+      "tags": [
+        "nexus",
+        "build",
+        "portability"
+      ],
+      "expected_result": "CI-less workstations build without Chromium"
+    },
+    {
+      "id": "NX-BROWSER-012",
+      "name": "Chromedp driver compiles with nexus_chromedp tag",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "web-nexus"
+      ],
+      "steps": [
+        {
+          "name": "go build -tags=nexus_chromedp ./pkg/nexus/...",
+          "action": "go build with tag",
+          "expected": "exit 0"
+        }
+      ],
+      "tags": [
+        "nexus",
+        "build",
+        "chromedp"
+      ],
+      "expected_result": "Driver is reachable by tag-enabled builds"
+    },
+    {
+      "id": "NX-BROWSER-013",
+      "name": "Rod driver compiles with nexus_rod tag",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "web-nexus"
+      ],
+      "steps": [
+        {
+          "name": "go build -tags=nexus_rod ./pkg/nexus/...",
+          "action": "go build with tag",
+          "expected": "exit 0"
+        }
+      ],
+      "tags": [
+        "nexus",
+        "build",
+        "rod"
+      ],
+      "expected_result": "Driver is reachable by tag-enabled builds"
+    },
+    {
+      "id": "NX-BROWSER-014",
+      "name": "Unknown action kind returns clear error",
+      "category": "functional",
+      "priority": "low",
+      "platforms": [
+        "web-nexus"
+      ],
+      "steps": [
+        {
+          "name": "engine.Do(ctx, s, Action{Kind: 'teleport'})",
+          "action": "engine.Do",
+          "expected": "error mentions 'unsupported action'"
+        }
+      ],
+      "tags": [
+        "nexus",
+        "actions",
+        "safety"
+      ],
+      "expected_result": "Typos in bank YAMLs surface as explicit errors"
+    },
+    {
+      "id": "NX-BROWSER-015",
+      "name": "Empty target URL refused",
+      "category": "security",
+      "priority": "medium",
+      "platforms": [
+        "web-nexus"
+      ],
+      "steps": [
+        {
+          "name": "engine.Navigate(ctx, s, '')",
+          "action": "engine.Navigate",
+          "expected": "error mentions 'empty'"
+        }
+      ],
+      "tags": [
+        "nexus",
+        "security",
+        "validation"
+      ],
+      "expected_result": "No silent empty-URL accept"
+    }
+  ]
+}
