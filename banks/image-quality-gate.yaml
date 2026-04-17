@@ -1,0 +1,210 @@
+name: "Image Quality Gate"
+description: "HelixQA bank covering the cover-image quality gate + replacement cascade across platforms. Validates X-Cover-Quality / X-Cover-Source response headers, placeholder fallback behavior, LLM-resolver opt-in safety, and that no visibly blurry cover reaches any client."
+metadata:
+  author: "vasic-digital"
+  app: "Catalogizer"
+  version: "2.3.1"
+  feature: "image-quality-gate"
+
+test_cases:
+
+  - id: IQ-API-001
+    name: "X-Cover-Quality header present on every cover response"
+    category: functional
+    priority: critical
+    platforms: [api]
+    steps:
+      - name: "Login as admin"
+        action: "POST /api/v1/auth/login with admin credentials"
+        expected: "200 with JWT"
+      - name: "Fetch placeholder for movie"
+        action: "GET /api/v1/cover/placeholder/movie"
+        expected: "200 image/svg+xml response body starting with <svg"
+      - name: "Fetch cover for non-existent id 99999999"
+        action: "GET /api/v1/cover/99999999"
+        expected: "200 with X-Cover-Quality header set to 'placeholder_fallback'"
+    tags: [image-quality, covers, headers]
+    estimated_duration: "5s"
+    expected_result: "Every cover response carries a quality header so clients can distinguish pass from placeholder"
+
+  - id: IQ-API-002
+    name: "Placeholder SVG valid for every media type"
+    category: functional
+    priority: high
+    platforms: [api]
+    steps:
+      - name: "Request placeholder for each supported type"
+        action: "GET /api/v1/cover/placeholder/:type for movie, tv_show, music_album, book, game, software, comic"
+        expected: "Each response is a well-formed SVG document (<svg element present)"
+    tags: [image-quality, placeholders]
+    estimated_duration: "8s"
+    expected_result: "All 7 media types have renderable placeholder SVGs"
+
+  - id: IQ-API-003
+    name: "LLM image-search resolver disabled by default"
+    category: security
+    priority: critical
+    platforms: [api]
+    steps:
+      - name: "Login as admin"
+        action: "POST /api/v1/auth/login"
+        expected: "200 with JWT"
+      - name: "Fetch covers across 20 entities"
+        action: "GET /api/v1/cover/:id for first 20 entity IDs"
+        expected: "No X-Cover-Source header equals 'llm_image_search' unless operator has explicitly set CATALOGIZER_LLM_IMAGE_SEARCH_ENABLED=true"
+    tags: [image-quality, security, llm]
+    estimated_duration: "30s"
+    expected_result: "LLM fallback never activates without explicit opt-in"
+
+  - id: IQ-API-004
+    name: "Quality verdict persisted across repeated requests"
+    category: functional
+    priority: high
+    platforms: [api]
+    steps:
+      - name: "Request cover for entity 1"
+        action: "GET /api/v1/cover/1 twice in quick succession"
+        expected: "Both responses return the same X-Cover-Quality and X-Cover-Source headers"
+      - name: "Confirm no new row added to image_quality_assessments between calls"
+        action: "Read image_quality_assessments.attempt_count for (media_item, 1, primary)"
+        expected: "attempt_count does not increase between successive requests served from cache"
+    tags: [image-quality, caching, database]
+    estimated_duration: "8s"
+    expected_result: "Cache hit on second request skips re-assessment"
+
+  - id: IQ-WEB-001
+    name: "Web cover grid shows no visibly blurry covers after sync"
+    category: visual
+    priority: critical
+    platforms: [web]
+    steps:
+      - name: "Log in to the web app as admin"
+        action: "browser.login(admin/admin123)"
+        expected: "Landing at /browse"
+      - name: "Wait for the cover grid to populate"
+        action: "browser.wait_for('img[data-role=cover]', count>=20)"
+        expected: "At least 20 covers rendered"
+      - name: "Screenshot the grid and run frame-level quality check"
+        action: "screenshot + Laplacian variance on each <img>"
+        expected: "No cover scores below the movie_poster blur threshold"
+    tags: [image-quality, web, ui]
+    estimated_duration: "30s"
+    expected_result: "Zero visibly blurry covers surface in the web cover grid"
+
+  - id: IQ-WEB-002
+    name: "Placeholder SVG renders in place of missing covers"
+    category: visual
+    priority: medium
+    platforms: [web]
+    steps:
+      - name: "Navigate to an entity with no cover assigned"
+        action: "browser.goto('/entity/99999999')"
+        expected: "Entity page loads"
+      - name: "Inspect the cover element"
+        action: "browser.element('img[data-role=cover]').attribute('src')"
+        expected: "src contains '/api/v1/cover/placeholder/'"
+    tags: [image-quality, web, placeholders]
+    estimated_duration: "10s"
+    expected_result: "Missing covers fall back to the placeholder asset, not a broken image"
+
+  - id: IQ-ANDROIDTV-001
+    name: "Android TV channel covers pass the gate"
+    category: visual
+    priority: critical
+    platforms: [androidtv]
+    steps:
+      - name: "Install the Android TV APK"
+        action: "adb install apk"
+        expected: "Package com.catalogizer.androidtv present"
+      - name: "Launch the app and browse 'Catalogizer Picks'"
+        action: "adb shell am start + DPAD navigate"
+        expected: "Channel populated with at least 10 covers"
+      - name: "Sample 10 covers via screencap and assess quality"
+        action: "screencap + Laplacian variance + resolution gate"
+        expected: "Every sampled cover passes the tv_poster threshold"
+    tags: [image-quality, androidtv, channels]
+    estimated_duration: "2m"
+    expected_result: "No visibly blurry cover appears in the TV channel"
+
+  - id: IQ-ANDROIDTV-002
+    name: "Watch Next row shows high-quality art"
+    category: visual
+    priority: high
+    platforms: [androidtv]
+    steps:
+      - name: "Seed partially-watched items via API"
+        action: "API calls to mark 3 items in-progress"
+        expected: "Items appear in the system Watch Next row"
+      - name: "Screenshot the Watch Next row and assess quality"
+        action: "screencap of homescreen row + Laplacian variance"
+        expected: "Every watch-next card passes the tv_poster threshold"
+    tags: [image-quality, androidtv, watch-next]
+    estimated_duration: "2m"
+    expected_result: "Watch Next row covers are crisp and correctly sized"
+
+  - id: IQ-ANDROID-001
+    name: "Android phone browse grid: no blurry covers"
+    category: visual
+    priority: critical
+    platforms: [android]
+    steps:
+      - name: "Install and launch the Android app"
+        action: "adb install + am start"
+        expected: "Browse grid renders"
+      - name: "Screenshot the grid"
+        action: "screencap -> pull to host"
+        expected: "File saved"
+      - name: "Assess all visible covers"
+        action: "Laplacian variance per cover"
+        expected: "All covers above threshold"
+    tags: [image-quality, android, ui]
+    estimated_duration: "90s"
+    expected_result: "Phone client shows only high-quality covers"
+
+  - id: IQ-DESKTOP-001
+    name: "Tauri desktop app shows only quality-gated covers"
+    category: visual
+    priority: high
+    platforms: [desktop]
+    steps:
+      - name: "Launch the desktop app"
+        action: "tauri bin launch via subprocess"
+        expected: "Browse view rendered"
+      - name: "Screenshot and assess covers"
+        action: "ffmpeg x11grab screenshot + Laplacian variance"
+        expected: "No cover below blur threshold"
+    tags: [image-quality, desktop, ui]
+    estimated_duration: "90s"
+    expected_result: "Desktop app surfaces only covers that passed the gate"
+
+  - id: IQ-CROSS-001
+    name: "SSRF guard rejects private-range URLs returned by the LLM orchestrator"
+    category: security
+    priority: critical
+    platforms: [api]
+    steps:
+      - name: "Stand up an LLM orchestrator mock that returns url=http://127.0.0.1/evil.jpg"
+        action: "Start stub HTTP server that responds with {\"url\":\"http://127.0.0.1/evil.jpg\"}"
+        expected: "Stub running"
+      - name: "Set CATALOGIZER_LLM_IMAGE_SEARCH_ENABLED=true + endpoint=stub url"
+        action: "Configure env and trigger a cover fetch that falls through to LLM"
+        expected: "API refuses the SSRF URL and reports it in logs"
+    tags: [image-quality, security, ssrf]
+    estimated_duration: "30s"
+    expected_result: "Loopback, private, and link-local URLs are blocked before download"
+
+  - id: IQ-CROSS-002
+    name: "Revalidation touches last_checked_at for stale rows"
+    category: functional
+    priority: medium
+    platforms: [api]
+    steps:
+      - name: "Backdate one row in image_quality_assessments to 30 days ago"
+        action: "SQL update on (entity_type, entity_id, variant)=(movie, 1, primary)"
+        expected: "Row's last_checked_at is 30d old"
+      - name: "Wait for the revalidator tick (or trigger it via admin endpoint)"
+        action: "Admin trigger or sleep >= interval"
+        expected: "Row's last_checked_at is now within the last minute"
+    tags: [image-quality, revalidation, background]
+    estimated_duration: "1m"
+    expected_result: "Background revalidation refreshes stale rows without operator intervention"
