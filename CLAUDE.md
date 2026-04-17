@@ -1,5 +1,19 @@
 # CLAUDE.md - HelixQA Module
 
+## CONSTITUTION: Project-Agnostic / 100% Decoupled (MANDATORY)
+
+**HelixQA and ALL its submodule dependencies (Challenges, Containers, DocProcessor, LLMOrchestrator, LLMProvider, VisionEngine) MUST be 100% decoupled and ready for generic use with ANY project — not just ATMOSphere, not just any single consumer.**
+
+- **NEVER** hardcode ATMOSphere package names, RU-region endpoints, device serials, or any project-specific data inside HelixQA or its dependencies.
+- **NEVER** add project-specific test banks, fixtures, or default configurations into HelixQA source code.
+- **NEVER** import anything from the consuming project (e.g., `device/rockchip/...`, ATMOSphere-specific Go modules).
+- All project-specific data (known endpoints, alternative apps, geo-restriction lists, device-specific behaviours) MUST be registered by the caller via public APIs (e.g., `RegisterEndpoint`, `RegisterAlternative`, `SetGenericAlternative`), NEVER baked into the library.
+- Default values in HelixQA libraries MUST be empty or generic — no RU/US/EU-specific preset lists.
+- Package documentation MUST call out the generic contract and show how ANY project (a TV vendor, an Android farm, a museum kiosk) can register its own data.
+- Test banks (`banks/*.yaml`) ARE allowed to contain project-specific test cases, because YAML is consumer-owned data, not library code — but the bank-loading MACHINERY in `pkg/testbank` must remain fully generic.
+
+**A HelixQA release that only works with ATMOSphere is a critical infrastructure failure.** Violations of this constitution void the entire release — the module must be immediately refactored to restore generic behaviour before any commit is accepted.
+
 ## CONSTITUTION: Fully Autonomous LLM-Driven QA
 
 **This is the SUPREME, NON-NEGOTIABLE rule of HelixQA:**
