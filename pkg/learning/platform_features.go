@@ -25,23 +25,50 @@ type PlatformFeature struct {
 	Metadata map[string]string
 }
 
-// PlatformFeatureDetector scans codebase for platform-specific features
+// PlatformFeatureDetector scans codebase for platform-specific features.
+// The detector is driven by a resolved ProjectManifest so it can run
+// against any project's Android/TV layout — no directory names are
+// hardcoded into HelixQA itself.
 type PlatformFeatureDetector struct {
-	root string
+	root     string
+	manifest ProjectManifest
 }
 
-// NewPlatformFeatureDetector creates a detector for the given project root
-func NewPlatformFeatureDetector(root string) *PlatformFeatureDetector {
-	return &PlatformFeatureDetector{root: root}
+// DetectorOption configures a PlatformFeatureDetector at construction.
+type DetectorOption func(*PlatformFeatureDetector)
+
+// WithDetectorManifest pins the manifest the detector uses instead of
+// auto-discovering component directories at call time.
+func WithDetectorManifest(m ProjectManifest) DetectorOption {
+	return func(d *PlatformFeatureDetector) { d.manifest = m }
 }
 
-// DetectAndroidTVChannels scans Android TV source files for Channels integration
-// Looks for androidx.tvprovider API usage patterns
+// NewPlatformFeatureDetector creates a detector for the given project
+// root. By default it auto-discovers Android/TV component directories
+// via the generic marker-file heuristics in ProjectManifest.Resolve.
+// Supply WithDetectorManifest to override.
+func NewPlatformFeatureDetector(root string, opts ...DetectorOption) *PlatformFeatureDetector {
+	d := &PlatformFeatureDetector{root: root}
+	for _, opt := range opts {
+		opt(d)
+	}
+	d.manifest = d.manifest.Resolve(root)
+	return d
+}
+
+// DetectAndroidTVChannels scans Android TV source files for Channels
+// integration — it looks for androidx.tvprovider API usage patterns in
+// every ComponentAndroidTV directory declared by the manifest.
 func (d *PlatformFeatureDetector) DetectAndroidTVChannels() *PlatformFeature {
-	androidTVPath := filepath.Join(d.root, "catalogizer-androidtv")
-	
-	// If no Android TV directory, check for any androidtv directory pattern
-	if _, err := os.Stat(androidTVPath); os.IsNotExist(err) {
+	tvComponents := d.manifest.ComponentsByType(ComponentAndroidTV)
+	var androidTVPath string
+	for _, c := range tvComponents {
+		if info, err := os.Stat(c.Dir); err == nil && info.IsDir() {
+			androidTVPath = c.Dir
+			break
+		}
+	}
+	if androidTVPath == "" {
 		androidTVPath = d.findAndroidTVDir()
 		if androidTVPath == "" {
 			return nil
@@ -151,23 +178,27 @@ func (d *PlatformFeatureDetector) DetectAndroidTVChannels() *PlatformFeature {
 	}
 }
 
-// findAndroidTVDir searches for Android TV directories with various naming patterns
+// findAndroidTVDir is the last-resort fallback when no manifest
+// component claims ComponentAndroidTV. It tries generic directory
+// patterns that describe Android TV sub-projects. HelixQA does not
+// hardcode any project-specific names here — callers that use
+// idiosyncratic layouts should pass an explicit ProjectManifest.
 func (d *PlatformFeatureDetector) findAndroidTVDir() string {
 	patterns := []string{
-		"catalogizer-androidtv",
 		"androidtv",
-		"tv",
 		"android-tv",
+		"tv",
+		"*-androidtv",
 		"*androidtv*",
 	}
-	
+
 	for _, pattern := range patterns {
 		matches, _ := filepath.Glob(filepath.Join(d.root, pattern))
 		if len(matches) > 0 {
 			return matches[0]
 		}
 	}
-	
+
 	// Try to find any directory containing tvprovider references
 	entries, _ := os.ReadDir(d.root)
 	for _, entry := range entries {
@@ -175,7 +206,7 @@ func (d *PlatformFeatureDetector) findAndroidTVDir() string {
 			return filepath.Join(d.root, entry.Name())
 		}
 	}
-	
+
 	return ""
 }
 

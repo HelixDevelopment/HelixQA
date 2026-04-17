@@ -2,9 +2,12 @@
 // SPDX-License-Identifier: Apache-2.0
 
 // Package infra manages QA infrastructure using the
-// Containers submodule. It provides a QAInfraManager that
-// boots PostgreSQL, Redis, and catalog-api services via
-// the BootManager, replacing manual Docker/Podman commands.
+// Containers submodule. It provides a generic QAInfraManager
+// that boots the caller-configured service set (typically a
+// database + cache + application API) via the BootManager,
+// replacing manual Docker/Podman commands. HelixQA ships no
+// project-specific service list — integrators describe their
+// own topology through ServiceConfig entries.
 package infra
 
 import (
@@ -46,12 +49,31 @@ type QAInfraConfig struct {
 	HealthTimeout time.Duration
 }
 
-// DefaultQAInfraConfig returns the standard Catalogizer QA
-// infrastructure: PostgreSQL, Redis, and catalog-api on a
-// remote host (amber.local by default).
-func DefaultQAInfraConfig(host string) QAInfraConfig {
+// DefaultQAInfraConfig returns a standard three-tier QA topology —
+// PostgreSQL, Redis, and the caller-named API service — all on the
+// same host. It exists as a convenience for the common case; any
+// project with a different shape should assemble a QAInfraConfig by
+// hand.
+//
+// Parameters:
+//   - host: the hostname or IP all services run on (empty = "localhost").
+//   - apiServiceName: the compose/pod service name of the application
+//     API. Empty falls back to "api" — HelixQA deliberately holds no
+//     project-specific default here.
+//   - apiPort: the TCP port the API listens on (empty = "8080").
+//   - apiHealthPath: the HTTP health probe path (empty = "/health").
+func DefaultQAInfraConfig(host, apiServiceName, apiPort, apiHealthPath string) QAInfraConfig {
 	if host == "" {
-		host = "amber.local"
+		host = "localhost"
+	}
+	if apiServiceName == "" {
+		apiServiceName = "api"
+	}
+	if apiPort == "" {
+		apiPort = "8080"
+	}
+	if apiHealthPath == "" {
+		apiHealthPath = "/health"
 	}
 	return QAInfraConfig{
 		Services: []ServiceConfig{
@@ -72,11 +94,11 @@ func DefaultQAInfraConfig(host string) QAInfraConfig {
 				Remote:     true,
 			},
 			{
-				Name:       "catalog-api",
+				Name:       apiServiceName,
 				Host:       host,
-				Port:       "8080",
+				Port:       apiPort,
 				HealthType: "http",
-				HealthPath: "/health",
+				HealthPath: apiHealthPath,
 				Required:   true,
 				Remote:     true,
 			},

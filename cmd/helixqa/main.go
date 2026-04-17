@@ -706,11 +706,16 @@ func cmdAutonomous(args []string) {
 
 	// ── QA Infrastructure boot ──────────────────────────────────
 	// When HELIX_INFRA_HOST is set, use the Containers module
-	// to verify that backend services (PostgreSQL, Redis,
-	// catalog-api) are healthy before starting the pipeline.
+	// to verify that backend services (database, cache, API) are
+	// healthy before starting the pipeline. The API service name,
+	// port, and health path are read from env so HelixQA stays
+	// decoupled from any project-specific naming.
 	if infraHost := os.Getenv("HELIX_INFRA_HOST"); infraHost != "" {
 		fmt.Printf("Infra host:       %s\n", infraHost)
-		infraCfg := qainfra.DefaultQAInfraConfig(infraHost)
+		apiName := os.Getenv("HELIX_INFRA_API_SERVICE")
+		apiPort := os.Getenv("HELIX_INFRA_API_PORT")
+		apiHealth := os.Getenv("HELIX_INFRA_API_HEALTH_PATH")
+		infraCfg := qainfra.DefaultQAInfraConfig(infraHost, apiName, apiPort, apiHealth)
 		infraMgr, infraErr := qainfra.NewQAInfraManager(infraCfg)
 		if infraErr != nil {
 			fmt.Fprintf(os.Stderr,

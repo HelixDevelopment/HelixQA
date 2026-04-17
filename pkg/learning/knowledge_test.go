@@ -162,9 +162,18 @@ func setupKBProject(t *testing.T) string {
 - All builds must be containerized
 `)
 
-	// catalog-api/main.go with one Gin route
+	// catalog-api/main.go with one Gin route. The go.mod marker is
+	// what HelixQA's auto-discovery uses to classify this directory as
+	// a ComponentGoAPI — the library itself holds no hardcoded
+	// reference to "catalog-api".
 	apiDir := filepath.Join(root, "catalog-api")
 	require.NoError(t, os.MkdirAll(apiDir, 0o755))
+	write(t, filepath.Join(apiDir, "go.mod"), `module example.com/api
+
+go 1.21
+
+require github.com/gin-gonic/gin v1.9.1
+`)
 	write(t, filepath.Join(apiDir, "main.go"), `package main
 
 import "github.com/gin-gonic/gin"

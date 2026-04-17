@@ -101,7 +101,7 @@ type SyncConfig struct {
 
 // DeepLinkConfig defines deep link handling
 type DeepLinkConfig struct {
-	// Scheme - URI scheme (e.g., "catalogizer", "myapp")
+	// Scheme - URI scheme the app uses for deep links (e.g., "myapp")
 	Scheme string
 	// MediaPath - Path for media deep links (e.g., "media/{id}")
 	MediaPath string

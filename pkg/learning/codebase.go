@@ -38,151 +38,151 @@ var composeNavRegex = regexp.MustCompile(
 	`composable\(\s*"([^"]+)"\s*\)\s*\{[^}]*?(\w+Screen)\s*\(`,
 )
 
-// ── known component directories ───────────────────────────────────────────────
-
-var knownComponents = []string{
-	"catalog-api",
-	"catalog-web",
-	"catalogizer-android",
-	"catalogizer-androidtv",
-	"catalogizer-desktop",
-	"installer-wizard",
-}
-
 // ── CodebaseMapper ────────────────────────────────────────────────────────────
 
 // CodebaseMapper walks the project source tree and extracts API endpoints,
 // web screens, and Android/TV composable destinations from source files.
+// The mapper is driven by a ProjectManifest so HelixQA stays decoupled
+// from any specific project layout — callers pass their own component
+// list, or rely on the zero-value manifest's auto-discovery.
 type CodebaseMapper struct {
-	root string
+	root     string
+	manifest ProjectManifest
 }
 
-// NewCodebaseMapper returns a CodebaseMapper that works relative to root.
-func NewCodebaseMapper(root string) *CodebaseMapper {
-	return &CodebaseMapper{root: root}
+// MapperOption configures a CodebaseMapper at construction time.
+type MapperOption func(*CodebaseMapper)
+
+// WithManifest overrides the project manifest the mapper consults to
+// decide which directories (and therefore which scanner passes) to
+// apply. When omitted, the mapper resolves an empty manifest — which
+// triggers on-the-fly auto-discovery via marker files.
+func WithManifest(m ProjectManifest) MapperOption {
+	return func(c *CodebaseMapper) { c.manifest = m }
 }
 
-// ExtractAPIEndpoints walks catalog-api/ for .go files and returns every
-// Gin route found (GET/POST/PUT/DELETE/PATCH).
-func (m *CodebaseMapper) ExtractAPIEndpoints() ([]APIEndpoint, error) {
-	apiDir := filepath.Join(m.root, "catalog-api")
-
-	if _, err := os.Stat(apiDir); os.IsNotExist(err) {
-		return []APIEndpoint{}, nil
+// NewCodebaseMapper returns a CodebaseMapper that works relative to
+// root. By default it auto-discovers component directories via marker
+// files (go.mod, package.json with "react", AndroidManifest.xml, etc.)
+// — supply WithManifest to pin a deterministic layout.
+func NewCodebaseMapper(root string, opts ...MapperOption) *CodebaseMapper {
+	m := &CodebaseMapper{root: root}
+	for _, opt := range opts {
+		opt(m)
 	}
+	m.manifest = m.manifest.Resolve(root)
+	return m
+}
 
-	var endpoints []APIEndpoint
-
-	err := filepath.WalkDir(apiDir, func(path string, d fs.DirEntry, walkErr error) error {
-		if walkErr != nil {
-			return walkErr
+// ExtractAPIEndpoints walks every Go-API component declared in the
+// manifest and returns every Gin route found (GET/POST/PUT/DELETE/PATCH).
+func (m *CodebaseMapper) ExtractAPIEndpoints() ([]APIEndpoint, error) {
+	endpoints := []APIEndpoint{}
+	for _, comp := range m.manifest.ComponentsByType(ComponentGoAPI) {
+		if _, err := os.Stat(comp.Dir); os.IsNotExist(err) {
+			continue
 		}
-		if d.IsDir() {
-			if skipDirs[d.Name()] {
-				return filepath.SkipDir
+		err := filepath.WalkDir(comp.Dir, func(path string, d fs.DirEntry, walkErr error) error {
+			if walkErr != nil {
+				return walkErr
+			}
+			if d.IsDir() {
+				if skipDirs[d.Name()] {
+					return filepath.SkipDir
+				}
+				return nil
+			}
+			if !strings.HasSuffix(d.Name(), ".go") {
+				return nil
+			}
+
+			raw, err := os.ReadFile(path)
+			if err != nil {
+				return nil // skip unreadable files
+			}
+
+			for _, match := range ginRouteRegex.FindAllStringSubmatch(string(raw), -1) {
+				endpoints = append(endpoints, APIEndpoint{
+					Method:     strings.ToUpper(match[1]),
+					Path:       match[2],
+					SourceFile: path,
+				})
 			}
 			return nil
-		}
-		if !strings.HasSuffix(d.Name(), ".go") {
-			return nil
-		}
-
-		raw, err := os.ReadFile(path)
+		})
 		if err != nil {
-			return nil // skip unreadable files
+			return nil, err
 		}
-
-		for _, m := range ginRouteRegex.FindAllStringSubmatch(string(raw), -1) {
-			endpoints = append(endpoints, APIEndpoint{
-				Method:     strings.ToUpper(m[1]),
-				Path:       m[2],
-				SourceFile: path,
-			})
-		}
-		return nil
-	})
-	if err != nil {
-		return nil, err
 	}
-
 	return endpoints, nil
 }
 
-// ExtractWebScreens walks catalog-web/ for .tsx, .jsx, and .ts files and
-// returns every React <Route> element found, with Platform set to "web".
+// ExtractWebScreens walks every React-web component declared in the
+// manifest and returns every React <Route> element found, with
+// Platform set to "web".
 func (m *CodebaseMapper) ExtractWebScreens() ([]Screen, error) {
-	webDir := filepath.Join(m.root, "catalog-web")
-
-	if _, err := os.Stat(webDir); os.IsNotExist(err) {
-		return []Screen{}, nil
-	}
-
-	var screens []Screen
-
-	err := filepath.WalkDir(webDir, func(path string, d fs.DirEntry, walkErr error) error {
-		if walkErr != nil {
-			return walkErr
+	screens := []Screen{}
+	for _, comp := range m.manifest.ComponentsByType(ComponentReactWeb) {
+		if _, err := os.Stat(comp.Dir); os.IsNotExist(err) {
+			continue
 		}
-		if d.IsDir() {
-			if skipDirs[d.Name()] {
-				return filepath.SkipDir
+		err := filepath.WalkDir(comp.Dir, func(path string, d fs.DirEntry, walkErr error) error {
+			if walkErr != nil {
+				return walkErr
+			}
+			if d.IsDir() {
+				if skipDirs[d.Name()] {
+					return filepath.SkipDir
+				}
+				return nil
+			}
+			name := strings.ToLower(d.Name())
+			if !strings.HasSuffix(name, ".tsx") &&
+				!strings.HasSuffix(name, ".jsx") &&
+				!strings.HasSuffix(name, ".ts") {
+				return nil
+			}
+
+			raw, err := os.ReadFile(path)
+			if err != nil {
+				return nil // skip unreadable files
+			}
+
+			for _, match := range reactRouteRegex.FindAllStringSubmatch(string(raw), -1) {
+				route := match[1]
+				component := match[2]
+				screens = append(screens, Screen{
+					Name:       component,
+					Platform:   "web",
+					Route:      route,
+					Component:  component,
+					SourceFile: path,
+				})
 			}
 			return nil
-		}
-		name := strings.ToLower(d.Name())
-		if !strings.HasSuffix(name, ".tsx") &&
-			!strings.HasSuffix(name, ".jsx") &&
-			!strings.HasSuffix(name, ".ts") {
-			return nil
-		}
-
-		raw, err := os.ReadFile(path)
+		})
 		if err != nil {
-			return nil // skip unreadable files
+			return nil, err
 		}
-
-		for _, match := range reactRouteRegex.FindAllStringSubmatch(string(raw), -1) {
-			route := match[1]
-			component := match[2]
-			screens = append(screens, Screen{
-				Name:       component,
-				Platform:   "web",
-				Route:      route,
-				Component:  component,
-				SourceFile: path,
-			})
-		}
-		return nil
-	})
-	if err != nil {
-		return nil, err
 	}
-
 	return screens, nil
 }
 
-// ExtractAndroidScreens walks catalogizer-android/ and catalogizer-androidtv/
-// for .kt files and returns every Compose navigation destination found.
-// Platform is set to "android" for phone and "androidtv" for TV.
+// ExtractAndroidScreens walks every Android/Android-TV component
+// declared in the manifest and returns every Compose navigation
+// destination found. Platform is "android" for phone components and
+// "androidtv" for TV components.
 func (m *CodebaseMapper) ExtractAndroidScreens() ([]Screen, error) {
-	type dirPlatform struct {
-		dir      string
-		platform string
-	}
-
-	dirs := []dirPlatform{
-		{filepath.Join(m.root, "catalogizer-android"), "android"},
-		{filepath.Join(m.root, "catalogizer-androidtv"), "androidtv"},
-	}
-
-	var screens []Screen
-
-	for _, dp := range dirs {
-		if _, err := os.Stat(dp.dir); os.IsNotExist(err) {
+	screens := []Screen{}
+	for _, comp := range m.manifest.ComponentsByType(ComponentAndroid, ComponentAndroidTV) {
+		if _, err := os.Stat(comp.Dir); os.IsNotExist(err) {
 			continue
 		}
-
-		err := filepath.WalkDir(dp.dir, func(path string, d fs.DirEntry, walkErr error) error {
+		platform := "android"
+		if comp.Type == ComponentAndroidTV {
+			platform = "androidtv"
+		}
+		err := filepath.WalkDir(comp.Dir, func(path string, d fs.DirEntry, walkErr error) error {
 			if walkErr != nil {
 				return walkErr
 			}
@@ -206,7 +206,7 @@ func (m *CodebaseMapper) ExtractAndroidScreens() ([]Screen, error) {
 				component := match[2]
 				screens = append(screens, Screen{
 					Name:       component,
-					Platform:   dp.platform,
+					Platform:   platform,
 					Route:      route,
 					Component:  component,
 					SourceFile: path,
@@ -218,19 +218,22 @@ func (m *CodebaseMapper) ExtractAndroidScreens() ([]Screen, error) {
 			return nil, err
 		}
 	}
-
 	return screens, nil
 }
 
-// DiscoverComponents checks which known project component directories exist
-// under root and returns their names.
+// DiscoverComponents returns the names of every Component in the
+// resolved manifest whose directory exists on disk.
 func (m *CodebaseMapper) DiscoverComponents() []string {
 	var found []string
-	for _, name := range knownComponents {
-		dir := filepath.Join(m.root, name)
-		if info, err := os.Stat(dir); err == nil && info.IsDir() {
-			found = append(found, name)
+	for _, c := range m.manifest.Components {
+		if info, err := os.Stat(c.Dir); err == nil && info.IsDir() {
+			found = append(found, c.Name)
 		}
 	}
 	return found
 }
+
+// Manifest returns the resolved manifest the mapper is using. Callers
+// can forward this to the platform-feature detector or the credential
+// reader so every stage shares the same component topology.
+func (m *CodebaseMapper) Manifest() ProjectManifest { return m.manifest }

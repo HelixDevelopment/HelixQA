@@ -34,7 +34,7 @@ Return ONLY a valid JSON array of test case objects. Each object must have:
 IMPORTANT: For Android TV apps, you MUST include comprehensive test cases for:
 - Android TV Home Screen Channels (default channel, category channels)
 - Watch Next row integration (continue watching, next episode)
-- Deep link handling from channels (catalogizer://media/{id}?type={type})
+- Deep link handling from channels (use the project's own URI scheme, e.g. "<scheme>://media/{id}?type={type}")
 - WorkManager periodic sync
 - Channel cleanup on logout
 

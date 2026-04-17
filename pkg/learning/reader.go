@@ -36,12 +36,32 @@ var skipDirs = map[string]bool{
 // ProjectReader reads documentation and constraint information from a
 // project directory tree.
 type ProjectReader struct {
-	root string
+	root     string
+	manifest ProjectManifest
 }
 
-// NewProjectReader returns a ProjectReader anchored at root.
-func NewProjectReader(root string) *ProjectReader {
-	return &ProjectReader{root: root}
+// ReaderOption configures a ProjectReader at construction time.
+type ReaderOption func(*ProjectReader)
+
+// WithReaderManifest pins the manifest the reader consults when
+// deciding which .env files to scan for credentials. Without this
+// option the reader resolves an empty manifest and falls back to the
+// generic defaults from ProjectManifest.Resolve.
+func WithReaderManifest(m ProjectManifest) ReaderOption {
+	return func(r *ProjectReader) { r.manifest = m }
+}
+
+// NewProjectReader returns a ProjectReader anchored at root. Pass
+// WithReaderManifest when the caller already resolved a manifest
+// through CodebaseMapper.Manifest() so every learning stage shares
+// the same component topology.
+func NewProjectReader(root string, opts ...ReaderOption) *ProjectReader {
+	r := &ProjectReader{root: root}
+	for _, opt := range opts {
+		opt(r)
+	}
+	r.manifest = r.manifest.Resolve(root)
+	return r
 }
 
 // ReadDocs walks the docs/ subdirectory under the project root, reads every
@@ -171,13 +191,13 @@ func (r *ProjectReader) ExtractCredentials(
 ) map[string]string {
 	creds := map[string]string{}
 
-	// Scan common .env locations.
-	envFiles := []string{
-		filepath.Join(root, ".env"),
-		filepath.Join(root, "catalog-api", ".env"),
-		filepath.Join(root, "backend", ".env"),
-		filepath.Join(root, "server", ".env"),
-		filepath.Join(root, "api", ".env"),
+	// Scan every .env location the manifest resolved. The manifest's
+	// default resolver already covers project-root + each Go-API
+	// component + backend/server/api fallbacks — so we pick up any
+	// project's layout without HelixQA hardcoding directory names.
+	envFiles := r.manifest.EnvFilePaths
+	if len(envFiles) == 0 {
+		envFiles = defaultEnvFilePaths(root, nil)
 	}
 
 	for _, path := range envFiles {

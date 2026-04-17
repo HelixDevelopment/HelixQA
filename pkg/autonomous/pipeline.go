@@ -2908,11 +2908,12 @@ func (sp *SessionPipeline) Run(
 // does not stall the pipeline.
 const apiDataTimeout = 10 * time.Second
 
-// validateAPIData makes HTTP requests to the catalog-api
-// to verify that backend data is available and consistent
-// with what should appear on screen. It returns findings
-// for any errors or empty responses that indicate a data
-// mismatch between the API and the UI.
+// validateAPIData makes HTTP requests to the application's
+// backend API (whatever the project uses — HelixQA holds no
+// project-specific URLs) to verify that data is available and
+// consistent with what should appear on screen. It returns
+// findings for any errors or empty responses that indicate a
+// data mismatch between the API and the UI.
 func (sp *SessionPipeline) validateAPIData(
 	ctx context.Context,
 ) []analysis.AnalysisFinding {

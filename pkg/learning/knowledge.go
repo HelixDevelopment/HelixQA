@@ -126,6 +126,21 @@ func (kb *KnowledgeBase) Summary() string {
 	)
 }
 
+// BuildOption tunes BuildKnowledgeBase at call time. The zero value
+// (no options) triggers auto-discovery.
+type BuildOption func(*buildConfig)
+
+type buildConfig struct {
+	manifest ProjectManifest
+}
+
+// WithBuildManifest pins the ProjectManifest every stage of
+// BuildKnowledgeBase consults. Without it the builder auto-discovers
+// components via generic marker-file heuristics.
+func WithBuildManifest(m ProjectManifest) BuildOption {
+	return func(c *buildConfig) { c.manifest = m }
+}
+
 // BuildKnowledgeBase constructs a fully-populated KnowledgeBase for the
 // project rooted at projectRoot. It composes ProjectReader, CodebaseMapper,
 // and GitAnalyzer to gather all available information. If store is non-nil,
@@ -133,13 +148,19 @@ func (kb *KnowledgeBase) Summary() string {
 //
 // Non-fatal errors (e.g. git not available, no android dirs) are silently
 // swallowed so the caller always receives a usable, partially-populated base.
-func BuildKnowledgeBase(projectRoot string, store *memory.Store) (*KnowledgeBase, error) {
+func BuildKnowledgeBase(projectRoot string, store *memory.Store, opts ...BuildOption) (*KnowledgeBase, error) {
+	cfg := &buildConfig{}
+	for _, opt := range opts {
+		opt(cfg)
+	}
+	resolved := cfg.manifest.Resolve(projectRoot)
+
 	kb := NewKnowledgeBase()
 	kb.ProjectName = filepath.Base(projectRoot)
 	kb.ProjectRoot = projectRoot
 
 	// ── docs ─────────────────────────────────────────────────────────────────
-	reader := NewProjectReader(projectRoot)
+	reader := NewProjectReader(projectRoot, WithReaderManifest(resolved))
 
 	docs, err := reader.ReadDocs()
 	if err != nil {
@@ -157,7 +178,7 @@ func BuildKnowledgeBase(projectRoot string, store *memory.Store) (*KnowledgeBase
 	kb.Credentials = reader.ExtractCredentials(projectRoot)
 
 	// ── API endpoints ────────────────────────────────────────────────────────
-	mapper := NewCodebaseMapper(projectRoot)
+	mapper := NewCodebaseMapper(projectRoot, WithManifest(resolved))
 
 	endpoints, err := mapper.ExtractAPIEndpoints()
 	if err != nil {
@@ -189,7 +210,7 @@ func BuildKnowledgeBase(projectRoot string, store *memory.Store) (*KnowledgeBase
 	kb.Components = mapper.DiscoverComponents()
 
 	// ── platform-specific features ────────────────────────────────────────────
-	featureDetector := NewPlatformFeatureDetector(projectRoot)
+	featureDetector := NewPlatformFeatureDetector(projectRoot, WithDetectorManifest(resolved))
 	kb.PlatformFeatures = featureDetector.DetectAllPlatformFeatures()
 
 	// ── recent git history ───────────────────────────────────────────────────

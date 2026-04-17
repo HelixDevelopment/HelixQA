@@ -648,7 +648,7 @@ func parsePlaybackCheckArgs(s string) (string, int) {
 // when a matching session is found and (false, reason) otherwise.
 //
 // The relevant dumpsys lines look like:
-//   package=com.catalogizer.androidtv
+//   package=<app package under test>
 //   state=PlaybackState {state=3, position=12345, ...
 //
 // PlaybackState integers: 0=NONE, 1=STOPPED, 2=PAUSED, 3=PLAYING,

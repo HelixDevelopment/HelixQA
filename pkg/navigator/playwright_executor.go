@@ -184,21 +184,39 @@ func (p *PlaywrightExecutor) runBridgeCmd(
 }
 
 // nodePath returns the best NODE_PATH for finding Playwright.
-// It searches catalog-web/node_modules relative to the working
-// directory, since Playwright is installed there.
+//
+// Resolution order (first hit wins):
+//  1. The HELIXQA_PLAYWRIGHT_NODE_PATH env var (explicit override).
+//  2. The NODE_PATH env var (standard Node lookup).
+//  3. Any directory matching `*web*/node_modules/playwright` under
+//     the working directory or its parent — generic so any project
+//     whose web front-end lives in a differently-named directory
+//     works without HelixQA knowing that name.
+//  4. The working directory's own `node_modules/playwright`.
 func nodePath() string {
+	if v := os.Getenv("HELIXQA_PLAYWRIGHT_NODE_PATH"); v != "" {
+		return v
+	}
 	if v := os.Getenv("NODE_PATH"); v != "" {
 		return v
 	}
-	if wd, err := os.Getwd(); err == nil {
-		candidates := []string{
-			filepath.Join(wd, "catalog-web", "node_modules"),
-			filepath.Join(wd, "..", "catalog-web", "node_modules"),
-		}
-		for _, c := range candidates {
-			if _, err := os.Stat(
-				filepath.Join(c, "playwright"),
-			); err == nil {
+	wd, err := os.Getwd()
+	if err != nil {
+		return ""
+	}
+	// Generic pattern search — matches any sibling dir containing a
+	// Playwright install, without hardcoding project-specific names.
+	patterns := []string{
+		filepath.Join(wd, "*web*", "node_modules"),
+		filepath.Join(wd, "*frontend*", "node_modules"),
+		filepath.Join(wd, "..", "*web*", "node_modules"),
+		filepath.Join(wd, "..", "*frontend*", "node_modules"),
+		filepath.Join(wd, "node_modules"),
+	}
+	for _, pattern := range patterns {
+		matches, _ := filepath.Glob(pattern)
+		for _, c := range matches {
+			if _, err := os.Stat(filepath.Join(c, "playwright")); err == nil {
 				return c
 			}
 		}

@@ -38,6 +38,17 @@ func setupCodebaseProject(t *testing.T) string {
 	// ── catalog-api ─────────────────────────────────────────────────────────
 	apiDir := filepath.Join(root, "catalog-api")
 	require.NoError(t, os.MkdirAll(apiDir, 0o755))
+	// Marker file so ProjectManifest.Resolve auto-classifies this dir
+	// as a ComponentGoAPI — HelixQA no longer knows Catalogizer's
+	// directory names, every project advertises itself via the same
+	// marker conventions (go.mod + Gin import, package.json with
+	// "react", AndroidManifest.xml, etc.).
+	write(t, filepath.Join(apiDir, "go.mod"), `module example.com/api
+
+go 1.21
+
+require github.com/gin-gonic/gin v1.9.1
+`)
 	write(t, filepath.Join(apiDir, "main.go"), `package main
 
 import "github.com/gin-gonic/gin"
@@ -60,7 +71,11 @@ func Register(router *gin.Engine) {
 `)
 
 	// ── catalog-web ─────────────────────────────────────────────────────────
-	webSrcDir := filepath.Join(root, "catalog-web", "src")
+	webDir := filepath.Join(root, "catalog-web")
+	require.NoError(t, os.MkdirAll(webDir, 0o755))
+	write(t, filepath.Join(webDir, "package.json"),
+		`{"name":"web","dependencies":{"react":"18.2.0"}}`)
+	webSrcDir := filepath.Join(webDir, "src")
 	require.NoError(t, os.MkdirAll(webSrcDir, 0o755))
 	write(t, filepath.Join(webSrcDir, "App.tsx"), `import React from 'react';
 import { Route } from 'react-router-dom';
@@ -91,8 +106,11 @@ export function DashboardRoutes() {
 `)
 
 	// ── catalogizer-android ─────────────────────────────────────────────────
-	androidDir := filepath.Join(root, "catalogizer-android", "app", "src", "main")
+	androidRoot := filepath.Join(root, "catalogizer-android")
+	androidDir := filepath.Join(androidRoot, "app", "src", "main")
 	require.NoError(t, os.MkdirAll(androidDir, 0o755))
+	write(t, filepath.Join(androidDir, "AndroidManifest.xml"),
+		`<?xml version="1.0"?><manifest package="com.example.phone"/>`)
 	write(t, filepath.Join(androidDir, "MainNav.kt"), `package com.example.catalogizer
 
 @Composable
@@ -109,8 +127,11 @@ fun MainNavGraph(navController: NavHostController) {
 `)
 
 	// ── catalogizer-androidtv ───────────────────────────────────────────────
-	androidTvDir := filepath.Join(root, "catalogizer-androidtv", "app", "src", "main")
+	androidTvRoot := filepath.Join(root, "catalogizer-androidtv")
+	androidTvDir := filepath.Join(androidTvRoot, "app", "src", "main")
 	require.NoError(t, os.MkdirAll(androidTvDir, 0o755))
+	write(t, filepath.Join(androidTvDir, "AndroidManifest.xml"),
+		`<?xml version="1.0"?><manifest package="com.example.tv"><uses-feature android:name="android.software.leanback"/></manifest>`)
 	write(t, filepath.Join(androidTvDir, "TvNav.kt"), `package com.example.catalogizer.tv
 
 @Composable
