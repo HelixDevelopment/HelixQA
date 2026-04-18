@@ -1,0 +1,73 @@
+# SPDX-FileCopyrightText: 2026 Milos Vasic
+# SPDX-License-Identifier: Apache-2.0
+#
+# OpenClawing2 Phase 1 bank — OSS vendoring + licence audit gate.
+# These entries lock in P1.T9 / P1.T10 from the integration plan:
+# every vendored OSS submodule must be documented and carry a
+# recognised licence file.
+
+version: "1.0"
+name: "OpenClawing2 — Phase 1 References"
+description: "Regression suite covering OSS submodule vendoring, licence inventory, and the sync script."
+metadata:
+  author: "vasic-digital"
+  phase: 1
+  plan: "docs/plans/2026-04-18-openclawing2-integration-plan.md"
+
+test_cases:
+  - id: OC-REF-001
+    name: "Every vendored OSS submodule is documented + has a licence"
+    category: functional
+    priority: critical
+    platforms: [api]
+    tags: [openclawing2, phase1, registry, licence]
+    steps:
+      - name: "Run pkg/opensource.Audit against tools/opensource"
+        action: "go test ./pkg/opensource/... -run TestAudit_P1_T9_EverySubmoduleDocumented"
+        expected: "Every submodule name appears in both docs/opensource-references.md and docs/licences-inventory.md"
+      - name: "Run licence-file locator for the OpenClawing2 set"
+        action: "go test ./pkg/opensource/... -run TestLocateLicenceFile_OpenClawing2Set"
+        expected: "browser-use / skyvern / stagehand / ui-tars / ui-tars-desktop / anthropic-quickstarts all ship LICENSE files"
+    expected_result: "Audit gate clean — no undocumented submodule, no missing licence"
+
+  - id: OC-REF-002
+    name: "Skyvern's AGPL status is enforced at the grep gate"
+    category: security
+    priority: critical
+    platforms: [api]
+    tags: [openclawing2, phase1, licence, agpl]
+    steps:
+      - name: "Grep HelixQA Go sources for Skyvern identifiers"
+        action: "grep -rn 'SkyvernAgent\\|skyvern_action_' --include='*.go' pkg cmd"
+        expected: "zero matches — Skyvern code is quarantined to tools/opensource/skyvern/ only"
+      - name: "Grep for Skyvern imports"
+        action: "grep -rn 'digital.vasic.helixqa/tools/opensource/skyvern' --include='*.go'"
+        expected: "zero matches — Go module system must never pull Skyvern code into the build graph"
+    expected_result: "AGPL code remains reference-only; HelixQA's Apache-2.0 posture preserved"
+
+  - id: OC-REF-003
+    name: "Sync script reports pinned-vs-remote diff without mutating state"
+    category: functional
+    priority: high
+    platforms: [api]
+    tags: [openclawing2, phase1, sync]
+    steps:
+      - name: "Run scripts/sync-opensource-references.sh (default diff mode)"
+        action: "scripts/sync-opensource-references.sh"
+        expected: "Emits a table with SUBMODULE / PINNED_SHA / REMOTE_HEAD / STATE columns without checking out anything"
+      - name: "Verify --fetch-only honours the safety contract"
+        action: "scripts/sync-opensource-references.sh --fetch-only"
+        expected: "Fetches but never checks out; exit code 0"
+    expected_result: "Operators can dry-run the sync safely before committing a SHA bump"
+
+  - id: OC-REF-004
+    name: "Pinned SHAs in opensource-references.md match the on-disk submodule state"
+    category: regression
+    priority: high
+    platforms: [api]
+    tags: [openclawing2, phase1, sha-pin]
+    steps:
+      - name: "For each OpenClawing2 submodule, compare git rev-parse HEAD to the Pinned SHA column"
+        action: "for m in browser-use skyvern stagehand ui-tars ui-tars-desktop anthropic-quickstarts; do (cd tools/opensource/$m && git rev-parse HEAD); done"
+        expected: "Each SHA equals the value documented in docs/opensource-references.md"
+    expected_result: "Doc + code stay in lockstep; SHA drift is caught at PR time"

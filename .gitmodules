@@ -67,3 +67,15 @@
 [submodule "tools/test-apps/rest-demo"]
 	path = tools/test-apps/rest-demo
 	url = git@github.com:nicehash/rest-clients-demo.git
+[submodule "tools/opensource/browser-use"]
+	path = tools/opensource/browser-use
+	url = git@github.com:browser-use/browser-use.git
+[submodule "tools/opensource/skyvern"]
+	path = tools/opensource/skyvern
+	url = git@github.com:Skyvern-AI/skyvern.git
+[submodule "tools/opensource/anthropic-quickstarts"]
+	path = tools/opensource/anthropic-quickstarts
+	url = git@github.com:anthropics/anthropic-quickstarts.git
+[submodule "tools/opensource/ui-tars-desktop"]
+	path = tools/opensource/ui-tars-desktop
+	url = git@github.com:bytedance/UI-TARS-desktop.git
