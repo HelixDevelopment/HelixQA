@@ -148,6 +148,14 @@ if phase_enabled 7; then
     go test ./pkg/ticket/... -count=1 -race || FAILED+=(phase7-ticket)
 fi
 
+# P10 — real-MinIO container integration (build-tagged, auto-skips
+# when no container runtime is reachable).
+if [[ "${HELIXQA_SKIP_CONTAINER_TESTS:-0}" != "1" ]]; then
+  run_or_print p10-minio-integration \
+    go test -tags=integration ./pkg/nexus/orchestrator/... -count=1 -run P10 \
+    || FAILED+=(p10-minio-integration)
+fi
+
 # Benchmarks — only when explicitly requested.
 if [[ $SKIP_BENCH == 0 ]]; then
   run_or_print benchmarks \
