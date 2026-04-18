@@ -1,0 +1,268 @@
+{
+  "id": "ocu-capture",
+  "version": "1.0",
+  "name": "OCU P1 Capture",
+  "description": "Validates the capture engine: factory, web/linux/android/androidtv sources, stress behaviour.",
+  "metadata": {
+    "author": "vasic-digital",
+    "priority": "2"
+  },
+  "test_cases": [
+    {
+      "id": "OCU-CAPTURE-001",
+      "name": "factory-register-and-open",
+      "category": "unit",
+      "priority": "critical",
+      "steps": [
+        {
+          "name": "Run factory register and open",
+          "action": "go-test: digital.vasic.helixqa/pkg/nexus/capture TestFactory_RegisterAndOpen",
+          "expected": "pass"
+        }
+      ],
+      "tags": ["ocu", "capture", "factory", "happy"],
+      "estimated_duration": "5s",
+      "expected_result": "Custom factory registered under a test kind is discoverable via Kinds() and Open() returns a non-nil CaptureSource"
+    },
+    {
+      "id": "OCU-CAPTURE-002",
+      "name": "factory-unknown-kind-errors",
+      "category": "unit",
+      "priority": "high",
+      "steps": [
+        {
+          "name": "Run factory unknown kind error case",
+          "action": "go-test: digital.vasic.helixqa/pkg/nexus/capture TestFactory_UnknownKind",
+          "expected": "pass"
+        }
+      ],
+      "tags": ["ocu", "capture", "factory", "edge"],
+      "estimated_duration": "5s",
+      "expected_result": "Open() returns a non-nil error containing the unregistered kind name"
+    },
+    {
+      "id": "OCU-CAPTURE-003",
+      "name": "factory-concurrent-register-race",
+      "category": "unit",
+      "priority": "high",
+      "steps": [
+        {
+          "name": "Run factory concurrent register race check",
+          "action": "go-test: digital.vasic.helixqa/pkg/nexus/capture TestFactory_ConcurrentRegister",
+          "expected": "pass"
+        }
+      ],
+      "tags": ["ocu", "capture", "factory", "adversarial", "race"],
+      "estimated_duration": "10s",
+      "expected_result": "Concurrent Register() and Open() calls on the factory produce no data races under -race"
+    },
+    {
+      "id": "OCU-CAPTURE-010",
+      "name": "web-source-produces-frames",
+      "category": "unit",
+      "priority": "critical",
+      "steps": [
+        {
+          "name": "Run web source mock frame production",
+          "action": "go-test: digital.vasic.helixqa/pkg/nexus/capture/web TestSource_ProducesFramesFromMock",
+          "expected": "pass"
+        }
+      ],
+      "tags": ["ocu", "capture", "web", "happy"],
+      "estimated_duration": "5s",
+      "expected_result": "Web source with mock producer emits 3 frames with correct Seq, Width, and PixelFormat"
+    },
+    {
+      "id": "OCU-CAPTURE-011",
+      "name": "web-source-factory-registration",
+      "category": "unit",
+      "priority": "critical",
+      "steps": [
+        {
+          "name": "Run web source factory registration check",
+          "action": "go-test: digital.vasic.helixqa/pkg/nexus/capture/web TestSource_RegisteredInFactory",
+          "expected": "pass"
+        }
+      ],
+      "tags": ["ocu", "capture", "web", "happy"],
+      "estimated_duration": "5s",
+      "expected_result": "capture.Kinds() contains \"web\" after the web sub-package init() runs"
+    },
+    {
+      "id": "OCU-CAPTURE-012",
+      "name": "web-production-not-wired",
+      "category": "unit",
+      "priority": "high",
+      "steps": [
+        {
+          "name": "Run web source production ErrNotWired check",
+          "action": "go-test: digital.vasic.helixqa/pkg/nexus/capture/web TestSource_ProductionOpenReturnsNotImplemented",
+          "expected": "pass"
+        }
+      ],
+      "tags": ["ocu", "capture", "web", "edge"],
+      "estimated_duration": "5s",
+      "expected_result": "Open() with the real productionFrameProducer returns ErrNotWired and no CaptureSource"
+    },
+    {
+      "id": "OCU-CAPTURE-013",
+      "name": "web-stress-100-clients",
+      "category": "stress",
+      "priority": "high",
+      "steps": [
+        {
+          "name": "Run 100-goroutine concurrent web source stress test under -race",
+          "action": "go-test: digital.vasic.helixqa/pkg/nexus/capture/web TestStress_Source_100Clients",
+          "expected": "pass"
+        }
+      ],
+      "tags": ["ocu", "capture", "web", "stress", "race", "adversarial"],
+      "estimated_duration": "30s",
+      "expected_result": "Zero errors and zero data races across 100 concurrent Open→Start→read-3-frames→Stop→Close cycles"
+    },
+    {
+      "id": "OCU-CAPTURE-020",
+      "name": "linux-source-produces-frames",
+      "category": "unit",
+      "priority": "critical",
+      "steps": [
+        {
+          "name": "Run linux source mock frame production",
+          "action": "go-test: digital.vasic.helixqa/pkg/nexus/capture/linux TestSource_ProducesFramesFromMock",
+          "expected": "pass"
+        }
+      ],
+      "tags": ["ocu", "capture", "linux", "happy"],
+      "estimated_duration": "5s",
+      "expected_result": "Linux X11 source with mock producer emits 3 frames with correct Seq, Width, and PixelFormat"
+    },
+    {
+      "id": "OCU-CAPTURE-021",
+      "name": "linux-source-factory-registration",
+      "category": "unit",
+      "priority": "critical",
+      "steps": [
+        {
+          "name": "Run linux source factory registration check",
+          "action": "go-test: digital.vasic.helixqa/pkg/nexus/capture/linux TestSource_RegisteredInFactory",
+          "expected": "pass"
+        }
+      ],
+      "tags": ["ocu", "capture", "linux", "happy"],
+      "estimated_duration": "5s",
+      "expected_result": "capture.Kinds() contains \"linux-x11\" after the linux sub-package init() runs"
+    },
+    {
+      "id": "OCU-CAPTURE-022",
+      "name": "linux-production-not-wired",
+      "category": "unit",
+      "priority": "high",
+      "steps": [
+        {
+          "name": "Run linux source production ErrNotWired check",
+          "action": "go-test: digital.vasic.helixqa/pkg/nexus/capture/linux TestSource_ProductionOpenReturnsNotImplemented",
+          "expected": "pass"
+        }
+      ],
+      "tags": ["ocu", "capture", "linux", "edge"],
+      "estimated_duration": "5s",
+      "expected_result": "Open() with the real productionFrameProducer returns ErrNotWired and no CaptureSource"
+    },
+    {
+      "id": "OCU-CAPTURE-023",
+      "name": "linux-stress-100-clients",
+      "category": "stress",
+      "priority": "high",
+      "steps": [
+        {
+          "name": "Run 100-goroutine concurrent linux source stress test under -race",
+          "action": "go-test: digital.vasic.helixqa/pkg/nexus/capture/linux TestStress_Source_100Clients",
+          "expected": "pass"
+        }
+      ],
+      "tags": ["ocu", "capture", "linux", "stress", "race", "adversarial"],
+      "estimated_duration": "30s",
+      "expected_result": "Zero errors and zero data races across 100 concurrent Open→Start→read-3-frames→Stop→Close cycles"
+    },
+    {
+      "id": "OCU-CAPTURE-030",
+      "name": "android-source-produces-h264",
+      "category": "unit",
+      "priority": "critical",
+      "steps": [
+        {
+          "name": "Run android source H264 frame production",
+          "action": "go-test: digital.vasic.helixqa/pkg/nexus/capture/android TestSource_ProducesH264Frames",
+          "expected": "pass"
+        }
+      ],
+      "tags": ["ocu", "capture", "android", "happy"],
+      "estimated_duration": "5s",
+      "expected_result": "Android source with mock producer emits 3 H264-format frames with correct NAL unit header bytes"
+    },
+    {
+      "id": "OCU-CAPTURE-031",
+      "name": "android-factory-registers-both-kinds",
+      "category": "unit",
+      "priority": "critical",
+      "steps": [
+        {
+          "name": "Run android factory both-kinds registration check",
+          "action": "go-test: digital.vasic.helixqa/pkg/nexus/capture/android TestFactoryRegistersBothKinds",
+          "expected": "pass"
+        }
+      ],
+      "tags": ["ocu", "capture", "android", "androidtv", "happy"],
+      "estimated_duration": "5s",
+      "expected_result": "capture.Kinds() contains both \"android\" and \"androidtv\" after the android sub-package init() runs"
+    },
+    {
+      "id": "OCU-CAPTURE-032",
+      "name": "android-source-reports-kind",
+      "category": "unit",
+      "priority": "high",
+      "steps": [
+        {
+          "name": "Run android source Name() kind reporting check",
+          "action": "go-test: digital.vasic.helixqa/pkg/nexus/capture/android TestSource_ReportsCorrectKind",
+          "expected": "pass"
+        }
+      ],
+      "tags": ["ocu", "capture", "android", "androidtv", "happy"],
+      "estimated_duration": "5s",
+      "expected_result": "Source opened via 'android' kind returns Name()=\"android\"; via 'androidtv' returns Name()=\"androidtv\""
+    },
+    {
+      "id": "OCU-CAPTURE-033",
+      "name": "android-production-not-wired",
+      "category": "unit",
+      "priority": "high",
+      "steps": [
+        {
+          "name": "Run android source production ErrNotWired check",
+          "action": "go-test: digital.vasic.helixqa/pkg/nexus/capture/android TestProductionOpenReturnsErrNotWired",
+          "expected": "pass"
+        }
+      ],
+      "tags": ["ocu", "capture", "android", "edge"],
+      "estimated_duration": "5s",
+      "expected_result": "Start() with the real productionFrameProducer returns ErrNotWired (Open succeeds; Start is where android checks)"
+    },
+    {
+      "id": "OCU-CAPTURE-034",
+      "name": "android-stress-100-clients",
+      "category": "stress",
+      "priority": "high",
+      "steps": [
+        {
+          "name": "Run 100-goroutine concurrent android source stress test under -race",
+          "action": "go-test: digital.vasic.helixqa/pkg/nexus/capture/android TestStress_Source_100Clients",
+          "expected": "pass"
+        }
+      ],
+      "tags": ["ocu", "capture", "android", "androidtv", "stress", "race", "adversarial"],
+      "estimated_duration": "30s",
+      "expected_result": "Zero errors and zero data races across 100 concurrent Open→Start→read-3-frames→Stop→Close cycles"
+    }
+  ]
+}
