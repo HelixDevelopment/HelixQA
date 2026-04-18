@@ -153,3 +153,93 @@ func TestCapability_ZeroValue(t *testing.T) {
 	assert.Equal(t, 0, c.MinVRAM)
 	assert.False(t, c.PreferLocal)
 }
+
+// ── Spec-review gap fill ──────────────────────────────────────────────────────
+
+func TestCaptureStats_ZeroValue(t *testing.T) {
+	var s CaptureStats
+	require.Zero(t, s.FramesProduced)
+	require.Zero(t, s.FramesDropped)
+	require.True(t, s.LastFrameAt.IsZero())
+	require.Zero(t, s.AverageLatency)
+}
+
+func TestDMABufHandle_FieldsAccessible(t *testing.T) {
+	h := DMABufHandle{FD: 7, Width: 1920, Height: 1080, Stride: 7680, Modifier: 0x100}
+	require.Equal(t, 7, h.FD)
+	require.Equal(t, 1920, h.Width)
+	require.Equal(t, uint64(0x100), h.Modifier)
+}
+
+func TestOCRResult_FieldsAccessible(t *testing.T) {
+	r := OCRResult{
+		Blocks:   []OCRBlock{{Text: "hi", Rect: Rect{1, 2, 3, 4}}},
+		FullText: "hi",
+	}
+	require.Len(t, r.Blocks, 1)
+	require.Equal(t, "hi", r.FullText)
+}
+
+func TestDiffResult_FieldsAccessible(t *testing.T) {
+	d := DiffResult{
+		Regions:    []ChangeRegion{{Rect: Rect{W: 10, H: 10}, Magnitude: 0.5, PixelCount: 100}},
+		TotalDelta: 0.5,
+		SameShape:  true,
+	}
+	require.Len(t, d.Regions, 1)
+	require.Equal(t, 0.5, d.TotalDelta)
+	require.True(t, d.SameShape)
+}
+
+func TestMatch_FieldsAccessible(t *testing.T) {
+	m := Match{Rect: Rect{X: 10, Y: 20, W: 30, H: 40}, Confidence: 0.88}
+	require.Equal(t, 10, m.Rect.X)
+	require.Equal(t, 0.88, m.Confidence)
+}
+
+func TestTypeOptions_ZeroValue(t *testing.T) {
+	var o TypeOptions
+	require.Zero(t, o.DelayPerChar)
+	require.False(t, o.ClearFirst)
+}
+
+func TestKeyOptions_ZeroValue(t *testing.T) {
+	var o KeyOptions
+	require.Empty(t, o.Modifiers)
+	require.Zero(t, o.HoldFor)
+}
+
+func TestDragOptions_ZeroValue(t *testing.T) {
+	var o DragOptions
+	require.Equal(t, ClickLeft, o.Button)
+	require.Zero(t, o.Steps)
+	require.Zero(t, o.Duration)
+	require.Empty(t, o.Modifiers)
+}
+
+func TestEventKind_HookPresent(t *testing.T) {
+	require.NotEmpty(t, string(EventKindHook))
+}
+
+func TestClipOptions_AnchorPointAndAnnotation(t *testing.T) {
+	o := ClipOptions{
+		BurntInActionArrow: true,
+		AnchorPoint:        Point{X: 100, Y: 200},
+		Annotation:         "click here",
+	}
+	require.Equal(t, 100, o.AnchorPoint.X)
+	require.Equal(t, "click here", o.Annotation)
+}
+
+// Compile-time interface satisfaction checks — ensure the contract
+// surfaces stay referenced so a rename downstream fails the build.
+var (
+	_ = (*Interactor)(nil)
+	_ = (*CaptureSource)(nil)
+	_ = (*VisionPipeline)(nil)
+	_ = (*Observer)(nil)
+	_ = (*Recorder)(nil)
+	_ = (*Worker)(nil)
+	_ = (*Dispatcher)(nil)
+	_ = (*FrameData)(nil)
+)
