@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"os/exec"
+	"strconv"
 	"strings"
 )
 
@@ -99,6 +100,73 @@ func (l *LinuxEngine) FindByRole(ctx context.Context, role string) (Element, err
 		return Element{}, fmt.Errorf("linux: no element role=%q", role)
 	}
 	return Element{Handle: handle, Role: role}, nil
+}
+
+// CoordClick dispatches a Phase-6 coord-grounded click at the
+// (x, y) pixel pair. Unlike Click (which refuses empty Elements
+// per B9), CoordClick accepts explicit pixel intent and uses
+// xdotool to move + click. Refuses under Wayland-native mode
+// because xdotool cannot drive Wayland compositors.
+func (l *LinuxEngine) CoordClick(ctx context.Context, x, y int) error {
+	if l.waylandNative {
+		return errors.New("linux: xdotool CoordClick unavailable under Wayland")
+	}
+	if x < 0 || y < 0 {
+		return fmt.Errorf("linux: CoordClick refuses negative coords (%d, %d)", x, y)
+	}
+	if _, err := l.commandRunner(ctx, "xdotool", "mousemove", strconv.Itoa(x), strconv.Itoa(y)); err != nil {
+		return fmt.Errorf("linux: CoordClick mousemove: %w", err)
+	}
+	_, err := l.commandRunner(ctx, "xdotool", "click", "1")
+	return err
+}
+
+// CoordType clicks at (x, y) to land focus, then types text.
+func (l *LinuxEngine) CoordType(ctx context.Context, x, y int, text string) error {
+	if text == "" {
+		return errors.New("linux: CoordType refuses empty text")
+	}
+	if err := l.CoordClick(ctx, x, y); err != nil {
+		return err
+	}
+	_, err := l.commandRunner(ctx, "xdotool", "type", "--delay", "10", text)
+	return err
+}
+
+// CoordScroll moves the pointer to (x, y) and fires scroll events
+// via xdotool button 4 (up) / button 5 (down). dx is mapped to
+// horizontal scroll via shift+scroll since xdotool lacks dedicated
+// horizontal buttons on X11.
+func (l *LinuxEngine) CoordScroll(ctx context.Context, x, y, dx, dy int) error {
+	if l.waylandNative {
+		return errors.New("linux: xdotool CoordScroll unavailable under Wayland")
+	}
+	if _, err := l.commandRunner(ctx, "xdotool", "mousemove", strconv.Itoa(x), strconv.Itoa(y)); err != nil {
+		return fmt.Errorf("linux: CoordScroll mousemove: %w", err)
+	}
+	// Vertical — xdotool button 4 = up, 5 = down. We fire one event
+	// per 120-pixel delta step (standard mouse-wheel tick size).
+	steps := absInt(dy) / 120
+	if steps == 0 && dy != 0 {
+		steps = 1
+	}
+	button := "5"
+	if dy < 0 {
+		button = "4"
+	}
+	for i := 0; i < steps; i++ {
+		if _, err := l.commandRunner(ctx, "xdotool", "click", button); err != nil {
+			return fmt.Errorf("linux: CoordScroll button %s: %w", button, err)
+		}
+	}
+	return nil
+}
+
+func absInt(v int) int {
+	if v < 0 {
+		return -v
+	}
+	return v
 }
 
 // Click uses AT-SPI's default action on the handle; falls back to

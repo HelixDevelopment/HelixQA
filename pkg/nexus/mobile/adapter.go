@@ -120,9 +120,57 @@ func (e *Engine) Do(ctx context.Context, s nexus.Session, a nexus.Action) error 
 		return NewGestures(e.client, e.caps.Platform).Scroll(ctx, dir, dist)
 	case "key":
 		return NewGestures(e.client, e.caps.Platform).Key(ctx, a.Target)
+
+	// Phase-6 coord-grounded dispatch: map to the same underlying
+	// Gestures primitives so UI-TARS-style (x, y) instructions work
+	// on mobile without a separate Adapter.
+	case "coord_click":
+		return NewGestures(e.client, e.caps.Platform).Tap(ctx, a.X, a.Y)
+	case "coord_type":
+		// Tap the target first so focus lands on the input, then
+		// send keys to the active element using Appium's
+		// no-element path (empty element id).
+		if err := NewGestures(e.client, e.caps.Platform).Tap(ctx, a.X, a.Y); err != nil {
+			return fmt.Errorf("mobile coord_type tap: %w", err)
+		}
+		return e.client.SendKeys(ctx, "", a.Text)
+	case "coord_scroll":
+		dx, _ := a.Params["dx"].(int)
+		dy, _ := a.Params["dy"].(int)
+		// Derive a direction/distance pair so the same Gestures.Scroll
+		// primitive dispatches. Prefer the larger axis; fall back to
+		// the configured default when both are zero.
+		dir := "down"
+		dist := 0
+		if absInt(dy) >= absInt(dx) {
+			if dy < 0 {
+				dir = "up"
+				dist = -dy
+			} else {
+				dir = "down"
+				dist = dy
+			}
+		} else {
+			if dx < 0 {
+				dir = "left"
+				dist = -dx
+			} else {
+				dir = "right"
+				dist = dx
+			}
+		}
+		return NewGestures(e.client, e.caps.Platform).Scroll(ctx, dir, dist)
+
 	default:
 		return fmt.Errorf("mobile: unsupported action kind %q", a.Kind)
 	}
+}
+
+func absInt(v int) int {
+	if v < 0 {
+		return -v
+	}
+	return v
 }
 
 // Screenshot fetches a PNG frame.
