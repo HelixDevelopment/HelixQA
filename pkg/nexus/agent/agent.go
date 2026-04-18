@@ -58,7 +58,31 @@ type Config struct {
 	// sees. Zero = 4 (browser-use default). A MessageManager swap-in
 	// can override this per step.
 	RecentStepsInPrompt int
+
+	// --- Phase-4 resilience wiring (opt-in) -----------------------
+	// ExecuteRetry, when non-nil, wraps every Adapter.Do call in
+	// RetryWithBackoff so transient failures recover without the
+	// planner seeing them. A nil policy keeps the zero-overhead
+	// default (one attempt per Action).
+	ExecuteRetry *BackoffPolicy
+
+	// LoopDetector, when non-nil, records every step's action
+	// fingerprint. Step() aborts with ErrLoopDetected when the
+	// detector trips so Run() can escalate instead of burning
+	// iterations.
+	LoopDetector *LoopDetector
+
+	// SelfHealer, when non-nil, re-plans after Execute exhausts its
+	// retries. The healed plan replaces the failed step's Actions;
+	// if healing also fails the Step returns the original error.
+	SelfHealer *SelfHealer
 }
+
+// ErrLoopDetected is returned from Step / Run when a configured
+// LoopDetector trips on the current action fingerprint. Callers
+// treat this as an escalation signal — the planner is stuck and
+// needs human / external intervention.
+var ErrLoopDetected = errors.New("agent: loop detected")
 
 // DefaultSystemPrompt is the planner system prompt used when
 // Config.SystemPrompt is empty. Written as a single string so unit
@@ -172,11 +196,55 @@ func (a *Agent) Step(parent context.Context, state *AgentState, sess nexus.Sessi
 	results := a.Execute(ctx, state, sess, step.Actions)
 	step.Results = results
 
+	// Phase 4 resilience integration — self-heal on Execute
+	// failure. When a healer is wired and at least one action in
+	// the step failed, re-plan with the failure reason prepended
+	// and dispatch the healed actions. The original step (with
+	// the failed results) still lands in History so observers see
+	// the full trajectory.
+	if a.cfg.SelfHealer != nil && lastFailureReason(results) != "" {
+		healed, hErr := a.cfg.SelfHealer.Heal(ctx, state, lastFailureReason(results))
+		if hErr == nil && len(healed.Actions) > 0 {
+			healResults := a.Execute(ctx, state, sess, healed.Actions)
+			step.Results = append(step.Results, healResults...)
+			// Merge heal memo so the next planner call sees the
+			// healed action too.
+			if healed.Memory != "" {
+				step.Memory = healed.Memory
+			}
+			if healed.Done {
+				step.Done = true
+			}
+		}
+	}
+
+	// Loop detection runs on the final action fingerprint for
+	// this step (healed or original).
+	if a.cfg.LoopDetector != nil {
+		a.cfg.LoopDetector.Record(step.Actions)
+		if a.cfg.LoopDetector.IsLoop() {
+			a.PostProcess(ctx, state, step)
+			return ErrLoopDetected
+		}
+	}
+
 	// Phase 4.
 	state.CurrentPhase = PhasePostProcess
 	a.PostProcess(ctx, state, step)
 
 	return nil
+}
+
+// lastFailureReason returns a human-readable description of the
+// first failed ActionResult in results, or the empty string when
+// every action succeeded.
+func lastFailureReason(results []ActionResult) string {
+	for _, r := range results {
+		if !r.Success {
+			return r.Action.Kind + " " + r.Action.Target + ": " + r.Err
+		}
+	}
+	return ""
 }
 
 // PrepareContext captures a fresh Snapshot + Screenshot through the
@@ -223,11 +291,22 @@ func (a *Agent) PlanActions(ctx context.Context, state *AgentState) (AgentStep, 
 // failure produces an ActionResult with Success=false + the error
 // text, but the loop continues so the planner sees the full
 // picture and can decide whether to retry or give up.
+//
+// When Config.ExecuteRetry is set, every Adapter.Do call is wrapped
+// in RetryWithBackoff so transient failures recover automatically.
 func (a *Agent) Execute(ctx context.Context, state *AgentState, sess nexus.Session, actions []nexus.Action) []ActionResult {
 	out := make([]ActionResult, 0, len(actions))
 	for _, action := range actions {
 		start := time.Now()
-		err := a.adapter.Do(ctx, sess, action)
+		var err error
+		if a.cfg.ExecuteRetry != nil {
+			act := action
+			err = RetryWithBackoff(ctx, *a.cfg.ExecuteRetry, func() error {
+				return a.adapter.Do(ctx, sess, act)
+			})
+		} else {
+			err = a.adapter.Do(ctx, sess, action)
+		}
 		out = append(out, ActionResult{
 			Action:   action,
 			Success:  err == nil,
