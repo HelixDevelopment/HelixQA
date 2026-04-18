@@ -1,0 +1,365 @@
+{
+  "id": "ocu-automation",
+  "version": "1.0.0",
+  "name": "OCU P6 — Unified Automation Surface",
+  "description": "Test bank covering Engine dispatch for all ActionKinds, PixelVerifier, MultiVerifier, Bridge adapter, and concurrent stress. All sub-engines are stub-backed.",
+  "metadata": {
+    "phase": "P6",
+    "package": "digital.vasic.helixqa/pkg/nexus/automation",
+    "created": "2026-04-18"
+  },
+  "test_cases": [
+    {
+      "id": "OCU-AUTO-001",
+      "name": "engine-click-success",
+      "category": "unit",
+      "priority": "critical",
+      "steps": [
+        {
+          "name": "Run Engine click success test",
+          "action": "go-test: digital.vasic.helixqa/pkg/nexus/automation TestEngine_Click_Success",
+          "expected": "pass"
+        }
+      ],
+      "tags": ["ocu", "automation", "engine", "click", "happy"],
+      "estimated_duration": "5s",
+      "expected_result": "Engine.Perform with ActionClick dispatches to Interactor.Click and returns Result.Success=true"
+    },
+    {
+      "id": "OCU-AUTO-002",
+      "name": "engine-click-error",
+      "category": "unit",
+      "priority": "critical",
+      "steps": [
+        {
+          "name": "Run Engine click error test",
+          "action": "go-test: digital.vasic.helixqa/pkg/nexus/automation TestEngine_Click_Error",
+          "expected": "pass"
+        }
+      ],
+      "tags": ["ocu", "automation", "engine", "click", "error"],
+      "estimated_duration": "5s",
+      "expected_result": "Interactor.Click error is captured in Result.Error; Perform itself returns no error"
+    },
+    {
+      "id": "OCU-AUTO-003",
+      "name": "engine-type-success",
+      "category": "unit",
+      "priority": "critical",
+      "steps": [
+        {
+          "name": "Run Engine type success test",
+          "action": "go-test: digital.vasic.helixqa/pkg/nexus/automation TestEngine_Type_Success",
+          "expected": "pass"
+        }
+      ],
+      "tags": ["ocu", "automation", "engine", "type", "happy"],
+      "estimated_duration": "5s",
+      "expected_result": "Engine.Perform with ActionType dispatches to Interactor.Type and returns Result.Success=true"
+    },
+    {
+      "id": "OCU-AUTO-004",
+      "name": "engine-scroll-success",
+      "category": "unit",
+      "priority": "high",
+      "steps": [
+        {
+          "name": "Run Engine scroll success test",
+          "action": "go-test: digital.vasic.helixqa/pkg/nexus/automation TestEngine_Scroll_Success",
+          "expected": "pass"
+        }
+      ],
+      "tags": ["ocu", "automation", "engine", "scroll", "happy"],
+      "estimated_duration": "5s",
+      "expected_result": "Engine.Perform with ActionScroll dispatches DX/DY to Interactor.Scroll"
+    },
+    {
+      "id": "OCU-AUTO-005",
+      "name": "engine-key-success",
+      "category": "unit",
+      "priority": "high",
+      "steps": [
+        {
+          "name": "Run Engine key success test",
+          "action": "go-test: digital.vasic.helixqa/pkg/nexus/automation TestEngine_Key_Success",
+          "expected": "pass"
+        }
+      ],
+      "tags": ["ocu", "automation", "engine", "key", "happy"],
+      "estimated_duration": "5s",
+      "expected_result": "Engine.Perform with ActionKey dispatches KeyCode to Interactor.Key"
+    },
+    {
+      "id": "OCU-AUTO-006",
+      "name": "engine-drag-success",
+      "category": "unit",
+      "priority": "high",
+      "steps": [
+        {
+          "name": "Run Engine drag success test",
+          "action": "go-test: digital.vasic.helixqa/pkg/nexus/automation TestEngine_Drag_Success",
+          "expected": "pass"
+        }
+      ],
+      "tags": ["ocu", "automation", "engine", "drag", "happy"],
+      "estimated_duration": "5s",
+      "expected_result": "Engine.Perform with ActionDrag dispatches At/To to Interactor.Drag"
+    },
+    {
+      "id": "OCU-AUTO-007",
+      "name": "engine-capture-success",
+      "category": "unit",
+      "priority": "critical",
+      "steps": [
+        {
+          "name": "Run Engine capture success test",
+          "action": "go-test: digital.vasic.helixqa/pkg/nexus/automation TestEngine_Capture_Success",
+          "expected": "pass"
+        }
+      ],
+      "tags": ["ocu", "automation", "engine", "capture", "happy"],
+      "estimated_duration": "5s",
+      "expected_result": "ActionCapture reads one frame and records EvidenceRef{Kind:screenshot_before, Ref:seq-42}"
+    },
+    {
+      "id": "OCU-AUTO-008",
+      "name": "engine-capture-no-frame",
+      "category": "unit",
+      "priority": "high",
+      "steps": [
+        {
+          "name": "Run Engine capture no-frame test",
+          "action": "go-test: digital.vasic.helixqa/pkg/nexus/automation TestEngine_Capture_NoFrame",
+          "expected": "pass"
+        }
+      ],
+      "tags": ["ocu", "automation", "engine", "capture", "edge"],
+      "estimated_duration": "5s",
+      "expected_result": "When no frame is available, Result.Success=false and Result.Error contains 'no frame'"
+    },
+    {
+      "id": "OCU-AUTO-009",
+      "name": "engine-capture-closed-channel",
+      "category": "unit",
+      "priority": "high",
+      "steps": [
+        {
+          "name": "Run Engine capture closed-channel test",
+          "action": "go-test: digital.vasic.helixqa/pkg/nexus/automation TestEngine_Capture_ClosedChannel",
+          "expected": "pass"
+        }
+      ],
+      "tags": ["ocu", "automation", "engine", "capture", "edge"],
+      "estimated_duration": "5s",
+      "expected_result": "When frames channel is closed, Result.Error contains 'closed'"
+    },
+    {
+      "id": "OCU-AUTO-010",
+      "name": "engine-analyze-dispatched-to",
+      "category": "unit",
+      "priority": "critical",
+      "steps": [
+        {
+          "name": "Run Engine analyze DispatchedTo test",
+          "action": "go-test: digital.vasic.helixqa/pkg/nexus/automation TestEngine_Analyze_DispatchedTo",
+          "expected": "pass"
+        }
+      ],
+      "tags": ["ocu", "automation", "engine", "analyze", "happy"],
+      "estimated_duration": "5s",
+      "expected_result": "Analysis.DispatchedTo propagates into Result.DispatchedTo"
+    },
+    {
+      "id": "OCU-AUTO-011",
+      "name": "engine-analyze-vision-error",
+      "category": "unit",
+      "priority": "high",
+      "steps": [
+        {
+          "name": "Run Engine analyze vision error test",
+          "action": "go-test: digital.vasic.helixqa/pkg/nexus/automation TestEngine_Analyze_VisionError",
+          "expected": "pass"
+        }
+      ],
+      "tags": ["ocu", "automation", "engine", "analyze", "error"],
+      "estimated_duration": "5s",
+      "expected_result": "VisionPipeline.Analyze error captured in Result.Error; Success=false"
+    },
+    {
+      "id": "OCU-AUTO-012",
+      "name": "engine-record-clip-success",
+      "category": "unit",
+      "priority": "critical",
+      "steps": [
+        {
+          "name": "Run Engine record clip success test",
+          "action": "go-test: digital.vasic.helixqa/pkg/nexus/automation TestEngine_RecordClip_Success",
+          "expected": "pass"
+        }
+      ],
+      "tags": ["ocu", "automation", "engine", "record_clip", "happy"],
+      "estimated_duration": "5s",
+      "expected_result": "ActionRecordClip writes to Recorder.Clip and records EvidenceRef{Kind:clip}"
+    },
+    {
+      "id": "OCU-AUTO-013",
+      "name": "engine-record-clip-error",
+      "category": "unit",
+      "priority": "high",
+      "steps": [
+        {
+          "name": "Run Engine record clip error test",
+          "action": "go-test: digital.vasic.helixqa/pkg/nexus/automation TestEngine_RecordClip_Error",
+          "expected": "pass"
+        }
+      ],
+      "tags": ["ocu", "automation", "engine", "record_clip", "error"],
+      "estimated_duration": "5s",
+      "expected_result": "Recorder.Clip error captured in Result.Error; Success=false"
+    },
+    {
+      "id": "OCU-AUTO-014",
+      "name": "engine-unknown-kind-error",
+      "category": "unit",
+      "priority": "high",
+      "steps": [
+        {
+          "name": "Run Engine unknown kind returns error",
+          "action": "go-test: digital.vasic.helixqa/pkg/nexus/automation TestEngine_UnknownKind_ReturnsError",
+          "expected": "pass"
+        }
+      ],
+      "tags": ["ocu", "automation", "engine", "edge", "error"],
+      "estimated_duration": "5s",
+      "expected_result": "Unsupported ActionKind causes Perform to return a non-nil error containing 'unsupported action kind'"
+    },
+    {
+      "id": "OCU-AUTO-015",
+      "name": "pixel-verifier-threshold",
+      "category": "unit",
+      "priority": "critical",
+      "steps": [
+        {
+          "name": "Run PixelVerifier threshold tests",
+          "action": "go-test: digital.vasic.helixqa/pkg/nexus/automation/verifier TestPixelVerifier_AboveThreshold_ReturnsTrue TestPixelVerifier_BelowThreshold_ReturnsFalse TestPixelVerifier_EqualThreshold_ReturnsTrue",
+          "expected": "pass"
+        }
+      ],
+      "tags": ["ocu", "automation", "verifier", "pixel", "happy"],
+      "estimated_duration": "5s",
+      "expected_result": "PixelVerifier returns true when TotalDelta >= Threshold, false otherwise"
+    },
+    {
+      "id": "OCU-AUTO-016",
+      "name": "pixel-verifier-error-propagation",
+      "category": "unit",
+      "priority": "high",
+      "steps": [
+        {
+          "name": "Run PixelVerifier error propagation test",
+          "action": "go-test: digital.vasic.helixqa/pkg/nexus/automation/verifier TestPixelVerifier_DiffError_Propagates TestPixelVerifier_NilVision_ReturnsError TestPixelVerifier_NilDiffResult_ReturnsError",
+          "expected": "pass"
+        }
+      ],
+      "tags": ["ocu", "automation", "verifier", "pixel", "error"],
+      "estimated_duration": "5s",
+      "expected_result": "Vision.Diff errors and nil results propagate as errors, never swallowed"
+    },
+    {
+      "id": "OCU-AUTO-017",
+      "name": "multi-verifier-composition",
+      "category": "unit",
+      "priority": "critical",
+      "steps": [
+        {
+          "name": "Run MultiVerifier composition tests",
+          "action": "go-test: digital.vasic.helixqa/pkg/nexus/automation/verifier TestMultiVerifier_AllPass_ReturnsTrue TestMultiVerifier_FirstFails_ReturnsFalse TestMultiVerifier_MiddleFails_ReturnsFalse TestMultiVerifier_ErrorPropagates TestMultiVerifier_Empty_ReturnsTrue",
+          "expected": "pass"
+        }
+      ],
+      "tags": ["ocu", "automation", "verifier", "multi", "composition"],
+      "estimated_duration": "5s",
+      "expected_result": "MultiVerifier short-circuits on first false/error; empty Inner returns true (vacuous)"
+    },
+    {
+      "id": "OCU-AUTO-018",
+      "name": "bridge-nil-engine-error",
+      "category": "unit",
+      "priority": "critical",
+      "steps": [
+        {
+          "name": "Run Bridge nil engine error test",
+          "action": "go-test: digital.vasic.helixqa/pkg/nexus/automation/agent_bridge TestBridge_NilEngine_ReturnsError",
+          "expected": "pass"
+        }
+      ],
+      "tags": ["ocu", "automation", "bridge", "error", "nil"],
+      "estimated_duration": "5s",
+      "expected_result": "Bridge with nil Engine returns error on ExecuteAction without panicking"
+    },
+    {
+      "id": "OCU-AUTO-019",
+      "name": "bridge-happy-path",
+      "category": "unit",
+      "priority": "critical",
+      "steps": [
+        {
+          "name": "Run Bridge happy path test",
+          "action": "go-test: digital.vasic.helixqa/pkg/nexus/automation/agent_bridge TestBridge_HappyPath_PassesThrough",
+          "expected": "pass"
+        }
+      ],
+      "tags": ["ocu", "automation", "bridge", "happy"],
+      "estimated_duration": "5s",
+      "expected_result": "Bridge.ExecuteAction delegates to Engine.Perform; Result.Success=true for ActionClick"
+    },
+    {
+      "id": "OCU-AUTO-020",
+      "name": "bridge-error-surfaces",
+      "category": "unit",
+      "priority": "high",
+      "steps": [
+        {
+          "name": "Run Bridge error surfaces test",
+          "action": "go-test: digital.vasic.helixqa/pkg/nexus/automation/agent_bridge TestBridge_ErrorFromEngine_Surfaces",
+          "expected": "pass"
+        }
+      ],
+      "tags": ["ocu", "automation", "bridge", "error"],
+      "estimated_duration": "5s",
+      "expected_result": "Unsupported ActionKind error from Engine.Perform is returned unchanged by Bridge"
+    },
+    {
+      "id": "OCU-AUTO-021",
+      "name": "bridge-dispatched-to-propagates",
+      "category": "unit",
+      "priority": "high",
+      "steps": [
+        {
+          "name": "Run Bridge DispatchedTo propagation test",
+          "action": "go-test: digital.vasic.helixqa/pkg/nexus/automation/agent_bridge TestBridge_AnalyzeAction_DispatchedTo",
+          "expected": "pass"
+        }
+      ],
+      "tags": ["ocu", "automation", "bridge", "analyze", "happy"],
+      "estimated_duration": "5s",
+      "expected_result": "DispatchedTo from VisionPipeline propagates through Engine and Bridge into caller"
+    },
+    {
+      "id": "OCU-AUTO-022",
+      "name": "stress-100-concurrent",
+      "category": "stress",
+      "priority": "critical",
+      "steps": [
+        {
+          "name": "Run 100-goroutine concurrent stress test",
+          "action": "go-test: -race digital.vasic.helixqa/pkg/nexus/automation TestStress_Engine_100Concurrent",
+          "expected": "pass"
+        }
+      ],
+      "tags": ["ocu", "automation", "stress", "race", "concurrent"],
+      "estimated_duration": "30s",
+      "expected_result": "100 concurrent Perform calls across all ActionKinds complete without data race or error"
+    }
+  ]
+}
