@@ -63,3 +63,31 @@ func TestDispatcher_Resolve_NoHostAvailable(t *testing.T) {
 	})
 	require.Error(t, err)
 }
+
+func TestUnwrap_RemoteWorker(t *testing.T) {
+	d := NewDispatcher(&fakeHostMgr{hosts: map[string]*cremote.HostResources{
+		"thinker": {
+			Host: "thinker", CPUCores: 8, MemoryTotalMB: 32_000,
+			GPU: []cremote.GPUDevice{{Vendor: "nvidia", VRAMFreeMB: 5800, CUDASupported: true}},
+		},
+	}}, scheduler.Options{GPUWeight: 1})
+	w, err := d.Resolve(context.Background(), contracts.Capability{
+		Kind: contracts.KindCUDAOpenCV, MinVRAM: 1024,
+	})
+	require.NoError(t, err)
+	defer w.Close()
+	info, ok := Unwrap(w)
+	require.True(t, ok)
+	require.Equal(t, "thinker", info.Host())
+}
+
+func TestUnwrap_LocalWorker(t *testing.T) {
+	d := NewDispatcher(&fakeHostMgr{}, scheduler.Options{})
+	w, err := d.Resolve(context.Background(), contracts.Capability{
+		Kind: contracts.KindCUDAOpenCV, PreferLocal: true,
+	})
+	require.NoError(t, err)
+	defer w.Close()
+	_, ok := Unwrap(w)
+	require.False(t, ok)
+}
