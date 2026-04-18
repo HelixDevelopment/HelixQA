@@ -1,0 +1,243 @@
+{
+  "version": "1.0",
+  "name": "OpenClawing2 \u2014 Phase 3 Message Manager",
+  "description": "Regression suite for pkg/nexus/agent MessageManager: compaction, digest bounds, pluggable tokenizer, stress + fuzz coverage.",
+  "metadata": {
+    "author": "vasic-digital",
+    "phase": 3,
+    "plan": "docs/plans/2026-04-18-openclawing2-integration-plan.md"
+  },
+  "test_cases": [
+    {
+      "id": "OC-MSG-001",
+      "name": "MessageManager applies defaults when config is zero",
+      "category": "regression",
+      "priority": "high",
+      "platforms": [
+        "api"
+      ],
+      "tags": [
+        "openclawing2",
+        "phase3",
+        "messagemanager"
+      ],
+      "steps": [
+        {
+          "name": "NewMessageManager('SYS', MessageManagerConfig{})",
+          "action": "pkg/nexus/agent.NewMessageManager",
+          "expected": "TokenBudget=8000, VerbatimTurns=4, Tokenizer=ApproxTokenizer, Summariser=DefaultSummariser"
+        }
+      ],
+      "expected_result": "Defaults are safe for dev + production"
+    },
+    {
+      "id": "OC-MSG-002",
+      "name": "CreateStateMessages embeds task goal + elements + screenshot",
+      "category": "functional",
+      "priority": "critical",
+      "platforms": [
+        "api"
+      ],
+      "tags": [
+        "openclawing2",
+        "phase3",
+        "prompt-shaping"
+      ],
+      "steps": [
+        {
+          "name": "Build state with Snapshot + Screenshot",
+          "action": "AgentState + Snapshot.Elements",
+          "expected": "Snapshot captured with 2 elements"
+        },
+        {
+          "name": "CreateStateMessages(state)",
+          "action": "pkg/nexus/agent.MessageManager.CreateStateMessages",
+          "expected": "Content contains TASK_GOAL + element refs; Image attached when screenshot present"
+        }
+      ],
+      "expected_result": "Every planner prompt carries full current-step context"
+    },
+    {
+      "id": "OC-MSG-003",
+      "name": "Compact folds digest + window under the token budget",
+      "category": "regression",
+      "priority": "critical",
+      "platforms": [
+        "api"
+      ],
+      "tags": [
+        "openclawing2",
+        "phase3",
+        "compaction"
+      ],
+      "steps": [
+        {
+          "name": "Seed 10 history steps with long evaluations, budget=50",
+          "action": "pkg/nexus/agent.MessageManager.PrepareStepState",
+          "expected": "Window holds 20 messages pre-compact"
+        },
+        {
+          "name": "Compact(ctx, current)",
+          "action": "pkg/nexus/agent.MessageManager.Compact",
+          "expected": "compacted==true, window size <= 2, digest non-empty"
+        }
+      ],
+      "expected_result": "Compaction keeps prompt inside budget"
+    },
+    {
+      "id": "OC-MSG-004",
+      "name": "Under-budget Compact is a no-op",
+      "category": "regression",
+      "priority": "high",
+      "platforms": [
+        "api"
+      ],
+      "tags": [
+        "openclawing2",
+        "phase3",
+        "compaction"
+      ],
+      "steps": [
+        {
+          "name": "Huge budget + single step",
+          "action": "pkg/nexus/agent.MessageManager.Compact",
+          "expected": "compacted==false, digest empty"
+        }
+      ],
+      "expected_result": "No spurious summariser calls when prompt already fits"
+    },
+    {
+      "id": "OC-MSG-005",
+      "name": "500-step stress session stays under budget",
+      "category": "stress",
+      "priority": "critical",
+      "platforms": [
+        "api"
+      ],
+      "tags": [
+        "openclawing2",
+        "phase3",
+        "stress"
+      ],
+      "steps": [
+        {
+          "name": "Seed 500 history steps, budget=2000",
+          "action": "pkg/nexus/agent.AgentState + Compact",
+          "expected": "Final TotalTokens <= budget"
+        }
+      ],
+      "expected_result": "Long sessions never exceed the configured budget"
+    },
+    {
+      "id": "OC-MSG-006",
+      "name": "Messages() emits system \u2192 digest \u2192 window \u2192 current order",
+      "category": "regression",
+      "priority": "medium",
+      "platforms": [
+        "api"
+      ],
+      "tags": [
+        "openclawing2",
+        "phase3",
+        "ordering"
+      ],
+      "steps": [
+        {
+          "name": "Messages(current)",
+          "action": "pkg/nexus/agent.MessageManager.Messages",
+          "expected": "First = RoleSystem; last = current RoleUser turn"
+        }
+      ],
+      "expected_result": "Deterministic prompt assembly order"
+    },
+    {
+      "id": "OC-MSG-007",
+      "name": "DefaultSummariser output capped at DefaultSummaryMaxBytes",
+      "category": "security",
+      "priority": "high",
+      "platforms": [
+        "api"
+      ],
+      "tags": [
+        "openclawing2",
+        "phase3",
+        "summariser",
+        "dos"
+      ],
+      "steps": [
+        {
+          "name": "Summarise a batch with massive messages",
+          "action": "pkg/nexus/agent.DefaultSummariser.Summarise",
+          "expected": "Output length <= 512 + trunc marker"
+        }
+      ],
+      "expected_result": "Digest cannot grow unbounded even under pathological inputs"
+    },
+    {
+      "id": "OC-MSG-008",
+      "name": "ApproxTokenizer counts are proportional to length",
+      "category": "regression",
+      "priority": "medium",
+      "platforms": [
+        "api"
+      ],
+      "tags": [
+        "openclawing2",
+        "phase3",
+        "tokenizer"
+      ],
+      "steps": [
+        {
+          "name": "CountTokens('') and CountTokens(400-char string)",
+          "action": "pkg/nexus/agent.ApproxTokenizer.CountTokens",
+          "expected": "empty=0; 400 chars >= 100 tokens"
+        }
+      ],
+      "expected_result": "Approx tokenizer is monotonic + non-zero for non-empty input"
+    },
+    {
+      "id": "OC-MSG-009",
+      "name": "Fuzz Compact never panics or loops forever",
+      "category": "security",
+      "priority": "high",
+      "platforms": [
+        "api"
+      ],
+      "tags": [
+        "openclawing2",
+        "phase3",
+        "fuzz"
+      ],
+      "steps": [
+        {
+          "name": "go test -fuzz FuzzMessageManager_Compact",
+          "action": "fuzz harness",
+          "expected": "3-second smoke run: no panics, bounded runtime per iteration"
+        }
+      ],
+      "expected_result": "Compaction path resilient to adversarial inputs"
+    },
+    {
+      "id": "OC-MSG-010",
+      "name": "Benchmark tracks compaction cost per step",
+      "category": "benchmark",
+      "priority": "medium",
+      "platforms": [
+        "api"
+      ],
+      "tags": [
+        "openclawing2",
+        "phase3",
+        "benchmark"
+      ],
+      "steps": [
+        {
+          "name": "go test -bench BenchmarkMessageManager_Compact",
+          "action": "benchmark harness",
+          "expected": "ns/op published so drift is visible across releases"
+        }
+      ],
+      "expected_result": "Compaction overhead observable + baseline-friendly"
+    }
+  ]
+}
