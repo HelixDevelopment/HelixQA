@@ -10,6 +10,16 @@ import (
 	"testing"
 )
 
+// newTestClient returns an HTTPLLMClient that allows private
+// networks so httptest-backed tests (served from 127.0.0.1) are not
+// blocked by the SSRF guard. Production clients keep the guard's
+// default (private + loopback rejected).
+func newTestClient(endpoint, apiKey, model string) *HTTPLLMClient {
+	c := NewHTTPLLMClient(endpoint, apiKey, model)
+	c.SSRFGuard.AllowPrivateNetworks = true
+	return c
+}
+
 func TestHTTPLLMClient_RequiresEndpoint(t *testing.T) {
 	c := &HTTPLLMClient{}
 	if _, err := c.Chat(context.Background(), ChatRequest{Model: "m", UserPrompt: "x"}); err == nil {
@@ -37,7 +47,7 @@ func TestHTTPLLMClient_HappyPath(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	c := NewHTTPLLMClient(srv.URL, "secret", "test-model")
+	c := newTestClient(srv.URL, "secret", "test-model")
 	resp, err := c.Chat(context.Background(), ChatRequest{UserPrompt: "hi"})
 	if err != nil {
 		t.Fatal(err)
@@ -59,7 +69,7 @@ func TestHTTPLLMClient_ErrorStatusSurfaced(t *testing.T) {
 		_, _ = w.Write([]byte(`{"error":"rate limit"}`))
 	}))
 	defer srv.Close()
-	c := NewHTTPLLMClient(srv.URL, "", "m")
+	c := newTestClient(srv.URL, "", "m")
 	_, err := c.Chat(context.Background(), ChatRequest{UserPrompt: "x"})
 	if err == nil || !strings.Contains(err.Error(), "429") {
 		t.Errorf("expected 429 in error, got %v", err)
@@ -71,7 +81,7 @@ func TestHTTPLLMClient_NoChoicesRejected(t *testing.T) {
 		_, _ = w.Write([]byte(`{"choices":[]}`))
 	}))
 	defer srv.Close()
-	c := NewHTTPLLMClient(srv.URL, "", "m")
+	c := newTestClient(srv.URL, "", "m")
 	_, err := c.Chat(context.Background(), ChatRequest{UserPrompt: "x"})
 	if err == nil || !strings.Contains(err.Error(), "no choices") {
 		t.Errorf("expected no-choices error, got %v", err)
@@ -86,7 +96,7 @@ func TestHTTPLLMClient_ImageAttachmentSerialized(t *testing.T) {
 		_, _ = w.Write([]byte(`{"choices":[{"message":{"content":"ok"}}]}`))
 	}))
 	defer srv.Close()
-	c := NewHTTPLLMClient(srv.URL, "", "m")
+	c := newTestClient(srv.URL, "", "m")
 	_, err := c.Chat(context.Background(), ChatRequest{
 		UserPrompt:  "describe",
 		ImageBase64: []string{"AAAA"},
@@ -111,7 +121,7 @@ func TestHTTPLLMClient_ModelDefaultFallback(t *testing.T) {
 		_, _ = w.Write([]byte(`{"choices":[{"message":{"content":"ok"}}]}`))
 	}))
 	defer srv.Close()
-	c := NewHTTPLLMClient(srv.URL, "", "default-m")
+	c := newTestClient(srv.URL, "", "default-m")
 	_, _ = c.Chat(context.Background(), ChatRequest{UserPrompt: "x"}) // no model override
 }
 
@@ -128,7 +138,7 @@ func TestHTTPLLMClient_BadJSONRejected(t *testing.T) {
 		_, _ = w.Write([]byte(`not json`))
 	}))
 	defer srv.Close()
-	c := NewHTTPLLMClient(srv.URL, "", "m")
+	c := newTestClient(srv.URL, "", "m")
 	if _, err := c.Chat(context.Background(), ChatRequest{UserPrompt: "x"}); err == nil {
 		t.Fatal("malformed JSON should error")
 	}

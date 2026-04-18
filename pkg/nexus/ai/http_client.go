@@ -23,6 +23,14 @@ type HTTPLLMClient struct {
 	APIKey      string // optional Bearer token
 	DefaultModel string
 	HTTP        *http.Client
+
+	// SSRFGuard runs on every Chat() call before any bytes leave the
+	// process. Zero value = private / loopback / link-local /
+	// metadata endpoints are all rejected, matching the
+	// "SSRF Defense" guidance from tldrsec/awesome-secure-defaults.
+	// Operators running an internal-only LLM flip
+	// AllowPrivateNetworks=true explicitly.
+	SSRFGuard SSRFGuardConfig
 }
 
 // NewHTTPLLMClient returns a client with a sensible default timeout
@@ -47,6 +55,12 @@ func (c *HTTPLLMClient) Chat(ctx context.Context, req ChatRequest) (ChatResponse
 	}
 	if model == "" {
 		return ChatResponse{}, errors.New("http llm: model is required")
+	}
+	// SSRF gate runs after the cheap endpoint + model checks so
+	// callers with misconfigured fields fast-fail without waiting
+	// on DNS, but before any bytes leave the process.
+	if err := ValidateURL(c.Endpoint, c.SSRFGuard); err != nil {
+		return ChatResponse{}, fmt.Errorf("http llm: %w", err)
 	}
 	body := map[string]any{
 		"model":     model,
