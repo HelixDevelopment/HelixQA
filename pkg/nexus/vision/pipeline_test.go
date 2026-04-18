@@ -120,3 +120,23 @@ func TestPipeline_NilLocalBackend_Errors(t *testing.T) {
 	_, err := p.Analyze(context.Background(), contracts.Frame{})
 	require.Error(t, err)
 }
+
+func TestPipeline_Analyze_RemoteDispatch(t *testing.T) {
+	d := &fakeDispatcher{worker: &fakeWorker{host: "thinker"}}
+	local := &fakeLocal{}
+	p := NewPipeline(d, local)
+	frame := contracts.Frame{Width: 800, Height: 600, Format: contracts.PixelFormatBGRA8}
+	res, err := p.Analyze(context.Background(), frame)
+	require.NoError(t, err)
+	require.Equal(t, "thinker-cuda", res.DispatchedTo)
+}
+
+func TestPipeline_OCR_RemoteDispatch(t *testing.T) {
+	d := &fakeDispatcher{worker: &fakeWorker{host: "thinker"}}
+	local := &fakeLocal{}
+	p := NewPipeline(d, local)
+	frame := contracts.Frame{Format: contracts.PixelFormatBGRA8}
+	res, err := p.OCR(context.Background(), frame, contracts.Rect{W: 10, H: 10})
+	require.NoError(t, err)
+	require.Empty(t, res.FullText)
+}
