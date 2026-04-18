@@ -1,0 +1,157 @@
+# SPDX-FileCopyrightText: 2026 Milos Vasic
+# SPDX-License-Identifier: Apache-2.0
+#
+# OpenClawing2 Phase 5 bank — Stagehand primitives (act / extract / observe / agent).
+
+version: "1.0"
+name: "OpenClawing2 — Phase 5 Primitives"
+description: "Regression suite for pkg/nexus/primitives: act/extract/observe/agent primitives, prompt cache, self-healing re-inference."
+metadata:
+  author: "vasic-digital"
+  phase: 5
+  plan: "docs/plans/2026-04-18-openclawing2-integration-plan.md"
+
+test_cases:
+  - id: OC-PRIM-001
+    name: "Engine.Act dispatches the planner-chosen Action"
+    category: functional
+    priority: critical
+    platforms: [api]
+    tags: [openclawing2, phase5, act]
+    steps:
+      - name: "Act('click submit')"
+        action: "pkg/nexus/primitives.Engine.Act"
+        expected: "adapter.Do invoked once with the planner's chosen Target"
+    expected_result: "Natural language routes to a single Action"
+
+  - id: OC-PRIM-002
+    name: "Act cache short-circuits repeat calls with identical snapshot"
+    category: regression
+    priority: high
+    platforms: [api]
+    tags: [openclawing2, phase5, cache]
+    steps:
+      - name: "Call Act with identical instruction twice"
+        action: "pkg/nexus/primitives.Engine.Act"
+        expected: "Planner invoked exactly once"
+    expected_result: "Cache hits cut LLM cost in steady-state flows"
+
+  - id: OC-PRIM-003
+    name: "Act self-heals via re-inference when dispatch fails"
+    category: regression
+    priority: critical
+    platforms: [api]
+    tags: [openclawing2, phase5, selfheal]
+    steps:
+      - name: "Adapter rejects first Target (simulated stale selector)"
+        action: "pkg/nexus/primitives.Engine.Act with WithSelfHealer"
+        expected: "Healer re-plans with failure hint; second action dispatches"
+    expected_result: "Stale selectors no longer fail the whole flow"
+
+  - id: OC-PRIM-004
+    name: "Extract decodes planner's Memory into typed struct"
+    category: functional
+    priority: critical
+    platforms: [api]
+    tags: [openclawing2, phase5, extract]
+    steps:
+      - name: "Extract('page title', schema, &out)"
+        action: "pkg/nexus/primitives.Engine.Extract"
+        expected: "out populated with typed fields"
+    expected_result: "Schema-driven extraction returns real Go values"
+
+  - id: OC-PRIM-005
+    name: "Extract rejects empty Memory and nil out"
+    category: regression
+    priority: high
+    platforms: [api]
+    tags: [openclawing2, phase5, extract]
+    steps:
+      - name: "Planner returns empty Memory"
+        action: "pkg/nexus/primitives.Engine.Extract"
+        expected: "error mentioning 'empty Memory'"
+      - name: "Call Extract with nil out"
+        action: "pkg/nexus/primitives.Engine.Extract"
+        expected: "error mentioning 'nil out'"
+    expected_result: "Input + output invariants enforced"
+
+  - id: OC-PRIM-006
+    name: "Observe parses comma + bracket + quoted ref lists"
+    category: regression
+    priority: high
+    platforms: [api]
+    tags: [openclawing2, phase5, observe]
+    steps:
+      - name: "refsFromMemory('e1, e2, e3')"
+        action: "pkg/nexus/primitives.refsFromMemory"
+        expected: "3 refs returned"
+      - name: "refsFromMemory('[e1, e2]')"
+        action: "pkg/nexus/primitives.refsFromMemory"
+        expected: "2 refs returned"
+    expected_result: "Parser is tolerant of model formatting quirks"
+
+  - id: OC-PRIM-007
+    name: "Engine.Agent runs the full state machine to completion"
+    category: functional
+    priority: critical
+    platforms: [api]
+    tags: [openclawing2, phase5, agent]
+    steps:
+      - name: "Engine.Agent('scoped goal', config)"
+        action: "pkg/nexus/primitives.Engine.Agent"
+        expected: "state.Done == true after planner marks completion"
+    expected_result: "Scoped autonomous mode delegates to the Phase 2 loop"
+
+  - id: OC-PRIM-008
+    name: "PromptCache expires entries after TTL"
+    category: regression
+    priority: medium
+    platforms: [api]
+    tags: [openclawing2, phase5, cache]
+    steps:
+      - name: "Put entry with 10ms TTL, sleep 30ms, Get"
+        action: "pkg/nexus/primitives.PromptCache"
+        expected: "Get returns (zero, false)"
+    expected_result: "Stale cache entries never ship to the planner"
+
+  - id: OC-PRIM-009
+    name: "PromptCache concurrent access is race-free"
+    category: stress
+    priority: high
+    platforms: [api]
+    tags: [openclawing2, phase5, concurrency]
+    steps:
+      - name: "100 goroutines Put + Get on a shared cache"
+        action: "pkg/nexus/primitives.PromptCache under -race"
+        expected: "size <= 10 (bounded by unique keys); no data races"
+    expected_result: "Cache is safe for concurrent primitives"
+
+  - id: OC-PRIM-010
+    name: "NewEngine rejects nil dependencies"
+    category: regression
+    priority: critical
+    platforms: [api]
+    tags: [openclawing2, phase5, constructor]
+    steps:
+      - name: "NewEngine(nil, adapter, session)"
+        action: "pkg/nexus/primitives.NewEngine"
+        expected: "error"
+      - name: "NewEngine(llm, nil, session)"
+        action: "pkg/nexus/primitives.NewEngine"
+        expected: "error"
+      - name: "NewEngine(llm, adapter, nil)"
+        action: "pkg/nexus/primitives.NewEngine"
+        expected: "error"
+    expected_result: "Engine never runs with a missing dependency"
+
+  - id: OC-PRIM-011
+    name: "refsFromMemory fuzz target never panics"
+    category: security
+    priority: high
+    platforms: [api]
+    tags: [openclawing2, phase5, fuzz]
+    steps:
+      - name: "go test -fuzz FuzzRefsFromMemory"
+        action: "fuzz harness"
+        expected: "no panics, bounded runtime per iteration"
+    expected_result: "Parser resilient to adversarial model output"
