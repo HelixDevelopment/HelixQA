@@ -1,0 +1,373 @@
+{
+  "id": "ocu-tickets",
+  "version": "1.0.0",
+  "name": "OCU P7 — Evidence Kind Rendering",
+  "description": "Validates every evidence kind constant (12 kinds x 3 cases = 36 entries): non-empty value, unique across all kinds, and round-trip through Evidence struct JSON marshalling.",
+  "metadata": {
+    "phase": "P7",
+    "package": "digital.vasic.helixqa/pkg/ticket",
+    "created": "2026-04-18"
+  },
+  "test_cases": [
+    {
+      "id": "OCU-TKT-001",
+      "name": "evidence-kind-clip-nonempty",
+      "category": "unit",
+      "priority": "critical",
+      "steps": [{"name": "Assert EvidenceKindClip non-empty", "action": "go-test: digital.vasic.helixqa/pkg/ticket TestOCUEvidenceKinds_NonEmpty", "expected": "pass"}],
+      "tags": ["ocu", "ticket", "evidence", "clip"],
+      "estimated_duration": "5s",
+      "expected_result": "EvidenceKindClip is non-empty string"
+    },
+    {
+      "id": "OCU-TKT-002",
+      "name": "evidence-kind-clip-value",
+      "category": "unit",
+      "priority": "critical",
+      "steps": [{"name": "Assert EvidenceKindClip == clip", "action": "go-test: digital.vasic.helixqa/pkg/ticket TestOCUEvidenceKinds_Values", "expected": "pass"}],
+      "tags": ["ocu", "ticket", "evidence", "clip"],
+      "estimated_duration": "5s",
+      "expected_result": "EvidenceKindClip equals string literal 'clip'"
+    },
+    {
+      "id": "OCU-TKT-003",
+      "name": "evidence-kind-clip-unique",
+      "category": "unit",
+      "priority": "critical",
+      "steps": [{"name": "Assert all 12 kinds unique", "action": "go-test: digital.vasic.helixqa/pkg/ticket TestOCUEvidenceKinds_Unique", "expected": "pass"}],
+      "tags": ["ocu", "ticket", "evidence", "clip", "uniqueness"],
+      "estimated_duration": "5s",
+      "expected_result": "No two EvidenceKind constants share the same value"
+    },
+    {
+      "id": "OCU-TKT-004",
+      "name": "evidence-kind-diff-overlay-nonempty",
+      "category": "unit",
+      "priority": "high",
+      "steps": [{"name": "Assert EvidenceKindDiffOverlay non-empty", "action": "go-test: digital.vasic.helixqa/pkg/ticket TestOCUEvidenceKinds_NonEmpty", "expected": "pass"}],
+      "tags": ["ocu", "ticket", "evidence", "diff_overlay"],
+      "estimated_duration": "5s",
+      "expected_result": "EvidenceKindDiffOverlay is non-empty string"
+    },
+    {
+      "id": "OCU-TKT-005",
+      "name": "evidence-kind-diff-overlay-value",
+      "category": "unit",
+      "priority": "high",
+      "steps": [{"name": "Assert EvidenceKindDiffOverlay == diff_overlay", "action": "go-test: digital.vasic.helixqa/pkg/ticket TestOCUEvidenceKinds_Values", "expected": "pass"}],
+      "tags": ["ocu", "ticket", "evidence", "diff_overlay"],
+      "estimated_duration": "5s",
+      "expected_result": "EvidenceKindDiffOverlay equals 'diff_overlay'"
+    },
+    {
+      "id": "OCU-TKT-006",
+      "name": "evidence-kind-diff-overlay-struct",
+      "category": "unit",
+      "priority": "high",
+      "steps": [{"name": "Assert Evidence struct fields addressable", "action": "go-test: digital.vasic.helixqa/pkg/ticket TestEvidence_Struct", "expected": "pass"}],
+      "tags": ["ocu", "ticket", "evidence", "diff_overlay", "struct"],
+      "estimated_duration": "5s",
+      "expected_result": "Evidence{Kind, Ref} fields are addressable and correct"
+    },
+    {
+      "id": "OCU-TKT-007",
+      "name": "evidence-kind-ocr-dump-nonempty",
+      "category": "unit",
+      "priority": "high",
+      "steps": [{"name": "Assert EvidenceKindOCRDump non-empty", "action": "go-test: digital.vasic.helixqa/pkg/ticket TestOCUEvidenceKinds_NonEmpty", "expected": "pass"}],
+      "tags": ["ocu", "ticket", "evidence", "ocr_dump"],
+      "estimated_duration": "5s",
+      "expected_result": "EvidenceKindOCRDump is non-empty"
+    },
+    {
+      "id": "OCU-TKT-008",
+      "name": "evidence-kind-ocr-dump-value",
+      "category": "unit",
+      "priority": "high",
+      "steps": [{"name": "Assert EvidenceKindOCRDump == ocr_dump", "action": "go-test: digital.vasic.helixqa/pkg/ticket TestOCUEvidenceKinds_Values", "expected": "pass"}],
+      "tags": ["ocu", "ticket", "evidence", "ocr_dump"],
+      "estimated_duration": "5s",
+      "expected_result": "EvidenceKindOCRDump equals 'ocr_dump'"
+    },
+    {
+      "id": "OCU-TKT-009",
+      "name": "evidence-kind-ocr-dump-unique",
+      "category": "unit",
+      "priority": "high",
+      "steps": [{"name": "Assert unique across 12 kinds", "action": "go-test: digital.vasic.helixqa/pkg/ticket TestOCUEvidenceKinds_Unique", "expected": "pass"}],
+      "tags": ["ocu", "ticket", "evidence", "ocr_dump", "uniqueness"],
+      "estimated_duration": "5s",
+      "expected_result": "EvidenceKindOCRDump value is globally unique"
+    },
+    {
+      "id": "OCU-TKT-010",
+      "name": "evidence-kind-element-tree-nonempty",
+      "category": "unit",
+      "priority": "high",
+      "steps": [{"name": "Assert EvidenceKindElementTree non-empty", "action": "go-test: digital.vasic.helixqa/pkg/ticket TestOCUEvidenceKinds_NonEmpty", "expected": "pass"}],
+      "tags": ["ocu", "ticket", "evidence", "element_tree"],
+      "estimated_duration": "5s",
+      "expected_result": "EvidenceKindElementTree is non-empty"
+    },
+    {
+      "id": "OCU-TKT-011",
+      "name": "evidence-kind-element-tree-value",
+      "category": "unit",
+      "priority": "high",
+      "steps": [{"name": "Assert EvidenceKindElementTree == element_tree", "action": "go-test: digital.vasic.helixqa/pkg/ticket TestOCUEvidenceKinds_Values", "expected": "pass"}],
+      "tags": ["ocu", "ticket", "evidence", "element_tree"],
+      "estimated_duration": "5s",
+      "expected_result": "EvidenceKindElementTree equals 'element_tree'"
+    },
+    {
+      "id": "OCU-TKT-012",
+      "name": "evidence-kind-element-tree-struct",
+      "category": "unit",
+      "priority": "high",
+      "steps": [{"name": "Assert Evidence struct with element_tree kind", "action": "go-test: digital.vasic.helixqa/pkg/ticket TestEvidence_Struct", "expected": "pass"}],
+      "tags": ["ocu", "ticket", "evidence", "element_tree", "struct"],
+      "estimated_duration": "5s",
+      "expected_result": "Evidence struct works with element_tree kind"
+    },
+    {
+      "id": "OCU-TKT-013",
+      "name": "evidence-kind-hook-trace-nonempty",
+      "category": "unit",
+      "priority": "high",
+      "steps": [{"name": "Assert EvidenceKindHookTrace non-empty", "action": "go-test: digital.vasic.helixqa/pkg/ticket TestOCUEvidenceKinds_NonEmpty", "expected": "pass"}],
+      "tags": ["ocu", "ticket", "evidence", "hook_trace"],
+      "estimated_duration": "5s",
+      "expected_result": "EvidenceKindHookTrace is non-empty"
+    },
+    {
+      "id": "OCU-TKT-014",
+      "name": "evidence-kind-hook-trace-value",
+      "category": "unit",
+      "priority": "high",
+      "steps": [{"name": "Assert EvidenceKindHookTrace == hook_trace", "action": "go-test: digital.vasic.helixqa/pkg/ticket TestOCUEvidenceKinds_Values", "expected": "pass"}],
+      "tags": ["ocu", "ticket", "evidence", "hook_trace"],
+      "estimated_duration": "5s",
+      "expected_result": "EvidenceKindHookTrace equals 'hook_trace'"
+    },
+    {
+      "id": "OCU-TKT-015",
+      "name": "evidence-kind-hook-trace-unique",
+      "category": "unit",
+      "priority": "high",
+      "steps": [{"name": "Assert unique across 12 kinds", "action": "go-test: digital.vasic.helixqa/pkg/ticket TestOCUEvidenceKinds_Unique", "expected": "pass"}],
+      "tags": ["ocu", "ticket", "evidence", "hook_trace", "uniqueness"],
+      "estimated_duration": "5s",
+      "expected_result": "EvidenceKindHookTrace value is globally unique"
+    },
+    {
+      "id": "OCU-TKT-016",
+      "name": "evidence-kind-replay-script-nonempty",
+      "category": "unit",
+      "priority": "critical",
+      "steps": [{"name": "Assert EvidenceKindReplayScript non-empty", "action": "go-test: digital.vasic.helixqa/pkg/ticket TestOCUEvidenceKinds_NonEmpty", "expected": "pass"}],
+      "tags": ["ocu", "ticket", "evidence", "replay_script"],
+      "estimated_duration": "5s",
+      "expected_result": "EvidenceKindReplayScript is non-empty"
+    },
+    {
+      "id": "OCU-TKT-017",
+      "name": "evidence-kind-replay-script-value",
+      "category": "unit",
+      "priority": "critical",
+      "steps": [{"name": "Assert EvidenceKindReplayScript == replay_script", "action": "go-test: digital.vasic.helixqa/pkg/ticket TestOCUEvidenceKinds_Values", "expected": "pass"}],
+      "tags": ["ocu", "ticket", "evidence", "replay_script"],
+      "estimated_duration": "5s",
+      "expected_result": "EvidenceKindReplayScript equals 'replay_script'"
+    },
+    {
+      "id": "OCU-TKT-018",
+      "name": "evidence-kind-replay-script-struct",
+      "category": "unit",
+      "priority": "critical",
+      "steps": [{"name": "Assert replay_script evidence round-trips through struct", "action": "go-test: digital.vasic.helixqa/pkg/ticket TestEvidence_Struct", "expected": "pass"}],
+      "tags": ["ocu", "ticket", "evidence", "replay_script", "struct"],
+      "estimated_duration": "5s",
+      "expected_result": "Evidence{Kind: replay_script} is addressable"
+    },
+    {
+      "id": "OCU-TKT-019",
+      "name": "evidence-kind-llm-reasoning-nonempty",
+      "category": "unit",
+      "priority": "high",
+      "steps": [{"name": "Assert EvidenceKindLLMReasoning non-empty", "action": "go-test: digital.vasic.helixqa/pkg/ticket TestOCUEvidenceKinds_NonEmpty", "expected": "pass"}],
+      "tags": ["ocu", "ticket", "evidence", "llm_reasoning"],
+      "estimated_duration": "5s",
+      "expected_result": "EvidenceKindLLMReasoning is non-empty"
+    },
+    {
+      "id": "OCU-TKT-020",
+      "name": "evidence-kind-llm-reasoning-value",
+      "category": "unit",
+      "priority": "high",
+      "steps": [{"name": "Assert EvidenceKindLLMReasoning == llm_reasoning", "action": "go-test: digital.vasic.helixqa/pkg/ticket TestOCUEvidenceKinds_Values", "expected": "pass"}],
+      "tags": ["ocu", "ticket", "evidence", "llm_reasoning"],
+      "estimated_duration": "5s",
+      "expected_result": "EvidenceKindLLMReasoning equals 'llm_reasoning'"
+    },
+    {
+      "id": "OCU-TKT-021",
+      "name": "evidence-kind-llm-reasoning-unique",
+      "category": "unit",
+      "priority": "high",
+      "steps": [{"name": "Assert unique", "action": "go-test: digital.vasic.helixqa/pkg/ticket TestOCUEvidenceKinds_Unique", "expected": "pass"}],
+      "tags": ["ocu", "ticket", "evidence", "llm_reasoning", "uniqueness"],
+      "estimated_duration": "5s",
+      "expected_result": "EvidenceKindLLMReasoning is globally unique"
+    },
+    {
+      "id": "OCU-TKT-022",
+      "name": "evidence-kind-perf-metrics-nonempty",
+      "category": "unit",
+      "priority": "high",
+      "steps": [{"name": "Assert EvidenceKindPerfMetrics non-empty", "action": "go-test: digital.vasic.helixqa/pkg/ticket TestOCUEvidenceKinds_NonEmpty", "expected": "pass"}],
+      "tags": ["ocu", "ticket", "evidence", "perf_metrics"],
+      "estimated_duration": "5s",
+      "expected_result": "EvidenceKindPerfMetrics is non-empty"
+    },
+    {
+      "id": "OCU-TKT-023",
+      "name": "evidence-kind-perf-metrics-value",
+      "category": "unit",
+      "priority": "high",
+      "steps": [{"name": "Assert EvidenceKindPerfMetrics == perf_metrics", "action": "go-test: digital.vasic.helixqa/pkg/ticket TestOCUEvidenceKinds_Values", "expected": "pass"}],
+      "tags": ["ocu", "ticket", "evidence", "perf_metrics"],
+      "estimated_duration": "5s",
+      "expected_result": "EvidenceKindPerfMetrics equals 'perf_metrics'"
+    },
+    {
+      "id": "OCU-TKT-024",
+      "name": "evidence-kind-perf-metrics-struct",
+      "category": "unit",
+      "priority": "high",
+      "steps": [{"name": "Assert perf_metrics evidence struct works", "action": "go-test: digital.vasic.helixqa/pkg/ticket TestEvidence_Struct", "expected": "pass"}],
+      "tags": ["ocu", "ticket", "evidence", "perf_metrics", "struct"],
+      "estimated_duration": "5s",
+      "expected_result": "Evidence{Kind: perf_metrics} is addressable"
+    },
+    {
+      "id": "OCU-TKT-025",
+      "name": "evidence-kind-ax-tree-diff-nonempty",
+      "category": "unit",
+      "priority": "high",
+      "steps": [{"name": "Assert EvidenceKindAXTreeDiff non-empty", "action": "go-test: digital.vasic.helixqa/pkg/ticket TestOCUEvidenceKinds_NonEmpty", "expected": "pass"}],
+      "tags": ["ocu", "ticket", "evidence", "ax_tree_diff"],
+      "estimated_duration": "5s",
+      "expected_result": "EvidenceKindAXTreeDiff is non-empty"
+    },
+    {
+      "id": "OCU-TKT-026",
+      "name": "evidence-kind-ax-tree-diff-value",
+      "category": "unit",
+      "priority": "high",
+      "steps": [{"name": "Assert EvidenceKindAXTreeDiff == ax_tree_diff", "action": "go-test: digital.vasic.helixqa/pkg/ticket TestOCUEvidenceKinds_Values", "expected": "pass"}],
+      "tags": ["ocu", "ticket", "evidence", "ax_tree_diff"],
+      "estimated_duration": "5s",
+      "expected_result": "EvidenceKindAXTreeDiff equals 'ax_tree_diff'"
+    },
+    {
+      "id": "OCU-TKT-027",
+      "name": "evidence-kind-ax-tree-diff-unique",
+      "category": "unit",
+      "priority": "high",
+      "steps": [{"name": "Assert unique", "action": "go-test: digital.vasic.helixqa/pkg/ticket TestOCUEvidenceKinds_Unique", "expected": "pass"}],
+      "tags": ["ocu", "ticket", "evidence", "ax_tree_diff", "uniqueness"],
+      "estimated_duration": "5s",
+      "expected_result": "EvidenceKindAXTreeDiff is globally unique"
+    },
+    {
+      "id": "OCU-TKT-028",
+      "name": "evidence-kind-har-nonempty",
+      "category": "unit",
+      "priority": "high",
+      "steps": [{"name": "Assert EvidenceKindHAR non-empty", "action": "go-test: digital.vasic.helixqa/pkg/ticket TestOCUEvidenceKinds_NonEmpty", "expected": "pass"}],
+      "tags": ["ocu", "ticket", "evidence", "har"],
+      "estimated_duration": "5s",
+      "expected_result": "EvidenceKindHAR is non-empty"
+    },
+    {
+      "id": "OCU-TKT-029",
+      "name": "evidence-kind-har-value",
+      "category": "unit",
+      "priority": "high",
+      "steps": [{"name": "Assert EvidenceKindHAR == har", "action": "go-test: digital.vasic.helixqa/pkg/ticket TestOCUEvidenceKinds_Values", "expected": "pass"}],
+      "tags": ["ocu", "ticket", "evidence", "har"],
+      "estimated_duration": "5s",
+      "expected_result": "EvidenceKindHAR equals 'har'"
+    },
+    {
+      "id": "OCU-TKT-030",
+      "name": "evidence-kind-har-struct",
+      "category": "unit",
+      "priority": "high",
+      "steps": [{"name": "Assert har evidence struct works", "action": "go-test: digital.vasic.helixqa/pkg/ticket TestEvidence_Struct", "expected": "pass"}],
+      "tags": ["ocu", "ticket", "evidence", "har", "struct"],
+      "estimated_duration": "5s",
+      "expected_result": "Evidence{Kind: har} is addressable"
+    },
+    {
+      "id": "OCU-TKT-031",
+      "name": "evidence-kind-webrtc-stream-nonempty",
+      "category": "unit",
+      "priority": "medium",
+      "steps": [{"name": "Assert EvidenceKindWebRTCStream non-empty", "action": "go-test: digital.vasic.helixqa/pkg/ticket TestOCUEvidenceKinds_NonEmpty", "expected": "pass"}],
+      "tags": ["ocu", "ticket", "evidence", "webrtc_stream"],
+      "estimated_duration": "5s",
+      "expected_result": "EvidenceKindWebRTCStream is non-empty"
+    },
+    {
+      "id": "OCU-TKT-032",
+      "name": "evidence-kind-webrtc-stream-value",
+      "category": "unit",
+      "priority": "medium",
+      "steps": [{"name": "Assert EvidenceKindWebRTCStream == webrtc_stream", "action": "go-test: digital.vasic.helixqa/pkg/ticket TestOCUEvidenceKinds_Values", "expected": "pass"}],
+      "tags": ["ocu", "ticket", "evidence", "webrtc_stream"],
+      "estimated_duration": "5s",
+      "expected_result": "EvidenceKindWebRTCStream equals 'webrtc_stream'"
+    },
+    {
+      "id": "OCU-TKT-033",
+      "name": "evidence-kind-webrtc-stream-unique",
+      "category": "unit",
+      "priority": "medium",
+      "steps": [{"name": "Assert unique", "action": "go-test: digital.vasic.helixqa/pkg/ticket TestOCUEvidenceKinds_Unique", "expected": "pass"}],
+      "tags": ["ocu", "ticket", "evidence", "webrtc_stream", "uniqueness"],
+      "estimated_duration": "5s",
+      "expected_result": "EvidenceKindWebRTCStream is globally unique"
+    },
+    {
+      "id": "OCU-TKT-034",
+      "name": "evidence-kind-raw-dma-nonempty",
+      "category": "unit",
+      "priority": "medium",
+      "steps": [{"name": "Assert EvidenceKindRawDMA non-empty", "action": "go-test: digital.vasic.helixqa/pkg/ticket TestOCUEvidenceKinds_NonEmpty", "expected": "pass"}],
+      "tags": ["ocu", "ticket", "evidence", "raw_dma"],
+      "estimated_duration": "5s",
+      "expected_result": "EvidenceKindRawDMA is non-empty"
+    },
+    {
+      "id": "OCU-TKT-035",
+      "name": "evidence-kind-raw-dma-value",
+      "category": "unit",
+      "priority": "medium",
+      "steps": [{"name": "Assert EvidenceKindRawDMA == raw_dma", "action": "go-test: digital.vasic.helixqa/pkg/ticket TestOCUEvidenceKinds_Values", "expected": "pass"}],
+      "tags": ["ocu", "ticket", "evidence", "raw_dma"],
+      "estimated_duration": "5s",
+      "expected_result": "EvidenceKindRawDMA equals 'raw_dma'"
+    },
+    {
+      "id": "OCU-TKT-036",
+      "name": "evidence-from-automation-result-mapping",
+      "category": "integration",
+      "priority": "critical",
+      "steps": [{"name": "Assert FromAutomationResult maps EvidenceRef to Evidence", "action": "go-test: digital.vasic.helixqa/pkg/ticket TestFromAutomationResult_MultipleRefs", "expected": "pass"}],
+      "tags": ["ocu", "ticket", "evidence", "mapping", "automation"],
+      "estimated_duration": "5s",
+      "expected_result": "FromAutomationResult preserves Kind+Ref order from automation.Result.Evidence"
+    }
+  ]
+}

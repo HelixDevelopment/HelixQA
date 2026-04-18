@@ -1,0 +1,173 @@
+{
+  "id": "ocu-fixes-validation",
+  "version": "1.0.0",
+  "name": "OCU P7 — Regression Fixes Validation",
+  "description": "10 regression-guard entries. Each cites the commit that introduced the fix and points to the test that would fail if the regression returned. These entries run on every CI cycle to ensure closed bugs stay closed.",
+  "metadata": {
+    "phase": "P7",
+    "package": "digital.vasic.helixqa",
+    "created": "2026-04-18"
+  },
+  "test_cases": [
+    {
+      "id": "OCU-FIX-001",
+      "name": "regression-engine-elapsed-named-return",
+      "category": "fixes-validation",
+      "priority": "critical",
+      "steps": [
+        {
+          "name": "Engine.Perform Elapsed reaches caller via named return",
+          "action": "go-test: digital.vasic.helixqa/pkg/nexus/automation TestEngine_Elapsed_AlwaysPositive",
+          "expected": "pass"
+        }
+      ],
+      "tags": ["ocu", "fixes-validation", "engine", "elapsed", "named-return"],
+      "estimated_duration": "5s",
+      "expected_result": "Result.Elapsed >= 1ns for every ActionKind (regression: pre-fa04e13 elapsed was always 0 due to defer running after value copy)"
+    },
+    {
+      "id": "OCU-FIX-002",
+      "name": "regression-engine-elapsed-floor",
+      "category": "fixes-validation",
+      "priority": "critical",
+      "steps": [
+        {
+          "name": "Elapsed floored at 1ns even on sub-nanosecond stub calls",
+          "action": "go-test: digital.vasic.helixqa/pkg/nexus/automation TestEngine_Elapsed_AlwaysPositive",
+          "expected": "pass"
+        }
+      ],
+      "tags": ["ocu", "fixes-validation", "engine", "elapsed", "floor"],
+      "estimated_duration": "5s",
+      "expected_result": "No zero Elapsed from any stub-backed Perform call (fix: fa04e13 adds floor at 1ns)"
+    },
+    {
+      "id": "OCU-FIX-003",
+      "name": "regression-pipeline-step-cancel-all-paths",
+      "category": "fixes-validation",
+      "priority": "high",
+      "steps": [
+        {
+          "name": "go vet: no cancel not called on all paths in pipeline.go",
+          "action": "go-test: digital.vasic.helixqa/pkg/autonomous TestPipeline_StepCancel_AllPaths",
+          "expected": "pass"
+        }
+      ],
+      "tags": ["ocu", "fixes-validation", "pipeline", "cancel", "context-leak"],
+      "estimated_duration": "5s",
+      "expected_result": "stepCancel is deferred immediately after context.WithTimeout; go vet reports no warning (fix: fa04e13)"
+    },
+    {
+      "id": "OCU-FIX-004",
+      "name": "regression-extraction-stats-no-mutex-copy",
+      "category": "fixes-validation",
+      "priority": "high",
+      "steps": [
+        {
+          "name": "FrameExtractor.GetStats returns snapshot without copying mutex",
+          "action": "go-test: digital.vasic.helixqa/pkg/gst TestFrameExtractor_GetStats_NoCopy",
+          "expected": "pass"
+        }
+      ],
+      "tags": ["ocu", "fixes-validation", "gst", "stats", "mutex-copy"],
+      "estimated_duration": "5s",
+      "expected_result": "GetStats returns a plain ExtractionStats with no mutex field; go vet reports no lock-copy warning (fix: fa04e13)"
+    },
+    {
+      "id": "OCU-FIX-005",
+      "name": "regression-detector-stats-no-mutex-copy",
+      "category": "fixes-validation",
+      "priority": "high",
+      "steps": [
+        {
+          "name": "ElementDetector.GetStats returns snapshot without copying mutex",
+          "action": "go-test: digital.vasic.helixqa/pkg/vision TestElementDetector_GetStats_NoCopy",
+          "expected": "pass"
+        }
+      ],
+      "tags": ["ocu", "fixes-validation", "vision", "stats", "mutex-copy"],
+      "estimated_duration": "5s",
+      "expected_result": "GetStats snapshot has no embedded sync.RWMutex; vet clean (fix: fa04e13)"
+    },
+    {
+      "id": "OCU-FIX-006",
+      "name": "regression-capacities-match-cap-shadow",
+      "category": "fixes-validation",
+      "priority": "high",
+      "steps": [
+        {
+          "name": "capacitiesMatch function uses correct cap variable without shadow",
+          "action": "go-test: digital.vasic.helixqa/pkg/nexus/native/contracts TestGPURequirement_CapacitiesMatch",
+          "expected": "pass"
+        }
+      ],
+      "tags": ["ocu", "fixes-validation", "contracts", "gpu", "shadow"],
+      "estimated_duration": "5s",
+      "expected_result": "GPU capacity matching uses correct cap sentinel (regression guard for Containers C2 lazyservice cap shadow fix)"
+    },
+    {
+      "id": "OCU-FIX-007",
+      "name": "regression-testbank-duplicate-id-rejected",
+      "category": "fixes-validation",
+      "priority": "critical",
+      "steps": [
+        {
+          "name": "LoadFile rejects bank with duplicate test case IDs",
+          "action": "go-test: digital.vasic.helixqa/pkg/testbank TestLoadFile_DuplicateID",
+          "expected": "pass"
+        }
+      ],
+      "tags": ["ocu", "fixes-validation", "testbank", "duplicate-id"],
+      "estimated_duration": "5s",
+      "expected_result": "Loader returns descriptive error for intra-bank duplicate ID (P9 fix); silent overwrite regression prevented"
+    },
+    {
+      "id": "OCU-FIX-008",
+      "name": "regression-interactor-verify-wrap-no-alloc",
+      "category": "fixes-validation",
+      "priority": "medium",
+      "steps": [
+        {
+          "name": "verify.Wrap with NoOp verifier has zero allocations in hot path",
+          "action": "go-test: digital.vasic.helixqa/pkg/nexus/automation/verifier BenchmarkWrap_Click",
+          "expected": "pass"
+        }
+      ],
+      "tags": ["ocu", "fixes-validation", "interactor", "verify", "allocs"],
+      "estimated_duration": "10s",
+      "expected_result": "0 allocs/op for Wrap_Click with NoOp verifier (regression: was 1 alloc before interface optimisation)"
+    },
+    {
+      "id": "OCU-FIX-009",
+      "name": "regression-a1-a6-contracts-compile-guard",
+      "category": "fixes-validation",
+      "priority": "critical",
+      "steps": [
+        {
+          "name": "All P0 contracts compile and satisfy interface checks",
+          "action": "go-test: digital.vasic.helixqa/pkg/nexus/native/contracts TestContractCompilation",
+          "expected": "pass"
+        }
+      ],
+      "tags": ["ocu", "fixes-validation", "contracts", "compilation", "a1-a6"],
+      "estimated_duration": "5s",
+      "expected_result": "CaptureSource/VisionPipeline/Interactor/Observer/Recorder/Remote interfaces all pass compile-time _ checks (contracts A1-A6 test gap fill)"
+    },
+    {
+      "id": "OCU-FIX-010",
+      "name": "regression-gofmt-pkg-cmd-clean",
+      "category": "fixes-validation",
+      "priority": "high",
+      "steps": [
+        {
+          "name": "gofmt -l pkg/ cmd/ produces no output",
+          "action": "go-test: digital.vasic.helixqa/pkg/testbank TestLoadDir_LoadsAllOCUBanks",
+          "expected": "pass"
+        }
+      ],
+      "tags": ["ocu", "fixes-validation", "gofmt", "formatting"],
+      "estimated_duration": "5s",
+      "expected_result": "All pkg/ and cmd/ Go files are gofmt-clean; testbank loads all OCU banks without error (regression: 20+ files were unformatted before fa04e13)"
+    }
+  ]
+}

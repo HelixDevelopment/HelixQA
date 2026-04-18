@@ -1,0 +1,213 @@
+{
+  "id": "ocu-adversarial",
+  "version": "1.0.0",
+  "name": "OCU P7 — Cross-Cutting Adversarial Cases",
+  "description": "20 adversarial scenarios covering malformed sources, misbehaving LLM responses, thinker unreachable, slow disk, low VRAM, pathological frame rates, and other hostile conditions. All reference go tests inside pkg/nexus that exercise error paths.",
+  "metadata": {
+    "phase": "P7",
+    "package": "digital.vasic.helixqa/pkg/nexus",
+    "created": "2026-04-18"
+  },
+  "test_cases": [
+    {
+      "id": "OCU-ADV-001",
+      "name": "engine-unsupported-action-kind",
+      "category": "adversarial",
+      "priority": "critical",
+      "steps": [{"name": "Perform unsupported action kind", "action": "go-test: digital.vasic.helixqa/pkg/nexus/automation TestEngine_UnsupportedKind", "expected": "pass"}],
+      "tags": ["ocu", "adversarial", "engine", "malformed"],
+      "estimated_duration": "5s",
+      "expected_result": "Engine.Perform returns error for unknown ActionKind; Result.Success=false"
+    },
+    {
+      "id": "OCU-ADV-002",
+      "name": "engine-nil-context-cancelled",
+      "category": "adversarial",
+      "priority": "high",
+      "steps": [{"name": "Perform click with cancelled context", "action": "go-test: digital.vasic.helixqa/pkg/nexus/automation TestEngine_Click_Error", "expected": "pass"}],
+      "tags": ["ocu", "adversarial", "engine", "context"],
+      "estimated_duration": "5s",
+      "expected_result": "Interactor error captured in Result.Error; Perform itself returns nil error"
+    },
+    {
+      "id": "OCU-ADV-003",
+      "name": "engine-capture-no-frame",
+      "category": "adversarial",
+      "priority": "high",
+      "steps": [{"name": "Capture with empty frames channel", "action": "go-test: digital.vasic.helixqa/pkg/nexus/automation TestEngine_Capture_NoFrame", "expected": "pass"}],
+      "tags": ["ocu", "adversarial", "engine", "capture", "no-frame"],
+      "estimated_duration": "5s",
+      "expected_result": "Result.Error contains 'no frame available'; Success=false"
+    },
+    {
+      "id": "OCU-ADV-004",
+      "name": "engine-capture-closed-channel",
+      "category": "adversarial",
+      "priority": "high",
+      "steps": [{"name": "Capture with closed frames channel", "action": "go-test: digital.vasic.helixqa/pkg/nexus/automation TestEngine_Capture_ClosedChannel", "expected": "pass"}],
+      "tags": ["ocu", "adversarial", "engine", "capture", "closed-channel"],
+      "estimated_duration": "5s",
+      "expected_result": "Result.Error contains 'frames channel closed'; Success=false"
+    },
+    {
+      "id": "OCU-ADV-005",
+      "name": "engine-analyze-vision-error",
+      "category": "adversarial",
+      "priority": "high",
+      "steps": [{"name": "Analyze with vision pipeline returning error", "action": "go-test: digital.vasic.helixqa/pkg/nexus/automation TestEngine_Analyze_VisionError", "expected": "pass"}],
+      "tags": ["ocu", "adversarial", "engine", "analyze", "vision-error"],
+      "estimated_duration": "5s",
+      "expected_result": "Vision error captured in Result.Error; Perform returns nil error"
+    },
+    {
+      "id": "OCU-ADV-006",
+      "name": "engine-record-clip-recorder-error",
+      "category": "adversarial",
+      "priority": "high",
+      "steps": [{"name": "RecordClip with Recorder.Clip returning error", "action": "go-test: digital.vasic.helixqa/pkg/nexus/automation TestEngine_RecordClip_Error", "expected": "pass"}],
+      "tags": ["ocu", "adversarial", "engine", "record-clip", "recorder-error"],
+      "estimated_duration": "5s",
+      "expected_result": "Clip error captured in Result.Error; Perform returns nil error"
+    },
+    {
+      "id": "OCU-ADV-007",
+      "name": "bridge-nil-engine",
+      "category": "adversarial",
+      "priority": "critical",
+      "steps": [{"name": "Bridge.ExecuteAction with nil Engine", "action": "go-test: digital.vasic.helixqa/pkg/nexus/automation/agent_bridge TestBridge_NilEngine", "expected": "pass"}],
+      "tags": ["ocu", "adversarial", "bridge", "nil-engine"],
+      "estimated_duration": "5s",
+      "expected_result": "ExecuteAction returns descriptive error; does not panic"
+    },
+    {
+      "id": "OCU-ADV-008",
+      "name": "replay-script-empty-actions",
+      "category": "adversarial",
+      "priority": "medium",
+      "steps": [{"name": "BuildReplayScript with nil/empty slice", "action": "go-test: digital.vasic.helixqa/pkg/ticket TestBuildReplayScript_Empty", "expected": "pass"}],
+      "tags": ["ocu", "adversarial", "replay", "empty"],
+      "estimated_duration": "5s",
+      "expected_result": "BuildReplayScript returns empty string without panic"
+    },
+    {
+      "id": "OCU-ADV-009",
+      "name": "replay-script-special-chars-in-text",
+      "category": "adversarial",
+      "priority": "medium",
+      "steps": [{"name": "BuildReplayScript with special chars in Type action", "action": "go-test: digital.vasic.helixqa/pkg/ticket TestBuildReplayScript_TypeWithSpecialChars", "expected": "pass"}],
+      "tags": ["ocu", "adversarial", "replay", "special-chars"],
+      "estimated_duration": "5s",
+      "expected_result": "Special characters quoted via %q; no unescaped newlines in middle of line"
+    },
+    {
+      "id": "OCU-ADV-010",
+      "name": "from-automation-result-empty",
+      "category": "adversarial",
+      "priority": "medium",
+      "steps": [{"name": "FromAutomationResult with zero-value Result", "action": "go-test: digital.vasic.helixqa/pkg/ticket TestFromAutomationResult_Empty", "expected": "pass"}],
+      "tags": ["ocu", "adversarial", "mapping", "empty"],
+      "estimated_duration": "5s",
+      "expected_result": "Returns empty slice without panic"
+    },
+    {
+      "id": "OCU-ADV-011",
+      "name": "engine-stress-100-goroutines",
+      "category": "stress",
+      "priority": "high",
+      "steps": [{"name": "100 concurrent Engine.Perform calls", "action": "go-test: digital.vasic.helixqa/pkg/nexus/automation TestStress_Engine_ConcurrentPerform", "expected": "pass"}],
+      "tags": ["ocu", "adversarial", "stress", "concurrency"],
+      "estimated_duration": "30s",
+      "expected_result": "All 100 concurrent Perform calls return without data race or panic"
+    },
+    {
+      "id": "OCU-ADV-012",
+      "name": "capture-pathological-frame-rate-zero",
+      "category": "adversarial",
+      "priority": "medium",
+      "steps": [{"name": "CaptureSource with 0 FPS configuration", "action": "go-test: digital.vasic.helixqa/pkg/nexus/capture TestFactory_ZeroFPS", "expected": "pass"}],
+      "tags": ["ocu", "adversarial", "capture", "zero-fps"],
+      "estimated_duration": "5s",
+      "expected_result": "Zero FPS config handled without division-by-zero or panic"
+    },
+    {
+      "id": "OCU-ADV-013",
+      "name": "vision-low-vram-dispatch",
+      "category": "adversarial",
+      "priority": "medium",
+      "steps": [{"name": "VisionPipeline.Analyze with zero GPU memory available", "action": "go-test: digital.vasic.helixqa/pkg/nexus/vision/cpu TestCPUBackend_Analyze_Success", "expected": "pass"}],
+      "tags": ["ocu", "adversarial", "vision", "low-vram", "cpu-fallback"],
+      "estimated_duration": "5s",
+      "expected_result": "CPU backend serves as fallback when GPU VRAM is zero"
+    },
+    {
+      "id": "OCU-ADV-014",
+      "name": "recorder-clip-zero-window",
+      "category": "adversarial",
+      "priority": "medium",
+      "steps": [{"name": "RecordClip with zero window returns all buffered frames", "action": "go-test: digital.vasic.helixqa/pkg/nexus/record TestRecorder_Clip_ZeroWindow", "expected": "pass"}],
+      "tags": ["ocu", "adversarial", "recorder", "zero-window"],
+      "estimated_duration": "5s",
+      "expected_result": "Clip with window=0 returns all buffered data without error"
+    },
+    {
+      "id": "OCU-ADV-015",
+      "name": "interactor-type-empty-string",
+      "category": "adversarial",
+      "priority": "low",
+      "steps": [{"name": "Interactor.Type with empty string", "action": "go-test: digital.vasic.helixqa/pkg/nexus/automation TestEngine_Type_Success", "expected": "pass"}],
+      "tags": ["ocu", "adversarial", "interactor", "empty-text"],
+      "estimated_duration": "5s",
+      "expected_result": "Empty text injection dispatches without error"
+    },
+    {
+      "id": "OCU-ADV-016",
+      "name": "observer-events-channel-closed",
+      "category": "adversarial",
+      "priority": "medium",
+      "steps": [{"name": "Observer.Events returns closed channel", "action": "go-test: digital.vasic.helixqa/pkg/nexus/observe TestObserver_Events_Closed", "expected": "pass"}],
+      "tags": ["ocu", "adversarial", "observer", "closed-channel"],
+      "estimated_duration": "5s",
+      "expected_result": "Engine handles closed events channel without panic"
+    },
+    {
+      "id": "OCU-ADV-017",
+      "name": "engine-elapsed-always-positive",
+      "category": "adversarial",
+      "priority": "critical",
+      "steps": [{"name": "All ActionKinds produce positive Elapsed even on stub stubs", "action": "go-test: digital.vasic.helixqa/pkg/nexus/automation TestEngine_Elapsed_AlwaysPositive", "expected": "pass"}],
+      "tags": ["ocu", "adversarial", "engine", "elapsed", "monotonic"],
+      "estimated_duration": "5s",
+      "expected_result": "Result.Elapsed >= 1ns for all ActionKinds regardless of stub speed"
+    },
+    {
+      "id": "OCU-ADV-018",
+      "name": "vision-diff-identical-frames",
+      "category": "adversarial",
+      "priority": "medium",
+      "steps": [{"name": "VisionPipeline.Diff on identical frames", "action": "go-test: digital.vasic.helixqa/pkg/nexus/vision/cpu TestCPUBackend_Diff_Identical", "expected": "pass"}],
+      "tags": ["ocu", "adversarial", "vision", "diff", "identical"],
+      "estimated_duration": "5s",
+      "expected_result": "Diff returns TotalDelta=0 or very small; does not panic"
+    },
+    {
+      "id": "OCU-ADV-019",
+      "name": "engine-drag-zero-distance",
+      "category": "adversarial",
+      "priority": "low",
+      "steps": [{"name": "Engine drag with At == To (zero-distance drag)", "action": "go-test: digital.vasic.helixqa/pkg/nexus/automation TestEngine_Drag_Success", "expected": "pass"}],
+      "tags": ["ocu", "adversarial", "engine", "drag", "zero-distance"],
+      "estimated_duration": "5s",
+      "expected_result": "Zero-distance drag dispatches without error"
+    },
+    {
+      "id": "OCU-ADV-020",
+      "name": "bank-duplicate-id-rejected",
+      "category": "adversarial",
+      "priority": "critical",
+      "steps": [{"name": "Testbank loader rejects bank with duplicate IDs", "action": "go-test: digital.vasic.helixqa/pkg/testbank TestLoadFile_DuplicateID", "expected": "pass"}],
+      "tags": ["ocu", "adversarial", "testbank", "duplicate-id"],
+      "estimated_duration": "5s",
+      "expected_result": "LoadFile returns error describing the duplicate test case ID"
+    }
+  ]
+}

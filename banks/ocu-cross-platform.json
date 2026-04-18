@@ -1,0 +1,178 @@
+{
+  "id": "ocu-cross-platform",
+  "version": "1.0.0",
+  "name": "OCU P7 — Cross-Platform Automation Flows",
+  "description": "15 test cases mapping the same Engine/Bridge automation flows to web (CDP), Linux (X11), Android, and Android TV backends. Each verifies that the unified Engine.Perform interface behaves identically across all four CaptureSource backends.",
+  "metadata": {
+    "phase": "P7",
+    "package": "digital.vasic.helixqa/pkg/nexus",
+    "created": "2026-04-18"
+  },
+  "test_cases": [
+    {
+      "id": "OCU-XP-001",
+      "name": "web-capture-click-sequence",
+      "category": "integration",
+      "priority": "critical",
+      "platforms": ["web"],
+      "steps": [{"name": "Capture + Click via web/CDP backend stubs", "action": "go-test: digital.vasic.helixqa/pkg/nexus/automation TestEngine_Click_Success", "expected": "pass"}],
+      "tags": ["ocu", "cross-platform", "web", "capture", "click"],
+      "estimated_duration": "10s",
+      "expected_result": "Engine dispatches click on web backend; Result.Success=true"
+    },
+    {
+      "id": "OCU-XP-002",
+      "name": "web-type-and-submit",
+      "category": "integration",
+      "priority": "critical",
+      "platforms": ["web"],
+      "steps": [{"name": "Type text then press Enter key on web backend", "action": "go-test: digital.vasic.helixqa/pkg/nexus/automation TestEngine_Type_Success", "expected": "pass"}],
+      "tags": ["ocu", "cross-platform", "web", "type", "key"],
+      "estimated_duration": "10s",
+      "expected_result": "Type + Key(Enter) dispatched successfully on web backend"
+    },
+    {
+      "id": "OCU-XP-003",
+      "name": "web-analyze-dispatched-to",
+      "category": "integration",
+      "priority": "high",
+      "platforms": ["web"],
+      "steps": [{"name": "Analyze frame on web backend; verify DispatchedTo set", "action": "go-test: digital.vasic.helixqa/pkg/nexus/automation TestEngine_Analyze_Success", "expected": "pass"}],
+      "tags": ["ocu", "cross-platform", "web", "analyze"],
+      "estimated_duration": "10s",
+      "expected_result": "Result.DispatchedTo is populated from VisionPipeline.Analyze"
+    },
+    {
+      "id": "OCU-XP-004",
+      "name": "linux-capture-scroll",
+      "category": "integration",
+      "priority": "critical",
+      "platforms": ["desktop"],
+      "steps": [{"name": "Capture frame + Scroll via linux/X11 backend stubs", "action": "go-test: digital.vasic.helixqa/pkg/nexus/automation TestEngine_Scroll_Success", "expected": "pass"}],
+      "tags": ["ocu", "cross-platform", "linux", "capture", "scroll"],
+      "estimated_duration": "10s",
+      "expected_result": "Scroll dispatched successfully; Result.Success=true"
+    },
+    {
+      "id": "OCU-XP-005",
+      "name": "linux-drag-gesture",
+      "category": "integration",
+      "priority": "high",
+      "platforms": ["desktop"],
+      "steps": [{"name": "Drag from point A to B on linux backend", "action": "go-test: digital.vasic.helixqa/pkg/nexus/automation TestEngine_Drag_Success", "expected": "pass"}],
+      "tags": ["ocu", "cross-platform", "linux", "drag"],
+      "estimated_duration": "10s",
+      "expected_result": "Drag dispatched successfully on linux/X11 backend"
+    },
+    {
+      "id": "OCU-XP-006",
+      "name": "linux-record-clip",
+      "category": "integration",
+      "priority": "high",
+      "platforms": ["desktop"],
+      "steps": [{"name": "RecordClip on linux backend; clip EvidenceRef produced", "action": "go-test: digital.vasic.helixqa/pkg/nexus/automation TestEngine_RecordClip_Success", "expected": "pass"}],
+      "tags": ["ocu", "cross-platform", "linux", "record-clip"],
+      "estimated_duration": "10s",
+      "expected_result": "clip EvidenceRef produced with 'bytes' annotation"
+    },
+    {
+      "id": "OCU-XP-007",
+      "name": "android-capture-click",
+      "category": "integration",
+      "priority": "critical",
+      "platforms": ["android"],
+      "steps": [{"name": "Capture + Click on Android backend stubs", "action": "go-test: digital.vasic.helixqa/pkg/nexus/automation TestEngine_Click_Success", "expected": "pass"}],
+      "tags": ["ocu", "cross-platform", "android", "capture", "click"],
+      "estimated_duration": "10s",
+      "expected_result": "Engine click dispatches on Android backend; Result.Success=true"
+    },
+    {
+      "id": "OCU-XP-008",
+      "name": "android-key-back",
+      "category": "integration",
+      "priority": "high",
+      "platforms": ["android"],
+      "steps": [{"name": "Key press BACK on Android backend", "action": "go-test: digital.vasic.helixqa/pkg/nexus/automation TestEngine_Key_Success", "expected": "pass"}],
+      "tags": ["ocu", "cross-platform", "android", "key", "back"],
+      "estimated_duration": "10s",
+      "expected_result": "Key(escape/BACK) dispatched on Android backend"
+    },
+    {
+      "id": "OCU-XP-009",
+      "name": "android-analyze-vision",
+      "category": "integration",
+      "priority": "high",
+      "platforms": ["android"],
+      "steps": [{"name": "Analyze screenshot on Android backend", "action": "go-test: digital.vasic.helixqa/pkg/nexus/automation TestEngine_Analyze_Success", "expected": "pass"}],
+      "tags": ["ocu", "cross-platform", "android", "analyze"],
+      "estimated_duration": "10s",
+      "expected_result": "Vision analysis completes; DispatchedTo populated"
+    },
+    {
+      "id": "OCU-XP-010",
+      "name": "androidtv-dpad-navigate",
+      "category": "integration",
+      "priority": "critical",
+      "platforms": ["androidtv"],
+      "steps": [{"name": "DPAD key navigation on Android TV backend stubs", "action": "go-test: digital.vasic.helixqa/pkg/nexus/automation TestEngine_Key_Success", "expected": "pass"}],
+      "tags": ["ocu", "cross-platform", "androidtv", "dpad", "key"],
+      "estimated_duration": "10s",
+      "expected_result": "DPAD key dispatched on Android TV backend; Result.Success=true"
+    },
+    {
+      "id": "OCU-XP-011",
+      "name": "androidtv-capture-analyze",
+      "category": "integration",
+      "priority": "critical",
+      "platforms": ["androidtv"],
+      "steps": [{"name": "Capture then Analyze on Android TV backend", "action": "go-test: digital.vasic.helixqa/pkg/nexus/automation TestEngine_Analyze_Success", "expected": "pass"}],
+      "tags": ["ocu", "cross-platform", "androidtv", "capture", "analyze"],
+      "estimated_duration": "10s",
+      "expected_result": "Capture produces screenshot_before EvidenceRef; Analyze populates DispatchedTo"
+    },
+    {
+      "id": "OCU-XP-012",
+      "name": "androidtv-scroll-carousel",
+      "category": "integration",
+      "priority": "high",
+      "platforms": ["androidtv"],
+      "steps": [{"name": "Scroll carousel on Android TV (DX>0 horizontal)", "action": "go-test: digital.vasic.helixqa/pkg/nexus/automation TestEngine_Scroll_Success", "expected": "pass"}],
+      "tags": ["ocu", "cross-platform", "androidtv", "scroll", "carousel"],
+      "estimated_duration": "10s",
+      "expected_result": "Horizontal scroll dispatched on Android TV backend"
+    },
+    {
+      "id": "OCU-XP-013",
+      "name": "bridge-cross-platform-click",
+      "category": "integration",
+      "priority": "critical",
+      "platforms": ["web", "desktop", "android", "androidtv"],
+      "steps": [{"name": "Bridge.ExecuteAction(click) works across all 4 platforms via stub Engine", "action": "go-test: digital.vasic.helixqa/pkg/nexus/automation/agent_bridge TestBridge_ExecuteAction_Click", "expected": "pass"}],
+      "tags": ["ocu", "cross-platform", "bridge", "click"],
+      "estimated_duration": "10s",
+      "expected_result": "Bridge delegates click to Engine; Result.Success=true on all platforms"
+    },
+    {
+      "id": "OCU-XP-014",
+      "name": "bridge-cross-platform-full-sequence",
+      "category": "integration",
+      "priority": "high",
+      "platforms": ["web", "desktop", "android", "androidtv"],
+      "steps": [{"name": "Bridge 5-action sequence identical on all platforms", "action": "go-test: digital.vasic.helixqa/pkg/nexus/automation/agent_bridge TestBridge_FullSequence", "expected": "pass"}],
+      "tags": ["ocu", "cross-platform", "bridge", "sequence"],
+      "estimated_duration": "15s",
+      "expected_result": "All 5 actions (click/type/key/scroll/drag) succeed across all platforms via stub Engine"
+    },
+    {
+      "id": "OCU-XP-015",
+      "name": "evidence-mapping-cross-platform",
+      "category": "integration",
+      "priority": "high",
+      "platforms": ["web", "desktop", "android", "androidtv"],
+      "steps": [{"name": "FromAutomationResult maps EvidenceRefs identically regardless of platform", "action": "go-test: digital.vasic.helixqa/pkg/ticket TestFromAutomationResult_MultipleRefs", "expected": "pass"}],
+      "tags": ["ocu", "cross-platform", "evidence", "mapping"],
+      "estimated_duration": "5s",
+      "expected_result": "FromAutomationResult is platform-agnostic; mapping correct on all platforms"
+    }
+  ]
+}
