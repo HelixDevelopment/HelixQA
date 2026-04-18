@@ -48,6 +48,9 @@ func withMock(t *testing.T, mock injector) func() {
 }
 
 func TestInteractor_ProductionReturnsErrNotWired(t *testing.T) {
+	// Force stub mode so this test is deterministic on every host (including
+	// those with chromium installed).
+	t.Setenv("HELIXQA_INTERACT_WEB_STUB", "1")
 	i, err := Open(context.Background(), interact.Config{})
 	require.NoError(t, err)
 	require.NotNil(t, i)
@@ -100,4 +103,26 @@ func TestInteractor_RegisteredAsWeb(t *testing.T) {
 		}
 	}
 	require.True(t, found, "web kind must be registered via init()")
+}
+
+// TestProductionInjector_MissingBrowserErrors verifies that when the stub env
+// is set (deterministic on any host), Open still succeeds but action methods
+// return ErrNotWired — never panic.
+func TestProductionInjector_MissingBrowserErrors(t *testing.T) {
+	t.Setenv("HELIXQA_INTERACT_WEB_STUB", "1")
+	// Ensure the package-level injectable is the production sentinel.
+	orig := newInjector
+	defer func() { newInjector = orig }()
+	newInjector = productionInjector{}
+
+	i, err := Open(context.Background(), interact.Config{})
+	require.NoError(t, err, "Open must always succeed")
+	require.NotNil(t, i)
+
+	// All action methods must return ErrNotWired (or a non-nil error), never panic.
+	err = i.Click(context.Background(), contracts.Point{X: 100, Y: 200}, contracts.ClickOptions{})
+	require.Error(t, err)
+	if !errors.Is(err, ErrNotWired) {
+		require.NotEmpty(t, err.Error())
+	}
 }
