@@ -1,0 +1,155 @@
+# SPDX-FileCopyrightText: 2026 Milos Vasic
+# SPDX-License-Identifier: Apache-2.0
+#
+# OpenClawing2 Phase 2 bank — Agent-step state machine.
+# Regression suite that locks in P2.T9 .. P2.T18 deliverables.
+
+version: "1.0"
+name: "OpenClawing2 — Phase 2 Agent-Step"
+description: "Regression suite for pkg/nexus/agent: four-phase loop, typed AgentStep, error propagation, concurrency, and JSON parsing."
+metadata:
+  author: "vasic-digital"
+  phase: 2
+  plan: "docs/plans/2026-04-18-openclawing2-integration-plan.md"
+
+test_cases:
+  - id: OC-AGENT-001
+    name: "Agent.Run drives a scripted happy-path flow to Done"
+    category: functional
+    priority: critical
+    platforms: [api]
+    tags: [openclawing2, phase2, agent, happy-path]
+    steps:
+      - name: "Build agent with scripted planner emitting click + wait_for + Done"
+        action: "agent.NewAgent(llm, adapter, Config{MaxIterations: 10})"
+        expected: "non-nil Agent"
+      - name: "Run(ctx, state, session)"
+        action: "pkg/nexus/agent.Agent.Run"
+        expected: "state.Done == true after 3 iterations; adapter.Do invoked 2 times"
+    expected_result: "Happy-path loop completes without error"
+    fix_reference:
+      id: P2
+      file: "pkg/nexus/agent/agent.go"
+
+  - id: OC-AGENT-002
+    name: "Agent.Run respects MaxIterations when planner never signals Done"
+    category: functional
+    priority: high
+    platforms: [api]
+    tags: [openclawing2, phase2, agent, safety]
+    steps:
+      - name: "Planner loops click forever"
+        action: "agent.NewAgent(scriptedLLM{loopLast: true}, adapter, Config{MaxIterations: 3})"
+        expected: "Agent configured with tight iteration cap"
+      - name: "Run returns ErrMaxIterationsExceeded"
+        action: "pkg/nexus/agent.Agent.Run"
+        expected: "errors.Is(err, ErrMaxIterationsExceeded) == true AND state.Iteration == 3"
+    expected_result: "No runaway loops ever escape the Agent's safety net"
+
+  - id: OC-AGENT-003
+    name: "Phase errors propagate with the phase name in context"
+    category: functional
+    priority: high
+    platforms: [api]
+    tags: [openclawing2, phase2, agent, error-path]
+    steps:
+      - name: "Adapter.Snapshot returns error"
+        action: "Agent.Step with failing adapter"
+        expected: "error text contains 'phase prepare'"
+      - name: "LLMClient.PlanStep returns error"
+        action: "Agent.Step with failing planner"
+        expected: "error text contains 'phase plan'"
+    expected_result: "Operators can pinpoint the failing phase without reading code"
+
+  - id: OC-AGENT-004
+    name: "Execute halts at the first failing Action instead of cascading"
+    category: regression
+    priority: critical
+    platforms: [api]
+    tags: [openclawing2, phase2, agent, execute]
+    steps:
+      - name: "Dispatch 3 clicks; adapter fails on call 2"
+        action: "pkg/nexus/agent.Agent.Execute"
+        expected: "results len == 2; results[1].Success == false; results[1].Err != ''"
+    expected_result: "Cascading failures after a known bad step are prevented"
+
+  - id: OC-AGENT-005
+    name: "PostProcess annotates empty-action steps for self-healer"
+    category: functional
+    priority: medium
+    platforms: [api]
+    tags: [openclawing2, phase2, agent, postprocess]
+    steps:
+      - name: "Planner emits step with no Actions and Done=false"
+        action: "pkg/nexus/agent.Agent.PostProcess"
+        expected: "history entry has 'empty action list' annotation in Evaluation"
+    expected_result: "Self-healer receives an explicit 'stuck' signal"
+
+  - id: OC-AGENT-006
+    name: "AgentState.RecentSteps respects window size"
+    category: regression
+    priority: medium
+    platforms: [api]
+    tags: [openclawing2, phase2, state]
+    steps:
+      - name: "Append 5 steps, request RecentSteps(2)"
+        action: "pkg/nexus/agent.AgentState.RecentSteps"
+        expected: "returns last 2 steps only"
+      - name: "Request RecentSteps(100) with 5 in history"
+        action: "pkg/nexus/agent.AgentState.RecentSteps"
+        expected: "returns all 5"
+      - name: "Request RecentSteps(0)"
+        action: "pkg/nexus/agent.AgentState.RecentSteps"
+        expected: "returns nil"
+    expected_result: "Window bound never crashes or over-returns"
+
+  - id: OC-AGENT-007
+    name: "ParsePlannerJSON handles code fences and valid shapes"
+    category: regression
+    priority: high
+    platforms: [api]
+    tags: [openclawing2, phase2, json-parse]
+    steps:
+      - name: "Parse fenced ```json block"
+        action: "pkg/nexus/agent.ParsePlannerJSON"
+        expected: "correct AgentStep extracted; Done=true survives"
+      - name: "Parse non-JSON input"
+        action: "pkg/nexus/agent.ParsePlannerJSON"
+        expected: "error wrapping 'parse planner json'"
+    expected_result: "Parser resilient to LLM quirks"
+
+  - id: OC-AGENT-008
+    name: "Adversarial Action refusals surface as ActionResult failures"
+    category: security
+    priority: high
+    platforms: [api]
+    tags: [openclawing2, phase2, security]
+    steps:
+      - name: "Adapter refuses navigate to file:///etc/passwd"
+        action: "pkg/nexus/agent.Agent.Execute"
+        expected: "result.Success == false AND result.Err contains 'refused'"
+    expected_result: "Action whitelisting happens at Adapter layer; Agent forwards faithfully"
+
+  - id: OC-AGENT-009
+    name: "10 concurrent Run sessions share one Agent struct without races"
+    category: stress
+    priority: high
+    platforms: [api]
+    tags: [openclawing2, phase2, concurrency]
+    steps:
+      - name: "go test -race ./pkg/nexus/agent/..."
+        action: "pkg/nexus/agent race-detection test suite"
+        expected: "Zero data races; planner invoked >= 10 times"
+    expected_result: "Agent struct is concurrency-safe by design"
+
+  - id: OC-AGENT-010
+    name: "50 sequential iterations keep memory bounded"
+    category: stress
+    priority: medium
+    platforms: [api]
+    tags: [openclawing2, phase2, stress]
+    steps:
+      - name: "Planner emits 50 click actions then Done"
+        action: "pkg/nexus/agent.Agent.Run"
+        expected: "state.Iteration == 51; no goroutine leak; snapshot retained"
+    expected_result: "History grows linearly with no unbounded side allocations"
