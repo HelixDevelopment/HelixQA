@@ -136,7 +136,21 @@ func (e *Engine) Snapshot(ctx context.Context, s nexus.Session) (*nexus.Snapshot
 	return snap, nil
 }
 
-// Do dispatches an Action to the underlying handle.
+// CoordCapable is the optional extension interface a SessionHandle
+// implements to accept Phase-6 coordinate-grounded Actions
+// (coord_click / coord_type / coord_scroll). Drivers that do not
+// implement it receive a descriptive error from Engine.Do so
+// operators know which driver to upgrade.
+type CoordCapable interface {
+	CoordClick(ctx context.Context, x, y int) error
+	CoordType(ctx context.Context, x, y int, text string) error
+	CoordScroll(ctx context.Context, x, y, dx, dy int) error
+}
+
+// Do dispatches an Action to the underlying handle. Phase-6 coord_*
+// kinds are routed to the CoordCapable extension interface when the
+// driver implements it, otherwise the call fails with an
+// actionable error.
 func (e *Engine) Do(ctx context.Context, s nexus.Session, a nexus.Action) error {
 	sess, ok := s.(*session)
 	if !ok {
@@ -154,6 +168,26 @@ func (e *Engine) Do(ctx context.Context, s nexus.Session, a nexus.Action) error 
 	case "screenshot":
 		_, err := sess.handle.Screenshot(ctx)
 		return err
+	case "coord_click":
+		cc, ok := sess.handle.(CoordCapable)
+		if !ok {
+			return fmt.Errorf("browser: driver does not implement CoordCapable; coord_click requires a coord-mode-capable driver")
+		}
+		return cc.CoordClick(ctx, a.X, a.Y)
+	case "coord_type":
+		cc, ok := sess.handle.(CoordCapable)
+		if !ok {
+			return fmt.Errorf("browser: driver does not implement CoordCapable; coord_type requires a coord-mode-capable driver")
+		}
+		return cc.CoordType(ctx, a.X, a.Y, a.Text)
+	case "coord_scroll":
+		cc, ok := sess.handle.(CoordCapable)
+		if !ok {
+			return fmt.Errorf("browser: driver does not implement CoordCapable; coord_scroll requires a coord-mode-capable driver")
+		}
+		dx, _ := a.Params["dx"].(int)
+		dy, _ := a.Params["dy"].(int)
+		return cc.CoordScroll(ctx, a.X, a.Y, dx, dy)
 	default:
 		return fmt.Errorf("browser: unsupported action kind %q", a.Kind)
 	}
