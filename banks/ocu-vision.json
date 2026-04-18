@@ -1,0 +1,220 @@
+{
+  "id": "ocu-vision",
+  "version": "1.0",
+  "name": "OCU P2 Vision Pipeline",
+  "description": "Validates the vision pipeline: Analyze/Match/Diff/OCR via remote dispatch or local CPU fallback.",
+  "metadata": {
+    "author": "vasic-digital",
+    "priority": "3"
+  },
+  "test_cases": [
+    {
+      "id": "OCU-VISION-001",
+      "name": "pipeline-analyze-local-fallback",
+      "category": "unit",
+      "priority": "critical",
+      "steps": [
+        {
+          "name": "Run Pipeline Analyze local fallback",
+          "action": "go-test: digital.vasic.helixqa/pkg/nexus/vision TestPipeline_Analyze_LocalFallback",
+          "expected": "pass"
+        }
+      ],
+      "tags": ["ocu", "vision", "pipeline", "happy"],
+      "estimated_duration": "5s",
+      "expected_result": "Pipeline.Analyze falls back to LocalBackend when Dispatcher returns an error; DispatchedTo is 'local-cpu'"
+    },
+    {
+      "id": "OCU-VISION-002",
+      "name": "pipeline-match-local-fallback",
+      "category": "unit",
+      "priority": "critical",
+      "steps": [
+        {
+          "name": "Run Pipeline Match local fallback",
+          "action": "go-test: digital.vasic.helixqa/pkg/nexus/vision TestPipeline_Match_LocalFallback",
+          "expected": "pass"
+        }
+      ],
+      "tags": ["ocu", "vision", "pipeline", "happy"],
+      "estimated_duration": "5s",
+      "expected_result": "Pipeline.Match falls back to LocalBackend; returns 1 match with Confidence 0.9"
+    },
+    {
+      "id": "OCU-VISION-003",
+      "name": "pipeline-diff-local-fallback",
+      "category": "unit",
+      "priority": "critical",
+      "steps": [
+        {
+          "name": "Run Pipeline Diff local fallback",
+          "action": "go-test: digital.vasic.helixqa/pkg/nexus/vision TestPipeline_Diff_LocalFallback",
+          "expected": "pass"
+        }
+      ],
+      "tags": ["ocu", "vision", "pipeline", "happy"],
+      "estimated_duration": "5s",
+      "expected_result": "Pipeline.Diff falls back to LocalBackend; returns non-nil DiffResult"
+    },
+    {
+      "id": "OCU-VISION-004",
+      "name": "pipeline-ocr-local-fallback",
+      "category": "unit",
+      "priority": "critical",
+      "steps": [
+        {
+          "name": "Run Pipeline OCR local fallback",
+          "action": "go-test: digital.vasic.helixqa/pkg/nexus/vision TestPipeline_OCR_LocalFallback",
+          "expected": "pass"
+        }
+      ],
+      "tags": ["ocu", "vision", "pipeline", "happy"],
+      "estimated_duration": "5s",
+      "expected_result": "Pipeline.OCR falls back to LocalBackend; returns OCRResult with FullText 'hi'"
+    },
+    {
+      "id": "OCU-VISION-005",
+      "name": "pipeline-nil-local-errors",
+      "category": "unit",
+      "priority": "high",
+      "steps": [
+        {
+          "name": "Run Pipeline nil LocalBackend errors",
+          "action": "go-test: digital.vasic.helixqa/pkg/nexus/vision TestPipeline_NilLocalBackend_Errors",
+          "expected": "pass"
+        }
+      ],
+      "tags": ["ocu", "vision", "pipeline", "edge"],
+      "estimated_duration": "5s",
+      "expected_result": "Pipeline.Analyze returns ErrNoBackend when dispatcher fails and local is nil"
+    },
+    {
+      "id": "OCU-VISION-006",
+      "name": "pipeline-analyze-remote-dispatch",
+      "category": "unit",
+      "priority": "critical",
+      "steps": [
+        {
+          "name": "Run Pipeline Analyze remote dispatch",
+          "action": "go-test: digital.vasic.helixqa/pkg/nexus/vision TestPipeline_Analyze_RemoteDispatch",
+          "expected": "pass"
+        }
+      ],
+      "tags": ["ocu", "vision", "pipeline", "happy", "remote"],
+      "estimated_duration": "5s",
+      "expected_result": "Pipeline.Analyze prefers remote Worker; DispatchedTo is 'thinker-cuda'"
+    },
+    {
+      "id": "OCU-VISION-007",
+      "name": "pipeline-ocr-remote-dispatch",
+      "category": "unit",
+      "priority": "high",
+      "steps": [
+        {
+          "name": "Run Pipeline OCR remote dispatch",
+          "action": "go-test: digital.vasic.helixqa/pkg/nexus/vision TestPipeline_OCR_RemoteDispatch",
+          "expected": "pass"
+        }
+      ],
+      "tags": ["ocu", "vision", "pipeline", "happy", "remote"],
+      "estimated_duration": "5s",
+      "expected_result": "Pipeline.OCR uses remote TensorRT worker; FullText is empty (P2 stub)"
+    },
+    {
+      "id": "OCU-VISION-010",
+      "name": "cpu-analyze-local-cpu",
+      "category": "unit",
+      "priority": "critical",
+      "steps": [
+        {
+          "name": "Run CPU Backend Analyze returns local-cpu",
+          "action": "go-test: digital.vasic.helixqa/pkg/nexus/vision/cpu TestBackend_Analyze_ReturnsLocalCPU",
+          "expected": "pass"
+        }
+      ],
+      "tags": ["ocu", "vision", "cpu", "happy"],
+      "estimated_duration": "5s",
+      "expected_result": "Backend.Analyze returns Analysis with DispatchedTo='local-cpu' for BGRA8 frame"
+    },
+    {
+      "id": "OCU-VISION-011",
+      "name": "cpu-analyze-rejects-unsupported",
+      "category": "unit",
+      "priority": "high",
+      "steps": [
+        {
+          "name": "Run CPU Backend Analyze rejects unsupported format",
+          "action": "go-test: digital.vasic.helixqa/pkg/nexus/vision/cpu TestBackend_Analyze_RejectsUnsupportedFormat",
+          "expected": "pass"
+        }
+      ],
+      "tags": ["ocu", "vision", "cpu", "edge"],
+      "estimated_duration": "5s",
+      "expected_result": "Backend.Analyze returns error for H264-format frames"
+    },
+    {
+      "id": "OCU-VISION-012",
+      "name": "cpu-match-empty",
+      "category": "unit",
+      "priority": "high",
+      "steps": [
+        {
+          "name": "Run CPU Backend Match returns empty",
+          "action": "go-test: digital.vasic.helixqa/pkg/nexus/vision/cpu TestBackend_Match_ReturnsEmpty",
+          "expected": "pass"
+        }
+      ],
+      "tags": ["ocu", "vision", "cpu", "happy"],
+      "estimated_duration": "5s",
+      "expected_result": "Backend.Match returns empty slice (real template matching deferred to P2.5)"
+    },
+    {
+      "id": "OCU-VISION-013",
+      "name": "cpu-diff-same-shape",
+      "category": "unit",
+      "priority": "high",
+      "steps": [
+        {
+          "name": "Run CPU Backend Diff flags same shape",
+          "action": "go-test: digital.vasic.helixqa/pkg/nexus/vision/cpu TestBackend_Diff_FlagsSameShape",
+          "expected": "pass"
+        }
+      ],
+      "tags": ["ocu", "vision", "cpu", "happy"],
+      "estimated_duration": "5s",
+      "expected_result": "Backend.Diff sets SameShape=true for two frames with identical dimensions"
+    },
+    {
+      "id": "OCU-VISION-014",
+      "name": "cpu-ocr-empty",
+      "category": "unit",
+      "priority": "high",
+      "steps": [
+        {
+          "name": "Run CPU Backend OCR returns empty",
+          "action": "go-test: digital.vasic.helixqa/pkg/nexus/vision/cpu TestBackend_OCR_ReturnsEmpty",
+          "expected": "pass"
+        }
+      ],
+      "tags": ["ocu", "vision", "cpu", "happy"],
+      "estimated_duration": "5s",
+      "expected_result": "Backend.OCR returns empty FullText (real Tesseract/TensorRT deferred to P2.5)"
+    },
+    {
+      "id": "OCU-VISION-020",
+      "name": "pipeline-stress-100-concurrent",
+      "category": "stress",
+      "priority": "high",
+      "steps": [
+        {
+          "name": "Run Pipeline 100-goroutine stress under -race",
+          "action": "go-test: digital.vasic.helixqa/pkg/nexus/vision TestStress_Pipeline_100Concurrent",
+          "expected": "pass"
+        }
+      ],
+      "tags": ["ocu", "vision", "stress", "adversarial", "race"],
+      "estimated_duration": "10s",
+      "expected_result": "100 concurrent goroutines all complete Analyze without errors or data races"
+    }
+  ]
+}
