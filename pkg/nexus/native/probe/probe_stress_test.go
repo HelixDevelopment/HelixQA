@@ -5,13 +5,14 @@ package probe
 
 import (
 	"context"
+	"fmt"
 	"sync"
 	"testing"
 )
 
 // TestStress_ProbeLocal_Concurrent runs 100 concurrent ProbeLocal
 // calls and asserts zero panics, zero errors, and that every call
-// populated OS/CPU/Memory.
+// populated OS / CPUCores / MemoryTotalMB.
 func TestStress_ProbeLocal_Concurrent(t *testing.T) {
 	ctx := context.Background()
 	const N = 100
@@ -26,8 +27,11 @@ func TestStress_ProbeLocal_Concurrent(t *testing.T) {
 				errs <- err
 				return
 			}
-			if r.OS == "" || r.CPUCores == 0 {
-				errs <- context.DeadlineExceeded // any non-nil sentinel
+			if r.OS == "" || r.CPUCores == 0 || r.MemoryTotalMB == 0 {
+				errs <- fmt.Errorf(
+					"probe returned incomplete report: OS=%q CPUCores=%d MemoryTotalMB=%d",
+					r.OS, r.CPUCores, r.MemoryTotalMB,
+				)
 			}
 		}()
 	}

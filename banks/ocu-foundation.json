@@ -1,4 +1,5 @@
 {
+  "id": "ocu-foundation",
   "version": "1.0",
   "name": "OCU P0 Foundation",
   "description": "Validates the foundation layer: probe, dispatcher, contracts, and Containers GPU extension.",
