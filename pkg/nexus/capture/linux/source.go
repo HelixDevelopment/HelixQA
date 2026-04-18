@@ -1,18 +1,22 @@
 // SPDX-FileCopyrightText: 2026 Milos Vasic
 // SPDX-License-Identifier: Apache-2.0
 
-// Package linux implements the OCU P1 CaptureSource backend for
-// linux X11 SHM source via xwd subprocess (P1 scope); PipeWire /
-// cgo bindings land later. P1 scope ships the plumbing (Source
-// struct, lifecycle, factory registration, injectable frame
-// producer). Production xwd subprocess wiring that parses real
-// XWD bytes arrives in P1.5.
+// Package linux implements the OCU P1/P1.5 CaptureSource backend for Linux.
+// P1.5 wires a real screenshot pipeline: xwd+convert (X11, preferred) →
+// gnome-screenshot (X11 fallback) → grim (Wayland fallback).
+//
+// Kill-switches (any one disables the real backend and returns ErrNotWired):
+//   - env HELIXQA_CAPTURE_LINUX_STUB=1
+//   - neither DISPLAY nor WAYLAND_DISPLAY is set
+//   - none of xwd, gnome-screenshot, or grim is found on PATH
 package linux
 
 import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
+	"os/exec"
 	"reflect"
 	"sync"
 	"sync/atomic"
@@ -22,26 +26,59 @@ import (
 	contracts "digital.vasic.helixqa/pkg/nexus/native/contracts"
 )
 
-// ErrNotWired is returned by Open (and by the production producer)
-// while the real xwd subprocess wiring is still pending (P1.5 scope).
-var ErrNotWired = errors.New("capture/linux: production xwd producer not wired yet (P1.5)")
+// ErrNotWired is returned by Open when the production backend is disabled
+// (HELIXQA_CAPTURE_LINUX_STUB=1, no display server, or no screenshot tool).
+var ErrNotWired = errors.New("capture/linux: production xwd/gnomeshot producer not wired (stub, no display, or no tool on PATH)")
+
+// backend names returned by detectBackend.
+const (
+	backendXwd   = "xwd"
+	backendGnome = "gnome-screenshot"
+	backendGrim  = "grim"
+)
+
+// detectBackend returns the name of the best available screenshot tool.
+// Priority: xwd (requires xwd + convert) → gnome-screenshot → grim.
+// Returns ErrNotWired when no tool is found.
+func detectBackend() (string, error) {
+	if _, err := exec.LookPath("xwd"); err == nil {
+		if _, err2 := exec.LookPath("convert"); err2 == nil {
+			return backendXwd, nil
+		}
+	}
+	if _, err := exec.LookPath("gnome-screenshot"); err == nil {
+		return backendGnome, nil
+	}
+	if _, err := exec.LookPath("grim"); err == nil {
+		return backendGrim, nil
+	}
+	return "", ErrNotWired
+}
 
 // frameProducer is the injectable backend. Tests swap newFrameProducer
 // for a fake; production keeps it as productionFrameProducer.
 type frameProducer func(ctx context.Context, cfg contracts.CaptureConfig, out chan<- contracts.Frame, stopCh <-chan struct{}) error
 
-// productionFrameProducer is the not-yet-wired stub used in production.
-func productionFrameProducer(_ context.Context, _ contracts.CaptureConfig, _ chan<- contracts.Frame, _ <-chan struct{}) error {
-	return ErrNotWired
+// productionFrameProducer dispatches to the best available screenshot tool:
+// xwd+convert → gnome-screenshot → grim.  It honours all kill-switches.
+func productionFrameProducer(ctx context.Context, cfg contracts.CaptureConfig, out chan<- contracts.Frame, stopCh <-chan struct{}) error {
+	backend, err := detectBackend()
+	if err != nil {
+		return err
+	}
+	switch backend {
+	case backendXwd:
+		return xwdProducer(ctx, cfg, out, stopCh)
+	default:
+		return gnomeShotProducer(ctx, cfg, out, stopCh)
+	}
 }
 
 // productionPC is the program-counter address of productionFrameProducer,
 // captured once at package init so isProduction() never calls the function.
 var productionPC = reflect.ValueOf(productionFrameProducer).Pointer()
 
-// isProduction returns true when fp is the unimplemented production stub.
-// Uses reflect.Value.Pointer() to compare function PCs — the idiomatic
-// Go pattern for func-value identity without unsafe.
+// isProduction returns true when fp is the production (non-mock) producer.
 func isProduction(fp frameProducer) bool {
 	return reflect.ValueOf(fp).Pointer() == productionPC
 }
@@ -53,14 +90,37 @@ func init() {
 	capture.Register("linux-x11", Open)
 }
 
-// Open constructs a Source. Returns ErrNotWired immediately when the
-// production xwd backend has not yet been wired (P1.5). Tests inject
-// a mock producer via newFrameProducer before calling Open.
+// linuxStubEnabled returns true when HELIXQA_CAPTURE_LINUX_STUB=1 is set.
+func linuxStubEnabled() bool {
+	return os.Getenv("HELIXQA_CAPTURE_LINUX_STUB") == "1"
+}
+
+// displayAvailable returns true when DISPLAY or WAYLAND_DISPLAY is set.
+func displayAvailable() bool {
+	return os.Getenv("DISPLAY") != "" || os.Getenv("WAYLAND_DISPLAY") != ""
+}
+
+// Open constructs a Source. When the production producer is selected (the
+// default), Open enforces kill-switches in order:
+//
+//  1. HELIXQA_CAPTURE_LINUX_STUB=1 → ErrNotWired
+//  2. No DISPLAY and no WAYLAND_DISPLAY → ErrNotWired
+//  3. No screenshot tool on PATH → ErrNotWired
+//
+// Tests inject a mock producer via newFrameProducer before calling Open.
 // On success the caller is responsible for Close().
 func Open(_ context.Context, cfg contracts.CaptureConfig) (contracts.CaptureSource, error) {
 	producer := newFrameProducer
 	if isProduction(producer) {
-		return nil, ErrNotWired
+		if linuxStubEnabled() {
+			return nil, ErrNotWired
+		}
+		if !displayAvailable() {
+			return nil, fmt.Errorf("%w: DISPLAY and WAYLAND_DISPLAY are both unset", ErrNotWired)
+		}
+		if _, err := detectBackend(); err != nil {
+			return nil, fmt.Errorf("%w: %w", ErrNotWired, err)
+		}
 	}
 	s := &Source{
 		cfg:      cfg,
@@ -71,7 +131,7 @@ func Open(_ context.Context, cfg contracts.CaptureConfig) (contracts.CaptureSour
 	return s, nil
 }
 
-// Source is the Linux X11 xwd-based CaptureSource.
+// Source is the Linux screenshot-based CaptureSource.
 type Source struct {
 	cfg      contracts.CaptureConfig
 	frames   chan contracts.Frame

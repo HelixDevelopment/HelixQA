@@ -1,27 +1,34 @@
 // SPDX-FileCopyrightText: 2026 Milos Vasic
 // SPDX-License-Identifier: Apache-2.0
 
-// Package linux implements the OCU P3 Interactor backend for Linux via
-// the uinput kernel module. P3 scope ships the plumbing (Interactor
-// struct, injectable injector, factory registration). Real uinput
-// device-open + event-write wiring arrives in P3.5.
-// Note: /dev/uinput access requires the user to be in the 'input'
-// group — no sudo required (operator-action item documented in the
-// P3 security audit).
+// Package linux implements the OCU P3/P3.5 Interactor backend for Linux via
+// xdotool (X11) or ydotool (Wayland). P3.5 wires real input injection:
+// click, type, scroll, key, and drag actions are dispatched to whichever
+// dotool binary is available on PATH. Raw /dev/uinput writes are deferred to
+// a future phase — xdotool covers 95% of QA interactions without sudo.
+//
+// Kill-switches (either disables the real backend; action methods return
+// ErrNotWired):
+//   - env HELIXQA_INTERACT_LINUX_STUB=1
+//   - neither "xdotool" nor "ydotool" found on PATH
+//
+// Operator note: /dev/uinput access for a future raw-uinput path requires
+// membership in the 'input' group. See docs/ocu-udev-setup.md.
 package linux
 
 import (
 	"context"
 	"errors"
+	"os"
 	"reflect"
 
 	"digital.vasic.helixqa/pkg/nexus/interact"
 	contracts "digital.vasic.helixqa/pkg/nexus/native/contracts"
 )
 
-// ErrNotWired is returned by every action method while the real uinput
-// wiring is still pending (P3.5 scope).
-var ErrNotWired = errors.New("interact/linux: production uinput injector not wired yet (P3.5)")
+// ErrNotWired is returned by action methods when no xdotool/ydotool binary is
+// available or HELIXQA_INTERACT_LINUX_STUB=1 is set.
+var ErrNotWired = errors.New("interact/linux: production xdotool/ydotool injector not wired (binary absent or HELIXQA_INTERACT_LINUX_STUB=1)")
 
 // injector is the injectable backend. Tests swap newInjector for a
 // fake; production keeps it as productionInjector.
@@ -33,7 +40,8 @@ type injector interface {
 	Drag(ctx context.Context, from, to contracts.Point, opts contracts.DragOptions) error
 }
 
-// productionInjector is the not-yet-wired stub used in production.
+// productionInjector is the not-yet-resolved sentinel.  It is only used when
+// neither xdotool nor ydotool is available or the stub env is set.
 type productionInjector struct{}
 
 func (productionInjector) Click(_ context.Context, _ contracts.Point, _ contracts.ClickOptions) error {
@@ -64,22 +72,45 @@ func isProduction(inj injector) bool {
 // newInjector is the package-level injectable; tests replace it.
 var newInjector injector = productionInjector{}
 
+// linuxStubEnabled returns true when HELIXQA_INTERACT_LINUX_STUB=1 is set.
+func linuxStubEnabled() bool {
+	return os.Getenv("HELIXQA_INTERACT_LINUX_STUB") == "1"
+}
+
+// resolveInjector returns a real xdotoolInjector when a dotool binary is
+// available and stub mode is off, otherwise returns the productionInjector
+// sentinel (action methods will return ErrNotWired).
+func resolveInjector() injector {
+	if linuxStubEnabled() {
+		return productionInjector{}
+	}
+	tool, err := resolveXdotool()
+	if err != nil {
+		return productionInjector{}
+	}
+	return &xdotoolInjector{tool: tool}
+}
+
 func init() {
 	interact.Register("linux", Open)
 }
 
-// Open constructs an Interactor. The production path always succeeds at
-// Open time; ErrNotWired surfaces when an action method is called (same
-// approach as capture/android so callers can inspect the backend before
-// use). Tests inject a mock via newInjector before calling Open.
+// Open constructs an Interactor. The production path always succeeds at Open
+// time; ErrNotWired surfaces on the first action call when no dotool binary
+// is found or the stub env is set — consistent with the P3 contract.
+// Tests inject a mock via newInjector before calling Open.
 func Open(_ context.Context, cfg interact.Config) (contracts.Interactor, error) {
+	inj := newInjector
+	if isProduction(inj) {
+		inj = resolveInjector()
+	}
 	return &Interactor{
 		cfg: cfg,
-		inj: newInjector,
+		inj: inj,
 	}, nil
 }
 
-// Interactor is the Linux uinput-based input injector.
+// Interactor is the Linux xdotool/ydotool-based input injector.
 type Interactor struct {
 	cfg interact.Config
 	inj injector
