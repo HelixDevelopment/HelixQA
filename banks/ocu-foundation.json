@@ -1,0 +1,171 @@
+{
+  "version": "1.0",
+  "name": "OCU P0 Foundation",
+  "description": "Validates the foundation layer: probe, dispatcher, contracts, and Containers GPU extension.",
+  "metadata": {
+    "author": "vasic-digital",
+    "priority": "1"
+  },
+  "test_cases": [
+    {
+      "id": "OCU-FOUNDATION-001",
+      "name": "probe-local-populates-os-cpu-ram",
+      "category": "unit",
+      "priority": "critical",
+      "steps": [
+        {
+          "name": "Run ProbeLocal",
+          "action": "go-test: digital.vasic.helixqa/pkg/nexus/native/probe TestProbeLocal_PopulatesHost",
+          "expected": "pass"
+        }
+      ],
+      "tags": ["ocu", "probe", "happy"],
+      "estimated_duration": "5s",
+      "expected_result": "ProbeLocal returns Report with non-empty OS, non-zero CPUCores and MemoryTotalMB"
+    },
+    {
+      "id": "OCU-FOUNDATION-002",
+      "name": "probe-remote-thinker-nvidia",
+      "category": "unit",
+      "priority": "critical",
+      "steps": [
+        {
+          "name": "Run ProbeRemote with fake NVIDIA output",
+          "action": "go-test: digital.vasic.helixqa/pkg/nexus/native/probe TestProbeRemote_Thinker",
+          "expected": "pass"
+        }
+      ],
+      "tags": ["ocu", "probe", "happy", "gpu"],
+      "estimated_duration": "5s",
+      "expected_result": "ProbeRemote parses nvidia-smi CSV and returns 1 GPU device with vendor=nvidia"
+    },
+    {
+      "id": "OCU-FOUNDATION-003",
+      "name": "dispatcher-picks-gpu-host",
+      "category": "unit",
+      "priority": "critical",
+      "steps": [
+        {
+          "name": "Run Dispatcher resolve happy path",
+          "action": "go-test: digital.vasic.helixqa/pkg/nexus/native/remote TestDispatcher_Resolve_PicksGPUHost",
+          "expected": "pass"
+        }
+      ],
+      "tags": ["ocu", "dispatcher", "happy"],
+      "estimated_duration": "5s",
+      "expected_result": "Dispatcher returns the host with a matching GPU when one is available"
+    },
+    {
+      "id": "OCU-FOUNDATION-004",
+      "name": "dispatcher-no-gpu-host-errors",
+      "category": "unit",
+      "priority": "high",
+      "steps": [
+        {
+          "name": "Run Dispatcher resolve — no host available",
+          "action": "go-test: digital.vasic.helixqa/pkg/nexus/native/remote TestDispatcher_Resolve_NoHostAvailable",
+          "expected": "pass"
+        }
+      ],
+      "tags": ["ocu", "dispatcher", "edge"],
+      "estimated_duration": "5s",
+      "expected_result": "Dispatcher returns a non-nil error when no host can satisfy the GPU requirement"
+    },
+    {
+      "id": "OCU-FOUNDATION-005",
+      "name": "budget-assert-detects-regression",
+      "category": "unit",
+      "priority": "high",
+      "steps": [
+        {
+          "name": "Run AssertWithin exceeds case",
+          "action": "go-test: digital.vasic.helixqa/pkg/nexus/native/budget TestAssertWithin_Exceeds",
+          "expected": "pass"
+        }
+      ],
+      "tags": ["ocu", "budget", "edge"],
+      "estimated_duration": "5s",
+      "expected_result": "AssertWithin returns an error when the measured value exceeds the baseline by more than the gate"
+    },
+    {
+      "id": "OCU-FOUNDATION-006",
+      "name": "containers-scheduler-gpu-canfit",
+      "category": "unit",
+      "priority": "critical",
+      "steps": [
+        {
+          "name": "Run Scorer CanFit GPU happy path",
+          "action": "go-test: digital.vasic.containers/pkg/scheduler TestScorer_CanFit_GPU_HostHasEnough",
+          "expected": "pass"
+        }
+      ],
+      "tags": ["ocu", "containers", "scheduler", "happy"],
+      "estimated_duration": "5s",
+      "expected_result": "Scorer reports CanFit=true when host VRAM meets or exceeds the request"
+    },
+    {
+      "id": "OCU-FOUNDATION-007",
+      "name": "containers-scheduler-gpu-vendor-mismatch",
+      "category": "unit",
+      "priority": "high",
+      "steps": [
+        {
+          "name": "Run Scorer CanFit GPU vendor mismatch",
+          "action": "go-test: digital.vasic.containers/pkg/scheduler TestScorer_CanFit_GPU_VendorMismatch",
+          "expected": "pass"
+        }
+      ],
+      "tags": ["ocu", "containers", "scheduler", "edge"],
+      "estimated_duration": "5s",
+      "expected_result": "Scorer reports CanFit=false when GPU vendor does not match the workload requirement"
+    },
+    {
+      "id": "OCU-FOUNDATION-008",
+      "name": "containers-parser-nvidia-smi",
+      "category": "unit",
+      "priority": "critical",
+      "steps": [
+        {
+          "name": "Run ParseNvidiaSmi one-GPU case",
+          "action": "go-test: digital.vasic.containers/pkg/remote TestParseNvidiaSmi_OneGPU",
+          "expected": "pass"
+        }
+      ],
+      "tags": ["ocu", "containers", "parser", "happy"],
+      "estimated_duration": "5s",
+      "expected_result": "ParseNvidiaSmi returns exactly one GPUDevice with correct fields from single-GPU CSV"
+    },
+    {
+      "id": "OCU-FOUNDATION-009",
+      "name": "containers-backcompat-no-gpu",
+      "category": "unit",
+      "priority": "high",
+      "steps": [
+        {
+          "name": "Run BackCompat NoGPU unchanged",
+          "action": "go-test: digital.vasic.containers/pkg/scheduler TestBackCompat_NoGPU_NoChange",
+          "expected": "pass"
+        }
+      ],
+      "tags": ["ocu", "containers", "scheduler", "happy"],
+      "estimated_duration": "5s",
+      "expected_result": "Workloads without GPU requirements pass through the scheduler unchanged"
+    },
+    {
+      "id": "OCU-FOUNDATION-010",
+      "name": "probe-local-concurrent-race",
+      "category": "stress",
+      "priority": "high",
+      "steps": [
+        {
+          "name": "Run 100-goroutine concurrent ProbeLocal under -race",
+          "action": "go-test: digital.vasic.helixqa/pkg/nexus/native/probe TestStress_ProbeLocal_Concurrent",
+          "expected": "pass"
+        }
+      ],
+      "tags": ["ocu", "probe", "stress", "race", "adversarial"],
+      "estimated_duration": "30s",
+      "expected_result": "Zero errors and zero data races across 100 concurrent ProbeLocal invocations"
+    }
+  ]
+}
