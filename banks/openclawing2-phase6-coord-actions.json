@@ -1,0 +1,254 @@
+{
+  "version": "1.0",
+  "name": "OpenClawing2 \u2014 Phase 6 Coord Actions",
+  "description": "Regression suite for pkg/nexus/coordinate: scaling algorithm, action builders, canonical Kind constants.",
+  "metadata": {
+    "author": "vasic-digital",
+    "phase": 6,
+    "plan": "docs/plans/2026-04-18-openclawing2-integration-plan.md"
+  },
+  "test_cases": [
+    {
+      "id": "OC-COORD-001",
+      "name": "Normalised (0..1) maps to real screen pixels",
+      "category": "functional",
+      "priority": "critical",
+      "platforms": [
+        "api"
+      ],
+      "tags": [
+        "openclawing2",
+        "phase6",
+        "scaling"
+      ],
+      "steps": [
+        {
+          "name": "ScaleCoordinates(0.5, 0.5) on 1920x1080",
+          "action": "pkg/nexus/coordinate.ScaleCoordinates",
+          "expected": "(960, 540)"
+        }
+      ],
+      "expected_result": "UI-TARS normalised coords land at centre"
+    },
+    {
+      "id": "OC-COORD-002",
+      "name": "Anthropic-style canonical\u2192screen scaling matches spec",
+      "category": "functional",
+      "priority": "critical",
+      "platforms": [
+        "api"
+      ],
+      "tags": [
+        "openclawing2",
+        "phase6",
+        "scaling"
+      ],
+      "steps": [
+        {
+          "name": "API (640, 360) on 1920x1080 via 1280x720 target",
+          "action": "pkg/nexus/coordinate.ScaleCoordinates",
+          "expected": "(960, 540)"
+        }
+      ],
+      "expected_result": "MAX_SCALING_TARGETS catalogue handles 16:9"
+    },
+    {
+      "id": "OC-COORD-003",
+      "name": "Screen\u2192API round-trip inverts correctly",
+      "category": "regression",
+      "priority": "high",
+      "platforms": [
+        "api"
+      ],
+      "tags": [
+        "openclawing2",
+        "phase6",
+        "scaling"
+      ],
+      "steps": [
+        {
+          "name": "Real (960, 540) on 1920x1080 \u2192 ScaleScreenToAPI",
+          "action": "pkg/nexus/coordinate.ScaleCoordinates",
+          "expected": "(640, 360)"
+        }
+      ],
+      "expected_result": "Observations map back into the planner's space"
+    },
+    {
+      "id": "OC-COORD-004",
+      "name": "Out-of-bounds coordinates error with ErrOutOfBounds",
+      "category": "security",
+      "priority": "critical",
+      "platforms": [
+        "api"
+      ],
+      "tags": [
+        "openclawing2",
+        "phase6",
+        "safety"
+      ],
+      "steps": [
+        {
+          "name": "Normalised (1.0, 1.0) on 100x100 screen",
+          "action": "pkg/nexus/coordinate.ScaleCoordinates",
+          "expected": "errors.Is(err, ErrOutOfBounds)"
+        }
+      ],
+      "expected_result": "No action ever escapes the screen"
+    },
+    {
+      "id": "OC-COORD-005",
+      "name": "Portrait / non-matching aspect passes coords through unchanged",
+      "category": "regression",
+      "priority": "high",
+      "platforms": [
+        "api"
+      ],
+      "tags": [
+        "openclawing2",
+        "phase6",
+        "no-match"
+      ],
+      "steps": [
+        {
+          "name": "360x640 portrait screen, API (100, 200)",
+          "action": "pkg/nexus/coordinate.ScaleCoordinates",
+          "expected": "(100, 200) returned without scaling"
+        }
+      ],
+      "expected_result": "No silent distortion on novel aspect ratios"
+    },
+    {
+      "id": "OC-COORD-006",
+      "name": "CoordClick builds scaled Action with canonical Kind",
+      "category": "functional",
+      "priority": "critical",
+      "platforms": [
+        "api"
+      ],
+      "tags": [
+        "openclawing2",
+        "phase6",
+        "action-builder"
+      ],
+      "steps": [
+        {
+          "name": "CoordClick(cfg, ScaleAPIToScreen, 0.5, 0.5)",
+          "action": "pkg/nexus/coordinate.CoordClick",
+          "expected": "Action{Kind:'coord_click', X:960, Y:540}"
+        }
+      ],
+      "expected_result": "Adapters receive ready-to-dispatch pixel coords"
+    },
+    {
+      "id": "OC-COORD-007",
+      "name": "CoordType rejects empty text",
+      "category": "regression",
+      "priority": "high",
+      "platforms": [
+        "api"
+      ],
+      "tags": [
+        "openclawing2",
+        "phase6",
+        "action-builder"
+      ],
+      "steps": [
+        {
+          "name": "CoordType(...'')",
+          "action": "pkg/nexus/coordinate.CoordType",
+          "expected": "error on empty text"
+        }
+      ],
+      "expected_result": "Callers cannot accidentally ship a no-op type"
+    },
+    {
+      "id": "OC-COORD-008",
+      "name": "CoordDrag scales both endpoints + carries end_x / end_y",
+      "category": "functional",
+      "priority": "high",
+      "platforms": [
+        "api"
+      ],
+      "tags": [
+        "openclawing2",
+        "phase6",
+        "drag"
+      ],
+      "steps": [
+        {
+          "name": "CoordDrag(0.25,0.25 \u2192 0.75,0.75) on 1920x1080",
+          "action": "pkg/nexus/coordinate.CoordDrag",
+          "expected": "X=480 Y=270, params.end_x=1440, params.end_y=810"
+        }
+      ],
+      "expected_result": "Drag primitives ship both endpoints pre-scaled"
+    },
+    {
+      "id": "OC-COORD-009",
+      "name": "CoordScroll carries dx / dy deltas unchanged",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "api"
+      ],
+      "tags": [
+        "openclawing2",
+        "phase6",
+        "scroll"
+      ],
+      "steps": [
+        {
+          "name": "CoordScroll(...dy=-320)",
+          "action": "pkg/nexus/coordinate.CoordScroll",
+          "expected": "params.dy == -320"
+        }
+      ],
+      "expected_result": "Scroll deltas survive the builder"
+    },
+    {
+      "id": "OC-COORD-010",
+      "name": "IsCoordKind filter matches the four canonical kinds",
+      "category": "regression",
+      "priority": "medium",
+      "platforms": [
+        "api"
+      ],
+      "tags": [
+        "openclawing2",
+        "phase6",
+        "dispatch"
+      ],
+      "steps": [
+        {
+          "name": "Truth table for coord_click/type/drag/scroll + click/emptystring",
+          "action": "pkg/nexus/coordinate.IsCoordKind",
+          "expected": "true only for the four canonical kinds"
+        }
+      ],
+      "expected_result": "Adapter dispatchers can distinguish coord vs. ref actions"
+    },
+    {
+      "id": "OC-COORD-011",
+      "name": "Fuzz ScaleCoordinates never panics on adversarial (x, y, w, h)",
+      "category": "security",
+      "priority": "high",
+      "platforms": [
+        "api"
+      ],
+      "tags": [
+        "openclawing2",
+        "phase6",
+        "fuzz"
+      ],
+      "steps": [
+        {
+          "name": "go test -fuzz FuzzScaleCoordinates",
+          "action": "fuzz harness",
+          "expected": "no panic; bounded runtime per iteration"
+        }
+      ],
+      "expected_result": "Scaler is resilient to adversarial inputs"
+    }
+  ]
+}
