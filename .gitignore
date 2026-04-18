@@ -3,6 +3,10 @@ __pycache__
 __pycache__/*
 __pycache__/*.*
 
+# Binary exports of markdown design docs
+docs/**/*.docx
+docs/**/*.pdf
+
 .env
 .env.local
 .env.*.local
