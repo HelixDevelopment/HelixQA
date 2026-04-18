@@ -85,6 +85,8 @@ func TestSource_ReportsCorrectKind(t *testing.T) {
 }
 
 func TestProductionOpenReturnsErrNotWired(t *testing.T) {
+	// Force stub mode for determinism: Start must return ErrNotWired.
+	t.Setenv("HELIXQA_CAPTURE_ANDROID_STUB", "1")
 	original := newFrameProducer
 	defer func() { newFrameProducer = original }()
 	newFrameProducer = productionFrameProducer
@@ -94,4 +96,48 @@ func TestProductionOpenReturnsErrNotWired(t *testing.T) {
 	err = src.Start(context.Background(), contracts.CaptureConfig{})
 	require.True(t, err == nil || errors.Is(err, ErrNotWired),
 		"Start should succeed or return ErrNotWired; got %v", err)
+}
+
+// TestProduction_MissingAdbErrors verifies graceful fallback when adb is
+// absent or stub mode is on — Start must return ErrNotWired, never panic.
+func TestProduction_MissingAdbErrors(t *testing.T) {
+	t.Setenv("HELIXQA_CAPTURE_ANDROID_STUB", "1")
+	orig := newFrameProducer
+	defer func() { newFrameProducer = orig }()
+	newFrameProducer = productionFrameProducer
+
+	src, err := Open(context.Background(), contracts.CaptureConfig{})
+	require.NoError(t, err)
+	defer src.Close()
+
+	err = src.Start(context.Background(), contracts.CaptureConfig{})
+	require.Error(t, err, "Start must return an error in stub mode")
+	require.True(t, errors.Is(err, ErrNotWired),
+		"expected ErrNotWired, got %v", err)
+}
+
+// TestSplitH264NALUnits_ThreeStartCodes verifies that splitH264NALUnits
+// correctly splits a buffer containing three 4-byte start codes.
+func TestSplitH264NALUnits_ThreeStartCodes(t *testing.T) {
+	sc := []byte{0x00, 0x00, 0x00, 0x01}
+	// Build: SC + [0x67, 0x01] + SC + [0x68, 0x02] + SC + [0x65, 0x03]
+	input := append(append(append(append(append(append(
+		sc, 0x67, 0x01),
+		sc...), 0x68, 0x02),
+		sc...), 0x65, 0x03),
+		[]byte{}...)
+
+	nals := splitH264NALUnits(input)
+	require.Len(t, nals, 3, "expected 3 NAL units")
+	// Each NAL must start with the start code.
+	for i, nal := range nals {
+		require.GreaterOrEqual(t, len(nal), 4,
+			"NAL %d too short: %v", i, nal)
+		require.Equal(t, sc, nal[:4],
+			"NAL %d missing start code", i)
+	}
+	// NAL type bytes.
+	require.Equal(t, byte(0x67), nals[0][4])
+	require.Equal(t, byte(0x68), nals[1][4])
+	require.Equal(t, byte(0x65), nals[2][4])
 }
