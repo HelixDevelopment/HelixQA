@@ -48,7 +48,9 @@ func withMock(t *testing.T, mock injector) func() {
 }
 
 func TestInteractor_ProductionReturnsErrNotWired(t *testing.T) {
-	// No mock swap — production injector must return ErrNotWired on action.
+	// Force stub mode for determinism — the real adb path is guarded by
+	// resolveInjector; stub mode always falls back to productionInjector.
+	t.Setenv("HELIXQA_INTERACT_ANDROID_STUB", "1")
 	i, err := Open(context.Background(), interact.Config{})
 	require.NoError(t, err)
 	require.NotNil(t, i)
@@ -112,4 +114,43 @@ func TestInteractor_KindDistinguishesPhoneAndTV(t *testing.T) {
 	tvI, ok := tv.(*Interactor)
 	require.True(t, ok)
 	require.Equal(t, "androidtv", tvI.Kind())
+}
+
+// TestAndroidKeycode_Mappings verifies that the 8 most common keys map to the
+// correct Android keyevent integer codes.
+func TestAndroidKeycode_Mappings(t *testing.T) {
+	cases := []struct {
+		code contracts.KeyCode
+		want int
+	}{
+		{contracts.KeyEnter, 66},
+		{contracts.KeyEscape, 111},
+		{contracts.KeyTab, 61},
+		{contracts.KeyBackspace, 67},
+		{contracts.KeySpace, 62},
+		{contracts.KeyArrowUp, 19},
+		{contracts.KeyArrowDown, 20},
+		{contracts.KeyDPadCenter, 23},
+	}
+	for _, tc := range cases {
+		got := androidKeycode(tc.code)
+		require.Equal(t, tc.want, got, "KeyCode %q", tc.code)
+	}
+}
+
+// TestProduction_MissingAdbErrors verifies graceful fallback when stub mode is
+// on — Open must succeed but Click must return ErrNotWired, never panic.
+func TestProduction_MissingAdbErrors(t *testing.T) {
+	t.Setenv("HELIXQA_INTERACT_ANDROID_STUB", "1")
+	orig := newInjector
+	defer func() { newInjector = orig }()
+	newInjector = productionInjector{}
+
+	i, err := Open(context.Background(), interact.Config{})
+	require.NoError(t, err, "Open must always succeed")
+	require.NotNil(t, i)
+
+	err = i.Click(context.Background(), contracts.Point{X: 100, Y: 200}, contracts.ClickOptions{})
+	require.Error(t, err, "Click must return an error in stub/no-adb mode")
+	require.ErrorIs(t, err, ErrNotWired)
 }
