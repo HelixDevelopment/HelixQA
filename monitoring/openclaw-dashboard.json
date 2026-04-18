@@ -1,0 +1,172 @@
+{
+  "_comment": "OpenClawing2 v3.0 observability dashboard. Mount in Grafana at /d/openclaw. Every panel reads from pkg/nexus/observability's PrometheusBridge exposed at /metrics (Phase 8 P8.T4). Panels mirror the ten-category coverage matrix so operators see at a glance whether any phase is regressing.",
+  "schemaVersion": 39,
+  "title": "HelixQA — OpenClawing2 v3.0",
+  "uid": "openclaw",
+  "tags": ["openclawing2", "helixqa", "nexus"],
+  "refresh": "30s",
+  "time": { "from": "now-6h", "to": "now" },
+  "panels": [
+    {
+      "id": 1,
+      "type": "timeseries",
+      "title": "Agent session opens (Phase 2)",
+      "gridPos": { "h": 7, "w": 12, "x": 0, "y": 0 },
+      "targets": [
+        { "expr": "rate(nexus_session_opens_total[5m])", "refId": "A", "legendFormat": "opens/s" }
+      ],
+      "description": "Tracks Agent.PrepareContext throughput. Rises with fleet size, drops on backend outages."
+    },
+    {
+      "id": 2,
+      "type": "timeseries",
+      "title": "Active browser sessions",
+      "gridPos": { "h": 7, "w": 12, "x": 12, "y": 0 },
+      "targets": [
+        { "expr": "nexus_browser_active_sessions", "refId": "A", "legendFormat": "active" }
+      ],
+      "description": "Gauge from browser.InstrumentedEngine. Should stay bounded by the pool size; runaway growth indicates a Close() leak."
+    },
+    {
+      "id": 3,
+      "type": "stat",
+      "title": "Agent step p95 (Phase 2)",
+      "gridPos": { "h": 5, "w": 8, "x": 0, "y": 7 },
+      "targets": [
+        { "expr": "histogram_quantile(0.95, sum by(le) (rate(nexus_agent_step_duration_seconds_bucket[5m])))", "refId": "A" }
+      ],
+      "description": "Orchestration overhead per Step(). Baseline ≈ 20μs with the in-memory fake planner; ~200ms-2s on real LLMs."
+    },
+    {
+      "id": 4,
+      "type": "stat",
+      "title": "MessageManager compaction rate (Phase 3)",
+      "gridPos": { "h": 5, "w": 8, "x": 8, "y": 7 },
+      "targets": [
+        { "expr": "rate(nexus_messages_compactions_total[5m])", "refId": "A" }
+      ],
+      "description": "How often MessageManager.Compact actually digests turns. Steady non-zero means the token budget is doing work."
+    },
+    {
+      "id": 5,
+      "type": "stat",
+      "title": "Retry backoff attempts (Phase 4)",
+      "gridPos": { "h": 5, "w": 8, "x": 16, "y": 7 },
+      "targets": [
+        { "expr": "rate(nexus_retry_attempts_total[5m])", "refId": "A" }
+      ],
+      "description": "Sum of attempts across every RetryWithBackoff call. Spikes correlate with upstream flake events."
+    },
+    {
+      "id": 6,
+      "type": "timeseries",
+      "title": "Loop-detector trips (Phase 4)",
+      "gridPos": { "h": 6, "w": 12, "x": 0, "y": 12 },
+      "targets": [
+        { "expr": "rate(nexus_loop_detector_trips_total[15m])", "refId": "A", "legendFormat": "trips/15m" }
+      ],
+      "description": "Every trip is an escalation signal — the Agent got stuck in a 2- or 3-cycle. Should stay at 0 in healthy flows."
+    },
+    {
+      "id": 7,
+      "type": "timeseries",
+      "title": "SelfHealer invocations (Phase 4)",
+      "gridPos": { "h": 6, "w": 12, "x": 12, "y": 12 },
+      "targets": [
+        { "expr": "rate(nexus_selfhealer_invocations_total[5m])", "refId": "A", "legendFormat": "heals/s" }
+      ],
+      "description": "Rising rate = selectors getting stale against the app under test."
+    },
+    {
+      "id": 8,
+      "type": "timeseries",
+      "title": "PromptCache hit ratio (Phase 5)",
+      "gridPos": { "h": 6, "w": 12, "x": 0, "y": 18 },
+      "targets": [
+        { "expr": "rate(nexus_prompt_cache_hits_total[5m]) / rate(nexus_prompt_cache_requests_total[5m])", "refId": "A", "legendFormat": "hit ratio" }
+      ],
+      "description": "Stagehand primitives hit/miss. Target >0.4 in steady-state flows."
+    },
+    {
+      "id": 9,
+      "type": "timeseries",
+      "title": "Coord-mode pixel-distance error (Phase 6)",
+      "gridPos": { "h": 6, "w": 12, "x": 12, "y": 18 },
+      "targets": [
+        { "expr": "histogram_quantile(0.95, sum by(le) (rate(nexus_coord_dispatch_pixel_error_bucket[5m])))", "refId": "A", "legendFormat": "p95 pixel error" }
+      ],
+      "description": "Difference between planner-provided and adapter-dispatched coordinates after scaling. Should be near-zero."
+    },
+    {
+      "id": 10,
+      "type": "timeseries",
+      "title": "Rich-ticket mandatory-field coverage (Phase 7)",
+      "gridPos": { "h": 6, "w": 12, "x": 0, "y": 24 },
+      "targets": [
+        { "expr": "nexus_tickets_complete / nexus_tickets_total", "refId": "A", "legendFormat": "complete tickets / total" }
+      ],
+      "description": "Fraction of tickets whose VerifyMandatory() returns empty. Must trend to 1.0."
+    },
+    {
+      "id": 11,
+      "type": "timeseries",
+      "title": "Go runtime — goroutines + heap (Phase 8 P5)",
+      "gridPos": { "h": 6, "w": 12, "x": 12, "y": 24 },
+      "targets": [
+        { "expr": "go_goroutines", "refId": "A", "legendFormat": "goroutines" },
+        { "expr": "go_memstats_heap_inuse_bytes", "refId": "B", "legendFormat": "heap inuse" }
+      ],
+      "description": "Go-runtime + process collectors surfaced via the Nexus bridge. Leaks show as monotonic growth."
+    },
+    {
+      "id": 12,
+      "type": "table",
+      "title": "Recent FINAL-REPORT outcomes",
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 30 },
+      "targets": [
+        { "expr": "helixqa_campaign_outcome", "refId": "A", "format": "table" }
+      ],
+      "description": "One row per scripts/openclaw-full-campaign.sh run. Green row = every phase passed."
+    },
+    {
+      "id": 13,
+      "type": "stat",
+      "title": "Campaign critical alerts (MUST be 0)",
+      "gridPos": { "h": 5, "w": 8, "x": 0, "y": 38 },
+      "targets": [
+        { "expr": "ALERTS{severity=\"critical\", alertstate=\"firing\", source=~\"openclaw.*\"}", "refId": "A" }
+      ],
+      "description": "Section-9 campaign gate: this must read zero for two consecutive runs."
+    },
+    {
+      "id": 14,
+      "type": "stat",
+      "title": "CPU budget headroom",
+      "gridPos": { "h": 5, "w": 8, "x": 8, "y": 38 },
+      "targets": [
+        { "expr": "1 - avg(rate(process_cpu_seconds_total[5m]))", "refId": "A" }
+      ],
+      "description": "Project constraint: 30–40% max host CPU. Panel shows 1 - used. Must stay >= 0.6."
+    },
+    {
+      "id": 15,
+      "type": "stat",
+      "title": "RAM budget headroom",
+      "gridPos": { "h": 5, "w": 8, "x": 16, "y": 38 },
+      "targets": [
+        { "expr": "1 - (process_resident_memory_bytes / (8 * 1024 * 1024 * 1024))", "refId": "A" }
+      ],
+      "description": "8 GB total ceiling per the Catalogizer host-resource rule. Must stay >= 0.6 for the campaign to be gate-eligible."
+    },
+    {
+      "id": 16,
+      "type": "timeseries",
+      "title": "Bank test-case throughput (all OC-* banks)",
+      "gridPos": { "h": 6, "w": 24, "x": 0, "y": 43 },
+      "targets": [
+        { "expr": "rate(helixqa_bank_tests_total{bank=~\"openclawing2-.*\"}[5m])", "refId": "A", "legendFormat": "{{bank}}" }
+      ],
+      "description": "Per-bank test-case throughput across OpenClawing2 Phases 1..7. Every bank should appear; a missing line = the bank isn't wired into the runner."
+    }
+  ]
+}
