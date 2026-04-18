@@ -8,7 +8,7 @@ Living status doc for the 8 OCU sub-projects. Program spec at
 | Sub-project | Status | Spec | Plan | Notes |
 |---|---|---|---|---|
 | P0 Foundation | **CLOSED 2026-04-17** | [spec](../superpowers/specs/2026-04-17-openclaw-ultimate-program-design.md) | [plan](../superpowers/plans/2026-04-17-ocu-p0-foundation-plan.md) | Contracts + Containers GPU extension + vertical-slice CLIs shipped. All ten P0-applicable test categories green. |
-| P1 Capture | pending | — | — | Waits on P0 contracts (✅ available). Can start. |
+| P1 Capture | **CLOSED 2026-04-18** | [spec](../superpowers/specs/2026-04-17-openclaw-ultimate-program-design.md) | [plan](../superpowers/plans/2026-04-17-ocu-p1-capture-plan.md) | Factory + 4 CaptureSource backends (web/CDP, linux/X11, android, androidtv). Stress tested under -race. Per-source bench + audit filed. Bank `ocu-capture.json` shipped. Integration smoke green. Production subprocess wiring deferred to P1.5 via injectable `newFrameProducer`. |
 | P2 Vision | pending | — | — | Waits on P0 contracts (✅). Can start in parallel with P1. |
 | P3 Interact | pending | — | — | Waits on P0 contracts (✅). Can start in parallel with P1/P2. |
 | P4 Observe | pending | — | — | Waits on P0 contracts (✅). Can start in parallel with P1/P2/P3. |
@@ -32,8 +32,11 @@ Living status doc for the 8 OCU sub-projects. Program spec at
 | Budget | Limit | P0 actual | Status |
 |---|---|---|---|
 | ProbeLocal | n/a (not budgeted) | ~133 µs / 366 allocs / 46 KB (laptop i7-1165G7) | informational |
+| web/CDP Open→frame→Close | n/a (not budgeted) | ~10.2 ms / 10 allocs / 4758 B (laptop i7-1165G7) | mock producer; 10 ms dominated by Start() readiness sleep |
+| linux/X11 Open→frame→Close | n/a (not budgeted) | ~10.5 ms / 10 allocs / 4696 B (laptop i7-1165G7) | mock producer; same sleep |
+| android/ADB Open→frame→Close | n/a (not budgeted) | ~10.3 ms / 12 allocs / 5095 B (laptop i7-1165G7) | mock producer; 2 extra allocs from kind string |
 
-P1–P7 append their own actuals as benches land.
+P2–P7 append their own actuals as benches land.
 
 ## Risk register
 
