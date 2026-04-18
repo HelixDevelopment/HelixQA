@@ -15,7 +15,9 @@ import (
 	contracts "digital.vasic.helixqa/pkg/nexus/native/contracts"
 )
 
-type fakeHostMgr struct{ hosts map[string]*cremote.HostResources }
+type fakeHostMgr struct {
+	hosts map[string]*cremote.HostResources
+}
 
 func (f *fakeHostMgr) ProbeAll(context.Context) (map[string]*cremote.HostResources, error) {
 	return f.hosts, nil
