@@ -168,6 +168,39 @@ func TestValidateURL_AllowPrivateNetworksOptIn(t *testing.T) {
 	}
 }
 
+func TestValidateURL_RejectsIntegerEncodedLoopback(t *testing.T) {
+	for _, target := range []string{
+		"http://2130706433/", // 127.0.0.1
+		"http://3232235777/", // 192.168.1.1
+	} {
+		err := ValidateURL(target, SSRFGuardConfig{})
+		if err == nil || !errors.Is(err, ErrSSRFBlocked) {
+			t.Errorf("integer-encoded %q must block, got %v", target, err)
+		}
+	}
+}
+
+func TestValidateURL_RejectsShortDottedLoopback(t *testing.T) {
+	for _, target := range []string{
+		"http://127.1/",
+		"http://127.0.1/",
+		"http://10.1/",
+		"http://192.168.1/",
+	} {
+		err := ValidateURL(target, SSRFGuardConfig{})
+		if err == nil || !errors.Is(err, ErrSSRFBlocked) {
+			t.Errorf("short-dotted %q must block, got %v", target, err)
+		}
+	}
+}
+
+func TestValidateURL_IntegerPublicPasses(t *testing.T) {
+	// 16843009 = 1.1.1.1 Cloudflare public DNS
+	if err := ValidateURL("http://16843009/", SSRFGuardConfig{}); err != nil {
+		t.Errorf("integer-encoded public IP must pass, got %v", err)
+	}
+}
+
 func TestValidateURL_LookupFailureBlocks(t *testing.T) {
 	err := ValidateURL("https://missing.example/", SSRFGuardConfig{
 		Resolver: stubResolver{err: errors.New("nxdomain")},

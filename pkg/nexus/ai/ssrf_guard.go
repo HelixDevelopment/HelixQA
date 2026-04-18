@@ -95,6 +95,18 @@ func ValidateURL(target string, cfg SSRFGuardConfig) error {
 		return checkIP(ip, cfg)
 	}
 
+	// Canonicalise alternative IP encodings that libc / cgo can
+	// still dial even though net.ParseIP rejects them. Required for
+	// parity with tldrsec/awesome-secure-defaults "SSRF Defense".
+	//   - Integer form  (http://2130706433/ → 127.0.0.1)
+	//   - Short-dotted  (http://127.1/ → 127.0.0.1)
+	if ip := parseSSRFIntegerIP(host); ip != nil {
+		return checkIP(ip, cfg)
+	}
+	if ip := parseSSRFShortDottedIP(host); ip != nil {
+		return checkIP(ip, cfg)
+	}
+
 	// Hostname path: resolve, then ensure every returned IP is
 	// allowed. Block on first hit so a hostname that points at
 	// both a public + private IP is refused.
@@ -164,4 +176,71 @@ func isIPv6UniqueLocal(ip net.IP) bool {
 		return false
 	}
 	return v6[0]&0xfe == 0xfc
+}
+
+// parseSSRFIntegerIP treats an all-digit host as a 32-bit IPv4 value
+// (e.g. "2130706433" → 127.0.0.1). Returns nil on any non-digit or
+// uint32 overflow — keeps DNS names with trailing digits unaffected.
+func parseSSRFIntegerIP(host string) net.IP {
+	if host == "" || len(host) > 10 {
+		return nil
+	}
+	var v uint64
+	for _, r := range host {
+		if r < '0' || r > '9' {
+			return nil
+		}
+		v = v*10 + uint64(r-'0')
+		if v > 0xFFFFFFFF {
+			return nil
+		}
+	}
+	return net.IPv4(byte(v>>24), byte(v>>16), byte(v>>8), byte(v))
+}
+
+// parseSSRFShortDottedIP expands a two- or three-octet dotted form
+// to the canonical four-octet IPv4 address. "127.1" → 127.0.0.1,
+// "10.1" → 10.0.0.1, "192.168.1" → 192.168.0.1. Returns nil if the
+// form is not a short-dotted IPv4 or any component is out of range.
+func parseSSRFShortDottedIP(host string) net.IP {
+	parts := strings.Split(host, ".")
+	if len(parts) != 2 && len(parts) != 3 {
+		return nil
+	}
+	nums := make([]uint64, len(parts))
+	for i, p := range parts {
+		if p == "" || len(p) > 10 {
+			return nil
+		}
+		var v uint64
+		for _, r := range p {
+			if r < '0' || r > '9' {
+				return nil
+			}
+			v = v*10 + uint64(r-'0')
+			if v > 0xFFFFFFFF {
+				return nil
+			}
+		}
+		nums[i] = v
+	}
+	for i := 0; i < len(nums)-1; i++ {
+		if nums[i] > 0xFF {
+			return nil
+		}
+	}
+	var full uint64
+	switch len(nums) {
+	case 2:
+		if nums[1] > 0xFFFFFF {
+			return nil
+		}
+		full = nums[0]<<24 | nums[1]
+	case 3:
+		if nums[2] > 0xFFFF {
+			return nil
+		}
+		full = nums[0]<<24 | nums[1]<<16 | nums[2]
+	}
+	return net.IPv4(byte(full>>24), byte(full>>16), byte(full>>8), byte(full))
 }
