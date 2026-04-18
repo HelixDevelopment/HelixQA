@@ -10,8 +10,8 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	contracts "digital.vasic.helixqa/pkg/nexus/native/contracts"
 	"digital.vasic.helixqa/pkg/nexus/interact"
+	contracts "digital.vasic.helixqa/pkg/nexus/native/contracts"
 )
 
 // mockInjector records calls and returns a configurable error.

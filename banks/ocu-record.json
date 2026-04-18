@@ -1,0 +1,348 @@
+{
+  "id": "ocu-record",
+  "version": "1.0",
+  "name": "OCU P5 Record",
+  "description": "Validates the recording and streaming layer: encoder factory, 3 codec stubs (x264/nvenc/vaapi), frame ring, clipper, WebRTC stub, Recorder lifecycle, and stress behaviour.",
+  "metadata": {
+    "author": "vasic-digital",
+    "priority": "2"
+  },
+  "test_cases": [
+    {
+      "id": "OCU-RECORD-001",
+      "name": "encoder-factory-register-and-new",
+      "category": "unit",
+      "priority": "critical",
+      "steps": [
+        {
+          "name": "Run encoder factory register and New test",
+          "action": "go-test: digital.vasic.helixqa/pkg/nexus/record/encoder TestEncoder_FactoryRegisterAndNew",
+          "expected": "pass"
+        }
+      ],
+      "tags": ["ocu", "record", "encoder", "factory", "happy"],
+      "estimated_duration": "5s",
+      "expected_result": "Custom factory registered under a test kind is discoverable via Kinds() and New() returns a non-nil Encoder"
+    },
+    {
+      "id": "OCU-RECORD-002",
+      "name": "encoder-factory-unknown-kind-errors",
+      "category": "unit",
+      "priority": "high",
+      "steps": [
+        {
+          "name": "Run encoder factory unknown kind error case",
+          "action": "go-test: digital.vasic.helixqa/pkg/nexus/record/encoder TestEncoder_UnknownKind",
+          "expected": "pass"
+        }
+      ],
+      "tags": ["ocu", "record", "encoder", "factory", "edge"],
+      "estimated_duration": "5s",
+      "expected_result": "New() returns a non-nil error containing the unregistered kind name"
+    },
+    {
+      "id": "OCU-RECORD-010",
+      "name": "x264-factory-registered",
+      "category": "unit",
+      "priority": "critical",
+      "steps": [
+        {
+          "name": "Run x264 factory registration test",
+          "action": "go-test: digital.vasic.helixqa/pkg/nexus/record/encoder/x264 TestX264_FactoryRegistered",
+          "expected": "pass"
+        }
+      ],
+      "tags": ["ocu", "record", "encoder", "x264", "happy"],
+      "estimated_duration": "5s",
+      "expected_result": "x264 init() registers 'x264' kind in the encoder factory"
+    },
+    {
+      "id": "OCU-RECORD-011",
+      "name": "x264-production-returns-err-not-wired",
+      "category": "unit",
+      "priority": "critical",
+      "steps": [
+        {
+          "name": "Run x264 production sentinel test",
+          "action": "go-test: digital.vasic.helixqa/pkg/nexus/record/encoder/x264 TestX264_ProductionReturnsErrNotWired",
+          "expected": "pass"
+        }
+      ],
+      "tags": ["ocu", "record", "encoder", "x264", "edge"],
+      "estimated_duration": "5s",
+      "expected_result": "x264 Encode() returns ErrNotWired when production stub is active (P5.5 deferred)"
+    },
+    {
+      "id": "OCU-RECORD-012",
+      "name": "x264-close-always-succeeds",
+      "category": "unit",
+      "priority": "high",
+      "steps": [
+        {
+          "name": "Run x264 Close success test",
+          "action": "go-test: digital.vasic.helixqa/pkg/nexus/record/encoder/x264 TestX264_Close_AlwaysSucceeds",
+          "expected": "pass"
+        }
+      ],
+      "tags": ["ocu", "record", "encoder", "x264", "happy"],
+      "estimated_duration": "5s",
+      "expected_result": "x264 Close() returns nil on the production stub"
+    },
+    {
+      "id": "OCU-RECORD-020",
+      "name": "nvenc-factory-registered",
+      "category": "unit",
+      "priority": "critical",
+      "steps": [
+        {
+          "name": "Run nvenc factory registration test",
+          "action": "go-test: digital.vasic.helixqa/pkg/nexus/record/encoder/nvenc TestNVENC_FactoryRegistered",
+          "expected": "pass"
+        }
+      ],
+      "tags": ["ocu", "record", "encoder", "nvenc", "happy"],
+      "estimated_duration": "5s",
+      "expected_result": "nvenc init() registers 'nvenc' kind in the encoder factory"
+    },
+    {
+      "id": "OCU-RECORD-021",
+      "name": "nvenc-production-returns-err-not-wired",
+      "category": "unit",
+      "priority": "critical",
+      "steps": [
+        {
+          "name": "Run nvenc production sentinel test",
+          "action": "go-test: digital.vasic.helixqa/pkg/nexus/record/encoder/nvenc TestNVENC_ProductionReturnsErrNotWired",
+          "expected": "pass"
+        }
+      ],
+      "tags": ["ocu", "record", "encoder", "nvenc", "edge"],
+      "estimated_duration": "5s",
+      "expected_result": "nvenc Encode() returns ErrNotWired; remote dispatch to thinker.local deferred to P5.5"
+    },
+    {
+      "id": "OCU-RECORD-030",
+      "name": "vaapi-factory-registered",
+      "category": "unit",
+      "priority": "critical",
+      "steps": [
+        {
+          "name": "Run vaapi factory registration test",
+          "action": "go-test: digital.vasic.helixqa/pkg/nexus/record/encoder/vaapi TestVAAPI_FactoryRegistered",
+          "expected": "pass"
+        }
+      ],
+      "tags": ["ocu", "record", "encoder", "vaapi", "happy"],
+      "estimated_duration": "5s",
+      "expected_result": "vaapi init() registers 'vaapi' kind in the encoder factory"
+    },
+    {
+      "id": "OCU-RECORD-031",
+      "name": "vaapi-production-returns-err-not-wired",
+      "category": "unit",
+      "priority": "critical",
+      "steps": [
+        {
+          "name": "Run vaapi production sentinel test",
+          "action": "go-test: digital.vasic.helixqa/pkg/nexus/record/encoder/vaapi TestVAAPI_ProductionReturnsErrNotWired",
+          "expected": "pass"
+        }
+      ],
+      "tags": ["ocu", "record", "encoder", "vaapi", "edge"],
+      "estimated_duration": "5s",
+      "expected_result": "vaapi Encode() returns ErrNotWired when production stub is active (P5.5 deferred)"
+    },
+    {
+      "id": "OCU-RECORD-040",
+      "name": "ring-push-and-snapshot-zero-window",
+      "category": "unit",
+      "priority": "critical",
+      "steps": [
+        {
+          "name": "Run FrameRing push and snapshot zero-window test",
+          "action": "go-test: digital.vasic.helixqa/pkg/nexus/record TestFrameRing_PushAndSnapshotAround_ZeroWindow",
+          "expected": "pass"
+        }
+      ],
+      "tags": ["ocu", "record", "ring", "happy"],
+      "estimated_duration": "5s",
+      "expected_result": "Frames pushed to the ring are returned by SnapshotAround(zero window) in insertion order"
+    },
+    {
+      "id": "OCU-RECORD-041",
+      "name": "ring-snapshot-window-filtering",
+      "category": "unit",
+      "priority": "high",
+      "steps": [
+        {
+          "name": "Run FrameRing window filtering test",
+          "action": "go-test: digital.vasic.helixqa/pkg/nexus/record TestFrameRing_SnapshotAround_Window",
+          "expected": "pass"
+        }
+      ],
+      "tags": ["ocu", "record", "ring", "happy"],
+      "estimated_duration": "5s",
+      "expected_result": "SnapshotAround(at, window) returns only frames whose timestamps fall in (at-window/2, at+window/2]"
+    },
+    {
+      "id": "OCU-RECORD-042",
+      "name": "ring-eviction-when-full",
+      "category": "unit",
+      "priority": "high",
+      "steps": [
+        {
+          "name": "Run FrameRing eviction test",
+          "action": "go-test: digital.vasic.helixqa/pkg/nexus/record TestFrameRing_Eviction",
+          "expected": "pass"
+        }
+      ],
+      "tags": ["ocu", "record", "ring", "edge"],
+      "estimated_duration": "5s",
+      "expected_result": "Pushing beyond capacity evicts oldest frames; Len() never exceeds capacity"
+    },
+    {
+      "id": "OCU-RECORD-043",
+      "name": "ring-snapshot-empty",
+      "category": "unit",
+      "priority": "high",
+      "steps": [
+        {
+          "name": "Run FrameRing empty snapshot test",
+          "action": "go-test: digital.vasic.helixqa/pkg/nexus/record TestFrameRing_SnapshotAround_Empty",
+          "expected": "pass"
+        }
+      ],
+      "tags": ["ocu", "record", "ring", "edge"],
+      "estimated_duration": "5s",
+      "expected_result": "SnapshotAround on an empty ring returns nil without panicking"
+    },
+    {
+      "id": "OCU-RECORD-050",
+      "name": "recorder-attach-start-stop-happy",
+      "category": "unit",
+      "priority": "critical",
+      "steps": [
+        {
+          "name": "Run Recorder happy path test",
+          "action": "go-test: digital.vasic.helixqa/pkg/nexus/record TestRecorder_AttachSource_Start_Stop",
+          "expected": "pass"
+        }
+      ],
+      "tags": ["ocu", "record", "recorder", "happy"],
+      "estimated_duration": "5s",
+      "expected_result": "AttachSource + Start + Stop drains all frames through encoder and closes encoder cleanly"
+    },
+    {
+      "id": "OCU-RECORD-051",
+      "name": "recorder-clip-writes-non-empty-output",
+      "category": "unit",
+      "priority": "critical",
+      "steps": [
+        {
+          "name": "Run Recorder Clip non-empty output test",
+          "action": "go-test: digital.vasic.helixqa/pkg/nexus/record TestRecorder_Clip_WritesNonEmptyOutput",
+          "expected": "pass"
+        }
+      ],
+      "tags": ["ocu", "record", "recorder", "clip", "happy"],
+      "estimated_duration": "5s",
+      "expected_result": "Clip writes newline-delimited JSON frame metadata; output is non-empty for frames in window"
+    },
+    {
+      "id": "OCU-RECORD-060",
+      "name": "webrtc-publisher-default-bind-addr",
+      "category": "unit",
+      "priority": "critical",
+      "steps": [
+        {
+          "name": "Run WebRTC publisher default bind address test",
+          "action": "go-test: digital.vasic.helixqa/pkg/nexus/record/webrtc TestPublisher_DefaultBindAddr",
+          "expected": "pass"
+        }
+      ],
+      "tags": ["ocu", "record", "webrtc", "security", "happy"],
+      "estimated_duration": "5s",
+      "expected_result": "Publisher.BindAddr defaults to '127.0.0.1'; OptIn defaults to false"
+    },
+    {
+      "id": "OCU-RECORD-061",
+      "name": "webrtc-publisher-returns-err-not-wired",
+      "category": "unit",
+      "priority": "critical",
+      "steps": [
+        {
+          "name": "Run WebRTC publisher ErrNotWired test",
+          "action": "go-test: digital.vasic.helixqa/pkg/nexus/record/webrtc TestPublisher_DefaultOptIn_ReturnsErrNotWired",
+          "expected": "pass"
+        }
+      ],
+      "tags": ["ocu", "record", "webrtc", "edge"],
+      "estimated_duration": "5s",
+      "expected_result": "Publish() returns ErrNotWired when OptIn=false (off by default)"
+    },
+    {
+      "id": "OCU-RECORD-062",
+      "name": "webrtc-optin-still-returns-err-not-wired",
+      "category": "unit",
+      "priority": "high",
+      "steps": [
+        {
+          "name": "Run WebRTC publisher OptIn=true still ErrNotWired test",
+          "action": "go-test: digital.vasic.helixqa/pkg/nexus/record/webrtc TestPublisher_OptIn_StillReturnsErrNotWired",
+          "expected": "pass"
+        }
+      ],
+      "tags": ["ocu", "record", "webrtc", "edge"],
+      "estimated_duration": "5s",
+      "expected_result": "Publish() returns ErrNotWired even with OptIn=true in P5; real WHIP lands in P5.5"
+    },
+    {
+      "id": "OCU-RECORD-070",
+      "name": "stress-100-concurrent-recorders",
+      "category": "stress",
+      "priority": "high",
+      "steps": [
+        {
+          "name": "Run 100-goroutine concurrent Recorder stress test",
+          "action": "go-test: digital.vasic.helixqa/pkg/nexus/record TestStress_Record_100Concurrent",
+          "expected": "pass"
+        }
+      ],
+      "tags": ["ocu", "record", "stress", "race"],
+      "estimated_duration": "60s",
+      "expected_result": "100 concurrent Recorder AttachSource→Start→Clip→Stop cycles complete with no data races under -race"
+    },
+    {
+      "id": "OCU-RECORD-080",
+      "name": "integration-recorder-in-memory-source",
+      "category": "integration",
+      "priority": "critical",
+      "steps": [
+        {
+          "name": "Run integration smoke — Recorder with in-memory source",
+          "action": "go-test: -tags=integration digital.vasic.helixqa/tests/integration TestOCU_Record_InMemorySource",
+          "expected": "pass"
+        }
+      ],
+      "tags": ["ocu", "record", "integration", "happy"],
+      "estimated_duration": "10s",
+      "expected_result": "Recorder records 10 frames from in-memory source; Clip produces non-empty output; Stop is clean"
+    },
+    {
+      "id": "OCU-RECORD-081",
+      "name": "integration-three-encoder-kinds-registered",
+      "category": "integration",
+      "priority": "critical",
+      "steps": [
+        {
+          "name": "Run integration smoke — all three encoder kinds registered",
+          "action": "go-test: -tags=integration digital.vasic.helixqa/tests/integration TestOCU_Record_EncoderKindsRegistered",
+          "expected": "pass"
+        }
+      ],
+      "tags": ["ocu", "record", "integration", "happy"],
+      "estimated_duration": "10s",
+      "expected_result": "After blank-importing x264/nvenc/vaapi sub-packages, Kinds() contains x264, nvenc, vaapi"
+    }
+  ]
+}
