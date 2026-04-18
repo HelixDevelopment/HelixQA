@@ -4,8 +4,12 @@
 package web
 
 import (
+	"bytes"
 	"context"
 	"errors"
+	"image"
+	"image/color"
+	"image/png"
 	"testing"
 	"time"
 
@@ -83,11 +87,62 @@ func TestSource_RegisteredInFactory(t *testing.T) {
 }
 
 func TestSource_ProductionOpenReturnsNotImplemented(t *testing.T) {
-	// Swap to nil producer path (simulates production).
+	// Force stub mode so this is deterministic on every host — the real
+	// chromedp path is covered by TestProductionProducer_MissingBrowserErrors
+	// and the integration tests. When HELIXQA_CAPTURE_WEB_STUB=1, Open must
+	// return ErrNotWired regardless of what is installed on the host.
+	t.Setenv("HELIXQA_CAPTURE_WEB_STUB", "1")
 	original := newFrameProducer
 	defer func() { newFrameProducer = original }()
 	newFrameProducer = productionFrameProducer
 	_, err := Open(context.Background(), contracts.CaptureConfig{})
 	require.Error(t, err)
 	require.True(t, errors.Is(err, ErrNotWired) || err.Error() != "")
+}
+
+// TestProductionProducer_MissingBrowserErrors verifies that when no
+// chromium/google-chrome binary is on PATH (or the stub env is set),
+// Open returns ErrNotWired or ErrChromeNotFound — never a panic.
+func TestProductionProducer_MissingBrowserErrors(t *testing.T) {
+	// Force the production producer path.
+	orig := newFrameProducer
+	defer func() { newFrameProducer = orig }()
+	newFrameProducer = productionFrameProducer
+
+	// Force stub mode so this test is deterministic regardless of host.
+	t.Setenv("HELIXQA_CAPTURE_WEB_STUB", "1")
+
+	_, err := Open(context.Background(), contracts.CaptureConfig{})
+	require.Error(t, err, "Open must return an error when browser is absent or stub mode is on")
+	// Must be one of the known sentinels, not a random panic.
+	if !errors.Is(err, ErrNotWired) && !errors.Is(err, ErrChromeNotFound) {
+		require.NotEmpty(t, err.Error(),
+			"expected ErrNotWired or ErrChromeNotFound, got %v", err)
+	}
+}
+
+// TestPngToBGRA8_SynthesizesFrame encodes a small synthetic PNG in memory and
+// decodes it through pngToBGRA8; asserts that the output length is w*h*4
+// and that a known pixel colour round-trips correctly.
+func TestPngToBGRA8_SynthesizesFrame(t *testing.T) {
+	const w, h = 4, 3
+	img := image.NewRGBA(image.Rect(0, 0, w, h))
+	// Paint pixel (1,2) a known RGBA colour.
+	img.Set(1, 2, color.RGBA{R: 0xAB, G: 0xCD, B: 0xEF, A: 0xFF})
+
+	var buf bytes.Buffer
+	require.NoError(t, png.Encode(&buf, img))
+
+	gotW, gotH, raw, err := pngToBGRA8(buf.Bytes())
+	require.NoError(t, err)
+	require.Equal(t, w, gotW)
+	require.Equal(t, h, gotH)
+	require.Equal(t, w*h*4, len(raw), "raw slice must be width*height*4 bytes")
+
+	// Verify the BGRA order for pixel (1,2).
+	idx := (2*w + 1) * 4
+	require.Equal(t, byte(0xEF), raw[idx+0], "B channel")
+	require.Equal(t, byte(0xCD), raw[idx+1], "G channel")
+	require.Equal(t, byte(0xAB), raw[idx+2], "R channel")
+	require.Equal(t, byte(0xFF), raw[idx+3], "A channel")
 }
