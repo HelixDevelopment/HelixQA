@@ -40,7 +40,7 @@ type Target struct {
 type Event struct {
 	Kind      EventKind
 	Timestamp time.Time
-	Payload   map[string]interface{}
+	Payload   map[string]any
 	Raw       []byte
 }
 

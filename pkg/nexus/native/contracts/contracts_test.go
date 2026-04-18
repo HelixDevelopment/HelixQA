@@ -231,8 +231,11 @@ func TestClipOptions_AnchorPointAndAnnotation(t *testing.T) {
 	require.Equal(t, "click here", o.Annotation)
 }
 
-// Compile-time interface satisfaction checks — ensure the contract
-// surfaces stay referenced so a rename downstream fails the build.
+// Compile-time guards: ensure the interface identifiers remain
+// reachable from this package. Full `var _ Iface = concreteImpl{}`
+// guards against signature drift will be added in P1–P5 where real
+// implementations land; for P0 these blank declarations are enough
+// to fail the build if any interface is renamed or removed.
 var (
 	_ = (*Interactor)(nil)
 	_ = (*CaptureSource)(nil)

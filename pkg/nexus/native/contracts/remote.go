@@ -9,24 +9,25 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
-// Kind identifies a hardware capability that a remote worker must provide.
-type Kind string
+// CapabilityKind identifies a hardware capability that a remote worker must
+// provide.
+type CapabilityKind string
 
 const (
 	// KindCUDAOpenCV requires an NVIDIA GPU with CUDA-accelerated OpenCV.
-	KindCUDAOpenCV Kind = "cuda-opencv"
+	KindCUDAOpenCV CapabilityKind = "cuda-opencv"
 
 	// KindNVENC requires NVIDIA hardware video encoding (NVENC).
-	KindNVENC Kind = "nvenc"
+	KindNVENC CapabilityKind = "nvenc"
 
 	// KindTensorRTOCR requires TensorRT-optimised OCR inference.
-	KindTensorRTOCR Kind = "tensorrt-ocr"
+	KindTensorRTOCR CapabilityKind = "tensorrt-ocr"
 )
 
 // Capability describes the minimum hardware requirement that a Dispatcher must
 // satisfy when resolving a Worker.
 type Capability struct {
-	Kind        Kind
+	Kind        CapabilityKind
 	MinVRAM     int  // minimum VRAM in MiB; 0 means no requirement
 	PreferLocal bool // prefer a worker on the same host when true
 }

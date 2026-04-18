@@ -19,8 +19,9 @@ type UIElement struct {
 	Rect       Rect
 	Label      string
 	Confidence float64
-	// Source identifies which detection backend found this element
-	// (e.g. "ax-tree", "ocr", "yolo").
+	// Source identifies which detection backend found this
+	// element: "cv" (computer vision), "dom", "ax" (accessibility
+	// tree), or "merged".
 	Source     string
 	Attributes map[string]string
 }
