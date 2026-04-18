@@ -9,7 +9,7 @@ Living status doc for the 8 OCU sub-projects. Program spec at
 |---|---|---|---|---|
 | P0 Foundation | **CLOSED 2026-04-17** | [spec](../superpowers/specs/2026-04-17-openclaw-ultimate-program-design.md) | [plan](../superpowers/plans/2026-04-17-ocu-p0-foundation-plan.md) | Contracts + Containers GPU extension + vertical-slice CLIs shipped. All ten P0-applicable test categories green. |
 | P1 Capture | **CLOSED 2026-04-18** | [spec](../superpowers/specs/2026-04-17-openclaw-ultimate-program-design.md) | [plan](../superpowers/plans/2026-04-17-ocu-p1-capture-plan.md) | Factory + 4 CaptureSource backends (web/CDP, linux/X11, android, androidtv). Stress tested under -race. Per-source bench + audit filed. Bank `ocu-capture.json` shipped. Integration smoke green. Production subprocess wiring deferred to P1.5 via injectable `newFrameProducer`. |
-| P2 Vision | pending | — | — | Waits on P0 contracts (✅). Can start in parallel with P1. |
+| P2 Vision | **CLOSED 2026-04-18** | [spec](../superpowers/specs/2026-04-17-openclaw-ultimate-program-design.md) | [plan](../superpowers/plans/2026-04-17-ocu-p2-vision-plan.md) | Pipeline + CPU backend + remote-dispatch plumbing via ocuremote.Dispatcher. Real OpenCV CUDA + TensorRT OCR deferred to P2.5 via LocalBackend interface + stub remote path. Stress -race clean. Bank `ocu-vision.json` (13 entries) shipped. Integration smoke green. |
 | P3 Interact | pending | — | — | Waits on P0 contracts (✅). Can start in parallel with P1/P2. |
 | P4 Observe | pending | — | — | Waits on P0 contracts (✅). Can start in parallel with P1/P2/P3. |
 | P5 Record | pending | — | — | Waits on Wave 2 (P1–P4). |
@@ -36,7 +36,10 @@ Living status doc for the 8 OCU sub-projects. Program spec at
 | linux/X11 Open→frame→Close | n/a (not budgeted) | ~10.5 ms / 10 allocs / 4696 B (laptop i7-1165G7) | mock producer; same sleep |
 | android/ADB Open→frame→Close | n/a (not budgeted) | ~10.3 ms / 12 allocs / 5095 B (laptop i7-1165G7) | mock producer; 2 extra allocs from kind string |
 
-P2–P7 append their own actuals as benches land.
+| CPU Backend Analyze (stub) | n/a (not budgeted) | ~3.8 ns / 0 allocs / 0 B (laptop i7-1165G7) | pure-Go stub; real OpenCV CUDA lands in P2.5 |
+| CPU Backend Diff (stub) | n/a (not budgeted) | ~48 ns / 1 alloc / 48 B (laptop i7-1165G7) | same-shape fast-path; real pixel diff in P2.5 |
+
+P3–P7 append their own actuals as benches land.
 
 ## Risk register
 
