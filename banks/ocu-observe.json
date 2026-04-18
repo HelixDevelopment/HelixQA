@@ -1,0 +1,348 @@
+{
+  "id": "ocu-observe",
+  "version": "1.0",
+  "name": "OCU P4 Observe",
+  "description": "Validates the observation engine: factory, ring buffer, 5 observer backends (ld_preload/plthook/dbus/cdp/ax_tree), stress behaviour.",
+  "metadata": {
+    "author": "vasic-digital",
+    "priority": "2"
+  },
+  "test_cases": [
+    {
+      "id": "OCU-OBSERVE-001",
+      "name": "factory-register-and-open",
+      "category": "unit",
+      "priority": "critical",
+      "steps": [
+        {
+          "name": "Run factory register and open",
+          "action": "go-test: digital.vasic.helixqa/pkg/nexus/observe TestFactory_RegisterAndOpen",
+          "expected": "pass"
+        }
+      ],
+      "tags": ["ocu", "observe", "factory", "happy"],
+      "estimated_duration": "5s",
+      "expected_result": "Custom factory registered under a test kind is discoverable via Kinds() and Open() returns a non-nil Observer"
+    },
+    {
+      "id": "OCU-OBSERVE-002",
+      "name": "factory-unknown-kind-errors",
+      "category": "unit",
+      "priority": "high",
+      "steps": [
+        {
+          "name": "Run factory unknown kind error case",
+          "action": "go-test: digital.vasic.helixqa/pkg/nexus/observe TestFactory_UnknownKind",
+          "expected": "pass"
+        }
+      ],
+      "tags": ["ocu", "observe", "factory", "edge"],
+      "estimated_duration": "5s",
+      "expected_result": "Open() returns a non-nil error containing the unregistered kind name"
+    },
+    {
+      "id": "OCU-OBSERVE-003",
+      "name": "factory-kinds-listing",
+      "category": "unit",
+      "priority": "high",
+      "steps": [
+        {
+          "name": "Run factory Kinds listing test",
+          "action": "go-test: digital.vasic.helixqa/pkg/nexus/observe TestFactory_Kinds",
+          "expected": "pass"
+        }
+      ],
+      "tags": ["ocu", "observe", "factory", "happy"],
+      "estimated_duration": "5s",
+      "expected_result": "Kinds() returns a sorted list that includes all registered kinds"
+    },
+    {
+      "id": "OCU-OBSERVE-004",
+      "name": "factory-default-buffer-size",
+      "category": "unit",
+      "priority": "high",
+      "steps": [
+        {
+          "name": "Run factory default buffer size test",
+          "action": "go-test: digital.vasic.helixqa/pkg/nexus/observe TestFactory_DefaultBufferSize",
+          "expected": "pass"
+        }
+      ],
+      "tags": ["ocu", "observe", "factory", "edge"],
+      "estimated_duration": "5s",
+      "expected_result": "Config.BufferSize=0 is normalised to 1024 before the Factory is called"
+    },
+    {
+      "id": "OCU-OBSERVE-005",
+      "name": "factory-concurrent-register-race",
+      "category": "unit",
+      "priority": "high",
+      "steps": [
+        {
+          "name": "Run factory concurrent register race check",
+          "action": "go-test: digital.vasic.helixqa/pkg/nexus/observe TestFactory_ConcurrentRegister",
+          "expected": "pass"
+        }
+      ],
+      "tags": ["ocu", "observe", "factory", "adversarial", "race"],
+      "estimated_duration": "10s",
+      "expected_result": "Concurrent Register() and Open() calls produce no data races under -race"
+    },
+    {
+      "id": "OCU-OBSERVE-010",
+      "name": "ring-push-and-snapshot-happy",
+      "category": "unit",
+      "priority": "critical",
+      "steps": [
+        {
+          "name": "Run ring push and snapshot happy path",
+          "action": "go-test: digital.vasic.helixqa/pkg/nexus/observe TestRing_PushAndSnapshotHappyPath",
+          "expected": "pass"
+        }
+      ],
+      "tags": ["ocu", "observe", "ring", "happy"],
+      "estimated_duration": "5s",
+      "expected_result": "Events pushed to the ring are returned by Snapshot with zero window in insertion order"
+    },
+    {
+      "id": "OCU-OBSERVE-011",
+      "name": "ring-window-filtering",
+      "category": "unit",
+      "priority": "high",
+      "steps": [
+        {
+          "name": "Run ring window filtering test",
+          "action": "go-test: digital.vasic.helixqa/pkg/nexus/observe TestRing_WindowFiltering",
+          "expected": "pass"
+        }
+      ],
+      "tags": ["ocu", "observe", "ring", "happy"],
+      "estimated_duration": "5s",
+      "expected_result": "Snapshot(at, window) returns only events whose timestamps fall in (at-window, at]"
+    },
+    {
+      "id": "OCU-OBSERVE-012",
+      "name": "ring-eviction-when-full",
+      "category": "unit",
+      "priority": "high",
+      "steps": [
+        {
+          "name": "Run ring eviction test",
+          "action": "go-test: digital.vasic.helixqa/pkg/nexus/observe TestRing_EvictionWhenFull",
+          "expected": "pass"
+        }
+      ],
+      "tags": ["ocu", "observe", "ring", "edge"],
+      "estimated_duration": "5s",
+      "expected_result": "Pushing beyond capacity evicts the oldest events; Len() never exceeds capacity"
+    },
+    {
+      "id": "OCU-OBSERVE-013",
+      "name": "ring-snapshot-empty",
+      "category": "unit",
+      "priority": "high",
+      "steps": [
+        {
+          "name": "Run ring empty snapshot test",
+          "action": "go-test: digital.vasic.helixqa/pkg/nexus/observe TestRing_SnapshotEmpty",
+          "expected": "pass"
+        }
+      ],
+      "tags": ["ocu", "observe", "ring", "edge"],
+      "estimated_duration": "5s",
+      "expected_result": "Snapshot on an empty ring returns nil without panicking"
+    },
+    {
+      "id": "OCU-OBSERVE-014",
+      "name": "ring-concurrent-push",
+      "category": "unit",
+      "priority": "high",
+      "steps": [
+        {
+          "name": "Run ring concurrent push race test",
+          "action": "go-test: digital.vasic.helixqa/pkg/nexus/observe TestRing_ConcurrentPush",
+          "expected": "pass"
+        }
+      ],
+      "tags": ["ocu", "observe", "ring", "adversarial", "race"],
+      "estimated_duration": "10s",
+      "expected_result": "64 goroutines pushing concurrently produce no data races under -race"
+    },
+    {
+      "id": "OCU-OBSERVE-020",
+      "name": "ld-preload-production-returns-err-not-wired",
+      "category": "unit",
+      "priority": "critical",
+      "steps": [
+        {
+          "name": "Run ld_preload production sentinel test",
+          "action": "go-test: digital.vasic.helixqa/pkg/nexus/observe/ld_preload TestObserver_ProductionReturnsErrNotWired",
+          "expected": "pass"
+        }
+      ],
+      "tags": ["ocu", "observe", "ld_preload", "edge"],
+      "estimated_duration": "5s",
+      "expected_result": "ld_preload Observer.Start() returns ErrNotWired when no producer is wired (P4.5 deferred)"
+    },
+    {
+      "id": "OCU-OBSERVE-021",
+      "name": "ld-preload-mock-produces-events",
+      "category": "unit",
+      "priority": "high",
+      "steps": [
+        {
+          "name": "Run ld_preload mock event production test",
+          "action": "go-test: digital.vasic.helixqa/pkg/nexus/observe/ld_preload TestObserver_MockProducesEvents",
+          "expected": "pass"
+        }
+      ],
+      "tags": ["ocu", "observe", "ld_preload", "happy"],
+      "estimated_duration": "5s",
+      "expected_result": "Mock producer emits events that flow through the ring buffer and Events() channel"
+    },
+    {
+      "id": "OCU-OBSERVE-022",
+      "name": "ld-preload-registered-in-init",
+      "category": "unit",
+      "priority": "high",
+      "steps": [
+        {
+          "name": "Run ld_preload factory registration test",
+          "action": "go-test: digital.vasic.helixqa/pkg/nexus/observe/ld_preload TestObserver_FactoryRegisteredInInit",
+          "expected": "pass"
+        }
+      ],
+      "tags": ["ocu", "observe", "ld_preload", "happy"],
+      "estimated_duration": "5s",
+      "expected_result": "ld_preload package init() registers 'ld_preload' kind in the factory"
+    },
+    {
+      "id": "OCU-OBSERVE-030",
+      "name": "plthook-production-returns-err-not-wired",
+      "category": "unit",
+      "priority": "critical",
+      "steps": [
+        {
+          "name": "Run plthook production sentinel test",
+          "action": "go-test: digital.vasic.helixqa/pkg/nexus/observe/plthook TestObserver_ProductionReturnsErrNotWired",
+          "expected": "pass"
+        }
+      ],
+      "tags": ["ocu", "observe", "plthook", "edge"],
+      "estimated_duration": "5s",
+      "expected_result": "plthook Observer.Start() returns ErrNotWired when no producer is wired (P4.5 deferred)"
+    },
+    {
+      "id": "OCU-OBSERVE-031",
+      "name": "plthook-mock-produces-events",
+      "category": "unit",
+      "priority": "high",
+      "steps": [
+        {
+          "name": "Run plthook mock event production test",
+          "action": "go-test: digital.vasic.helixqa/pkg/nexus/observe/plthook TestObserver_MockProducesEvents",
+          "expected": "pass"
+        }
+      ],
+      "tags": ["ocu", "observe", "plthook", "happy"],
+      "estimated_duration": "5s",
+      "expected_result": "Mock producer emits events through the ring buffer and Events() channel"
+    },
+    {
+      "id": "OCU-OBSERVE-040",
+      "name": "dbus-mock-produces-events",
+      "category": "unit",
+      "priority": "high",
+      "steps": [
+        {
+          "name": "Run dbus mock event production test",
+          "action": "go-test: digital.vasic.helixqa/pkg/nexus/observe/dbus TestObserver_MockProducesEvents",
+          "expected": "pass"
+        }
+      ],
+      "tags": ["ocu", "observe", "dbus", "happy"],
+      "estimated_duration": "5s",
+      "expected_result": "Mock D-Bus producer emits EventKindDBus events through ring and channel"
+    },
+    {
+      "id": "OCU-OBSERVE-050",
+      "name": "cdp-mock-produces-events",
+      "category": "unit",
+      "priority": "high",
+      "steps": [
+        {
+          "name": "Run cdp mock event production test",
+          "action": "go-test: digital.vasic.helixqa/pkg/nexus/observe/cdp TestObserver_MockProducesEvents",
+          "expected": "pass"
+        }
+      ],
+      "tags": ["ocu", "observe", "cdp", "happy"],
+      "estimated_duration": "5s",
+      "expected_result": "Mock CDP producer emits EventKindCDP events through ring and channel"
+    },
+    {
+      "id": "OCU-OBSERVE-060",
+      "name": "ax-tree-mock-produces-events",
+      "category": "unit",
+      "priority": "high",
+      "steps": [
+        {
+          "name": "Run ax_tree mock event production test",
+          "action": "go-test: digital.vasic.helixqa/pkg/nexus/observe/ax_tree TestObserver_MockProducesEvents",
+          "expected": "pass"
+        }
+      ],
+      "tags": ["ocu", "observe", "ax_tree", "happy"],
+      "estimated_duration": "5s",
+      "expected_result": "Mock AT-SPI2 producer emits EventKindAXTree events through ring and channel"
+    },
+    {
+      "id": "OCU-OBSERVE-070",
+      "name": "stress-100-concurrent-all-backends",
+      "category": "stress",
+      "priority": "high",
+      "steps": [
+        {
+          "name": "Run 100-goroutine stress test across all 5 backends",
+          "action": "go-test: digital.vasic.helixqa/pkg/nexus/observe TestStress_Observe_100Concurrent",
+          "expected": "pass"
+        }
+      ],
+      "tags": ["ocu", "observe", "stress", "race"],
+      "estimated_duration": "60s",
+      "expected_result": "100 concurrent Start→drain→Snapshot→Stop cycles across all 5 backends complete with no data races under -race"
+    },
+    {
+      "id": "OCU-OBSERVE-080",
+      "name": "integration-all-five-kinds-registered",
+      "category": "integration",
+      "priority": "critical",
+      "steps": [
+        {
+          "name": "Run integration smoke — all five kinds registered",
+          "action": "go-test: -tags=integration digital.vasic.helixqa/tests/integration TestOCU_Observe_FactoryKindsRegistered",
+          "expected": "pass"
+        }
+      ],
+      "tags": ["ocu", "observe", "integration", "happy"],
+      "estimated_duration": "10s",
+      "expected_result": "After blank-importing all 5 sub-packages, Kinds() contains ld_preload, plthook, dbus, cdp, ax_tree"
+    },
+    {
+      "id": "OCU-OBSERVE-081",
+      "name": "integration-open-each-kind",
+      "category": "integration",
+      "priority": "critical",
+      "steps": [
+        {
+          "name": "Run integration smoke — Open each kind",
+          "action": "go-test: -tags=integration digital.vasic.helixqa/tests/integration TestOCU_Observe_OpenEachKind",
+          "expected": "pass"
+        }
+      ],
+      "tags": ["ocu", "observe", "integration", "happy"],
+      "estimated_duration": "10s",
+      "expected_result": "Open() succeeds for all 5 kinds, returning a non-nil Observer (ErrNotWired at Start time, not Open time)"
+    }
+  ]
+}
