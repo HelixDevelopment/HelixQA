@@ -36,9 +36,13 @@ func (f *fakeRemoteExec) Execute(_ context.Context, _ remote.RemoteHost, cmd str
 func (f *fakeRemoteExec) ExecuteStream(context.Context, remote.RemoteHost, string) (io.ReadCloser, error) {
 	return nil, nil
 }
-func (f *fakeRemoteExec) CopyFile(context.Context, remote.RemoteHost, string, string) error { return nil }
-func (f *fakeRemoteExec) CopyDir(context.Context, remote.RemoteHost, string, string) error  { return nil }
-func (f *fakeRemoteExec) IsReachable(context.Context, remote.RemoteHost) bool               { return true }
+func (f *fakeRemoteExec) CopyFile(context.Context, remote.RemoteHost, string, string) error {
+	return nil
+}
+func (f *fakeRemoteExec) CopyDir(context.Context, remote.RemoteHost, string, string) error {
+	return nil
+}
+func (f *fakeRemoteExec) IsReachable(context.Context, remote.RemoteHost) bool { return true }
 
 func TestProbeRemote_Thinker(t *testing.T) {
 	exec := &fakeRemoteExec{replies: map[string]*remote.CommandResult{
