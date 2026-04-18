@@ -1,0 +1,145 @@
+# SPDX-FileCopyrightText: 2026 Milos Vasic
+# SPDX-License-Identifier: Apache-2.0
+#
+# OpenClawing2 Phase 4 bank — retry + healer + loop detection.
+
+version: "1.0"
+name: "OpenClawing2 — Phase 4 Retry / Healer / Loop Detection"
+description: "Regression suite for pkg/nexus/agent resilience stack: ExpBackoffWithJitter, LoopDetector, SelfHealer."
+metadata:
+  author: "vasic-digital"
+  phase: 4
+  plan: "docs/plans/2026-04-18-openclawing2-integration-plan.md"
+
+test_cases:
+  - id: OC-RETRY-001
+    name: "RetryWithBackoff stops at first success"
+    category: functional
+    priority: critical
+    platforms: [api]
+    tags: [openclawing2, phase4, retry]
+    steps:
+      - name: "fn returns nil on first call"
+        action: "pkg/nexus/agent.RetryWithBackoff"
+        expected: "single invocation; nil error"
+    expected_result: "Happy path is zero-cost"
+
+  - id: OC-RETRY-002
+    name: "RetryWithBackoff exhausts + returns last error"
+    category: functional
+    priority: critical
+    platforms: [api]
+    tags: [openclawing2, phase4, retry]
+    steps:
+      - name: "fn always returns 'still broken'"
+        action: "pkg/nexus/agent.RetryWithBackoff with MaxTries=3"
+        expected: "3 invocations; final error wraps the original"
+    expected_result: "Caller sees the root-cause error, not a generic timeout"
+
+  - id: OC-RETRY-003
+    name: "Context cancellation terminates retry mid-sleep"
+    category: regression
+    priority: high
+    platforms: [api]
+    tags: [openclawing2, phase4, retry, context]
+    steps:
+      - name: "Cancelled context passed to RetryWithBackoff"
+        action: "pkg/nexus/agent.RetryWithBackoff"
+        expected: "ctx.Err() returned immediately"
+    expected_result: "No zombie retries after cancellation"
+
+  - id: OC-RETRY-004
+    name: "Backoff delay grows monotonically toward Max"
+    category: regression
+    priority: medium
+    platforms: [api]
+    tags: [openclawing2, phase4, backoff]
+    steps:
+      - name: "delayFor(1..4) with 1% jitter"
+        action: "pkg/nexus/agent.BackoffPolicy.delayFor"
+        expected: "each delay >= prev/2 (jitter floor); none exceed Max"
+    expected_result: "Backoff is well-behaved under tiny jitter"
+
+  - id: OC-LOOP-001
+    name: "LoopDetector catches a 2-cycle repeated 3 times"
+    category: functional
+    priority: critical
+    platforms: [api]
+    tags: [openclawing2, phase4, loop-detection]
+    steps:
+      - name: "Record 3× (actionA, actionB)"
+        action: "pkg/nexus/agent.LoopDetector.Record"
+        expected: "IsLoop() returns true"
+    expected_result: "Ping-pong actions are caught early"
+
+  - id: OC-LOOP-002
+    name: "LoopDetector catches a 3-cycle repeated 3 times"
+    category: functional
+    priority: critical
+    platforms: [api]
+    tags: [openclawing2, phase4, loop-detection]
+    steps:
+      - name: "Record 3× (A, B, C)"
+        action: "pkg/nexus/agent.LoopDetector.Record"
+        expected: "IsLoop() returns true"
+    expected_result: "Three-step loops detected"
+
+  - id: OC-LOOP-003
+    name: "Healthy varied history passes"
+    category: regression
+    priority: medium
+    platforms: [api]
+    tags: [openclawing2, phase4, loop-detection]
+    steps:
+      - name: "Record 12 unique action fingerprints"
+        action: "pkg/nexus/agent.LoopDetector.Record"
+        expected: "IsLoop() returns false"
+    expected_result: "No false positives on normal flows"
+
+  - id: OC-LOOP-004
+    name: "Reset() clears detector state"
+    category: regression
+    priority: medium
+    platforms: [api]
+    tags: [openclawing2, phase4, loop-detection]
+    steps:
+      - name: "Record loop; Reset(); IsLoop()"
+        action: "pkg/nexus/agent.LoopDetector.Reset"
+        expected: "IsLoop() returns false after reset"
+    expected_result: "Escape-then-continue flows keep working"
+
+  - id: OC-HEAL-001
+    name: "SelfHealer re-invokes planner with failure reason"
+    category: functional
+    priority: critical
+    platforms: [api]
+    tags: [openclawing2, phase4, selfhealer]
+    steps:
+      - name: "Heal(ctx, state, 'element e1 not visible')"
+        action: "pkg/nexus/agent.SelfHealer.Heal"
+        expected: "Planner's RecentSteps[0].Evaluation contains 'previous_attempt_failed_because: element e1 not visible'"
+    expected_result: "Planner sees fresh failure context on heal"
+
+  - id: OC-HEAL-002
+    name: "SelfHealer exhausts MaxAttempts + returns last error"
+    category: functional
+    priority: high
+    platforms: [api]
+    tags: [openclawing2, phase4, selfhealer]
+    steps:
+      - name: "Planner always returns LLM 500"
+        action: "pkg/nexus/agent.SelfHealer.Heal"
+        expected: "errors.Is(err, boom) after MaxAttempts retries"
+    expected_result: "Healer does not mask the root cause"
+
+  - id: OC-RES-001
+    name: "100 sequential retries + 100 loop records stay stable"
+    category: stress
+    priority: high
+    platforms: [api]
+    tags: [openclawing2, phase4, stress]
+    steps:
+      - name: "RetryWithBackoff x100; LoopDetector.Record x100"
+        action: "pkg/nexus/agent resilience path"
+        expected: "300 total attempts; loop correctly flagged; no goroutine leak"
+    expected_result: "Resilience components scale linearly"
