@@ -121,12 +121,12 @@ func (m *MockKV) Put(ctx context.Context, key string, value []byte) (uint64, err
 func (m *MockKV) Get(ctx context.Context, key string) (jetstream.KeyValueEntry, error) {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
-	
+
 	value, ok := m.data[key]
 	if !ok {
 		return nil, errors.New("key not found")
 	}
-	
+
 	return &mockEntry{
 		key:       key,
 		value:     value,
@@ -146,7 +146,7 @@ func (m *MockKV) Delete(ctx context.Context, key string) error {
 func (m *MockKV) Keys(ctx context.Context) ([]string, error) {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
-	
+
 	keys := make([]string, 0, len(m.data))
 	for k := range m.data {
 		keys = append(keys, k)
@@ -162,12 +162,12 @@ type mockEntry struct {
 	operation jetstream.KeyValueOp
 }
 
-func (m *mockEntry) Bucket() string        { return "TEST_BUCKET" }
-func (m *mockEntry) Key() string           { return m.key }
-func (m *mockEntry) Value() []byte         { return m.value }
-func (m *mockEntry) Revision() uint64      { return m.revision }
-func (m *mockEntry) Created() time.Time    { return m.created }
-func (m *mockEntry) Delta() uint64         { return 0 }
+func (m *mockEntry) Bucket() string                  { return "TEST_BUCKET" }
+func (m *mockEntry) Key() string                     { return m.key }
+func (m *mockEntry) Value() []byte                   { return m.value }
+func (m *mockEntry) Revision() uint64                { return m.revision }
+func (m *mockEntry) Created() time.Time              { return m.created }
+func (m *mockEntry) Delta() uint64                   { return 0 }
 func (m *mockEntry) Operation() jetstream.KeyValueOp { return m.operation }
 
 // These tests require NATS to be running

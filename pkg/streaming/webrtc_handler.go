@@ -44,13 +44,13 @@ func NewWebRTCHandler(server *WebRTCServer) *WebRTCHandler {
 func (h *WebRTCHandler) RegisterRoutes(mux *http.ServeMux) {
 	// WebSocket endpoint for signaling
 	mux.HandleFunc("/ws/webrtc", h.HandleWebSocket)
-	
+
 	// Configuration endpoint
 	mux.HandleFunc("/api/webrtc/config", h.HandleConfig)
-	
+
 	// Stats endpoint
 	mux.HandleFunc("/api/webrtc/stats", h.HandleStats)
-	
+
 	// Room stats endpoint
 	mux.HandleFunc("/api/webrtc/rooms/", h.HandleRoomStats)
 }

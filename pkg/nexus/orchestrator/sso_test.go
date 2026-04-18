@@ -40,7 +40,7 @@ func TestNewOIDCProvider_Validation(t *testing.T) {
 func TestOIDCProvider_VerifyHappyPath(t *testing.T) {
 	p, _ := NewOIDCProvider("https://idp.example", "helixqa", oidcVerifier(OIDCClaims{
 		Subject: "u1", Email: "e@x", Team: "qa",
-		Groups:  []string{"helixqa-operator"},
+		Groups:    []string{"helixqa-operator"},
 		ExpiresAt: time.Now().Add(time.Hour),
 	}, nil))
 	u, err := p.Verify(context.Background(), "token")

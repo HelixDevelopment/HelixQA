@@ -27,7 +27,7 @@ type controllableMock struct {
 	resp      *Response
 }
 
-func (c *controllableMock) Name() string        { return c.name }
+func (c *controllableMock) Name() string         { return c.name }
 func (c *controllableMock) SupportsVision() bool { return c.supportsVision }
 
 func (c *controllableMock) Chat(

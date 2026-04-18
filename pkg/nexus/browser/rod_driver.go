@@ -58,8 +58,8 @@ type rodHandle struct {
 	page    *rod.Page
 }
 
-func (h *rodHandle) Close() error                                            { return h.browser.Close() }
-func (h *rodHandle) Navigate(_ context.Context, url string) error            { return h.page.Navigate(url) }
+func (h *rodHandle) Close() error                                 { return h.browser.Close() }
+func (h *rodHandle) Navigate(_ context.Context, url string) error { return h.page.Navigate(url) }
 func (h *rodHandle) Snapshot(_ context.Context) (*nexus.Snapshot, error) {
 	html, err := h.page.HTML()
 	if err != nil {

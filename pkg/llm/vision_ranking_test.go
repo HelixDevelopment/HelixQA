@@ -71,8 +71,8 @@ func TestRankVisionProviders_AvailableBeatsUnavailable(t *testing.T) {
 	t.Setenv("OPENAI_API_KEY", "")
 
 	providers := []Provider{
-		&mockProvider{name: ProviderOpenAI, vision: true},  // quality 0.95 but unavailable
-		&mockProvider{name: ProviderGoogle, vision: true},   // quality 0.88, available
+		&mockProvider{name: ProviderOpenAI, vision: true}, // quality 0.95 but unavailable
+		&mockProvider{name: ProviderGoogle, vision: true}, // quality 0.88, available
 	}
 	ranked := rankVisionProviders(providers)
 	require.Len(t, ranked, 2)

@@ -24,12 +24,12 @@ type CostTracker struct {
 
 // Entry is a single tracked LLM call.
 type Entry struct {
-	Provider   string
-	Model      string
-	TokensIn   int
-	TokensOut  int
-	CostCents  int
-	Outcome    string // pass | fail | aborted
+	Provider  string
+	Model     string
+	TokensIn  int
+	TokensOut int
+	CostCents int
+	Outcome   string // pass | fail | aborted
 }
 
 // NewCostTracker creates a tracker whose starting budget equals budget

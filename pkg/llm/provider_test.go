@@ -11,9 +11,9 @@ import (
 
 func TestMessage_Validate(t *testing.T) {
 	tests := []struct {
-		name    string
-		msg     Message
-		wantErr bool
+		name        string
+		msg         Message
+		wantErr     bool
 		errContains string
 	}{
 		{
@@ -57,9 +57,9 @@ func TestMessage_Validate(t *testing.T) {
 
 func TestResponse_HasContent(t *testing.T) {
 	tests := []struct {
-		name    string
-		resp    Response
-		want    bool
+		name string
+		resp Response
+		want bool
 	}{
 		{
 			name: "with content",

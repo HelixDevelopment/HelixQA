@@ -4,9 +4,9 @@ package browser
 // Engine's allowlist comparison matches any casing. Operators opt in
 // with:
 //
-//   cfg := browser.Config{
-//     AllowedHosts: browser.CaseInsensitiveAllowlist([]string{"Catalogizer.local"}),
-//   }
+//	cfg := browser.Config{
+//	  AllowedHosts: browser.CaseInsensitiveAllowlist([]string{"Catalogizer.local"}),
+//	}
 //
 // By default Nexus keeps the allowlist case-sensitive so a misconfigured
 // "Catalogizer.Local" does not silently pass. Use this helper to relax

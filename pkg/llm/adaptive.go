@@ -33,10 +33,10 @@ const adaptiveVisionTimeout = 90 * time.Second
 // for the remainder of the session to avoid wasting time retrying
 // providers with no credits.
 type AdaptiveProvider struct {
-	providers     []Provider
-	costTracker   *CostTracker
-	phase         string
-	unavailable   map[string]string // provider name -> reason
+	providers   []Provider
+	costTracker *CostTracker
+	phase       string
+	unavailable map[string]string // provider name -> reason
 }
 
 // NewAdaptiveProvider constructs an AdaptiveProvider from an

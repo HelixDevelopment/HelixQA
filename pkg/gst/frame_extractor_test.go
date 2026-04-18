@@ -213,7 +213,7 @@ func TestRGBImage(t *testing.T) {
 	// Test Bounds
 	bounds := img.Bounds()
 	assert.Equal(t, 0, bounds.Min.X)
-		assert.Equal(t, 0, bounds.Min.Y)
+	assert.Equal(t, 0, bounds.Min.Y)
 	assert.Equal(t, 2, bounds.Max.X)
 	assert.Equal(t, 2, bounds.Max.Y)
 
@@ -383,7 +383,7 @@ func TestFrameExtractor_StartStop(t *testing.T) {
 	config := DefaultExtractorConfig("test")
 	config.SourceType = SourceTest
 	config.FPS = 1 // Low FPS for testing
-	
+
 	extractor := NewFrameExtractor(config)
 
 	// Start
@@ -406,7 +406,7 @@ func TestFrameExtractor_Stats(t *testing.T) {
 	extractor := NewFrameExtractor(config)
 
 	stats := extractor.GetStats()
-	
+
 	// Initial stats should be zero
 	assert.Equal(t, uint64(0), stats.FramesExtracted)
 	assert.Equal(t, uint64(0), stats.FramesDropped)

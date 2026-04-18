@@ -45,13 +45,13 @@ func TestCheckOllamaAvailable(t *testing.T) {
 
 func TestRecommendedModels(t *testing.T) {
 	assert.Greater(t, len(RecommendedModels), 0)
-	
+
 	// Check for expected models
 	modelNames := make(map[string]bool)
 	for _, m := range RecommendedModels {
 		modelNames[m.Name] = true
 	}
-	
+
 	assert.True(t, modelNames["llava"])
 	assert.True(t, modelNames["llava:13b"])
 }
@@ -260,7 +260,7 @@ func TestGetAvailableModels(t *testing.T) {
 
 func TestCreateTestImageForLLM(t *testing.T) {
 	img := createTestImageForLLM(200, 100)
-	
+
 	assert.NotNil(t, img)
 	bounds := img.Bounds()
 	assert.Equal(t, 200, bounds.Dx())
@@ -270,7 +270,7 @@ func TestCreateTestImageForLLM(t *testing.T) {
 // Helper function
 func createTestImageForLLM(width, height int) image.Image {
 	img := image.NewRGBA(image.Rect(0, 0, width, height))
-	
+
 	// Create a gradient pattern
 	for y := 0; y < height; y++ {
 		for x := 0; x < width; x++ {
@@ -280,6 +280,6 @@ func createTestImageForLLM(width, height int) image.Image {
 			img.Set(x, y, color.RGBA{R: r, G: g, B: b, A: 255})
 		}
 	}
-	
+
 	return img
 }

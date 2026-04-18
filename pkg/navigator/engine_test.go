@@ -19,13 +19,13 @@ import (
 
 // mockAgent implements agent.Agent for testing.
 type mockAgent struct {
-	id         string
-	name       string
-	responses  []agent.Response
-	callCount  int
-	running    bool
-	vision     bool
-	modelInfo  agent.ModelInfo
+	id        string
+	name      string
+	responses []agent.Response
+	callCount int
+	running   bool
+	vision    bool
+	modelInfo agent.ModelInfo
 }
 
 func newMockAgent(name string) *mockAgent {
@@ -527,9 +527,9 @@ func TestNavigationEngine_ExploreUnknown_ScreenshotFails(t *testing.T) {
 
 func TestParseCoordinates(t *testing.T) {
 	tests := []struct {
-		input    string
-		expectX  int
-		expectY  int
+		input   string
+		expectX int
+		expectY int
 	}{
 		{"100,200", 100, 200},
 		{"0,0", 0, 0},

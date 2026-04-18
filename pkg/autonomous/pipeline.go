@@ -519,7 +519,7 @@ func (sp *SessionPipeline) preflightCheck(
 //  1. Learn  — build a knowledge base from the project
 //  2. Plan   — generate, reconcile, and rank test cases
 //  3. Execute — run tests with video recording, screenshots, crash detection, Maestro flows
-//  3.5 Curiosity — explore unknown areas via random navigation
+//     3.5 Curiosity — explore unknown areas via random navigation
 //  4. Analyze — LLM vision analysis, memory leak detection, video frame analysis, issue tickets
 //
 // It creates a session in the memory store at the start and
@@ -815,17 +815,17 @@ func (sp *SessionPipeline) Run(
 			poolCfg.Shared = false // dedicated instance per slot
 			poolCfg.BasePort = 8090
 			poolCfg.LlamaCpp = &visionremote.LlamaCppConfig{
-				Host:       sp.config.VisionHost,
-				User:       sp.config.VisionUser,
-				RepoDir:    "~/llama.cpp",
-				ModelPath:  sp.config.LlamaCppModelPath,
-				MMProjPath: sp.config.LlamaCppMMProjPath,
-				BasePort:   8090,
-				GPULayers:  -1,
+				Host:        sp.config.VisionHost,
+				User:        sp.config.VisionUser,
+				RepoDir:     "~/llama.cpp",
+				ModelPath:   sp.config.LlamaCppModelPath,
+				MMProjPath:  sp.config.LlamaCppMMProjPath,
+				BasePort:    8090,
+				GPULayers:   -1,
 				ContextSize: 8192,
 			}
 			fmt.Printf(
-				"[pipeline] Using llama.cpp backend "+
+				"[pipeline] Using llama.cpp backend " +
 					"(dedicated instances)\n",
 			)
 		}
@@ -1128,7 +1128,7 @@ func (sp *SessionPipeline) Run(
 	// Android uses ADB screenrecord, Web/Desktop use ffmpeg X11 capture.
 	recorders := make(map[string]*video.ScrcpyRecorder)
 	ffmpegRecorders := make(map[string]*video.FFmpegRecorder)
-	
+
 	for _, platform := range sp.config.Platforms {
 		videoPath := filepath.Join(
 			sp.config.OutputDir, "videos",
@@ -1143,7 +1143,7 @@ func (sp *SessionPipeline) Run(
 			)
 			continue
 		}
-		
+
 		switch platform {
 		case "android", "androidtv":
 			rec := video.NewScrcpyRecorder(
@@ -1166,7 +1166,7 @@ func (sp *SessionPipeline) Run(
 					platform, err,
 				)
 			}
-			
+
 		case "web", "desktop", "wizard":
 			// Use ffmpeg for X11 screen capture
 			rec := video.NewFFmpegRecorder(videoPath)
@@ -1523,13 +1523,13 @@ func (sp *SessionPipeline) Run(
 					platform+"-logcat.txt",
 				)
 				if mkErr := os.MkdirAll(
-						filepath.Dir(logcatPath), 0o755,
-					); mkErr != nil {
-						fmt.Printf(
-							"  [exec] mkdir logcat failed: %v\n",
-							mkErr,
-						)
-					}
+					filepath.Dir(logcatPath), 0o755,
+				); mkErr != nil {
+					fmt.Printf(
+						"  [exec] mkdir logcat failed: %v\n",
+						mkErr,
+					)
+				}
 				lcCtx, lcCancel :=
 					context.WithTimeout(
 						ctx, logcatTimeout,
@@ -1884,6 +1884,7 @@ func (sp *SessionPipeline) Run(
 				stepCtx, stepCancel := context.WithTimeout(
 					curiosityCtx, 90*time.Second,
 				)
+				defer stepCancel() // ensure cancel on every exit path
 
 				// Register step with process controller.
 				if sp.processController != nil {
@@ -2294,63 +2295,63 @@ func (sp *SessionPipeline) Run(
 				go func() {
 					defer func() { recDone <- struct{}{} }()
 
-				// ── TrainingCollector: record pair ───────
-				if sp.trainingCollector != nil &&
-					len(actions) > 0 {
-					tActions := make(
-						[]training.Action, len(actions),
-					)
-					for ai, a := range actions {
-						tActions[ai] = training.Action{
-							Type:   a.Type,
-							Value:  a.Value,
-							Reason: a.Reason,
+					// ── TrainingCollector: record pair ───────
+					if sp.trainingCollector != nil &&
+						len(actions) > 0 {
+						tActions := make(
+							[]training.Action, len(actions),
+						)
+						for ai, a := range actions {
+							tActions[ai] = training.Action{
+								Type:   a.Type,
+								Value:  a.Value,
+								Reason: a.Reason,
+							}
+						}
+						if tErr := sp.trainingCollector.Record(
+							screenshot,
+							tActions,
+							platform,
+							"curiosity",
+							platformProvider.Name(),
+							true,
+						); tErr != nil {
+							fmt.Printf(
+								"  [training %s #%d] "+
+									"record failed: %v\n",
+								platform, i+1, tErr,
+							)
 						}
 					}
-					if tErr := sp.trainingCollector.Record(
-						screenshot,
-						tActions,
-						platform,
-						"curiosity",
-						platformProvider.Name(),
-						true,
-					); tErr != nil {
-						fmt.Printf(
-							"  [training %s #%d] "+
-								"record failed: %v\n",
-							platform, i+1, tErr,
+
+					// ── ReplayBuffer: record sequence ───────
+					if sp.replayBuffer != nil &&
+						len(actions) > 0 {
+						screenHash := replay.ScreenHash(
+							screenshot,
+						)
+						recActions := make(
+							[]replay.RecordedAction,
+							len(actions),
+						)
+						for ai, a := range actions {
+							recActions[ai] = replay.RecordedAction{
+								Type:       a.Type,
+								Value:      a.Value,
+								ScreenHash: screenHash,
+							}
+						}
+						_ = sp.replayBuffer.Record(
+							replay.ActionSequence{
+								ID: fmt.Sprintf(
+									"%s-%s-%d",
+									platform, device, i+1,
+								),
+								Platform: platform,
+								Actions:  recActions,
+							},
 						)
 					}
-				}
-
-				// ── ReplayBuffer: record sequence ───────
-				if sp.replayBuffer != nil &&
-					len(actions) > 0 {
-					screenHash := replay.ScreenHash(
-						screenshot,
-					)
-					recActions := make(
-						[]replay.RecordedAction,
-						len(actions),
-					)
-					for ai, a := range actions {
-						recActions[ai] = replay.RecordedAction{
-							Type:       a.Type,
-							Value:      a.Value,
-							ScreenHash: screenHash,
-						}
-					}
-					_ = sp.replayBuffer.Record(
-						replay.ActionSequence{
-							ID: fmt.Sprintf(
-								"%s-%s-%d",
-								platform, device, i+1,
-							),
-							Platform: platform,
-							Actions:  recActions,
-						},
-					)
-				}
 
 				}() // end goroutine
 				// Wait up to 5s for recording, then proceed regardless
@@ -2517,7 +2518,7 @@ func (sp *SessionPipeline) Run(
 			)
 		}
 	}
-	
+
 	// Stop ffmpeg recorders for web/desktop platforms
 	for p, rec := range ffmpegRecorders {
 		if err := rec.Stop(); err != nil {
@@ -3049,8 +3050,8 @@ func (sp *SessionPipeline) validateAPIData(
 				)
 			} else {
 				var statsResp struct {
-					Total   int            `json:"total_entities"`
-					ByType  map[string]int `json:"by_type"`
+					Total  int            `json:"total_entities"`
+					ByType map[string]int `json:"by_type"`
 				}
 				if jErr := json.Unmarshal(
 					body, &statsResp,

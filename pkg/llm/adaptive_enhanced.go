@@ -15,12 +15,12 @@ import (
 // EnhancedAdaptiveProvider wraps providers with rate limiting,
 // circuit breakers, and prompt optimization
 type EnhancedAdaptiveProvider struct {
-	providers     []Provider
-	configs       []ProviderConfig
-	costTracker   *CostTracker
-	phase         string
-	learning      *learning.KnowledgeBase
-	platforms     []string
+	providers   []Provider
+	configs     []ProviderConfig
+	costTracker *CostTracker
+	phase       string
+	learning    *learning.KnowledgeBase
+	platforms   []string
 }
 
 // NewEnhancedAdaptiveProvider creates an enhanced adaptive provider

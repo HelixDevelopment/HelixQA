@@ -21,22 +21,22 @@ const (
 type Action string
 
 const (
-	ActionViewReport    Action = "view_report"
-	ActionStartSession  Action = "start_session"
-	ActionStopSession   Action = "stop_session"
-	ActionEditBank      Action = "edit_bank"
-	ActionManageUsers   Action = "manage_users"
+	ActionViewReport      Action = "view_report"
+	ActionStartSession    Action = "start_session"
+	ActionStopSession     Action = "stop_session"
+	ActionEditBank        Action = "edit_bank"
+	ActionManageUsers     Action = "manage_users"
 	ActionConfigureBudget Action = "configure_budget"
 )
 
 // defaultPolicy maps each action to the minimum role required.
 var defaultPolicy = map[Action]Role{
-	ActionViewReport:       RoleViewer,
-	ActionStartSession:     RoleRunner,
-	ActionStopSession:      RoleOperator,
-	ActionEditBank:         RoleOperator,
-	ActionManageUsers:      RoleAdmin,
-	ActionConfigureBudget:  RoleAdmin,
+	ActionViewReport:      RoleViewer,
+	ActionStartSession:    RoleRunner,
+	ActionStopSession:     RoleOperator,
+	ActionEditBank:        RoleOperator,
+	ActionManageUsers:     RoleAdmin,
+	ActionConfigureBudget: RoleAdmin,
 }
 
 var roleRank = map[Role]int{

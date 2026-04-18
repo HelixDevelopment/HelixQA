@@ -70,6 +70,7 @@ func Parse(raw []byte) (*Report, error) {
 //   - level A   -> any critical
 //   - level AA  -> any critical or serious
 //   - level AAA -> any critical, serious, or moderate
+//
 // Minor issues are logged but do not fail the assertion at any level.
 func (r *Report) Assert(level Level) error {
 	if r == nil {

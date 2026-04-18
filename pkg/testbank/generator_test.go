@@ -16,14 +16,14 @@ import (
 
 // mockTestGenerator is a test double for TestGenerator.
 type mockTestGenerator struct {
-	generateResult    []TestCase
-	edgeCaseResult    []TestCase
-	generateErr       error
-	edgeCaseErr       error
-	generateCalled    int
-	edgeCaseCalled    int
-	lastFeature       Feature
-	lastTestCase      TestCase
+	generateResult []TestCase
+	edgeCaseResult []TestCase
+	generateErr    error
+	edgeCaseErr    error
+	generateCalled int
+	edgeCaseCalled int
+	lastFeature    Feature
+	lastTestCase   TestCase
 }
 
 func (m *mockTestGenerator) GenerateTests(

@@ -349,10 +349,10 @@ func ParsePlannerJSON(raw string) (AgentStep, error) {
 	raw = strings.TrimSpace(raw)
 
 	var shape struct {
-		Evaluation string        `json:"evaluation"`
-		Memory     string        `json:"memory"`
-		NextGoal   string        `json:"next_goal"`
-		Done       bool          `json:"done"`
+		Evaluation string          `json:"evaluation"`
+		Memory     string          `json:"memory"`
+		NextGoal   string          `json:"next_goal"`
+		Done       bool            `json:"done"`
 		Actions    []rawActionJSON `json:"actions"`
 	}
 	if err := json.Unmarshal([]byte(raw), &shape); err != nil {

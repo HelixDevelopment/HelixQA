@@ -15,8 +15,8 @@ import (
 )
 
 const (
-	geminiDefaultModel   = "gemini-2.5-flash"
-	geminiHTTPTimeout    = 40 * time.Second
+	geminiDefaultModel = "gemini-2.5-flash"
+	geminiHTTPTimeout  = 40 * time.Second
 	// geminiGenerateURLFmt no longer includes the API key
 	// in the URL. The key is sent via the x-goog-api-key
 	// header to prevent leakage in error messages, logs,
@@ -46,8 +46,8 @@ type geminiContent struct {
 // geminiPart is a content block — either text or inline image
 // data.
 type geminiPart struct {
-	Text       string          `json:"text,omitempty"`
-	InlineData *geminiInline   `json:"inline_data,omitempty"`
+	Text       string        `json:"text,omitempty"`
+	InlineData *geminiInline `json:"inline_data,omitempty"`
 }
 
 // geminiInline holds base64-encoded image data for vision
@@ -59,8 +59,8 @@ type geminiInline struct {
 
 // geminiResponse is the JSON body returned by generateContent.
 type geminiResponse struct {
-	Candidates []geminiCandidate `json:"candidates"`
-	UsageMetadata *geminiUsage   `json:"usageMetadata,omitempty"`
+	Candidates    []geminiCandidate `json:"candidates"`
+	UsageMetadata *geminiUsage      `json:"usageMetadata,omitempty"`
 }
 
 // geminiCandidate is a single completion candidate.

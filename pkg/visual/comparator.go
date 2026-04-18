@@ -317,7 +317,7 @@ func (sc *ScreenshotComparator) CompareDisplays(
 	primary, secondary []byte,
 ) (*DisplayComparisonResult, error) {
 	result := &DisplayComparisonResult{
-		PrimaryState:  DisplayStateUnknown,
+		PrimaryState:   DisplayStateUnknown,
 		SecondaryState: DisplayStateUnknown,
 	}
 

@@ -28,11 +28,11 @@ type ExtendedHandle interface {
 
 // ConsoleMessage is one entry from the browser console.
 type ConsoleMessage struct {
-	Level   string    // debug | info | warn | error
-	Text    string
-	URL     string
-	Line    int
-	AtTime  time.Time
+	Level  string // debug | info | warn | error
+	Text   string
+	URL    string
+	Line   int
+	AtTime time.Time
 }
 
 // ErrActionUnsupported is returned when the engine's current driver

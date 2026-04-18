@@ -16,19 +16,19 @@ type Capabilities struct {
 	UDID        string
 
 	// iOS-specific
-	BundleID string
-	XcodeOrgID      string
-	XcodeSigningID  string
+	BundleID          string
+	XcodeOrgID        string
+	XcodeSigningID    string
 	WebDriverAgentURL string
 
 	// Shared
-	AutomationName string
-	AppPath        string
-	NoReset        bool
-	FullReset      bool
+	AutomationName       string
+	AppPath              string
+	NoReset              bool
+	FullReset            bool
 	NewCommandTimeoutSec int
-	Locale         string
-	Orientation    string
+	Locale               string
+	Orientation          string
 
 	// Free-form extras pass through verbatim; use sparingly.
 	Extra map[string]any
@@ -105,8 +105,8 @@ func (c Capabilities) Validate() error {
 // Unknown extras pass through verbatim.
 func (c Capabilities) toMap() map[string]any {
 	m := map[string]any{
-		"platformName":          platformName(c.Platform),
-		"appium:deviceName":     c.DeviceName,
+		"platformName":      platformName(c.Platform),
+		"appium:deviceName": c.DeviceName,
 	}
 	if c.OSVersion != "" {
 		m["appium:platformVersion"] = c.OSVersion

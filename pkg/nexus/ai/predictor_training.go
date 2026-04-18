@@ -12,7 +12,7 @@ import (
 
 // TrainFromCSV trains the Predictor from a CSV stream. Expected columns:
 //
-//   test_id,platform,pass,duration_s,retries,hour_of_day,runner_rss_bytes
+//	test_id,platform,pass,duration_s,retries,hour_of_day,runner_rss_bytes
 //
 // Rows with malformed numeric fields are skipped. Returns the
 // observed sample count and a map tracking skipped rows per reason so

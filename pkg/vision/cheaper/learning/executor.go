@@ -132,12 +132,12 @@ func (l *LearningVisionExecutor) Execute(
 			top := results[0]
 			if top.SimilarityScore > l.config.SimilarityThreshold {
 				return &cheaper.VisionResult{
-					Text:      top.Response,
-					Model:     top.ProviderModel,
-					Provider:  "vector-memory",
-					Duration:  top.Latency,
-					Timestamp: top.Timestamp,
-					CacheHit:  true,
+					Text:       top.Response,
+					Model:      top.ProviderModel,
+					Provider:   "vector-memory",
+					Duration:   top.Latency,
+					Timestamp:  top.Timestamp,
+					CacheHit:   true,
 					Confidence: top.ConfidenceScore,
 				}, nil
 			}

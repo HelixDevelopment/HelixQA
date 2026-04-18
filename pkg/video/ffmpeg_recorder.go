@@ -72,7 +72,7 @@ func (r *FFmpegRecorder) Start(ctx context.Context) error {
 	}
 
 	r.cmd = exec.CommandContext(ctx, "ffmpeg", args...)
-	
+
 	// Redirect output to avoid cluttering console
 	r.cmd.Stdout = os.Stdout
 	r.cmd.Stderr = os.Stderr
@@ -103,13 +103,13 @@ func (r *FFmpegRecorder) Stop() error {
 			// Fallback to kill
 			_ = r.cmd.Process.Kill()
 		}
-		
+
 		// Wait for ffmpeg to finish
 		done := make(chan error, 1)
 		go func() {
 			done <- r.cmd.Wait()
 		}()
-		
+
 		select {
 		case <-done:
 			// Process finished
@@ -127,7 +127,7 @@ func (r *FFmpegRecorder) Stop() error {
 		if info.Size() < 10*1024 { // < 10KB is suspicious
 			fmt.Printf("  [video] WARNING: recording is only %d bytes - may be incomplete\n", info.Size())
 		} else {
-			fmt.Printf("  [video] recording saved: %s (%d KB, %v)\n", 
+			fmt.Printf("  [video] recording saved: %s (%d KB, %v)\n",
 				r.outputPath, info.Size()/1024, time.Since(r.startedAt).Round(time.Second))
 		}
 	}

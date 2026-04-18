@@ -24,8 +24,8 @@ type adapterTestAgent struct {
 	failErr   error
 }
 
-func (a *adapterTestAgent) ID() string   { return "adapter-test" }
-func (a *adapterTestAgent) Name() string { return "test" }
+func (a *adapterTestAgent) ID() string                    { return "adapter-test" }
+func (a *adapterTestAgent) Name() string                  { return "test" }
 func (a *adapterTestAgent) Start(_ context.Context) error { return nil }
 func (a *adapterTestAgent) Stop(_ context.Context) error  { return nil }
 func (a *adapterTestAgent) IsRunning() bool               { return true }

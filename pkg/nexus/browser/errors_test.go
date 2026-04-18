@@ -15,9 +15,9 @@ func TestToAIFriendlyError_Nil(t *testing.T) {
 
 func TestToAIFriendlyError_KnownCategories(t *testing.T) {
 	cases := []struct {
-		name    string
-		err     error
-		needle  string
+		name   string
+		err    error
+		needle string
 	}{
 		{"deadline", context.DeadlineExceeded, "took too long"},
 		{"cancel", context.Canceled, "cancelled"},

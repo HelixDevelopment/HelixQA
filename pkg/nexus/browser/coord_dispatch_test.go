@@ -18,10 +18,10 @@ import (
 // coordHandle is a SessionHandle that also implements CoordCapable.
 // Records every call so tests assert on the exact arguments.
 type coordHandle struct {
-	mu       sync.Mutex
-	clicks   []clickArgs
-	types    []typeArgs
-	scrolls  []scrollArgs
+	mu      sync.Mutex
+	clicks  []clickArgs
+	types   []typeArgs
+	scrolls []scrollArgs
 }
 
 type clickArgs struct{ X, Y int }
@@ -31,9 +31,11 @@ type typeArgs struct {
 }
 type scrollArgs struct{ X, Y, DX, DY int }
 
-func (c *coordHandle) Close() error                                               { return nil }
-func (c *coordHandle) Navigate(_ context.Context, _ string) error                 { return nil }
-func (c *coordHandle) Snapshot(_ context.Context) (*nexus.Snapshot, error)        { return &nexus.Snapshot{}, nil }
+func (c *coordHandle) Close() error                               { return nil }
+func (c *coordHandle) Navigate(_ context.Context, _ string) error { return nil }
+func (c *coordHandle) Snapshot(_ context.Context) (*nexus.Snapshot, error) {
+	return &nexus.Snapshot{}, nil
+}
 func (c *coordHandle) Click(_ context.Context, _ nexus.ElementRef) error          { return nil }
 func (c *coordHandle) Type(_ context.Context, _ nexus.ElementRef, _ string) error { return nil }
 func (c *coordHandle) Screenshot(_ context.Context) ([]byte, error)               { return []byte{}, nil }
@@ -134,9 +136,11 @@ type legacyHandle struct{ *coordHandle }
 // methods to simulate a pre-Phase-6 driver.
 type legacyHandle2 struct{}
 
-func (legacyHandle2) Close() error                                               { return nil }
-func (legacyHandle2) Navigate(_ context.Context, _ string) error                 { return nil }
-func (legacyHandle2) Snapshot(_ context.Context) (*nexus.Snapshot, error)        { return &nexus.Snapshot{}, nil }
+func (legacyHandle2) Close() error                               { return nil }
+func (legacyHandle2) Navigate(_ context.Context, _ string) error { return nil }
+func (legacyHandle2) Snapshot(_ context.Context) (*nexus.Snapshot, error) {
+	return &nexus.Snapshot{}, nil
+}
 func (legacyHandle2) Click(_ context.Context, _ nexus.ElementRef) error          { return nil }
 func (legacyHandle2) Type(_ context.Context, _ nexus.ElementRef, _ string) error { return nil }
 func (legacyHandle2) Screenshot(_ context.Context) ([]byte, error)               { return []byte{}, nil }

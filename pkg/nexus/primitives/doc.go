@@ -8,10 +8,10 @@
 // inside otherwise scripted Playwright / mobile / desktop flows.
 // Each primitive maps to exactly one narrow LLM capability:
 //
-//   Act     — natural language → single nexus.Action
-//   Extract — schema + prompt   → typed struct value
-//   Observe — descriptor        → nexus.ElementRef(s)
-//   Agent   — scoped goal       → full agent state-machine run
+//	Act     — natural language → single nexus.Action
+//	Extract — schema + prompt   → typed struct value
+//	Observe — descriptor        → nexus.ElementRef(s)
+//	Agent   — scoped goal       → full agent state-machine run
 //
 // Ported as a pattern from tools/opensource/stagehand/lib/v3/
 // (act.ts, extract.ts, observe.ts, agent.ts). HelixQA re-implements

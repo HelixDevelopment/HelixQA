@@ -27,9 +27,9 @@ func ExampleNewWebRTCServer() {
 		EnableVideoTrack:  true,
 		EnableAudioTrack:  false,
 		MaxClientsPerRoom: 10,
-		ConnectionTimeout:   30 * time.Second,
-		EnableSTUN:          true,
-		EnableTURN:          true,
+		ConnectionTimeout: 30 * time.Second,
+		EnableSTUN:        true,
+		EnableTURN:        true,
 	}
 
 	// Create server
@@ -49,7 +49,7 @@ func ExampleNewWebRTCServer() {
 	// Graceful shutdown example
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	
+
 	server.Shutdown(ctx)
 }
 
@@ -62,7 +62,7 @@ func ExampleWebRTCServer_HandleWebSocket() {
 		// Add CORS headers for browser access
 		w.Header().Set("Access-Control-Allow-Origin", "*")
 		w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
-		
+
 		server.HandleWebSocket(w, r)
 	})
 
@@ -138,9 +138,9 @@ func ExampleWebRTCConfig_custom() {
 		EnableVideoTrack:  true,
 		EnableAudioTrack:  false,
 		MaxClientsPerRoom: 50,
-		ConnectionTimeout:   60 * time.Second,
-		EnableSTUN:          true,
-		EnableTURN:          false,
+		ConnectionTimeout: 60 * time.Second,
+		EnableSTUN:        true,
+		EnableTURN:        false,
 	}
 
 	server := NewWebRTCServer(config)

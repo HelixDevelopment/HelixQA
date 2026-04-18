@@ -4,13 +4,13 @@ import "testing"
 
 func TestDecodeHTMLEntities_NamedEntities(t *testing.T) {
 	cases := map[string]string{
-		"Fish &amp; Chips":   "Fish & Chips",
-		"&lt;tag&gt;":        "<tag>",
-		"&quot;hello&quot;":  `"hello"`,
-		"it&apos;s":          "it's",
-		"it&#39;s":           "it's",
-		"a&nbsp;b":           "a b",
-		"no entities":        "no entities",
+		"Fish &amp; Chips":  "Fish & Chips",
+		"&lt;tag&gt;":       "<tag>",
+		"&quot;hello&quot;": `"hello"`,
+		"it&apos;s":         "it's",
+		"it&#39;s":          "it's",
+		"a&nbsp;b":          "a b",
+		"no entities":       "no entities",
 	}
 	for in, want := range cases {
 		if got := decodeHTMLEntities(in); got != want {

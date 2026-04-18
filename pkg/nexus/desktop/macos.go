@@ -18,8 +18,8 @@ import (
 // run time and its presence is checked via CommandRunner. Tests
 // override CommandRunner to capture the script rather than execute it.
 type MacOSEngine struct {
-	bundleID       string
-	commandRunner  func(ctx context.Context, name string, args ...string) ([]byte, error)
+	bundleID        string
+	commandRunner   func(ctx context.Context, name string, args ...string) ([]byte, error)
 	webdriverEngine *WindowsEngine // reuse the W3C WebDriver HTTP client shape for WDA calls
 }
 

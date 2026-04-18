@@ -72,7 +72,7 @@ func (f *DefaultExecutorFactory) Create(
 	case "android", "androidtv":
 		if f.config.AndroidDevice == "" {
 			return nil, fmt.Errorf(
-				"android device ID is required; "+
+				"android device ID is required; " +
 					"set --device or ANDROID_DEVICE",
 			)
 		}
@@ -83,7 +83,7 @@ func (f *DefaultExecutorFactory) Create(
 	case "web":
 		if f.config.BrowserURL == "" {
 			return nil, fmt.Errorf(
-				"browser URL is required; "+
+				"browser URL is required; " +
 					"set --browser-url or WEB_URL",
 			)
 		}

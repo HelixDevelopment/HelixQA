@@ -346,10 +346,10 @@ func (sc *SessionCoordinator) runDocDriven(
 			defer mu.Unlock()
 
 			pr := &PlatformResult{
-				Platform:         p,
-				IssuesFound:      w.IssueDetector().IssueCount(),
+				Platform:          p,
+				IssuesFound:       w.IssueDetector().IssueCount(),
 				ScreensDiscovered: len(w.NavGraph().Screens()),
-				Coverage:         w.NavGraph().Coverage(),
+				Coverage:          w.NavGraph().Coverage(),
 			}
 
 			for _, sr := range stepResults {
@@ -460,8 +460,8 @@ func (n *noopExecutor) Swipe(_ context.Context, _, _, _, _ int) error {
 	return nil
 }
 func (n *noopExecutor) KeyPress(_ context.Context, _ string) error { return nil }
-func (n *noopExecutor) Back(_ context.Context) error              { return nil }
-func (n *noopExecutor) Home(_ context.Context) error              { return nil }
+func (n *noopExecutor) Back(_ context.Context) error               { return nil }
+func (n *noopExecutor) Home(_ context.Context) error               { return nil }
 func (n *noopExecutor) Screenshot(_ context.Context) ([]byte, error) {
 	return []byte("mock-screenshot"), nil
 }

@@ -143,7 +143,7 @@ func TestPlatformFeatureDetector_DetectAndroidTVChannels_WithChannelName(t *test
 	androidTVDir := filepath.Join(tempDir, "catalogizer-androidtv", "src")
 	os.MkdirAll(androidTVDir, 0755)
 
-	// Create file with channel name - regex looks for COLUMN_DISPLAY_NAME.*"value" 
+	// Create file with channel name - regex looks for COLUMN_DISPLAY_NAME.*"value"
 	// or DEFAULT_CHANNEL_DISPLAY_NAME.*"value"
 	testFile := filepath.Join(androidTVDir, "ChannelRepository.kt")
 	content := `package test

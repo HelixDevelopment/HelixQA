@@ -27,7 +27,7 @@ type consensusMock struct {
 	visionDelay    time.Duration
 }
 
-func (m *consensusMock) Name() string        { return m.name }
+func (m *consensusMock) Name() string         { return m.name }
 func (m *consensusMock) SupportsVision() bool { return m.supportsVision }
 
 func (m *consensusMock) Chat(

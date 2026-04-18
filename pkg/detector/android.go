@@ -36,7 +36,7 @@ func (d *Detector) checkAndroid(
 		)
 		return result, nil
 	}
-	
+
 	// If app is not in foreground, this is a critical failure
 	// Tests cannot pass if the app isn't even running
 	if !inForeground {

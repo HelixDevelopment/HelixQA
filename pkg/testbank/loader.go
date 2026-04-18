@@ -16,12 +16,12 @@ import (
 // jsonBankFile mirrors BankFile but accepts "challenges" as an
 // alternate key for test_cases (used by comprehensive JSON banks).
 type jsonBankFile struct {
-	Version    string            `json:"version"`
-	Name       string            `json:"name"`
-	Description string           `json:"description"`
-	TestCases  []TestCase        `json:"test_cases"`
-	Challenges []TestCase        `json:"challenges"`
-	Metadata   map[string]string `json:"metadata,omitempty"`
+	Version     string            `json:"version"`
+	Name        string            `json:"name"`
+	Description string            `json:"description"`
+	TestCases   []TestCase        `json:"test_cases"`
+	Challenges  []TestCase        `json:"challenges"`
+	Metadata    map[string]string `json:"metadata,omitempty"`
 }
 
 // LoadFile loads a test bank file (YAML or JSON) and returns the

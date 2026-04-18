@@ -81,32 +81,32 @@ func (d *PlatformFeatureDetector) DetectAndroidTVChannels() *PlatformFeature {
 	var hasDeepLinkActivity bool
 	var uriScheme string
 	var defaultChannelName string
-	
+
 	// Regex patterns for detecting Channels features
 	tvProviderRegex := regexp.MustCompile(`androidx\.tvprovider\.media\.tv\.TvContractCompat`)
 	watchNextRegex := regexp.MustCompile(`WatchNextPrograms|WatchNextManager`)
 	deepLinkRegex := regexp.MustCompile(`ChannelDeepLinkActivity|Intent\.ACTION_VIEW.*tvprovider`)
 	uriSchemeRegex := regexp.MustCompile(`"([a-z]+)://[^"]*"`)
 	channelNameRegex := regexp.MustCompile(`COLUMN_DISPLAY_NAME[^"]*"([^"]+)"|DEFAULT_CHANNEL_DISPLAY_NAME[^"]*"([^"]+)"`)
-	
+
 	err := filepath.WalkDir(androidTVPath, func(path string, entry fs.DirEntry, walkErr error) error {
 		if walkErr != nil || entry.IsDir() {
 			return walkErr
 		}
-		
+
 		// Only scan Kotlin files
 		if !strings.HasSuffix(strings.ToLower(entry.Name()), ".kt") {
 			return nil
 		}
-		
+
 		content, err := os.ReadFile(path)
 		if err != nil {
 			return nil
 		}
-		
+
 		contentStr := string(content)
 		foundFeature := false
-		
+
 		if tvProviderRegex.MatchString(contentStr) {
 			hasTvProvider = true
 			foundFeature = true
@@ -119,7 +119,7 @@ func (d *PlatformFeatureDetector) DetectAndroidTVChannels() *PlatformFeature {
 			hasDeepLinkActivity = true
 			foundFeature = true
 		}
-		
+
 		// Extract URI scheme
 		if uriScheme == "" {
 			if matches := uriSchemeRegex.FindStringSubmatch(contentStr); len(matches) > 1 {
@@ -129,7 +129,7 @@ func (d *PlatformFeatureDetector) DetectAndroidTVChannels() *PlatformFeature {
 				}
 			}
 		}
-		
+
 		// Extract default channel name
 		if defaultChannelName == "" {
 			if matches := channelNameRegex.FindStringSubmatch(contentStr); len(matches) > 1 {
@@ -141,18 +141,18 @@ func (d *PlatformFeatureDetector) DetectAndroidTVChannels() *PlatformFeature {
 				}
 			}
 		}
-		
+
 		if foundFeature {
 			sourceFiles = append(sourceFiles, path)
 		}
-		
+
 		return nil
 	})
-	
+
 	if err != nil || !hasTvProvider {
 		return nil
 	}
-	
+
 	// Default values if not detected
 	if uriScheme == "" {
 		uriScheme = "app"
@@ -160,15 +160,15 @@ func (d *PlatformFeatureDetector) DetectAndroidTVChannels() *PlatformFeature {
 	if defaultChannelName == "" {
 		defaultChannelName = "Recommended"
 	}
-	
+
 	metadata := map[string]string{
-		"uri_scheme":          uriScheme,
-		"default_channel":     defaultChannelName,
-		"has_watch_next":      boolToString(hasWatchNext),
-		"has_deep_linking":    boolToString(hasDeepLinkActivity),
-		"tvprovider_api":      "androidx.tvprovider.media.tv",
+		"uri_scheme":       uriScheme,
+		"default_channel":  defaultChannelName,
+		"has_watch_next":   boolToString(hasWatchNext),
+		"has_deep_linking": boolToString(hasDeepLinkActivity),
+		"tvprovider_api":   "androidx.tvprovider.media.tv",
 	}
-	
+
 	return &PlatformFeature{
 		Name:        "androidtv_channels",
 		Platform:    "androidtv",
@@ -213,11 +213,11 @@ func (d *PlatformFeatureDetector) findAndroidTVDir() string {
 // DetectAllPlatformFeatures scans the codebase for all supported platform features
 func (d *PlatformFeatureDetector) DetectAllPlatformFeatures() []PlatformFeature {
 	var features []PlatformFeature
-	
+
 	if f := d.DetectAndroidTVChannels(); f != nil {
 		features = append(features, *f)
 	}
-	
+
 	return features
 }
 

@@ -18,11 +18,11 @@ type stubAgent struct {
 	attach   []agent.Attachment
 }
 
-func (s *stubAgent) ID() string                 { return "stub" }
-func (s *stubAgent) Name() string               { return s.name }
-func (s *stubAgent) Start(_ context.Context) error  { return nil }
-func (s *stubAgent) Stop(_ context.Context) error   { return nil }
-func (s *stubAgent) IsRunning() bool            { return true }
+func (s *stubAgent) ID() string                    { return "stub" }
+func (s *stubAgent) Name() string                  { return s.name }
+func (s *stubAgent) Start(_ context.Context) error { return nil }
+func (s *stubAgent) Stop(_ context.Context) error  { return nil }
+func (s *stubAgent) IsRunning() bool               { return true }
 func (s *stubAgent) Send(_ context.Context, prompt string) (agent.Response, error) {
 	s.sendArgs = prompt
 	return s.resp, s.err

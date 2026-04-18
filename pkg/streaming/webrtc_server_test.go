@@ -226,7 +226,7 @@ func TestWebRTCServer_GetRoomStats(t *testing.T) {
 	// Create a room
 	room := server.getOrCreateRoom("test-room")
 	room.AddClient(&Client{ID: "client-1"})
-	room.AddClient(&Client{ID: "client-2" })
+	room.AddClient(&Client{ID: "client-2"})
 
 	stats := server.GetRoomStats("test-room")
 	require.NotNil(t, stats)
@@ -304,7 +304,7 @@ func TestSignalingMessageTypes(t *testing.T) {
 
 func TestPeerConnectionConfiguration(t *testing.T) {
 	config := DefaultWebRTCConfig()
-	
+
 	// Verify STUN server configuration
 	require.NotEmpty(t, config.ICEServers)
 	assert.Contains(t, config.ICEServers[0].URLs, "stun:stun.l.google.com:19302")

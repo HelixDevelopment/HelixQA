@@ -13,16 +13,16 @@ import (
 // hold login credentials. These are extracted from .env files
 // and injected into navigation prompts so the LLM can log in.
 var credentialKeys = map[string]bool{
-	"ADMIN_USERNAME":  true,
-	"ADMIN_PASSWORD":  true,
-	"ADMIN_USER":      true,
-	"ADMIN_PASS":      true,
-	"DEFAULT_USER":    true,
+	"ADMIN_USERNAME":   true,
+	"ADMIN_PASSWORD":   true,
+	"ADMIN_USER":       true,
+	"ADMIN_PASS":       true,
+	"DEFAULT_USER":     true,
 	"DEFAULT_PASSWORD": true,
-	"TEST_USERNAME":   true,
-	"TEST_PASSWORD":   true,
-	"USERNAME":        true,
-	"PASSWORD":        true,
+	"TEST_USERNAME":    true,
+	"TEST_PASSWORD":    true,
+	"USERNAME":         true,
+	"PASSWORD":         true,
 }
 
 // skipDirs contains directory names that should never be walked when

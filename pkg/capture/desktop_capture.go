@@ -13,22 +13,22 @@ import (
 // DesktopCapture captures video from desktop (screen or window)
 type DesktopCapture struct {
 	captureImpl desktopCaptureImpl
-	
+
 	// Common properties
-	source      string  // "screen" or "window"
-	windowID    string  // For window capture
-	resolution  Resolution
-	fps         int
-	
+	source     string // "screen" or "window"
+	windowID   string // For window capture
+	resolution Resolution
+	fps        int
+
 	// Output
-	frameChan   chan *Frame
-	errorChan   chan error
-	
+	frameChan chan *Frame
+	errorChan chan error
+
 	// Control
-	ctx         context.Context
-	cancel      context.CancelFunc
-	mu          sync.RWMutex
-	running     bool
+	ctx     context.Context
+	cancel  context.CancelFunc
+	mu      sync.RWMutex
+	running bool
 }
 
 // desktopCaptureImpl is the platform-specific implementation interface
@@ -41,11 +41,11 @@ type desktopCaptureImpl interface {
 
 // DesktopCaptureConfig configuration for desktop capture
 type DesktopCaptureConfig struct {
-	Source     string     // "screen" or "window"
-	WindowID   string     // Window ID for window capture
+	Source     string // "screen" or "window"
+	WindowID   string // Window ID for window capture
 	Resolution Resolution
 	FPS        int
-	Display    string     // Display identifier (e.g., ":0", "DP-1")
+	Display    string // Display identifier (e.g., ":0", "DP-1")
 }
 
 // DefaultDesktopConfig returns default configuration
@@ -61,7 +61,7 @@ func DefaultDesktopConfig() DesktopCaptureConfig {
 // NewDesktopCapture creates a new desktop capture instance
 func NewDesktopCapture(config DesktopCaptureConfig) (*DesktopCapture, error) {
 	ctx, cancel := context.WithCancel(context.Background())
-	
+
 	dc := &DesktopCapture{
 		source:     config.Source,
 		windowID:   config.WindowID,
@@ -72,7 +72,7 @@ func NewDesktopCapture(config DesktopCaptureConfig) (*DesktopCapture, error) {
 		ctx:        ctx,
 		cancel:     cancel,
 	}
-	
+
 	// Create platform-specific implementation
 	var err error
 	switch runtime.GOOS {
@@ -85,11 +85,11 @@ func NewDesktopCapture(config DesktopCaptureConfig) (*DesktopCapture, error) {
 	default:
 		return nil, fmt.Errorf("unsupported platform: %s", runtime.GOOS)
 	}
-	
+
 	if err != nil {
 		return nil, err
 	}
-	
+
 	return dc, nil
 }
 
@@ -97,15 +97,15 @@ func NewDesktopCapture(config DesktopCaptureConfig) (*DesktopCapture, error) {
 func (dc *DesktopCapture) Start() error {
 	dc.mu.Lock()
 	defer dc.mu.Unlock()
-	
+
 	if dc.running {
 		return fmt.Errorf("capture already running")
 	}
-	
+
 	if err := dc.captureImpl.Start(); err != nil {
 		return err
 	}
-	
+
 	dc.running = true
 	return nil
 }
@@ -114,17 +114,17 @@ func (dc *DesktopCapture) Start() error {
 func (dc *DesktopCapture) Stop() error {
 	dc.mu.Lock()
 	defer dc.mu.Unlock()
-	
+
 	if !dc.running {
 		return nil
 	}
-	
+
 	dc.cancel()
-	
+
 	if err := dc.captureImpl.Stop(); err != nil {
 		return err
 	}
-	
+
 	dc.running = false
 	return nil
 }
@@ -172,13 +172,13 @@ func ListDisplays() ([]Display, error) {
 
 // Display represents a display/monitor
 type Display struct {
-	ID       string
-	Name     string
-	Width    int
-	Height   int
-	Primary  bool
-	X        int
-	Y        int
+	ID      string
+	Name    string
+	Width   int
+	Height  int
+	Primary bool
+	X       int
+	Y       int
 }
 
 // ListWindows lists available windows (platform-specific)
@@ -197,13 +197,13 @@ func ListWindows() ([]Window, error) {
 
 // Window represents a window
 type Window struct {
-	ID       string
-	Title    string
-	AppName  string
-	X        int
-	Y        int
-	Width    int
-	Height   int
+	ID      string
+	Title   string
+	AppName string
+	X       int
+	Y       int
+	Width   int
+	Height  int
 }
 
 // String returns string representation
@@ -217,15 +217,15 @@ func FindWindow(query string) (*Window, error) {
 	if err != nil {
 		return nil, err
 	}
-	
+
 	query = strings.ToLower(query)
 	for _, w := range windows {
 		if strings.Contains(strings.ToLower(w.Title), query) ||
-		   strings.Contains(strings.ToLower(w.AppName), query) {
+			strings.Contains(strings.ToLower(w.AppName), query) {
 			return &w, nil
 		}
 	}
-	
+
 	return nil, fmt.Errorf("window not found: %s", query)
 }
 

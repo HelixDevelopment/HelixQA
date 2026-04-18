@@ -185,7 +185,7 @@ func getEnvBool(key string, defaultValue bool) bool {
 	if val == "" {
 		return defaultValue
 	}
-	
+
 	val = strings.ToLower(strings.TrimSpace(val))
 	switch val {
 	case "true", "1", "yes", "on", "enabled":

@@ -18,19 +18,19 @@ import (
 type OllamaConfig struct {
 	// Ollama server endpoint
 	Endpoint string
-	
+
 	// Model to use (llava, llava:13b, llava:34b, etc.)
 	Model string
-	
+
 	// Timeout for requests
 	Timeout time.Duration
-	
+
 	// Temperature for generation (0-1)
 	Temperature float64
-	
+
 	// Maximum tokens to generate
 	MaxTokens int
-	
+
 	// System prompt
 	SystemPrompt string
 }
@@ -55,12 +55,12 @@ type OllamaClient struct {
 
 // OllamaRequest represents the API request
 type OllamaRequest struct {
-	Model    string    `json:"model"`
-	Prompt   string    `json:"prompt"`
-	Images   []string  `json:"images,omitempty"`
-	Stream   bool      `json:"stream"`
-	System   string    `json:"system,omitempty"`
-	Options  Options   `json:"options,omitempty"`
+	Model   string   `json:"model"`
+	Prompt  string   `json:"prompt"`
+	Images  []string `json:"images,omitempty"`
+	Stream  bool     `json:"stream"`
+	System  string   `json:"system,omitempty"`
+	Options Options  `json:"options,omitempty"`
 }
 
 // Options represents generation options
@@ -118,7 +118,7 @@ func NewOllamaClient(config *OllamaConfig) (*OllamaClient, error) {
 	if config == nil {
 		config = DefaultOllamaConfig()
 	}
-	
+
 	return &OllamaClient{
 		config: config,
 		client: &http.Client{
@@ -130,25 +130,25 @@ func NewOllamaClient(config *OllamaConfig) (*OllamaClient, error) {
 // AnalyzeImage analyzes an image and returns UI description
 func (o *OllamaClient) AnalyzeImage(img image.Image, prompt string) (*UIAnalysisResult, error) {
 	start := time.Now()
-	
+
 	if prompt == "" {
 		prompt = "Describe this UI screenshot. What elements do you see? What is the layout? What actions can be performed?"
 	}
-	
+
 	// Convert image to base64
 	var buf bytes.Buffer
 	if err := png.Encode(&buf, img); err != nil {
 		return nil, fmt.Errorf("failed to encode image: %w", err)
 	}
 	imgBase64 := base64.StdEncoding.EncodeToString(buf.Bytes())
-	
+
 	// Create request
 	reqBody := OllamaRequest{
-		Model:   o.config.Model,
-		Prompt:  prompt,
-		Images:  []string{imgBase64},
-		Stream:  false,
-		System:  o.config.SystemPrompt,
+		Model:  o.config.Model,
+		Prompt: prompt,
+		Images: []string{imgBase64},
+		Stream: false,
+		System: o.config.SystemPrompt,
 		Options: Options{
 			Temperature: o.config.Temperature,
 			NumPredict:  o.config.MaxTokens,
@@ -156,38 +156,38 @@ func (o *OllamaClient) AnalyzeImage(img image.Image, prompt string) (*UIAnalysis
 			TopP:        0.9,
 		},
 	}
-	
+
 	jsonData, err := json.Marshal(reqBody)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal request: %w", err)
 	}
-	
+
 	// Send request
 	req, err := http.NewRequest("POST", o.config.Endpoint+"/api/generate", bytes.NewBuffer(jsonData))
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
-	
+
 	req.Header.Set("Content-Type", "application/json")
-	
+
 	resp, err := o.client.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("failed to send request: %w", err)
 	}
 	defer resp.Body.Close()
-	
+
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("ollama returned status %d", resp.StatusCode)
 	}
-	
+
 	// Parse response
 	var result OllamaResponse
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
 		return nil, fmt.Errorf("failed to decode response: %w", err)
 	}
-	
+
 	latency := time.Since(start).Milliseconds()
-	
+
 	// Parse structured result
 	return o.parseAnalysis(result.Response, float64(latency)), nil
 }
@@ -197,12 +197,12 @@ func (o *OllamaClient) AnalyzeImageWithContext(ctx context.Context, img image.Im
 	done := make(chan struct{})
 	var result *UIAnalysisResult
 	var err error
-	
+
 	go func() {
 		result, err = o.AnalyzeImage(img, prompt)
 		close(done)
 	}()
-	
+
 	select {
 	case <-ctx.Done():
 		return nil, ctx.Err()
@@ -219,10 +219,10 @@ func (o *OllamaClient) parseAnalysis(response string, latency float64) *UIAnalys
 		LatencyMs:   latency,
 		Elements:    make([]UIElement, 0),
 	}
-	
+
 	// Try to extract structured elements from response
 	// This is a simplified parser - in production, use more sophisticated parsing
-	
+
 	return result
 }
 
@@ -231,14 +231,14 @@ func CheckOllamaAvailable(endpoint string) bool {
 	if endpoint == "" {
 		endpoint = DefaultOllamaConfig().Endpoint
 	}
-	
+
 	client := &http.Client{Timeout: 5 * time.Second}
 	resp, err := client.Get(endpoint + "/api/tags")
 	if err != nil {
 		return false
 	}
 	defer resp.Body.Close()
-	
+
 	return resp.StatusCode == http.StatusOK
 }
 
@@ -247,33 +247,33 @@ func GetAvailableModels(endpoint string) ([]string, error) {
 	if endpoint == "" {
 		endpoint = DefaultOllamaConfig().Endpoint
 	}
-	
+
 	client := &http.Client{Timeout: 10 * time.Second}
 	resp, err := client.Get(endpoint + "/api/tags")
 	if err != nil {
 		return nil, fmt.Errorf("failed to get models: %w", err)
 	}
 	defer resp.Body.Close()
-	
+
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("server returned status %d", resp.StatusCode)
 	}
-	
+
 	var result struct {
 		Models []struct {
 			Name string `json:"name"`
 		} `json:"models"`
 	}
-	
+
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
 		return nil, fmt.Errorf("failed to decode response: %w", err)
 	}
-	
+
 	var models []string
 	for _, m := range result.Models {
 		models = append(models, m.Name)
 	}
-	
+
 	return models, nil
 }
 
@@ -282,16 +282,16 @@ func PullModel(model, endpoint string) error {
 	if endpoint == "" {
 		endpoint = DefaultOllamaConfig().Endpoint
 	}
-	
+
 	reqBody := map[string]string{
 		"name": model,
 	}
-	
+
 	jsonData, err := json.Marshal(reqBody)
 	if err != nil {
 		return err
 	}
-	
+
 	resp, err := http.Post(
 		endpoint+"/api/pull",
 		"application/json",
@@ -301,11 +301,11 @@ func PullModel(model, endpoint string) error {
 		return fmt.Errorf("failed to pull model: %w", err)
 	}
 	defer resp.Body.Close()
-	
+
 	if resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("pull failed with status %d", resp.StatusCode)
 	}
-	
+
 	return nil
 }
 
@@ -321,10 +321,10 @@ func NewOllamaService() (*OllamaService, error) {
 	if err := cmd.Start(); err != nil {
 		return nil, fmt.Errorf("failed to start ollama: %w", err)
 	}
-	
+
 	// Wait for service to be ready
 	time.Sleep(2 * time.Second)
-	
+
 	return &OllamaService{
 		cmd:    cmd,
 		config: DefaultOllamaConfig(),
@@ -365,9 +365,9 @@ func NewVisionLLM(ollamaConfig *OllamaConfig, detectorConfig DetectorConfig) (*V
 	if err != nil {
 		return nil, err
 	}
-	
+
 	detector := NewElementDetector(detectorConfig)
-	
+
 	return &VisionLLM{
 		ollama:   ollama,
 		detector: detector,
@@ -377,28 +377,28 @@ func NewVisionLLM(ollamaConfig *OllamaConfig, detectorConfig DetectorConfig) (*V
 // Analyze performs comprehensive UI analysis
 func (v *VisionLLM) Analyze(img image.Image) (*UIAnalysisResult, error) {
 	start := time.Now()
-	
+
 	// First, do traditional CV detection
 	cvResult, err := v.detector.Detect(img)
 	if err != nil {
 		return nil, err
 	}
-	
+
 	// Then, do LLM analysis
 	llmResult, err := v.ollama.AnalyzeImage(img, "")
 	if err != nil {
 		// Return CV-only result if LLM fails
 		return v.cvOnlyResult(cvResult, time.Since(start).Milliseconds()), nil
 	}
-	
+
 	// Merge results
 	merged := v.mergeResults(cvResult, llmResult)
 	merged.LatencyMs = float64(time.Since(start).Milliseconds())
-	
+
 	// Update stats
 	v.stats.ImagesAnalyzed++
 	v.stats.TotalTimeMs += uint64(merged.LatencyMs)
-	
+
 	return merged, nil
 }
 
@@ -409,7 +409,7 @@ func (v *VisionLLM) cvOnlyResult(cvResult *FrameResult, latency int64) *UIAnalys
 		LatencyMs:   float64(latency),
 		Elements:    make([]UIElement, 0, len(cvResult.Elements)),
 	}
-	
+
 	for _, elem := range cvResult.Elements {
 		uiElem := UIElement{
 			Type:       string(elem.Type),
@@ -418,7 +418,7 @@ func (v *VisionLLM) cvOnlyResult(cvResult *FrameResult, latency int64) *UIAnalys
 		}
 		result.Elements = append(result.Elements, uiElem)
 	}
-	
+
 	return result
 }
 
@@ -426,13 +426,13 @@ func (v *VisionLLM) cvOnlyResult(cvResult *FrameResult, latency int64) *UIAnalys
 func (v *VisionLLM) mergeResults(cvResult *FrameResult, llmResult *UIAnalysisResult) *UIAnalysisResult {
 	// Start with LLM result
 	merged := *llmResult
-	
+
 	// Add CV elements not already detected
 	existingTypes := make(map[string]bool)
 	for _, e := range merged.Elements {
 		existingTypes[e.Type+"_"+e.Label] = true
 	}
-	
+
 	for _, elem := range cvResult.Elements {
 		key := string(elem.Type) + "_" + elem.Label
 		if !existingTypes[key] {
@@ -444,7 +444,7 @@ func (v *VisionLLM) mergeResults(cvResult *FrameResult, llmResult *UIAnalysisRes
 			merged.Elements = append(merged.Elements, uiElem)
 		}
 	}
-	
+
 	return &merged
 }
 

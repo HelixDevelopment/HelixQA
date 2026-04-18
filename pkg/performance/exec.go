@@ -34,10 +34,10 @@ func (r *execRunner) Run(
 	defer cancel()
 
 	cmd := exec.CommandContext(cmdCtx, name, args...)
-	
+
 	// Performance optimization: Set process group for faster cleanup on timeout
 	setProcessGroup(cmd)
-	
+
 	out, err := cmd.CombinedOutput()
 	if cmdCtx.Err() == context.DeadlineExceeded &&
 		ctx.Err() == nil {

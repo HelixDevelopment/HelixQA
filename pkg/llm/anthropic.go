@@ -45,8 +45,8 @@ type anthropicMsg struct {
 
 // anthropicContent is a single content block inside a message.
 type anthropicContent struct {
-	Type   string          `json:"type"`
-	Text   string          `json:"text,omitempty"`
+	Type   string           `json:"type"`
+	Text   string           `json:"text,omitempty"`
 	Source *anthropicSource `json:"source,omitempty"`
 }
 

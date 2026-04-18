@@ -15,9 +15,9 @@ import (
 // pkg/nexus/desktop, pkg/nexus/mobile ADB tap) translates these
 // into its own primitives.
 const (
-	KindCoordClick = "coord_click"
-	KindCoordType  = "coord_type"
-	KindCoordDrag  = "coord_drag"
+	KindCoordClick  = "coord_click"
+	KindCoordType   = "coord_type"
+	KindCoordDrag   = "coord_drag"
 	KindCoordScroll = "coord_scroll"
 )
 

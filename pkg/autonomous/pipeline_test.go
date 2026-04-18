@@ -50,8 +50,8 @@ func (s *stubLLM) Vision(
 	return &llm.Response{Content: "ok"}, nil
 }
 
-func (s *stubLLM) Name() string          { return "stub" }
-func (s *stubLLM) SupportsVision() bool   { return false }
+func (s *stubLLM) Name() string         { return "stub" }
+func (s *stubLLM) SupportsVision() bool { return false }
 
 func TestSessionPipeline_Run(t *testing.T) {
 	// Set up a temporary project directory with minimal

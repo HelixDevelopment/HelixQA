@@ -171,7 +171,7 @@ func isScreenshotSize(width, height int) bool {
 // ValidateImageDirectory validates all image files in a directory
 func ValidateImageDirectory(dirPath string) ([]*ValidationResult, error) {
 	validator := NewImageValidator()
-	
+
 	entries, err := os.ReadDir(dirPath)
 	if err != nil {
 		return nil, err
@@ -182,7 +182,7 @@ func ValidateImageDirectory(dirPath string) ([]*ValidationResult, error) {
 		if entry.IsDir() {
 			continue
 		}
-		
+
 		path := filepath.Join(dirPath, entry.Name())
 		if validator.Supports(path) {
 			result, err := validator.Validate(path)
@@ -224,8 +224,8 @@ func (v *ScreenshotValidator) Validate(path string) (*ValidationResult, error) {
 		height, _ := result.Metadata["height"].(int)
 
 		if width != v.expectedWidth || height != v.expectedHeight {
-			result.Warnings = append(result.Warnings, 
-				fmt.Sprintf("screenshot dimensions %dx%d don't match expected %dx%d", 
+			result.Warnings = append(result.Warnings,
+				fmt.Sprintf("screenshot dimensions %dx%d don't match expected %dx%d",
 					width, height, v.expectedWidth, v.expectedHeight))
 		}
 	}

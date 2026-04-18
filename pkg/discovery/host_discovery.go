@@ -19,25 +19,25 @@ import (
 
 // HostCapabilities describes what a host can do
 type HostCapabilities struct {
-	IP           string        `json:"ip"`
-	Hostname     string        `json:"hostname"`
-	CPUCount     int           `json:"cpu_count"`
-	TotalRAM     uint64        `json:"total_ram_mb"`
-	GPUAvailable bool          `json:"gpu_available"`
-	GPUModel     string        `json:"gpu_model,omitempty"`
-	GPUVRAM      uint64        `json:"gpu_vram_mb,omitempty"`
-	LatencyMs    float64       `json:"latency_ms"`
-	Containers   bool          `json:"containers_supported"`
-	HasOllama    bool          `json:"has_ollama"`
-	LastSeen     time.Time     `json:"last_seen"`
+	IP           string    `json:"ip"`
+	Hostname     string    `json:"hostname"`
+	CPUCount     int       `json:"cpu_count"`
+	TotalRAM     uint64    `json:"total_ram_mb"`
+	GPUAvailable bool      `json:"gpu_available"`
+	GPUModel     string    `json:"gpu_model,omitempty"`
+	GPUVRAM      uint64    `json:"gpu_vram_mb,omitempty"`
+	LatencyMs    float64   `json:"latency_ms"`
+	Containers   bool      `json:"containers_supported"`
+	HasOllama    bool      `json:"has_ollama"`
+	LastSeen     time.Time `json:"last_seen"`
 }
 
 // ResourceRequirements for workload placement
 type ResourceRequirements struct {
-	NeedsGPU  bool
-	MinRAM    uint64 // MB
-	MinCPUs   int
-	GPUVRAM   uint64 // MB, if NeedsGPU
+	NeedsGPU bool
+	MinRAM   uint64 // MB
+	MinCPUs  int
+	GPUVRAM  uint64 // MB, if NeedsGPU
 }
 
 // NetworkScanner performs network discovery

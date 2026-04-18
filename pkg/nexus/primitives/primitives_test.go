@@ -254,12 +254,12 @@ func TestEngine_Agent_RunsToCompletion(t *testing.T) {
 
 func TestRefsFromMemory_StripsBracketsAndQuotes(t *testing.T) {
 	cases := map[string]int{
-		`e1, e2`:           2,
-		`[e1, e2, e3]`:     3,
-		`"e1", "e2"`:       2,
-		``:                 0,
-		`,`:                0,
-		`  e1  `:           1,
+		`e1, e2`:       2,
+		`[e1, e2, e3]`: 3,
+		`"e1", "e2"`:   2,
+		``:             0,
+		`,`:            0,
+		`  e1  `:       1,
 	}
 	for in, want := range cases {
 		got := refsFromMemory(in)
@@ -312,10 +312,10 @@ func FuzzRefsFromMemory(f *testing.F) {
 // ---------------------------------------------------------------------------
 
 type fakeAdapter struct {
-	mu            sync.Mutex
-	doCalls       int
-	lastAction    nexus.Action
-	refuseTarget  string
+	mu           sync.Mutex
+	doCalls      int
+	lastAction   nexus.Action
+	refuseTarget string
 }
 
 func (f *fakeAdapter) Open(_ context.Context, _ nexus.SessionOptions) (nexus.Session, error) {
@@ -344,7 +344,7 @@ func (f *fakeAdapter) Screenshot(_ context.Context, _ nexus.Session) ([]byte, er
 
 type fakeSession struct{}
 
-func (fakeSession) ID() string              { return "primitive-session" }
+func (fakeSession) ID() string               { return "primitive-session" }
 func (fakeSession) Platform() nexus.Platform { return nexus.PlatformWebChromedp }
 func (fakeSession) Close() error             { return nil }
 

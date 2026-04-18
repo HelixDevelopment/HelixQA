@@ -234,7 +234,7 @@ func (f *integFakeAdapter) Screenshot(_ context.Context, _ nexus.Session) ([]byt
 
 type integFakeSession struct{}
 
-func (integFakeSession) ID() string              { return "integ-session" }
+func (integFakeSession) ID() string               { return "integ-session" }
 func (integFakeSession) Platform() nexus.Platform { return nexus.PlatformWebChromedp }
 func (integFakeSession) Close() error             { return nil }
 

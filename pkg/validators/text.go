@@ -90,7 +90,7 @@ func (v *TextValidator) validateLog(file *os.File, result *ValidationResult) {
 	for scanner.Scan() {
 		lineCount++
 		line := scanner.Text()
-		
+
 		// Check for error/warning patterns
 		lower := strings.ToLower(line)
 		if strings.Contains(lower, "error") || strings.Contains(lower, "fatal") || strings.Contains(lower, "panic") {
@@ -99,7 +99,7 @@ func (v *TextValidator) validateLog(file *os.File, result *ValidationResult) {
 		if strings.Contains(lower, "warning") || strings.Contains(lower, "warn") {
 			warningCount++
 		}
-		
+
 		// Limit scan for large files
 		if lineCount >= 10000 {
 			result.Warnings = append(result.Warnings, "log file truncated (only checked first 10000 lines)")
@@ -118,7 +118,7 @@ func (v *TextValidator) validateLog(file *os.File, result *ValidationResult) {
 
 func (v *TextValidator) validateCSV(file *os.File, result *ValidationResult) {
 	reader := csv.NewReader(file)
-	
+
 	// Read header
 	header, err := reader.Read()
 	if err != nil {
@@ -174,7 +174,7 @@ func (v *TextValidator) validateMarkdown(file *os.File, result *ValidationResult
 	}
 
 	content := string(data)
-	
+
 	// Count markdown elements
 	headingCount := strings.Count(content, "# ")
 	linkCount := strings.Count(content, "](")
@@ -182,7 +182,7 @@ func (v *TextValidator) validateMarkdown(file *os.File, result *ValidationResult
 
 	result.Metadata["heading_count"] = headingCount
 	result.Metadata["link_count"] = linkCount
-	result.Metadata["code_block_count"] = codeBlockCount/2 // Divide by 2 for opening/closing
+	result.Metadata["code_block_count"] = codeBlockCount / 2 // Divide by 2 for opening/closing
 	result.Metadata["char_count"] = len(content)
 	result.Metadata["word_count"] = len(strings.Fields(content))
 }

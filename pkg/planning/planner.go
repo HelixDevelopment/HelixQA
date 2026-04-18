@@ -113,21 +113,21 @@ func (g *TestPlanGenerator) shouldInjectAndroidTVChannelsTests(platforms []strin
 	if !HasAndroidTVChannelsSupport(platforms) {
 		return false
 	}
-	
+
 	// Check if channels feature is detected in codebase
 	for _, f := range kb.PlatformFeatures {
 		if f.Name == "androidtv_channels" && f.Platform == "androidtv" {
 			return true
 		}
 	}
-	
+
 	return false
 }
 
 // buildChannelFeatureSpec builds a ChannelFeatureSpec from detected features
 func (g *TestPlanGenerator) buildChannelFeatureSpec(kb *learning.KnowledgeBase) ChannelFeatureSpec {
 	spec := DefaultChannelFeatureSpec(kb.ProjectName, "", strings.ToLower(kb.ProjectName))
-	
+
 	// Override with detected metadata from codebase
 	for _, f := range kb.PlatformFeatures {
 		if f.Name == "androidtv_channels" {
@@ -145,7 +145,7 @@ func (g *TestPlanGenerator) buildChannelFeatureSpec(kb *learning.KnowledgeBase) 
 			}
 		}
 	}
-	
+
 	return spec
 }
 
@@ -267,7 +267,7 @@ func (g *TestPlanGenerator) parseTests(content string) []PlannedTest {
 	seen := make(map[string]bool)
 	unique := make([]PlannedTest, 0, len(tests))
 	duplicates := 0
-	
+
 	for _, t := range tests {
 		key := strings.ToLower(strings.TrimSpace(t.Name))
 		if key == "" {
@@ -280,7 +280,7 @@ func (g *TestPlanGenerator) parseTests(content string) []PlannedTest {
 		seen[key] = true
 		unique = append(unique, t)
 	}
-	
+
 	if duplicates > 0 {
 		fmt.Printf("  [planner] deduplicated %d duplicate test(s)\n", duplicates)
 	}

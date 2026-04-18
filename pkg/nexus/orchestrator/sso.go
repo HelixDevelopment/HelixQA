@@ -41,12 +41,12 @@ type OIDCProvider struct {
 
 // OIDCClaims carries the fields we need from an OIDC ID token.
 type OIDCClaims struct {
-	Subject  string
-	Email    string
-	Name     string
-	Groups   []string
-	Team     string
-	IssuedAt time.Time
+	Subject   string
+	Email     string
+	Name      string
+	Groups    []string
+	Team      string
+	IssuedAt  time.Time
 	ExpiresAt time.Time
 }
 
@@ -98,11 +98,11 @@ type SAMLProvider struct {
 
 // SAMLAttributes is the subset of SAML assertion attributes Nexus uses.
 type SAMLAttributes struct {
-	NameID    string
-	Email     string
-	Groups    []string
-	Team      string
-	NotAfter  time.Time
+	NameID   string
+	Email    string
+	Groups   []string
+	Team     string
+	NotAfter time.Time
 }
 
 // NewSAMLProvider returns a verifier bound to entityID. The verifier

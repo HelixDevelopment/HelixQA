@@ -71,14 +71,14 @@ func TestEncodeBase64(t *testing.T) {
 
 	// Basic validation - base64 should be longer than original
 	assert.Greater(t, len(encoded), len(data))
-	
+
 	// Should only contain base64 characters
 	for _, c := range encoded {
-		assert.True(t, 
+		assert.True(t,
 			(c >= 'A' && c <= 'Z') ||
-			(c >= 'a' && c <= 'z') ||
-			(c >= '0' && c <= '9') ||
-			c == '+' || c == '/' || c == '=')
+				(c >= 'a' && c <= 'z') ||
+				(c >= '0' && c <= '9') ||
+				c == '+' || c == '/' || c == '=')
 	}
 }
 
@@ -198,16 +198,16 @@ func TestPaddleOCRService_IsRunning(t *testing.T) {
 	service := &PaddleOCRService{
 		config: DefaultPaddleOCRConfig(),
 	}
-	
+
 	// Should be false if not started
 	assert.False(t, service.IsRunning())
 }
 
 func TestCompareOCREngines(t *testing.T) {
 	img := createTestImageForOCR(100, 50)
-	
+
 	results, err := CompareOCREngines(img)
-	
+
 	// May or may not have results depending on what's installed
 	assert.NoError(t, err)
 	assert.NotNil(t, results)
@@ -216,20 +216,20 @@ func TestCompareOCREngines(t *testing.T) {
 // Helper function
 func createTestImageForOCR(width, height int) image.Image {
 	img := image.NewRGBA(image.Rect(0, 0, width, height))
-	
+
 	// White background
 	for y := 0; y < height; y++ {
 		for x := 0; x < width; x++ {
 			img.Set(x, y, color.White)
 		}
 	}
-	
+
 	// Draw black bars to simulate text
 	for y := height / 3; y < 2*height/3; y++ {
 		for x := width / 4; x < 3*width/4; x++ {
 			img.Set(x, y, color.Black)
 		}
 	}
-	
+
 	return img
 }

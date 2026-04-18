@@ -19,10 +19,10 @@ import (
 // itself does not bake in an SDK dependency so the package stays
 // portable.
 type HTTPLLMClient struct {
-	Endpoint    string // e.g. https://llm-orchestrator.local/v1/chat/completions
-	APIKey      string // optional Bearer token
+	Endpoint     string // e.g. https://llm-orchestrator.local/v1/chat/completions
+	APIKey       string // optional Bearer token
 	DefaultModel string
-	HTTP        *http.Client
+	HTTP         *http.Client
 
 	// SSRFGuard runs on every Chat() call before any bytes leave the
 	// process. Zero value = private / loopback / link-local /
@@ -63,9 +63,9 @@ func (c *HTTPLLMClient) Chat(ctx context.Context, req ChatRequest) (ChatResponse
 		return ChatResponse{}, fmt.Errorf("http llm: %w", err)
 	}
 	body := map[string]any{
-		"model":     model,
-		"messages":  buildMessages(req),
-		"max_tokens": maxTokensOrDefault(req.MaxTokens),
+		"model":       model,
+		"messages":    buildMessages(req),
+		"max_tokens":  maxTokensOrDefault(req.MaxTokens),
 		"temperature": req.Temperature,
 	}
 	if req.JSONResponse {
@@ -141,7 +141,7 @@ func buildMessages(req ChatRequest) []map[string]any {
 		parts := []map[string]any{{"type": "text", "text": req.UserPrompt}}
 		for _, b64 := range req.ImageBase64 {
 			parts = append(parts, map[string]any{
-				"type": "image_url",
+				"type":      "image_url",
 				"image_url": map[string]string{"url": "data:image/png;base64," + b64},
 			})
 		}

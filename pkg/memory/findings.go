@@ -15,16 +15,16 @@ import (
 
 // Finding represents a single QA issue discovered during a session.
 type Finding struct {
-	ID            string
-	SessionID     string
-	Severity      string
-	Category      string
-	Title         string
-	Description   string
-	ReproSteps    string
-	EvidencePaths string
-	Platform      string
-	Screen        string
+	ID                 string
+	SessionID          string
+	Severity           string
+	Category           string
+	Title              string
+	Description        string
+	ReproSteps         string
+	EvidencePaths      string
+	Platform           string
+	Screen             string
 	Status             string
 	FoundDate          string
 	FixedDate          string
@@ -312,15 +312,15 @@ func nullableString(v string) sql.NullString {
 
 func scanFinding(r rowScanner) (*Finding, error) {
 	var (
-		f                 Finding
-		description       sql.NullString
-		reproSteps        sql.NullString
-		evidencePaths     sql.NullString
-		platform          sql.NullString
-		screen            sql.NullString
-		foundDate         sql.NullString
-		fixedDate         sql.NullString
-		verifiedDate      sql.NullString
+		f                  Finding
+		description        sql.NullString
+		reproSteps         sql.NullString
+		evidencePaths      sql.NullString
+		platform           sql.NullString
+		screen             sql.NullString
+		foundDate          sql.NullString
+		fixedDate          sql.NullString
+		verifiedDate       sql.NullString
 		acceptanceCriteria sql.NullString
 	)
 

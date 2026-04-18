@@ -236,8 +236,8 @@ type NexusMetrics struct {
 	A11yViolationsTotal *Counter
 	RbacDenialsTotal    *Counter
 
-	AiCostCents     *Counter
-	EvidenceBytes   *Gauge
+	AiCostCents   *Counter
+	EvidenceBytes *Gauge
 }
 
 // DefaultMetrics returns the canonical Nexus metric set registered

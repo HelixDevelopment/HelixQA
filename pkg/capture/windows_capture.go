@@ -19,9 +19,9 @@ import (
 // For pure Go, we use GStreamer with d3d11screencapturesrc or fallback to gdigrab
 
 type windowsCapture struct {
-	parent      *DesktopCapture
-	config      DesktopCaptureConfig
-	cmd         *exec.Cmd
+	parent *DesktopCapture
+	config DesktopCaptureConfig
+	cmd    *exec.Cmd
 }
 
 // newWindowsCapture creates a new Windows capture instance
@@ -38,7 +38,7 @@ func (wc *windowsCapture) Start() error {
 	if CommandExists("gst-launch-1.0") {
 		return wc.startGStreamerCapture()
 	}
-	
+
 	return fmt.Errorf("GStreamer required for Windows capture")
 }
 
@@ -47,30 +47,30 @@ func (wc *windowsCapture) startGStreamerCapture() error {
 	args := []string{
 		"-q",
 	}
-	
+
 	pipeline := wc.buildPipeline()
 	args = append(args, pipeline)
-	
+
 	wc.cmd = exec.CommandContext(wc.parent.ctx, "gst-launch-1.0", args...)
-	
+
 	stdout, err := wc.cmd.StdoutPipe()
 	if err != nil {
 		return fmt.Errorf("failed to create stdout pipe: %w", err)
 	}
-	
+
 	if err := wc.cmd.Start(); err != nil {
 		return fmt.Errorf("failed to start GStreamer: %w", err)
 	}
-	
+
 	go wc.readFrames(stdout)
-	
+
 	return nil
 }
 
 // buildPipeline builds GStreamer pipeline for Windows capture
 func (wc *windowsCapture) buildPipeline() string {
 	var source string
-	
+
 	// Try d3d11screencapturesrc (best for Windows 10+)
 	// Fallback to gdigrab
 	if wc.config.Source == "window" && wc.config.WindowID != "" {
@@ -80,7 +80,7 @@ func (wc *windowsCapture) buildPipeline() string {
 		// Screen capture
 		source = "d3d11screencapturesrc"
 	}
-	
+
 	pipeline := fmt.Sprintf(
 		"%s ! "+
 			"video/x-raw,framerate=%d/1 ! "+
@@ -95,7 +95,7 @@ func (wc *windowsCapture) buildPipeline() string {
 		wc.config.Resolution.Width,
 		wc.config.Resolution.Height,
 	)
-	
+
 	// If d3d11screencapturesrc fails, pipeline will error out
 	// We could try gdigrab as fallback
 	return pipeline
@@ -129,7 +129,7 @@ func (wc *windowsCapture) GetFrameChan() <-chan *Frame {
 // listWindowsDisplays lists available displays on Windows
 func listWindowsDisplays() ([]Display, error) {
 	var displays []Display
-	
+
 	// Use wmic to get display info
 	cmd := exec.Command("wmic", "path", "Win32_VideoController", "get", "Name,CurrentHorizontalResolution,CurrentVerticalResolution", "/format:csv")
 	output, err := cmd.Output()
@@ -144,55 +144,55 @@ func listWindowsDisplays() ([]Display, error) {
 		})
 		return displays, nil
 	}
-	
+
 	lines := strings.Split(string(output), "\n")
 	for i, line := range lines {
 		if i == 0 || strings.TrimSpace(line) == "" {
 			continue
 		}
-		
+
 		parts := strings.Split(line, ",")
 		if len(parts) >= 4 {
 			display := Display{
 				ID:   strconv.Itoa(i - 1),
 				Name: strings.TrimSpace(parts[3]),
 			}
-			
+
 			if len(parts) >= 5 {
 				display.Width, _ = strconv.Atoi(strings.TrimSpace(parts[4]))
 			}
 			if len(parts) >= 6 {
 				display.Height, _ = strconv.Atoi(strings.TrimSpace(parts[5]))
 			}
-			
+
 			if i == 1 {
 				display.Primary = true
 			}
-			
+
 			displays = append(displays, display)
 		}
 	}
-	
+
 	return displays, nil
 }
 
 // listWindowsWindows lists available windows on Windows
 func listWindowsWindows() ([]Window, error) {
 	var windows []Window
-	
+
 	// Use PowerShell to get window list
 	psScript := `
 		Get-Process | Where-Object {$_.MainWindowTitle -ne ""} | ForEach-Object {
 			"$($_.Id)|$($_.MainWindowTitle)|$($_.ProcessName)"
 		}
 	`
-	
+
 	cmd := exec.Command("powershell", "-Command", psScript)
 	output, err := cmd.Output()
 	if err != nil {
 		return nil, err
 	}
-	
+
 	lines := strings.Split(string(output), "\n")
 	for _, line := range lines {
 		parts := strings.Split(line, "|")
@@ -203,14 +203,14 @@ func listWindowsWindows() ([]Window, error) {
 				Title:   strings.TrimSpace(parts[1]),
 				AppName: strings.TrimSpace(parts[2]),
 			}
-			
+
 			// Get window geometry using WinAPI (would need CGO)
 			// For now, leave at 0,0
-			
+
 			windows = append(windows, window)
 		}
 	}
-	
+
 	return windows, nil
 }
 
@@ -227,12 +227,12 @@ func captureWindowsScreenshot(outputPath string) error {
 		$graphics.Dispose()
 		$bitmap.Dispose()
 	`, outputPath)
-	
+
 	cmd := exec.Command("powershell", "-Command", psScript)
 	if err := cmd.Run(); err == nil {
 		return nil
 	}
-	
+
 	// Fallback to GStreamer
 	pipeline := fmt.Sprintf(
 		"d3d11screencapturesrc ! videoconvert ! pngenc ! filesink location=%s",
@@ -248,7 +248,7 @@ func verifyWindowsSupport() error {
 	if !CommandExists("gst-launch-1.0") {
 		return fmt.Errorf("GStreamer not found. Install from: https://gstreamer.freedesktop.org/download/")
 	}
-	
+
 	return nil
 }
 
@@ -299,7 +299,6 @@ type DXGIFrame struct {
 func CaptureFrameDXGI() (*DXGIFrame, error) {
 	return nil, fmt.Errorf("DXGI capture requires CGO and Windows SDK")
 }
-
 
 // Stub functions for Linux and macOS (only compiled on Windows)
 

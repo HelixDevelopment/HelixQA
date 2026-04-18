@@ -19,9 +19,9 @@ import (
 //
 // Usage:
 //
-//   sp, _ := samlsp.New(samlsp.Options{ ... })
-//   verifier := orchestrator.SAMLVerifierFromCrewjam(&sp.ServiceProvider, "groups", "team", possibleRequestIDs)
-//   provider, _ := orchestrator.NewSAMLProvider(sp.ServiceProvider.EntityID, verifier)
+//	sp, _ := samlsp.New(samlsp.Options{ ... })
+//	verifier := orchestrator.SAMLVerifierFromCrewjam(&sp.ServiceProvider, "groups", "team", possibleRequestIDs)
+//	provider, _ := orchestrator.NewSAMLProvider(sp.ServiceProvider.EntityID, verifier)
 //
 // possibleRequestIDs is the list of AuthnRequest ids the caller stored
 // in the user's cookie / session so the SP can match InResponseTo.

@@ -12,14 +12,14 @@ import (
 
 // fakeLLM is a controllable LLMClient used by every ai test.
 type fakeLLM struct {
-	mu       sync.Mutex
-	reply    string
-	costUSD  float64
-	tokensIn int
+	mu        sync.Mutex
+	reply     string
+	costUSD   float64
+	tokensIn  int
 	tokensOut int
-	err      error
-	calls    int
-	lastReq  ChatRequest
+	err       error
+	calls     int
+	lastReq   ChatRequest
 }
 
 func (f *fakeLLM) Chat(_ context.Context, req ChatRequest) (ChatResponse, error) {

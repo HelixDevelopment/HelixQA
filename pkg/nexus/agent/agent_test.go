@@ -396,7 +396,7 @@ func (f *fakeAdapter) Screenshot(_ context.Context, _ nexus.Session) ([]byte, er
 
 type fakeSession struct{}
 
-func (fakeSession) ID() string              { return "fake-session" }
+func (fakeSession) ID() string               { return "fake-session" }
 func (fakeSession) Platform() nexus.Platform { return nexus.PlatformWebChromedp }
 func (fakeSession) Close() error             { return nil }
 

@@ -233,7 +233,7 @@ func TestEngine_ForeignSessionTypeRejected(t *testing.T) {
 
 type fakeSession struct{}
 
-func (fakeSession) ID() string              { return "fake" }
+func (fakeSession) ID() string               { return "fake" }
 func (fakeSession) Platform() nexus.Platform { return nexus.PlatformWebChromedp }
 func (fakeSession) Close() error             { return nil }
 

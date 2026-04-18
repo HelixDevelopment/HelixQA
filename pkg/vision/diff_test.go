@@ -293,11 +293,11 @@ func TestStats_CountsSameAndDiff(t *testing.T) {
 	white := makePNG(t, 50, 50, color.White)
 	black := makePNG(t, 50, 50, color.Black)
 
-	sd.IsSameScreen(white)  // first call, stores
-	sd.IsSameScreen(white)  // same
-	sd.IsSameScreen(white)  // same
-	sd.IsSameScreen(black)  // diff
-	sd.IsSameScreen(black)  // same (black vs black)
+	sd.IsSameScreen(white) // first call, stores
+	sd.IsSameScreen(white) // same
+	sd.IsSameScreen(white) // same
+	sd.IsSameScreen(black) // diff
+	sd.IsSameScreen(black) // same (black vs black)
 
 	same, diff := sd.Stats()
 	assert.Equal(t, 3, same)
@@ -380,10 +380,10 @@ func TestIsSameScreen_SequenceOfScreens(t *testing.T) {
 		t, 100, 100, color.RGBA{0, 0, 255, 255},
 	)
 
-	sd.IsSameScreen(red)    // stores red
-	assert.False(t, sd.IsSameScreen(green))  // red vs green: diff
-	assert.False(t, sd.IsSameScreen(blue))   // green vs blue: diff
-	assert.True(t, sd.IsSameScreen(blue))    // blue vs blue: same
+	sd.IsSameScreen(red)                    // stores red
+	assert.False(t, sd.IsSameScreen(green)) // red vs green: diff
+	assert.False(t, sd.IsSameScreen(blue))  // green vs blue: diff
+	assert.True(t, sd.IsSameScreen(blue))   // blue vs blue: same
 }
 
 // --- copyBytes tests ---

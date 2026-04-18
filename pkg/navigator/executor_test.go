@@ -208,4 +208,3 @@ func TestADBExecutor_Click_Error(t *testing.T) {
 	err := exec.Click(context.Background(), 100, 200)
 	assert.Error(t, err)
 }
-

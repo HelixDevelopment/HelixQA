@@ -10,11 +10,11 @@ import (
 // Adapters produce these from Appium's pageSource XML so the AI navigator
 // can reason over a uniform tree.
 type AccessibilityNode struct {
-	Ref         string              `json:"ref"`       // stable a1..aN reference
-	Class       string              `json:"class"`     // android.widget.Button, XCUIElementTypeButton, ...
-	Text        string              `json:"text"`      // visible text content
+	Ref         string              `json:"ref"`   // stable a1..aN reference
+	Class       string              `json:"class"` // android.widget.Button, XCUIElementTypeButton, ...
+	Text        string              `json:"text"`  // visible text content
 	ContentDesc string              `json:"content_desc"`
-	Label       string              `json:"label"`     // iOS accessibility label
+	Label       string              `json:"label"` // iOS accessibility label
 	Value       string              `json:"value"`
 	Bounds      string              `json:"bounds"`
 	Enabled     bool                `json:"enabled"`

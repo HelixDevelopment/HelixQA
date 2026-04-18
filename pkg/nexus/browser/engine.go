@@ -20,15 +20,15 @@ const (
 
 // Config configures a browser session.
 type Config struct {
-	Engine        EngineType
-	Headless      bool
-	UserDataDir   string
-	CDPPort       int
-	WindowWidth   int
-	WindowHeight  int
-	Timeout       time.Duration
-	AllowedHosts  []string // non-empty activates the allowlist
-	MaxBodyBytes  int64
+	Engine       EngineType
+	Headless     bool
+	UserDataDir  string
+	CDPPort      int
+	WindowWidth  int
+	WindowHeight int
+	Timeout      time.Duration
+	AllowedHosts []string // non-empty activates the allowlist
+	MaxBodyBytes int64
 }
 
 // Driver is the concrete contract every engine (chromedp, rod, playwright)
@@ -56,10 +56,10 @@ type SessionHandle interface {
 // the selected Driver, applies URL allowlisting and body-size caps, and
 // translates errors via ToAIFriendlyError.
 type Engine struct {
-	driver     Driver
-	cfg        Config
-	sessions   atomic.Int64
-	idCounter  atomic.Uint64
+	driver    Driver
+	cfg       Config
+	sessions  atomic.Int64
+	idCounter atomic.Uint64
 }
 
 // NewEngine returns an Engine that drives the named EngineType. The
@@ -298,7 +298,7 @@ type session struct {
 	handle SessionHandle
 }
 
-func (s *session) ID() string              { return s.id }
+func (s *session) ID() string { return s.id }
 func (s *session) Platform() nexus.Platform {
 	switch s.engine.cfg.Engine {
 	case EngineChromedp:

@@ -8,10 +8,10 @@
 // The loop is deliberately four explicit phases instead of one
 // monolithic Step() so every transition is observable and testable:
 //
-//   Phase 1 — PrepareContext   : capture Snapshot + Screenshot via Adapter
-//   Phase 2 — PlanActions      : single structured-output LLM call
-//   Phase 3 — Execute          : dispatch each Action via the Adapter
-//   Phase 4 — PostProcess      : update History, emit telemetry
+//	Phase 1 — PrepareContext   : capture Snapshot + Screenshot via Adapter
+//	Phase 2 — PlanActions      : single structured-output LLM call
+//	Phase 3 — Execute          : dispatch each Action via the Adapter
+//	Phase 4 — PostProcess      : update History, emit telemetry
 //
 // Concrete adapters (pkg/nexus/browser, pkg/nexus/mobile, etc.)
 // slot in at construction time. Any LLMClient whose Chat method

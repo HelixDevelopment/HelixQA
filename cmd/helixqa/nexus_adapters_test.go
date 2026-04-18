@@ -55,10 +55,10 @@ func TestBuildNexusAdapterStack_W10_MobileOnlyCampaign(t *testing.T) {
 		browser.Config{},
 		"http://appium.local:4723",
 		mobile.Capabilities{
-			Platform:     mobile.PlatformAndroid,
-			DeviceName:   "Pixel 8",
-			AppPackage:   "com.example.app",
-			AppActivity:  ".MainActivity",
+			Platform:    mobile.PlatformAndroid,
+			DeviceName:  "Pixel 8",
+			AppPackage:  "com.example.app",
+			AppActivity: ".MainActivity",
 		},
 	)
 	if err != nil {
@@ -112,10 +112,12 @@ func (*mockDriver) Open(_ context.Context, _ browser.Config) (browser.SessionHan
 
 type mockSession struct{}
 
-func (*mockSession) Close() error                                              { return nil }
-func (*mockSession) Navigate(_ context.Context, _ string) error                { return nil }
-func (*mockSession) Snapshot(_ context.Context) (*nexus.Snapshot, error)       { return &nexus.Snapshot{}, nil }
-func (*mockSession) Click(_ context.Context, _ nexus.ElementRef) error         { return nil }
+func (*mockSession) Close() error                               { return nil }
+func (*mockSession) Navigate(_ context.Context, _ string) error { return nil }
+func (*mockSession) Snapshot(_ context.Context) (*nexus.Snapshot, error) {
+	return &nexus.Snapshot{}, nil
+}
+func (*mockSession) Click(_ context.Context, _ nexus.ElementRef) error          { return nil }
 func (*mockSession) Type(_ context.Context, _ nexus.ElementRef, _ string) error { return nil }
-func (*mockSession) Screenshot(_ context.Context) ([]byte, error)              { return []byte{}, nil }
-func (*mockSession) Scroll(_ context.Context, _, _ int) error                  { return nil }
+func (*mockSession) Screenshot(_ context.Context) ([]byte, error)               { return []byte{}, nil }
+func (*mockSession) Scroll(_ context.Context, _, _ int) error                   { return nil }

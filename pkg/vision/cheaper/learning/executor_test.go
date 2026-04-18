@@ -22,8 +22,8 @@ import (
 
 // stubProvider is a minimal VisionProvider that always returns a fixed result.
 type stubProvider struct {
-	name     string
-	response string
+	name      string
+	response  string
 	callCount int
 }
 

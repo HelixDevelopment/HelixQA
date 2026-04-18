@@ -11,8 +11,8 @@ import (
 
 // fakeDB records every SQL call and returns canned responses.
 type fakeDB struct {
-	mu     sync.Mutex
-	execs  []call
+	mu      sync.Mutex
+	execs   []call
 	queries []call
 	execErr error
 }

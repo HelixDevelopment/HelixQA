@@ -391,11 +391,11 @@ func TestManager_ToDefinitions(t *testing.T) {
 
 func TestTestCase_ToDefinition(t *testing.T) {
 	tc := &TestCase{
-		ID:           "TC-TEST",
-		Name:         "Test conversion",
-		Description:  "Verifies definition conversion",
-		Category:     "unit",
-		Dependencies: []string{"TC-001", "TC-002"},
+		ID:                "TC-TEST",
+		Name:              "Test conversion",
+		Description:       "Verifies definition conversion",
+		Category:          "unit",
+		Dependencies:      []string{"TC-001", "TC-002"},
 		EstimatedDuration: "30s",
 	}
 

@@ -190,10 +190,10 @@ func TestPhaseStatus_Constants(t *testing.T) {
 
 // mockPhaseListener records phase events.
 type mockPhaseListener struct {
-	mu       sync.Mutex
-	starts   []Phase
+	mu        sync.Mutex
+	starts    []Phase
 	completes []Phase
-	errors   []Phase
+	errors    []Phase
 }
 
 func (m *mockPhaseListener) OnPhaseStart(phase Phase) {

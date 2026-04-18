@@ -15,9 +15,9 @@ import (
 )
 
 const (
-	asticaDefaultEndpoint   = "https://vision.astica.ai/describe"
-	asticaDefaultModelVer   = "2.5_full"
-	asticaHTTPTimeout       = 60 * time.Second
+	asticaDefaultEndpoint     = "https://vision.astica.ai/describe"
+	asticaDefaultModelVer     = "2.5_full"
+	asticaHTTPTimeout         = 60 * time.Second
 	asticaDefaultVisionParams = "describe,objects,faces,text"
 )
 

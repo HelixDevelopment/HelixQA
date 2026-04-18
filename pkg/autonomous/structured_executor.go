@@ -32,11 +32,11 @@ type ActionExecutor interface {
 // StructuredTestExecutor runs test cases from test banks in a
 // systematic manner before curiosity-driven exploration.
 type StructuredTestExecutor struct {
-	config        PipelineConfig
-	execFactory   ExecutorFactory
-	vision        llm.Provider
-	onFinding     func(analysis.AnalysisFinding)
-	onScreenshot  func(platform string, data []byte)
+	config       PipelineConfig
+	execFactory  ExecutorFactory
+	vision       llm.Provider
+	onFinding    func(analysis.AnalysisFinding)
+	onScreenshot func(platform string, data []byte)
 }
 
 // NewStructuredTestExecutor creates a new structured test executor.
@@ -48,11 +48,11 @@ func NewStructuredTestExecutor(
 	onScreenshot func(platform string, data []byte),
 ) *StructuredTestExecutor {
 	return &StructuredTestExecutor{
-		config:        config,
-		execFactory:   execFactory,
-		vision:        vision,
-		onFinding:     onFinding,
-		onScreenshot:  onScreenshot,
+		config:       config,
+		execFactory:  execFactory,
+		vision:       vision,
+		onFinding:    onFinding,
+		onScreenshot: onScreenshot,
 	}
 }
 
@@ -371,7 +371,9 @@ func (ste *StructuredTestExecutor) performAction(
 	case testbank.ActionTypeKeyPress:
 		// Simulate key press
 		fmt.Printf("      [action] keypress: %s\n", actionValue)
-		if keyExecutor, ok := executor.(interface{ KeyPress(context.Context, string) error }); ok {
+		if keyExecutor, ok := executor.(interface {
+			KeyPress(context.Context, string) error
+		}); ok {
 			err := keyExecutor.KeyPress(ctx, actionValue)
 			if err != nil {
 				return ActionResult{Success: false, Message: fmt.Sprintf("Keypress failed: %v", err)}
@@ -382,7 +384,9 @@ func (ste *StructuredTestExecutor) performAction(
 	case testbank.ActionTypeText:
 		// Enter text
 		fmt.Printf("      [action] text: %s\n", actionValue)
-		if typeExecutor, ok := executor.(interface{ Type(context.Context, string) error }); ok {
+		if typeExecutor, ok := executor.(interface {
+			Type(context.Context, string) error
+		}); ok {
 			err := typeExecutor.Type(ctx, actionValue)
 			if err != nil {
 				return ActionResult{Success: false, Message: fmt.Sprintf("Type failed: %v", err)}
@@ -395,7 +399,9 @@ func (ste *StructuredTestExecutor) performAction(
 		fmt.Printf("      [action] tap: %s\n", actionValue)
 		var x, y int
 		fmt.Sscanf(actionValue, "%d,%d", &x, &y)
-		if tapExecutor, ok := executor.(interface{ Click(context.Context, int, int) error }); ok {
+		if tapExecutor, ok := executor.(interface {
+			Click(context.Context, int, int) error
+		}); ok {
 			err := tapExecutor.Click(ctx, x, y)
 			if err != nil {
 				return ActionResult{Success: false, Message: fmt.Sprintf("Tap failed: %v", err)}
@@ -648,8 +654,9 @@ func parsePlaybackCheckArgs(s string) (string, int) {
 // when a matching session is found and (false, reason) otherwise.
 //
 // The relevant dumpsys lines look like:
-//   package=<app package under test>
-//   state=PlaybackState {state=3, position=12345, ...
+//
+//	package=<app package under test>
+//	state=PlaybackState {state=3, position=12345, ...
 //
 // PlaybackState integers: 0=NONE, 1=STOPPED, 2=PAUSED, 3=PLAYING,
 // 4=FAST_FORWARDING, 5=REWINDING, 6=BUFFERING, 7=ERROR, 8=CONNECTING,

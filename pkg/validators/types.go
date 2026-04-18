@@ -11,12 +11,12 @@ import (
 type AssetType string
 
 const (
-	AssetTypeText   AssetType = "text"
-	AssetTypeVideo  AssetType = "video"
-	AssetTypeImage  AssetType = "image"
-	AssetTypeJSON   AssetType = "json"
-	AssetTypeYAML   AssetType = "yaml"
-	AssetTypeBinary AssetType = "binary"
+	AssetTypeText    AssetType = "text"
+	AssetTypeVideo   AssetType = "video"
+	AssetTypeImage   AssetType = "image"
+	AssetTypeJSON    AssetType = "json"
+	AssetTypeYAML    AssetType = "yaml"
+	AssetTypeBinary  AssetType = "binary"
 	AssetTypeUnknown AssetType = "unknown"
 )
 
@@ -34,12 +34,12 @@ const (
 
 // ValidationResult contains the result of asset validation
 type ValidationResult struct {
-	AssetPath   string      `json:"asset_path"`
-	AssetType   AssetType   `json:"asset_type"`
-	TextSubtype TextSubtype `json:"text_subtype,omitempty"`
-	IsValid     bool        `json:"is_valid"`
-	Errors      []string    `json:"errors,omitempty"`
-	Warnings    []string    `json:"warnings,omitempty"`
+	AssetPath   string                 `json:"asset_path"`
+	AssetType   AssetType              `json:"asset_type"`
+	TextSubtype TextSubtype            `json:"text_subtype,omitempty"`
+	IsValid     bool                   `json:"is_valid"`
+	Errors      []string               `json:"errors,omitempty"`
+	Warnings    []string               `json:"warnings,omitempty"`
 	Metadata    map[string]interface{} `json:"metadata,omitempty"`
 }
 
@@ -52,7 +52,7 @@ type Validator interface {
 // DetectAssetType determines the asset type from file extension and content
 func DetectAssetType(path string) AssetType {
 	ext := strings.ToLower(filepath.Ext(path))
-	
+
 	switch ext {
 	case ".mp4", ".avi", ".mov", ".mkv", ".webm", ".flv", ".wmv", ".m4v":
 		return AssetTypeVideo
@@ -83,7 +83,7 @@ func DetectAssetType(path string) AssetType {
 func DetectTextSubtype(path string) TextSubtype {
 	ext := strings.ToLower(filepath.Ext(path))
 	base := strings.ToLower(filepath.Base(path))
-	
+
 	switch {
 	case ext == ".log" || strings.Contains(base, ".log"):
 		return TextSubtypeLog

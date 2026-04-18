@@ -78,11 +78,11 @@ func (v *VideoValidator) Validate(path string) (*ValidationResult, error) {
 		// Check for common issues
 		width, _ := strconv.Atoi(videoInfo["width"])
 		height, _ := strconv.Atoi(videoInfo["height"])
-		
+
 		if width == 0 || height == 0 {
 			result.Warnings = append(result.Warnings, "video has invalid dimensions")
 		}
-		
+
 		// Check duration
 		duration, _ := strconv.ParseFloat(videoInfo["duration"], 64)
 		if duration == 0 {
@@ -90,7 +90,7 @@ func (v *VideoValidator) Validate(path string) (*ValidationResult, error) {
 		} else if duration < 1 {
 			result.Warnings = append(result.Warnings, fmt.Sprintf("video is very short (%.2f seconds)", duration))
 		}
-		
+
 		result.Metadata["duration_seconds"] = duration
 	} else {
 		result.Warnings = append(result.Warnings, "no video stream found")
@@ -136,7 +136,7 @@ func (v *VideoValidator) runFFprobe(path string) (map[string]map[string]string, 
 		"-show_streams",
 		path,
 	)
-	
+
 	output, err := cmd.Output()
 	if err != nil {
 		return nil, fmt.Errorf("ffprobe execution failed: %v", err)
@@ -150,7 +150,7 @@ func (v *VideoValidator) runFFprobe(path string) (map[string]map[string]string, 
 	result["format"] = make(map[string]string)
 
 	outputStr := string(output)
-	
+
 	// Extract format info
 	if idx := strings.Index(outputStr, "\"format\":"); idx != -1 {
 		formatSection := outputStr[idx:]
@@ -163,7 +163,7 @@ func (v *VideoValidator) runFFprobe(path string) (map[string]map[string]string, 
 	// Extract stream info
 	if idx := strings.Index(outputStr, "\"streams\":"); idx != -1 {
 		streamsSection := outputStr[idx:]
-		
+
 		// Find video stream
 		if vidx := strings.Index(streamsSection, "\"codec_type\": \"video\""); vidx != -1 {
 			videoSection := streamsSection[vidx:]
@@ -174,7 +174,7 @@ func (v *VideoValidator) runFFprobe(path string) (map[string]map[string]string, 
 			result["video"]["bit_rate"] = extractJSONString(videoSection, "bit_rate")
 			result["video"]["r_frame_rate"] = extractJSONString(videoSection, "r_frame_rate")
 		}
-		
+
 		// Find audio stream
 		if aidx := strings.Index(streamsSection, "\"codec_type\": \"audio\""); aidx != -1 {
 			audioSection := streamsSection[aidx:]
@@ -205,7 +205,7 @@ func extractJSONString(data, key string) string {
 		}
 		return strings.TrimSpace(data[start : start+end])
 	}
-	
+
 	start := idx + len(searchStr)
 	end := strings.Index(data[start:], "\"")
 	if end == -1 {
@@ -217,7 +217,7 @@ func extractJSONString(data, key string) string {
 // ValidateVideoDirectory validates all video files in a directory
 func ValidateVideoDirectory(dirPath string) ([]*ValidationResult, error) {
 	validator := NewVideoValidator("")
-	
+
 	entries, err := os.ReadDir(dirPath)
 	if err != nil {
 		return nil, err
@@ -228,7 +228,7 @@ func ValidateVideoDirectory(dirPath string) ([]*ValidationResult, error) {
 		if entry.IsDir() {
 			continue
 		}
-		
+
 		path := filepath.Join(dirPath, entry.Name())
 		if validator.Supports(path) {
 			result, err := validator.Validate(path)

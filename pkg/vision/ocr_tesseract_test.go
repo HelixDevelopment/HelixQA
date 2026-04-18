@@ -23,7 +23,7 @@ func TestDefaultTesseractConfig(t *testing.T) {
 func TestCheckTesseractAvailable(t *testing.T) {
 	// This test depends on whether tesseract is installed
 	available := CheckTesseractAvailable()
-	
+
 	// Just log the result, don't assert
 	t.Logf("Tesseract available: %v", available)
 }
@@ -38,7 +38,7 @@ func TestTesseractVersionInfo(t *testing.T) {
 
 	assert.NotEmpty(t, info.Version)
 	t.Logf("Tesseract version: %s", info.Version)
-	
+
 	if info.Leptonica != "" {
 		t.Logf("Leptonica version: %s", info.Leptonica)
 	}
@@ -70,7 +70,7 @@ func TestParseTSV(t *testing.T) {
 
 	// Should have 2 text blocks with sufficient confidence
 	assert.GreaterOrEqual(t, len(blocks), 0)
-	
+
 	for _, block := range blocks {
 		assert.NotEmpty(t, block.Text)
 		assert.GreaterOrEqual(t, block.Confidence, 0.0)
@@ -136,11 +136,11 @@ func TestTesseractOCR_GetAvailableLanguages(t *testing.T) {
 	require.NoError(t, err)
 
 	langs, err := ocr.GetAvailableLanguages()
-	
+
 	require.NoError(t, err)
 	assert.NotEmpty(t, langs)
 	assert.Contains(t, langs, "eng")
-	
+
 	t.Logf("Available languages: %v", langs)
 }
 
@@ -154,7 +154,7 @@ func TestTesseractOCR_GetVersion(t *testing.T) {
 	require.NoError(t, err)
 
 	version, err := ocr.GetVersion()
-	
+
 	require.NoError(t, err)
 	assert.NotEmpty(t, version)
 	t.Logf("Version: %s", version)
@@ -165,7 +165,7 @@ func TestTesseractOCR_DetectText_NotInstalled(t *testing.T) {
 	config := &TesseractConfig{
 		TesseractPath: "/invalid/path/to/tesseract",
 	}
-	
+
 	_, err := NewTesseractOCR(config)
 	assert.Error(t, err)
 }
@@ -191,7 +191,7 @@ func TestTesseractProcessor(t *testing.T) {
 
 	config := DefaultTesseractConfig()
 	processor, err := NewTesseractProcessor(config, 2)
-	
+
 	require.NoError(t, err)
 	assert.NotNil(t, processor)
 	assert.NotNil(t, processor.ocr)
@@ -215,7 +215,7 @@ func TestTesseractProcessor_GetStats(t *testing.T) {
 func TestPageSegModes(t *testing.T) {
 	// Test different PSM values
 	modes := []int{0, 1, 3, 4, 6, 7, 8, 11}
-	
+
 	for _, mode := range modes {
 		config := DefaultTesseractConfig()
 		config.PageSegMode = mode
@@ -226,7 +226,7 @@ func TestPageSegModes(t *testing.T) {
 func TestEngineModes(t *testing.T) {
 	// Test different OEM values
 	modes := []int{0, 1, 2, 3}
-	
+
 	for _, mode := range modes {
 		config := DefaultTesseractConfig()
 		config.EngineMode = mode
@@ -237,7 +237,7 @@ func TestEngineModes(t *testing.T) {
 func TestCreateTestImageWithText(t *testing.T) {
 	// Create a simple image
 	img := createTestImageWithText("TEST", 100, 50)
-	
+
 	assert.NotNil(t, img)
 	bounds := img.Bounds()
 	assert.Equal(t, 100, bounds.Dx())
@@ -247,14 +247,14 @@ func TestCreateTestImageWithText(t *testing.T) {
 // Helper function to create a test image with text-like pattern
 func createTestImageWithText(text string, width, height int) image.Image {
 	img := image.NewRGBA(image.Rect(0, 0, width, height))
-	
+
 	// White background
 	for y := 0; y < height; y++ {
 		for x := 0; x < width; x++ {
 			img.Set(x, y, color.White)
 		}
 	}
-	
+
 	// Draw simple black rectangles to simulate text
 	for i := 0; i < len(text); i++ {
 		x := 10 + i*15
@@ -266,6 +266,6 @@ func createTestImageWithText(text string, width, height int) image.Image {
 			}
 		}
 	}
-	
+
 	return img
 }

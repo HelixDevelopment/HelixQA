@@ -227,7 +227,7 @@ func (f *flakyAdapter) Screenshot(_ context.Context, _ nexus.Session) ([]byte, e
 }
 
 type refusingAdapter struct {
-	refuse string
+	refuse  string
 	doCalls int
 }
 

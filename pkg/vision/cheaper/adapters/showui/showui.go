@@ -22,14 +22,14 @@ import (
 )
 
 const (
-	defaultAPIURL = "http://localhost:7860/api/predict"
+	defaultAPIURL  = "http://localhost:7860/api/predict"
 	defaultTimeout = 30 * time.Second
 
 	providerName = "showui-2b"
 	modelName    = "ShowUI-2B"
 
-	maxImageSize   = 10 * 1024 * 1024 // 10 MB
-	avgLatency     = 500 * time.Millisecond
+	maxImageSize = 10 * 1024 * 1024 // 10 MB
+	avgLatency   = 500 * time.Millisecond
 )
 
 // ShowUIProvider sends screenshots to a locally-hosted ShowUI-2B model via
@@ -45,7 +45,7 @@ type ShowUIProvider struct {
 //
 // Accepted keys:
 //   - "api_url"  (string)        — Gradio predict endpoint
-//                                  (default: "http://localhost:7860/api/predict")
+//     (default: "http://localhost:7860/api/predict")
 //   - "timeout"  (time.Duration) — per-request HTTP timeout (default: 30s)
 //
 // No API key is required because ShowUI-2B runs locally.

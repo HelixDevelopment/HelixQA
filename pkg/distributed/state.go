@@ -15,16 +15,16 @@ import (
 
 // FrameProcessingState represents the state of a frame being processed
 type FrameProcessingState struct {
-	FrameID      string            `json:"frame_id"`
-	Timestamp    time.Time         `json:"timestamp"`
-	HostID       string            `json:"host_id"`
-	Platform     string            `json:"platform"`
-	Status       ProcessingStatus  `json:"status"`
-	Elements     []UIElement       `json:"elements,omitempty"`
-	TextBlocks   []TextBlock       `json:"text_blocks,omitempty"`
-	LLMResult    string            `json:"llm_result,omitempty"`
-	Error        string            `json:"error,omitempty"`
-	LatencyMs    float64           `json:"latency_ms"`
+	FrameID    string           `json:"frame_id"`
+	Timestamp  time.Time        `json:"timestamp"`
+	HostID     string           `json:"host_id"`
+	Platform   string           `json:"platform"`
+	Status     ProcessingStatus `json:"status"`
+	Elements   []UIElement      `json:"elements,omitempty"`
+	TextBlocks []TextBlock      `json:"text_blocks,omitempty"`
+	LLMResult  string           `json:"llm_result,omitempty"`
+	Error      string           `json:"error,omitempty"`
+	LatencyMs  float64          `json:"latency_ms"`
 }
 
 // ProcessingStatus represents the current state of processing
@@ -63,11 +63,11 @@ func (s ProcessingStatus) String() string {
 
 // UIElement represents a detected UI element
 type UIElement struct {
-	ID         string    `json:"id"`
-	Type       string    `json:"type"` // button, textfield, image, etc.
-	Bounds     Bounds    `json:"bounds"`
-	Confidence float64   `json:"confidence"`
-	Text       string    `json:"text,omitempty"`
+	ID         string  `json:"id"`
+	Type       string  `json:"type"` // button, textfield, image, etc.
+	Bounds     Bounds  `json:"bounds"`
+	Confidence float64 `json:"confidence"`
+	Text       string  `json:"text,omitempty"`
 }
 
 // Bounds represents a rectangular region
@@ -87,25 +87,25 @@ type TextBlock struct {
 
 // StateManager manages distributed state using NATS JetStream
 type StateManager struct {
-	nc          *nats.Conn
-	js          jetstream.JetStream
-	kv          jetstream.KeyValue
-	stream      jetstream.Stream
-	
-	hostID      string
-	mu          sync.RWMutex
-	localCache  map[string]*FrameProcessingState
-	
+	nc     *nats.Conn
+	js     jetstream.JetStream
+	kv     jetstream.KeyValue
+	stream jetstream.Stream
+
+	hostID     string
+	mu         sync.RWMutex
+	localCache map[string]*FrameProcessingState
+
 	// Subscriptions
-	subs        []jetstream.ConsumeContext
+	subs []jetstream.ConsumeContext
 }
 
 // StateManagerConfig configuration for state manager
 type StateManagerConfig struct {
-	NATSURL     string
-	HostID      string
-	StreamName  string
-	KVBucket    string
+	NATSURL    string
+	HostID     string
+	StreamName string
+	KVBucket   string
 }
 
 // DefaultConfig returns default configuration
@@ -197,8 +197,8 @@ func (sm *StateManager) setupKV(config StateManagerConfig) error {
 
 	// Create KV bucket for frame state
 	kv, err := sm.js.CreateKeyValue(ctx, jetstream.KeyValueConfig{
-		Bucket:      config.KVBucket,
-		Description: "Frame processing state",
+		Bucket:       config.KVBucket,
+		Description:  "Frame processing state",
 		MaxValueSize: 1024 * 1024, // 1MB
 		History:      5,
 		TTL:          time.Hour * 24,
@@ -301,10 +301,10 @@ func (sm *StateManager) SubscribeFrames(ctx context.Context, platform string, ha
 	subject := fmt.Sprintf("frames.%s.*", platform)
 
 	cons, err := sm.js.CreateConsumer(ctx, sm.stream.CachedInfo().Config.Name, jetstream.ConsumerConfig{
-		Durable:   fmt.Sprintf("worker-%s-%s", sm.hostID, platform),
+		Durable:       fmt.Sprintf("worker-%s-%s", sm.hostID, platform),
 		FilterSubject: subject,
-		AckPolicy: jetstream.AckExplicitPolicy,
-		MaxDeliver: 3,
+		AckPolicy:     jetstream.AckExplicitPolicy,
+		MaxDeliver:    3,
 	})
 	if err != nil {
 		return fmt.Errorf("failed to create consumer: %w", err)
@@ -405,10 +405,10 @@ func (sm *StateManager) GetStats(ctx context.Context) (*Stats, error) {
 
 // Stats represents processing statistics
 type Stats struct {
-	TotalFrames      int                `json:"total_frames"`
-	ByStatus         map[string]int     `json:"by_status"`
-	ByPlatform       map[string]int     `json:"by_platform"`
-	AverageLatencyMs float64            `json:"average_latency_ms"`
+	TotalFrames      int            `json:"total_frames"`
+	ByStatus         map[string]int `json:"by_status"`
+	ByPlatform       map[string]int `json:"by_platform"`
+	AverageLatencyMs float64        `json:"average_latency_ms"`
 }
 
 // WatchFrame watches a specific frame for updates
@@ -448,12 +448,12 @@ func (sm *StateManager) WatchFrame(ctx context.Context, frameID string, callback
 
 // LeaderElection manages leader election for coordinator role
 type LeaderElection struct {
-	kv      jetstream.KeyValue
-	hostID  string
-	ctx     context.Context
-	cancel  context.CancelFunc
+	kv       jetstream.KeyValue
+	hostID   string
+	ctx      context.Context
+	cancel   context.CancelFunc
 	isLeader bool
-	mu      sync.RWMutex
+	mu       sync.RWMutex
 }
 
 // NewLeaderElection creates a new leader election

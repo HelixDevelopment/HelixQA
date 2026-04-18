@@ -44,7 +44,7 @@ func (m *mockVisionLLM) Vision(
 	return &llm.Response{Content: m.visionResponse}, nil
 }
 
-func (m *mockVisionLLM) Name() string        { return "mock" }
+func (m *mockVisionLLM) Name() string         { return "mock" }
 func (m *mockVisionLLM) SupportsVision() bool { return true }
 
 // singleFindingJSON is a minimal valid JSON array with one

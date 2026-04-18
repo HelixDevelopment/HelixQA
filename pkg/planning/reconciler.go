@@ -23,9 +23,9 @@ type existingEntry struct {
 // LoadBankDir. It mirrors the subset of testbank.BankFile
 // that BankReconciler needs, avoiding a cross-package import.
 type bankFileYAML struct {
-	Version   string           `yaml:"version"`
-	Name      string           `yaml:"name"`
-	TestCases []bankCaseYAML   `yaml:"test_cases"`
+	Version   string         `yaml:"version"`
+	Name      string         `yaml:"name"`
+	TestCases []bankCaseYAML `yaml:"test_cases"`
 }
 
 // bankCaseYAML is the per-test-case subset read from YAML.

@@ -14,18 +14,18 @@ import (
 type ScreenState string
 
 const (
-	StateSplashScreen     ScreenState = "splash_screen"
-	StateLoading          ScreenState = "loading"
-	StateHomeContent      ScreenState = "home_with_content"
-	StateHomeEmpty        ScreenState = "home_empty"
-	StateMovieGrid        ScreenState = "movie_grid"
-	StateMovieDetails     ScreenState = "movie_details"
-	StateTVShows          ScreenState = "tv_shows"
-	StateSearch           ScreenState = "search"
-	StateSettings         ScreenState = "settings"
-	StateSystemSettings   ScreenState = "system_settings" // Wrong state!
-	StateError            ScreenState = "error"
-	StateUnknown          ScreenState = "unknown"
+	StateSplashScreen   ScreenState = "splash_screen"
+	StateLoading        ScreenState = "loading"
+	StateHomeContent    ScreenState = "home_with_content"
+	StateHomeEmpty      ScreenState = "home_empty"
+	StateMovieGrid      ScreenState = "movie_grid"
+	StateMovieDetails   ScreenState = "movie_details"
+	StateTVShows        ScreenState = "tv_shows"
+	StateSearch         ScreenState = "search"
+	StateSettings       ScreenState = "settings"
+	StateSystemSettings ScreenState = "system_settings" // Wrong state!
+	StateError          ScreenState = "error"
+	StateUnknown        ScreenState = "unknown"
 )
 
 // StateDetector uses AI/ML to recognize screen states
@@ -40,13 +40,13 @@ type VisionClient interface {
 
 // VisionResult contains the vision model analysis
 type VisionResult struct {
-	State           ScreenState            `json:"state"`
-	Confidence      float64                `json:"confidence"`
-	ContentItems    int                    `json:"content_items,omitempty"`
-	HasError        bool                   `json:"has_error"`
-	ErrorMessage    string                 `json:"error_message,omitempty"`
-	UIElements      []UIElement            `json:"ui_elements,omitempty"`
-	Metadata        map[string]interface{} `json:"metadata,omitempty"`
+	State        ScreenState            `json:"state"`
+	Confidence   float64                `json:"confidence"`
+	ContentItems int                    `json:"content_items,omitempty"`
+	HasError     bool                   `json:"has_error"`
+	ErrorMessage string                 `json:"error_message,omitempty"`
+	UIElements   []UIElement            `json:"ui_elements,omitempty"`
+	Metadata     map[string]interface{} `json:"metadata,omitempty"`
 }
 
 // UIElement represents a detected UI element
@@ -170,9 +170,9 @@ func NewScreenshotValidator() *ScreenshotValidator {
 // Validate checks if a screenshot is valid
 func (v *ScreenshotValidator) Validate(path string) (*ValidationReport, error) {
 	report := &ValidationReport{
-		Path:     path,
-		IsValid:  true,
-		Issues:   []string{},
+		Path:    path,
+		IsValid: true,
+		Issues:  []string{},
 	}
 
 	// Check file exists and size
@@ -187,7 +187,7 @@ func (v *ScreenshotValidator) Validate(path string) (*ValidationReport, error) {
 
 	if info.Size() < v.minFileSize {
 		report.IsValid = false
-		report.Issues = append(report.Issues, 
+		report.Issues = append(report.Issues,
 			fmt.Sprintf("file too small: %d bytes (min: %d)", info.Size(), v.minFileSize))
 	}
 

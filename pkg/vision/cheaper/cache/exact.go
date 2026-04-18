@@ -36,7 +36,7 @@ type CachedResponse struct {
 
 // cacheEntry wraps a CachedResponse together with metadata used for eviction.
 type cacheEntry struct {
-	resp      *CachedResponse
+	resp       *CachedResponse
 	insertedAt time.Time
 }
 
@@ -96,7 +96,7 @@ func (c *ExactCache) Put(img image.Image, promptHash string, resp *CachedRespons
 	}
 
 	c.entries[key] = &cacheEntry{
-		resp:      resp,
+		resp:       resp,
 		insertedAt: time.Now(),
 	}
 }

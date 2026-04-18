@@ -173,10 +173,12 @@ type executorAdapter struct {
 func (a *executorAdapter) Analyze(ctx context.Context, img image.Image, prompt string) (*cheaper.VisionResult, error) {
 	return a.executor.Execute(ctx, img, prompt)
 }
-func (a *executorAdapter) Name() string                                    { return "cheaper-executor" }
-func (a *executorAdapter) HealthCheck(_ context.Context) error             { return nil }
-func (a *executorAdapter) GetCapabilities() cheaper.ProviderCapabilities   { return cheaper.ProviderCapabilities{} }
-func (a *executorAdapter) GetCostEstimate(_ int, _ int) float64            { return 0 }
+func (a *executorAdapter) Name() string                        { return "cheaper-executor" }
+func (a *executorAdapter) HealthCheck(_ context.Context) error { return nil }
+func (a *executorAdapter) GetCapabilities() cheaper.ProviderCapabilities {
+	return cheaper.ProviderCapabilities{}
+}
+func (a *executorAdapter) GetCostEstimate(_ int, _ int) float64 { return 0 }
 
 // learningAdapter adapts LearningVisionExecutor to cheaper.VisionProvider.
 type learningAdapter struct {
@@ -186,10 +188,12 @@ type learningAdapter struct {
 func (a *learningAdapter) Analyze(ctx context.Context, img image.Image, prompt string) (*cheaper.VisionResult, error) {
 	return a.executor.Execute(ctx, img, prompt)
 }
-func (a *learningAdapter) Name() string                                    { return "cheaper-learning" }
-func (a *learningAdapter) HealthCheck(_ context.Context) error             { return nil }
-func (a *learningAdapter) GetCapabilities() cheaper.ProviderCapabilities   { return cheaper.ProviderCapabilities{} }
-func (a *learningAdapter) GetCostEstimate(_ int, _ int) float64            { return 0 }
+func (a *learningAdapter) Name() string                        { return "cheaper-learning" }
+func (a *learningAdapter) HealthCheck(_ context.Context) error { return nil }
+func (a *learningAdapter) GetCapabilities() cheaper.ProviderCapabilities {
+	return cheaper.ProviderCapabilities{}
+}
+func (a *learningAdapter) GetCostEstimate(_ int, _ int) float64 { return 0 }
 
 // defaultEmbedder returns a simple character-hash embedder for vector memory.
 // In production, replace with a real embedding model via Ollama.

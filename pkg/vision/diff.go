@@ -43,14 +43,14 @@ const defaultChannelTolerance = 12
 //
 // Thread-safe: all state is protected by a mutex.
 type ScreenDiffer struct {
-	mu            sync.Mutex
-	previousImage []byte
+	mu              sync.Mutex
+	previousImage   []byte
 	previousDecoded image.Image
-	threshold     float64
-	sampleCount   int
-	tolerance     int
-	sameCount     int
-	diffCount     int
+	threshold       float64
+	sampleCount     int
+	tolerance       int
+	sameCount       int
+	diffCount       int
 }
 
 // NewScreenDiffer creates a ScreenDiffer with the given

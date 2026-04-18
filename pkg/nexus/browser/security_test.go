@@ -17,8 +17,8 @@ func TestSecurity_SchemeBlocksAreExhaustive(t *testing.T) {
 
 	blocked := []string{
 		"file:///etc/passwd",
-		"FILE:///etc/passwd",   // case-insensitive
-		"File:///etc/passwd",   // mixed case
+		"FILE:///etc/passwd", // case-insensitive
+		"File:///etc/passwd", // mixed case
 		"javascript:alert(1)",
 		"JavaScript:alert(1)",
 		"data:text/html,<script>alert(1)</script>",

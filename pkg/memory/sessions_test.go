@@ -33,14 +33,14 @@ func TestStore_CreateSession(t *testing.T) {
 	s := newTestStore(t)
 
 	sess := memory.Session{
-		ID:          "sess-001",
-		StartedAt:   time.Now().UTC().Truncate(time.Second),
-		Platforms:   "android,web",
-		TotalTests:  42,
-		Passed:      40,
-		Failed:      2,
-		PassNumber:  1,
-		Notes:       "smoke run",
+		ID:         "sess-001",
+		StartedAt:  time.Now().UTC().Truncate(time.Second),
+		Platforms:  "android,web",
+		TotalTests: 42,
+		Passed:     40,
+		Failed:     2,
+		PassNumber: 1,
+		Notes:      "smoke run",
 	}
 
 	require.NoError(t, s.CreateSession(sess))

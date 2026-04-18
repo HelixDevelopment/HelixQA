@@ -28,7 +28,7 @@ func (r Resolution) String() string {
 type Frame struct {
 	ID        string
 	Timestamp time.Time
-	Data      []byte        // Raw frame data (H.264 NAL units or decoded)
+	Data      []byte // Raw frame data (H.264 NAL units or decoded)
 	Width     int
 	Height    int
 	Format    FrameFormat
@@ -50,22 +50,22 @@ type AndroidCapture struct {
 	resolution Resolution
 	fps        int
 	bitRate    int
-	
+
 	// scrcpy process
-	cmd        *exec.Cmd
-	stdout     io.ReadCloser
-	stderr     io.ReadCloser
-	
+	cmd    *exec.Cmd
+	stdout io.ReadCloser
+	stderr io.ReadCloser
+
 	// Frame output
-	frameChan  chan *Frame
-	errorChan  chan error
-	
+	frameChan chan *Frame
+	errorChan chan error
+
 	// Control
-	ctx        context.Context
-	cancel     context.CancelFunc
-	wg         sync.WaitGroup
-	mu         sync.RWMutex
-	running    bool
+	ctx     context.Context
+	cancel  context.CancelFunc
+	wg      sync.WaitGroup
+	mu      sync.RWMutex
+	running bool
 }
 
 // AndroidCaptureConfig configuration for Android capture
@@ -89,7 +89,7 @@ func DefaultAndroidConfig(deviceID string) AndroidCaptureConfig {
 // NewAndroidCapture creates a new Android capture instance
 func NewAndroidCapture(config AndroidCaptureConfig) *AndroidCapture {
 	ctx, cancel := context.WithCancel(context.Background())
-	
+
 	return &AndroidCapture{
 		deviceID:   config.DeviceID,
 		resolution: config.Resolution,
@@ -106,68 +106,68 @@ func NewAndroidCapture(config AndroidCaptureConfig) *AndroidCapture {
 func (ac *AndroidCapture) Start() error {
 	ac.mu.Lock()
 	defer ac.mu.Unlock()
-	
+
 	if ac.running {
 		return fmt.Errorf("capture already running")
 	}
-	
+
 	// Check if device is connected
 	if err := ac.checkDevice(); err != nil {
 		return fmt.Errorf("device check failed: %w", err)
 	}
-	
+
 	// Build scrcpy command with raw H.264 output
 	args := ac.buildScrcpyArgs()
-	
+
 	ac.cmd = exec.CommandContext(ac.ctx, "scrcpy", args...)
-	
+
 	// Get stdout pipe for video data
 	stdout, err := ac.cmd.StdoutPipe()
 	if err != nil {
 		return fmt.Errorf("failed to create stdout pipe: %w", err)
 	}
 	ac.stdout = stdout
-	
+
 	// Get stderr pipe for logging
 	stderr, err := ac.cmd.StderrPipe()
 	if err != nil {
 		return fmt.Errorf("failed to create stderr pipe: %w", err)
 	}
 	ac.stderr = stderr
-	
+
 	// Start scrcpy
 	if err := ac.cmd.Start(); err != nil {
 		return fmt.Errorf("failed to start scrcpy: %w", err)
 	}
-	
+
 	ac.running = true
-	
+
 	// Start goroutines
 	ac.wg.Add(3)
 	go ac.readFrames()
 	go ac.readErrors()
 	go ac.monitorProcess()
-	
+
 	return nil
 }
 
 // buildScrcpyArgs builds command line arguments for scrcpy
 func (ac *AndroidCapture) buildScrcpyArgs() []string {
 	args := []string{
-		"--no-display",                    // Don't show window
-		"--record-format=raw",             // Output raw H.264
-		"--record=-",                      // Output to stdout
+		"--no-display",        // Don't show window
+		"--record-format=raw", // Output raw H.264
+		"--record=-",          // Output to stdout
 		fmt.Sprintf("--max-size=%d", ac.resolution.Width),
 		fmt.Sprintf("--max-fps=%d", ac.fps),
 		fmt.Sprintf("--video-bit-rate=%d", ac.bitRate),
-		"--no-control",                    // Don't forward input
-		"--render-driver=software",        // Software rendering (headless)
+		"--no-control",             // Don't forward input
+		"--render-driver=software", // Software rendering (headless)
 	}
-	
+
 	if ac.deviceID != "" {
 		args = append(args, "--serial="+ac.deviceID)
 	}
-	
+
 	return args
 }
 
@@ -178,12 +178,12 @@ func (ac *AndroidCapture) checkDevice() error {
 	if err != nil {
 		return fmt.Errorf("adb devices failed: %w", err)
 	}
-	
+
 	lines := strings.Split(string(output), "\n")
 	if len(lines) < 2 {
 		return fmt.Errorf("no devices found")
 	}
-	
+
 	// If deviceID is specified, check it's connected
 	if ac.deviceID != "" {
 		found := false
@@ -197,24 +197,24 @@ func (ac *AndroidCapture) checkDevice() error {
 			return fmt.Errorf("device %s not found", ac.deviceID)
 		}
 	}
-	
+
 	return nil
 }
 
 // readFrames reads H.264 frames from scrcpy stdout
 func (ac *AndroidCapture) readFrames() {
 	defer ac.wg.Done()
-	
+
 	reader := bufio.NewReader(ac.stdout)
 	frameCount := 0
-	
+
 	for {
 		select {
 		case <-ac.ctx.Done():
 			return
 		default:
 		}
-		
+
 		// Read H.264 NAL units
 		// scrcpy outputs raw H.264 Annex B format
 		data := make([]byte, 1024*1024) // 1MB buffer
@@ -228,7 +228,7 @@ func (ac *AndroidCapture) readFrames() {
 			}
 			return
 		}
-		
+
 		if n > 0 {
 			frameCount++
 			frame := &Frame{
@@ -239,7 +239,7 @@ func (ac *AndroidCapture) readFrames() {
 				Width:     ac.resolution.Width,
 				Height:    ac.resolution.Height,
 			}
-			
+
 			select {
 			case ac.frameChan <- frame:
 			case <-ac.ctx.Done():
@@ -252,16 +252,16 @@ func (ac *AndroidCapture) readFrames() {
 // readErrors reads and logs stderr from scrcpy
 func (ac *AndroidCapture) readErrors() {
 	defer ac.wg.Done()
-	
+
 	reader := bufio.NewReader(ac.stderr)
-	
+
 	for {
 		select {
 		case <-ac.ctx.Done():
 			return
 		default:
 		}
-		
+
 		line, err := reader.ReadString('\n')
 		if err != nil {
 			if err != io.EOF {
@@ -269,7 +269,7 @@ func (ac *AndroidCapture) readErrors() {
 			}
 			return
 		}
-		
+
 		// Log stderr for debugging
 		// In production, this could be sent to a logger
 		_ = line
@@ -279,13 +279,13 @@ func (ac *AndroidCapture) readErrors() {
 // monitorProcess monitors the scrcpy process
 func (ac *AndroidCapture) monitorProcess() {
 	defer ac.wg.Done()
-	
+
 	err := ac.cmd.Wait()
-	
+
 	ac.mu.Lock()
 	ac.running = false
 	ac.mu.Unlock()
-	
+
 	if err != nil && ac.ctx.Err() == nil {
 		select {
 		case ac.errorChan <- fmt.Errorf("scrcpy exited: %w", err):
@@ -302,22 +302,22 @@ func (ac *AndroidCapture) Stop() error {
 		return nil
 	}
 	ac.mu.Unlock()
-	
+
 	// Cancel context
 	ac.cancel()
-	
+
 	// Kill process if still running
 	if ac.cmd != nil && ac.cmd.Process != nil {
 		ac.cmd.Process.Kill()
 	}
-	
+
 	// Wait for goroutines
 	ac.wg.Wait()
-	
+
 	// Close channels
 	close(ac.frameChan)
 	close(ac.errorChan)
-	
+
 	return nil
 }
 
@@ -348,15 +348,15 @@ func (ac *AndroidCapture) IsRunning() bool {
 func GetDeviceInfo(deviceID string) (map[string]string, error) {
 	args := []string{"-s", deviceID, "shell", "getprop"}
 	cmd := exec.Command("adb", args...)
-	
+
 	output, err := cmd.Output()
 	if err != nil {
 		return nil, fmt.Errorf("adb shell failed: %w", err)
 	}
-	
+
 	info := make(map[string]string)
 	lines := strings.Split(string(output), "\n")
-	
+
 	for _, line := range lines {
 		// Parse properties like: [ro.product.model]: [MIBOX4]
 		if strings.HasPrefix(line, "[") && strings.Contains(line, "]: [") {
@@ -368,7 +368,7 @@ func GetDeviceInfo(deviceID string) (map[string]string, error) {
 			}
 		}
 	}
-	
+
 	return info, nil
 }
 
@@ -376,12 +376,12 @@ func GetDeviceInfo(deviceID string) (map[string]string, error) {
 func GetDeviceResolution(deviceID string) (Resolution, error) {
 	args := []string{"-s", deviceID, "shell", "wm", "size"}
 	cmd := exec.Command("adb", args...)
-	
+
 	output, err := cmd.Output()
 	if err != nil {
 		return Resolution{}, fmt.Errorf("failed to get resolution: %w", err)
 	}
-	
+
 	// Parse: Physical size: 1920x1080
 	line := strings.TrimSpace(string(output))
 	if strings.HasPrefix(line, "Physical size: ") {
@@ -393,7 +393,7 @@ func GetDeviceResolution(deviceID string) (Resolution, error) {
 			return Resolution{Width: width, Height: height}, nil
 		}
 	}
-	
+
 	return Resolution{}, fmt.Errorf("could not parse resolution: %s", line)
 }
 
@@ -404,23 +404,23 @@ func ListDevices() ([]string, error) {
 	if err != nil {
 		return nil, fmt.Errorf("adb devices failed: %w", err)
 	}
-	
+
 	var devices []string
 	lines := strings.Split(string(output), "\n")
-	
+
 	// Skip first line (header)
 	for _, line := range lines[1:] {
 		line = strings.TrimSpace(line)
 		if line == "" {
 			continue
 		}
-		
+
 		parts := strings.Fields(line)
 		if len(parts) >= 2 && parts[1] == "device" {
 			devices = append(devices, parts[0])
 		}
 	}
-	
+
 	return devices, nil
 }
 
@@ -428,19 +428,19 @@ func ListDevices() ([]string, error) {
 func IsAppInForeground(deviceID, packageName string) (bool, error) {
 	args := []string{"-s", deviceID, "shell", "dumpsys", "activity", "activities"}
 	cmd := exec.Command("adb", args...)
-	
+
 	output, err := cmd.Output()
 	if err != nil {
 		return false, fmt.Errorf("dumpsys failed: %w", err)
 	}
-	
+
 	lines := strings.Split(string(output), "\n")
 	for _, line := range lines {
 		if strings.Contains(line, "mResumedActivity") && strings.Contains(line, packageName) {
 			return true, nil
 		}
 	}
-	
+
 	return false, nil
 }
 
@@ -449,11 +449,11 @@ func Tap(deviceID string, x, y int) error {
 	args := []string{"-s", deviceID, "shell", "input", "tap",
 		strconv.Itoa(x), strconv.Itoa(y)}
 	cmd := exec.Command("adb", args...)
-	
+
 	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("tap failed: %w", err)
 	}
-	
+
 	return nil
 }
 
@@ -463,11 +463,11 @@ func Swipe(deviceID string, x1, y1, x2, y2 int, durationMs int) error {
 		strconv.Itoa(x1), strconv.Itoa(y1), strconv.Itoa(x2), strconv.Itoa(y2),
 		strconv.Itoa(durationMs)}
 	cmd := exec.Command("adb", args...)
-	
+
 	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("swipe failed: %w", err)
 	}
-	
+
 	return nil
 }
 
@@ -476,11 +476,11 @@ func KeyEvent(deviceID string, keyCode int) error {
 	args := []string{"-s", deviceID, "shell", "input", "keyevent",
 		strconv.Itoa(keyCode)}
 	cmd := exec.Command("adb", args...)
-	
+
 	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("keyevent failed: %w", err)
 	}
-	
+
 	return nil
 }
 
@@ -488,23 +488,23 @@ func KeyEvent(deviceID string, keyCode int) error {
 func Text(deviceID string, text string) error {
 	args := []string{"-s", deviceID, "shell", "input", "text", text}
 	cmd := exec.Command("adb", args...)
-	
+
 	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("text input failed: %w", err)
 	}
-	
+
 	return nil
 }
 
 // Common key codes
 const (
-	KeyCodeHome     = 3
-	KeyCodeBack     = 4
-	KeyCodeMenu     = 82
-	KeyCodeEnter    = 66
-	KeyCodeDPadUp    = 19
-	KeyCodeDPadDown  = 20
-	KeyCodeDPadLeft  = 21
-	KeyCodeDPadRight = 22
+	KeyCodeHome       = 3
+	KeyCodeBack       = 4
+	KeyCodeMenu       = 82
+	KeyCodeEnter      = 66
+	KeyCodeDPadUp     = 19
+	KeyCodeDPadDown   = 20
+	KeyCodeDPadLeft   = 21
+	KeyCodeDPadRight  = 22
 	KeyCodeDPadCenter = 23
 )

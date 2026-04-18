@@ -216,8 +216,8 @@ func fingerprintActions(actions []nexus.Action) uint64 {
 // failed" context when a step's Execute phase reports an error.
 // Stagehand inspired (tools/opensource/stagehand/lib/StagehandPage.ts).
 type SelfHealer struct {
-	MaxAttempts int           // default 3
-	Client      LLMClient     // required
+	MaxAttempts int       // default 3
+	Client      LLMClient // required
 }
 
 // NewSelfHealer wires a healer bound to client. MaxAttempts falls

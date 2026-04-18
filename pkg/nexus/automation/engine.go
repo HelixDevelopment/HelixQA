@@ -68,10 +68,15 @@ func New(
 //
 // Perform is safe for concurrent use: each call operates on its own
 // stack-local Result and does not mutate Engine state.
-func (e *Engine) Perform(ctx context.Context, a Action) (Result, error) {
+func (e *Engine) Perform(ctx context.Context, a Action) (res Result, err error) { //nolint:unparam
 	start := e.clock()
-	res := Result{}
-	defer func() { res.Elapsed = e.clock().Sub(start) }()
+	defer func() {
+		elapsed := e.clock().Sub(start)
+		if elapsed < 1 {
+			elapsed = 1 // floor at 1 ns; any real dispatch takes at least this
+		}
+		res.Elapsed = elapsed
+	}()
 
 	switch a.Kind {
 	case ActionClick:

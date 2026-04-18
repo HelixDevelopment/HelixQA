@@ -226,9 +226,9 @@ func flattenElements(root *AccessibilityNode) []nexus.Element {
 			return nil
 		}
 		out = append(out, nexus.Element{
-			Ref:   nexus.ElementRef(n.Ref),
-			Role:  roleFromClass(n.Class),
-			Name:  label,
+			Ref:  nexus.ElementRef(n.Ref),
+			Role: roleFromClass(n.Class),
+			Name: label,
 		})
 		return nil
 	})
@@ -254,7 +254,7 @@ type mobileSession struct {
 	engine *Engine
 }
 
-func (s *mobileSession) ID() string              { return s.id }
+func (s *mobileSession) ID() string               { return s.id }
 func (s *mobileSession) Platform() nexus.Platform { return s.engine.Platform() }
 func (s *mobileSession) Close() error             { return s.engine.client.DeleteSession(context.Background()) }
 

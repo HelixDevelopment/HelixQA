@@ -211,14 +211,14 @@ func TestParseXrandrOutput(t *testing.T) {
 	displays := parseXrandrOutput(output)
 
 	assert.Len(t, displays, 2)
-	
+
 	// First display
-	assert.Equal(t, "0:", displays[0].ID)  // Note: includes colon from parsing
+	assert.Equal(t, "0:", displays[0].ID) // Note: includes colon from parsing
 	assert.Equal(t, "DP-1", displays[0].Name)
 	// Width/Height may be 0 if parsing doesn't work as expected
-	
+
 	// Second display
-	assert.Equal(t, "1:", displays[1].ID)  // Note: includes colon from parsing
+	assert.Equal(t, "1:", displays[1].ID) // Note: includes colon from parsing
 	assert.Equal(t, "HDMI-1", displays[1].Name)
 }
 
@@ -269,12 +269,12 @@ func TestParseWmctrlOutput(t *testing.T) {
 	windows := parseWmctrlOutput(output)
 
 	assert.Len(t, windows, 2)
-	
+
 	// First window
 	assert.Equal(t, "0x0420000a", windows[0].ID)
 	// Verify basic parsing works
 	t.Logf("First window: X=%d, Y=%d, Title=%s", windows[0].X, windows[0].Y, windows[0].Title)
-	
+
 	// Second window
 	assert.Equal(t, "0x04600003", windows[1].ID)
 }

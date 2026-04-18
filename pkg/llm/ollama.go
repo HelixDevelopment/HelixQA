@@ -15,8 +15,8 @@ import (
 )
 
 const (
-	ollamaDefaultModel   = "minicpm-v:8b"
-	ollamaHTTPTimeout    = 120 * time.Second
+	ollamaDefaultModel = "minicpm-v:8b"
+	ollamaHTTPTimeout  = 120 * time.Second
 )
 
 // ollamaProvider implements Provider for a self-hosted Ollama

@@ -13,9 +13,9 @@ import (
 
 // macOS capture using ScreenCaptureKit (macOS 12.3+) or CoreMediaIO
 type macOSCapture struct {
-	parent      *DesktopCapture
-	config      DesktopCaptureConfig
-	cmd         *exec.Cmd
+	parent *DesktopCapture
+	config DesktopCaptureConfig
+	cmd    *exec.Cmd
 }
 
 // newMacOSCapture creates a new macOS capture instance
@@ -32,7 +32,7 @@ func (mc *macOSCapture) Start() error {
 	if CommandExists("gst-launch-1.0") {
 		return mc.startGStreamerCapture()
 	}
-	
+
 	return fmt.Errorf("GStreamer required for macOS capture")
 }
 
@@ -41,23 +41,23 @@ func (mc *macOSCapture) startGStreamerCapture() error {
 	args := []string{
 		"-q",
 	}
-	
+
 	pipeline := mc.buildPipeline()
 	args = append(args, pipeline)
-	
+
 	mc.cmd = exec.CommandContext(mc.parent.ctx, "gst-launch-1.0", args...)
-	
+
 	stdout, err := mc.cmd.StdoutPipe()
 	if err != nil {
 		return fmt.Errorf("failed to create stdout pipe: %w", err)
 	}
-	
+
 	if err := mc.cmd.Start(); err != nil {
 		return fmt.Errorf("failed to start GStreamer: %w", err)
 	}
-	
+
 	go mc.readFrames(stdout)
-	
+
 	return nil
 }
 
@@ -65,7 +65,7 @@ func (mc *macOSCapture) startGStreamerCapture() error {
 func (mc *macOSCapture) buildPipeline() string {
 	// Use avfvideosrc for macOS screen capture
 	var source string
-	
+
 	if mc.config.Source == "window" && mc.config.WindowID != "" {
 		// Window capture (requires CGO for ScreenCaptureKit)
 		source = "avfvideosrc capture-screen=false capture-screen-cursor=false"
@@ -73,7 +73,7 @@ func (mc *macOSCapture) buildPipeline() string {
 		// Screen capture
 		source = "avfvideosrc capture-screen=true capture-screen-cursor=true"
 	}
-	
+
 	pipeline := fmt.Sprintf(
 		"%s ! "+
 			"video/x-raw,framerate=%d/1 ! "+
@@ -88,7 +88,7 @@ func (mc *macOSCapture) buildPipeline() string {
 		mc.config.Resolution.Width,
 		mc.config.Resolution.Height,
 	)
-	
+
 	return pipeline
 }
 
@@ -119,7 +119,7 @@ func (mc *macOSCapture) GetFrameChan() <-chan *Frame {
 // listMacOSDisplays lists available displays on macOS
 func listMacOSDisplays() ([]Display, error) {
 	var displays []Display
-	
+
 	// Use system_profiler to get display info
 	cmd := exec.Command("system_profiler", "SPDisplaysDataType", "-json")
 	output, err := cmd.Output()
@@ -134,18 +134,18 @@ func listMacOSDisplays() ([]Display, error) {
 		})
 		return displays, nil
 	}
-	
+
 	// Parse JSON output
 	// This is simplified - full implementation would parse the JSON
 	_ = output
-	
+
 	return displays, nil
 }
 
 // listMacOSWindows lists available windows on macOS
 func listMacOSWindows() ([]Window, error) {
 	var windows []Window
-	
+
 	// Use AppleScript to get window list
 	script := `
 		tell application "System Events"
@@ -162,13 +162,13 @@ func listMacOSWindows() ([]Window, error) {
 			return windowList as string
 		end tell
 	`
-	
+
 	cmd := exec.Command("osascript", "-e", script)
 	output, err := cmd.Output()
 	if err != nil {
 		return nil, err
 	}
-	
+
 	// Parse output
 	windowStrs := strings.Split(string(output), ", ")
 	for i, ws := range windowStrs {
@@ -181,7 +181,7 @@ func listMacOSWindows() ([]Window, error) {
 			})
 		}
 	}
-	
+
 	return windows, nil
 }
 
@@ -198,13 +198,13 @@ func verifyMacOSSupport() error {
 	if !CommandExists("gst-launch-1.0") {
 		return fmt.Errorf("GStreamer not found. Install with: brew install gstreamer gst-plugins-base gst-plugins-good gst-plugins-bad gst-libav")
 	}
-	
+
 	// Check for avfvideosrc
 	cmd := exec.Command("gst-inspect-1.0", "avfvideosrc")
 	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("avfvideosrc not found. Install with: brew install gst-plugins-bad")
 	}
-	
+
 	return nil
 }
 
@@ -232,19 +232,19 @@ func IsScreenCaptureKitAvailable() bool {
 	if err != nil {
 		return false
 	}
-	
+
 	version := strings.TrimSpace(string(output))
 	parts := strings.Split(version, ".")
 	if len(parts) >= 2 {
 		major, _ := strconv.Atoi(parts[0])
 		minor, _ := strconv.Atoi(parts[1])
-		
+
 		// ScreenCaptureKit available on macOS 12.3+
 		if major > 12 || (major == 12 && minor >= 3) {
 			return true
 		}
 	}
-	
+
 	return false
 }
 
@@ -261,10 +261,10 @@ func CheckScreenRecordingPermission() bool {
 	tmpFile := "/tmp/helixqa_permission_test.png"
 	cmd := exec.Command("screencapture", "-x", tmpFile)
 	err := cmd.Run()
-	
+
 	// Clean up
 	exec.Command("rm", "-f", tmpFile).Run()
-	
+
 	return err == nil
 }
 
@@ -288,7 +288,6 @@ func GetOnlineDisplays() ([]CGDisplayID, error) {
 func CaptureDisplay(displayID CGDisplayID) (*Frame, error) {
 	return nil, fmt.Errorf("CoreGraphics capture requires CGO")
 }
-
 
 // Stub functions for Linux and Windows (only compiled on macOS)
 

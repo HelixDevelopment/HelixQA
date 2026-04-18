@@ -6,9 +6,9 @@
 // the androidx.tvprovider API for home screen channel integration.
 //
 // Usage:
-//   1. Define your app's ChannelFeatureSpec with URIs, channel names, and capabilities
-//   2. Call GenerateAndroidTVChannelsTests(spec) to get comprehensive test cases
-//   3. Tests are generated based on standard Android TV provider patterns
+//  1. Define your app's ChannelFeatureSpec with URIs, channel names, and capabilities
+//  2. Call GenerateAndroidTVChannelsTests(spec) to get comprehensive test cases
+//  3. Tests are generated based on standard Android TV provider patterns
 //
 // The framework supports:
 //   - Default/Recommended channels (TYPE_PREVIEW)
@@ -126,7 +126,7 @@ type ChannelFeatureSpec struct {
 	AppName string
 	// PackageName - Android package name (e.g., "com.example.myapp")
 	PackageName string
-	
+
 	// ─── Default Channel ────────────────────────────────────────────────────
 	// DefaultChannelEnabled - Whether a default/recommended channel exists
 	DefaultChannelEnabled bool
@@ -138,7 +138,7 @@ type ChannelFeatureSpec struct {
 	DefaultChannelContentTypes []string
 	// DefaultChannelMaxPrograms - Maximum programs in default channel (default 30)
 	DefaultChannelMaxPrograms int
-	
+
 	// ─── Category Channels ──────────────────────────────────────────────────
 	// CategoryChannelsEnabled - Whether per-category channels are supported
 	CategoryChannelsEnabled bool
@@ -148,16 +148,16 @@ type ChannelFeatureSpec struct {
 	AutoCreateCategoryChannels bool
 	// RemoveEmptyCategoryChannels - Whether to remove channels when category is empty
 	RemoveEmptyCategoryChannels bool
-	
+
 	// ─── Watch Next ─────────────────────────────────────────────────────────
 	WatchNext WatchNextConfig
-	
+
 	// ─── Sync Configuration ─────────────────────────────────────────────────
 	Sync SyncConfig
-	
+
 	// ─── Deep Link Configuration ────────────────────────────────────────────
 	DeepLink DeepLinkConfig
-	
+
 	// ─── Security & Cleanup ─────────────────────────────────────────────────
 	// CleanupOnLogout - Whether to remove all channels on logout
 	CleanupOnLogout bool
@@ -169,15 +169,15 @@ type ChannelFeatureSpec struct {
 // with full Channels support. Apps can customize this base configuration.
 func DefaultChannelFeatureSpec(appName, packageName, uriScheme string) ChannelFeatureSpec {
 	return ChannelFeatureSpec{
-		AppName:                    appName,
-		PackageName:                packageName,
-		DefaultChannelEnabled:      true,
-		DefaultChannelName:         appName + " Picks",
-		DefaultChannelKey:          "default",
-		DefaultChannelContentTypes: []string{"continue_watching", "recent", "trending"},
-		DefaultChannelMaxPrograms:  30,
-		CategoryChannelsEnabled:    true,
-		AutoCreateCategoryChannels: true,
+		AppName:                     appName,
+		PackageName:                 packageName,
+		DefaultChannelEnabled:       true,
+		DefaultChannelName:          appName + " Picks",
+		DefaultChannelKey:           "default",
+		DefaultChannelContentTypes:  []string{"continue_watching", "recent", "trending"},
+		DefaultChannelMaxPrograms:   30,
+		CategoryChannelsEnabled:     true,
+		AutoCreateCategoryChannels:  true,
 		RemoveEmptyCategoryChannels: true,
 		WatchNext: WatchNextConfig{
 			Enabled:                 true,
@@ -211,24 +211,24 @@ func DefaultChannelFeatureSpec(appName, packageName, uriScheme string) ChannelFe
 // This is the main entry point for the testing framework.
 func GenerateAndroidTVChannelsTests(spec ChannelFeatureSpec) []PlannedTest {
 	var tests []PlannedTest
-	
+
 	if spec.DefaultChannelEnabled {
 		tests = append(tests, generateDefaultChannelTests(spec)...)
 	}
-	
+
 	if spec.CategoryChannelsEnabled {
 		tests = append(tests, generateCategoryChannelTests(spec)...)
 	}
-	
+
 	if spec.WatchNext.Enabled {
 		tests = append(tests, generateWatchNextTests(spec)...)
 	}
-	
+
 	tests = append(tests, generateSyncTests(spec)...)
 	tests = append(tests, generateDeepLinkTests(spec)...)
 	tests = append(tests, generateCleanupTests(spec)...)
 	tests = append(tests, generateEdgeCaseTests(spec)...)
-	
+
 	return tests
 }
 
@@ -264,8 +264,8 @@ func generateDefaultChannelTests(spec ChannelFeatureSpec) []PlannedTest {
 				"Navigate to '" + spec.DefaultChannelName + "' channel",
 				"Wait for content to sync",
 			},
-			Expected: fmt.Sprintf("Channel displays up to %d programs from: %s", 
-				spec.DefaultChannelMaxPrograms, 
+			Expected: fmt.Sprintf("Channel displays up to %d programs from: %s",
+				spec.DefaultChannelMaxPrograms,
 				strings.Join(spec.DefaultChannelContentTypes, ", ")),
 		},
 		{
@@ -349,7 +349,7 @@ func generateCategoryChannelTests(spec ChannelFeatureSpec) []PlannedTest {
 			Expected: "No channel is created for content categories with zero items",
 		},
 	}
-	
+
 	if spec.RemoveEmptyCategoryChannels {
 		tests = append(tests, PlannedTest{
 			ID:          "ATV-CH-008",
@@ -369,7 +369,7 @@ func generateCategoryChannelTests(spec ChannelFeatureSpec) []PlannedTest {
 			Expected: "Channel is automatically removed when category becomes empty",
 		})
 	}
-	
+
 	return tests
 }
 
@@ -377,7 +377,7 @@ func generateCategoryChannelTests(spec ChannelFeatureSpec) []PlannedTest {
 func generateWatchNextTests(spec ChannelFeatureSpec) []PlannedTest {
 	minPct := int(spec.WatchNext.MinProgress * 100)
 	maxPct := int(spec.WatchNext.MaxProgress * 100)
-	
+
 	tests := []PlannedTest{
 		{
 			ID:          "ATV-CH-009",
@@ -429,7 +429,7 @@ func generateWatchNextTests(spec ChannelFeatureSpec) []PlannedTest {
 			Expected: fmt.Sprintf("Item does NOT appear in Watch Next (min threshold is %d%%)", minPct),
 		},
 	}
-	
+
 	if spec.WatchNext.SupportsAutoNextEpisode {
 		tests = append(tests, PlannedTest{
 			ID:          "ATV-CH-012",
@@ -448,7 +448,7 @@ func generateWatchNextTests(spec ChannelFeatureSpec) []PlannedTest {
 			Expected: "Next episode appears in Watch Next with 'Next Episode' type",
 		})
 	}
-	
+
 	if spec.WatchNext.StaleThresholdDays > 0 {
 		tests = append(tests, PlannedTest{
 			ID:          "ATV-CH-013",
@@ -465,7 +465,7 @@ func generateWatchNextTests(spec ChannelFeatureSpec) []PlannedTest {
 			Expected: fmt.Sprintf("Stale entries (%d+ days old) are removed", spec.WatchNext.StaleThresholdDays),
 		})
 	}
-	
+
 	return tests
 }
 
@@ -489,7 +489,7 @@ func generateSyncTests(spec ChannelFeatureSpec) []PlannedTest {
 			Expected: "New content appears, old content positions may shift, no duplicates",
 		},
 	}
-	
+
 	if spec.Sync.PeriodicSyncEnabled {
 		tests = append(tests, PlannedTest{
 			ID:          "ATV-CH-015",
@@ -507,7 +507,7 @@ func generateSyncTests(spec ChannelFeatureSpec) []PlannedTest {
 			Expected: fmt.Sprintf("Channel sync worker scheduled with %d-hour repeat interval", spec.Sync.SyncIntervalHours),
 		})
 	}
-	
+
 	if spec.Sync.SyncOnLaunch {
 		tests = append(tests, PlannedTest{
 			ID:          "ATV-CH-016",
@@ -525,7 +525,7 @@ func generateSyncTests(spec ChannelFeatureSpec) []PlannedTest {
 			Expected: "New content appears in channels shortly after app launch",
 		})
 	}
-	
+
 	if spec.Sync.ManualSyncSupported {
 		tests = append(tests, PlannedTest{
 			ID:          "ATV-CH-017",
@@ -544,14 +544,14 @@ func generateSyncTests(spec ChannelFeatureSpec) []PlannedTest {
 			Expected: "Channels update immediately after manual sync trigger",
 		})
 	}
-	
+
 	return tests
 }
 
 // generateDeepLinkTests creates tests for deep link handling
 func generateDeepLinkTests(spec ChannelFeatureSpec) []PlannedTest {
 	scheme := spec.DeepLink.Scheme
-	
+
 	tests := []PlannedTest{
 		{
 			ID:          "ATV-CH-018",
@@ -595,7 +595,7 @@ func generateDeepLinkTests(spec ChannelFeatureSpec) []PlannedTest {
 				"Query PreviewPrograms content",
 				"Check COLUMN_INTENT_URI values",
 			},
-			Expected: fmt.Sprintf("Intent URIs follow format: %s://%s?%s={type}", 
+			Expected: fmt.Sprintf("Intent URIs follow format: %s://%s?%s={type}",
 				scheme, spec.DeepLink.MediaPath, spec.DeepLink.QueryParamType),
 		},
 		{
@@ -610,11 +610,11 @@ func generateDeepLinkTests(spec ChannelFeatureSpec) []PlannedTest {
 				"Query Channels for " + spec.AppName,
 				"Check COLUMN_APP_LINK_INTENT_URI",
 			},
-			Expected: fmt.Sprintf("Default: %s://%s, Category: %s://%s", 
+			Expected: fmt.Sprintf("Default: %s://%s, Category: %s://%s",
 				scheme, spec.DeepLink.HomePath, scheme, spec.DeepLink.BrowsePathTemplate),
 		},
 	}
-	
+
 	if !spec.DeepLink.SupportsUnauthenticated {
 		tests = append(tests, PlannedTest{
 			ID:          "ATV-CH-022",
@@ -631,14 +631,14 @@ func generateDeepLinkTests(spec ChannelFeatureSpec) []PlannedTest {
 			Expected: spec.DeepLink.UnauthenticatedRedirectScreen + " appears with pending deep link preserved",
 		})
 	}
-	
+
 	return tests
 }
 
 // generateCleanupTests creates tests for logout cleanup
 func generateCleanupTests(spec ChannelFeatureSpec) []PlannedTest {
 	var tests []PlannedTest
-	
+
 	if spec.CleanupOnLogout {
 		tests = append(tests, PlannedTest{
 			ID:          "ATV-CH-023",
@@ -657,7 +657,7 @@ func generateCleanupTests(spec ChannelFeatureSpec) []PlannedTest {
 			Expected: "All " + spec.AppName + " channels removed from home screen",
 		})
 	}
-	
+
 	if spec.CleanupWatchNextOnLogout {
 		tests = append(tests, PlannedTest{
 			ID:          "ATV-CH-024",
@@ -675,7 +675,7 @@ func generateCleanupTests(spec ChannelFeatureSpec) []PlannedTest {
 			Expected: "All " + spec.AppName + " entries removed from Watch Next",
 		})
 	}
-	
+
 	tests = append(tests, PlannedTest{
 		ID:          "ATV-CH-025",
 		Name:        "Re-authentication Channel Restoration",
@@ -692,7 +692,7 @@ func generateCleanupTests(spec ChannelFeatureSpec) []PlannedTest {
 		},
 		Expected: "All channels recreated and populated with user's content",
 	})
-	
+
 	return tests
 }
 
@@ -781,16 +781,16 @@ func InjectAndroidTVChannelsTests(tests []PlannedTest, platforms []string, appNa
 	if !HasAndroidTVChannelsSupport(platforms) {
 		return tests
 	}
-	
+
 	// Check if channel tests already exist
 	for _, t := range tests {
 		if strings.HasPrefix(t.ID, "ATV-CH-") {
 			return tests
 		}
 	}
-	
+
 	spec := DefaultChannelFeatureSpec(appName, "", uriScheme)
 	channelTests := GenerateAndroidTVChannelsTests(spec)
-	
+
 	return append(tests, channelTests...)
 }

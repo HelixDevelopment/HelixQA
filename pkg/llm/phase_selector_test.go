@@ -449,7 +449,7 @@ func TestPhaseModelSelector_SelectForPhase_Consistent(
 // TestIsGeneralPurposeLLM verifies the heuristic.
 func TestIsGeneralPurposeLLM(t *testing.T) {
 	tests := []struct {
-		name string
+		name  string
 		entry visionModelScore
 		want  bool
 	}{

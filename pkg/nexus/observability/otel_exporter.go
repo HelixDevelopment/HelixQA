@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
+	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 )
 
 // buildOTLPExporter constructs an OTLP gRPC exporter targeting endpoint.

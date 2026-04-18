@@ -48,7 +48,7 @@ func (w *WindowsEngine) Launch(ctx context.Context, appPath string, args []strin
 		"capabilities": map[string]any{
 			"firstMatch": []map[string]any{
 				{
-					"appium:app":  appPath,
+					"appium:app":   appPath,
 					"platformName": "Windows",
 				},
 			},

@@ -36,15 +36,15 @@ import (
 //	    Languages: []string{"eng", "chi_sim"},
 //	})
 //	defer extractor.Close()
-//	
+//
 //	regions, err := extractor.Extract(ctx, frame)
 type TesseractExtractor struct {
 	config TesseractConfig
-	
+
 	// Client pool for concurrent usage
 	clientPool chan *gosseract.Client
 	poolOnce   sync.Once
-	
+
 	// Statistics
 	stats Stats
 }
@@ -129,7 +129,7 @@ func NewTesseractExtractor(config TesseractConfig) (*TesseractExtractor, error) 
 	// Initialize client pool
 	for i := 0; i < config.PoolSize; i++ {
 		client := gosseract.NewClient()
-		
+
 		// Set language
 		lang := strings.Join(config.Languages, "+")
 		if err := client.SetLanguage(lang); err != nil {
@@ -188,8 +188,8 @@ func (e *TesseractExtractor) Extract(ctx context.Context, frame *core.Frame) ([]
 		// Fallback to single region if bounding boxes fail
 		return []core.TextRegion{{
 			Bounds: core.Rectangle{
-				Rectangle:    frame.Bounds,
-				Confidence:   0.8,
+				Rectangle:  frame.Bounds,
+				Confidence: 0.8,
 			},
 			Text:       strings.TrimSpace(text),
 			Confidence: 0.8,
@@ -399,7 +399,7 @@ func cropFrame(frame *core.Frame, region image.Rectangle) (*core.Frame, error) {
 // inferBlockType determines the type of text block.
 func inferBlockType(text string, position int) core.TextBlockType {
 	text = strings.TrimSpace(text)
-	
+
 	if text == "" {
 		return core.TextBlockUnknown
 	}
@@ -410,7 +410,7 @@ func inferBlockType(text string, position int) core.TextBlockType {
 		if position < 3 && !strings.Contains(text, ".") {
 			return core.TextBlockHeading
 		}
-		
+
 		// Check for all caps
 		if text == strings.ToUpper(text) && len(text) > 3 {
 			return core.TextBlockHeading

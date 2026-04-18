@@ -112,15 +112,15 @@ func TestS3EvidenceStore_PutPropagatesError(t *testing.T) {
 
 func TestContentTypeFor(t *testing.T) {
 	cases := map[string]string{
-		"a.PNG":                    "image/png",
-		"a.jpg":                    "image/jpeg",
-		"a.jpeg":                   "image/jpeg",
-		"a.webp":                   "image/webp",
-		"a.mp4":                    "video/mp4",
-		"a.json":                   "application/json",
-		"a.LOG":                    "text/plain; charset=utf-8",
-		"a.pdf":                    "application/pdf",
-		"unknown.blob":             "application/octet-stream",
+		"a.PNG":        "image/png",
+		"a.jpg":        "image/jpeg",
+		"a.jpeg":       "image/jpeg",
+		"a.webp":       "image/webp",
+		"a.mp4":        "video/mp4",
+		"a.json":       "application/json",
+		"a.LOG":        "text/plain; charset=utf-8",
+		"a.pdf":        "application/pdf",
+		"unknown.blob": "application/octet-stream",
 	}
 	for in, want := range cases {
 		if got := contentTypeFor(in); got != want {

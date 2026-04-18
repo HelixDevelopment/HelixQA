@@ -64,15 +64,15 @@ func TestGenerator_Stress_ConcurrentRender(t *testing.T) {
 		go func(idx int) {
 			defer wg.Done()
 			ticket := &Ticket{
-				ID:             fmt.Sprintf("HQA-%04d", idx),
-				Title:          fmt.Sprintf("Concurrent issue %d", idx),
-				Severity:       SeverityHigh,
-				Platform:       config.PlatformWeb,
-				Description:    "Concurrently rendered ticket",
-				StackTrace:     "concurrent trace",
-				Logs:           []string{"log1", "log2"},
-				Screenshots:    []string{"/shot1.png"},
-				CreatedAt:      time.Now(),
+				ID:               fmt.Sprintf("HQA-%04d", idx),
+				Title:            fmt.Sprintf("Concurrent issue %d", idx),
+				Severity:         SeverityHigh,
+				Platform:         config.PlatformWeb,
+				Description:      "Concurrently rendered ticket",
+				StackTrace:       "concurrent trace",
+				Logs:             []string{"log1", "log2"},
+				Screenshots:      []string{"/shot1.png"},
+				CreatedAt:        time.Now(),
 				StepsToReproduce: []string{"step1", "step2"},
 			}
 			md := gen.RenderMarkdown(ticket)

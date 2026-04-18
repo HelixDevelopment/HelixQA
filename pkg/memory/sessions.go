@@ -183,10 +183,10 @@ type rowScanner interface {
 
 func scanSession(r rowScanner) (*Session, error) {
 	var (
-		sess          Session
-		endedAtStr    sql.NullString
-		durationSecs  sql.NullFloat64
-		startedAtStr  string
+		sess         Session
+		endedAtStr   sql.NullString
+		durationSecs sql.NullFloat64
+		startedAtStr string
 	)
 
 	err := r.Scan(

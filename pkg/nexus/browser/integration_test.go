@@ -25,7 +25,7 @@ import (
 //
 // Run it with:
 //
-//   go test -tags=nexus_chromedp_integration ./pkg/nexus/browser/...
+//	go test -tags=nexus_chromedp_integration ./pkg/nexus/browser/...
 //
 // The default test suite does NOT include this file (the
 // `nexus_chromedp_integration` tag opts in), so CI-less workstations
@@ -77,9 +77,9 @@ func TestChromedp_RealContainer_EndToEnd(t *testing.T) {
 	// Config pointing at the container's CDP port.
 	driver := NewChromedpDriver()
 	eng, err := NewEngine(driver, Config{
-		Engine:    EngineChromedp,
-		Headless:  true,
-		CDPPort:   3000,
+		Engine:       EngineChromedp,
+		Headless:     true,
+		CDPPort:      3000,
 		AllowedHosts: []string{"127.0.0.1"},
 	})
 	if err != nil {

@@ -118,10 +118,10 @@ func TestCollector_IsAudioRecording(t *testing.T) {
 
 func TestCollector_AudioRecordingQualityMapping(t *testing.T) {
 	tests := []struct {
-		name       string
-		quality    string
-		wantRate   string
-		wantFmt    string
+		name     string
+		quality  string
+		wantRate string
+		wantFmt  string
 	}{
 		{
 			name:     "standard quality",

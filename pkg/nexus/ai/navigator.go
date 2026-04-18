@@ -11,8 +11,8 @@ import (
 
 // NavigationAction is the AI's next move in the UI.
 type NavigationAction struct {
-	Kind       string  `json:"kind"`        // click | type | scroll | wait | done
-	Target     string  `json:"target"`      // ElementRef or free-text description
+	Kind       string  `json:"kind"`   // click | type | scroll | wait | done
+	Target     string  `json:"target"` // ElementRef or free-text description
 	Text       string  `json:"text,omitempty"`
 	Reasoning  string  `json:"reasoning"`
 	Confidence float64 `json:"confidence"`
@@ -22,12 +22,12 @@ type NavigationAction struct {
 // the next action. Screenshot is PNG bytes; Tree is the serialised UI
 // tree (HTML for browser, XML for mobile, JSON for desktop).
 type VisualContext struct {
-	Screenshot []byte
-	Tree       string
-	Goal       string
+	Screenshot      []byte
+	Tree            string
+	Goal            string
 	PreviousActions []NavigationAction
-	URL        string
-	Platform   nexus.Platform
+	URL             string
+	Platform        nexus.Platform
 }
 
 // LLMClient is the narrow contract the navigator needs from the
@@ -41,7 +41,7 @@ type LLMClient interface {
 
 // ChatRequest is the vendor-agnostic request envelope.
 type ChatRequest struct {
-	Model       string
+	Model        string
 	SystemPrompt string
 	UserPrompt   string
 	ImageBase64  []string
@@ -52,12 +52,12 @@ type ChatRequest struct {
 
 // ChatResponse carries the reply plus cost signals.
 type ChatResponse struct {
-	Text       string
-	Provider   string
-	Model      string
-	TokensIn   int
-	TokensOut  int
-	CostUSD    float64
+	Text      string
+	Provider  string
+	Model     string
+	TokensIn  int
+	TokensOut int
+	CostUSD   float64
 }
 
 // Navigator decides the next UI action to progress toward a Goal.

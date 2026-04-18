@@ -19,8 +19,8 @@ import (
 // fails here instead of in a hard-to-trace runtime panic. Any semconv
 // version migration must update this gate.
 var (
-	_ string                = semconv.SchemaURL
-	_ attribute.KeyValue    = semconv.ServiceName("compile-time-check")
+	_ string             = semconv.SchemaURL
+	_ attribute.KeyValue = semconv.ServiceName("compile-time-check")
 )
 
 // OTelTracer adapts an OpenTelemetry TracerProvider into our Tracer
@@ -98,8 +98,8 @@ type otelSpanWrapper struct {
 	otel   oteltrace.Span
 	mirror Span
 
-	mu     sync.Mutex
-	ended  bool
+	mu    sync.Mutex
+	ended bool
 }
 
 func (s *otelSpanWrapper) SetAttribute(key string, value any) {

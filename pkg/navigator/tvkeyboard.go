@@ -157,7 +157,7 @@ func (tk *TVKeyboard) typeDigit(ctx context.Context, digit rune) error {
 	// Switch to ?123 mode
 	// ?123 key is typically at bottom left
 	// Navigate to it and press
-	
+
 	// First, press DPAD_DOWN multiple times to reach row 3
 	for i := 0; i < 4; i++ {
 		if err := tk.executor.KeyPress(ctx, "KEYCODE_DPAD_DOWN"); err != nil {
@@ -165,7 +165,7 @@ func (tk *TVKeyboard) typeDigit(ctx context.Context, digit rune) error {
 		}
 		time.Sleep(50 * time.Millisecond)
 	}
-	
+
 	// Press left multiple times to reach ?123
 	for i := 0; i < 5; i++ {
 		if err := tk.executor.KeyPress(ctx, "KEYCODE_DPAD_LEFT"); err != nil {
@@ -173,13 +173,13 @@ func (tk *TVKeyboard) typeDigit(ctx context.Context, digit rune) error {
 		}
 		time.Sleep(50 * time.Millisecond)
 	}
-	
+
 	// Press ?123 to switch to number mode
 	if err := tk.executor.KeyPress(ctx, "KEYCODE_ENTER"); err != nil {
 		return err
 	}
 	time.Sleep(200 * time.Millisecond)
-	
+
 	// Now navigate to the digit
 	digitCol := int(digit - '0')
 	if digitCol == 0 {
@@ -187,7 +187,7 @@ func (tk *TVKeyboard) typeDigit(ctx context.Context, digit rune) error {
 	} else {
 		digitCol-- // 1-9 are at positions 0-8
 	}
-	
+
 	// Navigate to the digit
 	for i := 0; i < digitCol; i++ {
 		if err := tk.executor.KeyPress(ctx, "KEYCODE_DPAD_RIGHT"); err != nil {
@@ -195,13 +195,13 @@ func (tk *TVKeyboard) typeDigit(ctx context.Context, digit rune) error {
 		}
 		time.Sleep(50 * time.Millisecond)
 	}
-	
+
 	// Press the digit
 	if err := tk.executor.KeyPress(ctx, "KEYCODE_ENTER"); err != nil {
 		return err
 	}
 	time.Sleep(100 * time.Millisecond)
-	
+
 	// Switch back to ABC mode by pressing ?123 again
 	// Navigate to ?123
 	for i := 0; i < 5; i++ {
@@ -210,12 +210,12 @@ func (tk *TVKeyboard) typeDigit(ctx context.Context, digit rune) error {
 		}
 		time.Sleep(50 * time.Millisecond)
 	}
-	
+
 	if err := tk.executor.KeyPress(ctx, "KEYCODE_ENTER"); err != nil {
 		return err
 	}
 	time.Sleep(200 * time.Millisecond)
-	
+
 	return nil
 }
 
@@ -229,7 +229,7 @@ func (tk *TVKeyboard) pressSpace(ctx context.Context) error {
 		}
 		time.Sleep(50 * time.Millisecond)
 	}
-	
+
 	// Navigate to center (space bar)
 	// From left side, move right about 3-4 times
 	for i := 0; i < 3; i++ {
@@ -238,7 +238,7 @@ func (tk *TVKeyboard) pressSpace(ctx context.Context) error {
 		}
 		time.Sleep(50 * time.Millisecond)
 	}
-	
+
 	return tk.executor.KeyPress(ctx, "KEYCODE_ENTER")
 }
 
@@ -252,7 +252,7 @@ func (tk *TVKeyboard) pressDot(ctx context.Context) error {
 		}
 		time.Sleep(50 * time.Millisecond)
 	}
-	
+
 	// Navigate right to reach the dot key
 	for i := 0; i < 5; i++ {
 		if err := tk.executor.KeyPress(ctx, "KEYCODE_DPAD_RIGHT"); err != nil {
@@ -260,7 +260,7 @@ func (tk *TVKeyboard) pressDot(ctx context.Context) error {
 		}
 		time.Sleep(50 * time.Millisecond)
 	}
-	
+
 	return tk.executor.KeyPress(ctx, "KEYCODE_ENTER")
 }
 
@@ -273,33 +273,33 @@ func (tk *TVKeyboard) pressHyphen(ctx context.Context) error {
 		}
 		time.Sleep(50 * time.Millisecond)
 	}
-	
+
 	for i := 0; i < 5; i++ {
 		if err := tk.executor.KeyPress(ctx, "KEYCODE_DPAD_LEFT"); err != nil {
 			return err
 		}
 		time.Sleep(50 * time.Millisecond)
 	}
-	
+
 	// Press ?123
 	if err := tk.executor.KeyPress(ctx, "KEYCODE_ENTER"); err != nil {
 		return err
 	}
 	time.Sleep(200 * time.Millisecond)
-	
+
 	// Hyphen is usually in the second row of symbols
 	// Navigate to it
 	if err := tk.executor.KeyPress(ctx, "KEYCODE_DPAD_DOWN"); err != nil {
 		return err
 	}
 	time.Sleep(50 * time.Millisecond)
-	
+
 	// Press hyphen (position varies, but usually accessible)
 	if err := tk.executor.KeyPress(ctx, "KEYCODE_ENTER"); err != nil {
 		return err
 	}
 	time.Sleep(100 * time.Millisecond)
-	
+
 	// Switch back to ABC
 	for i := 0; i < 5; i++ {
 		if err := tk.executor.KeyPress(ctx, "KEYCODE_DPAD_LEFT"); err != nil {
@@ -307,7 +307,7 @@ func (tk *TVKeyboard) pressHyphen(ctx context.Context) error {
 		}
 		time.Sleep(50 * time.Millisecond)
 	}
-	
+
 	return tk.executor.KeyPress(ctx, "KEYCODE_ENTER")
 }
 
@@ -327,27 +327,27 @@ func (tk *TVKeyboard) pressColon(ctx context.Context) error {
 		}
 		time.Sleep(50 * time.Millisecond)
 	}
-	
+
 	for i := 0; i < 5; i++ {
 		if err := tk.executor.KeyPress(ctx, "KEYCODE_DPAD_LEFT"); err != nil {
 			return err
 		}
 		time.Sleep(50 * time.Millisecond)
 	}
-	
+
 	// Press ?123
 	if err := tk.executor.KeyPress(ctx, "KEYCODE_ENTER"); err != nil {
 		return err
 	}
 	time.Sleep(200 * time.Millisecond)
-	
+
 	// Navigate to find colon (usually requires going to symbols page 2)
 	// Press the symbols shift key (=&<)
 	if err := tk.executor.KeyPress(ctx, "KEYCODE_DPAD_DOWN"); err != nil {
 		return err
 	}
 	time.Sleep(50 * time.Millisecond)
-	
+
 	// Navigate to colon position
 	for i := 0; i < 3; i++ {
 		if err := tk.executor.KeyPress(ctx, "KEYCODE_DPAD_RIGHT"); err != nil {
@@ -355,12 +355,12 @@ func (tk *TVKeyboard) pressColon(ctx context.Context) error {
 		}
 		time.Sleep(50 * time.Millisecond)
 	}
-	
+
 	if err := tk.executor.KeyPress(ctx, "KEYCODE_ENTER"); err != nil {
 		return err
 	}
 	time.Sleep(100 * time.Millisecond)
-	
+
 	// Switch back
 	for i := 0; i < 5; i++ {
 		if err := tk.executor.KeyPress(ctx, "KEYCODE_DPAD_LEFT"); err != nil {
@@ -368,7 +368,7 @@ func (tk *TVKeyboard) pressColon(ctx context.Context) error {
 		}
 		time.Sleep(50 * time.Millisecond)
 	}
-	
+
 	return tk.executor.KeyPress(ctx, "KEYCODE_ENTER")
 }
 
@@ -393,7 +393,7 @@ func (tk *TVKeyboard) ConfirmInput(ctx context.Context) error {
 		}
 		time.Sleep(50 * time.Millisecond)
 	}
-	
+
 	// Navigate to far right
 	for i := 0; i < 7; i++ {
 		if err := tk.executor.KeyPress(ctx, "KEYCODE_DPAD_RIGHT"); err != nil {
@@ -401,7 +401,7 @@ func (tk *TVKeyboard) ConfirmInput(ctx context.Context) error {
 		}
 		time.Sleep(50 * time.Millisecond)
 	}
-	
+
 	return tk.executor.KeyPress(ctx, "KEYCODE_ENTER")
 }
 
@@ -420,14 +420,14 @@ func NewTVKeyboardInput(executor *ADBExecutor) *TVKeyboardInput {
 
 // Type types text using the on-screen keyboard
 // Usage:
-//   1. Focus a text field first (DPAD navigation + ENTER)
-//   2. Wait for keyboard to appear
-//   3. Call Type() with the text
-//   4. Call Confirm() or CloseKeyboard() to finish
+//  1. Focus a text field first (DPAD navigation + ENTER)
+//  2. Wait for keyboard to appear
+//  3. Call Type() with the text
+//  4. Call Confirm() or CloseKeyboard() to finish
 func (tvi *TVKeyboardInput) Type(ctx context.Context, text string) error {
 	// Wait for keyboard to be ready
 	time.Sleep(500 * time.Millisecond)
-	
+
 	return tvi.keyboard.TypeText(ctx, text)
 }
 

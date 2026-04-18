@@ -17,7 +17,7 @@ import (
 // testcontainers-go and drives the Nexus mobile Engine against a
 // headless Android emulator image. Opt in with:
 //
-//   go test -tags=nexus_appium_integration ./pkg/nexus/mobile/...
+//	go test -tags=nexus_appium_integration ./pkg/nexus/mobile/...
 //
 // The default suite skips this file. Operators need Docker/Podman +
 // KVM on the host; when the container cannot start the test is
@@ -31,9 +31,9 @@ func TestAppium_RealContainer_EndToEnd(t *testing.T) {
 		Image:        "docker.io/budtmo/docker-android:emulator_13.0",
 		ExposedPorts: []string{"4723/tcp", "6080/tcp"},
 		Env: map[string]string{
-			"APPIUM":       "true",
+			"APPIUM":          "true",
 			"EMULATOR_DEVICE": "Samsung Galaxy S10",
-			"WEB_VNC":      "false",
+			"WEB_VNC":         "false",
 		},
 		WaitingFor: wait.ForHTTP("/status").WithPort("4723/tcp").WithStartupTimeout(4 * time.Minute),
 	}

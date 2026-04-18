@@ -164,7 +164,7 @@ func TestBoundingRect(t *testing.T) {
 		{X: 50, Y: 80},
 		{X: 10, Y: 80},
 	}
-	
+
 	bounds := boundingRect(contour)
 	assert.Equal(t, 10, bounds.Min.X)
 	assert.Equal(t, 20, bounds.Min.Y)
@@ -321,7 +321,7 @@ func TestTextBlock(t *testing.T) {
 
 func createTestImage(width, height int) image.Image {
 	img := image.NewRGBA(image.Rect(0, 0, width, height))
-	
+
 	// Draw a simple pattern
 	for y := 0; y < height; y++ {
 		for x := 0; x < width; x++ {
@@ -333,7 +333,7 @@ func createTestImage(width, height int) image.Image {
 			})
 		}
 	}
-	
+
 	return img
 }
 

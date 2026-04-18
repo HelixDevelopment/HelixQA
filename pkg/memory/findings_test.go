@@ -31,18 +31,18 @@ func TestStore_CreateFinding(t *testing.T) {
 	seedSession(t, s, "sess-f1")
 
 	f := memory.Finding{
-		ID:           "HELIX-001",
-		SessionID:    "sess-f1",
-		Severity:     "high",
-		Category:     "crash",
-		Title:        "App crashes on login",
-		Description:  "Tapping login button causes immediate crash.",
-		ReproSteps:   "1. Open app\n2. Tap Login",
+		ID:            "HELIX-001",
+		SessionID:     "sess-f1",
+		Severity:      "high",
+		Category:      "crash",
+		Title:         "App crashes on login",
+		Description:   "Tapping login button causes immediate crash.",
+		ReproSteps:    "1. Open app\n2. Tap Login",
 		EvidencePaths: "/tmp/screen.png",
-		Platform:     "android",
-		Screen:       "LoginScreen",
-		Status:       "open",
-		FoundDate:    "2026-03-26",
+		Platform:      "android",
+		Screen:        "LoginScreen",
+		Status:        "open",
+		FoundDate:     "2026-03-26",
 	}
 
 	require.NoError(t, s.CreateFinding(f))

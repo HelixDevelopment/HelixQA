@@ -20,7 +20,7 @@ type enhancedMockProvider struct {
 	visionFunc     func(ctx context.Context, image []byte, prompt string) (*Response, error)
 }
 
-func (m *enhancedMockProvider) Name() string { return m.name }
+func (m *enhancedMockProvider) Name() string         { return m.name }
 func (m *enhancedMockProvider) SupportsVision() bool { return m.supportsVision }
 func (m *enhancedMockProvider) Chat(ctx context.Context, messages []Message) (*Response, error) {
 	if m.chatFunc != nil {
@@ -264,30 +264,30 @@ func TestEnhancedAdaptiveProvider_RateLimitRetry(t *testing.T) {
 	// This test verifies the rate limit detection works
 	// The actual retry behavior depends on the retryAfter value
 	rl := GetRateLimiter("rate-limit-test")
-	
+
 	// Reset state
 	rl.failures = 0
 	rl.circuitOpen = false
-	
+
 	// Record rate limit failures - these should NOT open the circuit
 	for i := 0; i < 10; i++ {
 		rl.RecordFailure(errors.New("429 rate limit exceeded"))
 	}
-	
+
 	// Circuit should NOT be open for rate limit errors
 	if rl.circuitOpen {
 		t.Error("circuit should not open for rate limit errors")
 	}
-	
+
 	// Reset
 	rl.failures = 0
 	rl.circuitOpen = false
-	
+
 	// Record non-rate-limit errors - these SHOULD open the circuit
 	for i := 0; i < 3; i++ {
 		rl.RecordFailure(errors.New("some other error"))
 	}
-	
+
 	// Circuit should be open for non-rate-limit errors
 	if !rl.circuitOpen {
 		t.Error("circuit should open for non-rate-limit errors")

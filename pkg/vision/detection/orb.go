@@ -34,7 +34,7 @@ import (
 //	    ScaleFactor: 1.2,
 //	    NLevels: 8,
 //	})
-//	
+//
 //	element, err := detector.FindByTemplate(ctx, frame, templateImage, 0.8)
 type ORBDetector struct {
 	config ORBConfig
@@ -95,9 +95,9 @@ func DefaultORBConfig() ORBConfig {
 
 // templateFeatures stores precomputed features for a template.
 type templateFeatures struct {
-	KeyPoints gocv.KeyPoints
+	KeyPoints   gocv.KeyPoints
 	Descriptors gocv.Mat
-	Size      image.Point
+	Size        image.Point
 }
 
 // NewORBDetector creates a new ORB-based element detector.
@@ -433,7 +433,7 @@ func (d *ORBDetector) findHomography(
 
 	// Find homography
 	homography := gocv.FindHomography(frameMat, templateMat, gocv.HomographyMethodRANSAC, d.config.RANSACThreshold)
-	
+
 	// Create mask from homography status
 	mask := gocv.NewMat()
 	// In OpenCV, FindHomography with RANSAC returns empty mask, so we compute one

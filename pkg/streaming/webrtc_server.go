@@ -16,13 +16,13 @@ import (
 
 // SignalingMessage represents a WebRTC signaling message
 type SignalingMessage struct {
-	Type      string                    `json:"type"`      // "offer", "answer", "ice", "join", "leave"
-	RoomID    string                    `json:"roomId"`    // Room/session identifier
-	ClientID  string                    `json:"clientId"`  // Unique client identifier
+	Type      string                     `json:"type"`     // "offer", "answer", "ice", "join", "leave"
+	RoomID    string                     `json:"roomId"`   // Room/session identifier
+	ClientID  string                     `json:"clientId"` // Unique client identifier
 	SDP       *webrtc.SessionDescription `json:"sdp,omitempty"`
 	ICE       *webrtc.ICECandidateInit   `json:"ice,omitempty"`
-	Error     string                    `json:"error,omitempty"`
-	Timestamp time.Time                 `json:"timestamp"`
+	Error     string                     `json:"error,omitempty"`
+	Timestamp time.Time                  `json:"timestamp"`
 }
 
 // Client represents a connected WebRTC client
@@ -136,16 +136,16 @@ type WebRTCServer struct {
 
 // WebRTCConfig holds server configuration
 type WebRTCConfig struct {
-	ICEServers          []webrtc.ICEServer
-	EnableDataChannel   bool
-	EnableVideoTrack    bool
-	EnableAudioTrack    bool
-	MaxClientsPerRoom   int
-	ConnectionTimeout   time.Duration
-	EnableSTUN          bool
-	EnableTURN          bool
-	TURNUsername        string
-	TURNPassword        string
+	ICEServers        []webrtc.ICEServer
+	EnableDataChannel bool
+	EnableVideoTrack  bool
+	EnableAudioTrack  bool
+	MaxClientsPerRoom int
+	ConnectionTimeout time.Duration
+	EnableSTUN        bool
+	EnableTURN        bool
+	TURNUsername      string
+	TURNPassword      string
 }
 
 // DefaultWebRTCConfig returns default configuration
@@ -160,9 +160,9 @@ func DefaultWebRTCConfig() *WebRTCConfig {
 		EnableVideoTrack:  true,
 		EnableAudioTrack:  false,
 		MaxClientsPerRoom: 10,
-		ConnectionTimeout:   30 * time.Second,
-		EnableSTUN:          true,
-		EnableTURN:          false,
+		ConnectionTimeout: 30 * time.Second,
+		EnableSTUN:        true,
+		EnableTURN:        false,
 	}
 }
 
@@ -174,7 +174,7 @@ func NewWebRTCServer(config *WebRTCConfig) *WebRTCServer {
 
 	// Create setting engine for custom configuration
 	settingEngine := webrtc.SettingEngine{}
-	
+
 	// Configure ICE timeout
 	settingEngine.SetICETimeouts(
 		config.ConnectionTimeout,
@@ -186,8 +186,8 @@ func NewWebRTCServer(config *WebRTCConfig) *WebRTCServer {
 	api := webrtc.NewAPI(webrtc.WithSettingEngine(settingEngine))
 
 	return &WebRTCServer{
-		rooms:    make(map[string]*Room),
-		clients:  make(map[string]*Client),
+		rooms:   make(map[string]*Room),
+		clients: make(map[string]*Client),
 		upgrader: websocket.Upgrader{
 			CheckOrigin: func(r *http.Request) bool {
 				// Allow all origins in development
@@ -463,7 +463,7 @@ func (c *Client) createPeerConnection() error {
 	// Handle connection state changes
 	pc.OnConnectionStateChange(func(state webrtc.PeerConnectionState) {
 		log.Printf("Peer connection state changed: %s (client: %s)", state.String(), c.ID)
-		
+
 		switch state {
 		case webrtc.PeerConnectionStateConnected:
 			log.Printf("Client %s connected", c.ID)
@@ -477,9 +477,9 @@ func (c *Client) createPeerConnection() error {
 
 	// Handle incoming tracks
 	pc.OnTrack(func(track *webrtc.TrackRemote, receiver *webrtc.RTPReceiver) {
-		log.Printf("New track received: %s (kind: %s) from client %s", 
+		log.Printf("New track received: %s (kind: %s) from client %s",
 			track.ID(), track.Kind().String(), c.ID)
-		
+
 		// Process the track (e.g., forward to other clients, record, etc.)
 		go c.handleTrack(track)
 	})
@@ -487,11 +487,11 @@ func (c *Client) createPeerConnection() error {
 	// Handle data channel
 	pc.OnDataChannel(func(dc *webrtc.DataChannel) {
 		log.Printf("New data channel: %s", dc.Label())
-		
+
 		dc.OnOpen(func() {
 			log.Printf("Data channel opened: %s", dc.Label())
 		})
-		
+
 		dc.OnMessage(func(msg webrtc.DataChannelMessage) {
 			// Handle data channel messages
 			log.Printf("Data channel message: %d bytes", len(msg.Data))
@@ -512,7 +512,7 @@ func (c *Client) handleTrack(track *webrtc.TrackRemote) {
 			log.Printf("Track read error: %v", err)
 			return
 		}
-		
+
 		// Process the RTP packet
 		// This is where you would forward to other clients, decode, etc.
 		_ = n
@@ -550,14 +550,14 @@ func (s *WebRTCServer) registerClient(client *Client) {
 func (s *WebRTCServer) unregisterClient(client *Client) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	
+
 	// Remove from room
 	if client.RoomID != "" {
 		if room, ok := s.rooms[client.RoomID]; ok {
 			room.RemoveClient(client.ID)
 		}
 	}
-	
+
 	delete(s.clients, client.ID)
 	log.Printf("Client unregistered: %s", client.ID)
 }
@@ -566,11 +566,11 @@ func (s *WebRTCServer) unregisterClient(client *Client) {
 func (s *WebRTCServer) getOrCreateRoom(roomID string) *Room {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	
+
 	if room, ok := s.rooms[roomID]; ok {
 		return room
 	}
-	
+
 	room := &Room{
 		ID:      roomID,
 		Clients: make(map[string]*Client),
@@ -590,15 +590,15 @@ func (s *WebRTCServer) getRoom(roomID string) *Room {
 func (s *WebRTCServer) GetRoomStats(roomID string) map[string]interface{} {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
-	
+
 	room, ok := s.rooms[roomID]
 	if !ok {
 		return nil
 	}
-	
+
 	return map[string]interface{}{
-		"roomId":       roomID,
-		"clientCount":  room.ClientCount(),
+		"roomId":      roomID,
+		"clientCount": room.ClientCount(),
 	}
 }
 
@@ -606,7 +606,7 @@ func (s *WebRTCServer) GetRoomStats(roomID string) map[string]interface{} {
 func (s *WebRTCServer) GetServerStats() map[string]interface{} {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
-	
+
 	return map[string]interface{}{
 		"totalClients": len(s.clients),
 		"totalRooms":   len(s.rooms),

@@ -17,8 +17,8 @@ import (
 //
 // Usage:
 //
-//   verifier, err := orchestrator.OIDCVerifierFromCoreOS(ctx, issuer, clientID, groupsClaim)
-//   provider, _ := orchestrator.NewOIDCProvider(issuer, clientID, verifier)
+//	verifier, err := orchestrator.OIDCVerifierFromCoreOS(ctx, issuer, clientID, groupsClaim)
+//	provider, _ := orchestrator.NewOIDCProvider(issuer, clientID, verifier)
 //
 // The verifier accepts any ID token issued by the OIDC provider's
 // discovery endpoint whose audience matches clientID. groupsClaim

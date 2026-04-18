@@ -38,17 +38,17 @@ import (
 //	    log.Fatal(err)
 //	}
 //	defer detector.Close()
-//	
+//
 //	regions, err := detector.Detect(ctx, frame)
 type EASTDetector struct {
 	config EASTConfig
 	net    gocv.Net
-	
+
 	// Pre-allocated mats for reuse
-	blob       gocv.Mat
-	scores     gocv.Mat
-	geometry   gocv.Mat
-	
+	blob     gocv.Mat
+	scores   gocv.Mat
+	geometry gocv.Mat
+
 	// Thread safety
 	mutex sync.Mutex
 }
@@ -169,11 +169,11 @@ func (d *EASTDetector) Detect(ctx context.Context, frame *core.Frame) ([]core.Te
 
 	// Set input and run forward pass
 	d.net.SetInput(d.blob, "input_images")
-	
+
 	// Get output layers
 	// EAST has two outputs: "feature_fusion/Conv_7/Sigmoid" (scores) and "feature_fusion/concat_3" (geometry)
 	outputs := []string{"feature_fusion/Conv_7/Sigmoid", "feature_fusion/concat_3"}
-	
+
 	// Run inference
 	outputMats := d.net.ForwardLayers(outputs)
 	if len(outputMats) != 2 {

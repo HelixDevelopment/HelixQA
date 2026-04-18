@@ -101,7 +101,7 @@ steps:
 
 func TestStripFences(t *testing.T) {
 	cases := map[string]string{
-		"```yaml\nid: x\n```":  "id: x",
+		"```yaml\nid: x\n```": "id: x",
 		"```\nid: x\n```":     "id: x",
 		"  id: x  ":           "id: x",
 	}

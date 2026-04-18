@@ -16,9 +16,9 @@ func TestEstimateTokens(t *testing.T) {
 		expected int
 	}{
 		{"", 0},
-		{"hello", 1},                    // 5 chars / 4 = 1
-		{"hello world", 2},              // 11 chars / 4 = 2
-		{"this is a longer text", 5},    // 21 chars / 4 = 5
+		{"hello", 1},                      // 5 chars / 4 = 1
+		{"hello world", 2},                // 11 chars / 4 = 2
+		{"this is a longer text", 5},      // 21 chars / 4 = 5
 		{strings.Repeat("a", 4000), 1000}, // 4000 chars / 4 = 1000
 	}
 
@@ -169,7 +169,7 @@ func TestPromptOptimizer_Truncation(t *testing.T) {
 		})
 	}
 
-	po := NewPromptOptimizer(3000) // Moderate limit
+	po := NewPromptOptimizer(3000)                               // Moderate limit
 	result := po.OptimizePrompt(kb, []string{"androidtv"}, 2250) // 75% of limit
 
 	// Should contain truncation indicator

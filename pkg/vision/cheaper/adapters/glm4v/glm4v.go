@@ -28,12 +28,12 @@ const (
 	defaultModel   = "glm-4v-flash"
 	defaultTimeout = 60 * time.Second
 
-	providerName     = "glm-4v"
-	paidModel        = "glm-4v"
-	paidModelCost    = 0.015
-	flashModelCost   = 0.0
-	maxImageSize     = 10 * 1024 * 1024 // 10 MB
-	avgLatency       = 1 * time.Second
+	providerName   = "glm-4v"
+	paidModel      = "glm-4v"
+	paidModelCost  = 0.015
+	flashModelCost = 0.0
+	maxImageSize   = 10 * 1024 * 1024 // 10 MB
+	avgLatency     = 1 * time.Second
 )
 
 // GLM4VProvider is a VisionProvider implementation that calls the Zhipu AI
@@ -246,10 +246,10 @@ func (p *GLM4VProvider) HealthCheck(ctx context.Context) error {
 // The flash model is free tier so CostPer1MTokens is 0.
 func (p *GLM4VProvider) GetCapabilities() cheaper.ProviderCapabilities {
 	return cheaper.ProviderCapabilities{
-		MaxImageSize:    maxImageSize,
+		MaxImageSize:     maxImageSize,
 		SupportedFormats: []string{"png", "jpg", "jpeg", "webp"},
-		AverageLatency:  avgLatency,
-		CostPer1MTokens: 0,
+		AverageLatency:   avgLatency,
+		CostPer1MTokens:  0,
 	}
 }
 

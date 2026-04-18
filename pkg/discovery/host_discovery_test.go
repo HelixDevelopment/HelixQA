@@ -303,7 +303,7 @@ func TestNetworkScanner_PingSweep(t *testing.T) {
 			break
 		}
 	}
-	
+
 	// Log but don't fail - ping might be restricted in some environments
 	if !found {
 		t.Logf("PingSweep did not find localhost. Hosts found: %v. This may be expected in restricted environments.", hosts)

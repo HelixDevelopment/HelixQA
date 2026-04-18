@@ -123,23 +123,23 @@ type UIElement struct {
 type ElementType string
 
 const (
-	ElementUnknown     ElementType = "unknown"
-	ElementButton      ElementType = "button"
-	ElementText        ElementType = "text"
-	ElementTextField   ElementType = "textfield"
-	ElementIcon        ElementType = "icon"
-	ElementImage       ElementType = "image"
-	ElementCheckbox    ElementType = "checkbox"
-	ElementRadio       ElementType = "radio"
-	ElementDropdown    ElementType = "dropdown"
-	ElementList        ElementType = "list"
-	ElementListItem    ElementType = "listitem"
-	ElementNavigation  ElementType = "navigation"
-	ElementTab         ElementType = "tab"
-	ElementDialog      ElementType = "dialog"
-	ElementToast       ElementType = "toast"
-	ElementLoading     ElementType = "loading"
-	ElementVideo       ElementType = "video"
+	ElementUnknown    ElementType = "unknown"
+	ElementButton     ElementType = "button"
+	ElementText       ElementType = "text"
+	ElementTextField  ElementType = "textfield"
+	ElementIcon       ElementType = "icon"
+	ElementImage      ElementType = "image"
+	ElementCheckbox   ElementType = "checkbox"
+	ElementRadio      ElementType = "radio"
+	ElementDropdown   ElementType = "dropdown"
+	ElementList       ElementType = "list"
+	ElementListItem   ElementType = "listitem"
+	ElementNavigation ElementType = "navigation"
+	ElementTab        ElementType = "tab"
+	ElementDialog     ElementType = "dialog"
+	ElementToast      ElementType = "toast"
+	ElementLoading    ElementType = "loading"
+	ElementVideo      ElementType = "video"
 )
 
 // TextRegion represents a region containing text.
@@ -206,15 +206,15 @@ type UIRegion struct {
 type RegionType string
 
 const (
-	RegionUnknown      RegionType = "unknown"
-	RegionNavigation   RegionType = "navigation"
-	RegionContent      RegionType = "content"
-	RegionSidebar      RegionType = "sidebar"
-	RegionHeader       RegionType = "header"
-	RegionFooter       RegionType = "footer"
-	RegionModal        RegionType = "modal"
-	RegionToast        RegionType = "toast"
-	RegionKeyboard     RegionType = "keyboard"
+	RegionUnknown    RegionType = "unknown"
+	RegionNavigation RegionType = "navigation"
+	RegionContent    RegionType = "content"
+	RegionSidebar    RegionType = "sidebar"
+	RegionHeader     RegionType = "header"
+	RegionFooter     RegionType = "footer"
+	RegionModal      RegionType = "modal"
+	RegionToast      RegionType = "toast"
+	RegionKeyboard   RegionType = "keyboard"
 )
 
 // TextBlock represents a block of text with layout information.
@@ -235,15 +235,15 @@ type TextBlock struct {
 type TextBlockType string
 
 const (
-	TextBlockUnknown    TextBlockType = "unknown"
-	TextBlockHeading    TextBlockType = "heading"
-	TextBlockParagraph  TextBlockType = "paragraph"
-	TextBlockCaption    TextBlockType = "caption"
-	TextBlockLabel      TextBlockType = "label"
-	TextBlockButton     TextBlockType = "button"
-	TextBlockLink       TextBlockType = "link"
-	TextBlockCode       TextBlockType = "code"
-	TextBlockQuote      TextBlockType = "quote"
+	TextBlockUnknown   TextBlockType = "unknown"
+	TextBlockHeading   TextBlockType = "heading"
+	TextBlockParagraph TextBlockType = "paragraph"
+	TextBlockCaption   TextBlockType = "caption"
+	TextBlockLabel     TextBlockType = "label"
+	TextBlockButton    TextBlockType = "button"
+	TextBlockLink      TextBlockType = "link"
+	TextBlockCode      TextBlockType = "code"
+	TextBlockQuote     TextBlockType = "quote"
 )
 
 // LayoutTree represents hierarchical UI structure.

@@ -106,11 +106,12 @@ func (m *Manager) ValidateDirectory(dirPath string, recursive bool) ([]*Validati
 
 // ValidateQASession validates all assets in a QA session directory
 // Expected structure:
-//   session-*/
-//     screenshots/     -> Image validation
-//     videos/          -> Video validation
-//     logs/            -> Text validation (logs)
-//     reports/         -> Text validation (markdown, json)
+//
+//	session-*/
+//	  screenshots/     -> Image validation
+//	  videos/          -> Video validation
+//	  logs/            -> Text validation (logs)
+//	  reports/         -> Text validation (markdown, json)
 func (m *Manager) ValidateQASession(sessionPath string) (map[string][]*ValidationResult, error) {
 	results := make(map[string][]*ValidationResult)
 
@@ -170,7 +171,7 @@ func (m *Manager) GetSummary() *ValidationSummary {
 
 	for _, result := range m.results {
 		summary.ByType[result.AssetType]++
-		
+
 		if result.IsValid {
 			summary.ValidFiles++
 		} else {
@@ -196,12 +197,12 @@ func (m *Manager) Clear() {
 
 // ValidationSummary provides a summary of validation results
 type ValidationSummary struct {
-	TotalFiles   int                   `json:"total_files"`
-	ValidFiles   int                   `json:"valid_files"`
-	InvalidFiles int                   `json:"invalid_files"`
-	ByType       map[AssetType]int     `json:"by_type"`
-	Errors       []string              `json:"errors"`
-	Warnings     []string              `json:"warnings"`
+	TotalFiles   int               `json:"total_files"`
+	ValidFiles   int               `json:"valid_files"`
+	InvalidFiles int               `json:"invalid_files"`
+	ByType       map[AssetType]int `json:"by_type"`
+	Errors       []string          `json:"errors"`
+	Warnings     []string          `json:"warnings"`
 }
 
 // HasErrors returns true if there are any validation errors
@@ -217,7 +218,7 @@ func (s *ValidationSummary) HasWarnings() bool {
 // String returns a human-readable summary
 func (s *ValidationSummary) String() string {
 	var sb strings.Builder
-	
+
 	sb.WriteString(fmt.Sprintf("Validation Summary:\n"))
 	sb.WriteString(fmt.Sprintf("  Total files: %d\n", s.TotalFiles))
 	sb.WriteString(fmt.Sprintf("  Valid: %d\n", s.ValidFiles))
@@ -226,20 +227,20 @@ func (s *ValidationSummary) String() string {
 	for t, count := range s.ByType {
 		sb.WriteString(fmt.Sprintf("    %s: %d\n", t, count))
 	}
-	
+
 	if len(s.Errors) > 0 {
 		sb.WriteString(fmt.Sprintf("  Errors (%d):\n", len(s.Errors)))
 		for _, err := range s.Errors {
 			sb.WriteString(fmt.Sprintf("    - %s\n", err))
 		}
 	}
-	
+
 	if len(s.Warnings) > 0 {
 		sb.WriteString(fmt.Sprintf("  Warnings (%d):\n", len(s.Warnings)))
 		for _, warn := range s.Warnings {
 			sb.WriteString(fmt.Sprintf("    - %s\n", warn))
 		}
 	}
-	
+
 	return sb.String()
 }

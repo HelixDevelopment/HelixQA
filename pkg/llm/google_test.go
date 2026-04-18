@@ -258,7 +258,7 @@ func TestGoogleProvider_Vision(t *testing.T) {
 					{
 						InlineData: &geminiInline{
 							MIMEType: "image/png",
-							Data: "iVBORw0KGgo=",
+							Data:     "iVBORw0KGgo=",
 						},
 					},
 					{

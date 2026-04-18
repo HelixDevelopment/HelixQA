@@ -21,9 +21,9 @@ type FlakeSample struct {
 // good enough for a first pass and keeps us CGo-free; swap to an ONNX
 // runtime model later without breaking callers.
 type Predictor struct {
-	mu     sync.RWMutex
-	weight map[string]float64 // feature name -> weight
-	bias   float64
+	mu      sync.RWMutex
+	weight  map[string]float64 // feature name -> weight
+	bias    float64
 	history []FlakeSample
 }
 
@@ -32,10 +32,10 @@ type Predictor struct {
 func NewPredictor() *Predictor {
 	return &Predictor{
 		weight: map[string]float64{
-			"retries":     0.45,
-			"duration":    0.02,
-			"hour_late":   0.18,
-			"rss_gb":      0.12,
+			"retries":   0.45,
+			"duration":  0.02,
+			"hour_late": 0.18,
+			"rss_gb":    0.12,
 		},
 		bias: -0.9,
 	}

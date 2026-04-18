@@ -48,7 +48,7 @@ func (pb *PipelineBuilder) AddVideoCaps(format PixelFormat, width, height, fps i
 // Build constructs the final pipeline string
 func (pb *PipelineBuilder) Build() string {
 	var parts []string
-	
+
 	for i, elem := range pb.elements {
 		parts = append(parts, elem)
 		// Add caps after element if available
@@ -56,32 +56,32 @@ func (pb *PipelineBuilder) Build() string {
 			parts = append(parts, pb.caps[i])
 		}
 	}
-	
+
 	return strings.Join(parts, " ! ")
 }
 
 // BuildArgs constructs the pipeline as command-line arguments
 func (pb *PipelineBuilder) BuildArgs() []string {
 	var args []string
-	
+
 	for i, elem := range pb.elements {
 		// Split element into parts (name + properties)
 		parts := strings.Fields(elem)
 		args = append(args, parts...)
 		args = append(args, "!")
-		
+
 		// Add caps if available
 		if i < len(pb.caps) {
 			args = append(args, pb.caps[i])
 			args = append(args, "!")
 		}
 	}
-	
+
 	// Remove trailing "!"
 	if len(args) > 0 {
 		args = args[:len(args)-1]
 	}
-	
+
 	return args
 }
 
@@ -196,13 +196,13 @@ func (pb *PipelineBuilder) RTMPSink(url string) *PipelineBuilder {
 
 // RTSPSink adds an RTSP sink
 func (pb *PipelineBuilder) RTSPSink(host string, port int, path string) *PipelineBuilder {
-	return pb.AddElement("rtspclientsink", 
+	return pb.AddElement("rtspclientsink",
 		fmt.Sprintf("location=rtsp://%s:%d/%s", host, port, path))
 }
 
 // TCPServerSink adds a TCP server sink
 func (pb *PipelineBuilder) TCPServerSink(host string, port int) *PipelineBuilder {
-	return pb.AddElement("tcpserversink", 
+	return pb.AddElement("tcpserversink",
 		fmt.Sprintf("host=%s", host),
 		fmt.Sprintf("port=%d", port))
 }
@@ -260,7 +260,7 @@ func (pb *PipelineBuilder) CapFilter(caps string) *PipelineBuilder {
 // FrameExtractionPipeline creates a complete frame extraction pipeline
 func FrameExtractionPipeline(sourceURL string, sourceType SourceType, format PixelFormat, width, height, fps int) string {
 	var pb *PipelineBuilder
-	
+
 	switch sourceType {
 	case SourceRTSP:
 		pb = RTSPSource(sourceURL)
@@ -273,7 +273,7 @@ func FrameExtractionPipeline(sourceURL string, sourceType SourceType, format Pix
 	default:
 		pb = TestSource("smpte")
 	}
-	
+
 	return pb.
 		Decoder().
 		VideoConvert().
@@ -301,7 +301,7 @@ func StreamingPipeline(sourceURL string, outputURL string, codec string) string 
 		Decoder().
 		VideoConvert().
 		Queue("", 100, 0, 0)
-	
+
 	switch codec {
 	case "h264":
 		pb = pb.H264Encoder("veryfast", "")
@@ -312,7 +312,7 @@ func StreamingPipeline(sourceURL string, outputURL string, codec string) string 
 	case "vp9":
 		pb = pb.VP9Encoder()
 	}
-	
+
 	return pb.
 		Parse(codec).
 		Mux("matroskamux").
@@ -358,13 +358,13 @@ func ValidatePipeline(pipeline string) error {
 	// Extract element names from pipeline
 	// This is a simplified check - full validation would require parsing
 	elements := ExtractElements(pipeline)
-	
+
 	for _, elem := range elements {
 		if !CheckElement(elem) {
 			return fmt.Errorf("element not available: %s", elem)
 		}
 	}
-	
+
 	return nil
 }
 
@@ -372,13 +372,13 @@ func ValidatePipeline(pipeline string) error {
 func ExtractElements(pipeline string) []string {
 	var elements []string
 	parts := strings.Split(pipeline, "!")
-	
+
 	for _, part := range parts {
 		part = strings.TrimSpace(part)
 		if part == "" || strings.HasPrefix(part, "video/") || strings.HasPrefix(part, "audio/") {
 			continue
 		}
-		
+
 		// Get element name (first word)
 		fields := strings.Fields(part)
 		if len(fields) > 0 {
@@ -390,7 +390,7 @@ func ExtractElements(pipeline string) []string {
 			}
 		}
 	}
-	
+
 	return elements
 }
 
@@ -398,7 +398,7 @@ func ExtractElements(pipeline string) []string {
 func EstimateBitrate(width, height, fps int, quality string) int {
 	// Base bitrate calculation (bits per pixel)
 	bpp := 0.1 // Default bits per pixel
-	
+
 	switch quality {
 	case "low":
 		bpp = 0.05
@@ -409,10 +409,10 @@ func EstimateBitrate(width, height, fps int, quality string) int {
 	case "ultra":
 		bpp = 0.4
 	}
-	
+
 	// Calculate: width * height * fps * bpp
 	bitrate := width * height * fps * int(bpp*1000000) / 1000000
-	
+
 	// Apply resolution-specific adjustments
 	pixels := width * height
 	switch {
@@ -427,7 +427,7 @@ func EstimateBitrate(width, height, fps int, quality string) int {
 	case pixels <= 3840*2160: // 4K
 		bitrate = min(bitrate, 25000000)
 	}
-	
+
 	return bitrate
 }
 

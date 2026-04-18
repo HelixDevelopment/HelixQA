@@ -27,8 +27,8 @@ func newTestAgent(id, name string) *testAgent {
 	return &testAgent{id: id, name: name}
 }
 
-func (a *testAgent) ID() string                  { return a.id }
-func (a *testAgent) Name() string                { return a.name }
+func (a *testAgent) ID() string                    { return a.id }
+func (a *testAgent) Name() string                  { return a.name }
 func (a *testAgent) Start(_ context.Context) error { return nil }
 func (a *testAgent) Stop(_ context.Context) error  { return nil }
 func (a *testAgent) IsRunning() bool               { return true }

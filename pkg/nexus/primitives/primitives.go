@@ -210,8 +210,8 @@ func (e *Engine) Extract(ctx context.Context, prompt, schema string, out any) er
 		}
 	}
 	req := agent.PlanRequest{
-		TaskGoal:   prompt,
-		Snapshot:   snap,
+		TaskGoal:     prompt,
+		Snapshot:     snap,
 		SystemPrompt: "You are a structured-data extractor. Reply with a single JSON object matching the schema in Memory. Do not emit actions.",
 		RecentSteps: []agent.AgentStep{{
 			Evaluation: "Extraction schema:",

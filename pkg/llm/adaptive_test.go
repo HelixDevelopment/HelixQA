@@ -20,7 +20,7 @@ type mockProvider struct {
 	visionErr  error
 }
 
-func (m *mockProvider) Name() string        { return m.name }
+func (m *mockProvider) Name() string         { return m.name }
 func (m *mockProvider) SupportsVision() bool { return m.vision }
 
 func (m *mockProvider) Chat(
@@ -213,8 +213,8 @@ func TestAdaptiveProvider_Vision_NoCapableProvider(t *testing.T) {
 // returned when all supplied configs are invalid.
 func TestNewAdaptiveFromConfigs_AllInvalid(t *testing.T) {
 	configs := []ProviderConfig{
-		{Name: ""},         // empty name — invalid
-		{Name: "unknown"},  // unknown type — silently skipped
+		{Name: ""},        // empty name — invalid
+		{Name: "unknown"}, // unknown type — silently skipped
 	}
 
 	_, err := NewAdaptiveFromConfigs(configs)
