@@ -1,0 +1,220 @@
+{
+  "version": "1.0",
+  "name": "OpenClawing2 \u2014 Phase 7 Rich Ticketing",
+  "description": "Regression suite for pkg/ticket rich-evidence fields: CaptureRich helper, RenderRichMarkdown, VerifyMandatory.",
+  "metadata": {
+    "author": "vasic-digital",
+    "phase": 7,
+    "plan": "docs/plans/2026-04-18-openclawing2-integration-plan.md"
+  },
+  "test_cases": [
+    {
+      "id": "OC-TICKET-001",
+      "name": "CaptureRich populates every field from input",
+      "category": "functional",
+      "priority": "critical",
+      "platforms": [
+        "api"
+      ],
+      "tags": [
+        "openclawing2",
+        "phase7",
+        "evidence"
+      ],
+      "steps": [
+        {
+          "name": "Build ticket + call CaptureRich with full input",
+          "action": "pkg/ticket.CaptureRich",
+          "expected": "SessionID, StepNumber, VideoTimestamp, VideoRefs, before/after paths, LLMReasoning, StackTrace, ReproductionBank all set"
+        }
+      ],
+      "expected_result": "One call captures every mandatory evidence field"
+    },
+    {
+      "id": "OC-TICKET-002",
+      "name": "VideoTimestamp is derived from FailedAt - VideoOriginAt",
+      "category": "regression",
+      "priority": "critical",
+      "platforms": [
+        "api"
+      ],
+      "tags": [
+        "openclawing2",
+        "phase7",
+        "video"
+      ],
+      "steps": [
+        {
+          "name": "FailedAt = origin + 42s",
+          "action": "pkg/ticket.CaptureRich",
+          "expected": "VideoTimestamp == '00:42'"
+        }
+      ],
+      "expected_result": "mm:ss timestamp auto-computed"
+    },
+    {
+      "id": "OC-TICKET-003",
+      "name": "Nil ticket pointer returns nil safely",
+      "category": "regression",
+      "priority": "high",
+      "platforms": [
+        "api"
+      ],
+      "tags": [
+        "openclawing2",
+        "phase7",
+        "safety"
+      ],
+      "steps": [
+        {
+          "name": "CaptureRich(nil, input)",
+          "action": "pkg/ticket.CaptureRich",
+          "expected": "returns nil without panic"
+        }
+      ],
+      "expected_result": "No crash on nil receiver"
+    },
+    {
+      "id": "OC-TICKET-004",
+      "name": "Partial input leaves other fields untouched",
+      "category": "regression",
+      "priority": "high",
+      "platforms": [
+        "api"
+      ],
+      "tags": [
+        "openclawing2",
+        "phase7",
+        "merge"
+      ],
+      "steps": [
+        {
+          "name": "Ticket already has SessionID; capture only a before path",
+          "action": "pkg/ticket.CaptureRich",
+          "expected": "SessionID preserved; AfterScreenshotPath stays empty"
+        }
+      ],
+      "expected_result": "Capture is additive"
+    },
+    {
+      "id": "OC-TICKET-005",
+      "name": "RenderRichMarkdown emits every section",
+      "category": "functional",
+      "priority": "critical",
+      "platforms": [
+        "api"
+      ],
+      "tags": [
+        "openclawing2",
+        "phase7",
+        "renderer"
+      ],
+      "steps": [
+        {
+          "name": "RenderRichMarkdown on fully-populated ticket",
+          "action": "pkg/ticket.RenderRichMarkdown",
+          "expected": "output contains '## Evidence', Session ID, Step number, Video timestamp, screenshots, stack trace, numbered reasoning transcript, reproduction bank"
+        }
+      ],
+      "expected_result": "Reviewers can act without reading code"
+    },
+    {
+      "id": "OC-TICKET-006",
+      "name": "Legacy ticket produces empty markdown block",
+      "category": "regression",
+      "priority": "medium",
+      "platforms": [
+        "api"
+      ],
+      "tags": [
+        "openclawing2",
+        "phase7",
+        "renderer"
+      ],
+      "steps": [
+        {
+          "name": "RenderRichMarkdown on ticket with no rich fields",
+          "action": "pkg/ticket.RenderRichMarkdown",
+          "expected": "empty string"
+        }
+      ],
+      "expected_result": "Evidence section never added spuriously"
+    },
+    {
+      "id": "OC-TICKET-007",
+      "name": "VerifyMandatory reports every missing mandatory field",
+      "category": "regression",
+      "priority": "critical",
+      "platforms": [
+        "api"
+      ],
+      "tags": [
+        "openclawing2",
+        "phase7",
+        "gate"
+      ],
+      "steps": [
+        {
+          "name": "VerifyMandatory on empty ticket",
+          "action": "pkg/ticket.VerifyMandatory",
+          "expected": "returns full MandatoryRichFields list"
+        },
+        {
+          "name": "VerifyMandatory on fully populated ticket",
+          "action": "pkg/ticket.VerifyMandatory",
+          "expected": "returns empty slice"
+        }
+      ],
+      "expected_result": "Production gate can reject incomplete tickets"
+    },
+    {
+      "id": "OC-TICKET-008",
+      "name": "formatMMSS handles negative + large durations",
+      "category": "regression",
+      "priority": "medium",
+      "platforms": [
+        "api"
+      ],
+      "tags": [
+        "openclawing2",
+        "phase7",
+        "formatting"
+      ],
+      "steps": [
+        {
+          "name": "formatMMSS(-1s)",
+          "action": "pkg/ticket.formatMMSS",
+          "expected": "'00:00'"
+        },
+        {
+          "name": "formatMMSS(7m5s)",
+          "action": "pkg/ticket.formatMMSS",
+          "expected": "'07:05'"
+        }
+      ],
+      "expected_result": "Clock math never panics or wraps"
+    },
+    {
+      "id": "OC-TICKET-009",
+      "name": "Before + after screenshots accumulate into Screenshots slice",
+      "category": "regression",
+      "priority": "medium",
+      "platforms": [
+        "api"
+      ],
+      "tags": [
+        "openclawing2",
+        "phase7",
+        "compat"
+      ],
+      "steps": [
+        {
+          "name": "CaptureRich with before + after paths",
+          "action": "pkg/ticket.CaptureRich",
+          "expected": "Ticket.Screenshots len >= 2"
+        }
+      ],
+      "expected_result": "Legacy reviewers still see both frames in the unified list"
+    }
+  ]
+}

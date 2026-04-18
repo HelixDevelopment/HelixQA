@@ -145,6 +145,43 @@ type Ticket struct {
 	// SuggestedFix holds an LLM-generated fix suggestion.
 	// Optional: nil means no suggestion available.
 	SuggestedFix *LLMSuggestedFix `json:"suggested_fix,omitempty"`
+
+	// ---- P7 (OpenClawing2 Phase 7) — rich evidence fields ----
+	// These fields lock in the "better-documented tickets" brief
+	// from the OpenClawing2 plan. Every one is optional so legacy
+	// tickets stay schema-compatible; callers populate only what
+	// applies to their failure scenario.
+
+	// VideoTimestamp is an mm:ss offset into VideoRefs[0].Path where
+	// the failure is visible. Empty string = no pinned timestamp.
+	VideoTimestamp string `json:"video_timestamp,omitempty"`
+
+	// BeforeScreenshotPath + AfterScreenshotPath pin the paired
+	// pre/post frames for a single failed step. Reviewers open
+	// these side-by-side to see exactly what changed.
+	BeforeScreenshotPath string `json:"before_screenshot_path,omitempty"`
+	AfterScreenshotPath  string `json:"after_screenshot_path,omitempty"`
+
+	// LLMReasoningTranscript is the planner's "Evaluation + Memory
+	// + NextGoal" trace across the steps leading up to the failure.
+	// Reviewers see exactly what the model was thinking when it
+	// produced the bad Action.
+	LLMReasoningTranscript []string `json:"llm_reasoning_transcript,omitempty"`
+
+	// ReproductionBank names the YAML bank entry that will
+	// permanently replay this scenario — typically a
+	// banks/fixes-validation-*.yaml row. The enhanced generator
+	// can auto-create the stub so the ticket + regression guard
+	// ship together.
+	ReproductionBank string `json:"reproduction_bank,omitempty"`
+
+	// SessionID is the Agent / nexus.Session ID that produced the
+	// failure. Links the ticket back to qa-results/session-*.
+	SessionID string `json:"session_id,omitempty"`
+
+	// StepNumber is the 1-based iteration index inside the Agent
+	// run that produced this failure.
+	StepNumber int `json:"step_number,omitempty"`
 }
 
 // Generator creates markdown tickets from QA results.
