@@ -185,8 +185,10 @@ func (h *chromedpHandle) OpenTab(ctx context.Context, url string) (string, error
 
 func (h *chromedpHandle) CloseTab(ctx context.Context, tabID string) error {
 	return chromedp.Run(h.ctx, chromedp.ActionFunc(func(c context.Context) error {
-		_, err := target.CloseTarget(target.ID(tabID)).Do(c)
-		return err
+		// Newer chromedp/cdproto releases changed CloseTarget().Do to
+		// return only an error — the previous boolean success flag is
+		// gone. Keep compatibility with the pinned go.mod version.
+		return target.CloseTarget(target.ID(tabID)).Do(c)
 	}))
 }
 
@@ -238,6 +240,50 @@ func stringField(m map[string]any, k string) string {
 	return ""
 }
 
+// --- CoordCapable implementation -------------------------------------------
+//
+// Phase-6 coord-grounded dispatch. The chromedp handle wires through
+// CDP's Input domain via MouseEvent / DispatchKeyEvent so UI-TARS-
+// style planners that emit pixel-grounded actions work against a
+// real Chromium without the caller having to configure anything.
+
+func (h *chromedpHandle) CoordClick(ctx context.Context, x, y int) error {
+	if x < 0 || y < 0 {
+		return fmt.Errorf("chromedp CoordClick: refused negative coords (%d, %d)", x, y)
+	}
+	return chromedp.Run(h.ctx, chromedp.MouseClickXY(float64(x), float64(y)))
+}
+
+func (h *chromedpHandle) CoordType(ctx context.Context, x, y int, text string) error {
+	if text == "" {
+		return fmt.Errorf("chromedp CoordType: empty text")
+	}
+	// Click to land focus on whatever widget sits at (x, y), then
+	// insert the text via the standard chromedp.KeyEvent helper so
+	// keyboard shortcuts + IME compose paths all behave.
+	return chromedp.Run(h.ctx,
+		chromedp.MouseClickXY(float64(x), float64(y)),
+		chromedp.KeyEvent(text),
+	)
+}
+
+func (h *chromedpHandle) CoordScroll(ctx context.Context, x, y, dx, dy int) error {
+	// Anchor at (x, y) by dispatching a synthetic mouseover first so
+	// scroll-at-point targets the intended element; then evaluate a
+	// window.scrollBy to apply the delta. Using JS avoids depending on
+	// chromedp.MouseWheel(), which was introduced later than the
+	// vendored chromedp version pinned in go.mod.
+	script := fmt.Sprintf(`(() => {
+      const ev = new MouseEvent('mousemove', {bubbles:true, clientX:%d, clientY:%d});
+      document.dispatchEvent(ev);
+      window.scrollBy(%d, %d);
+      return true;
+    })()`, x, y, dx, dy)
+	var ok bool
+	return chromedp.Run(h.ctx, chromedp.Evaluate(script, &ok))
+}
+
 var _ Driver = (*ChromedpDriver)(nil)
 var _ SessionHandle = (*chromedpHandle)(nil)
 var _ ExtendedHandle = (*chromedpHandle)(nil)
+var _ CoordCapable = (*chromedpHandle)(nil)

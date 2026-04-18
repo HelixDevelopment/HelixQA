@@ -219,6 +219,59 @@ func stringFromMap(m map[string]any, k string) string {
 	return ""
 }
 
+// --- CoordCapable implementation -------------------------------------------
+//
+// Phase-6 coord-grounded dispatch for the rod driver. Routes through
+// rod's Page.Mouse + Page.InsertText APIs so UI-TARS-style
+// pixel-grounded actions work against a real Chromium.
+
+func (h *rodHandle) CoordClick(_ context.Context, x, y int) error {
+	if x < 0 || y < 0 {
+		return fmt.Errorf("rod CoordClick: refused negative coords (%d, %d)", x, y)
+	}
+	if err := h.page.Mouse.MoveTo(proto.NewPoint(float64(x), float64(y))); err != nil {
+		return fmt.Errorf("rod CoordClick move: %w", err)
+	}
+	if err := h.page.Mouse.Down(proto.InputMouseButtonLeft, 1); err != nil {
+		return fmt.Errorf("rod CoordClick down: %w", err)
+	}
+	return h.page.Mouse.Up(proto.InputMouseButtonLeft, 1)
+}
+
+func (h *rodHandle) CoordType(ctx context.Context, x, y int, text string) error {
+	if text == "" {
+		return fmt.Errorf("rod CoordType: empty text")
+	}
+	if err := h.CoordClick(ctx, x, y); err != nil {
+		return err
+	}
+	// Insert text into the now-focused element. InsertText bypasses
+	// per-key event dispatch, which is what we want for a coord-
+	// grounded type — the LLM already said "put this string here".
+	return h.page.InsertText(text)
+}
+
+func (h *rodHandle) CoordScroll(_ context.Context, x, y, dx, dy int) error {
+	if err := h.page.Mouse.MoveTo(proto.NewPoint(float64(x), float64(y))); err != nil {
+		return fmt.Errorf("rod CoordScroll move: %w", err)
+	}
+	// Scroll(offsetX, offsetY, steps) — one step per ~120px of
+	// wheel delta matches the desktop CoordScroll cadence.
+	steps := (absIntRod(dx) + absIntRod(dy)) / 120
+	if steps <= 0 {
+		steps = 1
+	}
+	return h.page.Mouse.Scroll(float64(dx), float64(dy), steps)
+}
+
+func absIntRod(v int) int {
+	if v < 0 {
+		return -v
+	}
+	return v
+}
+
 var _ Driver = (*RodDriver)(nil)
 var _ SessionHandle = (*rodHandle)(nil)
 var _ ExtendedHandle = (*rodHandle)(nil)
+var _ CoordCapable = (*rodHandle)(nil)
