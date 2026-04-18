@@ -54,7 +54,11 @@ func LoadFile(path string) (*BankFile, error) {
 		}
 	}
 
-	// Validate all test cases.
+	// Validate all test cases + guard against intra-bank duplicate
+	// ids. P9 fix (docs/nexus/remaining-work.md): a duplicate id
+	// inside a single bank used to silently overwrite the prior
+	// entry when loaded into maps downstream; refuse at load time.
+	seen := map[string]int{}
 	for i := range bf.TestCases {
 		if msg := bf.TestCases[i].IsValid(); msg != "" {
 			return nil, fmt.Errorf(
@@ -62,6 +66,17 @@ func LoadFile(path string) (*BankFile, error) {
 				path, i, msg,
 			)
 		}
+		id := bf.TestCases[i].ID
+		if id == "" {
+			continue
+		}
+		if prev, dup := seen[id]; dup {
+			return nil, fmt.Errorf(
+				"bank file %s: duplicate test case id %q at indices %d and %d",
+				path, id, prev, i,
+			)
+		}
+		seen[id] = i
 	}
 
 	return &bf, nil
@@ -76,6 +91,11 @@ func LoadDir(dir string) ([]*BankFile, error) {
 	}
 
 	var banks []*BankFile
+	// P9: track every id across the directory so cross-bank
+	// collisions are caught at load time. The bank-registry layer
+	// downstream also derives from these ids and silently drops
+	// collisions; blocking here is the permanent fix.
+	xref := map[string]string{}
 	for _, entry := range entries {
 		if entry.IsDir() {
 			continue
@@ -84,9 +104,34 @@ func LoadDir(dir string) ([]*BankFile, error) {
 		if ext != ".yaml" && ext != ".yml" && ext != ".json" {
 			continue
 		}
-		bf, err := LoadFile(filepath.Join(dir, entry.Name()))
+		// Skip JSON twins when a YAML sibling exists to avoid a
+		// spurious duplicate-id error — the YAML and JSON forms are
+		// two serialisations of the same bank.
+		if ext == ".json" {
+			base := strings.TrimSuffix(entry.Name(), ".json")
+			if _, err := os.Stat(filepath.Join(dir, base+".yaml")); err == nil {
+				continue
+			}
+			if _, err := os.Stat(filepath.Join(dir, base+".yml")); err == nil {
+				continue
+			}
+		}
+		path := filepath.Join(dir, entry.Name())
+		bf, err := LoadFile(path)
 		if err != nil {
 			return nil, err
+		}
+		for _, tc := range bf.TestCases {
+			if tc.ID == "" {
+				continue
+			}
+			if prev, dup := xref[tc.ID]; dup {
+				return nil, fmt.Errorf(
+					"bank dir %s: duplicate test case id %q across banks (also in %s)",
+					dir, tc.ID, prev,
+				)
+			}
+			xref[tc.ID] = path
 		}
 		banks = append(banks, bf)
 	}

@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/collectors"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
@@ -89,10 +90,18 @@ func (b *PrometheusBridge) Collect(ch chan<- prometheus.Metric) {
 }
 
 // Handler returns a Prometheus scrape handler serving the Nexus metric
-// set plus any standard collectors operators want to include.
+// set plus any standard collectors operators want to include. P5 fix
+// (docs/nexus/remaining-work.md): the default bundle now includes
+// collectors.NewGoCollector() + collectors.NewProcessCollector() so
+// scrapes of the Nexus bridge expose Go-runtime gauges (goroutines,
+// gc pause, heap alloc) and process gauges (rss, fds, cpu) alongside
+// the custom Nexus metrics. Operators can still pass additional
+// collectors via `extra`.
 func Handler(r *Registry, extra ...prometheus.Collector) http.Handler {
 	reg := prometheus.NewRegistry()
 	reg.MustRegister(NewPrometheusBridge(r))
+	reg.MustRegister(collectors.NewGoCollector())
+	reg.MustRegister(collectors.NewProcessCollector(collectors.ProcessCollectorOpts{}))
 	for _, c := range extra {
 		reg.MustRegister(c)
 	}
