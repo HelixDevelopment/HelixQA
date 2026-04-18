@@ -1,0 +1,316 @@
+{
+  "id": "ocu-interact",
+  "version": "1.0",
+  "name": "OCU P3 Interact",
+  "description": "Validates the interaction engine: factory, linux/web/android/androidtv backends, verifier hook, and stress behaviour.",
+  "metadata": {
+    "author": "vasic-digital",
+    "priority": "2"
+  },
+  "test_cases": [
+    {
+      "id": "OCU-INTERACT-001",
+      "name": "factory-register-and-open",
+      "category": "unit",
+      "priority": "critical",
+      "steps": [
+        {
+          "name": "Run factory register and open",
+          "action": "go-test: digital.vasic.helixqa/pkg/nexus/interact TestFactory_RegisterAndOpen",
+          "expected": "pass"
+        }
+      ],
+      "tags": ["ocu", "interact", "factory", "happy"],
+      "estimated_duration": "5s",
+      "expected_result": "Custom factory registered under a test kind is discoverable via Kinds() and Open() returns a non-nil Interactor"
+    },
+    {
+      "id": "OCU-INTERACT-002",
+      "name": "factory-unknown-kind-errors",
+      "category": "unit",
+      "priority": "high",
+      "steps": [
+        {
+          "name": "Run factory unknown kind error case",
+          "action": "go-test: digital.vasic.helixqa/pkg/nexus/interact TestFactory_UnknownKind",
+          "expected": "pass"
+        }
+      ],
+      "tags": ["ocu", "interact", "factory", "edge"],
+      "estimated_duration": "5s",
+      "expected_result": "Open() returns a non-nil error containing the unregistered kind name"
+    },
+    {
+      "id": "OCU-INTERACT-003",
+      "name": "factory-kinds-listing",
+      "category": "unit",
+      "priority": "high",
+      "steps": [
+        {
+          "name": "Run factory Kinds listing test",
+          "action": "go-test: digital.vasic.helixqa/pkg/nexus/interact TestFactory_Kinds",
+          "expected": "pass"
+        }
+      ],
+      "tags": ["ocu", "interact", "factory", "happy"],
+      "estimated_duration": "5s",
+      "expected_result": "Kinds() returns a sorted list that includes all registered kinds"
+    },
+    {
+      "id": "OCU-INTERACT-004",
+      "name": "factory-concurrent-register-race",
+      "category": "unit",
+      "priority": "high",
+      "steps": [
+        {
+          "name": "Run factory concurrent register race check",
+          "action": "go-test: digital.vasic.helixqa/pkg/nexus/interact TestFactory_ConcurrentRegister",
+          "expected": "pass"
+        }
+      ],
+      "tags": ["ocu", "interact", "factory", "adversarial", "race"],
+      "estimated_duration": "10s",
+      "expected_result": "Concurrent Register() and Open() calls produce no data races under -race"
+    },
+    {
+      "id": "OCU-INTERACT-010",
+      "name": "linux-production-returns-err-not-wired",
+      "category": "unit",
+      "priority": "critical",
+      "steps": [
+        {
+          "name": "Run linux production sentinel test",
+          "action": "go-test: digital.vasic.helixqa/pkg/nexus/interact/linux TestInteractor_ProductionReturnsErrNotWired",
+          "expected": "pass"
+        }
+      ],
+      "tags": ["ocu", "interact", "linux", "edge"],
+      "estimated_duration": "5s",
+      "expected_result": "Linux Interactor.Click() returns ErrNotWired when no injector is wired (P3.5 deferred)"
+    },
+    {
+      "id": "OCU-INTERACT-011",
+      "name": "linux-mock-all-methods",
+      "category": "unit",
+      "priority": "high",
+      "steps": [
+        {
+          "name": "Run linux all-methods delegation test",
+          "action": "go-test: digital.vasic.helixqa/pkg/nexus/interact/linux TestInteractor_AllMethodsDelegate",
+          "expected": "pass"
+        }
+      ],
+      "tags": ["ocu", "interact", "linux", "happy"],
+      "estimated_duration": "5s",
+      "expected_result": "All 5 Interactor methods delegate to the injector in order with correct arguments"
+    },
+    {
+      "id": "OCU-INTERACT-012",
+      "name": "linux-registered-as-kind",
+      "category": "unit",
+      "priority": "high",
+      "steps": [
+        {
+          "name": "Run linux kind registration test",
+          "action": "go-test: digital.vasic.helixqa/pkg/nexus/interact/linux TestInteractor_RegisteredAsLinux",
+          "expected": "pass"
+        }
+      ],
+      "tags": ["ocu", "interact", "linux", "happy"],
+      "estimated_duration": "5s",
+      "expected_result": "linux package init() registers 'linux' kind in the factory"
+    },
+    {
+      "id": "OCU-INTERACT-020",
+      "name": "web-production-returns-err-not-wired",
+      "category": "unit",
+      "priority": "critical",
+      "steps": [
+        {
+          "name": "Run web production sentinel test",
+          "action": "go-test: digital.vasic.helixqa/pkg/nexus/interact/web TestInteractor_ProductionReturnsErrNotWired",
+          "expected": "pass"
+        }
+      ],
+      "tags": ["ocu", "interact", "web", "edge"],
+      "estimated_duration": "5s",
+      "expected_result": "Web Interactor.Click() returns ErrNotWired when no CDP injector is wired (P3.5 deferred)"
+    },
+    {
+      "id": "OCU-INTERACT-021",
+      "name": "web-mock-all-methods",
+      "category": "unit",
+      "priority": "high",
+      "steps": [
+        {
+          "name": "Run web all-methods delegation test",
+          "action": "go-test: digital.vasic.helixqa/pkg/nexus/interact/web TestInteractor_AllMethodsDelegate",
+          "expected": "pass"
+        }
+      ],
+      "tags": ["ocu", "interact", "web", "happy"],
+      "estimated_duration": "5s",
+      "expected_result": "All 5 Interactor methods delegate to the CDP injector in order"
+    },
+    {
+      "id": "OCU-INTERACT-022",
+      "name": "web-registered-as-kind",
+      "category": "unit",
+      "priority": "high",
+      "steps": [
+        {
+          "name": "Run web kind registration test",
+          "action": "go-test: digital.vasic.helixqa/pkg/nexus/interact/web TestInteractor_RegisteredAsWeb",
+          "expected": "pass"
+        }
+      ],
+      "tags": ["ocu", "interact", "web", "happy"],
+      "estimated_duration": "5s",
+      "expected_result": "web package init() registers 'web' kind in the factory"
+    },
+    {
+      "id": "OCU-INTERACT-030",
+      "name": "android-both-kinds-registered",
+      "category": "unit",
+      "priority": "critical",
+      "steps": [
+        {
+          "name": "Run android dual-kind registration test",
+          "action": "go-test: digital.vasic.helixqa/pkg/nexus/interact/android TestFactory_RegistersBothKinds",
+          "expected": "pass"
+        }
+      ],
+      "tags": ["ocu", "interact", "android", "androidtv", "happy"],
+      "estimated_duration": "5s",
+      "expected_result": "android package init() registers both 'android' and 'androidtv' kinds in the factory"
+    },
+    {
+      "id": "OCU-INTERACT-031",
+      "name": "android-kind-distinguishes-phone-and-tv",
+      "category": "unit",
+      "priority": "high",
+      "steps": [
+        {
+          "name": "Run android/androidtv kind distinction test",
+          "action": "go-test: digital.vasic.helixqa/pkg/nexus/interact/android TestInteractor_KindDistinguishesPhoneAndTV",
+          "expected": "pass"
+        }
+      ],
+      "tags": ["ocu", "interact", "android", "androidtv", "happy"],
+      "estimated_duration": "5s",
+      "expected_result": "Interactor.Kind() returns 'android' for phone and 'androidtv' for TV; factory routes them correctly"
+    },
+    {
+      "id": "OCU-INTERACT-040",
+      "name": "verifier-noop-always-nil",
+      "category": "unit",
+      "priority": "high",
+      "steps": [
+        {
+          "name": "Run NoOp verifier always-nil test",
+          "action": "go-test: digital.vasic.helixqa/pkg/nexus/interact/verify TestNoOp_AlwaysNil",
+          "expected": "pass"
+        }
+      ],
+      "tags": ["ocu", "interact", "verify", "happy"],
+      "estimated_duration": "5s",
+      "expected_result": "NoOp.After() returns nil for any action string"
+    },
+    {
+      "id": "OCU-INTERACT-041",
+      "name": "verifier-wrap-calls-after-correct-action",
+      "category": "unit",
+      "priority": "critical",
+      "steps": [
+        {
+          "name": "Run Wrap calls-After with correct action test",
+          "action": "go-test: digital.vasic.helixqa/pkg/nexus/interact/verify TestWrap_CallsAfterWithCorrectAction",
+          "expected": "pass"
+        }
+      ],
+      "tags": ["ocu", "interact", "verify", "happy"],
+      "estimated_duration": "5s",
+      "expected_result": "Wrap() calls Verifier.After() with the correct action string ('click','type','scroll','key','drag') after each successful method"
+    },
+    {
+      "id": "OCU-INTERACT-042",
+      "name": "verifier-inner-error-short-circuits",
+      "category": "unit",
+      "priority": "critical",
+      "steps": [
+        {
+          "name": "Run inner-error short-circuit test",
+          "action": "go-test: digital.vasic.helixqa/pkg/nexus/interact/verify TestWrap_InnerErrorShortCircuits_AfterNotCalled",
+          "expected": "pass"
+        }
+      ],
+      "tags": ["ocu", "interact", "verify", "edge"],
+      "estimated_duration": "5s",
+      "expected_result": "When the inner Interactor returns an error, Verifier.After() is NOT called and the error propagates"
+    },
+    {
+      "id": "OCU-INTERACT-050",
+      "name": "stress-linux-100-concurrent",
+      "category": "stress",
+      "priority": "high",
+      "steps": [
+        {
+          "name": "Run linux 100-goroutine stress test",
+          "action": "go-test: digital.vasic.helixqa/pkg/nexus/interact/linux TestStress_Linux_100Concurrent",
+          "expected": "pass"
+        }
+      ],
+      "tags": ["ocu", "interact", "linux", "stress", "race"],
+      "estimated_duration": "30s",
+      "expected_result": "100 concurrent linux Interactor constructions + Click calls complete with no data races under -race"
+    },
+    {
+      "id": "OCU-INTERACT-051",
+      "name": "stress-web-100-concurrent",
+      "category": "stress",
+      "priority": "high",
+      "steps": [
+        {
+          "name": "Run web 100-goroutine stress test",
+          "action": "go-test: digital.vasic.helixqa/pkg/nexus/interact/web TestStress_Web_100Concurrent",
+          "expected": "pass"
+        }
+      ],
+      "tags": ["ocu", "interact", "web", "stress", "race"],
+      "estimated_duration": "30s",
+      "expected_result": "100 concurrent web Interactor constructions + Click calls complete with no data races under -race"
+    },
+    {
+      "id": "OCU-INTERACT-052",
+      "name": "stress-android-100-concurrent",
+      "category": "stress",
+      "priority": "high",
+      "steps": [
+        {
+          "name": "Run android 100-goroutine stress test",
+          "action": "go-test: digital.vasic.helixqa/pkg/nexus/interact/android TestStress_Android_100Concurrent",
+          "expected": "pass"
+        }
+      ],
+      "tags": ["ocu", "interact", "android", "androidtv", "stress", "race"],
+      "estimated_duration": "30s",
+      "expected_result": "100 concurrent android+androidtv Interactor constructions + Click calls complete with no data races under -race"
+    },
+    {
+      "id": "OCU-INTERACT-053",
+      "name": "stress-verifier-wrap-100-concurrent",
+      "category": "stress",
+      "priority": "high",
+      "steps": [
+        {
+          "name": "Run verifier Wrap 100-goroutine stress test",
+          "action": "go-test: digital.vasic.helixqa/pkg/nexus/interact/verify TestStress_Wrap_100Concurrent",
+          "expected": "pass"
+        }
+      ],
+      "tags": ["ocu", "interact", "verify", "stress", "race"],
+      "estimated_duration": "30s",
+      "expected_result": "100 concurrent Wrap+Click calls complete with no data races under -race"
+    }
+  ]
+}

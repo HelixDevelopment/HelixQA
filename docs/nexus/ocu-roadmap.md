@@ -10,7 +10,7 @@ Living status doc for the 8 OCU sub-projects. Program spec at
 | P0 Foundation | **CLOSED 2026-04-17** | [spec](../superpowers/specs/2026-04-17-openclaw-ultimate-program-design.md) | [plan](../superpowers/plans/2026-04-17-ocu-p0-foundation-plan.md) | Contracts + Containers GPU extension + vertical-slice CLIs shipped. All ten P0-applicable test categories green. |
 | P1 Capture | **CLOSED 2026-04-18** | [spec](../superpowers/specs/2026-04-17-openclaw-ultimate-program-design.md) | [plan](../superpowers/plans/2026-04-17-ocu-p1-capture-plan.md) | Factory + 4 CaptureSource backends (web/CDP, linux/X11, android, androidtv). Stress tested under -race. Per-source bench + audit filed. Bank `ocu-capture.json` shipped. Integration smoke green. Production subprocess wiring deferred to P1.5 via injectable `newFrameProducer`. |
 | P2 Vision | **CLOSED 2026-04-18** | [spec](../superpowers/specs/2026-04-17-openclaw-ultimate-program-design.md) | [plan](../superpowers/plans/2026-04-17-ocu-p2-vision-plan.md) | Pipeline + CPU backend + remote-dispatch plumbing via ocuremote.Dispatcher. Real OpenCV CUDA + TensorRT OCR deferred to P2.5 via LocalBackend interface + stub remote path. Stress -race clean. Bank `ocu-vision.json` (13 entries) shipped. Integration smoke green. |
-| P3 Interact | pending | — | — | Waits on P0 contracts (✅). Can start in parallel with P1/P2. |
+| P3 Interact | **CLOSED 2026-04-18** | [spec](../superpowers/specs/2026-04-17-openclaw-ultimate-program-design.md) | [plan](../superpowers/plans/2026-04-17-ocu-p3-interact-plan.md) | Factory + 4 Interactor backends (linux/uinput, web/CDP, android, androidtv). Injectable newInjector sentinel; production returns ErrNotWired. Verifier hook (verify.Wrap + NoOp). 100-goroutine stress -race clean. Bench: Wrap_Click ~86 ns/op 0 allocs (i7-1165G7). Bank `ocu-interact.json` (19 entries) shipped. Integration smoke green. Real uinput/CDP/ADB wiring deferred to P3.5. |
 | P4 Observe | pending | — | — | Waits on P0 contracts (✅). Can start in parallel with P1/P2/P3. |
 | P5 Record | pending | — | — | Waits on Wave 2 (P1–P4). |
 | P6 Automation | pending | — | — | Waits on P5. |
@@ -39,7 +39,11 @@ Living status doc for the 8 OCU sub-projects. Program spec at
 | CPU Backend Analyze (stub) | n/a (not budgeted) | ~3.8 ns / 0 allocs / 0 B (laptop i7-1165G7) | pure-Go stub; real OpenCV CUDA lands in P2.5 |
 | CPU Backend Diff (stub) | n/a (not budgeted) | ~48 ns / 1 alloc / 48 B (laptop i7-1165G7) | same-shape fast-path; real pixel diff in P2.5 |
 
-P3–P7 append their own actuals as benches land.
+| interact/verify Wrap_Click | n/a (not budgeted) | ~86 ns/op / 0 allocs / 83 B (laptop i7-1165G7) | NoOp verifier; 0 allocs in the hot path |
+| interact/verify NoOp_After | n/a (not budgeted) | ~0.34 ns/op / 0 allocs / 0 B (laptop i7-1165G7) | pure no-op; effectively free |
+| interact/verify Wrap_AllMethods (5 calls) | n/a (not budgeted) | ~488 ns/op / 0 allocs / 424 B (laptop i7-1165G7) | 5-method sequence through Wrap; 0 allocs |
+
+P4–P7 append their own actuals as benches land.
 
 ## Risk register
 
