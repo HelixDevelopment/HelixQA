@@ -336,3 +336,21 @@ test_cases:
         action: "podman-compose -f docker-compose.qa-robot.yml config"
         expected: "Valid compose configuration"
     tags: [container, compose]
+
+  # ─── OpenClawing Docs Audit (Phase 0) ───
+  - id: HQA-DOCS-001
+    name: "OpenClawing docs audit — retraction banners intact, no-sudo hook wired"
+    category: regression
+    priority: critical
+    platforms: [all]
+    steps:
+      - name: "Retraction banners present on 3 prior docs"
+        action: "grep -q 'RETRACTION NOTICE' docs/openclawing/Starting_Point.md && grep -q 'RETRACTION NOTICE' docs/openclawing/OpenClawing2.md && grep -q 'RETRACTION NOTICE' docs/openclawing/OpenClawing3.md"
+        expected: "All three grep calls succeed"
+      - name: "no-sudo hook rejects bare sudo"
+        action: "printf 'sudo foo\\n' | ./scripts/hooks/no-sudo.sh /dev/stdin || true"
+        expected: "Exit 1 stderr reports violation"
+      - name: "docs-audit bank loads"
+        action: "helixqa list --banks banks/docs-audit.yaml"
+        expected: "7 test cases enumerated (AUDIT-001..007)"
+    tags: [docs, retraction, hook, phase0]

@@ -820,3 +820,277 @@ test_cases:
       bug_id: "fullqa-challenge-runner-context"
       description: "Challenge runner used Gin request context (c.Request.Context()) which was cancelled when the HTTP write timeout fired, killing long-running challenges"
       fix_file: "catalog-api/handlers/challenge_handler.go"
+
+  # ==================== OpenClawing4 Phase 0 Retractions ====================
+  # Seeded from OpenClawing4.md §11 + OpenClawing4-Audit.md §D.
+  # Each entry maps one retracted claim to the evidence that catches the
+  # regression if a contributor re-introduces the claim. The banks/docs-audit.yaml
+  # bank provides the mechanical checks; these entries are the permanent
+  # `fixes-validation` anchors per CLAUDE.md Article VII.
+
+  - id: FIX-OC2-001
+    name: "OpenClawing2 fabricated browser-use path retracted"
+    category: regression
+    priority: high
+    platforms: [all]
+    steps:
+      - name: "Banner present"
+        action: "grep -n 'custom_browser.py' HelixQA/docs/openclawing/OpenClawing2.md"
+        expected: "Match within the retraction banner, labelled as not-existing"
+    tags: [regression, retraction, openclawing2, docs]
+    estimated_duration: "1s"
+    expected_result: "custom_browser.py is flagged as fabricated, not cited as authority"
+    fix_reference:
+      bug_id: "FIX-OC2-001"
+      description: "OpenClawing2.md §4.3.2 cited browser_use/browser/custom_browser.py which does not exist in browser-use/browser-use"
+      fix_file: "HelixQA/docs/openclawing/OpenClawing2.md"
+      fix_commit: "pending"
+
+  - id: FIX-OC2-002
+    name: "OpenClawing2 fabricated Skyvern path retracted"
+    category: regression
+    priority: high
+    platforms: [all]
+    steps:
+      - name: "Banner present"
+        action: "grep -n 'skyvern/agent/prompts.py' HelixQA/docs/openclawing/OpenClawing2.md"
+        expected: "Match within the retraction banner, labelled as not-existing"
+    tags: [regression, retraction, openclawing2, docs]
+    estimated_duration: "1s"
+    expected_result: "Skyvern agent/prompts.py is flagged as fabricated"
+    fix_reference:
+      bug_id: "FIX-OC2-002"
+      description: "OpenClawing2.md §5.1.2 cited skyvern/agent/prompts.py; Skyvern has no agent/ directory"
+      fix_file: "HelixQA/docs/openclawing/OpenClawing2.md"
+      fix_commit: "pending"
+
+  - id: FIX-OC2-003
+    name: "OpenClawing2 invented PlanEvaluate class retracted"
+    category: regression
+    priority: high
+    platforms: [all]
+    steps:
+      - name: "Banner present"
+        action: "grep -n 'PlanEvaluate' HelixQA/docs/openclawing/OpenClawing2.md"
+        expected: "Match within the retraction banner as 'not a real class'"
+    tags: [regression, retraction, openclawing2, docs]
+    estimated_duration: "1s"
+    expected_result: "PlanEvaluate is flagged as fabricated"
+    fix_reference:
+      bug_id: "FIX-OC2-003"
+      description: "OpenClawing2.md §10.1.1 and §8.1.2 referenced PlanEvaluate class that does not exist in browser-use"
+      fix_file: "HelixQA/docs/openclawing/OpenClawing2.md"
+      fix_commit: "pending"
+
+  - id: FIX-OC3-001
+    name: "OpenClawing3 src/ tree fabrication retracted"
+    category: regression
+    priority: critical
+    platforms: [all]
+    steps:
+      - name: "Banner present"
+        action: "grep -nE 'src/.*fabricated|Every file path.*src/' HelixQA/docs/openclawing/OpenClawing3.md"
+        expected: "Match within the retraction banner declaring src/... fabricated"
+      - name: "pkg/ map present in OpenClawing4 §7"
+        action: "grep -c '^| `pkg/' HelixQA/docs/openclawing/OpenClawing4.md"
+        expected: "Count >= 5"
+    tags: [regression, retraction, openclawing3, docs, architecture]
+    estimated_duration: "1s"
+    expected_result: "src/... tree is retracted; OpenClawing4 §7 provides the real pkg/... map"
+    fix_reference:
+      bug_id: "FIX-OC3-001"
+      description: "OpenClawing3 invented an src/... C++/TS tree that does not exist in HelixQA's Go pkg/... layout"
+      fix_file: "HelixQA/docs/openclawing/OpenClawing3.md"
+      fix_commit: "pending"
+
+  - id: FIX-OC3-002
+    name: "OpenClawing3 sudo usage retracted + no-sudo hook enforces constitution"
+    category: security
+    priority: critical
+    platforms: [all]
+    steps:
+      - name: "Retraction banner present"
+        action: "grep -nE 'sudo.*violates.*CLAUDE|NO SUDO OR ROOT' HelixQA/docs/openclawing/OpenClawing3.md"
+        expected: "Match within the retraction banner"
+      - name: "Hook script present and executable"
+        action: "test -x HelixQA/scripts/hooks/no-sudo.sh"
+        expected: "Script is executable"
+      - name: "Pre-commit config wires the hook"
+        action: "grep -n 'no-sudo' HelixQA/.pre-commit-config.yaml"
+        expected: "Hook wired via local repo entry"
+    tags: [security, retraction, openclawing3, constitution, hook]
+    estimated_duration: "2s"
+    expected_result: "sudo retraction and the mechanical hook both present"
+    fix_reference:
+      bug_id: "FIX-OC3-002"
+      description: "OpenClawing3 §14 used sudo dpkg/apt-get/usermod/make — violates HelixQA CLAUDE.md NO SUDO OR ROOT EXECUTION rule"
+      fix_file: "HelixQA/scripts/hooks/no-sudo.sh"
+      fix_commit: "pending"
+
+  - id: FIX-OC3-003
+    name: "OpenClawing3 TensorRT v2-API misuse retracted"
+    category: regression
+    priority: high
+    platforms: [all]
+    steps:
+      - name: "Retraction banner flags enqueueV3 bindings_ misuse"
+        action: "grep -n 'enqueueV3' HelixQA/docs/openclawing/OpenClawing3.md"
+        expected: "Match within the retraction banner"
+    tags: [regression, retraction, openclawing3, gpu, tensorrt]
+    estimated_duration: "1s"
+    expected_result: "enqueueV3 misuse flagged and replaced guidance given"
+    fix_reference:
+      bug_id: "FIX-OC3-003"
+      description: "OpenClawing3 copy-pasted TensorRT v2 bindings_ array into v3-style enqueueV3 call"
+      fix_file: "HelixQA/docs/openclawing/OpenClawing3.md"
+      fix_commit: "pending"
+
+  - id: FIX-OC3-004
+    name: "OpenClawing3 TensorRT-as-primary retracted; llama.cpp RPC is primary"
+    category: regression
+    priority: critical
+    platforms: [all]
+    steps:
+      - name: "Verify OpenClawing4 declares llama.cpp RPC primary"
+        action: "grep -nE 'llama\\.cpp RPC is the primary' HelixQA/docs/openclawing/OpenClawing4.md"
+        expected: "At least one match in §1.2 design invariants"
+      - name: "Verify HelixQA CLAUDE.md preserves the rule"
+        action: "grep -n 'llama.cpp RPC distributed inference is the primary' HelixQA/CLAUDE.md"
+        expected: "Rule intact"
+    tags: [regression, retraction, openclawing3, llm, constitution]
+    estimated_duration: "1s"
+    expected_result: "Primary-backend invariant preserved"
+    fix_reference:
+      bug_id: "FIX-OC3-004"
+      description: "OpenClawing3 proposed TensorRT as primary local inference, contradicting HelixQA CLAUDE.md llama.cpp RPC mandate"
+      fix_file: "HelixQA/docs/openclawing/OpenClawing4.md"
+      fix_commit: "pending"
+
+  - id: FIX-OC3-005
+    name: "OpenClawing3 'zero-copy DXGI' claim retracted"
+    category: regression
+    priority: medium
+    platforms: [all]
+    steps:
+      - name: "Retraction banner present"
+        action: "grep -nE 'Zero-copy DXGI|zero-copy.*DXGI' HelixQA/docs/openclawing/OpenClawing3.md"
+        expected: "Match within the retraction banner"
+    tags: [regression, retraction, openclawing3, gpu, dxgi]
+    estimated_duration: "1s"
+    expected_result: "zero-copy DXGI claim retracted; real path described in OpenClawing4 §11.3"
+    fix_reference:
+      bug_id: "FIX-OC3-005"
+      description: "OpenClawing3 §6.1 L1036-1037 claimed DXGI GetSharedHandle provides zero-copy; actually GPU-GPU copy"
+      fix_file: "HelixQA/docs/openclawing/OpenClawing3.md"
+      fix_commit: "pending"
+
+  - id: FIX-OC3-006
+    name: "OpenClawing3 optimistic benchmarks retracted"
+    category: regression
+    priority: medium
+    platforms: [all]
+    steps:
+      - name: "Retraction banner present"
+        action: "grep -nE 'Benchmarks.*optimistic|3.7.*optimistic|RTX 3060' HelixQA/docs/openclawing/OpenClawing3.md | head"
+        expected: "Match within the retraction banner declaring benchmarks 3–7× optimistic"
+    tags: [regression, retraction, openclawing3, benchmarks]
+    estimated_duration: "1s"
+    expected_result: "Benchmark retraction present; realistic budget in OpenClawing4 §5.5"
+    fix_reference:
+      bug_id: "FIX-OC3-006"
+      description: "OpenClawing3 '<2 ms template match on 1080p' and '<16 ms full pipeline' on RTX 3060 are 3–7× off"
+      fix_file: "HelixQA/docs/openclawing/OpenClawing3.md"
+      fix_commit: "pending"
+
+  - id: FIX-OC3-007
+    name: "OpenClawing3 16-week / 47-tech plan retracted"
+    category: regression
+    priority: medium
+    platforms: [all]
+    steps:
+      - name: "Retraction banner present"
+        action: "grep -nE '16-week.*47|47-tech|plan replaced' HelixQA/docs/openclawing/OpenClawing3.md | head"
+        expected: "Match within the retraction banner"
+      - name: "OpenClawing4 phase plan present"
+        action: "grep -nE '^## 8\\. Phased delivery plan|^### 1\\.3 Phase roadmap' HelixQA/docs/openclawing/OpenClawing4.md"
+        expected: "Phase plan section present in OpenClawing4"
+    tags: [regression, retraction, openclawing3, plan]
+    estimated_duration: "1s"
+    expected_result: "16-week plan retracted; 7-phase plan in OpenClawing4 §1.3 + §8"
+    fix_reference:
+      bug_id: "FIX-OC3-007"
+      description: "OpenClawing3 §12 scheduled 47 technologies across 16 weeks — 5-10x too optimistic"
+      fix_file: "HelixQA/docs/openclawing/OpenClawing4.md"
+      fix_commit: "pending"
+
+  - id: FIX-OC3-008
+    name: "OpenClawing3 namespace{} in .c file compile-blocker retracted"
+    category: regression
+    priority: low
+    platforms: [all]
+    steps:
+      - name: "Retraction banner mentions namespace in .c file"
+        action: "grep -nE 'namespace.*\\.c file|\\.c file.*namespace' HelixQA/docs/openclawing/OpenClawing3.md | head"
+        expected: "Match within the retraction banner"
+    tags: [regression, retraction, openclawing3, compile]
+    estimated_duration: "1s"
+    expected_result: "namespace compile-blocker retracted"
+    fix_reference:
+      bug_id: "FIX-OC3-008"
+      description: "OpenClawing3 §6.2 L1091-1248 put `namespace openclaw{}` inside a .c file — C has no namespaces"
+      fix_file: "HelixQA/docs/openclawing/OpenClawing3.md"
+      fix_commit: "pending"
+
+  - id: FIX-OC3-009
+    name: "OpenClawing3 invalid BuilderFlag::kCUDA_GRAPH retracted"
+    category: regression
+    priority: low
+    platforms: [all]
+    steps:
+      - name: "Retraction banner mentions kCUDA_GRAPH"
+        action: "grep -n 'kCUDA_GRAPH' HelixQA/docs/openclawing/OpenClawing3.md"
+        expected: "Match within the retraction banner"
+    tags: [regression, retraction, openclawing3, gpu]
+    estimated_duration: "1s"
+    expected_result: "invalid TensorRT BuilderFlag retracted; real CUDA Graphs path documented in OpenClawing4 §5.5.2"
+    fix_reference:
+      bug_id: "FIX-OC3-009"
+      description: "OpenClawing3 L727 referenced BuilderFlag::kCUDA_GRAPH which is not a valid TensorRT flag"
+      fix_file: "HelixQA/docs/openclawing/OpenClawing3.md"
+      fix_commit: "pending"
+
+  - id: FIX-OC3-010
+    name: "OpenClawing3 TS type error {key:'Down'}.repeat(n) retracted"
+    category: regression
+    priority: low
+    platforms: [all]
+    steps:
+      - name: "Retraction banner mentions the TS type error"
+        action: "grep -nE '\\{key:.?.Down.?.?\\}\\.repeat|TS type error|type error' HelixQA/docs/openclawing/OpenClawing3.md | head"
+        expected: "Match within the retraction banner"
+    tags: [regression, retraction, openclawing3, typescript]
+    estimated_duration: "1s"
+    expected_result: "Invalid TS code retracted"
+    fix_reference:
+      bug_id: "FIX-OC3-010"
+      description: "OpenClawing3 L2561 contained `{key:'Down'}.repeat(n)` which is a TS type error"
+      fix_file: "HelixQA/docs/openclawing/OpenClawing3.md"
+      fix_commit: "pending"
+
+  - id: FIX-OC3-011
+    name: "OpenClawing3 scrcpy v1.x wire-format retracted"
+    category: regression
+    priority: low
+    platforms: [all]
+    steps:
+      - name: "Retraction banner mentions scrcpy wire format"
+        action: "grep -nE 'scrcpy.*wire format|action_button|buttons.*uint32' HelixQA/docs/openclawing/OpenClawing3.md | head"
+        expected: "Match within the retraction banner"
+    tags: [regression, retraction, openclawing3, scrcpy]
+    estimated_duration: "1s"
+    expected_result: "Obsolete wire-format retracted; correct v3 fields documented in OpenClawing4 §5.1.3"
+    fix_reference:
+      bug_id: "FIX-OC3-011"
+      description: "OpenClawing3 §6.5 used scrcpy v1.x control packet layout missing action_button/buttons uint32 fields"
+      fix_file: "HelixQA/docs/openclawing/OpenClawing3.md"
+      fix_commit: "pending"

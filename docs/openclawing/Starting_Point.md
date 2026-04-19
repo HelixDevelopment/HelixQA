@@ -1,3 +1,16 @@
+> ⚠️ **RETRACTION NOTICE — 2026-04-19**
+>
+> This document is a landscape / seed attachment with **significant verification gaps**:
+> - **9 of 24 primary repository URLs return HTTP 404** (NanoClaw, ZeroClaw, NullClaw,
+>   Hermes, Moltworker, DumbClaw, PycoClaw, BabyClaw, Clawlet).
+> - **10 projects** have inconsistent URLs across sections (list vs. per-project write-up).
+> - Baseline "OpenClaw" facts (~420k LoC TypeScript, port 18789, Lane Queue) are **unsourced**.
+>
+> **Do not cite as authority.** Retained for historical context only.
+> See `OpenClawing4-Audit.md` §D.1 and `OpenClawing4.md` §11.1 for specifics.
+
+---
+
 # OpenClaw Like Codebases In-Depth Research
 
 I need a comprehensive list of projects which do same things as OpenClaw, but fater, smoother and better! I need a list in form a name of the project and a link to its GitHub repo(s).
