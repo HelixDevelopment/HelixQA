@@ -624,3 +624,93 @@ test_cases:
         expected: "< 200 ms GPU round-trip per OpenClawing4.md §5.8 tier-3 budget"
     tags: [phase2, perceptual, dreamsim, integration, manual, triton]
 
+  # ─── M35 · pkg/analysis/pelt · pure-Go PELT ───
+  - id: PH2-PELT-001
+    name: "pkg/analysis/pelt — PELT change-point detection happy path"
+    category: unit
+    priority: critical
+    platforms: [linux]
+    steps:
+      - name: "Step change is detected within ±5 samples of the true split"
+        action: "TestPELT_DetectsStepChange"
+        expected: "PASS"
+      - name: "Three-segment signal yields ≥ 2 change points"
+        action: "TestPELT_DetectsMultipleChanges"
+        expected: "PASS"
+      - name: "Constant signal yields zero change points"
+        action: "TestPELT_ConstantSignalYieldsNoChangePoints"
+        expected: "PASS"
+      - name: "Higher penalty produces ≤ change points (BIC monotonicity)"
+        action: "TestPELT_HigherPenaltyYieldsFewerOrEqualChangePoints"
+        expected: "PASS"
+      - name: "Four-segment signal yields strictly increasing change-point indices within (0, n)"
+        action: "TestPELT_ChangePointsAreStrictlyIncreasing"
+        expected: "PASS"
+    tags: [phase2, analysis, pelt, change-point, algorithm]
+
+  - id: PH2-PELT-002
+    name: "pkg/analysis/pelt — config + pluggable cost functions"
+    category: unit
+    priority: high
+    platforms: [linux]
+    steps:
+      - name: "Custom MinSize is enforced in the output"
+        action: "TestPELT_CustomMinSizePreservedInOutput"
+        expected: "PASS — no change point within MinSize of either end"
+      - name: "Custom CostFunc = 0 produces no change points at positive penalty"
+        action: "TestPELT_CustomCostFunc"
+        expected: "PASS"
+      - name: "VarianceCost detects a pure scale shift that mean-cost would miss"
+        action: "TestPELT_VarianceCostDetectsScaleShift"
+        expected: "PASS"
+      - name: "Segmenter interface conformance"
+        action: "TestPELT_SatisfiesSegmenterInterface"
+        expected: "PASS"
+    tags: [phase2, analysis, pelt, cost-function, interface]
+
+  - id: PH2-PELT-003
+    name: "pkg/analysis/pelt — cost-function unit tests"
+    category: unit
+    priority: high
+    platforms: [linux]
+    steps:
+      - name: "gaussianMeanCost zero for constant segment"
+        action: "TestGaussianMeanCost_ZeroForConstantSegment"
+        expected: "PASS"
+      - name: "gaussianMeanCost positive for varying segment"
+        action: "TestGaussianMeanCost_PositiveForVaryingSegment"
+        expected: "PASS"
+      - name: "gaussianMeanCost zero for empty segment"
+        action: "TestGaussianMeanCost_ZeroForEmptySegment"
+        expected: "PASS"
+      - name: "VarianceCost penalises high variance"
+        action: "TestVarianceCost_PenalizesHighVariance"
+        expected: "PASS"
+      - name: "VarianceCost handles too-short and zero-variance inputs"
+        action: "TestVarianceCost_TooShortReturnsZero + TestVarianceCost_ZeroVarianceFloor"
+        expected: "Both PASS — 1-sample → 0, constant segment → finite (floor prevents -Inf)"
+    tags: [phase2, analysis, pelt, math]
+
+  - id: PH2-PELT-004
+    name: "pkg/analysis/pelt — error paths"
+    category: unit
+    priority: high
+    platforms: [linux]
+    steps:
+      - name: "Empty series returns ErrEmptySeries (nil + len 0)"
+        action: "TestPELT_EmptySeriesError"
+        expected: "PASS"
+      - name: "Negative penalty returns ErrNegativePenalty"
+        action: "TestPELT_NegativePenaltyError"
+        expected: "PASS"
+      - name: "Invalid MinSize returns ErrInvalidMinSize"
+        action: "TestPELT_InvalidMinSizeError"
+        expected: "PASS"
+      - name: "Too-short series (< 2*MinSize) returns empty change points, no error"
+        action: "TestPELT_TooShortReturnsEmpty"
+        expected: "PASS"
+      - name: "Canceled context bails out of the main DP loop"
+        action: "TestPELT_ContextCanceled"
+        expected: "PASS"
+    tags: [phase2, analysis, pelt, error-paths]
+

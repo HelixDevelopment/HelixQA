@@ -523,6 +523,27 @@ test_cases:
         expected: "All PASS — 1.0 → 1.0, 0.5 → 0.0, 0.0 → -1.0"
     tags: [phase2, gocore, perceptual, dreamsim, triton, kserve, regression]
 
+  - id: HQA-PHASE2-GOCORE-008
+    name: "OpenClawing4 Phase 2 Go-core — pure-Go PELT offline segmentation"
+    category: regression
+    priority: critical
+    platforms: [all]
+    steps:
+      - name: "pkg/analysis/pelt builds clean"
+        action: "go build -mod=vendor ./pkg/analysis/pelt/..."
+        expected: "exit 0"
+      - name: "All PELT tests pass under -race with 100% coverage"
+        action: "go test -mod=vendor -count=1 -race -cover ./pkg/analysis/pelt/..."
+        expected: "PASS, coverage = 100.0% of statements, zero data races"
+      - name: "Phase-2 gocore bank entries for PELT loaded"
+        action: "helixqa list --banks banks/phase2-gocore.yaml"
+        expected: "34 test cases total (prior 30 + 4 PELT)"
+      - name: "Change-point returns are monotone + within series bounds"
+        action: "go test -mod=vendor -count=1 -run 'TestPELT_ChangePointsAreStrictlyIncreasing|TestPELT_DetectsMultipleChanges' ./pkg/analysis/pelt/..."
+        expected: "Both PASS"
+    tags: [phase2, gocore, analysis, pelt, change-point, regression]
+
+
 
 
 

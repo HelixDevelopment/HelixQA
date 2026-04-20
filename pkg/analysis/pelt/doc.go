@@ -1,25 +1,35 @@
 // SPDX-FileCopyrightText: 2026 Milos Vasic
 // SPDX-License-Identifier: Apache-2.0
 
-// Package pelt wraps the ruptures PELT (Pruned Exact Linear Time)
-// change-point-detection algorithm for HelixQA Phase-2 post-session
-// analysis. See OpenClawing4.md §5.8 (stagnation / change-point tiers).
+// Package pelt implements PELT (Pruned Exact Linear Time) change-point
+// detection for HelixQA Phase-2 post-session analysis. See
+// OpenClawing4.md §5.8 (stagnation / change-point tiers).
 //
-// Planned contents:
+// Contents:
 //
-//   - client.go — gRPC / subprocess client against a Python-hosted
-//                 ruptures implementation. Offline; runs after a session
-//                 closes to segment the frame-similarity time series
-//                 into "phases" (each phase's boundary marks a
-//                 screen-level transition).
+//   - pelt.go — ✅ Pure-Go PELT (Killick, Fearnhead & Eckley 2012) with
+//               pluggable cost functions (Gaussian mean-change default;
+//               VarianceCost also exported). O(n²) worst case, O(n)
+//               expected with pruning. Shipped M35.
 //
-// Interface target (pelt.Segmenter):
+// Interface (pelt.Segmenter) — satisfied by PELT{}:
 //
 //	type Segmenter interface {
 //	    Segment(ctx context.Context, series []float64, penalty float64) ([]int, error)
 //	}
 //
-// Nothing is implemented in this commit — placeholder for Phase 2.
-// BOCPD (online change-point detection for live stagnation alerts) lives
-// in a sibling package `pkg/analysis/bocpd` that will land in Phase 2 too.
+// Rationale for pure-Go PELT over the Kickoff-brief ruptures-sidecar plan:
+//
+//   - Ruptures is Python — a sidecar dependency means gRPC between the
+//     Go host and a Python process for what is ~120 LoC of dynamic
+//     programming.
+//   - Post-session segmentation workloads are ≤ a few thousand samples
+//     — well within Go's pure-CPU comfort zone. No GPU/SIMD advantage
+//     to exploit.
+//   - Same decision pattern as pkg/vision/perceptual/ssim.go: keeping
+//     the Go host CGO-free + sidecar-free wins across every deployment.
+//
+// Sibling: pkg/autonomous.BOCPD is the ONLINE change-point detector
+// (fires live while a session is recording); PELT runs post-session on
+// the completed time-series for optimal (offline) segmentation.
 package pelt

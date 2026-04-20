@@ -1244,3 +1244,27 @@ test_cases:
       description: "Guards the DreamSim client's compliance with Triton KServe v2 /infer — the wire format that the deployed DreamSim ONNX runtime expects. The client uses BYTES datatype with Shape=[1] and base64-PNG data, the canonical envelope for image-in-bytes inputs. The similarity output is mapped from DreamSim's native [0, 1] to the canonical Comparator [-1, 1] range (1.0 → 1.0, 0.5 → 0.0, 0.0 → -1.0); this mapping must stay linear or the tier-3 tiebreaker score loses comparability with SSIM and dHash distances."
       fix_file: "HelixQA/pkg/vision/perceptual/dreamsim.go"
       fix_commit: "pending"
+
+  - id: FIX-OC4-008
+    name: "pkg/analysis/pelt — PELT pruning invariants + monotonicity guard"
+    category: regression
+    priority: critical
+    platforms: [linux, all]
+    steps:
+      - name: "Change-point indices are strictly increasing and within (0, n)"
+        action: "go test -mod=vendor -count=1 -run TestPELT_ChangePointsAreStrictlyIncreasing ./pkg/analysis/pelt/..."
+        expected: "PASS — the pruning step must not emit duplicates or out-of-range indices"
+      - name: "Higher penalty ⇒ fewer-or-equal change points (BIC monotonicity)"
+        action: "go test -mod=vendor -count=1 -run TestPELT_HigherPenaltyYieldsFewerOrEqualChangePoints ./pkg/analysis/pelt/..."
+        expected: "PASS"
+      - name: "100% coverage on the entire pelt.go surface"
+        action: "go test -mod=vendor -count=1 -cover ./pkg/analysis/pelt/..."
+        expected: "coverage = 100.0% of statements"
+    tags: [regression, phase2, openclawing4, analysis, pelt, change-point]
+    estimated_duration: "1s"
+    expected_result: "PELT's optimality + pruning correctness guarded"
+    fix_reference:
+      bug_id: "FIX-OC4-008"
+      description: "Guards the core PELT dynamic-programming invariants: (1) the pruning step (drop candidates whose F[s] + cost(s,tau) already exceeds F[tau]) must never remove a candidate that could still be optimal, else the algorithm loses its O(n²)-beats-O(n³) advantage AND can return a non-optimal segmentation; (2) the traceback must produce strictly-increasing change-point indices within (0, n); (3) higher penalties must monotonically reduce the number of change points (BIC-like behaviour required for interpretability). All three properties have explicit tests that would fail on any regression."
+      fix_file: "HelixQA/pkg/analysis/pelt/pelt.go"
+      fix_commit: "pending"
