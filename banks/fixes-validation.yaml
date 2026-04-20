@@ -1427,3 +1427,33 @@ test_cases:
       description: "Guards three orthogonal invariants for the iOS axtree backend. (1) JSON tolerance: real `idb ui describe-all` output shape has changed across idb versions (single object vs array of windows vs nested wrapper). The parser must accept array-or-object top-level silently; a scalar JSON (rare but possible on error) must fail cleanly, not silently produce a zero Node. (2) Name/RawID fallbacks: iOS AX conventions favor AXLabel over title for name, and custom widgets may lack an accessibility identifier — the fallback to 'type:title' means action resolution always has SOME handle to target, avoiding silent loss of interactivity. (3) Cross-platform Node contract: the whole point of axtree is that Linux + Android + iOS (+ future macOS/Windows) emit the SAME Node shape. The compile-time + runtime Snapshotter-interface checks are the primary regression guard against any platform drifting toward a Platform-specific subtype."
       fix_file: "HelixQA/pkg/nexus/observe/axtree/ios.go"
       fix_commit: "pending"
+
+  - id: FIX-OC4-015
+    name: "pkg/nexus/observe/axtree/darwin — Swift-sidecar wire contract + AX role fallback"
+    category: regression
+    priority: high
+    platforms: [darwin, all]
+    steps:
+      - name: "Swift sidecar HTTP wire: GET /snapshot returns JSON object-or-array, HTTP 5xx propagates"
+        action: "go test -mod=vendor -count=1 -run 'TestDarwinHTTPFetcher_ReturnsBody|TestDarwinHTTPFetcher_HTTPErrorPropagates' ./pkg/nexus/observe/axtree/..."
+        expected: "Both PASS"
+      - name: "End-to-end: DarwinSnapshotter + httptest-backed DarwinHTTPFetcher parses correctly"
+        action: "go test -mod=vendor -count=1 -run TestDarwinSnapshotter_EndToEndViaHTTPFetcher ./pkg/nexus/observe/axtree/..."
+        expected: "PASS"
+      - name: "AXTitle > AXDescription name precedence"
+        action: "go test -mod=vendor -count=1 -run TestDarwinSnapshotter_Snapshot_AttributesTranslated ./pkg/nexus/observe/axtree/..."
+        expected: "PASS — btn.Name=AXTitle, textbox.Name=AXDescription (empty-title fallback)"
+      - name: "Unknown AX-prefixed roles strip prefix + lowercase (AXFoo → foo) — no silent drops"
+        action: "go test -mod=vendor -count=1 -run 'TestDarwinRoleToARIA_UnknownStripsAXPrefix|TestDarwinRoleToARIA_NonAXPrefixPassesThrough' ./pkg/nexus/observe/axtree/..."
+        expected: "Both PASS"
+      - name: "Cross-platform Snapshotter contract holds for FOUR backends"
+        action: "go test -mod=vendor -count=1 -run '_SatisfiesSnapshotterInterface' ./pkg/nexus/observe/axtree/..."
+        expected: "All 4 PASS — Linux, Android, iOS, Darwin"
+    tags: [regression, phase6, openclawing4, axtree, darwin, macos, swift-sidecar, cross-platform]
+    estimated_duration: "1s"
+    expected_result: "macOS axtree client stays compatible with the Swift sidecar wire and preserves the four-platform Node contract"
+    fix_reference:
+      bug_id: "FIX-OC4-015"
+      description: "Guards four macOS-axtree invariants. (1) Wire: the Swift sidecar speaks GET /snapshot returning JSON object-or-array (same shape as iOS) — if the sidecar devs drift to multipart or gRPC, the HTTPFetcher request-shape tests catch it. (2) Name precedence: macOS AX convention is AXTitle > AXDescription; reversing this would silently degrade grounding (VLMs use Name to disambiguate nested widgets). (3) AXRole fallback: unknown AX-prefixed roles strip 'AX' + lowercase (AXCustomWidget → customwidget) instead of silently mapping to the empty string or the raw role string — keeps the normalized ARIA vocabulary usable without hiding new widget types. (4) Cross-platform contract: the FOUR backends (Linux AT-SPI2, Android UIAutomator, iOS idb, Darwin Swift) must all emit the SAME Node type with Platform set correctly; the compile-time guards (var _ Snapshotter = (*…)(nil)) + runtime interface tests are the primary regression protection."
+      fix_file: "HelixQA/pkg/nexus/observe/axtree/darwin.go"
+      fix_commit: "pending"

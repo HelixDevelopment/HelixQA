@@ -127,3 +127,119 @@ test_cases:
         action: "Run IOSSnapshotter.Snapshot against an actually-running iOS app"
         expected: "≥ 5 descendants, at least one Button / TextField / StaticText"
     tags: [phase6, axtree, ios, integration, manual, idb]
+
+  # ─── M42 · pkg/nexus/observe/axtree/darwin.go · macOS Swift sidecar ───
+  - id: PH6-AXTREE-DARWIN-001
+    name: "pkg/nexus/observe/axtree — DarwinSnapshotter happy path"
+    category: unit
+    priority: critical
+    platforms: [darwin]
+    steps:
+      - name: "Snapshot with canned Swift-sidecar JSON returns full tree (Platform=PlatformDarwin)"
+        action: "TestDarwinSnapshotter_Snapshot_FullTree"
+        expected: "PASS — 4 descendants, root role=application, RawID from identifier"
+      - name: "AXTitle precedence over AXDescription; button + textfield fields translate correctly"
+        action: "TestDarwinSnapshotter_Snapshot_AttributesTranslated"
+        expected: "PASS — button.Name='Sign In' (AXTitle), textbox.Name='Username' (AXDescription fallback)"
+      - name: "RawID falls back to 'AXRole:AXTitle' when identifier is empty"
+        action: "TestDarwinSnapshotter_Snapshot_RawIDFallsBackToRoleTitle"
+        expected: "PASS — ensures action resolution always has a handle"
+      - name: "Snapshotter interface conformance"
+        action: "TestDarwinSnapshotter_SatisfiesSnapshotterInterface"
+        expected: "PASS"
+    tags: [phase6, axtree, darwin, macos, unit]
+
+  - id: PH6-AXTREE-DARWIN-002
+    name: "pkg/nexus/observe/axtree — macOS top-level JSON tolerance"
+    category: unit
+    priority: high
+    platforms: [darwin]
+    steps:
+      - name: "JSON array with multiple windows wraps in synthetic application root"
+        action: "TestDarwinSnapshotter_Snapshot_JSONArrayWrapped"
+        expected: "PASS — role=application, 2 children"
+      - name: "JSON array with single element unwraps directly"
+        action: "TestDarwinSnapshotter_Snapshot_SingleElementArrayUnwrapped"
+        expected: "PASS"
+    tags: [phase6, axtree, darwin, json-tolerance]
+
+  - id: PH6-AXTREE-DARWIN-003
+    name: "pkg/nexus/observe/axtree — macOS AXRole → ARIA mapping"
+    category: unit
+    priority: high
+    platforms: [darwin]
+    steps:
+      - name: "All 44 mapped AXRole strings translate correctly"
+        action: "TestDarwinRoleToARIA_KnownRoles"
+        expected: "PASS — AXApplication / AXWindow / AXSheet / AXPopover / AXButton / AXStaticText / AXTextField / AXImage / AXCheckBox / AXRadioButton / AXSwitch / AXStepper / AXComboBox / AXOutline / AXTable / AXRow / AXCell / AXColumn / AXGroup / AXScrollArea / AXToolbar / AXMenuBar / AXMenu / AXMenuItem / AXTabGroup / AXRadioGroup / AXLink / AXWebArea / AXBrowser / AXSplitGroup / AXSplitter / AXDrawer / AXHelpTag / …"
+      - name: "Unknown AX-prefixed role strips prefix + lowercases (AXFoo → foo)"
+        action: "TestDarwinRoleToARIA_UnknownStripsAXPrefix"
+        expected: "PASS — readable fallback, not silent drop"
+      - name: "Non-AX-prefixed role passes through unchanged"
+        action: "TestDarwinRoleToARIA_NonAXPrefixPassesThrough"
+        expected: "PASS"
+    tags: [phase6, axtree, darwin, role-mapping]
+
+  - id: PH6-AXTREE-DARWIN-004
+    name: "pkg/nexus/observe/axtree — macOS error + lifecycle paths"
+    category: unit
+    priority: high
+    platforms: [darwin]
+    steps:
+      - name: "Empty / empty-array dump returns ErrNoRoot"
+        action: "TestDarwinSnapshotter_Snapshot_EmptyDumpError + TestDarwinSnapshotter_Snapshot_EmptyArrayError"
+        expected: "Both PASS"
+      - name: "Malformed JSON (object / array / scalar) returns parse errors"
+        action: "TestDarwinSnapshotter_Snapshot_MalformedJSON + TestDarwinSnapshotter_Snapshot_MalformedArray + TestDarwinSnapshotter_Snapshot_UnexpectedJSONKind"
+        expected: "All PASS"
+      - name: "Fetcher error propagates"
+        action: "TestDarwinSnapshotter_Snapshot_FetcherError"
+        expected: "PASS"
+      - name: "Canceled context bails out"
+        action: "TestDarwinSnapshotter_Snapshot_ContextCanceled"
+        expected: "PASS"
+      - name: "Close is idempotent; Snapshot-after-Close returns ErrSnapshotClosed"
+        action: "TestDarwinSnapshotter_Close_Idempotent + TestDarwinSnapshotter_Snapshot_AfterCloseReturnsError"
+        expected: "Both PASS"
+    tags: [phase6, axtree, darwin, error-paths, lifecycle]
+
+  - id: PH6-AXTREE-DARWIN-005
+    name: "pkg/nexus/observe/axtree — DarwinHTTPFetcher httptest-backed end-to-end"
+    category: unit
+    priority: high
+    platforms: [darwin]
+    steps:
+      - name: "HTTPFetcher returns the body for a valid 200 OK response"
+        action: "TestDarwinHTTPFetcher_ReturnsBody"
+        expected: "PASS"
+      - name: "HTTP 5xx propagates with status + body in error message"
+        action: "TestDarwinHTTPFetcher_HTTPErrorPropagates"
+        expected: "PASS — 'HTTP 503' appears in the wrapped error"
+      - name: "Empty URL + invalid URL both error at request construction"
+        action: "TestDarwinHTTPFetcher_EmptyURLError + TestDarwinHTTPFetcher_InvalidURLError"
+        expected: "Both PASS"
+      - name: "End-to-end: DarwinSnapshotter + httptest-backed DarwinHTTPFetcher"
+        action: "TestDarwinSnapshotter_EndToEndViaHTTPFetcher"
+        expected: "PASS — real HTTP roundtrip through the full parsing pipeline"
+      - name: "NewDarwinSnapshotter constructor wires HTTPFetcher with URL"
+        action: "TestNewDarwinSnapshotter_UsesHTTPFetcher"
+        expected: "PASS"
+    tags: [phase6, axtree, darwin, http-fetcher, end-to-end]
+
+  # Production Swift sidecar integration (blocked on operator-action
+  # per OPEN_POINTS_CLOSURE.md §10.3 — macOS Xcode build of the
+  # Swift sidecar + ScreenCaptureKit + Accessibility entitlements).
+  - id: PH6-AXTREE-DARWIN-INT-001
+    name: "pkg/nexus/observe/axtree — live Swift sidecar smoke test"
+    category: integration
+    priority: high
+    platforms: [darwin]
+    requires: [darwin-swift-axtree-sidecar-running]
+    steps:
+      - name: "DarwinHTTPFetcher returns non-empty JSON from live sidecar"
+        action: "DarwinHTTPFetcher{URL: 'http://127.0.0.1:17420/snapshot'}.Fetch(ctx)"
+        expected: "len(body) > 100, starts with '{' or '['"
+      - name: "Snapshot on live frontmost app enumerates widgets"
+        action: "Run DarwinSnapshotter.Snapshot against the actual frontmost macOS app"
+        expected: "≥ 5 descendants, at least one AXButton/AXTextField"
+    tags: [phase6, axtree, darwin, integration, manual, swift-sidecar]

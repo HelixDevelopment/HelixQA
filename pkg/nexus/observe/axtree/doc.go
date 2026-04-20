@@ -20,8 +20,12 @@
 //                   `adb -s <serial> exec-out uiautomator dump /dev/tty`).
 //                   24-class ARIA role mapping, bounds regex, full
 //                   attribute propagation. Shipped M32.
-//   - darwin.go   — ⏳ Swift sidecar emitting JSON AXUIElement tree
-//                   (cmd/helixqa-axtree-darwin/, future).
+//   - darwin.go   — ✅ Swift sidecar over HTTP emitting JSON
+//                   AXUIElement tree. DarwinFetcher narrow
+//                   abstraction (DarwinHTTPFetcher is the production
+//                   impl). 44-role AXRole→ARIA mapping. Shipped M42.
+//                   Swift sidecar in cmd/helixqa-axtree-darwin/
+//                   remains operator-action (§10.3).
 //   - windows.go  — ⏳ go-ole client wrapping IUIAutomation.
 //   - ios.go      — ✅ idb describe-all JSON parser via IDBDumper
 //                   abstraction (IDBShellDumper shells out to

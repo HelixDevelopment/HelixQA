@@ -686,6 +686,30 @@ test_cases:
         expected: "All 3 PASS — same Node type emitted by three distinct backends"
     tags: [phase6, gocore, axtree, ios, idb, cross-platform, regression]
 
+  - id: HQA-PHASE6-GOCORE-002
+    name: "OpenClawing4 Phase 6 Go-core — macOS axtree via Swift sidecar (HTTP+JSON)"
+    category: regression
+    priority: critical
+    platforms: [all]
+    steps:
+      - name: "pkg/nexus/observe/axtree still builds clean with darwin.go added"
+        action: "go build -mod=vendor ./pkg/nexus/observe/axtree/..."
+        expected: "exit 0"
+      - name: "All axtree tests (Linux + Android + iOS + Darwin + shared node) pass under -race"
+        action: "go test -mod=vendor -count=1 -race ./pkg/nexus/observe/axtree/..."
+        expected: "PASS — 83 tests across four platforms, zero data races"
+      - name: "Phase-6 bank has all darwin entries"
+        action: "helixqa list --banks banks/phase6-gocore.yaml"
+        expected: "11 test cases total (prior 5 iOS + 5 darwin unit + 1 darwin integration)"
+      - name: "Cross-platform contract now holds across FOUR backends"
+        action: "go test -mod=vendor -count=1 -run '_SatisfiesSnapshotterInterface' ./pkg/nexus/observe/axtree/..."
+        expected: "All 4 PASS — Linux + Android + iOS + Darwin emit identical Node shape"
+      - name: "End-to-end DarwinHTTPFetcher + parse pipeline works via httptest"
+        action: "go test -mod=vendor -count=1 -run TestDarwinSnapshotter_EndToEndViaHTTPFetcher ./pkg/nexus/observe/axtree/..."
+        expected: "PASS — real HTTP roundtrip"
+    tags: [phase6, gocore, axtree, darwin, macos, swift-sidecar, cross-platform, regression]
+
+
 
 
 
