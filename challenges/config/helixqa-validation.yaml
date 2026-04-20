@@ -463,5 +463,26 @@ test_cases:
         expected: "PASS — every case in the switch yields the expected ARIA name"
     tags: [phase2, gocore, axtree, atspi2, linux, regression]
 
+  - id: HQA-PHASE2-GOCORE-005
+    name: "OpenClawing4 Phase 2 Go-core — axtree Android UIAutomator dump parser"
+    category: regression
+    priority: critical
+    platforms: [all]
+    steps:
+      - name: "pkg/nexus/observe/axtree still builds clean with android.go added"
+        action: "go build -mod=vendor ./pkg/nexus/observe/axtree/..."
+        expected: "exit 0"
+      - name: "All axtree tests (Linux + Android + shared node) pass under -race"
+        action: "go test -mod=vendor -count=1 -race ./pkg/nexus/observe/axtree/..."
+        expected: "PASS, 39 tests, zero data races"
+      - name: "Phase-2 gocore bank entries for axtree-android loaded"
+        action: "helixqa list --banks banks/phase2-gocore.yaml"
+        expected: "22 test cases total (6 DHASH + 2 BOCPD + 2 STAGNATION + 3 PIXELMATCH + 4 AXTREE-LINUX + 3 AXTREE-ANDROID + 2 integration)"
+      - name: "UIAutomator XML attribute conversion is correct"
+        action: "go test -mod=vendor -count=1 -run 'TestParseAndroidBounds|TestBoolAttr|TestAndroidClassToARIA|TestConvertXMLNode' ./pkg/nexus/observe/axtree/..."
+        expected: "All PASS"
+    tags: [phase2, gocore, axtree, android, uiautomator, regression]
+
+
 
 

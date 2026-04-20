@@ -366,3 +366,90 @@ test_cases:
         expected: "Tree has ≥ 1 descendant reflecting the currently-focused app"
     tags: [phase2, axtree, atspi2, linux, integration, manual]
 
+  # ─── M32 · pkg/nexus/observe/axtree · Android UIAutomator dump ───
+  - id: PH2-AXTREE-ANDROID-001
+    name: "pkg/nexus/observe/axtree — AndroidSnapshotter happy path"
+    category: unit
+    priority: critical
+    platforms: [android]
+    steps:
+      - name: "Snapshot with canned UIAutomator dump returns full tree"
+        action: "TestAndroidSnapshotter_Snapshot_FullTree"
+        expected: "PASS — root.Platform = PlatformAndroid, 5 descendants, rotation captured in root.Value"
+      - name: "All attributes translate: bounds, focused, selected, RawID, Name fallback"
+        action: "TestAndroidSnapshotter_Snapshot_AttributesTranslated"
+        expected: "PASS — button and textbox preserve all accessibility state"
+      - name: "Multi-top-level hierarchies wrap in synthetic application root"
+        action: "TestAndroidSnapshotter_Snapshot_MultipleTopLevelWrapped"
+        expected: "PASS — wrapper Role=application, 2 children"
+      - name: "Snapshotter interface conformance"
+        action: "TestAndroidSnapshotter_SatisfiesSnapshotterInterface"
+        expected: "PASS"
+    tags: [phase2, axtree, android, unit]
+
+  - id: PH2-AXTREE-ANDROID-002
+    name: "pkg/nexus/observe/axtree — Android error + lifecycle paths"
+    category: unit
+    priority: high
+    platforms: [android]
+    steps:
+      - name: "Dumper errors propagate with wrapped context"
+        action: "TestAndroidSnapshotter_Snapshot_DumperError"
+        expected: "PASS — 'Dump' appears in the wrapped error"
+      - name: "Malformed XML bubbles up with 'parse' context"
+        action: "TestAndroidSnapshotter_Snapshot_MalformedXML"
+        expected: "PASS"
+      - name: "Empty hierarchy → ErrNoRoot"
+        action: "TestAndroidSnapshotter_Snapshot_EmptyHierarchy"
+        expected: "PASS"
+      - name: "Canceled context bails out of Dump"
+        action: "TestAndroidSnapshotter_Snapshot_ContextCanceled"
+        expected: "PASS"
+      - name: "Close is idempotent; Snapshot-after-Close returns ErrSnapshotClosed"
+        action: "TestAndroidSnapshotter_Close_Idempotent + TestAndroidSnapshotter_Snapshot_AfterCloseReturnsError"
+        expected: "Both PASS"
+      - name: "ADBDumper refuses to run with empty Serial"
+        action: "TestADBDumper_EmptySerialError"
+        expected: "PASS"
+      - name: "NewAndroidSnapshotter builds an ADBDumper bound to the requested serial"
+        action: "TestNewAndroidSnapshotter_UsesADBDumper"
+        expected: "PASS"
+    tags: [phase2, axtree, android, error-paths, lifecycle]
+
+  - id: PH2-AXTREE-ANDROID-003
+    name: "pkg/nexus/observe/axtree — UIAutomator XML attribute conversion"
+    category: unit
+    priority: high
+    platforms: [android]
+    steps:
+      - name: "parseAndroidBounds handles happy / negative / malformed inputs"
+        action: "TestParseAndroidBounds_HappyPath + TestParseAndroidBounds_NegativeCoords + TestParseAndroidBounds_Malformed"
+        expected: "All PASS"
+      - name: "boolAttr strictly matches 'true'"
+        action: "TestBoolAttr"
+        expected: "PASS"
+      - name: "androidClassToARIA covers 17-class baseline + unknown fallback"
+        action: "TestAndroidClassToARIA_KnownClasses + TestAndroidClassToARIA_UnknownClassFallback"
+        expected: "Both PASS"
+      - name: "convertXMLNode uses class:index RawID when resource-id is empty"
+        action: "TestConvertXMLNode_UsesClassIndexWhenResourceIDMissing"
+        expected: "PASS"
+    tags: [phase2, axtree, android, xml, attribute-mapping]
+
+  # Production ADB integration (blocked on a real connected device —
+  # can't be run unattended in CI; requires .devconnect + live device).
+  - id: PH2-AXTREE-ANDROID-INT-001
+    name: "pkg/nexus/observe/axtree — ADBDumper live device smoke test"
+    category: integration
+    priority: high
+    platforms: [android]
+    requires: [adb-device-connected]
+    steps:
+      - name: "ADBDumper produces valid UIAutomator XML"
+        action: "ADBDumper{Serial: first `.devconnect` entry}.Dump(ctx) → len(output) > 0 && strings.Contains(output, '<?xml')"
+        expected: "Raw UIAutomator dump returned"
+      - name: "Snapshot on live device enumerates current-app widgets"
+        action: "Run AndroidSnapshotter.Snapshot against an actually-running device"
+        expected: "≥ 10 descendants, root.Value = 'rotation=<current>' reflecting orientation"
+    tags: [phase2, axtree, android, integration, manual]
+

@@ -15,7 +15,11 @@
 //                   AT-SPI role codes → ARIA mapping. Shipped M31.
 //   - web.go      — ⏳ CDP Accessibility.getFullAXTree via go-rod /
 //                   chromedp (Phase 2 Step 2.6).
-//   - android.go  — ⏳ UiAutomator2 HTTP client wrap (Phase 2 Step 2.7).
+//   - android.go  — ✅ UIAutomator dump parser via AndroidDumper
+//                   abstraction (ADBDumper shells out to
+//                   `adb -s <serial> exec-out uiautomator dump /dev/tty`).
+//                   24-class ARIA role mapping, bounds regex, full
+//                   attribute propagation. Shipped M32.
 //   - darwin.go   — ⏳ Swift sidecar emitting JSON AXUIElement tree
 //                   (cmd/helixqa-axtree-darwin/, future).
 //   - windows.go  — ⏳ go-ole client wrapping IUIAutomation.
