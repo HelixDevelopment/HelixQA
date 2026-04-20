@@ -11,8 +11,9 @@ import (
 	"testing"
 	"time"
 
-	capturelinux "digital.vasic.helixqa/pkg/capture/linux"
+	androidcap "digital.vasic.helixqa/pkg/capture/android"
 	"digital.vasic.helixqa/pkg/capture/frames"
+	capturelinux "digital.vasic.helixqa/pkg/capture/linux"
 )
 
 func TestParseArgv_Health(t *testing.T) {
@@ -72,7 +73,14 @@ func TestParseArgv_Invalid(t *testing.T) {
 func TestValidateConfig(t *testing.T) {
 	ok := demoConfig{Platform: "linux", Width: 1, Height: 1, Duration: time.Second}
 	if err := validateConfig(ok); err != nil {
-		t.Errorf("valid config rejected: %v", err)
+		t.Errorf("valid linux config rejected: %v", err)
+	}
+	okAndroid := demoConfig{
+		Platform: "android", Width: 1, Height: 1, Duration: time.Second,
+		JarPath: "/path/to/scrcpy-server.jar", ScrcpyVersion: "3.x",
+	}
+	if err := validateConfig(okAndroid); err != nil {
+		t.Errorf("valid android config rejected: %v", err)
 	}
 	bad := []struct {
 		name string
@@ -82,6 +90,14 @@ func TestValidateConfig(t *testing.T) {
 		{"zero-width", demoConfig{Platform: "linux", Height: 1, Duration: time.Second}},
 		{"zero-height", demoConfig{Platform: "linux", Width: 1, Duration: time.Second}},
 		{"zero-duration", demoConfig{Platform: "linux", Width: 1, Height: 1}},
+		{"android-missing-jar", demoConfig{
+			Platform: "android", Width: 1, Height: 1, Duration: time.Second,
+			ScrcpyVersion: "3.x",
+		}},
+		{"android-missing-version", demoConfig{
+			Platform: "android", Width: 1, Height: 1, Duration: time.Second,
+			JarPath: "/j.jar",
+		}},
 	}
 	for _, tc := range bad {
 		t.Run(tc.name, func(t *testing.T) {
@@ -89,6 +105,53 @@ func TestValidateConfig(t *testing.T) {
 				t.Error("expected error")
 			}
 		})
+	}
+}
+
+func TestBuildAndroidConfig_ProductionRuntimeWired(t *testing.T) {
+	cfg := demoConfig{
+		Platform: "android", Width: 1920, Height: 1080,
+		Serial: "dev1", JarPath: "/j.jar", ScrcpyVersion: "3.x",
+		DevIgnorePath: "/dev/ignore",
+	}
+	ac := buildAndroidConfig(cfg)
+	if ac.Server.Runner == nil {
+		t.Error("Runner not wired")
+	}
+	if ac.Server.Launcher == nil {
+		t.Error("Launcher not wired")
+	}
+	if ac.Server.Serial != "dev1" || ac.Server.JarLocalPath != "/j.jar" ||
+		ac.Server.ServerVersion != "3.x" || ac.Server.DevIgnorePath != "/dev/ignore" {
+		t.Errorf("fields not threaded: %+v", ac.Server)
+	}
+	if !ac.Server.EnableControl {
+		t.Error("EnableControl must be forced true")
+	}
+	if ac.Server.EnableAudio {
+		t.Error("EnableAudio should be false for video-only demo")
+	}
+	if ac.Width != 1920 || ac.Height != 1080 {
+		t.Errorf("dims not threaded: %+v", ac)
+	}
+}
+
+func TestParseArgv_AndroidFlags(t *testing.T) {
+	cfg, _, err := parseArgv([]string{
+		"--platform", "android",
+		"--width", "1080", "--height", "1920",
+		"--serial", "ADB-TEST",
+		"--jar", "/data/local/tmp/scrcpy-server.jar",
+		"--scrcpy-version", "3.2",
+		"--devignore", "/.devignore",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if cfg.Platform != "android" || cfg.Serial != "ADB-TEST" ||
+		cfg.JarPath != "/data/local/tmp/scrcpy-server.jar" ||
+		cfg.ScrcpyVersion != "3.2" || cfg.DevIgnorePath != "/.devignore" {
+		t.Errorf("cfg = %+v", cfg)
 	}
 }
 
@@ -129,7 +192,7 @@ func TestRun_HappyPath_PrintsPerFrameLines(t *testing.T) {
 		Platform: "linux", Width: 1920, Height: 1080, Duration: 2 * time.Second,
 	}, &stdout, &stderr, func(capturelinux.ServiceConfig) (capturelinux.Source, error) {
 		return fake, nil
-	})
+	}, notCalledAndroidOpener(t))
 	if err != nil {
 		t.Fatalf("run: %v", err)
 	}
@@ -165,7 +228,7 @@ func TestRun_ContextDeadlinePrintsSummary(t *testing.T) {
 		Platform: "linux", Width: 1, Height: 1, Duration: 50 * time.Millisecond,
 	}, &stdout, &stderr, func(capturelinux.ServiceConfig) (capturelinux.Source, error) {
 		return fake, nil
-	})
+	}, notCalledAndroidOpener(t))
 	if err != nil {
 		t.Fatalf("run: %v", err)
 	}
@@ -181,7 +244,7 @@ func TestRun_OpenError(t *testing.T) {
 		Platform: "linux", Width: 1, Height: 1, Duration: time.Second,
 	}, &stdout, &stderr, func(capturelinux.ServiceConfig) (capturelinux.Source, error) {
 		return nil, boom
-	})
+	}, notCalledAndroidOpener(t))
 	if !errors.Is(err, boom) {
 		t.Errorf("want boom wrapped, got %v", err)
 	}
@@ -195,7 +258,7 @@ func TestRun_StartError(t *testing.T) {
 		Platform: "linux", Width: 1, Height: 1, Duration: time.Second,
 	}, &stdout, &stderr, func(capturelinux.ServiceConfig) (capturelinux.Source, error) {
 		return fake, nil
-	})
+	}, notCalledAndroidOpener(t))
 	if !errors.Is(err, boom) {
 		t.Errorf("want boom wrapped, got %v", err)
 	}
@@ -204,10 +267,26 @@ func TestRun_StartError(t *testing.T) {
 func TestRun_BadConfigRejected(t *testing.T) {
 	var stdout, stderr bytes.Buffer
 	err := run(context.Background(), demoConfig{Platform: "mac"}, &stdout, &stderr,
-		func(capturelinux.ServiceConfig) (capturelinux.Source, error) { return nil, nil })
+		func(capturelinux.ServiceConfig) (capturelinux.Source, error) { return nil, nil },
+		notCalledAndroidOpener(t))
 	if err == nil {
 		t.Error("bad config should error")
 	}
+}
+
+// notCalledAndroidOpener returns an androidOpener that fails the test if
+// invoked — used by Linux-path tests where the Android opener must never
+// be called.
+func notCalledAndroidOpener(t *testing.T) androidOpener {
+	t.Helper()
+	return func(context.Context, androidcap.DirectServiceConfig) (androidFrameSource, error) {
+		t.Errorf("Android opener must not be called on Linux-path tests")
+		return nil, errors.New("should not be called")
+	}
+}
+
+func notCalledAndroidOpenerValue(t *testing.T) androidOpener {
+	return notCalledAndroidOpener(t)
 }
 
 func TestHealth_ContractString(t *testing.T) {
