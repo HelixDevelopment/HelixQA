@@ -169,6 +169,67 @@ test_cases:
         expected: "~175 µs / op"
     tags: [phase2, vision, hash, phash, benchmark]
 
+  # ─── M46 · pkg/vision/hash · BlockMean + ChangedTiles ───
+  - id: PH2-BLOCKMEAN-001
+    name: "pkg/vision/hash — BlockMean identity + discrimination"
+    category: unit
+    priority: critical
+    platforms: [linux]
+    steps:
+      - name: "Identical images → distance 0"
+        action: "TestBlockMean_IdenticalImagesReturnZeroDistance"
+        expected: "PASS"
+      - name: "Half-black / half-white produces exactly 32 set bits (clean median split)"
+        action: "TestBlockMean_HalfSplit_ProducesConsistentHash"
+        expected: "PASS"
+      - name: "Different images produce non-zero distance"
+        action: "TestBlockMean_DifferentImagesReturnNonZeroDistance"
+        expected: "PASS"
+      - name: "1-pixel shift on 256-wide source → ≤ 8 bit flips"
+        action: "TestBlockMean_ShiftedImagesStaySimilar"
+        expected: "PASS"
+      - name: "BlockMeanHasher satisfies Hasher interface"
+        action: "TestBlockMean_SatisfiesHasherInterface"
+        expected: "PASS"
+    tags: [phase2, vision, hash, block-mean, unit]
+
+  - id: PH2-BLOCKMEAN-002
+    name: "pkg/vision/hash — ChangedTiles partial-screen detection"
+    category: unit
+    priority: critical
+    platforms: [linux]
+    steps:
+      - name: "Identical hashes → 0 changed tiles"
+        action: "TestChangedTiles_EmptyXOR"
+        expected: "PASS"
+      - name: "Single-bit flip maps to correct (col, row) — top-left + bottom-right"
+        action: "TestChangedTiles_SingleBitFlip + TestChangedTiles_BottomRightBit"
+        expected: "Both PASS"
+      - name: "All-bits flip produces full 8×8 grid coverage"
+        action: "TestChangedTiles_AllBitsFlipped"
+        expected: "PASS — 64 TileChange records covering every (col, row) in [0, 8)"
+    tags: [phase2, vision, hash, block-mean, changed-tiles, unit]
+
+  - id: PH2-BLOCKMEAN-003
+    name: "pkg/vision/hash — BlockMean config + error paths"
+    category: unit
+    priority: high
+    platforms: [linux]
+    steps:
+      - name: "nil image → ErrNilImage; zero bounds → ErrZeroBounds"
+        action: "TestBlockMean_NilImageError + TestBlockMean_ZeroBoundsError"
+        expected: "Both PASS"
+      - name: "BlockSize != 8 → ErrWrongBlockSize (64-bit Hasher contract)"
+        action: "TestBlockMean_WrongBlockSizeError"
+        expected: "PASS — rejects 4, 16, 32, -1"
+      - name: "Default (0) and explicit 8 both accepted"
+        action: "TestBlockMean_DefaultBlockSizeIsEight + TestBlockMean_ExplicitEightBlockSizeWorks"
+        expected: "Both PASS"
+      - name: "Utility helpers: medianOf (odd / even / no-mutation); blockMeans error; ErrWrongBlockSize.Error()"
+        action: "TestMedianOf_OddLength + TestMedianOf_EvenLength + TestMedianOf_DoesNotMutateInput + TestBlockMeans_ZeroBoundsError + TestErrWrongBlockSize_HasErrorMessage"
+        expected: "All PASS"
+    tags: [phase2, vision, hash, block-mean, error-paths]
+
   # ─── M29 · pkg/autonomous · BOCPD + stagnation integration ───
   - id: PH2-BOCPD-001
     name: "pkg/autonomous — BOCPD Normal-Gamma conjugate prior math"

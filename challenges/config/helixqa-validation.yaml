@@ -506,6 +506,30 @@ test_cases:
         expected: "PASS"
     tags: [phase2, gocore, vision, hash, phash, dct, regression]
 
+  - id: HQA-PHASE2-GOCORE-012
+    name: "OpenClawing4 Phase 2 Go-core — BlockMean + ChangedTiles partial-screen detection"
+    category: regression
+    priority: high
+    platforms: [all]
+    steps:
+      - name: "pkg/vision/hash builds clean with block_mean.go added"
+        action: "go build -mod=vendor ./pkg/vision/hash/..."
+        expected: "exit 0"
+      - name: "All BlockMean tests pass under -race"
+        action: "go test -mod=vendor -count=1 -race -run 'BlockMean|ChangedTiles|MedianOf|ErrWrongBlockSize' ./pkg/vision/hash/..."
+        expected: "PASS, zero data races"
+      - name: "Coverage remains ≥ 97% package-wide"
+        action: "go test -mod=vendor -count=1 -cover ./pkg/vision/hash/..."
+        expected: "coverage ≥ 97.0%"
+      - name: "Phase-2 bank has all BlockMean entries"
+        action: "helixqa list --banks banks/phase2-gocore.yaml"
+        expected: "47 test cases total (prior 44 + 3 BlockMean)"
+      - name: "Hash-triad complete — dHash + pHash + BlockMean all satisfy Hasher"
+        action: "go test -mod=vendor -count=1 -run '_SatisfiesHasherInterface' ./pkg/vision/hash/..."
+        expected: "All 3 PASS — interchangeable via the Hasher interface"
+    tags: [phase2, gocore, vision, hash, block-mean, partial-screen, regression]
+
+
 
 
 

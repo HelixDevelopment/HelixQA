@@ -15,8 +15,9 @@
 //   - phash.go       — ✅ pHash via 32×32 DCT-II + 8×8 low-freq
 //                      median split. More shift/rotation-robust than
 //                      dHash. ~175 µs / 1080p CPU. Shipped M45.
-//   - block_mean.go  — ⏳ BlockMean for partial-screen change detection
-//                      (which 4×4 tile of the UI moved).
+//   - block_mean.go  — ✅ BlockMean (Yang 2006) with 8×8 tile grid +
+//                      ChangedTiles helper for partial-screen change
+//                      detection. Shipped M46.
 //
 // Interface (hash.Hasher) — satisfied by DHasher{Kind: DHash64}:
 //
