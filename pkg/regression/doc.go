@@ -13,9 +13,12 @@
 //                     reference-validated), sRGB→CIELAB via D65,
 //                     CheckBrandCompliance helper. Pure Go, ~200 LoC.
 //                     Shipped M43.
-//   - report.go     — ⏳ HTML reporter emitting per-session analysis
-//                     under docs/reports/qa-sessions/.../analysis/
-//                     (reg-cli compatible).
+//   - report.go     — ✅ Self-contained HTML reporter. Embeds every
+//                     PNG as a base64 data URL (template.URL to
+//                     bypass html/template's data-URL sanitization),
+//                     inline CSS, no external assets. Sessions +
+//                     Summary + optional BrandComplianceReport panels.
+//                     Shipped M44.
 //
 // Interface (regression.Differ) — satisfied by PixelMatch{}:
 //

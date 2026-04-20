@@ -463,6 +463,27 @@ test_cases:
         expected: "PASS — 10 canonical reference pairs match"
     tags: [phase2, gocore, regression, deltae, ciede2000, brand-compliance, regression]
 
+  - id: HQA-PHASE2-GOCORE-010
+    name: "OpenClawing4 Phase 2 Go-core — HTML visual-regression reporter"
+    category: regression
+    priority: critical
+    platforms: [all]
+    steps:
+      - name: "pkg/regression builds clean with report.go added"
+        action: "go build -mod=vendor ./pkg/regression/..."
+        expected: "exit 0"
+      - name: "All reporter tests pass under -race"
+        action: "go test -mod=vendor -count=1 -race -run 'Report|EncodePNGDataURL|VerdictForDiff|Summarize' ./pkg/regression/..."
+        expected: "PASS, zero data races"
+      - name: "Reporter produces self-contained HTML with base64 images (template.URL bypass)"
+        action: "go test -mod=vendor -count=1 -run TestReport_Render_HappyPath ./pkg/regression/..."
+        expected: "PASS — output contains 'data:image/png;base64,' (unescaped)"
+      - name: "Phase-2 bank has all reporter entries"
+        action: "helixqa list --banks banks/phase2-gocore.yaml"
+        expected: "41 test cases total (prior 37 + 4 reporter)"
+    tags: [phase2, gocore, regression, report, html, regression]
+
+
 
   - id: HQA-PHASE2-GOCORE-004
     name: "OpenClawing4 Phase 2 Go-core — axtree Linux AT-SPI2 client"

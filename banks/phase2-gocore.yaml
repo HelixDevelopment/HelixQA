@@ -298,6 +298,78 @@ test_cases:
         expected: "PASS"
     tags: [phase2, regression, deltae, srgb, cielab, unit]
 
+  # ─── M44 · pkg/regression · HTML reporter ───
+  - id: PH2-REPORT-001
+    name: "pkg/regression — HTML report renders inline with base64 PNGs"
+    category: unit
+    priority: critical
+    platforms: [linux]
+    steps:
+      - name: "Happy path: title + before/after/diff images + stats"
+        action: "TestReport_Render_HappyPath"
+        expected: "PASS — contains doctype, title, session markers, data:image/png;base64 (template.URL bypasses html/template sanitization)"
+      - name: "Match + different sessions tagged with correct CSS class"
+        action: "TestReport_Render_DifferentSessionsMarkedCorrectly"
+        expected: "PASS — 'session match' + 'session different' both present, summary totals Matching=1 / Different=1"
+      - name: "Sessions without Diff render as 'unknown' verdict (no stats table)"
+        action: "TestReport_Render_SessionWithoutDiffIsUnknown"
+        expected: "PASS — class='session unknown', no DiffCount row"
+      - name: "Brand compliance report renders CIEDE2000 panel when BrandReport is set"
+        action: "TestReport_Render_IncludesBrandReport"
+        expected: "PASS — 'Brand Compliance (CIEDE2000)' + Pass Rate + Mean ΔE + Max ΔE"
+    tags: [phase2, regression, report, html, unit]
+
+  - id: PH2-REPORT-002
+    name: "pkg/regression — HTML report defaults + ordering"
+    category: unit
+    priority: high
+    platforms: [linux]
+    steps:
+      - name: "Default Title is 'HelixQA Visual Regression Report' when empty"
+        action: "TestReport_Render_DefaultTitleAndTimestamp"
+        expected: "PASS — default title + current year in GeneratedAt"
+      - name: "Summary table sorts sessions by DiffPercent descending"
+        action: "TestReport_Render_SortsSummaryByDiffPercentDescending"
+        expected: "PASS — higher-diff session listed first in summary"
+    tags: [phase2, regression, report, defaults, sort]
+
+  - id: PH2-REPORT-003
+    name: "pkg/regression — HTML report error paths"
+    category: unit
+    priority: high
+    platforms: [linux]
+    steps:
+      - name: "Empty Sessions returns ErrNoSessions"
+        action: "TestReport_Render_EmptySessionsError"
+        expected: "PASS"
+      - name: "Missing Before or After returns ErrMissingImage"
+        action: "TestReport_Render_MissingBeforeError + TestReport_Render_MissingAfterError"
+        expected: "Both PASS"
+      - name: "Canceled context bails out early"
+        action: "TestReport_Render_ContextCanceled"
+        expected: "PASS"
+      - name: "io.Writer errors propagate"
+        action: "TestReport_Render_WriterError"
+        expected: "PASS"
+    tags: [phase2, regression, report, error-paths]
+
+  - id: PH2-REPORT-004
+    name: "pkg/regression — Report helper functions"
+    category: unit
+    priority: medium
+    platforms: [linux]
+    steps:
+      - name: "encodePNGDataURL produces 'data:image/png;base64,' prefix"
+        action: "TestEncodePNGDataURL_HasCorrectPrefix"
+        expected: "PASS"
+      - name: "verdictForDiff: 0 diffs → match, > 0 → different"
+        action: "TestVerdictForDiff"
+        expected: "PASS"
+      - name: "summarize(nil) returns zero-valued summary"
+        action: "TestSummarize_EmptySessionsHasZeroes"
+        expected: "PASS"
+    tags: [phase2, regression, report, util]
+
   - id: PH2-DELTAE-003
     name: "pkg/regression — CheckBrandCompliance integration"
     category: unit
