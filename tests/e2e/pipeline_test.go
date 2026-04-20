@@ -8,7 +8,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 
@@ -328,14 +327,14 @@ func TestE2E(t *testing.T) {
 
 func TestE2E_QuickPipeline(t *testing.T) {
 	img := image.NewRGBA(image.Rect(0, 0, 100, 100))
-	
+
 	detectorConfig := vision.DefaultDetectorConfig()
 	detectorConfig.EnableOCR = false
 	detector := vision.NewElementDetector(detectorConfig)
-	
+
 	result, err := detector.Detect(img)
 	require.NoError(t, err)
-	assert.NotNil(t, result)
+	require.NotNil(t, result)
 }
 
 func TestE2E_QuickGStreamer(t *testing.T) {
@@ -343,17 +342,17 @@ func TestE2E_QuickGStreamer(t *testing.T) {
 		VideoConvert().
 		AppSink("sink", 10, true).
 		Build()
-	
-	assert.NotEmpty(t, pipeline)
-	assert.Contains(t, pipeline, "videotestsrc")
-	assert.Contains(t, pipeline, "appsink")
+
+	require.NotEmpty(t, pipeline)
+	require.Contains(t, pipeline, "videotestsrc")
+	require.Contains(t, pipeline, "appsink")
 }
 
 func TestE2E_QuickWebRTC(t *testing.T) {
 	config := streaming.DefaultWebRTCConfig()
 	server := streaming.NewWebRTCServer(config)
 	require.NotNil(t, server)
-	
+
 	stats := server.GetServerStats()
-	assert.NotNil(t, stats)
+	require.NotNil(t, stats)
 }
