@@ -440,4 +440,28 @@ test_cases:
         expected: "All PASS"
     tags: [phase2, gocore, regression, pixelmatch, visual-diff]
 
+  - id: HQA-PHASE2-GOCORE-004
+    name: "OpenClawing4 Phase 2 Go-core — axtree Linux AT-SPI2 client"
+    category: regression
+    priority: critical
+    platforms: [all]
+    steps:
+      - name: "pkg/nexus/observe/axtree builds clean"
+        action: "go build -mod=vendor ./pkg/nexus/observe/axtree/..."
+        expected: "exit 0"
+      - name: "All axtree unit tests pass under -race"
+        action: "go test -mod=vendor -count=1 -race ./pkg/nexus/observe/axtree/..."
+        expected: "PASS, zero data races"
+      - name: "Phase-2 gocore bank entries for axtree loaded"
+        action: "helixqa list --banks banks/phase2-gocore.yaml"
+        expected: "18 test cases total (6 DHASH + 2 BOCPD + 2 STAGNATION + 3 PIXELMATCH + 4 AXTREE + 1 integration)"
+      - name: "Snapshotter + LinuxBus interface contracts honored"
+        action: "go test -mod=vendor -count=1 -run 'TestLinuxSnapshotter_SatisfiesSnapshotterInterface' ./pkg/nexus/observe/axtree/..."
+        expected: "PASS — compile-time guards + runtime interface check"
+      - name: "AT-SPI role mapping covers the 31-role baseline"
+        action: "go test -mod=vendor -count=1 -run 'TestAtspiRoleToARIA_KnownRoles' ./pkg/nexus/observe/axtree/..."
+        expected: "PASS — every case in the switch yields the expected ARIA name"
+    tags: [phase2, gocore, axtree, atspi2, linux, regression]
+
+
 

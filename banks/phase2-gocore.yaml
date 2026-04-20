@@ -268,3 +268,101 @@ test_cases:
         expected: "PASS"
     tags: [phase2, regression, pixelmatch, yiq, aa]
 
+  # ─── M31 · pkg/nexus/observe/axtree · AT-SPI2 Linux client ───
+  - id: PH2-AXTREE-LINUX-001
+    name: "pkg/nexus/observe/axtree — LinuxSnapshotter happy path"
+    category: unit
+    priority: critical
+    platforms: [linux]
+    steps:
+      - name: "Snapshot returns full tree with correct hierarchy"
+        action: "TestLinuxSnapshotter_Snapshot_FullTree"
+        expected: "PASS — root.CountDescendants()==5, Platform==PlatformLinux"
+      - name: "All Node properties propagate (Role, Name, Value, Bounds, Enabled, Focused, Selected)"
+        action: "TestLinuxSnapshotter_Snapshot_PropertiesPropagate"
+        expected: "PASS — button bounds, textbox value, dialog disabled/selected all correct"
+      - name: "Snapshotter interface conformance"
+        action: "TestLinuxSnapshotter_SatisfiesSnapshotterInterface"
+        expected: "PASS"
+    tags: [phase2, axtree, atspi2, linux, unit]
+
+  - id: PH2-AXTREE-LINUX-002
+    name: "pkg/nexus/observe/axtree — error + lifecycle paths"
+    category: unit
+    priority: high
+    platforms: [linux]
+    steps:
+      - name: "Close is idempotent — bus.Close only fires once"
+        action: "TestLinuxSnapshotter_Close_Idempotent"
+        expected: "PASS"
+      - name: "Snapshot after Close returns ErrSnapshotClosed"
+        action: "TestLinuxSnapshotter_Snapshot_AfterCloseReturnsError"
+        expected: "PASS"
+      - name: "GetRoot / GetProps / GetChildren errors propagate with wrapped context"
+        action: "TestLinuxSnapshotter_Snapshot_GetRootError + TestLinuxSnapshotter_Snapshot_GetPropsError + TestLinuxSnapshotter_Snapshot_GetChildrenError"
+        expected: "All PASS — error message contains method name"
+      - name: "Empty root path returns ErrNoRoot"
+        action: "TestLinuxSnapshotter_Snapshot_EmptyRoot"
+        expected: "PASS"
+      - name: "Canceled context bails out of walk"
+        action: "TestLinuxSnapshotter_Snapshot_ContextCanceled"
+        expected: "PASS"
+    tags: [phase2, axtree, atspi2, linux, error-paths]
+
+  - id: PH2-AXTREE-LINUX-003
+    name: "pkg/nexus/observe/axtree — Node.Walk / Find / CountDescendants"
+    category: unit
+    priority: high
+    platforms: [linux]
+    steps:
+      - name: "Walk visits every node depth-first pre-order"
+        action: "TestNode_Walk_VisitsEveryNodeDepthFirstPreOrder"
+        expected: "PASS — visited order matches expected traversal"
+      - name: "Walk propagates visitor errors + handles nil receiver"
+        action: "TestNode_Walk_PropagatesError + TestNode_Walk_NilNodeIsNoop"
+        expected: "Both PASS"
+      - name: "Find returns nil on no match + stops at first match"
+        action: "TestNode_Find_ReturnsNilOnNoMatch + TestNode_Find_StopsAtFirstMatch"
+        expected: "Both PASS"
+      - name: "CountDescendants handles nil"
+        action: "TestNode_CountDescendants_Nil"
+        expected: "PASS"
+    tags: [phase2, axtree, node, tree-ops]
+
+  - id: PH2-AXTREE-LINUX-004
+    name: "pkg/nexus/observe/axtree — AT-SPI role → ARIA translation"
+    category: unit
+    priority: medium
+    platforms: [linux]
+    steps:
+      - name: "Every mapped AT-SPI role code translates to the expected ARIA name"
+        action: "TestAtspiRoleToARIA_KnownRoles"
+        expected: "PASS — 31 roles covered (application, button, textbox, slider, ...)"
+      - name: "Unknown role code produces 'role-<N>' fallback"
+        action: "TestAtspiRoleToARIA_UnknownCodeFallback"
+        expected: "PASS"
+      - name: "roleCodeFromName round-trips + is case-insensitive"
+        action: "TestRoleCodeFromName_RoundTrip + TestRoleCodeFromName_CaseInsensitive + TestRoleCodeFromName_Unknown"
+        expected: "All PASS"
+      - name: "stateBit decodes two-uint32 bitmask"
+        action: "TestStateBit_ReadsCorrectBit"
+        expected: "PASS — bit 12 in word 0, bit 40 in word 1, out-of-range → false"
+    tags: [phase2, axtree, atspi2, role-mapping]
+
+  # Production D-Bus integration (blocked on a real AT-SPI2 session —
+  # no GNOME/KDE in CI; runs on the operator's desktop only)
+  - id: PH2-AXTREE-LINUX-INT-001
+    name: "pkg/nexus/observe/axtree — ConnectLinuxBus live smoke test"
+    category: integration
+    priority: high
+    platforms: [linux]
+    requires: [dbus-a11y-bus-running]
+    steps:
+      - name: "ConnectLinuxBus succeeds when the a11y bus is up"
+        action: "go test -mod=vendor -count=1 -tags=integration -run 'TestConnectLinuxBus_Live' ./pkg/nexus/observe/axtree/..."
+        expected: "PASS on an operator desktop with AT-SPI2 running — skipped in CI"
+      - name: "Snapshot of live tree returns ≥ 1 child"
+        action: "Run the above with HELIXQA_AXTREE_SMOKE=1 set"
+        expected: "Tree has ≥ 1 descendant reflecting the currently-focused app"
+    tags: [phase2, axtree, atspi2, linux, integration, manual]
+
