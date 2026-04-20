@@ -16,6 +16,8 @@
 #   - pkg/capture/linux         (M7) — SidecarRunner + envelope wire format
 #   - pkg/capture/linux         (M8) — Backend router + Source interface + factories
 #   - pkg/capture/linux         (M9) — ScreenCast portal client via godbus
+#   - pkg/capture/linux         (M10) — PortalFactory + KMSGrabFactory helpers
+#   - pkg/capture/android       (M12) — scrcpy-direct DirectSource emitting frames.Frame
 #
 # Each entry pairs a concrete `go test` invocation with a coverage / behaviour
 # expectation. No entry here requires adb, an Android device, a desktop
@@ -452,4 +454,62 @@ test_cases:
       bug_id: "OPENCLAWING4-PHASE1-M9"
       description: "godbus ScreenCast client with Caller abstraction + fake-backed tests"
       fix_file: "pkg/capture/linux/portal.go"
+      fix_commit: "pending"
+
+  # ==================== M10: pipewire + kmsgrab factories ====================
+
+  - id: P1G-CAP-LIN-FACTORIES-001
+    name: "pkg/capture/linux: PortalFactory + KMSGrabFactory end-to-end with fakes"
+    category: integration
+    priority: critical
+    platforms: [all]
+    steps:
+      - name: "PortalFactory happy path chains Portal + SidecarRunner"
+        action: "go test -run 'TestNewPortalFactory_EndToEnd' -count=1 -race ./pkg/capture/linux/..."
+        expected: "PASS — scripted fakeCaller handshake + stubStdoutRunner + 2 envelope frames reach Source.Frames; runner saw --node 7 + 1 ExtraFile"
+      - name: "Portal failure paths roll back cleanly"
+        action: "go test -run 'TestNewPortalFactory_(CreateSessionFails|UserCancelled|CallerFactoryError|InvalidConfig)' -count=1 ./pkg/capture/linux/..."
+        expected: "PASS — caller Closed on failure; IsUserCancelled true on status=1; CallerFactory error propagates; ErrPortalConfig / ErrInvalidConfig for bad input"
+      - name: "portalSource Frames() before Start is pre-closed"
+        action: "go test -run 'TestPortalSource_FramesBeforeStart' -count=1 ./pkg/capture/linux/..."
+        expected: "PASS — non-nil pre-closed channel; no block"
+      - name: "KMSGrabFactory happy path + defaults + dimensions"
+        action: "go test -run 'TestNewKMSGrabFactory_' -count=1 -race ./pkg/capture/linux/..."
+        expected: "PASS — SidecarRunner launched with helixqa-kmsgrab + --connector HDMI-A-1; Source='kmsgrab'; default binary applied; bad dims rejected"
+    tags: [phase1, gocore, capture-linux, factories]
+    estimated_duration: "5s"
+    expected_result: "Concrete BackendFactory helpers deliver a functional Source end-to-end via fakes; every error branch guarded"
+    fix_reference:
+      bug_id: "OPENCLAWING4-PHASE1-M10"
+      description: "PortalFactory + KMSGrabFactory — concrete BackendFactory helpers"
+      fix_file: "pkg/capture/linux/pipewire.go"
+      fix_commit: "pending"
+
+  # ==================== M12: scrcpy-direct android source ====================
+
+  - id: P1G-CAP-AND-DIRECT-001
+    name: "pkg/capture/android: DirectSource wraps scrcpy.Session + emits frames.Frame"
+    category: integration
+    priority: critical
+    platforms: [all]
+    steps:
+      - name: "Validation rejects nil Server + zero dimensions"
+        action: "go test -run 'TestNewDirectSource_ValidationRejects' -count=1 ./pkg/capture/android/..."
+        expected: "PASS — 3 sub-cases (nil-server, zero-width, zero-height) each return ErrDirectConfig"
+      - name: "Pump forwards keyframes; config packets skipped by default"
+        action: "go test -run 'TestDirectSource_(PumpsFrames|SkipsConfigByDefault|IncludesConfigWhenRequested)' -count=1 -race ./pkg/capture/android/..."
+        expected: "PASS — 2 real v3 video packets -> 2 frames with Source='scrcpy-direct', correct PTS, correct payload bytes; config packet dropped unless IncludeConfig=true"
+      - name: "Lifecycle: double Start rejected; Stop idempotent; StartedAt honours Clock"
+        action: "go test -run 'TestDirectSource_(DoubleStart|StopIdempotent|StartedAt)' -count=1 -race ./pkg/capture/android/..."
+        expected: "PASS — Server.Stop invoked once even on double Stop; StartedAt == fixed clock"
+      - name: "HELIX_SCRCPY_DIRECT env gating"
+        action: "go test -run 'TestIsDirectEnabled' -count=1 ./pkg/capture/android/..."
+        expected: "PASS — '1' -> true; '0', unset, empty -> false; nil lookup -> false"
+    tags: [phase1, gocore, capture-android, scrcpy-direct]
+    estimated_duration: "4s"
+    expected_result: "Android scrcpy-direct path ready to be opt-in'd without touching the legacy pkg/capture.AndroidCapture flow"
+    fix_reference:
+      bug_id: "OPENCLAWING4-PHASE1-M12"
+      description: "scrcpy-direct delegation via pkg/capture/android/direct.go"
+      fix_file: "pkg/capture/android/direct.go"
       fix_commit: "pending"

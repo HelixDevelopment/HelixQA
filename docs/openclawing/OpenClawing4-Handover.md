@@ -37,6 +37,8 @@ A forensic audit on 2026-04-19 (`OpenClawing4-Audit.md`) exposed the problems, a
 
 | Commit | Repo | URL pattern | Purpose |
 |---|---|---|---|
+| `4bc738f` | HelixQA | 4 upstreams pushed | **Phase 1 M12** — `pkg/capture/android/direct.go` scrcpy-direct delegation emitting `frames.Frame`; new `scrcpy.NewSession` constructor; 88.9% pkg coverage |
+| `bdfc375` | HelixQA | 4 upstreams pushed | **Phase 1 M10** — `pkg/capture/linux/{pipewire,kmsgrab}.go` BackendFactory helpers + 84.3% pkg coverage |
 | `ad0c0ec` | HelixQA | 4 upstreams pushed | **Phase 1 M9** — `pkg/capture/linux/portal.go` xdg-desktop-portal ScreenCast client via godbus (Caller abstraction; full fake-backed tests); package now 83.9% coverage |
 | `801b04c` | HelixQA | 4 upstreams pushed | **Phase 1 M8** — `pkg/capture/linux/router.go` Backend enum + Source interface + BackendFactory dispatch + WrapSidecarAsSource adapter |
 | `0c53389` | HelixQA | 4 upstreams pushed | **Phase 1 M7** — `pkg/capture/linux/sidecar.go` SidecarRunner + envelope wire format (4B length + 8B PTS + body); 72.8% starting coverage |
@@ -109,6 +111,8 @@ packages below.
 | M7 | `pkg/capture/linux/` | `doc.go` + `sidecar.go` + `sidecar_test.go` | 72.8 % (pkg after M7 alone) | `0c53389` |
 | M8 | `pkg/capture/linux/` (extended) | `router.go` + `router_test.go` | 79.6 % pkg | `801b04c` |
 | M9 | `pkg/capture/linux/` (extended) | `portal.go` + `portal_test.go` | 83.9 % pkg | `ad0c0ec` |
+| M10 | `pkg/capture/linux/` (extended) | `pipewire.go` + `kmsgrab.go` + `pipewire_test.go` | 84.3 % pkg | `bdfc375` |
+| M12 | `pkg/capture/android/` (new) + `pkg/bridge/scrcpy/` (extended) | `direct.go` + `direct_test.go` + `session.go` NewSession export | 88.9 % android / 81.3 % scrcpy | `4bc738f` |
 
 Deliverable highlights:
 
@@ -166,15 +170,15 @@ Legend: ✅ done (commits in §2.1 + §2.5) · 🚧 remaining.
 | `pkg/capture/linux/sidecar.go` | Generic exec-based frame pump — SidecarConfig, Runner/Cmd interfaces, ExecRunner production wrapper, SidecarRunner with idempotent Stop + ctx cancel. | **✅** `0c53389` |
 | `pkg/capture/linux/router.go` | Backend enum (Auto/Portal/KMSGrab/X11Grab), Source interface, BackendFactory dispatch via NewSource + ResolveBackend; WrapSidecarAsSource adapter. | **✅** `801b04c` |
 | `pkg/capture/linux/portal.go` | godbus ScreenCast client — CreateSession + SelectSources + Start + OpenPipeWireRemote via Caller interface; ErrPortalStatus + IsUserCancelled; parseStreams for `a(ua{sv})` decode. | **✅** `ad0c0ec` |
+| `pkg/capture/linux/pipewire.go` | PortalFactory helper that chains `Portal` + `SidecarRunner` — hands the PipeWire FD from OpenPipeWireRemote to the helixqa-capture-linux sidecar via ExtraFiles. | **✅** `bdfc375` |
+| `pkg/capture/linux/kmsgrab.go` | KMSGrabFactory helper — thin SidecarRunner wrapper for the capability-granted `helixqa-kmsgrab` sidecar. | **✅** `bdfc375` |
+| `pkg/capture/android/direct.go` | `DirectSource` adapter wrapping scrcpy.Server + Session, emitting `frames.Frame` values. Opt-in via `HELIX_SCRCPY_DIRECT=1` (exposed via `android.IsDirectEnabled`). Legacy `pkg/capture.AndroidCapture` stays untouched. | **✅** `4bc738f` |
 | `pkg/capture/linux/portal_dbus.go` | Production Caller wrapping `*dbus.Conn` — handles Response signal match + wait. Defers to a host with portal + Wayland for integration testing. | 🚧 |
-| `pkg/capture/linux/pipewire.go` | PortalFactory helper that chains `Portal` + `SidecarRunner` — hands the PipeWire FD from OpenPipeWireRemote to the helixqa-capture-linux sidecar via ExtraFiles. | 🚧 |
-| `pkg/capture/linux/kmsgrab.go` | KMSGrabFactory helper — probes for `helixqa-kmsgrab` sidecar existence + `cap_sys_admin`; gated by `HELIX_LINUX_KMSGRAB=1`; optional. | 🚧 |
-| `pkg/capture/linux/x11grab.go` | X11GrabFactory helper — reuses existing `ffmpeg x11grab` invocation path as legacy fallback. | 🚧 |
+| `pkg/capture/linux/x11grab.go` | X11GrabFactory helper — requires a companion `cmd/helixqa-x11grab` Go sidecar that runs ffmpeg x11grab and wraps its raw H.264 output in the envelope format. Not a pure-refactor item: needs the new command too. | 🚧 |
 | `pkg/capture/linux/xcbshm.go` | xcb-shm fallback for X11 / XWayland sessions (optional; x11grab factory covers this surface today). | 🚧 |
 | `pkg/capture/linux_capture.go` | **Modify** — route by `XDG_SESSION_TYPE`: wayland→portal, x11→xcbshm, legacy→existing x11grab behind `-tags x11legacy`. | 🚧 |
 | `pkg/navigator/linux/libei.go` | godbus client for `org.freedesktop.portal.RemoteDesktop`; EI binary protocol writer. | 🚧 |
 | `pkg/navigator/x11_executor.go` | **Modify** — move existing code behind `-tags x11legacy`; default is libei. | 🚧 |
-| `pkg/capture/android_capture.go` / `pkg/capture/android/direct.go` | **Modify / new** — delegate to `pkg/bridge/scrcpy` when `HELIX_SCRCPY_DIRECT=1`. Because the existing AndroidCapture uses its own `Frame` type (`pkg/capture.Frame`), the delegation should land as a parallel `pkg/capture/android/direct.go` emitting `pkg/capture/frames.Frame` values — keeps the existing flow untouched. | 🚧 |
 
 **Sidecar binaries (not Go host):**
 
