@@ -10,6 +10,7 @@ import (
 	"os"
 	"sync"
 
+	"digital.vasic.helixqa/pkg/bridge/dbusportal"
 	"digital.vasic.helixqa/pkg/capture/frames"
 )
 
@@ -18,9 +19,10 @@ import (
 const DefaultPortalSidecarBinary = "helixqa-capture-linux"
 
 // CallerFactory constructs a Caller on demand. Production wires
-// NewDBusCaller (portal_dbus.go, lands in a future commit); tests inject
-// a closure that returns a fakeCaller.
-type CallerFactory func() (Caller, error)
+// NewDBusCaller via dbusportal.DBusCallerFactory; tests inject a closure
+// that returns a fakeCaller. Declared as a type alias so any
+// dbusportal.CallerFactory value is usable here without conversion.
+type CallerFactory = dbusportal.CallerFactory
 
 // PortalConfig drives NewPortalFactory. Only CallerFactory is strictly
 // required; the rest have sensible defaults.
