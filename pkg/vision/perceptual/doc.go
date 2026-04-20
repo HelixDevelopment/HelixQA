@@ -18,8 +18,11 @@
 //                     to the canonical [-1, 1]. Shipped M34; Triton
 //                     deployment remains an operator action tracked
 //                     in docs/OPEN_POINTS_CLOSURE.md §10.3.
-//   - lpips.go      — ⏳ Optional LPIPS fallback when DreamSim isn't
-//                     deployed.
+//   - lpips.go      — ✅ LPIPS REST client (Zhang 2018) — tier-3
+//                     fallback when DreamSim is not deployed. Same
+//                     Triton KServe v2 wire as DreamSim, with
+//                     distance → similarity inversion via
+//                     configurable MaxDistance clamp. Shipped M52.
 //
 // Interface (perceptual.Comparator) — satisfied by SSIM:
 //

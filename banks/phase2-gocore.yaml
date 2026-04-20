@@ -254,6 +254,61 @@ test_cases:
         expected: "~175 µs / op"
     tags: [phase2, vision, hash, phash, benchmark]
 
+  # ─── M52 · pkg/vision/perceptual · LPIPS tier-3 fallback ───
+  - id: PH2-LPIPS-001
+    name: "pkg/vision/perceptual — LPIPS distance → similarity mapping"
+    category: unit
+    priority: critical
+    platforms: [linux]
+    steps:
+      - name: "d=0 → similarity=1; d=max/2 → 0; d=max → -1; d > max → -1 (clamp)"
+        action: "TestDistanceToSimilarity_ZeroMapsToOne + TestDistanceToSimilarity_HalfMapsToZero + TestDistanceToSimilarity_MaxMapsToMinusOne + TestDistanceToSimilarity_BeyondMaxClamps"
+        expected: "All PASS"
+      - name: "Negative distance defensively treated as identical (d<0 → 1)"
+        action: "TestDistanceToSimilarity_NegativeDistanceTreatedAsIdentical"
+        expected: "PASS"
+      - name: "Mock sidecar returns DISTANCE 0/0.5/1 → Compare returns 1/0/-1"
+        action: "TestLPIPS_IdenticalImagesReturnOne + TestLPIPS_MidDistanceReturnsZero + TestLPIPS_MaxDistanceReturnsMinusOne"
+        expected: "All PASS"
+      - name: "Custom MaxDistance re-scales the mapping (d=1, max=2 → similarity=0)"
+        action: "TestLPIPS_CustomMaxDistance"
+        expected: "PASS"
+      - name: "Zero MaxDistance defaults to 1"
+        action: "TestLPIPS_ZeroMaxDistanceDefaultsToOne"
+        expected: "PASS"
+    tags: [phase2, perceptual, lpips, distance-mapping, unit]
+
+  - id: PH2-LPIPS-002
+    name: "pkg/vision/perceptual — LPIPS wire format + output-name tolerance"
+    category: unit
+    priority: high
+    platforms: [linux]
+    steps:
+      - name: "Uppercase DISTANCE + lowercase distance output both recognized"
+        action: "TestLPIPS_IdenticalImagesReturnOne + TestLPIPS_LowercaseDistanceOutput"
+        expected: "Both PASS"
+      - name: "Pre-inverted SIMILARITY output decoded back to distance then re-mapped"
+        action: "TestLPIPS_PreInvertedSimilarityOutput"
+        expected: "PASS"
+      - name: "Unknown-named output falls back to first-non-empty value"
+        action: "TestLPIPS_OutputNameFallback"
+        expected: "PASS"
+      - name: "Comparator interface satisfied"
+        action: "TestLPIPS_SatisfiesComparatorInterface"
+        expected: "PASS"
+    tags: [phase2, perceptual, lpips, wire-format]
+
+  - id: PH2-LPIPS-003
+    name: "pkg/vision/perceptual — LPIPS error paths"
+    category: unit
+    priority: high
+    platforms: [linux]
+    steps:
+      - name: "nil / empty endpoint / HTTP 5xx / malformed JSON / missing outputs / empty data / canceled ctx / invalid URL all return correct errors"
+        action: "TestLPIPS_NilImagesError + TestLPIPS_EmptyEndpointError + TestLPIPS_HTTPErrorPropagates + TestLPIPS_MalformedResponseError + TestLPIPS_NoOutputsError + TestLPIPS_EmptyDistanceDataError + TestLPIPS_EmptySimilarityDataError + TestLPIPS_ContextCanceled + TestLPIPS_InvalidEndpointURLError"
+        expected: "All PASS"
+    tags: [phase2, perceptual, lpips, error-paths]
+
   # ─── M51 · pkg/vision/text · text-detection sidecar client ───
   - id: PH2-TEXT-001
     name: "pkg/vision/text — Detect happy path + multipart PNG wire"

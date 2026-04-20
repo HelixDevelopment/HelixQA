@@ -601,6 +601,27 @@ test_cases:
         expected: "All PASS"
     tags: [phase2, gocore, vision, text, sidecar, regression]
 
+  - id: HQA-PHASE2-GOCORE-017
+    name: "OpenClawing4 Phase 2 — LPIPS tier-3 fallback Comparator"
+    category: regression
+    priority: high
+    platforms: [all]
+    steps:
+      - name: "pkg/vision/perceptual builds clean with lpips.go"
+        action: "go build -mod=vendor ./pkg/vision/perceptual/..."
+        expected: "exit 0"
+      - name: "All LPIPS tests pass under -race"
+        action: "go test -mod=vendor -count=1 -race -run LPIPS ./pkg/vision/perceptual/..."
+        expected: "PASS, zero data races"
+      - name: "Distance → similarity mapping preserves endpoints"
+        action: "go test -mod=vendor -count=1 -run TestDistanceToSimilarity ./pkg/vision/perceptual/..."
+        expected: "All PASS — d=0→1, d=max/2→0, d=max→-1, d>max→-1"
+      - name: "Wire-format tolerance: DISTANCE / distance / SIMILARITY / fallback"
+        action: "go test -mod=vendor -count=1 -run 'TestLPIPS_LowercaseDistanceOutput|TestLPIPS_PreInvertedSimilarityOutput|TestLPIPS_OutputNameFallback' ./pkg/vision/perceptual/..."
+        expected: "All PASS"
+    tags: [phase2, gocore, perceptual, lpips, tier-3, regression]
+
+
 
 
 
