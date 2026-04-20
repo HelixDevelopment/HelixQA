@@ -5,26 +5,25 @@
 // Phase-2 perception tier. See docs/openclawing/OpenClawing4.md §5.8
 // (stagnation / change-point detection tiers).
 //
-// Planned contents:
+// Contents:
 //
-//   - dhash.go       — dHash-64 and dHash-256 via corona10/goimagehash. Sub-
-//                      millisecond per 1080p frame on CPU; the tier-1
-//                      "did the screen change at all?" primitive.
-//   - phash.go       — pHash / wHash wrappers (DCT / wavelet bases). Used
-//                      as fallback when dHash is too aggressive.
-//   - block_mean.go  — BlockMean via ajdnik/imghash for partial-screen
-//                      change detection (which 4×4 tile of the UI moved).
+//   - dhash.go       — ✅ dHash-64 and dHash-256, pure-Go (no CGO, no
+//                      external deps). ~1 µs per 1080p frame via
+//                      nearest-neighbor + fast-paths for RGBA / NRGBA /
+//                      Gray / YCbCr. The tier-1 "did the screen change
+//                      at all?" primitive. Shipped M28.
+//   - phash.go       — ⏳ pHash / wHash wrappers (DCT / wavelet bases).
+//                      Fallback when dHash is too aggressive.
+//   - block_mean.go  — ⏳ BlockMean for partial-screen change detection
+//                      (which 4×4 tile of the UI moved).
 //
-// Interface target (hash.Hasher):
+// Interface (hash.Hasher) — satisfied by DHasher{Kind: DHash64}:
 //
 //	type Hasher interface {
 //	    Hash(img image.Image) (uint64, error)
 //	    Distance(a, b uint64) int
 //	}
 //
-// Nothing is implemented in this commit — the package exists so that
-// pkg/autonomous/stagnation.go can start importing
-// `digital.vasic.helixqa/pkg/vision/hash.Hasher` in Phase 2 without a
-// dependency inversion. See Phase 2 kickoff notes in
-// OpenClawing4-Handover.md §4.
+// The 256-bit variant uses DHasher.Hash256 → *BigHash + BigHash.Distance
+// directly; see dhash.go for the full type contract.
 package hash

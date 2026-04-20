@@ -375,3 +375,27 @@ test_cases:
         action: "go test -run 'TestInjectTouchEvent_Marshal_v3Fields' -count=1 ./pkg/bridge/scrcpy/..."
         expected: "PASS — 31-byte body including action_button + buttons uint32s"
     tags: [phase1, gocore, scrcpy, sidecarutil, regression]
+
+  # ─── OpenClawing4 Phase 2 Go-Core ───
+  - id: HQA-PHASE2-GOCORE-001
+    name: "OpenClawing4 Phase 2 Go-core — dHash-64 / dHash-256 tier-1 perception primitive"
+    category: regression
+    priority: critical
+    platforms: [all]
+    steps:
+      - name: "pkg/vision/hash builds clean"
+        action: "go build -mod=vendor ./pkg/vision/hash/..."
+        expected: "exit 0"
+      - name: "All tests pass under -race with 100% coverage"
+        action: "go test -mod=vendor -count=1 -race -cover ./pkg/vision/hash/..."
+        expected: "PASS, coverage = 100.0% of statements, zero data races"
+      - name: "Phase-2 gocore bank loads"
+        action: "helixqa list --banks banks/phase2-gocore.yaml"
+        expected: "6 test cases enumerated (PH2-HASH-DHASH-001..006)"
+      - name: "Article V §8 perf target — dHash < 5 ms / 1080p CPU"
+        action: "go test -mod=vendor -run 'TestPerformance_DHash64_Under5msPer1080pFrame' ./pkg/vision/hash/..."
+        expected: "PASS — average per-frame latency well under 5 ms (target: ~1 µs)"
+      - name: "Micro-benchmarks complete"
+        action: "go test -mod=vendor -bench=. -benchtime=100ms -run=^$ ./pkg/vision/hash/..."
+        expected: "BenchmarkDHash64_1080p < 5 µs/op; BenchmarkDHash256_1080p < 20 µs/op"
+    tags: [phase2, gocore, vision, hash, dhash, regression]

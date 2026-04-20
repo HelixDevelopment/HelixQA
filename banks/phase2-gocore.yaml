@@ -1,0 +1,112 @@
+# SPDX-FileCopyrightText: 2026 Milos Vasic
+# SPDX-License-Identifier: Apache-2.0
+#
+# HelixQA Test Bank: OpenClawing4 Phase 2 Go-Core
+#
+# This bank validates the pure-Go perception / analysis / regression packages
+# that land as Phase 2 progresses. Entries appear as the corresponding
+# implementations ship — empty / commented rows are placeholders tracked in
+# `docs/openclawing/OpenClawing4-Phase2-Kickoff.md` §3.
+#
+# Every test here runs on a clean Linux container — no GPU, no OpenCV, no
+# Python sidecars, no native dependencies. GPU-gated flows live in their own
+# bank once the sidecars are online.
+
+version: "1.0"
+name: "OpenClawing4 Phase 2 — Go core bank"
+description: >
+  Tier-1 / tier-2 perception primitives + analysis + regression, pure-Go
+  subset. Backs the HQA-PHASE2-GOCORE-* challenges in
+  `challenges/config/helixqa-validation.yaml`.
+
+test_cases:
+  # ─── M28 · pkg/vision/hash · DHash-64 / DHash-256 ───
+  - id: PH2-HASH-DHASH-001
+    name: "pkg/vision/hash — DHasher basic invariants"
+    category: unit
+    priority: critical
+    platforms: [linux]
+    steps:
+      - name: "Build + run tests with vendor mode"
+        action: "GOTOOLCHAIN=local go test -mod=vendor ./pkg/vision/hash/..."
+        expected: "PASS, 100% statement coverage"
+      - name: "Verify identical inputs → distance zero"
+        action: "TestDHash64_IdenticalImages_DistanceZero + TestDHash256_IdenticalImages_DistanceZero"
+        expected: "Both PASS"
+      - name: "Verify 1-pixel shift is absorbed"
+        action: "TestDHash64_ShiftedByOnePixel_DistanceSmall"
+        expected: "PASS (distance ≤ 8)"
+      - name: "Verify different inputs → large distance"
+        action: "TestDHash64_CompletelyDifferent_DistanceLarge + TestDHash256_CompletelyDifferent_DistanceLarge"
+        expected: "PASS (distance ≥ 20 for DHash-64, ≥ 80 for DHash-256)"
+    tags: [phase2, vision, hash, unit]
+
+  - id: PH2-HASH-DHASH-002
+    name: "pkg/vision/hash — wrong-kind + nil-input error sentinels"
+    category: unit
+    priority: high
+    platforms: [linux]
+    steps:
+      - name: "Hash on DHash256 hasher returns ErrWrongKind64"
+        action: "TestHasher_WrongKind_Hash64OnDHash256Hasher"
+        expected: "PASS"
+      - name: "Hash256 on DHash64 hasher returns ErrWrongKind256"
+        action: "TestHasher_WrongKind_Hash256OnDHash64Hasher"
+        expected: "PASS"
+      - name: "nil image → ErrNilImage"
+        action: "TestHasher_NilImage_Hash + TestHasher_NilImage_Hash256"
+        expected: "Both PASS"
+      - name: "zero-bounds image → ErrZeroBounds"
+        action: "TestHasher_ZeroBounds"
+        expected: "PASS"
+    tags: [phase2, vision, hash, error-paths]
+
+  - id: PH2-HASH-DHASH-003
+    name: "pkg/vision/hash — image-type coverage (RGBA / NRGBA / Gray / YCbCr / generic)"
+    category: unit
+    priority: high
+    platforms: [linux]
+    steps:
+      - name: "All four concrete fast-paths exercised"
+        action: "TestDHash64_HandlesVariousImageTypes + TestDHash64_YCbCr + TestDHash64_GenericImageInterface"
+        expected: "All PASS"
+    tags: [phase2, vision, hash, coverage]
+
+  - id: PH2-HASH-DHASH-004
+    name: "pkg/vision/hash — Hasher interface conformance"
+    category: unit
+    priority: medium
+    platforms: [linux]
+    steps:
+      - name: "DHasher{Kind: DHash64} satisfies hash.Hasher"
+        action: "TestDHasher_SatisfiesHasherInterface + compile-time `var _ Hasher = DHasher{...}`"
+        expected: "Build + test PASS"
+    tags: [phase2, vision, hash, interface]
+
+  - id: PH2-HASH-DHASH-005
+    name: "pkg/vision/hash — BigHash.Distance symmetry + 64-bit Hamming examples"
+    category: unit
+    priority: medium
+    platforms: [linux]
+    steps:
+      - name: "BigHash.Distance is symmetric"
+        action: "TestBigHash_Distance_Symmetric"
+        expected: "PASS"
+      - name: "DHasher.Distance matches hand-computed Hamming weights"
+        action: "TestDistance64_Examples"
+        expected: "PASS for all table entries (0, 64, 64, 7)"
+    tags: [phase2, vision, hash, math]
+
+  - id: PH2-HASH-DHASH-006
+    name: "pkg/vision/hash — Article V benchmarking: < 5 ms / 1080p frame"
+    category: benchmark
+    priority: critical
+    platforms: [linux]
+    steps:
+      - name: "TestPerformance_DHash64_Under5msPer1080pFrame runs 20× averages"
+        action: "go test -mod=vendor -run TestPerformance_DHash64_Under5msPer1080pFrame ./pkg/vision/hash/..."
+        expected: "Average per-frame latency < 5 ms (target: ~1 µs on commodity CPU)"
+      - name: "BenchmarkDHash64_1080p / BenchmarkDHash256_1080p"
+        action: "go test -mod=vendor -bench=. -run=^$ ./pkg/vision/hash/..."
+        expected: "DHash64 < 5 µs/op, DHash256 < 20 µs/op on AMD64"
+    tags: [phase2, vision, hash, benchmark, article-v-8]
