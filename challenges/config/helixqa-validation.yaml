@@ -543,6 +543,34 @@ test_cases:
         expected: "Both PASS"
     tags: [phase2, gocore, analysis, pelt, change-point, regression]
 
+  # ─── OpenClawing4 Phase 3 Go-Core ───
+  - id: HQA-PHASE3-GOCORE-001
+    name: "OpenClawing4 Phase 3 Go-core — agent.Action vocabulary + UI-TARS VLM client"
+    category: regression
+    priority: critical
+    platforms: [all]
+    steps:
+      - name: "Two new packages build clean"
+        action: "go build -mod=vendor ./pkg/agent/action/... ./pkg/agent/uitars/..."
+        expected: "exit 0"
+      - name: "All Phase-3 unit tests pass under -race"
+        action: "go test -mod=vendor -count=1 -race ./pkg/agent/..."
+        expected: "PASS, 36 tests (13 action + 23 uitars), zero data races"
+      - name: "agent.Action coverage is 100%"
+        action: "go test -mod=vendor -count=1 -cover ./pkg/agent/action/..."
+        expected: "coverage = 100.0% of statements"
+      - name: "agent.uitars coverage is ≥ 95% (remainder = defensive I/O error guards)"
+        action: "go test -mod=vendor -count=1 -cover ./pkg/agent/uitars/..."
+        expected: "coverage ≥ 95.0% of statements"
+      - name: "Phase-3 gocore bank loads all 6 PH3-* cases + 1 integration"
+        action: "helixqa list --banks banks/phase3-gocore.yaml"
+        expected: "7 test cases enumerated (PH3-ACTION-001/002 + PH3-UITARS-001/002/003/004 + PH3-UITARS-INT-001)"
+      - name: "OpenAI-compat wire shape stays conformant (request has image_url + text parts, 2 messages default)"
+        action: "go test -mod=vendor -count=1 -run 'TestAct_RequestShapeIsOpenAIChat|TestActChat_PassesHistoryAsAssistantMessages' ./pkg/agent/uitars/..."
+        expected: "Both PASS"
+    tags: [phase3, gocore, agent, action, uitars, vlm, regression]
+
+
 
 
 

@@ -1268,3 +1268,24 @@ test_cases:
       description: "Guards the core PELT dynamic-programming invariants: (1) the pruning step (drop candidates whose F[s] + cost(s,tau) already exceeds F[tau]) must never remove a candidate that could still be optimal, else the algorithm loses its O(n²)-beats-O(n³) advantage AND can return a non-optimal segmentation; (2) the traceback must produce strictly-increasing change-point indices within (0, n); (3) higher penalties must monotonically reduce the number of change points (BIC-like behaviour required for interpretability). All three properties have explicit tests that would fail on any regression."
       fix_file: "HelixQA/pkg/analysis/pelt/pelt.go"
       fix_commit: "pending"
+
+  - id: FIX-OC4-009
+    name: "pkg/agent/uitars — OpenAI image_url wire-format + ExtractAction tolerance"
+    category: regression
+    priority: high
+    platforms: [linux, all]
+    steps:
+      - name: "Request shape stays OpenAI chat-compatible (image_url data URL + text parts, stream=false, default model/tokens/temperature)"
+        action: "go test -mod=vendor -count=1 -run 'TestAct_RequestShapeIsOpenAIChat|TestActChat_PassesHistoryAsAssistantMessages|TestAct_CustomModel|TestAct_CustomSystemPrompt' ./pkg/agent/uitars/..."
+        expected: "All PASS — llama-server contract frozen"
+      - name: "ExtractAction tolerates prose around JSON (Thought/Action style outputs)"
+        action: "go test -mod=vendor -count=1 -run 'TestAct_SurroundingProseTolerated|TestExtractAction_NoBraceError|TestExtractAction_UnbalancedBraceError' ./pkg/agent/uitars/..."
+        expected: "All PASS"
+    tags: [regression, phase3, openclawing4, agent, uitars, openai-compat, parser]
+    estimated_duration: "1s"
+    expected_result: "UI-TARS client stays compatible with llama-server's OpenAI-compat endpoint even as both sides version independently"
+    fix_reference:
+      bug_id: "FIX-OC4-009"
+      description: "Guards the UI-TARS client's compliance with llama-server's OpenAI /v1/chat/completions endpoint — the wire format that every VLM backend HelixQA targets (llama-server, vLLM, TGI) implements. The client sends image_url content parts with base64 PNG data URLs, the canonical envelope for OpenAI vision. ExtractAction's brace-count parser is deliberately tolerant of surrounding prose because real-world VLM outputs frequently emit 'Thought: ... Action: {json}' chain-of-thought prefixes, and upgrading to a strict JSON-only parser would silently break on every minor model update."
+      fix_file: "HelixQA/pkg/agent/uitars/uitars.go"
+      fix_commit: "pending"

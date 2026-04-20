@@ -1,0 +1,175 @@
+# SPDX-FileCopyrightText: 2026 Milos Vasic
+# SPDX-License-Identifier: Apache-2.0
+#
+# HelixQA Test Bank: OpenClawing4 Phase 3 Go-Core
+#
+# This bank validates the pure-Go agent-brain primitives that land as
+# Phase 3 progresses. Phase 3 scope per OpenClawing4.md §8:
+#
+#   - UI-TARS-1.5-7B VLM client (pkg/agent/uitars)
+#   - OmniParser v2 client (pkg/agent/omniparser — pending)
+#   - Shared agent action vocabulary (pkg/agent/action)
+#   - LangGraph-style agent orchestration (pkg/agent/graph — pending)
+#   - SGLang-style structured generation (pkg/agent/sglang — pending)
+#
+# Toolchain / operator-action dependencies (tracked in
+# docs/OPEN_POINTS_CLOSURE.md §10.3):
+#
+#   - UI-TARS-1.5-7B GGUF deployed on thinker.local with llama-server
+#     + --mmproj (needed to turn unit tests into live smoke tests).
+#   - OmniParser v2 Python sidecar built in cmd/helixqa-omniparser/
+#     container (needed for OmniParser client integration).
+#
+# Every test here runs on a clean Linux container — no GPU, no external
+# model server, no Python. Live smoke tests are in PH3-*-INT-* cases
+# tagged `manual`.
+
+version: "1.0"
+name: "OpenClawing4 Phase 3 — Go core bank"
+description: >
+  Agent brain, VLM clients, and action vocabulary. Pure Go — no CGO, no
+  Python sidecars in the Go host. Backs the HQA-PHASE3-GOCORE-*
+  challenges in challenges/config/helixqa-validation.yaml.
+
+test_cases:
+  # ─── M36 · pkg/agent/action · shared action vocabulary ───
+  - id: PH3-ACTION-001
+    name: "pkg/agent/action — Action.Validate per Kind"
+    category: unit
+    priority: critical
+    platforms: [linux]
+    steps:
+      - name: "click / type / scroll / wait / done / key / swipe / open_app happy paths"
+        action: "TestValidate_Click + TestValidate_Type + TestValidate_Scroll + TestValidate_Wait + TestValidate_Done_RequiresNothing + TestValidate_Key + TestValidate_Swipe + TestValidate_OpenApp"
+        expected: "All PASS — every Kind validates with its required fields"
+      - name: "Unknown Kind returns ErrUnknownKind with the kind name in the message"
+        action: "TestValidate_UnknownKind"
+        expected: "PASS"
+    tags: [phase3, agent, action, vocabulary, unit]
+
+  - id: PH3-ACTION-002
+    name: "pkg/agent/action — Summary + JSON round-trip"
+    category: unit
+    priority: high
+    platforms: [linux]
+    steps:
+      - name: "Summary produces human-readable line for every Kind"
+        action: "TestSummary_EveryKind + TestSummary_UnknownKind"
+        expected: "Both PASS"
+      - name: "ParseJSON happy path + malformed + invalid-action detection"
+        action: "TestParseJSON_HappyPath + TestParseJSON_MalformedJSON + TestParseJSON_InvalidAction"
+        expected: "All PASS"
+      - name: "Action round-trips through encoding/json without loss"
+        action: "TestAction_JSONRoundTrip"
+        expected: "PASS"
+      - name: "omitempty keeps the wire envelope compact"
+        action: "TestAction_OmitEmptyKeepsWireCompact"
+        expected: "PASS — bare Done marshals to {\"kind\":\"done\"}"
+    tags: [phase3, agent, action, json, serialization]
+
+  # ─── M36 · pkg/agent/uitars · UI-TARS VLM client ───
+  - id: PH3-UITARS-001
+    name: "pkg/agent/uitars — Act returns parsed Action per Kind"
+    category: unit
+    priority: critical
+    platforms: [linux]
+    steps:
+      - name: "Click action parsed end-to-end"
+        action: "TestAct_ClickAction"
+        expected: "PASS — coords + reason round-trip"
+      - name: "Type action parsed end-to-end"
+        action: "TestAct_TypeAction"
+        expected: "PASS"
+      - name: "Done action parsed when model emits Thought-then-Action prose"
+        action: "TestAct_DoneAction"
+        expected: "PASS"
+      - name: "Surrounding prose tolerated — JSON extracted from freeform text"
+        action: "TestAct_SurroundingProseTolerated"
+        expected: "PASS"
+    tags: [phase3, agent, uitars, vlm, unit]
+
+  - id: PH3-UITARS-002
+    name: "pkg/agent/uitars — OpenAI /v1/chat/completions wire format"
+    category: unit
+    priority: critical
+    platforms: [linux]
+    steps:
+      - name: "Request body matches OpenAI chat shape (system + user, image_url + text parts, default model / tokens / temperature)"
+        action: "TestAct_RequestShapeIsOpenAIChat"
+        expected: "PASS — model=ui-tars-1.5-7b, max_tokens=256, temperature=0, stream=false, base64 PNG data URL"
+      - name: "ActChat threads history as assistant messages between system and user"
+        action: "TestActChat_PassesHistoryAsAssistantMessages"
+        expected: "PASS — 4 messages (system + 2 history + user)"
+      - name: "Custom Model / MaxTokens / Temperature honored"
+        action: "TestAct_CustomModel"
+        expected: "PASS"
+      - name: "Custom SystemPrompt propagates to request"
+        action: "TestAct_CustomSystemPrompt"
+        expected: "PASS"
+    tags: [phase3, agent, uitars, openai-compat, wire-format]
+
+  - id: PH3-UITARS-003
+    name: "pkg/agent/uitars — error paths"
+    category: unit
+    priority: high
+    platforms: [linux]
+    steps:
+      - name: "Empty endpoint → ErrEmptyEndpoint"
+        action: "TestAct_EmptyEndpointError"
+        expected: "PASS"
+      - name: "Whitespace-only instruction → ErrEmptyInstruction"
+        action: "TestAct_EmptyInstructionError"
+        expected: "PASS"
+      - name: "nil screenshot → ErrNilImage"
+        action: "TestAct_NilScreenshotError"
+        expected: "PASS"
+      - name: "HTTP 5xx propagates with status + body in error"
+        action: "TestAct_HTTPErrorPropagates"
+        expected: "PASS"
+      - name: "Malformed JSON response fails with decode error"
+        action: "TestAct_MalformedResponseError"
+        expected: "PASS"
+      - name: "Empty choices array returns ErrNoChoices"
+        action: "TestAct_NoChoicesError"
+        expected: "PASS"
+      - name: "Canceled context bails out of the HTTP call"
+        action: "TestAct_ContextCanceled"
+        expected: "PASS"
+      - name: "Invalid endpoint URL fails at request construction"
+        action: "TestAct_InvalidEndpointURLError"
+        expected: "PASS"
+    tags: [phase3, agent, uitars, error-paths]
+
+  - id: PH3-UITARS-004
+    name: "pkg/agent/uitars — ExtractAction parser + utility"
+    category: unit
+    priority: high
+    platforms: [linux]
+    steps:
+      - name: "No brace / unbalanced brace / invalid inner JSON all surface ErrNoActionJSON or parse errors"
+        action: "TestExtractAction_NoBraceError + TestExtractAction_UnbalancedBraceError + TestExtractAction_InvalidInnerJSON"
+        expected: "All PASS"
+      - name: "Nested braces are tolerated for simple action objects"
+        action: "TestExtractAction_NestedBraces"
+        expected: "PASS"
+      - name: "New constructor + truncate helper + pngDataURL sanity"
+        action: "TestNew_SetsEndpoint + TestTruncate + TestPngDataURL_HasCorrectPrefix"
+        expected: "All PASS"
+    tags: [phase3, agent, uitars, parser, util]
+
+  # Production llama-server integration (blocked on operator action per
+  # OPEN_POINTS_CLOSURE.md §10.3 — UI-TARS-1.5-7B GGUF deploy to thinker.local).
+  - id: PH3-UITARS-INT-001
+    name: "pkg/agent/uitars — live llama-server smoke test"
+    category: integration
+    priority: high
+    platforms: [linux]
+    requires: [llama-server-uitars-thinker-local]
+    steps:
+      - name: "Client connects to thinker.local:18100 and receives a parseable Action"
+        action: "Client{Endpoint: 'http://thinker.local:18100'}.Act(screenshot, 'tap Sign In')"
+        expected: "Returned Action passes Validate(), Kind ∈ {click, type, key, scroll, done}"
+      - name: "End-to-end latency is within the Phase-3 budget"
+        action: "Time 3 consecutive Acts on 1080p screenshots"
+        expected: "< 5s per call on a 7B model + GPU; < 30s on CPU fallback"
+    tags: [phase3, agent, uitars, integration, manual, llama-server]
