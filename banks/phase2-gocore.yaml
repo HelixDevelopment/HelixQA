@@ -254,6 +254,50 @@ test_cases:
         expected: "~175 µs / op"
     tags: [phase2, vision, hash, phash, benchmark]
 
+  # ─── M49 · pkg/vision/template · NCC matcher ───
+  - id: PH2-TEMPLATE-001
+    name: "pkg/vision/template — NCC finds embedded template at known location"
+    category: unit
+    priority: critical
+    platforms: [linux]
+    steps:
+      - name: "Exact embedded needle found with score ≈ 1 at the right coords"
+        action: "TestMatch_ExactEmbeddedTemplateFoundAtKnownLocation"
+        expected: "PASS — BBox.Min=(42, 37), Score ≥ 0.99"
+      - name: "Absent template returns not-found (solid haystack has no signal)"
+        action: "TestMatch_TemplateAbsentReturnsNotFound"
+        expected: "PASS"
+      - name: "Region.Center returns the bbox midpoint"
+        action: "TestMatch_CenterReturnsBBoxMidpoint"
+        expected: "PASS"
+      - name: "Custom MinScore enforces strict vs loose thresholds consistently"
+        action: "TestMatch_CustomMinScoreEnforced"
+        expected: "PASS"
+    tags: [phase2, vision, template, ncc, unit]
+
+  - id: PH2-TEMPLATE-002
+    name: "pkg/vision/template — degeneracies + error paths"
+    category: unit
+    priority: high
+    platforms: [linux]
+    steps:
+      - name: "Uniform needle (zero variance) gracefully returns not-found"
+        action: "TestMatch_UniformNeedleReturnsNotFoundGracefully"
+        expected: "PASS"
+      - name: "Uniform haystack window produces score 0"
+        action: "TestMatch_UniformHaystackWindowHasZeroScore"
+        expected: "PASS"
+      - name: "nil image / zero bounds / oversized needle return sentinels"
+        action: "TestMatch_NilImageError + TestMatch_ZeroBoundsError + TestMatch_NeedleLargerThanHaystack"
+        expected: "All PASS — ErrNilImage / ErrZeroBounds / ErrNeedleTooLarge"
+      - name: "Canceled context bails out of the scan"
+        action: "TestMatch_ContextCanceled"
+        expected: "PASS"
+      - name: "ncc zero-variance branch + rec709Luma black/white sanity"
+        action: "TestNCC_ZeroHaystackVarianceReturnsZero + TestRec709Luma_BlackAndWhite"
+        expected: "Both PASS"
+    tags: [phase2, vision, template, ncc, error-paths]
+
   # ─── M46 · pkg/vision/hash · BlockMean + ChangedTiles ───
   - id: PH2-BLOCKMEAN-001
     name: "pkg/vision/hash — BlockMean identity + discrimination"

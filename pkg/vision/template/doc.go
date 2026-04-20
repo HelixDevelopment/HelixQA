@@ -5,18 +5,15 @@
 // "is the logo still on screen?" regression checks. See OpenClawing4.md
 // §5.4.1.
 //
-// Planned contents:
+// Contents:
 //
-//   - match.go — cv::matchTemplate with TM_CCOEFF_NORMED via gocv, ROI-aware.
-//                Used for button/icon presence confirmation, NOT for
-//                locating clickable targets (too brittle under scaling /
-//                anti-aliasing — use a grounding VLM for that).
-//
-// Interface target (template.Matcher):
-//
-//	type Matcher interface {
-//	    Match(img, tmpl image.Image, mask *image.Image) (Region, float64, error)
-//	}
-//
-// Nothing is implemented in this commit — placeholder for Phase 2.
+//   - template.go — ✅ Pure-Go NCC (normalized cross-correlation)
+//                   matcher on Rec-709 luma. No CGO, no OpenCV
+//                   dep — the doc-planned gocv wrapper was replaced
+//                   with the straight O(N·M·w·h) loop because
+//                   matchTemplate's SIMD advantage is minor at the
+//                   typical 50-pixel needle + 1080p haystack sizes
+//                   HelixQA uses, and staying CGO-free keeps the
+//                   build reproducible across every platform.
+//                   Shipped M49.
 package template

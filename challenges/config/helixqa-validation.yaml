@@ -550,6 +550,24 @@ test_cases:
         expected: "All 3 PASS — interchangeable via the Hasher interface"
     tags: [phase2, gocore, vision, hash, block-mean, partial-screen, regression]
 
+  - id: HQA-PHASE2-GOCORE-014
+    name: "OpenClawing4 Phase 2 — pure-Go NCC template matcher"
+    category: regression
+    priority: high
+    platforms: [all]
+    steps:
+      - name: "pkg/vision/template builds clean"
+        action: "go build -mod=vendor ./pkg/vision/template/..."
+        expected: "exit 0"
+      - name: "All template tests pass under -race with 100% coverage"
+        action: "go test -mod=vendor -count=1 -race -cover ./pkg/vision/template/..."
+        expected: "PASS, coverage = 100.0% of statements, zero data races"
+      - name: "Matcher.Match locates exact embedded needles within the bbox"
+        action: "go test -mod=vendor -count=1 -run TestMatch_ExactEmbeddedTemplateFoundAtKnownLocation ./pkg/vision/template/..."
+        expected: "PASS — NCC score ≥ 0.99 for the embedded needle"
+    tags: [phase2, gocore, vision, template, ncc, regression]
+
+
 
 
 
