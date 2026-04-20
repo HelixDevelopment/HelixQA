@@ -584,6 +584,24 @@ test_cases:
         expected: "All PASS"
     tags: [phase2, gocore, vision, flow, lucas-kanade, regression]
 
+  - id: HQA-PHASE2-GOCORE-016
+    name: "OpenClawing4 Phase 2 — text-detection sidecar client"
+    category: regression
+    priority: high
+    platforms: [all]
+    steps:
+      - name: "pkg/vision/text builds clean"
+        action: "go build -mod=vendor ./pkg/vision/text/..."
+        expected: "exit 0"
+      - name: "All text client tests pass under -race"
+        action: "go test -mod=vendor -count=1 -race ./pkg/vision/text/..."
+        expected: "PASS, zero data races"
+      - name: "Multipart PNG wire format + smallest-enclosing helpers stay correct"
+        action: "go test -mod=vendor -count=1 -run 'TestDetect_MultipartPNGWireFormat|TestResult_FindContaining' ./pkg/vision/text/..."
+        expected: "All PASS"
+    tags: [phase2, gocore, vision, text, sidecar, regression]
+
+
 
 
 

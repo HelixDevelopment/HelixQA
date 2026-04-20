@@ -254,6 +254,67 @@ test_cases:
         expected: "~175 µs / op"
     tags: [phase2, vision, hash, phash, benchmark]
 
+  # ─── M51 · pkg/vision/text · text-detection sidecar client ───
+  - id: PH2-TEXT-001
+    name: "pkg/vision/text — Detect happy path + multipart PNG wire"
+    category: unit
+    priority: critical
+    platforms: [linux]
+    steps:
+      - name: "Sidecar response decodes into Result with region bboxes"
+        action: "TestDetect_HappyPath"
+        expected: "PASS — 2 regions, Sign In confidence 0.94, bbox round-trips"
+      - name: "Request is multipart/form-data with 'image' PNG field"
+        action: "TestDetect_MultipartPNGWireFormat"
+        expected: "PASS"
+      - name: "Custom DetectPath honored"
+        action: "TestDetect_CustomDetectPath"
+        expected: "PASS"
+      - name: "Region.Center + FindContaining smallest-enclosing semantics"
+        action: "TestRegion_Center + TestResult_FindContaining_HitsSmallestEnclosing + TestResult_FindContaining_NoMatch + TestResult_FindContaining_Empty"
+        expected: "All PASS"
+      - name: "bboxArea + pointIn honor Min-inclusive/Max-exclusive rect semantics"
+        action: "TestBboxArea_InvalidReturnsZero + TestPointIn"
+        expected: "Both PASS"
+      - name: "New constructor sets Endpoint; Client satisfies Detector interface"
+        action: "TestNew_SetsEndpoint + TestClient_SatisfiesDetectorInterface"
+        expected: "Both PASS"
+    tags: [phase2, vision, text, sidecar, unit]
+
+  - id: PH2-TEXT-002
+    name: "pkg/vision/text — error paths"
+    category: unit
+    priority: high
+    platforms: [linux]
+    steps:
+      - name: "Empty endpoint / nil image return sentinels"
+        action: "TestDetect_EmptyEndpointError + TestDetect_NilImageError"
+        expected: "Both PASS"
+      - name: "HTTP 5xx / malformed JSON / bad bbox shape surface errors"
+        action: "TestDetect_HTTPErrorPropagates + TestDetect_MalformedJSONError + TestDetect_InvalidBBoxError"
+        expected: "All PASS"
+      - name: "Canceled context bails out of HTTP call"
+        action: "TestDetect_ContextCanceled"
+        expected: "PASS"
+      - name: "Invalid URL fails at request construction"
+        action: "TestDetect_InvalidURLError"
+        expected: "PASS"
+    tags: [phase2, vision, text, sidecar, error-paths]
+
+  # Production Python sidecar integration (blocked on operator-action
+  # — cmd/helixqa-text/ Python build + weights download).
+  - id: PH2-TEXT-INT-001
+    name: "pkg/vision/text — live Python sidecar smoke test"
+    category: integration
+    priority: high
+    platforms: [linux]
+    requires: [helixqa-text-sidecar-running]
+    steps:
+      - name: "Live sidecar returns ≥ 1 region for a busy screenshot"
+        action: "New('http://127.0.0.1:7870').Detect(1080p screenshot)"
+        expected: "len(regions) ≥ 1"
+    tags: [phase2, vision, text, sidecar, integration, manual]
+
   # ─── M50 · pkg/vision/flow · Lucas-Kanade sparse optical flow ───
   - id: PH2-FLOW-001
     name: "pkg/vision/flow — LK detects motion direction + identical-frame zero"

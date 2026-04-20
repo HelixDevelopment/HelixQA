@@ -1,23 +1,18 @@
 // SPDX-FileCopyrightText: 2026 Milos Vasic
 // SPDX-License-Identifier: Apache-2.0
 
-// Package text implements text-region detection for HelixQA Phase-2, used
-// to hint a grounding VLM with candidate clickable-text bounding boxes
-// before LLM inference. See OpenClawing4.md §5.4.4.
+// Package text is the HelixQA client for the text-detection sidecar.
 //
-// Planned contents:
+// Contents:
 //
-//   - east.go — cv::dnn::TextDetectionModel_EAST via gocv DNN. 13 FPS on
-//               720p CPU; cuts LLM token cost by feeding it structured
-//               ROI hints instead of the whole screen.
-//   - mser.go — MSER + Stroke Width Transform for well-structured UI
-//               chrome (buttons on solid backgrounds).
+//   - text.go — ✅ HTTP client for the EAST/MSER/PP-OCR Python
+//               sidecar (cmd/helixqa-text/, future). Multipart PNG
+//               upload, JSON region grid response, smallest-
+//               enclosing FindContaining grounding helper. Same
+//               wire pattern as pkg/agent/omniparser. Shipped M51.
 //
-// Interface target (text.Detector):
-//
-//	type Detector interface {
-//	    Detect(img image.Image) ([]Region, error)
-//	}
-//
-// Nothing is implemented in this commit — placeholder for Phase 2.
+// Replaces the doc-planned gocv EAST/MSER wrappers: text detection
+// models require a Python CV stack (ONNX Runtime, TF) that doesn't
+// fit the CGO-free Go host. The sidecar pattern keeps the Go client
+// small while the Python process carries the model dependencies.
 package text
