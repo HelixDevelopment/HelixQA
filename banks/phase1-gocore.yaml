@@ -13,6 +13,9 @@
 #   - pkg/navigator/linux/uinput (M4) — pure-Go /dev/uinput driver
 #   - pkg/bridge/scrcpy         (M5) — server lifecycle + Session API
 #   - pkg/bridges                (M6) — sidecar registry extended with 13 native probes
+#   - pkg/capture/linux         (M7) — SidecarRunner + envelope wire format
+#   - pkg/capture/linux         (M8) — Backend router + Source interface + factories
+#   - pkg/capture/linux         (M9) — ScreenCast portal client via godbus
 #
 # Each entry pairs a concrete `go test` invocation with a coverage / behaviour
 # expectation. No entry here requires adb, an Android device, a desktop
@@ -365,4 +368,88 @@ test_cases:
       bug_id: "OPENCLAWING4-PHASE1-M6"
       description: "Sidecar registry honouring OpenClawing4 §6.1 roster"
       fix_file: "pkg/bridges/registry.go"
+      fix_commit: "pending"
+
+  # ==================== M7: pkg/capture/linux SidecarRunner ====================
+
+  - id: P1G-CAP-LIN-SIDECAR-001
+    name: "pkg/capture/linux: envelope encode/decode + SidecarRunner frame pump"
+    category: unit
+    priority: critical
+    platforms: [all]
+    steps:
+      - name: "Envelope tests pass"
+        action: "go test -run 'TestEncodeEnvelope_|TestReadEnvelope_' -count=1 ./pkg/capture/linux/..."
+        expected: "PASS — layout + NoPTS sentinel + roundtrip + short header/body + too-large + clean EOF all pass"
+      - name: "SidecarRunner happy path"
+        action: "go test -run 'TestSidecarRunner_FramePump' -count=1 -race ./pkg/capture/linux/..."
+        expected: "PASS — 3 frames delivered with correct PTS (1s, 2s, NoPTS->0) + correct metadata"
+      - name: "Stop idempotency + DoubleStart rejection + ctx cancel"
+        action: "go test -run 'TestSidecarRunner_(StopIdempotent|DoubleStart|ContextCancel)' -count=1 -race ./pkg/capture/linux/..."
+        expected: "PASS — Kill called once; second Start errors; ctx cancel closes Frames channel within 2s"
+    tags: [phase1, gocore, capture-linux, sidecar]
+    estimated_duration: "4s"
+    expected_result: "Envelope wire format byte-exact; generic frame pump terminates cleanly on every shutdown path"
+    fix_reference:
+      bug_id: "OPENCLAWING4-PHASE1-M7"
+      description: "Generic exec-based capture sidecar runner — foundation for portal/kmsgrab/x11grab backends"
+      fix_file: "pkg/capture/linux/sidecar.go"
+      fix_commit: "pending"
+
+  # ==================== M8: pkg/capture/linux router ====================
+
+  - id: P1G-CAP-LIN-ROUTER-001
+    name: "pkg/capture/linux: Backend enum + ResolveBackend precedence + NewSource dispatch"
+    category: unit
+    priority: high
+    platforms: [all]
+    steps:
+      - name: "Backend String + ParseBackend table-driven"
+        action: "go test -run 'TestBackend_String|TestParseBackend' -count=1 ./pkg/capture/linux/..."
+        expected: "PASS"
+      - name: "ResolveBackend precedence (8 cases)"
+        action: "go test -run 'TestResolveBackend_' -count=1 ./pkg/capture/linux/..."
+        expected: "PASS — override over env over session-type over default; aliases honoured"
+      - name: "NewSource dispatches to the chosen factory"
+        action: "go test -run 'TestNewSource_|TestWrapSidecarAsSource' -count=1 -race ./pkg/capture/linux/..."
+        expected: "PASS — factory invoked exactly once; ErrUnsupportedBackend on unwired; ErrInvalidConfig on bad dims"
+    tags: [phase1, gocore, capture-linux, router]
+    estimated_duration: "3s"
+    expected_result: "Env-var dispatch is deterministic across all precedence cases; factory injection is clean"
+    fix_reference:
+      bug_id: "OPENCLAWING4-PHASE1-M8"
+      description: "Backend enum + Source interface + BackendFactory dispatch"
+      fix_file: "pkg/capture/linux/router.go"
+      fix_commit: "pending"
+
+  # ==================== M9: pkg/capture/linux portal ====================
+
+  - id: P1G-CAP-LIN-PORTAL-001
+    name: "pkg/capture/linux: ScreenCast portal client CreateSession/SelectSources/Start/OpenPipeWireRemote"
+    category: unit
+    priority: critical
+    platforms: [all]
+    steps:
+      - name: "CreateSession builds correct options + unique tokens per call"
+        action: "go test -run 'TestPortal_CreateSession_' -count=1 ./pkg/capture/linux/..."
+        expected: "PASS — Success + TokensAreUnique + StatusNonZero + MissingHandle + CallerError"
+      - name: "SelectSources argument shape + defaults"
+        action: "go test -run 'TestPortal_SelectSources_' -count=1 ./pkg/capture/linux/..."
+        expected: "PASS — argument shape includes types+multiple+cursor_mode+persist_mode+restore_token; defaults to Monitor+Hidden; conditional omission of persist/restore"
+      - name: "Start decodes streams + parent window pass-through"
+        action: "go test -run 'TestPortal_Start_' -count=1 ./pkg/capture/linux/..."
+        expected: "PASS — stream tuple (u, a{sv}) decoded to Stream{NodeID, Metadata}; NoStreams rejection; parentWindow reaches call args"
+      - name: "OpenPipeWireRemote extracts dbus.UnixFD"
+        action: "go test -run 'TestPortal_OpenPipeWireRemote_' -count=1 ./pkg/capture/linux/..."
+        expected: "PASS — real os.Pipe FD roundtrips via dbus.UnixFD -> *os.File; wrong body type + empty body + empty sessionPath all error"
+      - name: "IsUserCancelled identifies status=1"
+        action: "go test -run 'TestPortal_CreateSession_StatusNonZero' -count=1 -v ./pkg/capture/linux/..."
+        expected: "PASS — status=1 -> IsUserCancelled=true; status=2 -> false"
+    tags: [phase1, gocore, capture-linux, portal, godbus]
+    estimated_duration: "4s"
+    expected_result: "Portal client drives the full xdg-desktop-portal ScreenCast handshake correctly; testable without a real D-Bus"
+    fix_reference:
+      bug_id: "OPENCLAWING4-PHASE1-M9"
+      description: "godbus ScreenCast client with Caller abstraction + fake-backed tests"
+      fix_file: "pkg/capture/linux/portal.go"
       fix_commit: "pending"

@@ -37,6 +37,9 @@ A forensic audit on 2026-04-19 (`OpenClawing4-Audit.md`) exposed the problems, a
 
 | Commit | Repo | URL pattern | Purpose |
 |---|---|---|---|
+| `ad0c0ec` | HelixQA | 4 upstreams pushed | **Phase 1 M9** — `pkg/capture/linux/portal.go` xdg-desktop-portal ScreenCast client via godbus (Caller abstraction; full fake-backed tests); package now 83.9% coverage |
+| `801b04c` | HelixQA | 4 upstreams pushed | **Phase 1 M8** — `pkg/capture/linux/router.go` Backend enum + Source interface + BackendFactory dispatch + WrapSidecarAsSource adapter |
+| `0c53389` | HelixQA | 4 upstreams pushed | **Phase 1 M7** — `pkg/capture/linux/sidecar.go` SidecarRunner + envelope wire format (4B length + 8B PTS + body); 72.8% starting coverage |
 | `a28657e` | HelixQA | 4 upstreams pushed | **Phase 1 M6** — `pkg/bridges/registry` ToolKind + 13 HelixQA-native sidecar probes + 100% coverage |
 | `ee83028` | HelixQA | 4 upstreams pushed | **Phase 1 M5** — `pkg/bridge/scrcpy/{server,session}` lifecycle + 81.5% package coverage |
 | `341fe33` | HelixQA | 4 upstreams pushed | **Phase 1 M4** — `pkg/navigator/linux/uinput` pure-Go /dev/uinput driver + 42% coverage (remainder is linear ioctl path) |
@@ -103,6 +106,9 @@ packages below.
 | M4 | `pkg/navigator/linux/uinput/` | `doc.go` + `event.go` + `device_linux.go` + 2 tests | 42.0 % pkg (event.go 100 %) | `341fe33` |
 | M5 | `pkg/bridge/scrcpy/` (extended) | `server.go` + `session.go` + `server_test.go` | 81.5 % pkg | `ee83028` |
 | M6 | `pkg/bridges/` (extended) | `registry.go` + `registry_test.go` modifications | 100.0 % pkg | `a28657e` |
+| M7 | `pkg/capture/linux/` | `doc.go` + `sidecar.go` + `sidecar_test.go` | 72.8 % (pkg after M7 alone) | `0c53389` |
+| M8 | `pkg/capture/linux/` (extended) | `router.go` + `router_test.go` | 79.6 % pkg | `801b04c` |
+| M9 | `pkg/capture/linux/` (extended) | `portal.go` + `portal_test.go` | 83.9 % pkg | `ad0c0ec` |
 
 Deliverable highlights:
 
@@ -113,6 +119,7 @@ Deliverable highlights:
 - **`/dev/uinput` driver (pure Go)** — `EncodeEvent`/`DecodeEvent` produce the 24-byte `input_event` layout byte-exact (time fields zeroed for the kernel to stamp). High-level `WriteKeyTap` / `WriteClickAbs` / `WriteMoveRel` / `WriteScroll` emit the proper press+sync+release+sync or abs+abs+btn+sync sequences. Linux-only `device_linux.go` adds `Open` (O_NONBLOCK → UI_SET_EVBIT → UI_SET_*BIT → UI_DEV_SETUP → UI_DEV_CREATE), nil-safe idempotent `Close`, config validation before any syscall. CGO-free; uses `golang.org/x/sys/unix.Syscall(SYS_IOCTL, ...)`.
 - **scrcpy server + session lifecycle** — `StartServer(ctx, ServerConfig)` runs devguard check → adb push → adb reverse → `net.Listen("tcp", "127.0.0.1:<port>")` → `ProcessLauncher.Launch("adb", "shell", "CLASSPATH=...", "app_process", …)` → accept 1–3 sockets within `AcceptTimeout` → return a `*Session`. Full rollback on any step failure. `Server.Stop` (idempotent via `sync.Once`) closes session + signals process + removes `adb reverse`. `Session.StartPumps(ctx)` launches goroutines that push `VideoPacket`/`AudioPacket`/`DeviceMessage` onto buffered channels with clean exit on `ctx.Done` or `Close`. `Session.Send` is goroutine-safe (mutex-guarded) and sets a 5-second write deadline. Tests use real loopback listener + fake process launcher dialing three times.
 - **Sidecar registry extension** — 13 HelixQA-native sidecars (the complete OpenClawing4 §6.1 roster) added to `DiscoverTools`, probed via the universal `<bin> --health` contract from sidecarutil; new `ToolKind` enum + `NativeTools` / `ExternalTools` partition helpers so operator-facing reports can clearly distinguish "ships with HelixQA" from "installed on host".
+- **Linux capture subsystem** — `pkg/capture/linux/` lays the foundation for every Linux backend: `SidecarRunner` consumes a binary-framed envelope stream (4-byte body length + 8-byte PTS in microseconds + body) from any capture sidecar's stdout and publishes `frames.Frame` values on a Go channel; tests back-to-back with fake Runner + fake Cmd verify envelope decode, PTS carry-through (incl. NoPTS=-1 sentinel fallback to `time.Since(startedAt)`), Stop idempotency, double-Start rejection, context-cancel termination. `Source` interface + `BackendFactory` dispatch via `NewSource` / `ResolveBackend` with precedence `BackendOverride → HELIX_LINUX_CAPTURE → XDG_SESSION_TYPE → BackendPortal`; `WrapSidecarAsSource` adapter. xdg-desktop-portal ScreenCast client via godbus: `Portal{Caller}` with `CreateSession` / `SelectSources` / `Start` / `OpenPipeWireRemote` wrapping the Request/Response handshake; `ErrPortalStatus` + `IsUserCancelled` distinguish status=1 (user declined) from status=2+ (technical failure); unique `handle_token` / `session_handle_token` per call via `sync/atomic.Uint64`; raw `dbus.UnixFD` extraction into `*os.File` ready for `exec.Cmd.ExtraFiles` handoff. Full test coverage via `fakeCaller` that records every invocation — zero real D-Bus required.
 
 Acceptance evidence (Article V — all green for Phase-1 Go-core):
 
@@ -155,10 +162,15 @@ Legend: ✅ done (commits in §2.1 + §2.5) · 🚧 remaining.
 | `pkg/bridge/scrcpy/session.go` | Session wraps the 3 sockets; StartPumps launches reader goroutines; Send(ControlMessage) with 5s deadline; idempotent Close. | **✅** `ee83028` |
 | `pkg/navigator/linux/uinput/` | Pure-Go `/dev/uinput` driver — event encoder (cross-platform) + Linux ioctl sequence. | **✅** `341fe33` |
 | `pkg/bridges/registry.go` | 13 HelixQA-native sidecar probes added + ToolKind enum + NativeTools / ExternalTools helpers. 100% coverage. | **✅** `a28657e` |
-| `pkg/capture/linux/portal.go` | godbus client for `org.freedesktop.portal.ScreenCast` — `CreateSession`, `SelectSources`, `Start`; caches the session across frames. | 🚧 |
-| `pkg/capture/linux/pipewire.go` | Spawns `helixqa-capture-linux` with PipeWire FD in `SysProcAttr.ExtraFiles`; reads Annex-B from stdout; emits `Frame` objects via `pkg/capture/frames`. | 🚧 |
-| `pkg/capture/linux/kmsgrab.go` | Probes for `helixqa-kmsgrab` sidecar existence + `cap_sys_admin`; gated by `HELIX_LINUX_KMSGRAB=1`; optional. | 🚧 |
-| `pkg/capture/linux/xcbshm.go` | xcb-shm fallback for X11 / XWayland sessions. | 🚧 |
+| `pkg/capture/linux/doc.go` | Package rationale + envelope wire format reference. | **✅** `0c53389` |
+| `pkg/capture/linux/sidecar.go` | Generic exec-based frame pump — SidecarConfig, Runner/Cmd interfaces, ExecRunner production wrapper, SidecarRunner with idempotent Stop + ctx cancel. | **✅** `0c53389` |
+| `pkg/capture/linux/router.go` | Backend enum (Auto/Portal/KMSGrab/X11Grab), Source interface, BackendFactory dispatch via NewSource + ResolveBackend; WrapSidecarAsSource adapter. | **✅** `801b04c` |
+| `pkg/capture/linux/portal.go` | godbus ScreenCast client — CreateSession + SelectSources + Start + OpenPipeWireRemote via Caller interface; ErrPortalStatus + IsUserCancelled; parseStreams for `a(ua{sv})` decode. | **✅** `ad0c0ec` |
+| `pkg/capture/linux/portal_dbus.go` | Production Caller wrapping `*dbus.Conn` — handles Response signal match + wait. Defers to a host with portal + Wayland for integration testing. | 🚧 |
+| `pkg/capture/linux/pipewire.go` | PortalFactory helper that chains `Portal` + `SidecarRunner` — hands the PipeWire FD from OpenPipeWireRemote to the helixqa-capture-linux sidecar via ExtraFiles. | 🚧 |
+| `pkg/capture/linux/kmsgrab.go` | KMSGrabFactory helper — probes for `helixqa-kmsgrab` sidecar existence + `cap_sys_admin`; gated by `HELIX_LINUX_KMSGRAB=1`; optional. | 🚧 |
+| `pkg/capture/linux/x11grab.go` | X11GrabFactory helper — reuses existing `ffmpeg x11grab` invocation path as legacy fallback. | 🚧 |
+| `pkg/capture/linux/xcbshm.go` | xcb-shm fallback for X11 / XWayland sessions (optional; x11grab factory covers this surface today). | 🚧 |
 | `pkg/capture/linux_capture.go` | **Modify** — route by `XDG_SESSION_TYPE`: wayland→portal, x11→xcbshm, legacy→existing x11grab behind `-tags x11legacy`. | 🚧 |
 | `pkg/navigator/linux/libei.go` | godbus client for `org.freedesktop.portal.RemoteDesktop`; EI binary protocol writer. | 🚧 |
 | `pkg/navigator/x11_executor.go` | **Modify** — move existing code behind `-tags x11legacy`; default is libei. | 🚧 |
