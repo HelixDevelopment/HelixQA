@@ -14,6 +14,11 @@
 > §2 to see what's done, §3 to see exactly what's left down to file paths
 > and commands, §4 for known issues, §5 for the resume playbook, and start
 > immediately.
+>
+> **Phase 1 CLOSED as of 2026-04-20.** See `OpenClawing4-Phase1-Closure.md`
+> for the final exit report. Phase 2 kickoff in
+> `OpenClawing4-Phase2-Kickoff.md` — next concrete task is
+> `pkg/vision/hash/dhash.go`.
 
 ---
 
