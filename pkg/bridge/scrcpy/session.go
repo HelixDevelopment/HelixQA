@@ -39,6 +39,18 @@ type Session struct {
 	closed    chan struct{}
 }
 
+// NewSession constructs a Session from pre-established connections. The
+// production bring-up (Server.StartServer) builds one internally; this
+// constructor is exposed so callers driving scrcpy-server.jar through
+// their own transport (or tests wanting to inject net.Pipe pairs) can
+// participate in the same channel-based contract.
+//
+// Any of video/audio/control may be nil — StartPumps only launches the
+// goroutines whose corresponding conn is non-nil.
+func NewSession(video, audio, control net.Conn) *Session {
+	return &Session{video: video, audio: audio, control: control}
+}
+
 // StartPumps launches the read goroutines that push VideoPacket /
 // AudioPacket / DeviceMessage values onto the Session's channels. Must be
 // called exactly once per Session. The returned channels are closed when
