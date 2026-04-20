@@ -619,6 +619,30 @@ test_cases:
         expected: "All PASS — grounding is guarded against phantom detections and distant snaps"
     tags: [phase3, gocore, agent, ground, grounding, vlm, regression]
 
+  - id: HQA-PHASE3-GOCORE-004
+    name: "OpenClawing4 Phase 3 Go-core — stateful agent-loop Runner"
+    category: regression
+    priority: critical
+    platforms: [all]
+    steps:
+      - name: "pkg/agent/graph builds clean"
+        action: "go build -mod=vendor ./pkg/agent/graph/..."
+        expected: "exit 0"
+      - name: "All Runner tests pass under -race with 100% coverage"
+        action: "go test -mod=vendor -count=1 -race -cover ./pkg/agent/graph/..."
+        expected: "PASS, coverage = 100.0% of statements, zero data races"
+      - name: "Phase-3 bank has the runner entries"
+        action: "helixqa list --banks banks/phase3-gocore.yaml"
+        expected: "21 test cases total (prior 16 + 5 graph)"
+      - name: "Four termination conditions all wired correctly"
+        action: "go test -mod=vendor -count=1 -run 'TestRun_TerminatesOnDoneAction|TestRun_TerminatesOnMaxSteps|TestRun_StuckDetectionFires|TestRun_ContextCanceledBeforeFirstStep' ./pkg/agent/graph/..."
+        expected: "All PASS — Done / MaxSteps / Stuck / ctx-cancel"
+      - name: "Done action is recorded but never executed (safety invariant)"
+        action: "go test -mod=vendor -count=1 -run TestRun_TerminatesOnDoneAction ./pkg/agent/graph/..."
+        expected: "PASS — Steps=3, executor saw 2 actions (Done excluded)"
+    tags: [phase3, gocore, agent, graph, runner, regression]
+
+
 
 
 

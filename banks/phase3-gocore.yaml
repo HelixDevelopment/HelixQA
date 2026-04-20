@@ -371,3 +371,101 @@ test_cases:
         action: "TestActorAndDetectorInterfaces_SatisfiedByFakes"
         expected: "PASS"
     tags: [phase3, agent, ground, geometry, util, unit]
+
+  # ─── M39 · pkg/agent/graph · stateful agent runner ───
+  - id: PH3-GRAPH-001
+    name: "pkg/agent/graph — Run terminates on Done action"
+    category: unit
+    priority: critical
+    platforms: [linux]
+    steps:
+      - name: "Scripted click → type → done runs to Done, Done is recorded but NOT executed"
+        action: "TestRun_TerminatesOnDoneAction"
+        expected: "PASS — Steps=3, executor saw 2 (Done excluded)"
+      - name: "OnStep hook fires once per step"
+        action: "TestRun_OnStepHookFiresPerStep"
+        expected: "PASS"
+      - name: "ResolverFunc adapter dispatches the wrapped function"
+        action: "TestResolverFunc_Adapter"
+        expected: "PASS"
+    tags: [phase3, agent, graph, runner, unit]
+
+  - id: PH3-GRAPH-002
+    name: "pkg/agent/graph — MaxSteps bound"
+    category: unit
+    priority: critical
+    platforms: [linux]
+    steps:
+      - name: "Run terminates at MaxSteps without Done flag"
+        action: "TestRun_TerminatesOnMaxSteps"
+        expected: "PASS — 5 steps executed, Done=false Stuck=false"
+      - name: "Default MaxSteps is 50 when zero-valued"
+        action: "TestRun_DefaultMaxStepsIs50"
+        expected: "PASS"
+      - name: "MaxSteps=-1 disables the bound — agent can run unbounded until Done"
+        action: "TestRun_MaxStepsNegativeAllowsUnboundedLoopUntilDone"
+        expected: "PASS — reaches Done at step 100"
+    tags: [phase3, agent, graph, bounds, unit]
+
+  - id: PH3-GRAPH-003
+    name: "pkg/agent/graph — Stuck detection"
+    category: unit
+    priority: critical
+    platforms: [linux]
+    steps:
+      - name: "StuckDetect=3 fires after 3 identical actions (Reason field ignored)"
+        action: "TestRun_StuckDetectionFires"
+        expected: "PASS — Stuck=true, Done=false"
+      - name: "StuckDetect=0 disables the check"
+        action: "TestRun_StuckDetectionIgnoredWhenZero"
+        expected: "PASS"
+      - name: "StuckDetect=1 is a no-op (nonsensical)"
+        action: "TestRun_StuckDetectionOneMeansNeverFires"
+        expected: "PASS"
+      - name: "Distinct actions never trigger Stuck"
+        action: "TestRun_StuckNotFiredWhenActionsDiffer"
+        expected: "PASS"
+      - name: "sameCore ignores Reason, honors Kind/coords"
+        action: "TestSameCore_IgnoresReason + TestSameCore_DistinguishesCoords"
+        expected: "Both PASS"
+      - name: "isStuck handles empty / too-small-n / short-history edge cases"
+        action: "TestIsStuck_EmptyHistory + TestIsStuck_NTooSmall + TestIsStuck_HistoryShorterThanN"
+        expected: "All PASS"
+    tags: [phase3, agent, graph, stuck-detection, unit]
+
+  - id: PH3-GRAPH-004
+    name: "pkg/agent/graph — error paths + dependency validation"
+    category: unit
+    priority: high
+    platforms: [linux]
+    steps:
+      - name: "nil Screenshotter / Resolver / Executor / empty goal all return sentinels"
+        action: "TestRun_NilScreenshotterError + TestRun_NilResolverError + TestRun_NilExecutorError + TestRun_EmptyGoalError"
+        expected: "All PASS — ErrNoScreenshotter / ErrNoResolver / ErrNoExecutor / ErrEmptyGoal"
+      - name: "Screenshot / Resolve / Execute errors wrap with step number + operation"
+        action: "TestRun_ScreenshotErrorWrapsWithStep + TestRun_ResolveErrorWrapsWithStep + TestRun_ExecuteErrorWrapsWithStep"
+        expected: "All PASS — 'step N: <op>:' prefix for auditability"
+      - name: "Pre-canceled context returns before any step runs"
+        action: "TestRun_ContextCanceledBeforeFirstStep"
+        expected: "PASS"
+      - name: "StepTimeout cancels a slow Screenshot in < 100ms"
+        action: "TestRun_StepTimeoutCancelsSlowSteps"
+        expected: "PASS"
+    tags: [phase3, agent, graph, error-paths, timeout, unit]
+
+  - id: PH3-GRAPH-005
+    name: "pkg/agent/graph — UnwrapMaxStepsOrStuck result helper"
+    category: unit
+    priority: medium
+    platforms: [linux]
+    steps:
+      - name: "Done result → nil"
+        action: "TestUnwrapMaxStepsOrStuck_Done"
+        expected: "PASS"
+      - name: "Stuck result → ErrStuck"
+        action: "TestUnwrapMaxStepsOrStuck_Stuck"
+        expected: "PASS"
+      - name: "MaxSteps result → ErrMaxStepsReached"
+        action: "TestUnwrapMaxStepsOrStuck_MaxSteps"
+        expected: "PASS"
+    tags: [phase3, agent, graph, result, unit]

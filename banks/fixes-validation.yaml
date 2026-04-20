@@ -1343,3 +1343,30 @@ test_cases:
       description: "Guards three grounding invariants. (1) Graceful degradation: the Grounder must pass UI-TARS actions through unchanged when the Detector (OmniParser sidecar) is nil — the sidecar is operator-action-gated (§10.3), and hard-failing when it is unavailable would brick the agent pipeline in every deployment without one. (2) Confidence floor: low-confidence OmniParser elements (< 0.5 default) are phantom detections on busy screens and MUST NOT capture VLM clicks, otherwise the agent targets noise. (3) MaxSnapDist cap: snap-to-nearest without a distance ceiling produces nonsensical long-range snaps across huge empty regions; the default 64px keeps snaps visually local. All three are guarded by explicit tests."
       fix_file: "HelixQA/pkg/agent/ground/ground.go"
       fix_commit: "pending"
+
+  - id: FIX-OC4-012
+    name: "pkg/agent/graph — agent-loop termination + Done-not-executed safety"
+    category: regression
+    priority: critical
+    platforms: [linux, all]
+    steps:
+      - name: "All four termination conditions stay wired: Done, MaxSteps, Stuck, ctx-cancel"
+        action: "go test -mod=vendor -count=1 -run 'TestRun_TerminatesOnDoneAction|TestRun_TerminatesOnMaxSteps|TestRun_StuckDetectionFires|TestRun_ContextCanceledBeforeFirstStep' ./pkg/agent/graph/..."
+        expected: "All PASS"
+      - name: "Done action must NEVER reach the Executor"
+        action: "go test -mod=vendor -count=1 -run TestRun_TerminatesOnDoneAction ./pkg/agent/graph/..."
+        expected: "PASS — executor saw 2 actions (click + type), Done was recorded in History but not executed"
+      - name: "sameCore ignores Reason so stuck detection fires on VLM-generated prose drift"
+        action: "go test -mod=vendor -count=1 -run 'TestSameCore_IgnoresReason|TestSameCore_DistinguishesCoords' ./pkg/agent/graph/..."
+        expected: "Both PASS"
+      - name: "StepTimeout cancels slow iterations"
+        action: "go test -mod=vendor -count=1 -run TestRun_StepTimeoutCancelsSlowSteps ./pkg/agent/graph/..."
+        expected: "PASS — slow Screenshot aborted in < 100ms with StepTimeout=10ms"
+    tags: [regression, phase3, openclawing4, agent, graph, runner, termination]
+    estimated_duration: "1s"
+    expected_result: "Runner stays bounded, auditable, and never dispatches a Done action to the device"
+    fix_reference:
+      bug_id: "FIX-OC4-012"
+      description: "Guards four orthogonal Runner invariants. (1) The Done action is the VLM's 'goal reached' signal — dispatching it to the device executor (uinput / scrcpy control) would result in a no-op at best and undefined behaviour at worst; Runner records Done in History but stops before Execute. (2) MaxSteps / Stuck termination must return a successful (err=nil) Result so callers can branch on Done/Stuck/MaxSteps flags — hard-erroring would force every caller into error wrapping for normal outcomes. (3) sameCore(a, b) ignores Reason because VLMs emit different rationalizations for the same literal action on each call; stuck detection must see through prose drift to catch the actual repetition. (4) StepTimeout bounds each iteration; without it, a hanging Screenshotter can wedge the agent loop indefinitely under the parent context's much-longer deadline."
+      fix_file: "HelixQA/pkg/agent/graph/graph.go"
+      fix_commit: "pending"
