@@ -1592,3 +1592,42 @@ test_cases:
       description: "HelixQA banks + external monitors probe /api/v1/health; catalog-api only exposed /health. parse-runall-log.py showed 11× 404 on /api/v1/health + 36× during the full session. Main.go now registers both paths against the same handler via a shared closure, keeping both public (no auth, same 5s CacheHeaders TTL)."
       fix_file: "catalog-api/main.go"
       fix_commit: "pending"
+
+  - id: FIX-QA-2026-04-21-003
+    name: "catalog-api /api/v1/admin/{config,errors,health,logs} — 404 alias fixes"
+    category: regression
+    priority: medium
+    platforms: [api]
+    steps:
+      - name: "All four admin aliases return 200 with a valid admin JWT"
+        action: "start catalog-api; login as admin; curl /api/v1/admin/{config,errors,health,logs} each with the session_token"
+        expected: "HTTP 200 on every path — they delegate to canonical handlers under /configuration, /errors, /logs"
+    tags: [regression, api, admin, bank-alias]
+    estimated_duration: "1s"
+    expected_result: "Admin surface exposes config/errors/health/logs as a superset alongside system-info/storage/backups"
+    fix_reference:
+      bug_id: "FIX-QA-2026-04-21-003"
+      description: "parse-runall-log.py surfaced 4 × 404 each on /api/v1/admin/{config,errors,health,logs} — the bank expected an admin superset, but those routes were never registered. main.go now adds four aliases in adminGroup that delegate via root_handlers.WrapHTTPHandler to the existing ConfigurationHandler.GetConfiguration, ErrorReportingHandler.ListErrorReports, ErrorReportingHandler.GetSystemHealth, and LogManagementHandler.ListLogCollections. `wrap` is hoisted above the admin block so both admin and users groups can use it."
+      fix_file: "catalog-api/main.go"
+      fix_commit: "pending"
+
+  - id: FIX-QA-2026-04-21-004
+    name: "catalog-api GET /challenges/results — limit default prevents hang after RunAll"
+    category: regression
+    priority: medium
+    platforms: [api]
+    steps:
+      - name: "GetResults with 250 stored returns 100 by default + total_count=250"
+        action: "cd catalog-api && GOTOOLCHAIN=local go test -count=1 -run 'TestChallengeHandler_GetResults_LimitTruncates' ./handlers/..."
+        expected: "PASS — default count=100, ?limit=10 count=10, ?limit=0 count=250"
+      - name: "Response shape still contains success/data/count and now total_count"
+        action: "cd catalog-api && GOTOOLCHAIN=local go test -count=1 -run 'TestChallengeHandler_GetResults_ResponseHasAllKeys' ./handlers/..."
+        expected: "PASS — response has exactly 4 top-level keys"
+    tags: [regression, api, challenges, results, limit]
+    estimated_duration: "1s"
+    expected_result: "Post-RunAll GET /challenges/results returns within a few ms even with 500+ stored results"
+    fix_reference:
+      bug_id: "FIX-QA-2026-04-21-004"
+      description: "Partial mitigation of DEFER-QA-2026-04-21-001. After a 508-challenge RunAll, the full results slice contains tens of MB of embedded assertion + output data; serialising all of it through gin's JSON encoder can sit past the 60s RequestTimeout and present as a hung endpoint (observed in the 2026-04-20 session). GetResults now accepts an optional `?limit=N` query parameter with a default of 100 (last-N semantic) and reports `total_count` so callers can page. `?limit=0` opts into the old unlimited behaviour for callers that genuinely need the whole list. Full ctx-threading through the Challenges runner remains in DEFER-QA-2026-04-21-001."
+      fix_file: "catalog-api/handlers/challenge.go"
+      fix_commit: "pending"
