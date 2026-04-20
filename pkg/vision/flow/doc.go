@@ -5,19 +5,17 @@
 // motion analysis. See OpenClawing4.md §5.4.3 (DIS optical flow on CPU,
 // NVOF 2.0 on GPU).
 //
-// Planned contents:
+// Contents:
 //
-//   - dis.go  — cv::DISOpticalFlow via gocv. 4–8 ms on 720p CPU; the
-//               "is the list scrolling or frozen?" primitive.
-//   - nvof.go — cv::cuda::NvidiaOpticalFlow_2_0 via C++ sidecar with
-//               gRPC + SHM; HelixQA Go calls into it for GPU-accelerated
-//               optical flow when a CUDA-capable host is available.
-//
-// Interface target (flow.Computer):
-//
-//	type Computer interface {
-//	    Compute(ctx context.Context, prev, next image.Image) (FlowField, error)
-//	}
-//
-// Nothing is implemented in this commit — placeholder for Phase 2.
+//   - flow.go — ✅ Pure-Go Lucas-Kanade sparse optical flow
+//               (Lucas & Kanade 1981). Per-grid-point velocity
+//               vectors + Median summary for dominant direction
+//               (scroll / pan / animation detection). Shipped M50.
+//               Replaces the doc-planned gocv DIS wrapper —
+//               LK on a 16-pixel grid is sufficient for HelixQA's
+//               "is the list scrolling or frozen?" primitive, and
+//               stays CGO-free.
+//   - nvof.go — ⏳ GPU-accelerated optical flow via C++ sidecar
+//               (cv::cuda::NvidiaOpticalFlow_2_0). Deferred; LK is
+//               already fast enough for current workloads.
 package flow

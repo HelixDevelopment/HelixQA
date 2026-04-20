@@ -254,6 +254,53 @@ test_cases:
         expected: "~175 µs / op"
     tags: [phase2, vision, hash, phash, benchmark]
 
+  # ─── M50 · pkg/vision/flow · Lucas-Kanade sparse optical flow ───
+  - id: PH2-FLOW-001
+    name: "pkg/vision/flow — LK detects motion direction + identical-frame zero"
+    category: unit
+    priority: critical
+    platforms: [linux]
+    steps:
+      - name: "1-pixel horizontal shift → median U > 0, |U| > |V|"
+        action: "TestSparse_DetectsHorizontalMotionSign"
+        expected: "PASS — LK picks up the rightward shift direction"
+      - name: "1-pixel vertical shift → median V > 0, |V| > |U|"
+        action: "TestSparse_DetectsVerticalMotionSign"
+        expected: "PASS"
+      - name: "Identical frames produce ≈ zero median flow"
+        action: "TestSparse_IdenticalFramesProduceZeroFlow"
+        expected: "PASS — |median| < 0.01"
+      - name: "Finer grid yields more vectors"
+        action: "TestSparse_FinerGridProducesMoreVectors"
+        expected: "PASS"
+      - name: "Custom WindowSize (3 and 15) both produce vectors"
+        action: "TestSparse_CustomWindowSize"
+        expected: "PASS"
+      - name: "Even WindowSize silently forced to odd"
+        action: "TestSparse_EvenWindowSizeForcedOdd"
+        expected: "PASS"
+    tags: [phase2, vision, flow, lucas-kanade, unit]
+
+  - id: PH2-FLOW-002
+    name: "pkg/vision/flow — error paths + math helpers"
+    category: unit
+    priority: high
+    platforms: [linux]
+    steps:
+      - name: "Sentinel errors: nil / dimension mismatch / too small / invalid grid"
+        action: "TestSparse_NilImageError + TestSparse_DimensionMismatchError + TestSparse_TooSmallError + TestSparse_InvalidGridError"
+        expected: "All PASS — ErrNilImage / ErrDimensionMismatch / ErrTooSmall / ErrInvalidGrid"
+      - name: "Canceled context bails out"
+        action: "TestSparse_ContextCanceled"
+        expected: "PASS"
+      - name: "Uniform gradient window returns (0, 0, false) from solveLK"
+        action: "TestSolveLK_UniformWindowReturnsFalse"
+        expected: "PASS — degenerate A^T A correctly detected"
+      - name: "Median handles empty / odd / even counts + medianOf + insertionSort"
+        action: "TestMedian_EmptyReturnsZero + TestMedian_OddCountUsesMiddleElement + TestMedian_EvenCountAveragesMiddlePair + TestMedianOf_Empty + TestInsertionSort + TestRec709Luma_Black"
+        expected: "All PASS"
+    tags: [phase2, vision, flow, lucas-kanade, error-paths, math]
+
   # ─── M49 · pkg/vision/template · NCC matcher ───
   - id: PH2-TEMPLATE-001
     name: "pkg/vision/template — NCC finds embedded template at known location"

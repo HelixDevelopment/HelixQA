@@ -567,6 +567,24 @@ test_cases:
         expected: "PASS — NCC score ≥ 0.99 for the embedded needle"
     tags: [phase2, gocore, vision, template, ncc, regression]
 
+  - id: HQA-PHASE2-GOCORE-015
+    name: "OpenClawing4 Phase 2 — pure-Go Lucas-Kanade optical flow"
+    category: regression
+    priority: high
+    platforms: [all]
+    steps:
+      - name: "pkg/vision/flow builds clean"
+        action: "go build -mod=vendor ./pkg/vision/flow/..."
+        expected: "exit 0"
+      - name: "All flow tests pass under -race with 100% coverage"
+        action: "go test -mod=vendor -count=1 -race -cover ./pkg/vision/flow/..."
+        expected: "PASS, coverage = 100.0% of statements, zero data races"
+      - name: "LK direction detection: rightward + downward shift sign-correct"
+        action: "go test -mod=vendor -count=1 -run 'TestSparse_DetectsHorizontalMotionSign|TestSparse_DetectsVerticalMotionSign|TestSparse_IdenticalFramesProduceZeroFlow' ./pkg/vision/flow/..."
+        expected: "All PASS"
+    tags: [phase2, gocore, vision, flow, lucas-kanade, regression]
+
+
 
 
 
