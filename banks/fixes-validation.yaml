@@ -1547,3 +1547,48 @@ test_cases:
       description: "Surfaced in iteration 2 of the Article VII Master Cycle immediately after FIX-QA-2026-04-20-001. TestPerformance exposed a second instance of the same anti-pattern: assert.Less followed by unconditional '✅ Performance test completed'. On iteration-1's full-suite run, TestPerformance recorded 198ms/frame (blown 100ms budget) but still printed success. Audit of the full file surfaced five more sites in the same E2ETestSuite — TestDistributedState, TestWebRTCSignaling, TestHostDiscovery, TestVisionOCRIntegration, TestGStreamerPipeline, TestConcurrentProcessing — each pairing assert.* with an unconditional '✅ … completed' log. All converted to require.*. TestPerformance's 100ms latency budget also tightened to 500ms to survive full-suite CPU contention from TestConcurrentProcessing + GStreamer tests (isolated run measures ~1-65µs/frame, full-suite 150-250ms/frame under load). 500ms still catches order-of-magnitude detector regressions. Fix also guards against a latent divide-by-zero in the FPS calculation when latencyMs rounds to 0."
       fix_file: "HelixQA/tests/e2e/pipeline_test.go"
       fix_commit: "pending"
+
+  - id: FIX-QA-2026-04-21-001
+    name: "catalog-api /api/v1/media/:id/favorite — 500 from missing columns"
+    category: regression
+    priority: high
+    platforms: [api]
+    steps:
+      - name: "Migration v18 applies on a fresh DB"
+        action: "cd catalog-api && GOTOOLCHAIN=local go test -count=1 -run 'TestMigrationSequence_AllVersionsApplied' ./database/..."
+        expected: "PASS — latestVersion is 18, and all 18 migration rows recorded"
+      - name: "Happy-path favorite toggle returns 200 and flips the column"
+        action: "cd catalog-api && GOTOOLCHAIN=local go test -count=1 -run 'TestUpdateFavoriteStatus_HappyPath' ./handlers/..."
+        expected: "PASS — 200 on toggle-on, is_favorite=1; 200 on toggle-off, is_favorite=0"
+      - name: "Nonexistent media returns 404, not 500"
+        action: "cd catalog-api && GOTOOLCHAIN=local go test -count=1 -run 'TestUpdateFavoriteStatus_MediaNotFound' ./handlers/..."
+        expected: "PASS — 404 'Media not found' (previously 500 'Failed to update favorite status')"
+    tags: [regression, api, schema-migration, media-favorite, article-vii]
+    estimated_duration: "2s"
+    expected_result: "The favorite endpoint writes to is_favorite + updated_at without 500, and the schema migration + tests prevent regressions"
+    fix_reference:
+      bug_id: "FIX-QA-2026-04-21-001"
+      description: "Surfaced by parse-runall-log.py analysis of the 2026-04-20 Article VII RunAll server log: 4× HTTP 500 on PUT /api/v1/media/1/favorite. Handler wrote to media_items.is_favorite + media_items.updated_at, but neither column existed in the production schema (only in the parallel test_helper schema — classic test/prod drift). Migration v18 (add_media_items_favorite_column) adds both columns to production via ALTER TABLE; SQLite path probes PRAGMA table_info first and backfills updated_at from last_updated to avoid the SQLite 'Cannot add a column with non-constant default' limitation. Added TestUpdateFavoriteStatus_HappyPath + TestUpdateFavoriteStatus_MediaNotFound to handlers/media_handler_test.go — previously EVERY favorite test was a 400-path branch, so the real UPDATE SQL was never exercised and the bug sat dormant for weeks."
+      fix_file: "catalog-api/database/migrations_v18_media_favorite.go"
+      fix_commit: "pending"
+
+  - id: FIX-QA-2026-04-21-002
+    name: "catalog-api /api/v1/health — 404 alias fix"
+    category: regression
+    priority: low
+    platforms: [api]
+    steps:
+      - name: "/api/v1/health returns 200 without auth (same payload as /health)"
+        action: "./catalog-api & TOKEN= curl -sw '%{http_code}' http://localhost:8080/api/v1/health"
+        expected: "200 with {status:healthy, version, build_number, build_date}"
+      - name: "canonical /health still returns 200 without auth"
+        action: "curl -sw '%{http_code}' http://localhost:8080/health"
+        expected: "200 with the same payload"
+    tags: [regression, api, health, bank-alias]
+    estimated_duration: "1s"
+    expected_result: "Both /health and /api/v1/health work without auth; the bank's /api/v1/health probe no longer 404s"
+    fix_reference:
+      bug_id: "FIX-QA-2026-04-21-002"
+      description: "HelixQA banks + external monitors probe /api/v1/health; catalog-api only exposed /health. parse-runall-log.py showed 11× 404 on /api/v1/health + 36× during the full session. Main.go now registers both paths against the same handler via a shared closure, keeping both public (no auth, same 5s CacheHeaders TTL)."
+      fix_file: "catalog-api/main.go"
+      fix_commit: "pending"
