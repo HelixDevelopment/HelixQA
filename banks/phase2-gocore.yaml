@@ -245,6 +245,82 @@ test_cases:
         expected: "PASS"
     tags: [phase2, regression, pixelmatch, error-paths]
 
+  # ─── M43 · pkg/regression · CIEDE2000 color delta ───
+  - id: PH2-DELTAE-001
+    name: "pkg/regression — CIEDE2000 against Sharma 2005 reference table"
+    category: unit
+    priority: critical
+    platforms: [linux]
+    steps:
+      - name: "10 canonical Sharma pairs match within ±0.01 ΔE"
+        action: "TestDeltaE2000_SharmaReferenceValues"
+        expected: "PASS — cases 1..7, 14, 15, 26 all produce reference ΔE"
+      - name: "Identical LAB inputs give ΔE ≈ 0"
+        action: "TestDeltaE2000_IdenticalInputsZero"
+        expected: "PASS"
+      - name: "ΔE is symmetric (a,b) == (b,a)"
+        action: "TestDeltaE2000_Symmetric"
+        expected: "PASS"
+      - name: "ΔE is non-negative"
+        action: "TestDeltaE2000_NonNegative"
+        expected: "PASS"
+    tags: [phase2, regression, deltae, ciede2000, unit]
+
+  - id: PH2-DELTAE-002
+    name: "pkg/regression — sRGB → CIELAB conversion"
+    category: unit
+    priority: high
+    platforms: [linux]
+    steps:
+      - name: "Black → L=A=B=0"
+        action: "TestRGBToLAB_Black"
+        expected: "PASS"
+      - name: "White → L≈100, A≈0, B≈0 (D65)"
+        action: "TestRGBToLAB_White"
+        expected: "PASS"
+      - name: "Primary red / green / blue match published sRGB→LAB reference values"
+        action: "TestRGBToLAB_PrimaryRed + TestRGBToLAB_PrimaryGreen + TestRGBToLAB_PrimaryBlue"
+        expected: "All PASS — within ±0.2 of reference"
+      - name: "ColorToLAB delegates to RGBToLAB for color.RGBA inputs"
+        action: "TestColorToLAB_WrapsRGBToLAB"
+        expected: "PASS"
+      - name: "sRGB gamma (srgbToLinear) low + high branches both covered"
+        action: "TestSRGBToLinear_LowBranch + TestSRGBToLinear_HighBranch"
+        expected: "Both PASS"
+      - name: "CIELAB f() low + high branches both covered"
+        action: "TestLabF_LowBranch + TestLabF_HighBranch"
+        expected: "Both PASS"
+      - name: "hueAngleDeg: (0,0)→0, negative angles wrap to [0, 360)"
+        action: "TestHueAngleDeg_BothZeroIsZero + TestHueAngleDeg_NegativeBranchWraps"
+        expected: "Both PASS"
+      - name: "deg2rad sanity (180° → π)"
+        action: "TestDeg2Rad"
+        expected: "PASS"
+    tags: [phase2, regression, deltae, srgb, cielab, unit]
+
+  - id: PH2-DELTAE-003
+    name: "pkg/regression — CheckBrandCompliance integration"
+    category: unit
+    priority: high
+    platforms: [linux]
+    steps:
+      - name: "All-pixels-match solid image yields InRange=Total, ΔE≈0"
+        action: "TestCheckBrandCompliance_AllPixelsInRange"
+        expected: "PASS — PassRate=1.0"
+      - name: "Pure-red image vs pure-green target yields InRange=0"
+        action: "TestCheckBrandCompliance_AllPixelsOutOfRange"
+        expected: "PASS — PassRate=0.0"
+      - name: "Half-and-half image yields PassRate=0.5 + MaxDeltaE>10"
+        action: "TestCheckBrandCompliance_PartialPass"
+        expected: "PASS"
+      - name: "Empty report has PassRate=0 (no divide-by-zero)"
+        action: "TestCheckBrandCompliance_PassRateEmpty"
+        expected: "PASS"
+      - name: "nil image / negative threshold / zero-bounds / canceled ctx all return correct errors"
+        action: "TestCheckBrandCompliance_NilImage + TestCheckBrandCompliance_NegativeThreshold + TestCheckBrandCompliance_ZeroBoundsReturnsEmpty + TestCheckBrandCompliance_ContextCanceled"
+        expected: "All PASS — ErrNilImage / ErrNegativeThreshold / empty report / ctx error"
+    tags: [phase2, regression, deltae, brand-compliance, integration, unit]
+
   - id: PH2-PIXELMATCH-003
     name: "pkg/regression — YIQ + anti-aliasing math"
     category: unit

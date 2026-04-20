@@ -440,6 +440,30 @@ test_cases:
         expected: "All PASS"
     tags: [phase2, gocore, regression, pixelmatch, visual-diff]
 
+  - id: HQA-PHASE2-GOCORE-009
+    name: "OpenClawing4 Phase 2 Go-core — CIEDE2000 color delta + brand compliance"
+    category: regression
+    priority: critical
+    platforms: [all]
+    steps:
+      - name: "pkg/regression builds clean with deltae.go added"
+        action: "go build -mod=vendor ./pkg/regression/..."
+        expected: "exit 0"
+      - name: "All deltae tests pass under -race"
+        action: "go test -mod=vendor -count=1 -race -run 'DeltaE|RGBToLAB|ColorToLAB|CheckBrandCompliance|SRGBToLinear|LabF|HueAngle|Deg2Rad' ./pkg/regression/..."
+        expected: "PASS, zero data races"
+      - name: "Coverage is ≥ 95% on deltae.go (the 4.3% gap is pure-gray edge cases in deltaE2000KParams)"
+        action: "go test -mod=vendor -count=1 -cover ./pkg/regression/..."
+        expected: "coverage ≥ 95.0% of statements (package-wide)"
+      - name: "Phase-2 bank has all deltae entries"
+        action: "helixqa list --banks banks/phase2-gocore.yaml"
+        expected: "37 test cases total (prior 34 + 3 deltae)"
+      - name: "Sharma 2005 reference table reproduced within ±0.01 ΔE"
+        action: "go test -mod=vendor -count=1 -run TestDeltaE2000_SharmaReferenceValues ./pkg/regression/..."
+        expected: "PASS — 10 canonical reference pairs match"
+    tags: [phase2, gocore, regression, deltae, ciede2000, brand-compliance, regression]
+
+
   - id: HQA-PHASE2-GOCORE-004
     name: "OpenClawing4 Phase 2 Go-core — axtree Linux AT-SPI2 client"
     category: regression

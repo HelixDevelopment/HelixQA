@@ -9,8 +9,10 @@
 //   - pixelmatch.go — ✅ Pure-Go port of mapbox/pixelmatch (MIT, AA-aware
 //                     with YIQ colour diff). The fast "did any pixel
 //                     change?" primitive. Shipped M30.
-//   - deltae.go     — ⏳ CIEDE2000 perceptual colour delta on changed
-//                     tiles (brand-compliance / dark-mode verification).
+//   - deltae.go     — ✅ CIEDE2000 perceptual colour delta (Sharma 2005
+//                     reference-validated), sRGB→CIELAB via D65,
+//                     CheckBrandCompliance helper. Pure Go, ~200 LoC.
+//                     Shipped M43.
 //   - report.go     — ⏳ HTML reporter emitting per-session analysis
 //                     under docs/reports/qa-sessions/.../analysis/
 //                     (reg-cli compatible).

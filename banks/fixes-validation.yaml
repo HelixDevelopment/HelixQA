@@ -1457,3 +1457,30 @@ test_cases:
       description: "Guards four macOS-axtree invariants. (1) Wire: the Swift sidecar speaks GET /snapshot returning JSON object-or-array (same shape as iOS) — if the sidecar devs drift to multipart or gRPC, the HTTPFetcher request-shape tests catch it. (2) Name precedence: macOS AX convention is AXTitle > AXDescription; reversing this would silently degrade grounding (VLMs use Name to disambiguate nested widgets). (3) AXRole fallback: unknown AX-prefixed roles strip 'AX' + lowercase (AXCustomWidget → customwidget) instead of silently mapping to the empty string or the raw role string — keeps the normalized ARIA vocabulary usable without hiding new widget types. (4) Cross-platform contract: the FOUR backends (Linux AT-SPI2, Android UIAutomator, iOS idb, Darwin Swift) must all emit the SAME Node type with Platform set correctly; the compile-time guards (var _ Snapshotter = (*…)(nil)) + runtime interface tests are the primary regression protection."
       fix_file: "HelixQA/pkg/nexus/observe/axtree/darwin.go"
       fix_commit: "pending"
+
+  - id: FIX-OC4-016
+    name: "pkg/regression/deltae — CIEDE2000 conformance against Sharma 2005"
+    category: regression
+    priority: critical
+    platforms: [linux, all]
+    steps:
+      - name: "10 Sharma reference pairs produce the canonical ΔE within ±0.01"
+        action: "go test -mod=vendor -count=1 -run TestDeltaE2000_SharmaReferenceValues ./pkg/regression/..."
+        expected: "PASS — if any drift, the CIEDE2000 implementation is broken"
+      - name: "sRGB primary colors (R/G/B) produce published sRGB→LAB reference values within ±0.2"
+        action: "go test -mod=vendor -count=1 -run 'TestRGBToLAB_PrimaryRed|TestRGBToLAB_PrimaryGreen|TestRGBToLAB_PrimaryBlue|TestRGBToLAB_Black|TestRGBToLAB_White' ./pkg/regression/..."
+        expected: "All PASS — sRGB→XYZ→LAB (D65) pipeline stays correct"
+      - name: "ΔE is symmetric, non-negative, zero-for-identical"
+        action: "go test -mod=vendor -count=1 -run 'TestDeltaE2000_IdenticalInputsZero|TestDeltaE2000_Symmetric|TestDeltaE2000_NonNegative' ./pkg/regression/..."
+        expected: "All PASS"
+      - name: "Brand compliance passes/fails deterministically on synthetic images"
+        action: "go test -mod=vendor -count=1 -run TestCheckBrandCompliance ./pkg/regression/..."
+        expected: "All PASS — full-pass / full-fail / partial / empty / error paths all green"
+    tags: [regression, phase2, openclawing4, regression, deltae, ciede2000, sharma]
+    estimated_duration: "1s"
+    expected_result: "CIEDE2000 stays reference-conformant against the Sharma 2005 benchmark"
+    fix_reference:
+      bug_id: "FIX-OC4-016"
+      description: "Guards two orthogonal color-science invariants. (1) CIEDE2000: the formula is notoriously prone to subtle sign/branching errors (Sharma 2005 itself was published to clarify ambiguities in the CIE 2002 spec). The 10-pair reference table is the gold-standard conformance test; any drift is a hard correctness bug with brand-compliance impact. (2) sRGB → LAB: the D65 illuminant + IEC 61966-2-1 gamma + CIE 2° observer combination is the standard web/video pipeline. Getting the matrix coefficients or gamma branch wrong would silently bias every color measurement in the system. Both invariants have tight tolerances (±0.01 on ΔE, ±0.2 on primary color LAB)."
+      fix_file: "HelixQA/pkg/regression/deltae.go"
+      fix_commit: "pending"
