@@ -19,6 +19,7 @@ docs/**/*.pdf
 *.dylib
 /helixqa
 /helix-qa
+/helixqa-x11grab
 /bin/helixqa
 /bin/helix-qa
 
