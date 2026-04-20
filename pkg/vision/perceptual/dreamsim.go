@@ -6,71 +6,43 @@ package perceptual
 import (
 	"bytes"
 	"context"
-	"encoding/json"
+	"encoding/base64"
 	"errors"
 	"fmt"
 	"image"
 	"image/png"
-	"io"
 	"net/http"
 	"time"
 
-	"encoding/base64"
+	"digital.vasic.helixqa/pkg/gpu/infer"
 )
 
-// DreamSim is the tier-3 perceptual Comparator — a REST client against a
-// Triton-hosted DreamSim (Sundar 2023) model. DreamSim is trained on
-// human perceptual-similarity judgments and achieves ~96% agreement with
-// human raters on structural-similarity tasks; see
-// https://dreamsim-nights.github.io/ for the model.
+// DreamSim is the tier-3 perceptual Comparator — a REST client
+// against a Triton-hosted DreamSim (Sundar 2023) model. DreamSim
+// is trained on human perceptual-similarity judgments and
+// achieves ~96% agreement with human raters on structural-
+// similarity tasks; see https://dreamsim-nights.github.io/.
 //
-// Why a REST client rather than embedding the model:
-//
-//   - DreamSim is a ViT-based model; running it inside the HelixQA Go
-//     host would require either ONNX Runtime CGO bindings or a tensor
-//     library port, both of which violate the CGO-free discipline.
-//   - Triton Inference Server hosts the model on the GPU host (thinker.
-//     local per OpenClawing4-Phase2-Kickoff.md §8) and exposes HTTP+gRPC
-//     endpoints. The Go client only needs net/http + encoding/json.
-//
-// Wire format (Triton KServe v2):
-//
-//	POST {endpoint}/v2/models/{model}/infer
-//	{
-//	  "inputs": [
-//	    {"name": "IMAGE_A", "datatype": "BYTES", "shape": [1],
-//	     "data": ["<base64-encoded PNG>"]},
-//	    {"name": "IMAGE_B", "datatype": "BYTES", "shape": [1],
-//	     "data": ["<base64-encoded PNG>"]}
-//	  ]
-//	}
-//	→ 200 OK {
-//	  "outputs": [
-//	    {"name": "SIMILARITY", "datatype": "FP32", "shape": [1],
-//	     "data": [0.87]}
-//	  ]
-//	}
-//
-// Similarity in DreamSim is on [0, 1] where 1 = perceptually identical.
-// The Comparator contract returns [-1, 1] — we map 2*raw-1 into the
-// canonical range so 1→1, 0.5→0, 0→-1.
+// Since M60, DreamSim delegates its HTTP wire code to pkg/gpu/
+// infer (the generic Triton KServe v2 client). This removes
+// ~140 LoC of duplicated request/response handling that was
+// otherwise copy-pasted between DreamSim and LPIPS; the two
+// clients now differ only in their input/output naming
+// conventions and distance→similarity mapping.
 type DreamSim struct {
-	// Endpoint is the base URL of the Triton server, e.g.
+	// Endpoint is the Triton server URL, e.g.
 	// "http://thinker.local:8000". Required.
 	Endpoint string
 
-	// Model is the model name configured in Triton. Default:
-	// "dreamsim".
+	// Model is the Triton model name. Default: "dreamsim".
 	Model string
 
-	// HTTPClient is the underlying transport; default is a
-	// 200-millisecond client (matching the Phase 2 budget in
-	// OpenClawing4.md §5.8).
+	// HTTPClient is the transport. Default 200ms timeout (matches
+	// the Phase-2 tier-3 budget in OpenClawing4.md §5.8).
 	HTTPClient *http.Client
 }
 
 // NewDreamSim returns a tier-3 Comparator with the given endpoint.
-// The model defaults to "dreamsim" and the HTTP timeout to 200 ms.
 func NewDreamSim(endpoint string) *DreamSim {
 	return &DreamSim{
 		Endpoint: endpoint,
@@ -81,37 +53,16 @@ func NewDreamSim(endpoint string) *DreamSim {
 	}
 }
 
-// Sentinel errors specific to the DreamSim client.
+// Sentinel errors — preserved from the pre-M60 shape so existing
+// errors.Is checks on DreamSim.Compare continue to work.
 var (
 	ErrDreamSimEndpoint = errors.New("helixqa/perceptual/dreamsim: Endpoint not set")
 	ErrDreamSimResponse = errors.New("helixqa/perceptual/dreamsim: unexpected Triton response shape")
 )
 
-// tritonInput / tritonOutput mirror the KServe v2 inference-request shape.
-type tritonInput struct {
-	Name     string   `json:"name"`
-	Datatype string   `json:"datatype"`
-	Shape    []int    `json:"shape"`
-	Data     []string `json:"data"`
-}
-
-type tritonRequest struct {
-	Inputs []tritonInput `json:"inputs"`
-}
-
-type tritonOutput struct {
-	Name     string    `json:"name"`
-	Datatype string    `json:"datatype"`
-	Shape    []int     `json:"shape"`
-	Data     []float64 `json:"data"`
-}
-
-type tritonResponse struct {
-	Outputs []tritonOutput `json:"outputs"`
-}
-
-// Compare encodes a and b as PNGs, sends them to the configured Triton
-// endpoint, and returns the DreamSim similarity mapped to [-1, 1].
+// Compare encodes a and b as PNGs and sends them through
+// pkg/gpu/infer to the configured Triton endpoint, returning the
+// DreamSim similarity mapped to [-1, 1].
 func (d *DreamSim) Compare(ctx context.Context, a, b image.Image) (float64, error) {
 	if a == nil || b == nil {
 		return 0, ErrNilImage
@@ -119,13 +70,10 @@ func (d *DreamSim) Compare(ctx context.Context, a, b image.Image) (float64, erro
 	if d.Endpoint == "" {
 		return 0, ErrDreamSimEndpoint
 	}
+
 	model := d.Model
 	if model == "" {
 		model = "dreamsim"
-	}
-	client := d.HTTPClient
-	if client == nil {
-		client = &http.Client{Timeout: 200 * time.Millisecond}
 	}
 
 	encA, err := encodePNGBase64(a)
@@ -137,69 +85,77 @@ func (d *DreamSim) Compare(ctx context.Context, a, b image.Image) (float64, erro
 		return 0, fmt.Errorf("dreamsim: encode b: %w", err)
 	}
 
-	body, err := json.Marshal(tritonRequest{
-		Inputs: []tritonInput{
-			{Name: "IMAGE_A", Datatype: "BYTES", Shape: []int{1}, Data: []string{encA}},
-			{Name: "IMAGE_B", Datatype: "BYTES", Shape: []int{1}, Data: []string{encB}},
+	client := &infer.Client{
+		Endpoint:   d.Endpoint,
+		HTTPClient: d.HTTPClient,
+	}
+	resp, err := client.Infer(ctx, infer.Request{
+		Model: model,
+		Inputs: []infer.Input{
+			{Name: "IMAGE_A", Datatype: "BYTES", Shape: []int{1}, StringData: []string{encA}},
+			{Name: "IMAGE_B", Datatype: "BYTES", Shape: []int{1}, StringData: []string{encB}},
 		},
 	})
 	if err != nil {
-		return 0, fmt.Errorf("dreamsim: marshal request: %w", err)
+		return 0, fmt.Errorf("dreamsim: %w", err)
 	}
 
-	url := fmt.Sprintf("%s/v2/models/%s/infer", d.Endpoint, model)
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(body))
-	if err != nil {
-		return 0, fmt.Errorf("dreamsim: new request: %w", err)
-	}
-	req.Header.Set("Content-Type", "application/json")
-
-	resp, err := client.Do(req)
-	if err != nil {
-		return 0, fmt.Errorf("dreamsim: call: %w", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		body, _ := io.ReadAll(resp.Body)
-		return 0, fmt.Errorf("dreamsim: HTTP %d: %s", resp.StatusCode, string(body))
-	}
-
-	var out tritonResponse
-	if err := json.NewDecoder(resp.Body).Decode(&out); err != nil {
-		return 0, fmt.Errorf("dreamsim: decode response: %w", err)
-	}
-
-	similarity, err := extractSimilarity(out)
+	similarity, err := dreamSimScalar(resp)
 	if err != nil {
 		return 0, err
 	}
-	// DreamSim raw output is in [0, 1]; canonical Comparator is [-1, 1].
+	// DreamSim raw output is in [0, 1]; canonical Comparator is
+	// [-1, 1]. 1 → 1, 0.5 → 0, 0 → -1.
 	return 2*similarity - 1, nil
 }
 
-// extractSimilarity pulls the scalar similarity from the Triton response.
-// Returns ErrDreamSimResponse on any shape mismatch.
-func extractSimilarity(r tritonResponse) (float64, error) {
-	for _, o := range r.Outputs {
-		if o.Name == "SIMILARITY" || o.Name == "similarity" || o.Name == "output" {
-			if len(o.Data) == 0 {
-				return 0, fmt.Errorf("%w: empty SIMILARITY data", ErrDreamSimResponse)
+// dreamSimScalar extracts a scalar similarity from the response.
+// Tolerates three naming conventions the sidecar might use:
+// SIMILARITY (canonical), similarity (lowercase), output (generic).
+// Falls back to the first output with non-empty Float32Data /
+// Float64Data.
+func dreamSimScalar(r infer.Response) (float64, error) {
+	for _, name := range []string{"SIMILARITY", "similarity", "output"} {
+		for _, o := range r.Outputs {
+			if o.Name != name {
+				continue
 			}
-			return o.Data[0], nil
+			if v, ok := firstFloat(o); ok {
+				return v, nil
+			}
+			return 0, fmt.Errorf("%w: %q present but empty", ErrDreamSimResponse, name)
 		}
 	}
-	// Fallback: first output with non-empty Data.
+	// Fallback: first output with numeric data.
 	for _, o := range r.Outputs {
-		if len(o.Data) > 0 {
-			return o.Data[0], nil
+		if v, ok := firstFloat(o); ok {
+			return v, nil
 		}
 	}
 	return 0, fmt.Errorf("%w: no SIMILARITY output found", ErrDreamSimResponse)
 }
 
-// encodePNGBase64 encodes img as PNG and returns the base64-encoded
-// bytes. Triton's BYTES datatype wraps arbitrary blobs in base64.
+// firstFloat returns the first numeric value from whichever
+// *Data slice the Output carries. Shared with LPIPS.
+func firstFloat(o infer.Output) (float64, bool) {
+	switch {
+	case len(o.Float64Data) > 0:
+		return o.Float64Data[0], true
+	case len(o.Float32Data) > 0:
+		return float64(o.Float32Data[0]), true
+	case len(o.Int32Data) > 0:
+		return float64(o.Int32Data[0]), true
+	case len(o.Int64Data) > 0:
+		return float64(o.Int64Data[0]), true
+	case len(o.Uint8Data) > 0:
+		return float64(o.Uint8Data[0]), true
+	}
+	return 0, false
+}
+
+// encodePNGBase64 encodes img as PNG and returns the base64-
+// encoded bytes. Shared between DreamSim and LPIPS; Triton's BYTES
+// datatype wraps arbitrary blobs in base64.
 func encodePNGBase64(img image.Image) (string, error) {
 	var buf bytes.Buffer
 	if err := png.Encode(&buf, img); err != nil {

@@ -17,6 +17,33 @@ import (
 	"time"
 )
 
+// Test-local Triton KServe v2 wire shapes — DreamSim was refactored
+// in M60 onto pkg/gpu/infer, which hides its own wire structs. The
+// mock httptest server still needs to emit valid Triton JSON, so we
+// redefine just the bits we use for encoding responses here.
+
+type tritonRequest struct {
+	Inputs []tritonInput `json:"inputs"`
+}
+
+type tritonInput struct {
+	Name     string   `json:"name"`
+	Datatype string   `json:"datatype"`
+	Shape    []int    `json:"shape"`
+	Data     []string `json:"data"`
+}
+
+type tritonOutput struct {
+	Name     string    `json:"name"`
+	Datatype string    `json:"datatype"`
+	Shape    []int     `json:"shape"`
+	Data     []float64 `json:"data"`
+}
+
+type tritonResponse struct {
+	Outputs []tritonOutput `json:"outputs"`
+}
+
 // ---------------------------------------------------------------------------
 // Fixture helpers
 // ---------------------------------------------------------------------------

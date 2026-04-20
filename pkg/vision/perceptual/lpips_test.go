@@ -16,6 +16,32 @@ import (
 	"time"
 )
 
+// Test-local Triton wire shapes — LPIPS was refactored in M60 onto
+// pkg/gpu/infer which hides the wire types. The httptest mock
+// server below emits JSON matching these structs.
+
+type lpipsInput struct {
+	Name     string   `json:"name"`
+	Datatype string   `json:"datatype"`
+	Shape    []int    `json:"shape"`
+	Data     []string `json:"data"`
+}
+
+type lpipsRequest struct {
+	Inputs []lpipsInput `json:"inputs"`
+}
+
+type lpipsOutput struct {
+	Name     string    `json:"name"`
+	Datatype string    `json:"datatype"`
+	Shape    []int     `json:"shape"`
+	Data     []float64 `json:"data"`
+}
+
+type lpipsResponse struct {
+	Outputs []lpipsOutput `json:"outputs"`
+}
+
 // ---------------------------------------------------------------------------
 // Mock Triton LPIPS sidecar
 // ---------------------------------------------------------------------------

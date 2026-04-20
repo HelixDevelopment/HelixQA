@@ -4,41 +4,31 @@
 package perceptual
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"image"
-	"io"
 	"net/http"
 	"time"
+
+	"digital.vasic.helixqa/pkg/gpu/infer"
 )
 
 // LPIPS is the HelixQA tier-3 fallback when DreamSim is not
 // deployed: Learned Perceptual Image Patch Similarity (Zhang et
-// al. 2018, "The Unreasonable Effectiveness of Deep Features as a
-// Perceptual Metric"). LPIPS is older than DreamSim but more
-// widely deployed — the two cover the same
-// "human-perceptual-similarity" niche and satisfy the same
-// Comparator contract.
+// al. 2018). LPIPS is older than DreamSim but more widely
+// deployed — the two cover the same perceptual-similarity niche
+// and satisfy the same Comparator contract.
 //
-// Wire format (Triton KServe v2, identical to DreamSim.Compare so
-// sidecars can multiplex both models on the same endpoint):
+// Since M60, LPIPS delegates its HTTP wire to pkg/gpu/infer (the
+// generic Triton KServe v2 client). The LPIPS-specific logic is
+// just the distance→similarity mapping at the end.
 //
-//	POST {endpoint}/v2/models/{model}/infer
-//	  inputs:
-//	    IMAGE_A: BYTES shape=[1] data=<base64 PNG>
-//	    IMAGE_B: BYTES shape=[1] data=<base64 PNG>
-//	→ 200 OK outputs:
-//	    DISTANCE: FP32 shape=[1] data=[<perceptual distance>]
-//
-// LPIPS output is a DISTANCE (not a similarity) in [0, ~2] where
-// 0 = perceptually identical and larger = more different. The
-// client inverts this to the canonical Comparator [-1, 1]
-// similarity via: similarity = 1 - min(1, distance).
+// LPIPS output is a DISTANCE in [0, ~2] where 0 = perceptually
+// identical. The client inverts this to the canonical Comparator
+// [-1, 1] similarity via: similarity = 1 - 2·(distance/maxDist).
 type LPIPS struct {
-	// Endpoint is the base URL of the Triton server.
+	// Endpoint is the Triton server URL.
 	Endpoint string
 
 	// Model defaults to "lpips".
@@ -60,16 +50,15 @@ func NewLPIPS(endpoint string) *LPIPS {
 	return &LPIPS{Endpoint: endpoint}
 }
 
-// Sentinel errors specific to LPIPS. Reuses ErrNilImage from
-// ssim.go / dreamsim.go.
+// Sentinel errors — preserved from the pre-M60 shape for errors.Is
+// compatibility. Reuses ErrNilImage from ssim.go.
 var (
 	ErrLPIPSEndpoint = errors.New("helixqa/perceptual/lpips: Endpoint not set")
 	ErrLPIPSResponse = errors.New("helixqa/perceptual/lpips: unexpected Triton response shape")
 )
 
-// Compare sends (a, b) to the LPIPS sidecar and returns the
-// canonical similarity in [-1, 1]. 1 = identical, 0 = halfway,
-// -1 = maximally dissimilar (or beyond MaxDistance).
+// Compare sends (a, b) to the LPIPS sidecar via pkg/gpu/infer and
+// returns the canonical similarity in [-1, 1].
 func (l *LPIPS) Compare(ctx context.Context, a, b image.Image) (float64, error) {
 	if a == nil || b == nil {
 		return 0, ErrNilImage
@@ -81,9 +70,9 @@ func (l *LPIPS) Compare(ctx context.Context, a, b image.Image) (float64, error) 
 	if model == "" {
 		model = "lpips"
 	}
-	client := l.HTTPClient
-	if client == nil {
-		client = &http.Client{Timeout: 200 * time.Millisecond}
+	httpClient := l.HTTPClient
+	if httpClient == nil {
+		httpClient = &http.Client{Timeout: 200 * time.Millisecond}
 	}
 	maxDist := l.MaxDistance
 	if maxDist <= 0 {
@@ -99,40 +88,22 @@ func (l *LPIPS) Compare(ctx context.Context, a, b image.Image) (float64, error) 
 		return 0, fmt.Errorf("lpips: encode b: %w", err)
 	}
 
-	body, err := json.Marshal(lpipsRequest{
-		Inputs: []lpipsInput{
-			{Name: "IMAGE_A", Datatype: "BYTES", Shape: []int{1}, Data: []string{encA}},
-			{Name: "IMAGE_B", Datatype: "BYTES", Shape: []int{1}, Data: []string{encB}},
+	client := &infer.Client{
+		Endpoint:   l.Endpoint,
+		HTTPClient: httpClient,
+	}
+	resp, err := client.Infer(ctx, infer.Request{
+		Model: model,
+		Inputs: []infer.Input{
+			{Name: "IMAGE_A", Datatype: "BYTES", Shape: []int{1}, StringData: []string{encA}},
+			{Name: "IMAGE_B", Datatype: "BYTES", Shape: []int{1}, StringData: []string{encB}},
 		},
 	})
 	if err != nil {
-		return 0, fmt.Errorf("lpips: marshal: %w", err)
+		return 0, fmt.Errorf("lpips: %w", err)
 	}
 
-	url := fmt.Sprintf("%s/v2/models/%s/infer", l.Endpoint, model)
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(body))
-	if err != nil {
-		return 0, fmt.Errorf("lpips: new request: %w", err)
-	}
-	req.Header.Set("Content-Type", "application/json")
-
-	resp, err := client.Do(req)
-	if err != nil {
-		return 0, fmt.Errorf("lpips: call: %w", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		body, _ := io.ReadAll(resp.Body)
-		return 0, fmt.Errorf("lpips: HTTP %d: %s", resp.StatusCode, string(body))
-	}
-
-	var out lpipsResponse
-	if err := json.NewDecoder(resp.Body).Decode(&out); err != nil {
-		return 0, fmt.Errorf("lpips: decode: %w", err)
-	}
-
-	distance, err := extractLPIPSDistance(out)
+	distance, err := extractLPIPSDistance(resp)
 	if err != nil {
 		return 0, err
 	}
@@ -145,8 +116,7 @@ func (l *LPIPS) Compare(ctx context.Context, a, b image.Image) (float64, error) 
 //	distance = 0        → similarity =  1
 //	distance = maxDist  → similarity = -1
 //	distance > maxDist  → similarity = -1 (clamped)
-//
-// Negative distance (impossible but defensively handled) → 1.
+//	distance < 0        → similarity =  1 (defensive)
 func distanceToSimilarity(distance, maxDist float64) float64 {
 	if distance <= 0 {
 		return 1
@@ -157,66 +127,37 @@ func distanceToSimilarity(distance, maxDist float64) float64 {
 	return 1 - 2*(distance/maxDist)
 }
 
-// extractLPIPSDistance pulls the scalar distance from the Triton
-// response. Tolerates "DISTANCE", "distance", "similarity" (in
-// case the sidecar already inverted), or the first non-empty
-// output.
-func extractLPIPSDistance(r lpipsResponse) (float64, error) {
+// extractLPIPSDistance pulls a scalar distance from the response.
+// Tolerates "DISTANCE", "distance", "SIMILARITY" (pre-inverted
+// sidecars — we undo the inversion back to distance), or the
+// first output with numeric data.
+func extractLPIPSDistance(r infer.Response) (float64, error) {
 	for _, o := range r.Outputs {
 		switch o.Name {
 		case "DISTANCE", "distance":
-			if len(o.Data) == 0 {
-				return 0, fmt.Errorf("%w: empty DISTANCE", ErrLPIPSResponse)
+			if v, ok := firstFloat(o); ok {
+				return v, nil
 			}
-			return o.Data[0], nil
+			return 0, fmt.Errorf("%w: empty DISTANCE", ErrLPIPSResponse)
 		case "SIMILARITY", "similarity":
-			// Sidecar pre-inverted — reverse the mapping so the
-			// caller still receives a distance.
-			if len(o.Data) == 0 {
-				return 0, fmt.Errorf("%w: empty SIMILARITY", ErrLPIPSResponse)
+			// Sidecar pre-inverted; reverse: similarity = 1 -
+			// 2·(dist/maxDist), so dist = (1 - similarity)/2 at
+			// maxDist=1. The LPIPS.Compare caller re-applies its
+			// own maxDist after this.
+			if v, ok := firstFloat(o); ok {
+				return (1 - v) / 2, nil
 			}
-			// similarity = 1 - 2*(dist/maxDist)  →  distance =
-			// maxDist*(1-similarity)/2; default maxDist=1 here, the
-			// caller-configured maxDist gets reapplied later.
-			return (1 - o.Data[0]) / 2, nil
+			return 0, fmt.Errorf("%w: empty SIMILARITY", ErrLPIPSResponse)
 		}
 	}
+	// Fallback: first output with numeric data.
 	for _, o := range r.Outputs {
-		if len(o.Data) > 0 {
-			return o.Data[0], nil
+		if v, ok := firstFloat(o); ok {
+			return v, nil
 		}
 	}
 	return 0, fmt.Errorf("%w: no DISTANCE output found", ErrLPIPSResponse)
 }
-
-// ---------------------------------------------------------------------------
-// Wire structs — intentionally local (not reused from dreamsim.go) so
-// sidecars can rename fields independently.
-// ---------------------------------------------------------------------------
-
-type lpipsInput struct {
-	Name     string   `json:"name"`
-	Datatype string   `json:"datatype"`
-	Shape    []int    `json:"shape"`
-	Data     []string `json:"data"`
-}
-
-type lpipsRequest struct {
-	Inputs []lpipsInput `json:"inputs"`
-}
-
-type lpipsOutput struct {
-	Name     string    `json:"name"`
-	Datatype string    `json:"datatype"`
-	Shape    []int     `json:"shape"`
-	Data     []float64 `json:"data"`
-}
-
-type lpipsResponse struct {
-	Outputs []lpipsOutput `json:"outputs"`
-}
-
-// encodePNGBase64 is shared with dreamsim.go (same package).
 
 // Compile-time guard.
 var _ Comparator = (*LPIPS)(nil)
