@@ -321,6 +321,102 @@ test_cases:
         expected: "PASS"
     tags: [phase6, axtree, windows, http-fetcher, end-to-end]
 
+  # ─── M57 · pkg/nexus/observe/axtree/tui.go · TUI ANSI grid ───
+  - id: PH6-AXTREE-TUI-001
+    name: "pkg/nexus/observe/axtree — TUISnapshotter happy path + row emission"
+    category: unit
+    priority: critical
+    platforms: [linux, all]
+    steps:
+      - name: "Three-line ANSI dump (with colors) produces 3 row-Node children + PlatformTUI root"
+        action: "TestTUISnapshotter_Snapshot_FullTree"
+        expected: "PASS — Role=text, Enabled=true per row, CSI colors stripped from Name"
+      - name: "Empty / whitespace-only rows are skipped"
+        action: "TestTUISnapshotter_Snapshot_SkipsEmptyRows"
+        expected: "PASS"
+      - name: "Row bounds use character coordinates (col, row)"
+        action: "TestTUISnapshotter_Snapshot_RowBoundsInCharCoords"
+        expected: "PASS"
+      - name: "Custom Cols + Rows override auto-detected dimensions"
+        action: "TestTUISnapshotter_Snapshot_CustomDimensions"
+        expected: "PASS"
+      - name: "Snapshotter interface conformance + constructor wires StdinFetcher"
+        action: "TestTUISnapshotter_SatisfiesSnapshotterInterface + TestNewTUISnapshotter_UsesStdinFetcher"
+        expected: "Both PASS"
+    tags: [phase6, axtree, tui, ansi, unit]
+
+  - id: PH6-AXTREE-TUI-002
+    name: "pkg/nexus/observe/axtree — ANSI escape stripping"
+    category: unit
+    priority: high
+    platforms: [linux, all]
+    steps:
+      - name: "Plain text passes through unchanged"
+        action: "TestStripANSI_PlainTextPassesThrough"
+        expected: "PASS"
+      - name: "CSI color codes stripped"
+        action: "TestStripANSI_CSIColorsStripped"
+        expected: "PASS"
+      - name: "OSC sequences (title + hyperlink with BEL or ST terminator) stripped"
+        action: "TestStripANSI_OSCTitleStripped + TestStripANSI_OSCWithSTTerminator"
+        expected: "Both PASS"
+      - name: "Backspace overtype sequences collapse (man-style bold/underline)"
+        action: "TestStripANSI_BackspaceOvertype"
+        expected: "PASS"
+      - name: "Single-char escape (ESC M) stripped"
+        action: "TestStripANSI_SingleCharEscape"
+        expected: "PASS"
+      - name: "Unterminated CSI / OSC sequences consumed to EOF without panic"
+        action: "TestStripANSI_UnterminatedCSI + TestStripANSI_UnterminatedOSC"
+        expected: "Both PASS"
+    tags: [phase6, axtree, tui, ansi, strip]
+
+  - id: PH6-AXTREE-TUI-003
+    name: "pkg/nexus/observe/axtree — ParseGrid styled cell extraction"
+    category: unit
+    priority: high
+    platforms: [linux, all]
+    steps:
+      - name: "Plain text produces per-character cells"
+        action: "TestParseGrid_SimpleText"
+        expected: "PASS"
+      - name: "SGR colors tracked (30-37 fg, 40-47 bg, 90-97 bright fg, 100-107 bright bg)"
+        action: "TestParseGrid_SGRColors + TestParseGrid_BackgroundColor + TestParseGrid_BrightColors"
+        expected: "All PASS"
+      - name: "Bold (1) + underline (4) toggles; 22 / 24 clears"
+        action: "TestParseGrid_BoldAndUnderline"
+        expected: "PASS"
+      - name: "Cursor motion CSI (CUF/CUB/CHA) respected; grid sized via cursor-aware measure pass"
+        action: "TestParseGrid_CursorForwardBackward + TestParseGrid_CursorHorizontalAbsolute"
+        expected: "Both PASS"
+      - name: "Empty input + out-of-range At() return default space cells"
+        action: "TestParseGrid_EmptyInput + TestParseGrid_AtOutOfRange"
+        expected: "Both PASS"
+    tags: [phase6, axtree, tui, ansi, grid]
+
+  - id: PH6-AXTREE-TUI-004
+    name: "pkg/nexus/observe/axtree — TUI error + lifecycle"
+    category: unit
+    priority: high
+    platforms: [linux, all]
+    steps:
+      - name: "Empty bytes → ErrNoRoot"
+        action: "TestTUISnapshotter_Snapshot_EmptyBytesError"
+        expected: "PASS"
+      - name: "Fetcher error propagates"
+        action: "TestTUISnapshotter_Snapshot_FetcherError"
+        expected: "PASS"
+      - name: "Canceled ctx bails out"
+        action: "TestTUISnapshotter_Snapshot_ContextCanceled"
+        expected: "PASS"
+      - name: "Close is idempotent; Snapshot-after-Close → ErrSnapshotClosed"
+        action: "TestTUISnapshotter_Close_Idempotent + TestTUISnapshotter_Snapshot_AfterCloseReturnsError"
+        expected: "Both PASS"
+      - name: "TUIStdinFetcher: nil reader guard, custom MaxBytes, ctx cancel"
+        action: "TestTUIStdinFetcher_ReadsFromReader + TestTUIStdinFetcher_NilReaderError + TestTUIStdinFetcher_ContextCanceled + TestTUIStdinFetcher_CustomMaxBytes"
+        expected: "All PASS"
+    tags: [phase6, axtree, tui, error-paths]
+
   # Production UIA sidecar integration (blocked on operator-action —
   # Windows sidecar build + IUIAutomation permissions).
   - id: PH6-AXTREE-WINDOWS-INT-001

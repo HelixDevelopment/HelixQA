@@ -21,6 +21,9 @@ const (
 	PlatformDarwin  Platform = "darwin-ax"
 	PlatformWindows Platform = "windows-uiautomation"
 	PlatformIOS     Platform = "ios-idb"
+	// PlatformTUI is defined in tui.go (the TUI backend is a
+	// later addition; it lives in its own file to avoid
+	// reshuffling this Platform block).
 )
 
 // Node is the unified accessibility-tree entry across every platform

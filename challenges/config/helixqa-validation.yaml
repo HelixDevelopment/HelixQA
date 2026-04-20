@@ -918,6 +918,27 @@ test_cases:
         expected: "All PASS — full ControlType coverage"
     tags: [phase6, gocore, axtree, windows, uia, cross-platform, regression]
 
+  - id: HQA-PHASE6-GOCORE-004
+    name: "OpenClawing4 Phase 6 — TUI axtree via ANSI-escape grid parsing"
+    category: regression
+    priority: high
+    platforms: [all]
+    steps:
+      - name: "pkg/nexus/observe/axtree builds clean with tui.go added"
+        action: "go build -mod=vendor ./pkg/nexus/observe/axtree/..."
+        expected: "exit 0"
+      - name: "All TUI tests pass under -race"
+        action: "go test -mod=vendor -count=1 -race -run 'TUI|StripANSI|ParseGrid' ./pkg/nexus/observe/axtree/..."
+        expected: "PASS, zero data races"
+      - name: "Cross-platform contract holds across SEVEN axtree backends"
+        action: "go test -mod=vendor -count=1 -run '_SatisfiesSnapshotterInterface' ./pkg/nexus/observe/axtree/..."
+        expected: "All 7 PASS — Linux + Android + iOS + Darwin + Web + Windows + TUI"
+      - name: "ANSI stripper + grid parser handle real-world escape sequences"
+        action: "go test -mod=vendor -count=1 -run 'TestStripANSI_|TestParseGrid_' ./pkg/nexus/observe/axtree/..."
+        expected: "All PASS — CSI colors, OSC titles, cursor motion, bold/underline, brights"
+    tags: [phase6, gocore, axtree, tui, ansi, cross-platform, regression]
+
+
 
 
 

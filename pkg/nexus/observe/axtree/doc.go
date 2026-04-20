@@ -35,6 +35,11 @@
 //                   + 32-control-type + 19-numeric-ID ARIA mapping.
 //                   Same sidecar pattern as darwin.go (Go host
 //                   stays CGO/COM-free). Shipped M48.
+//   - tui.go      — ✅ Terminal-UI axtree backend via ANSI-escape
+//                   parsing. TUIFetcher reads a raw pty dump,
+//                   StripANSI / ParseGrid convert to a styled
+//                   cell grid, Snapshot emits row-per-text-line
+//                   Node tree. Shipped M57.
 //   - ios.go      — ✅ idb describe-all JSON parser via IDBDumper
 //                   abstraction (IDBShellDumper shells out to
 //                   `idb ui describe-all --udid <UDID> --json`).
