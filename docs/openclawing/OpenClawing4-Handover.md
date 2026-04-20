@@ -37,6 +37,7 @@ A forensic audit on 2026-04-19 (`OpenClawing4-Audit.md`) exposed the problems, a
 
 | Commit | Repo | URL pattern | Purpose |
 |---|---|---|---|
+| `fe82e95` | HelixQA | 4 upstreams pushed | **Phase 1 M17** — extract `pkg/bridge/dbusportal/` (shared D-Bus portal plumbing) + add `pkg/navigator/linux/libei/portal.go` RemoteDesktop client (CreateSession/SelectDevices/Start/ConnectToEIS); libei pkg 91.8% coverage |
 | `0778a24` | HelixQA | 4 upstreams pushed | **Phase 1 M16** — `cmd/helixqa-x11grab/` Go sidecar: ffmpeg wrapper + NAL-splitter + envelope framer; ~800 LoC (code+tests), 68.8% pkg coverage, CGO-free |
 | `d761a75` | HelixQA | 4 upstreams pushed | **Phase 1 M14** — `pkg/capture/linux/x11grab.go` X11GrabFactory completing the Portal/KMSGrab/X11Grab triad; 80.1% pkg |
 | `12065b0` | HelixQA | 4 upstreams pushed | **Phase 1 M13** — `pkg/capture/linux/portal_dbus.go` production DBusCaller wrapping `*dbus.Conn` (Request/Response signal handshake); 79.4% pkg with integration smoke test against live bus |
@@ -119,6 +120,7 @@ packages below.
 | M13 | `pkg/capture/linux/` (extended) | `portal_dbus.go` + `portal_dbus_test.go` | 79.4 % pkg | `12065b0` |
 | M14 | `pkg/capture/linux/` (extended) | `x11grab.go` + `x11grab_test.go` | 80.1 % pkg | `d761a75` |
 | M16 | `cmd/helixqa-x11grab/` (new) | `doc.go` + `main.go` + `nal.go` + 2 tests | 68.8 % pkg | `0778a24` |
+| M17 | `pkg/bridge/dbusportal/` (new) + `pkg/capture/linux/` (migrated) + `pkg/navigator/linux/libei/` (new) | 4 new dbusportal files + portal.go/portal_dbus.go/portal_test.go migrations + 3 new libei files | 61.5% dbusportal / 85.5% capture / 91.8% libei | `fe82e95` |
 
 Deliverable highlights:
 
@@ -184,7 +186,8 @@ Legend: ✅ done (commits in §2.1 + §2.5) · 🚧 remaining.
 | `cmd/helixqa-x11grab/` | Go sidecar: `doc.go`/`main.go`/`nal.go`. CommandFactory + ChildProcess abstractions (testable), argv parser with DISPLAY env fallback, SplitNALs for 3-byte + 4-byte start codes with emulation-escape passthrough, 5s SIGINT → SIGKILL deferred cleanup, `--health` returns `ok\n`. Picked up by bridges.DiscoverTools as KindHelixQANative. | **✅** `0778a24` |
 | `pkg/capture/linux/xcbshm.go` | xcb-shm fallback for X11 / XWayland sessions (optional; x11grab factory covers this surface today). | 🚧 |
 | `pkg/capture/linux_capture.go` | **Modify** — route by `XDG_SESSION_TYPE`: wayland→portal, x11→xcbshm, legacy→existing x11grab behind `-tags x11legacy`. | 🚧 |
-| `pkg/navigator/linux/libei.go` | godbus client for `org.freedesktop.portal.RemoteDesktop`; EI binary protocol writer. | 🚧 |
+| `pkg/navigator/linux/libei/portal.go` | RemoteDesktop portal handshake — CreateSession + SelectDevices + Start + ConnectToEIS (returns *os.File). Uses dbusportal.Caller; 91.8% test coverage. | **✅** `fe82e95` |
+| `pkg/navigator/linux/libei/ei_client.go` | EI wire-protocol client consuming the ConnectToEIS FD — flatbuffers-based binary protocol from libei spec. | 🚧 |
 | `pkg/navigator/x11_executor.go` | **Modify** — move existing code behind `-tags x11legacy`; default is libei. | 🚧 |
 
 **Sidecar binaries (not Go host):**

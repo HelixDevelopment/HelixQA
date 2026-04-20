@@ -21,6 +21,8 @@
 #   - pkg/capture/linux         (M13) — production DBusCaller wrapping *dbus.Conn
 #   - pkg/capture/linux         (M14) — X11GrabFactory completing the BackendFactory triad
 #   - cmd/helixqa-x11grab       (M16) — Go sidecar: ffmpeg wrapper + NAL splitter + envelope framer
+#   - pkg/bridge/dbusportal     (M17) — shared D-Bus portal plumbing (Caller + DBusCaller + errors)
+#   - pkg/navigator/linux/libei (M17) — RemoteDesktop portal client for libei
 #
 # Each entry pairs a concrete `go test` invocation with a coverage / behaviour
 # expectation. No entry here requires adb, an Android device, a desktop
@@ -632,4 +634,63 @@ test_cases:
       bug_id: "OPENCLAWING4-PHASE1-M16-RUN"
       description: "helixqa-x11grab runtime — argv, validation, run loop"
       fix_file: "cmd/helixqa-x11grab/main.go"
+      fix_commit: "pending"
+
+  # ==================== M17: dbusportal extraction + libei portal ====================
+
+  - id: P1G-DBUSPORTAL-001
+    name: "pkg/bridge/dbusportal: shared D-Bus portal plumbing"
+    category: integration
+    priority: critical
+    platforms: [all]
+    steps:
+      - name: "ErrPortalStatus + IsUserCancelled + DecodeVariantMap"
+        action: "go test -run 'TestErrPortalStatus_Error|TestIsUserCancelled|TestDecodeVariantMap' -count=1 ./pkg/bridge/dbusportal/..."
+        expected: "PASS — error message shape, user-cancelled detection across 5 cases, decode variants + plain map + wrong-type"
+      - name: "DBusCaller constructors + nil-safety + session-bus integration smoke"
+        action: "go test -run 'TestNewDBusCaller|TestDBusCaller_|TestNewDBusCallerOwningConn' -count=1 ./pkg/bridge/dbusportal/..."
+        expected: "PASS — ErrNoSessionBus on bogus addr; nil conn safe; ownership flag tracked; live-bus smoke test (skips when DBUS_SESSION_BUS_ADDRESS unset)"
+      - name: "Interface compile-time satisfaction"
+        action: "go test -run 'TestDBusCallerFactory_SatisfiesInterface' -count=1 ./pkg/bridge/dbusportal/..."
+        expected: "PASS — DBusCallerFactory satisfies CallerFactory at compile time"
+    tags: [phase1, gocore, dbusportal, refactor]
+    estimated_duration: "3s"
+    expected_result: "Shared portal plumbing is reusable across ScreenCast (capture) and RemoteDesktop (libei) clients"
+    fix_reference:
+      bug_id: "OPENCLAWING4-PHASE1-M17-DBUSPORTAL"
+      description: "Extract dbusportal from pkg/capture/linux to pkg/bridge/dbusportal"
+      fix_file: "pkg/bridge/dbusportal/caller.go"
+      fix_commit: "pending"
+
+  - id: P1G-LIBEI-PORTAL-001
+    name: "pkg/navigator/linux/libei: RemoteDesktop portal handshake"
+    category: integration
+    priority: critical
+    platforms: [all]
+    steps:
+      - name: "CreateSession: success + unique tokens + status=1 + missing session_handle + caller error"
+        action: "go test -run 'TestPortal_CreateSession_' -count=1 ./pkg/navigator/linux/libei/..."
+        expected: "PASS — 5 sub-tests all green"
+      - name: "SelectDevices: argument shape + defaults + empty sessionPath"
+        action: "go test -run 'TestPortal_SelectDevices_' -count=1 ./pkg/navigator/linux/libei/..."
+        expected: "PASS — types bitmask + persist_mode + restore_token; default keyboard|pointer; empty session rejected"
+      - name: "Start: success + no-devices rejection + status non-zero + parent-window pass-through"
+        action: "go test -run 'TestPortal_Start_' -count=1 ./pkg/navigator/linux/libei/..."
+        expected: "PASS — devices decoded from uint32; zero-devices rejected; ErrPortalStatus surfaces; parentWindow reaches call"
+      - name: "ConnectToEIS: real os.Pipe FD -> *os.File round-trip + error branches"
+        action: "go test -run 'TestPortal_ConnectToEIS_' -count=1 ./pkg/navigator/linux/libei/..."
+        expected: "PASS — UnixFD -> *os.File; wrong body type + empty body + empty sessionPath all error"
+      - name: "Close + nil receiver safe"
+        action: "go test -run 'TestPortal_Close_' -count=1 ./pkg/navigator/linux/libei/..."
+        expected: "PASS — Close forwards to caller; nil receiver returns nil"
+      - name: "Package coverage >= 90%"
+        action: "go test -cover -count=1 ./pkg/navigator/linux/libei/..."
+        expected: "coverage >= 90% of statements"
+    tags: [phase1, gocore, libei, portal, godbus]
+    estimated_duration: "4s"
+    expected_result: "RemoteDesktop portal handshake is end-to-end testable and delivers a connected FD ready for an EI wire-protocol client"
+    fix_reference:
+      bug_id: "OPENCLAWING4-PHASE1-M17-LIBEI"
+      description: "RemoteDesktop portal client for libei input emulation"
+      fix_file: "pkg/navigator/linux/libei/portal.go"
       fix_commit: "pending"
