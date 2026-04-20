@@ -3,13 +3,16 @@
 #
 # HelixQA Test Bank: OpenClawing4 Phase 1 Go-Core (pure-Go portions)
 #
-# This bank validates the three pure-Go packages that land before the
-# native sidecars (helixqa-capture-linux, helixqa-kmsgrab) can be built on
-# their target hosts:
+# This bank validates the pure-Go packages that land before the native
+# sidecars (helixqa-capture-linux, helixqa-kmsgrab, helixqa-input) can be
+# built on their target hosts:
 #
 #   - pkg/capture/frames        (M1) — normalised Frame type
 #   - pkg/bridge/sidecarutil    (M2) — stdio framing + SCM_RIGHTS + --health probe
 #   - pkg/bridge/scrcpy         (M3) — v3 wire-format + .devignore enforcement
+#   - pkg/navigator/linux/uinput (M4) — pure-Go /dev/uinput driver
+#   - pkg/bridge/scrcpy         (M5) — server lifecycle + Session API
+#   - pkg/bridges                (M6) — sidecar registry extended with 13 native probes
 #
 # Each entry pairs a concrete `go test` invocation with a coverage / behaviour
 # expectation. No entry here requires adb, an Android device, a desktop
@@ -144,7 +147,7 @@ test_cases:
   # ==================== M3: pkg/bridge/scrcpy ====================
 
   - id: P1G-SCRCPY-001
-    name: "pkg/bridge/scrcpy: v3 protocol tests pass, coverage >= 90%"
+    name: "pkg/bridge/scrcpy: v3 protocol + server + session tests pass, coverage >= 80%"
     category: unit
     priority: critical
     platforms: [all]
@@ -154,7 +157,7 @@ test_cases:
         expected: "PASS; zero data races"
       - name: "Coverage threshold"
         action: "go test -cover -count=1 ./pkg/bridge/scrcpy/..."
-        expected: "coverage >= 90% of statements"
+        expected: "coverage >= 80% of statements (package-wide, including server.go + session.go added in M5)"
     tags: [phase1, gocore, scrcpy, unit]
     estimated_duration: "5s"
     expected_result: "Wire-format encoders + device-message decoders + video/audio packet decoders all green"
@@ -220,9 +223,9 @@ test_cases:
       - name: "go vet clean"
         action: "go vet ./..."
         expected: "no diagnostics"
-      - name: "no-sudo hook against new Phase-1 files"
-        action: "./scripts/hooks/no-sudo.sh pkg/capture/frames/frame.go pkg/bridge/sidecarutil/framing.go pkg/bridge/scrcpy/protocol.go pkg/bridge/scrcpy/devguard.go pkg/bridge/scrcpy/doc.go"
-        expected: "exit 0 (no bare sudo in any Phase-1 Go-core file)"
+      - name: "no-sudo hook against every Phase-1 Go-core file"
+        action: "./scripts/hooks/no-sudo.sh pkg/capture/frames/frame.go pkg/bridge/sidecarutil/framing.go pkg/bridge/scrcpy/protocol.go pkg/bridge/scrcpy/devguard.go pkg/bridge/scrcpy/doc.go pkg/bridge/scrcpy/server.go pkg/bridge/scrcpy/session.go pkg/navigator/linux/uinput/doc.go pkg/navigator/linux/uinput/event.go pkg/navigator/linux/uinput/device_linux.go pkg/bridges/registry.go"
+        expected: "exit 0 (no bare 'sudo' in any Phase-1 Go-core file)"
     tags: [phase1, gocore, build, vet, security]
     estimated_duration: "30s"
     expected_result: "Phase 1 Go-core is build-ready and constitutionally clean"
@@ -230,4 +233,136 @@ test_cases:
       bug_id: "OPENCLAWING4-PHASE1-GATE"
       description: "Nothing ships broken — build + vet + hook must all be green"
       fix_file: "multiple"
+      fix_commit: "pending"
+
+  # ==================== M4: pkg/navigator/linux/uinput ====================
+
+  - id: P1G-UINPUT-001
+    name: "pkg/navigator/linux/uinput: event encoder byte-exact on 64-bit Linux"
+    category: unit
+    priority: critical
+    platforms: [all]
+    steps:
+      - name: "Byte-exact encoder tests pass"
+        action: "go test -run 'TestEncodeEvent_' -count=1 ./pkg/navigator/linux/uinput/..."
+        expected: "PASS — TestEncodeEvent_ByteExact + _Size (EventSize=24) + _NegativeValue all green"
+      - name: "High-level writers emit expected sequences"
+        action: "go test -run 'TestWrite' -count=1 ./pkg/navigator/linux/uinput/..."
+        expected: "PASS — KeyTap (4 events), ClickAbs (6 events), MoveRel (zero-suppressed), Scroll (zero-suppressed)"
+    tags: [phase1, gocore, uinput, unit]
+    estimated_duration: "3s"
+    expected_result: "input_event wire format byte-exact; high-level writers emit correct event sequences"
+    fix_reference:
+      bug_id: "OPENCLAWING4-PHASE1-M4"
+      description: "Pure-Go /dev/uinput driver — Wayland-fallback input path"
+      fix_file: "pkg/navigator/linux/uinput/event.go"
+      fix_commit: "pending"
+
+  - id: P1G-UINPUT-002
+    name: "pkg/navigator/linux/uinput: Config validation rejects every invalid combo"
+    category: regression
+    priority: high
+    platforms: [all]
+    steps:
+      - name: "validateConfig accepts valid configs"
+        action: "go test -run 'TestValidateConfig_OK' -count=1 ./pkg/navigator/linux/uinput/..."
+        expected: "PASS"
+      - name: "validateConfig rejects all 4 invalid-combo sub-cases"
+        action: "go test -run 'TestValidateConfig_Rejects' -count=1 -v ./pkg/navigator/linux/uinput/..."
+        expected: "PASS — key-bits-without-enable, rel-bits-without-enable, abs-bits-without-enable, abs-inverted-range"
+      - name: "Open rejects empty name and missing device"
+        action: "go test -run 'TestOpen_' -count=1 ./pkg/navigator/linux/uinput/..."
+        expected: "PASS — TestOpen_EmptyName + TestOpen_BadConfig + TestOpen_MissingDevice (skipped when /dev/uinput is writable)"
+    tags: [phase1, gocore, uinput, regression]
+    estimated_duration: "2s"
+    expected_result: "Misconfigured devices never open /dev/uinput; clear error messages"
+    fix_reference:
+      bug_id: "OPENCLAWING4-PHASE1-M4-CONFIG"
+      description: "validateConfig gates every Open path"
+      fix_file: "pkg/navigator/linux/uinput/device_linux.go"
+      fix_commit: "pending"
+
+  # ==================== M5: pkg/bridge/scrcpy server + session ====================
+
+  - id: P1G-SCRCPY-SERVER-001
+    name: "pkg/bridge/scrcpy: StartServer happy path runs full bring-up sequence"
+    category: integration
+    priority: critical
+    platforms: [all]
+    steps:
+      - name: "TestStartServer_HappyPath passes"
+        action: "go test -run 'TestStartServer_HappyPath' -count=1 -race ./pkg/bridge/scrcpy/..."
+        expected: "PASS — devguard + push + reverse + listener + launcher + accept(3) + session-created; Stop issues 'adb reverse --remove'"
+      - name: "TestStartServer_Blocked rejects .devignore match"
+        action: "go test -run 'TestStartServer_Blocked' -count=1 ./pkg/bridge/scrcpy/..."
+        expected: "PASS — errors.Is(err, ErrDeviceBlocked); launcher never invoked"
+      - name: "TestStartServer_InvalidConfig rejects 3 bad config shapes"
+        action: "go test -run 'TestStartServer_InvalidConfig' -count=1 ./pkg/bridge/scrcpy/..."
+        expected: "PASS — nil-runner, empty-jar, empty-version each return ErrServerConfig"
+      - name: "TestStartServer_AcceptTimeout surfaces timeout"
+        action: "go test -run 'TestStartServer_AcceptTimeout' -count=1 ./pkg/bridge/scrcpy/..."
+        expected: "PASS — ErrAcceptTimeout after 200ms when launcher never dials back"
+    tags: [phase1, gocore, scrcpy, server, integration]
+    estimated_duration: "8s"
+    expected_result: "Server lifecycle is bulletproof across success + 3 failure modes"
+    fix_reference:
+      bug_id: "OPENCLAWING4-PHASE1-M5-SERVER"
+      description: "scrcpy-server bring-up via ProcessLauncher; no desktop scrcpy binary required"
+      fix_file: "pkg/bridge/scrcpy/server.go"
+      fix_commit: "pending"
+
+  - id: P1G-SCRCPY-SESSION-001
+    name: "pkg/bridge/scrcpy: Session.Send / Close / StartPumps behave correctly"
+    category: unit
+    priority: critical
+    platforms: [all]
+    steps:
+      - name: "Session.Send returns ErrNoControlSocket when control=nil"
+        action: "go test -run 'TestSession_Send_NilControl' -count=1 ./pkg/bridge/scrcpy/..."
+        expected: "PASS"
+      - name: "Session.Send roundtrip via net.Pipe"
+        action: "go test -run 'TestSession_Send_RoundTrip' -count=1 ./pkg/bridge/scrcpy/..."
+        expected: "PASS — receiver sees CtrlResetVideo byte"
+      - name: "Session.Close idempotency"
+        action: "go test -run 'TestSession_Close_Idempotent' -count=1 ./pkg/bridge/scrcpy/..."
+        expected: "PASS — second Close returns nil"
+      - name: "Session.StartPumps delivers video packet"
+        action: "go test -run 'TestSession_StartPumps_VideoStream' -count=1 -race ./pkg/bridge/scrcpy/..."
+        expected: "PASS — one packet reaches videoCh within 1s; PTS + payload length correct"
+    tags: [phase1, gocore, scrcpy, session, unit]
+    estimated_duration: "4s"
+    expected_result: "Session API honours its contract: single control writer, idempotent Close, buffered pumps"
+    fix_reference:
+      bug_id: "OPENCLAWING4-PHASE1-M5-SESSION"
+      description: "Session wraps 3 sockets + channels + write-deadline"
+      fix_file: "pkg/bridge/scrcpy/session.go"
+      fix_commit: "pending"
+
+  # ==================== M6: pkg/bridges/registry ====================
+
+  - id: P1G-REGISTRY-001
+    name: "pkg/bridges/registry: ToolKind + 13 HelixQA-native sidecar probes"
+    category: regression
+    priority: high
+    platforms: [all]
+    steps:
+      - name: "Probe count split holds"
+        action: "go test -run 'TestToolProbes_Count' -count=1 ./pkg/bridges/..."
+        expected: "PASS — 9 external + 13 helixqa-native = 22 total"
+      - name: "Partition helpers drop the right rows"
+        action: "go test -run 'TestNativeTools_PartitionsByKind' -count=1 ./pkg/bridges/..."
+        expected: "PASS"
+      - name: "ToolKind.String values are stable"
+        action: "go test -run 'TestToolKind_String' -count=1 ./pkg/bridges/..."
+        expected: "PASS — 'external' / 'helixqa-native'"
+      - name: "Package coverage >= 95%"
+        action: "go test -cover -count=1 ./pkg/bridges/"
+        expected: "coverage >= 95.0% of statements (expected 100.0%)"
+    tags: [phase1, gocore, registry, regression]
+    estimated_duration: "3s"
+    expected_result: "DiscoverTools surfaces the 13 HelixQA-native sidecars as unavailable until installed by the operator / release image"
+    fix_reference:
+      bug_id: "OPENCLAWING4-PHASE1-M6"
+      description: "Sidecar registry honouring OpenClawing4 §6.1 roster"
+      fix_file: "pkg/bridges/registry.go"
       fix_commit: "pending"

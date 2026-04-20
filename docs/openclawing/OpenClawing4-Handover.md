@@ -37,6 +37,10 @@ A forensic audit on 2026-04-19 (`OpenClawing4-Audit.md`) exposed the problems, a
 
 | Commit | Repo | URL pattern | Purpose |
 |---|---|---|---|
+| `a28657e` | HelixQA | 4 upstreams pushed | **Phase 1 M6** — `pkg/bridges/registry` ToolKind + 13 HelixQA-native sidecar probes + 100% coverage |
+| `ee83028` | HelixQA | 4 upstreams pushed | **Phase 1 M5** — `pkg/bridge/scrcpy/{server,session}` lifecycle + 81.5% package coverage |
+| `341fe33` | HelixQA | 4 upstreams pushed | **Phase 1 M4** — `pkg/navigator/linux/uinput` pure-Go /dev/uinput driver + 42% coverage (remainder is linear ioctl path) |
+| `8535f12` | HelixQA | 4 upstreams pushed | **Phase 1 handover+bank+challenge rollup** |
 | `25599bb` | HelixQA | 4 upstreams pushed | **Phase 1 M3** — `pkg/bridge/scrcpy` v3 wire format + devguard + 91.4% coverage |
 | `bcdc740` | HelixQA | 4 upstreams pushed | **Phase 1 M2** — `pkg/bridge/sidecarutil` framing + SCM_RIGHTS + --health + 84.5% coverage |
 | `61d2696` | HelixQA | 4 upstreams pushed | **Phase 1 M1** — `pkg/capture/frames` normalised Frame type + 97.1% coverage |
@@ -44,6 +48,7 @@ A forensic audit on 2026-04-19 (`OpenClawing4-Audit.md`) exposed the problems, a
 | `f2505b5` | HelixQA | 4 upstreams pushed | Docs reorg + OpenClawing4 + OpenClawing4-Audit |
 | `b2ebdcf` | Catalogizer | 6 upstreams pushed | Submodule pointer bump (Phase 0 rollup) |
 | `360372c8` | Catalogizer | 6 upstreams pushed | OPEN_POINTS_CLOSURE §10 (Phase 0 closed, phases 1-6 roadmap) |
+| `599fda1e` | Catalogizer | 6 upstreams pushed | Submodule bump (Phase 1 M1-M3 rollup) + OPEN_POINTS §10.1.1 |
 | `c17e965` | Catalogizer | 6 upstreams pushed | CLAUDE.md trim + companion-doc index |
 
 Upstream fan-out verified in each push log.
@@ -95,6 +100,9 @@ packages below.
 | M1 | `pkg/capture/frames/` | `frame.go` + `frame_test.go` | 97.1 % | `61d2696` |
 | M2 | `pkg/bridge/sidecarutil/` | `framing.go` + `framing_test.go` | 84.5 % | `bcdc740` |
 | M3 | `pkg/bridge/scrcpy/` | `doc.go` + `protocol.go` + `devguard.go` + two test files | 91.4 % | `25599bb` |
+| M4 | `pkg/navigator/linux/uinput/` | `doc.go` + `event.go` + `device_linux.go` + 2 tests | 42.0 % pkg (event.go 100 %) | `341fe33` |
+| M5 | `pkg/bridge/scrcpy/` (extended) | `server.go` + `session.go` + `server_test.go` | 81.5 % pkg | `ee83028` |
+| M6 | `pkg/bridges/` (extended) | `registry.go` + `registry_test.go` modifications | 100.0 % pkg | `a28657e` |
 
 Deliverable highlights:
 
@@ -102,6 +110,9 @@ Deliverable highlights:
 - **Sidecar contract primitives** — length-prefixed JSON framing on stdin/stdout (16 MiB cap, heartbeat, `DrainReader`), SCM_RIGHTS FD passing over `*net.UnixConn` (CGO-free, stdlib `syscall`+`net` only), and `HealthProbe`/`MultiHealth` enforcing `--health → ok\n + exit 0` contract.
 - **scrcpy-server v3 wire protocol** — all 18 client→server control messages with byte-exact marshalling, including the `InjectTouchEvent` 31-byte body with `action_button` + `buttons` uint32s that OpenClawing3 had wrong (FIX-OC3-011 regression covered). Server→client `DeviceMessage` (Clipboard, AckClipboard, UhidOutput). `ReadVideoPacket` + `ReadAudioPacket` with flag-bit decoding. All size ceilings + ErrProtocol guardrails.
 - **`.devignore` enforcement gate** — `LoadDevIgnore` / `MatchModel` (case-insensitive) / `DeviceModel` (adb shell getprop) / `EnforceDevIgnore` (the single gate every socket-opener passes through). `ErrDeviceBlocked` wraps the offending model for `errors.Is` checks.
+- **`/dev/uinput` driver (pure Go)** — `EncodeEvent`/`DecodeEvent` produce the 24-byte `input_event` layout byte-exact (time fields zeroed for the kernel to stamp). High-level `WriteKeyTap` / `WriteClickAbs` / `WriteMoveRel` / `WriteScroll` emit the proper press+sync+release+sync or abs+abs+btn+sync sequences. Linux-only `device_linux.go` adds `Open` (O_NONBLOCK → UI_SET_EVBIT → UI_SET_*BIT → UI_DEV_SETUP → UI_DEV_CREATE), nil-safe idempotent `Close`, config validation before any syscall. CGO-free; uses `golang.org/x/sys/unix.Syscall(SYS_IOCTL, ...)`.
+- **scrcpy server + session lifecycle** — `StartServer(ctx, ServerConfig)` runs devguard check → adb push → adb reverse → `net.Listen("tcp", "127.0.0.1:<port>")` → `ProcessLauncher.Launch("adb", "shell", "CLASSPATH=...", "app_process", …)` → accept 1–3 sockets within `AcceptTimeout` → return a `*Session`. Full rollback on any step failure. `Server.Stop` (idempotent via `sync.Once`) closes session + signals process + removes `adb reverse`. `Session.StartPumps(ctx)` launches goroutines that push `VideoPacket`/`AudioPacket`/`DeviceMessage` onto buffered channels with clean exit on `ctx.Done` or `Close`. `Session.Send` is goroutine-safe (mutex-guarded) and sets a 5-second write deadline. Tests use real loopback listener + fake process launcher dialing three times.
+- **Sidecar registry extension** — 13 HelixQA-native sidecars (the complete OpenClawing4 §6.1 roster) added to `DiscoverTools`, probed via the universal `<bin> --health` contract from sidecarutil; new `ToolKind` enum + `NativeTools` / `ExternalTools` partition helpers so operator-facing reports can clearly distinguish "ships with HelixQA" from "installed on host".
 
 Acceptance evidence (Article V — all green for Phase-1 Go-core):
 
@@ -140,18 +151,18 @@ Legend: ✅ done (commits in §2.1 + §2.5) · 🚧 remaining.
 | `pkg/bridge/sidecarutil/framing.go` | Length-prefixed JSON framing + heartbeat + `DrainReader`; SCM_RIGHTS FD passing over `*net.UnixConn`; `HealthProbe`/`MultiHealth`. 84.5% coverage. | **✅** `bcdc740` |
 | `pkg/bridge/scrcpy/protocol.go` | v3 wire format — 18 control messages + DeviceMessage + VideoPacket + AudioPacket decoders + all size ceilings. 91.4% coverage. | **✅** `25599bb` |
 | `pkg/bridge/scrcpy/devguard.go` | `.devignore` enforcement: LoadDevIgnore + MatchModel + DeviceModel + EnforceDevIgnore. | **✅** `25599bb` |
+| `pkg/bridge/scrcpy/server.go` | ADB push + reverse, loopback listener, ProcessLauncher + accept pumps (video / audio / control). Full rollback on failure; idempotent Stop. | **✅** `ee83028` |
+| `pkg/bridge/scrcpy/session.go` | Session wraps the 3 sockets; StartPumps launches reader goroutines; Send(ControlMessage) with 5s deadline; idempotent Close. | **✅** `ee83028` |
+| `pkg/navigator/linux/uinput/` | Pure-Go `/dev/uinput` driver — event encoder (cross-platform) + Linux ioctl sequence. | **✅** `341fe33` |
+| `pkg/bridges/registry.go` | 13 HelixQA-native sidecar probes added + ToolKind enum + NativeTools / ExternalTools helpers. 100% coverage. | **✅** `a28657e` |
 | `pkg/capture/linux/portal.go` | godbus client for `org.freedesktop.portal.ScreenCast` — `CreateSession`, `SelectSources`, `Start`; caches the session across frames. | 🚧 |
 | `pkg/capture/linux/pipewire.go` | Spawns `helixqa-capture-linux` with PipeWire FD in `SysProcAttr.ExtraFiles`; reads Annex-B from stdout; emits `Frame` objects via `pkg/capture/frames`. | 🚧 |
 | `pkg/capture/linux/kmsgrab.go` | Probes for `helixqa-kmsgrab` sidecar existence + `cap_sys_admin`; gated by `HELIX_LINUX_KMSGRAB=1`; optional. | 🚧 |
 | `pkg/capture/linux/xcbshm.go` | xcb-shm fallback for X11 / XWayland sessions. | 🚧 |
 | `pkg/capture/linux_capture.go` | **Modify** — route by `XDG_SESSION_TYPE`: wayland→portal, x11→xcbshm, legacy→existing x11grab behind `-tags x11legacy`. | 🚧 |
-| `pkg/bridge/scrcpy/server.go` | ADB forward setup, `app_process` launch, three-socket accept. Requires an adb-capable CI; build stub + smoke test only under `-tags scrcpy_e2e`. | 🚧 |
-| `pkg/bridge/scrcpy/session.go` | High-level `Session.OpenVideo() → <-chan Frame`, `Session.Send(ControlEvent)`, `Session.Close()`. | 🚧 |
-| `pkg/bridges/registry.go` | **Modify** — add sidecar probes: `helixqa-capture-linux`, `helixqa-kmsgrab`. | 🚧 |
 | `pkg/navigator/linux/libei.go` | godbus client for `org.freedesktop.portal.RemoteDesktop`; EI binary protocol writer. | 🚧 |
-| `pkg/navigator/linux/uinput.go` | `/dev/uinput` ioctl path (pure Go `syscall.Syscall`); udev group check at startup. | 🚧 |
 | `pkg/navigator/x11_executor.go` | **Modify** — move existing code behind `-tags x11legacy`; default is libei. | 🚧 |
-| `pkg/capture/android_capture.go` | **Modify** — delegate to `pkg/bridge/scrcpy` when `HELIX_SCRCPY_DIRECT=1`. | 🚧 |
+| `pkg/capture/android_capture.go` / `pkg/capture/android/direct.go` | **Modify / new** — delegate to `pkg/bridge/scrcpy` when `HELIX_SCRCPY_DIRECT=1`. Because the existing AndroidCapture uses its own `Frame` type (`pkg/capture.Frame`), the delegation should land as a parallel `pkg/capture/android/direct.go` emitting `pkg/capture/frames.Frame` values — keeps the existing flow untouched. | 🚧 |
 
 **Sidecar binaries (not Go host):**
 
