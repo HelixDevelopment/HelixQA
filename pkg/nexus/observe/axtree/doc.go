@@ -13,8 +13,12 @@
 //   - linux.go    — ✅ AT-SPI2 over D-Bus (godbus on the a11y bus) with
 //                   LinuxBus abstraction for test mocking. Covers 31
 //                   AT-SPI role codes → ARIA mapping. Shipped M31.
-//   - web.go      — ⏳ CDP Accessibility.getFullAXTree via go-rod /
-//                   chromedp (Phase 2 Step 2.6).
+//   - web.go      — ✅ CDP Accessibility.getFullAXTree via
+//                   chromedp/cdproto. WebFetcher narrow abstraction
+//                   (ChromedpFetcher is the production impl driving
+//                   a real Chromium). Flat CDP AXNode list
+//                   reassembled into tree form with cycle-guarded
+//                   recursion + ignored-node hoisting. Shipped M47.
 //   - android.go  — ✅ UIAutomator dump parser via AndroidDumper
 //                   abstraction (ADBDumper shells out to
 //                   `adb -s <serial> exec-out uiautomator dump /dev/tty`).

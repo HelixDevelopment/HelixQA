@@ -111,6 +111,91 @@ test_cases:
         expected: "DHash64 < 5 µs/op, DHash256 < 20 µs/op on AMD64"
     tags: [phase2, vision, hash, benchmark, article-v-8]
 
+  # ─── M47 · pkg/nexus/observe/axtree/web.go · CDP web AX ───
+  - id: PH2-AXTREE-WEB-001
+    name: "pkg/nexus/observe/axtree — WebSnapshotter happy path"
+    category: unit
+    priority: critical
+    platforms: [linux, web]
+    steps:
+      - name: "CDP AXNode list → Node tree, Platform=PlatformWeb"
+        action: "TestWebSnapshotter_Snapshot_FullTree"
+        expected: "PASS — 5 descendants, RootWebArea→document, RawID from CDP NodeID"
+      - name: "Attributes translate (role, name, value, focused, disabled→Enabled inversion)"
+        action: "TestWebSnapshotter_Snapshot_AttributesTranslated"
+        expected: "PASS — button focused, textbox value=admin + enabled (disabled=false)"
+      - name: "Multi-root trees (iframe boundaries) wrap in synthetic application root"
+        action: "TestWebSnapshotter_Snapshot_MultiRootWrapped"
+        expected: "PASS"
+      - name: "Ignored nodes elided; grandchildren hoisted"
+        action: "TestWebSnapshotter_Snapshot_IgnoredNodesHoistGrandchildren"
+        expected: "PASS — CDP aria-hidden wrappers don't lose their nested content"
+      - name: "Cycle guard prevents infinite recursion on malformed trees"
+        action: "TestWebSnapshotter_Snapshot_CycleGuard"
+        expected: "PASS — finite traversal even with a→b→a cycle"
+      - name: "Snapshotter interface conformance"
+        action: "TestWebSnapshotter_SatisfiesSnapshotterInterface"
+        expected: "PASS"
+    tags: [phase2, axtree, web, cdp, unit]
+
+  - id: PH2-AXTREE-WEB-002
+    name: "pkg/nexus/observe/axtree — CDP value/property decoding"
+    category: unit
+    priority: high
+    platforms: [linux, web]
+    steps:
+      - name: "axValueString handles nil / empty / JSON-quoted / numeric forms"
+        action: "TestAxValueString_Variants"
+        expected: "PASS"
+      - name: "axBoolProperty handles focused/selected/disabled with value unwrap"
+        action: "TestAxBoolProperty"
+        expected: "PASS — disabled=true maps to Enabled=false; missing prop → default; nil value → default"
+      - name: "Role normalization: StaticText→text, RootWebArea/WebView→document, genericContainer→group, ARIA passthrough"
+        action: "TestNormalizeWebRole"
+        expected: "PASS — 7 role transitions verified"
+    tags: [phase2, axtree, web, cdp, value-decoding]
+
+  - id: PH2-AXTREE-WEB-003
+    name: "pkg/nexus/observe/axtree — web error + lifecycle"
+    category: unit
+    priority: high
+    platforms: [linux, web]
+    steps:
+      - name: "Empty node list + no-root tree → ErrNoRoot"
+        action: "TestWebSnapshotter_Snapshot_EmptyTreeError + TestWebSnapshotter_Snapshot_NoRootNodeError"
+        expected: "Both PASS"
+      - name: "Fetcher error propagates"
+        action: "TestWebSnapshotter_Snapshot_FetcherError"
+        expected: "PASS"
+      - name: "Canceled context bails out"
+        action: "TestWebSnapshotter_Snapshot_ContextCanceled"
+        expected: "PASS"
+      - name: "Close is idempotent; Snapshot-after-Close returns ErrSnapshotClosed"
+        action: "TestWebSnapshotter_Close_Idempotent + TestWebSnapshotter_Snapshot_AfterCloseReturnsError"
+        expected: "Both PASS"
+      - name: "ChromedpFetcher guards nil AllocCtx + Close-before-Fetch idempotent"
+        action: "TestChromedpFetcher_NilAllocCtxError + TestChromedpFetcher_CloseIsIdempotent"
+        expected: "Both PASS"
+      - name: "NewWebSnapshotter wires ChromedpFetcher with allocator context"
+        action: "TestNewWebSnapshotter_UsesChromedpFetcher"
+        expected: "PASS"
+    tags: [phase2, axtree, web, cdp, error-paths]
+
+  # Production Chrome integration (blocked on operator-action per
+  # OPEN_POINTS_CLOSURE.md §10.3 — Chrome/Chromium with remote
+  # debugging enabled + a real page loaded).
+  - id: PH2-AXTREE-WEB-INT-001
+    name: "pkg/nexus/observe/axtree — live chromedp smoke test"
+    category: integration
+    priority: high
+    platforms: [linux, web]
+    requires: [chromium-with-remote-debugging]
+    steps:
+      - name: "ChromedpFetcher connects to a running Chromium and fetches AXTree"
+        action: "chromedp.NewExecAllocator + NewWebSnapshotter → Snapshot"
+        expected: "≥ 1 descendant for any loaded page"
+    tags: [phase2, axtree, web, cdp, integration, manual]
+
   # ─── M45 · pkg/vision/hash · DCT-based pHash ───
   - id: PH2-PHASH-001
     name: "pkg/vision/hash — pHash identity + discrimination"

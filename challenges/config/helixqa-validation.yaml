@@ -506,6 +506,27 @@ test_cases:
         expected: "PASS"
     tags: [phase2, gocore, vision, hash, phash, dct, regression]
 
+  - id: HQA-PHASE2-GOCORE-013
+    name: "OpenClawing4 Phase 2 Step 2.6 — CDP web axtree (chromedp/cdproto)"
+    category: regression
+    priority: critical
+    platforms: [all]
+    steps:
+      - name: "pkg/nexus/observe/axtree builds clean with web.go added"
+        action: "go build -mod=vendor ./pkg/nexus/observe/axtree/..."
+        expected: "exit 0"
+      - name: "All web axtree tests pass under -race"
+        action: "go test -mod=vendor -count=1 -race -run 'Web|NormalizeWebRole|AxValueString|AxBoolProperty|Chromedp' ./pkg/nexus/observe/axtree/..."
+        expected: "PASS, zero data races"
+      - name: "Cross-platform contract holds across 5 axtree backends"
+        action: "go test -mod=vendor -count=1 -run '_SatisfiesSnapshotterInterface' ./pkg/nexus/observe/axtree/..."
+        expected: "All 5 PASS — Linux + Android + iOS + Darwin + Web"
+      - name: "Phase-2 Step 2.6 (CDP web) closed — go.mod unlock made chromedp/cdproto available"
+        action: "grep -q 'chromedp/cdproto' vendor/modules.txt"
+        expected: "exit 0"
+    tags: [phase2, gocore, axtree, web, cdp, chromedp, cross-platform, regression]
+
+
   - id: HQA-PHASE2-GOCORE-012
     name: "OpenClawing4 Phase 2 Go-core — BlockMean + ChangedTiles partial-screen detection"
     category: regression
