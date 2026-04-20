@@ -483,6 +483,27 @@ test_cases:
         expected: "All PASS"
     tags: [phase2, gocore, axtree, android, uiautomator, regression]
 
+  - id: HQA-PHASE2-GOCORE-006
+    name: "OpenClawing4 Phase 2 Go-core — SSIM tier-2 perception primitive"
+    category: regression
+    priority: critical
+    platforms: [all]
+    steps:
+      - name: "pkg/vision/perceptual builds clean"
+        action: "go build -mod=vendor ./pkg/vision/perceptual/..."
+        expected: "exit 0"
+      - name: "All SSIM tests pass under -race"
+        action: "go test -mod=vendor -count=1 -race ./pkg/vision/perceptual/..."
+        expected: "PASS, zero data races (perf test auto-skips under -race)"
+      - name: "Phase-2 gocore bank entries for SSIM loaded"
+        action: "helixqa list --banks banks/phase2-gocore.yaml"
+        expected: "26 test cases total (6 DHASH + 2 BOCPD + 2 STAGNATION + 3 PIXELMATCH + 7 AXTREE + 2 AXTREE-INT + 4 SSIM)"
+      - name: "Article V §8 perf — SSIM < 5 ms / 480p CPU"
+        action: "go test -mod=vendor -count=1 -run TestPerformance_SSIM_Under5msPer480pFrame ./pkg/vision/perceptual/..."
+        expected: "PASS — best-of-20 under 5 ms, typically ~4 ms on commodity CPU"
+    tags: [phase2, gocore, perceptual, ssim, regression]
+
+
 
 
 

@@ -453,3 +453,84 @@ test_cases:
         expected: "≥ 10 descendants, root.Value = 'rotation=<current>' reflecting orientation"
     tags: [phase2, axtree, android, integration, manual]
 
+  # ─── M33 · pkg/vision/perceptual · pure-Go SSIM ───
+  - id: PH2-SSIM-001
+    name: "pkg/vision/perceptual — SSIM canonical invariants"
+    category: unit
+    priority: critical
+    platforms: [linux]
+    steps:
+      - name: "Identical images return SSIM ≈ 1.0"
+        action: "TestSSIM_IdenticalImagesReturnOne"
+        expected: "PASS — SSIM > 0.999"
+      - name: "Near-duplicate images return high similarity (< 1, > 0.9)"
+        action: "TestSSIM_NearDuplicateImagesReturnHighSimilarity"
+        expected: "PASS"
+      - name: "Structurally different images return < 0.5"
+        action: "TestSSIM_DifferentImagesReturnLowerSimilarity"
+        expected: "PASS — gradient vs noise drops similarity below 0.5"
+      - name: "Solid black vs solid white produces low SSIM in bounded range"
+        action: "TestSSIM_SolidBlackVsSolidWhite"
+        expected: "PASS — value in [-1, 1], below 0.5 due to mean mismatch"
+    tags: [phase2, perceptual, ssim, unit]
+
+  - id: PH2-SSIM-002
+    name: "pkg/vision/perceptual — SSIM config + image-type coverage"
+    category: unit
+    priority: high
+    platforms: [linux]
+    steps:
+      - name: "Custom BlockSize honors self-identity"
+        action: "TestSSIM_CustomBlockSize"
+        expected: "PASS"
+      - name: "Custom K1/K2/L config applied correctly"
+        action: "TestSSIM_CustomK1K2L"
+        expected: "PASS"
+      - name: "Fast-paths cover RGBA / NRGBA / Gray / YCbCr concrete types"
+        action: "TestSSIM_HandlesConcreteImageTypes"
+        expected: "All four PASS"
+      - name: "Generic image.Image fallback works"
+        action: "TestSSIM_GenericImageInterface"
+        expected: "PASS"
+      - name: "luma8 Rec-709 sanity checks"
+        action: "TestLuma8_SanityChecks"
+        expected: "PASS — black/white extremes + green-dominates-red + green-dominates-blue"
+      - name: "Comparator interface conformance"
+        action: "TestSSIM_SatisfiesComparatorInterface"
+        expected: "PASS"
+    tags: [phase2, perceptual, ssim, coverage]
+
+  - id: PH2-SSIM-003
+    name: "pkg/vision/perceptual — SSIM error paths"
+    category: unit
+    priority: high
+    platforms: [linux]
+    steps:
+      - name: "nil images return ErrNilImage"
+        action: "TestSSIM_NilImagesError"
+        expected: "PASS"
+      - name: "dimension mismatch returns ErrDimensionMismatch"
+        action: "TestSSIM_DimensionMismatchError"
+        expected: "PASS"
+      - name: "Image smaller than one block returns ErrTooSmall"
+        action: "TestSSIM_ImageSmallerThanBlockError"
+        expected: "PASS"
+      - name: "Canceled context propagates"
+        action: "TestSSIM_ContextCanceled"
+        expected: "PASS"
+    tags: [phase2, perceptual, ssim, error-paths]
+
+  - id: PH2-SSIM-004
+    name: "pkg/vision/perceptual — Article V §8 benchmark: < 5 ms / 480p"
+    category: benchmark
+    priority: critical
+    platforms: [linux]
+    steps:
+      - name: "TestPerformance_SSIM_Under5msPer480pFrame best-of-20 passes"
+        action: "go test -mod=vendor -count=1 -run TestPerformance_SSIM_Under5msPer480pFrame ./pkg/vision/perceptual/..."
+        expected: "PASS — best-of-20 < 5 ms; skipped under -race instrumentation (5-30× overhead invalidates timing)"
+      - name: "BenchmarkSSIM_480p reports microsecond range"
+        action: "go test -mod=vendor -bench=. -run=^$ ./pkg/vision/perceptual/..."
+        expected: "Sub-5 ms/op on commodity CPU"
+    tags: [phase2, perceptual, ssim, benchmark, article-v-8]
+

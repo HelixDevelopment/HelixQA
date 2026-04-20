@@ -5,21 +5,28 @@
 // HelixQA Phase-2 verification. See OpenClawing4.md §5.8 (tier-2 / tier-3
 // stagnation detection).
 //
-// Planned contents:
+// Contents:
 //
-//   - ssim.go       — SSIM / MS-SSIM via gocv (tier 2; ~3 ms on 480p luma).
-//                     Runs only when tier-1 dHash flags a suspicious frame.
-//   - dreamsim.go   — DreamSim REST client against a Triton-hosted model
-//                     (tier 3; 96% human agreement; used as the tiebreaker
-//                     on long stagnation segments).
-//   - lpips.go      — Optional LPIPS fallback when DreamSim isn't deployed.
+//   - ssim.go       — ✅ Pure-Go SSIM (Wang 2004) on non-overlapping 8×8
+//                     blocks. < 5 ms / 480p on commodity CPU. Tier-2
+//                     verifier that runs only when tier-1 dHash flags a
+//                     suspicious frame. Shipped M33.
+//   - dreamsim.go   — ⏳ DreamSim REST client against a Triton-hosted
+//                     model (tier 3; 96% human agreement).
+//   - lpips.go      — ⏳ Optional LPIPS fallback when DreamSim isn't
+//                     deployed.
 //
-// Interface target (perceptual.Comparator):
+// Interface (perceptual.Comparator) — satisfied by SSIM:
 //
 //	type Comparator interface {
 //	    Compare(ctx context.Context, a, b image.Image) (similarity float64, err error)
 //	}
 //
-// Nothing is implemented in this commit — placeholder for the Phase 2
-// perception tier. See OpenClawing4-Handover.md §4.
+// Rationale for pure-Go SSIM over the Kickoff-brief gocv plan:
+//
+//   - gocv requires CGO + OpenCV dev headers on every build host,
+//     contradicting HelixQA's CGO-free discipline.
+//   - SSIM is ~80 LoC of arithmetic; OpenCV's advantage is NEON/AVX
+//     intrinsics that the pure-Go block-based loop already beats
+//     within the Phase-2 budget.
 package perceptual
