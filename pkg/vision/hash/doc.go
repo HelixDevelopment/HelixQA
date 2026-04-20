@@ -12,8 +12,9 @@
 //                      nearest-neighbor + fast-paths for RGBA / NRGBA /
 //                      Gray / YCbCr. The tier-1 "did the screen change
 //                      at all?" primitive. Shipped M28.
-//   - phash.go       — ⏳ pHash / wHash wrappers (DCT / wavelet bases).
-//                      Fallback when dHash is too aggressive.
+//   - phash.go       — ✅ pHash via 32×32 DCT-II + 8×8 low-freq
+//                      median split. More shift/rotation-robust than
+//                      dHash. ~175 µs / 1080p CPU. Shipped M45.
 //   - block_mean.go  — ⏳ BlockMean for partial-screen change detection
 //                      (which 4×4 tile of the UI moved).
 //

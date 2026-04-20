@@ -111,6 +111,64 @@ test_cases:
         expected: "DHash64 < 5 µs/op, DHash256 < 20 µs/op on AMD64"
     tags: [phase2, vision, hash, benchmark, article-v-8]
 
+  # ─── M45 · pkg/vision/hash · DCT-based pHash ───
+  - id: PH2-PHASH-001
+    name: "pkg/vision/hash — pHash identity + discrimination"
+    category: unit
+    priority: critical
+    platforms: [linux]
+    steps:
+      - name: "Identical images produce Hamming distance 0"
+        action: "TestPHash_IdenticalImagesReturnZeroDistance"
+        expected: "PASS"
+      - name: "Uncorrelated images produce distance ≥ 15"
+        action: "TestPHash_CompletelyDifferentImagesReturnLargeDistance"
+        expected: "PASS — stays well below the 32-bit uncorrelated baseline but above noise"
+      - name: "1-pixel shift on 512×384 source produces distance ≤ 16 (pHash shift-robustness)"
+        action: "TestPHash_ShiftedImagesStillSimilar"
+        expected: "PASS"
+      - name: "Black vs white produce distinct hashes (DCT pipeline correctness)"
+        action: "TestPHash_HammingPackedCorrectly"
+        expected: "PASS"
+      - name: "PHasher satisfies the Hasher interface"
+        action: "TestPHash_SatisfiesHasherInterface"
+        expected: "PASS — same contract as DHasher, swappable in call sites"
+    tags: [phase2, vision, hash, phash, dct, unit]
+
+  - id: PH2-PHASH-002
+    name: "pkg/vision/hash — pHash DCT + error paths"
+    category: unit
+    priority: high
+    platforms: [linux]
+    steps:
+      - name: "DCT of constant image has only DC coefficient, all ACs zero"
+        action: "TestDCT32_ConstantInputHasOnlyDC"
+        expected: "PASS — fundamental DCT property"
+      - name: "DCT panics on wrong-size input (internal invariant guard)"
+        action: "TestDCT32_PanicsOnWrongSize"
+        expected: "PASS"
+      - name: "nil image → ErrNilImage; zero-bounds → ErrZeroBounds"
+        action: "TestPHash_NilImageError + TestPHash_ZeroBoundsError"
+        expected: "Both PASS"
+      - name: "RGBA / NRGBA / Gray all produce stable self-hashes"
+        action: "TestPHash_HandlesConcreteImageTypes"
+        expected: "All 3 PASS"
+    tags: [phase2, vision, hash, phash, dct, error-paths]
+
+  - id: PH2-PHASH-003
+    name: "pkg/vision/hash — pHash performance"
+    category: benchmark
+    priority: high
+    platforms: [linux]
+    steps:
+      - name: "pHash runs < 25 ms / 1080p frame (typically ~175 µs on commodity CPU)"
+        action: "TestPerformance_PHash_Under25msPer1080pFrame"
+        expected: "PASS"
+      - name: "BenchmarkPHash_1080p reports sub-millisecond operation"
+        action: "go test -mod=vendor -bench=BenchmarkPHash_1080p -run=^$ ./pkg/vision/hash/..."
+        expected: "~175 µs / op"
+    tags: [phase2, vision, hash, phash, benchmark]
+
   # ─── M29 · pkg/autonomous · BOCPD + stagnation integration ───
   - id: PH2-BOCPD-001
     name: "pkg/autonomous — BOCPD Normal-Gamma conjugate prior math"
