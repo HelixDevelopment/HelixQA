@@ -23,6 +23,7 @@
 #   - cmd/helixqa-x11grab       (M16) — Go sidecar: ffmpeg wrapper + NAL splitter + envelope framer
 #   - pkg/bridge/dbusportal     (M17) — shared D-Bus portal plumbing (Caller + DBusCaller + errors)
 #   - pkg/navigator/linux/libei (M17) — RemoteDesktop portal client for libei
+#   - capture/linux + android + libei (M18) — one-liner service-layer APIs
 #
 # Each entry pairs a concrete `go test` invocation with a coverage / behaviour
 # expectation. No entry here requires adb, an Android device, a desktop
@@ -693,4 +694,87 @@ test_cases:
       bug_id: "OPENCLAWING4-PHASE1-M17-LIBEI"
       description: "RemoteDesktop portal client for libei input emulation"
       fix_file: "pkg/navigator/linux/libei/portal.go"
+      fix_commit: "pending"
+
+  # ==================== M18: service-layer one-liner APIs ====================
+
+  - id: P1G-SERVICE-LINUX-001
+    name: "pkg/capture/linux: NewDefaultSource + NewDefaultSourceWithCallerFactory + CollectFrames"
+    category: integration
+    priority: critical
+    platforms: [all]
+    steps:
+      - name: "NewDefaultSource validates + wires all three factories"
+        action: "go test -run 'TestNewDefaultSource_' -count=1 ./pkg/capture/linux/..."
+        expected: "PASS — bad dimensions rejected; production defaults wired (Portal/KMSGrab/X11Grab); Backend=portal returned when BackendOverride=BackendPortal; Frames() non-nil before Start"
+      - name: "NewDefaultSourceWithCallerFactory + X11Grab tuning propagation"
+        action: "go test -run 'TestNewDefaultSourceWithCallerFactory_|TestServiceConfig_ToConfigPropagatesX11GrabTuning' -count=1 ./pkg/capture/linux/..."
+        expected: "PASS — HappyPath runs end-to-end via fakeCaller + stubStdoutRunner; NilFactory + BadDims rejected; --display :7 --fps 15 argv verified"
+      - name: "CollectFrames respects max + ctx"
+        action: "go test -run 'TestCollectFrames_RespectsMaxAndCtx' -count=1 -race ./pkg/capture/linux/..."
+        expected: "PASS — CollectFrames(max=3) returns exactly 3 frames when source emits 5"
+    tags: [phase1, gocore, capture-linux, service]
+    estimated_duration: "3s"
+    expected_result: "Production one-liner Linux capture entry point is fully wired"
+    fix_reference:
+      bug_id: "OPENCLAWING4-PHASE1-M18-LINUX"
+      description: "NewDefaultSource wiring every BackendFactory + DBusCallerFactory"
+      fix_file: "pkg/capture/linux/service.go"
+      fix_commit: "pending"
+
+  - id: P1G-SERVICE-ANDROID-001
+    name: "pkg/capture/android: NewDirectFromServerConfig + MustBeEnabled"
+    category: integration
+    priority: critical
+    platforms: [all]
+    steps:
+      - name: "Happy path chains scrcpy.StartServer + DirectSource"
+        action: "go test -run 'TestNewDirectFromServerConfig_HappyPath' -count=1 -race ./pkg/capture/android/..."
+        expected: "PASS — dial #1 (video) delivers one keyframe packet -> 1 frame with Source='scrcpy-direct', Width=1920"
+      - name: "Bad dimensions + StartServer error rollback"
+        action: "go test -run 'TestNewDirectFromServerConfig_(BadDimensions|StartServerError)' -count=1 ./pkg/capture/android/..."
+        expected: "PASS — ErrDirectConfig for zero dims; StartServer error bubble-through"
+      - name: "EnableControl forced true so input injection always works"
+        action: "go test -run 'TestNewDirectFromServerConfig_ForcesEnableControl' -count=1 ./pkg/capture/android/..."
+        expected: "PASS — launcher argv contains control=true even when ServerConfig.EnableControl=false"
+      - name: "MustBeEnabled env gating"
+        action: "go test -run 'TestMustBeEnabled' -count=1 ./pkg/capture/android/..."
+        expected: "PASS — unset env errors; HELIX_SCRCPY_DIRECT=1 passes"
+    tags: [phase1, gocore, capture-android, service]
+    estimated_duration: "3s"
+    expected_result: "Production Android scrcpy-direct one-liner is fully wired"
+    fix_reference:
+      bug_id: "OPENCLAWING4-PHASE1-M18-ANDROID"
+      description: "NewDirectFromServerConfig chains scrcpy Server + DirectSource"
+      fix_file: "pkg/capture/android/service.go"
+      fix_commit: "pending"
+
+  - id: P1G-SERVICE-LIBEI-001
+    name: "pkg/navigator/linux/libei: NewDefaultService + NewServiceWithFactory + NewServiceWithPortal"
+    category: integration
+    priority: critical
+    platforms: [all]
+    steps:
+      - name: "NewServiceWithFactory HappyPath: full RemoteDesktop handshake"
+        action: "go test -run 'TestNewServiceWithFactory_HappyPath' -count=1 -race ./pkg/navigator/linux/libei/..."
+        expected: "PASS — 3 portal calls (CreateSession+SelectDevices+Start) + 1 immediate call (ConnectToEIS); EISFile non-nil; GrantedDevices=Keyboard|Pointer; RestoreToken='tok-42'"
+      - name: "NilFactory + FactoryError"
+        action: "go test -run 'TestNewServiceWithFactory_(NilFactory|FactoryError)' -count=1 ./pkg/navigator/linux/libei/..."
+        expected: "PASS"
+      - name: "CreateSession failure closes caller + UserCancelled surfaces"
+        action: "go test -run 'TestNewServiceWithFactory_(CreateSessionFails|UserCancelled)' -count=1 ./pkg/navigator/linux/libei/..."
+        expected: "PASS — caller.Close invoked on failure; dbusportal.IsUserCancelled returns true for status=1"
+      - name: "NewServiceWithPortal NilPortal + nil-receiver accessors + Close idempotency"
+        action: "go test -run 'TestNewServiceWithPortal_NilPortal|TestService_NilReceiverAccessors|TestService_CloseIdempotent' -count=1 -race ./pkg/navigator/linux/libei/..."
+        expected: "PASS"
+      - name: "NewDefaultService uses production DBusCallerFactory (skips when bus absent)"
+        action: "go test -run 'TestNewDefaultService_UsesProductionFactory' -count=1 ./pkg/navigator/linux/libei/..."
+        expected: "PASS or SKIP — returns ErrNoSessionBus when DBUS_SESSION_BUS_ADDRESS unset; returns a portal error when set (no RemoteDesktop portal registered on test host)"
+    tags: [phase1, gocore, libei, service]
+    estimated_duration: "3s"
+    expected_result: "Production RemoteDesktop handshake one-liner is wired; EI wire-protocol client consumes EISFile()"
+    fix_reference:
+      bug_id: "OPENCLAWING4-PHASE1-M18-LIBEI"
+      description: "NewDefaultService + full handshake orchestrator"
+      fix_file: "pkg/navigator/linux/libei/service.go"
       fix_commit: "pending"
