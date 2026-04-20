@@ -23,7 +23,12 @@
 //   - darwin.go   — ⏳ Swift sidecar emitting JSON AXUIElement tree
 //                   (cmd/helixqa-axtree-darwin/, future).
 //   - windows.go  — ⏳ go-ole client wrapping IUIAutomation.
-//   - ios.go      — ⏳ idb describe-ui JSON parser.
+//   - ios.go      — ✅ idb describe-all JSON parser via IDBDumper
+//                   abstraction (IDBShellDumper shells out to
+//                   `idb ui describe-all --udid <UDID> --json`).
+//                   30-type AXUIElement→ARIA mapping, AXLabel →
+//                   Name fallback, array-or-object top-level tolerance.
+//                   Shipped M41.
 //
 // The unified Node type lets higher layers (navigator / action
 // resolution) treat every platform uniformly — RawID is the platform-

@@ -665,6 +665,28 @@ test_cases:
         expected: "Both PASS — retry instruction contains 'fill field' + 'Text exceeds MaxTextLen'"
     tags: [phase3, gocore, agent, sglang, guard, schema, regression]
 
+  # ─── OpenClawing4 Phase 6 Go-Core ───
+  - id: HQA-PHASE6-GOCORE-001
+    name: "OpenClawing4 Phase 6 Go-core — iOS axtree via idb JSON parser"
+    category: regression
+    priority: critical
+    platforms: [all]
+    steps:
+      - name: "pkg/nexus/observe/axtree builds clean with ios.go added"
+        action: "go build -mod=vendor ./pkg/nexus/observe/axtree/..."
+        expected: "exit 0"
+      - name: "All axtree tests (Linux + Android + iOS + shared node) pass under -race"
+        action: "go test -mod=vendor -count=1 -race ./pkg/nexus/observe/axtree/..."
+        expected: "PASS — 59 tests across three platforms, zero data races"
+      - name: "Phase-6 gocore bank entries for iOS loaded"
+        action: "helixqa list --banks banks/phase6-gocore.yaml"
+        expected: "5 test cases total (4 iOS unit + 1 integration)"
+      - name: "Cross-platform contract holds: Linux + Android + iOS all satisfy Snapshotter"
+        action: "go test -mod=vendor -count=1 -run '_SatisfiesSnapshotterInterface' ./pkg/nexus/observe/axtree/..."
+        expected: "All 3 PASS — same Node type emitted by three distinct backends"
+    tags: [phase6, gocore, axtree, ios, idb, cross-platform, regression]
+
+
 
 
 

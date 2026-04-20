@@ -1397,3 +1397,33 @@ test_cases:
       description: "Guards four structured-generation invariants. (1) MaxTextLen MUST count runes, not bytes — HelixQA runs multilingual (Cyrillic, CJK, etc.) and byte-counting would falsely reject perfectly valid 3-character Cyrillic input under MaxTextLen=3. (2) ScreenBounds checks MUST only fire on Kinds with coordinates (Click, Swipe); Type/Key/Done/Wait have no coords and must not be rejected for being 'outside bounds'. (3) The retry instruction MUST preserve the original goal text AND append the specific validation error — just re-sending the original wastes a VLM call because the model has no signal that the previous attempt failed. (4) ErrRetriesExhausted MUST be a unique sentinel so callers can errors.Is-branch on 'retries exhausted' vs 'VLM unreachable' vs 'context canceled' — all three are different failure modes with different recovery strategies."
       fix_file: "HelixQA/pkg/agent/sglang/sglang.go"
       fix_commit: "pending"
+
+  - id: FIX-OC4-014
+    name: "pkg/nexus/observe/axtree/ios — idb JSON tolerance + cross-platform Node contract"
+    category: regression
+    priority: high
+    platforms: [ios, all]
+    steps:
+      - name: "idb emits either {object} or [array] — parser handles both, falls back to scalar-JSON error"
+        action: "go test -mod=vendor -count=1 -run 'TestIOSSnapshotter_Snapshot_JSONArrayWrapped|TestIOSSnapshotter_Snapshot_SingleElementArrayUnwrapped|TestIOSSnapshotter_Snapshot_UnexpectedJSONKind' ./pkg/nexus/observe/axtree/..."
+        expected: "All PASS — array + object + scalar tolerance"
+      - name: "Empty / whitespace / empty-array all return ErrNoRoot (not silent acceptance of empty tree)"
+        action: "go test -mod=vendor -count=1 -run 'TestIOSSnapshotter_Snapshot_EmptyDumpError|TestIOSSnapshotter_Snapshot_WhitespaceOnlyDumpError|TestIOSSnapshotter_Snapshot_EmptyArrayError' ./pkg/nexus/observe/axtree/..."
+        expected: "All PASS"
+      - name: "RawID fallback to type:title when identifier is empty (never an empty handle)"
+        action: "go test -mod=vendor -count=1 -run TestIOSSnapshotter_Snapshot_RawIDFallsBackToTypeTitle ./pkg/nexus/observe/axtree/..."
+        expected: "PASS"
+      - name: "Name precedence: label > title (AX conventions)"
+        action: "go test -mod=vendor -count=1 -run 'TestIOSSnapshotter_Snapshot_AttributesTranslated|TestIOSSnapshotter_Snapshot_NameFallsBackToTitle' ./pkg/nexus/observe/axtree/..."
+        expected: "Both PASS"
+      - name: "Cross-platform Snapshotter contract holds: Linux + Android + iOS all satisfy the interface"
+        action: "go test -mod=vendor -count=1 -run '_SatisfiesSnapshotterInterface' ./pkg/nexus/observe/axtree/..."
+        expected: "All 3 PASS"
+    tags: [regression, phase6, openclawing4, axtree, ios, idb, cross-platform]
+    estimated_duration: "1s"
+    expected_result: "iOS axtree stays tolerant of idb output shape drift and preserves the cross-platform Node contract"
+    fix_reference:
+      bug_id: "FIX-OC4-014"
+      description: "Guards three orthogonal invariants for the iOS axtree backend. (1) JSON tolerance: real `idb ui describe-all` output shape has changed across idb versions (single object vs array of windows vs nested wrapper). The parser must accept array-or-object top-level silently; a scalar JSON (rare but possible on error) must fail cleanly, not silently produce a zero Node. (2) Name/RawID fallbacks: iOS AX conventions favor AXLabel over title for name, and custom widgets may lack an accessibility identifier — the fallback to 'type:title' means action resolution always has SOME handle to target, avoiding silent loss of interactivity. (3) Cross-platform Node contract: the whole point of axtree is that Linux + Android + iOS (+ future macOS/Windows) emit the SAME Node shape. The compile-time + runtime Snapshotter-interface checks are the primary regression guard against any platform drifting toward a Platform-specific subtype."
+      fix_file: "HelixQA/pkg/nexus/observe/axtree/ios.go"
+      fix_commit: "pending"
