@@ -20,6 +20,7 @@
 #   - pkg/capture/android       (M12) — scrcpy-direct DirectSource emitting frames.Frame
 #   - pkg/capture/linux         (M13) — production DBusCaller wrapping *dbus.Conn
 #   - pkg/capture/linux         (M14) — X11GrabFactory completing the BackendFactory triad
+#   - cmd/helixqa-x11grab       (M16) — Go sidecar: ffmpeg wrapper + NAL splitter + envelope framer
 #
 # Each entry pairs a concrete `go test` invocation with a coverage / behaviour
 # expectation. No entry here requires adb, an Android device, a desktop
@@ -569,4 +570,66 @@ test_cases:
       bug_id: "OPENCLAWING4-PHASE1-M14"
       description: "X11GrabFactory mirroring KMSGrabFactory pattern"
       fix_file: "pkg/capture/linux/x11grab.go"
+      fix_commit: "pending"
+
+  # ==================== M16: cmd/helixqa-x11grab sidecar ====================
+
+  - id: P1G-CMD-X11GRAB-001
+    name: "cmd/helixqa-x11grab: NAL splitter byte-exact across all start-code variants"
+    category: unit
+    priority: critical
+    platforms: [all]
+    steps:
+      - name: "3-byte + 4-byte + mixed start codes"
+        action: "go test -run 'TestSplitNALs_(ThreeByte|FourByte|Mixed)' -count=1 ./cmd/helixqa-x11grab/..."
+        expected: "PASS — each variant emits the correct NAL payloads in order"
+      - name: "Leading garbage dropped; no-start-code emits nothing"
+        action: "go test -run 'TestSplitNALs_(LeadingGarbageDropped|NoStartCode_EmitsNothing)' -count=1 ./cmd/helixqa-x11grab/..."
+        expected: "PASS"
+      - name: "Zero-runs + emulation escape + clean EOF + handler error"
+        action: "go test -run 'TestSplitNALs_(RunsOfZerosDontFalseTrigger|CleanEOF|HandlerError|FinalNALFlushedOnEOF)' -count=1 ./cmd/helixqa-x11grab/..."
+        expected: "PASS — emulation bytes passthrough; EOF flushes last NAL; handler errors propagate; io.EOF returned on clean termination"
+      - name: "Round-trip: encode + split recovers byte-exact payloads"
+        action: "go test -run 'TestSplitNALs_Roundtrip' -count=1 ./cmd/helixqa-x11grab/..."
+        expected: "PASS — 4 NALs with mixed 3/4-byte start codes round-trip"
+    tags: [phase1, gocore, x11grab, nal-splitter, unit]
+    estimated_duration: "3s"
+    expected_result: "NAL splitter is byte-exact across every Annex-B variant the H.264 spec permits"
+    fix_reference:
+      bug_id: "OPENCLAWING4-PHASE1-M16-NAL"
+      description: "H.264 Annex-B NAL splitter for x11grab sidecar"
+      fix_file: "cmd/helixqa-x11grab/nal.go"
+      fix_commit: "pending"
+
+  - id: P1G-CMD-X11GRAB-002
+    name: "cmd/helixqa-x11grab: argv parsing + ffmpeg argv shape + run() end-to-end with fake ffmpeg"
+    category: integration
+    priority: critical
+    platforms: [all]
+    steps:
+      - name: "parseArgv coverage"
+        action: "go test -run 'TestParseArgv_' -count=1 ./cmd/helixqa-x11grab/..."
+        expected: "PASS — --health; required flags with defaults; DISPLAY env fallback; explicit flags win over env; --extra whitespace split; unknown flag rejected"
+      - name: "ffmpegArgs shape byte-exact"
+        action: "go test -run 'TestFfmpegArgs_' -count=1 ./cmd/helixqa-x11grab/..."
+        expected: "PASS — full config argv matches the documented order; minimal config omits extras"
+      - name: "validateConfig 1 pass + 5 reject paths"
+        action: "go test -run 'TestValidateConfig' -count=1 ./cmd/helixqa-x11grab/..."
+        expected: "PASS"
+      - name: "run() end-to-end with fakeChild"
+        action: "go test -run 'TestRun_(WrapsNALsInEnvelopes|BadConfigRejected|StartErrorPropagates)' -count=1 -race ./cmd/helixqa-x11grab/..."
+        expected: "PASS — 3 NALs -> 3 envelopes with monotonic PTS + byte-exact bodies; bad config rejected before spawn; Start error verbatim"
+      - name: "Envelope interop with pkg/capture/linux"
+        action: "go test -run 'TestEnvelopeInterop' -count=1 ./cmd/helixqa-x11grab/..."
+        expected: "PASS — EncodeEnvelope + ReadEnvelope round-trip"
+      - name: "Health contract string is stable"
+        action: "go test -run 'TestHealth_PrintsOK' -count=1 ./cmd/helixqa-x11grab/..."
+        expected: "PASS — exitHealthOK == 'ok\\n'"
+    tags: [phase1, gocore, x11grab, integration]
+    estimated_duration: "6s"
+    expected_result: "Sidecar wraps fake ffmpeg output into valid envelopes; all argv + validation branches covered"
+    fix_reference:
+      bug_id: "OPENCLAWING4-PHASE1-M16-RUN"
+      description: "helixqa-x11grab runtime — argv, validation, run loop"
+      fix_file: "cmd/helixqa-x11grab/main.go"
       fix_commit: "pending"

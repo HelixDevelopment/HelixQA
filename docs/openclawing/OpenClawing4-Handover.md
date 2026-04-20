@@ -37,6 +37,7 @@ A forensic audit on 2026-04-19 (`OpenClawing4-Audit.md`) exposed the problems, a
 
 | Commit | Repo | URL pattern | Purpose |
 |---|---|---|---|
+| `0778a24` | HelixQA | 4 upstreams pushed | **Phase 1 M16** — `cmd/helixqa-x11grab/` Go sidecar: ffmpeg wrapper + NAL-splitter + envelope framer; ~800 LoC (code+tests), 68.8% pkg coverage, CGO-free |
 | `d761a75` | HelixQA | 4 upstreams pushed | **Phase 1 M14** — `pkg/capture/linux/x11grab.go` X11GrabFactory completing the Portal/KMSGrab/X11Grab triad; 80.1% pkg |
 | `12065b0` | HelixQA | 4 upstreams pushed | **Phase 1 M13** — `pkg/capture/linux/portal_dbus.go` production DBusCaller wrapping `*dbus.Conn` (Request/Response signal handshake); 79.4% pkg with integration smoke test against live bus |
 | `4bc738f` | HelixQA | 4 upstreams pushed | **Phase 1 M12** — `pkg/capture/android/direct.go` scrcpy-direct delegation emitting `frames.Frame`; new `scrcpy.NewSession` constructor; 88.9% pkg coverage |
@@ -117,6 +118,7 @@ packages below.
 | M12 | `pkg/capture/android/` (new) + `pkg/bridge/scrcpy/` (extended) | `direct.go` + `direct_test.go` + `session.go` NewSession export | 88.9 % android / 81.3 % scrcpy | `4bc738f` |
 | M13 | `pkg/capture/linux/` (extended) | `portal_dbus.go` + `portal_dbus_test.go` | 79.4 % pkg | `12065b0` |
 | M14 | `pkg/capture/linux/` (extended) | `x11grab.go` + `x11grab_test.go` | 80.1 % pkg | `d761a75` |
+| M16 | `cmd/helixqa-x11grab/` (new) | `doc.go` + `main.go` + `nal.go` + 2 tests | 68.8 % pkg | `0778a24` |
 
 Deliverable highlights:
 
@@ -179,7 +181,7 @@ Legend: ✅ done (commits in §2.1 + §2.5) · 🚧 remaining.
 | `pkg/capture/android/direct.go` | `DirectSource` adapter wrapping scrcpy.Server + Session, emitting `frames.Frame` values. Opt-in via `HELIX_SCRCPY_DIRECT=1` (exposed via `android.IsDirectEnabled`). Legacy `pkg/capture.AndroidCapture` stays untouched. | **✅** `4bc738f` |
 | `pkg/capture/linux/portal_dbus.go` | Production DBusCaller wrapping `*dbus.Conn` — Request/Response signal handshake, three constructors (SessionBus / injected / owned), `DBusCallerFactory` adapter satisfying `CallerFactory`. | **✅** `12065b0` |
 | `pkg/capture/linux/x11grab.go` | X11GrabFactory mirroring KMSGrabFactory — thin SidecarRunner wrapper around `helixqa-x11grab`. Arg shape: `--display <val> [--fps N] [extras...]`. Missing binary surfaces via Runner.Start error. | **✅** `d761a75` |
-| `cmd/helixqa-x11grab/` | Go sidecar that shells out to ffmpeg x11grab and wraps the raw H.264 Annex-B stream in envelope frames. ~100 LoC Go: NAL-unit splitter + envelope framer around ffmpeg stdout. | 🚧 |
+| `cmd/helixqa-x11grab/` | Go sidecar: `doc.go`/`main.go`/`nal.go`. CommandFactory + ChildProcess abstractions (testable), argv parser with DISPLAY env fallback, SplitNALs for 3-byte + 4-byte start codes with emulation-escape passthrough, 5s SIGINT → SIGKILL deferred cleanup, `--health` returns `ok\n`. Picked up by bridges.DiscoverTools as KindHelixQANative. | **✅** `0778a24` |
 | `pkg/capture/linux/xcbshm.go` | xcb-shm fallback for X11 / XWayland sessions (optional; x11grab factory covers this surface today). | 🚧 |
 | `pkg/capture/linux_capture.go` | **Modify** — route by `XDG_SESSION_TYPE`: wayland→portal, x11→xcbshm, legacy→existing x11grab behind `-tags x11legacy`. | 🚧 |
 | `pkg/navigator/linux/libei.go` | godbus client for `org.freedesktop.portal.RemoteDesktop`; EI binary protocol writer. | 🚧 |
