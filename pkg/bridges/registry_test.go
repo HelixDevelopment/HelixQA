@@ -101,7 +101,43 @@ func TestToolProbes_ContainsExpectedTools(t *testing.T) {
 }
 
 func TestToolProbes_Count(t *testing.T) {
-	assert.Equal(t, 9, len(toolProbes))
+	var external, native int
+	for _, p := range toolProbes {
+		switch p.kind {
+		case KindExternal:
+			external++
+		case KindHelixQANative:
+			native++
+		}
+	}
+	assert.Equal(t, 9, external, "external probe count must stay at 9")
+	assert.Equal(t, 13, native,
+		"helixqa-native probe count tracks the OpenClawing4 §6.1 sidecar roster")
+	assert.Equal(t, external+native, len(toolProbes))
+}
+
+func TestNativeTools_PartitionsByKind(t *testing.T) {
+	all := []ToolStatus{
+		{Name: "scrcpy", Kind: KindExternal},
+		{Name: "helixqa-capture-linux", Kind: KindHelixQANative},
+		{Name: "adb", Kind: KindExternal},
+		{Name: "helixqa-input", Kind: KindHelixQANative},
+	}
+	native := NativeTools(all)
+	ext := ExternalTools(all)
+	assert.Len(t, native, 2)
+	assert.Len(t, ext, 2)
+	for _, s := range native {
+		assert.Equal(t, KindHelixQANative, s.Kind)
+	}
+	for _, s := range ext {
+		assert.Equal(t, KindExternal, s.Kind)
+	}
+}
+
+func TestToolKind_String(t *testing.T) {
+	assert.Equal(t, "external", KindExternal.String())
+	assert.Equal(t, "helixqa-native", KindHelixQANative.String())
 }
 
 // --- probeVersion ---

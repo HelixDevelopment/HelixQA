@@ -34,6 +34,55 @@ type ToolStatus struct {
 	// Version is the version string reported by the tool, or
 	// empty if the version could not be determined.
 	Version string `json:"version,omitempty"`
+
+	// Kind distinguishes external tools from HelixQA's own sidecars.
+	Kind ToolKind `json:"kind"`
+}
+
+// NativeTools returns the subset of statuses that are HelixQA-native sidecars.
+func NativeTools(all []ToolStatus) []ToolStatus {
+	out := make([]ToolStatus, 0, len(all))
+	for _, s := range all {
+		if s.Kind == KindHelixQANative {
+			out = append(out, s)
+		}
+	}
+	return out
+}
+
+// ExternalTools returns the subset that are external third-party binaries.
+func ExternalTools(all []ToolStatus) []ToolStatus {
+	out := make([]ToolStatus, 0, len(all))
+	for _, s := range all {
+		if s.Kind == KindExternal {
+			out = append(out, s)
+		}
+	}
+	return out
+}
+
+// ToolKind distinguishes external third-party binaries from HelixQA's own
+// sidecar binaries shipped alongside the Go host. Consumers use this to
+// decide whether a missing tool is a packaging bug ("we ship it") or a
+// host-setup requirement ("operator must install it").
+type ToolKind int
+
+const (
+	// KindExternal is a third-party tool installed on the host (scrcpy,
+	// adb, ffmpeg, etc.).
+	KindExternal ToolKind = iota
+	// KindHelixQANative is a sidecar binary shipped by the HelixQA release
+	// (helixqa-capture-linux, helixqa-kmsgrab, helixqa-input, ...).
+	KindHelixQANative
+)
+
+func (k ToolKind) String() string {
+	switch k {
+	case KindHelixQANative:
+		return "helixqa-native"
+	default:
+		return "external"
+	}
 }
 
 // toolProbe describes how to discover a single tool.
@@ -45,10 +94,17 @@ type toolProbe struct {
 	// obtain a version string. If nil, version detection is
 	// skipped.
 	versionArgs []string
+
+	// kind distinguishes external tools from HelixQA sidecars.
+	kind ToolKind
 }
 
-// toolProbes is the ordered list of tools that DiscoverTools checks.
+// toolProbes is the ordered list of tools that DiscoverTools checks. External
+// third-party tools come first (existing set), followed by HelixQA's own
+// sidecar binaries added in OpenClawing4 Phase 1+ (see
+// docs/openclawing/OpenClawing4.md §6.1).
 var toolProbes = []toolProbe{
+	// External tools (pre-existing).
 	{name: "scrcpy", versionArgs: []string{"--version"}},
 	{name: "appium", versionArgs: []string{"--version"}},
 	{name: "allure", versionArgs: []string{"--version"}},
@@ -58,6 +114,21 @@ var toolProbes = []toolProbe{
 	{name: "adb", versionArgs: []string{"version"}},
 	{name: "npx", versionArgs: []string{"--version"}},
 	{name: "xdotool", versionArgs: []string{"version"}},
+
+	// HelixQA-native sidecars (OpenClawing4 Phase 1+).
+	{name: "helixqa-capture-linux", versionArgs: []string{"--health"}, kind: KindHelixQANative},
+	{name: "helixqa-kmsgrab", versionArgs: []string{"--health"}, kind: KindHelixQANative},
+	{name: "helixqa-input", versionArgs: []string{"--health"}, kind: KindHelixQANative},
+	{name: "helixqa-frida", versionArgs: []string{"--health"}, kind: KindHelixQANative},
+	{name: "helixqa-axtree-darwin", versionArgs: []string{"--health"}, kind: KindHelixQANative},
+	{name: "helixqa-capture-darwin", versionArgs: []string{"--health"}, kind: KindHelixQANative},
+	{name: "helixqa-capture-win", versionArgs: []string{"--health"}, kind: KindHelixQANative},
+	{name: "helixqa-omniparser", versionArgs: []string{"--health"}, kind: KindHelixQANative},
+	{name: "helixqa-langgraph", versionArgs: []string{"--health"}, kind: KindHelixQANative},
+	{name: "helixqa-browser-use", versionArgs: []string{"--health"}, kind: KindHelixQANative},
+	{name: "qa-vision-infer", versionArgs: []string{"--health"}, kind: KindHelixQANative},
+	{name: "qa-video-decode", versionArgs: []string{"--health"}, kind: KindHelixQANative},
+	{name: "qa-vulkan-compute", versionArgs: []string{"--health"}, kind: KindHelixQANative},
 }
 
 // DiscoverTools checks which QA tools are installed and reachable on
@@ -69,7 +140,7 @@ func DiscoverTools(runner CommandRunner) []ToolStatus {
 	statuses := make([]ToolStatus, 0, len(toolProbes))
 
 	for _, probe := range toolProbes {
-		status := ToolStatus{Name: probe.name}
+		status := ToolStatus{Name: probe.name, Kind: probe.kind}
 
 		path, err := exec.LookPath(probe.name)
 		if err != nil {
