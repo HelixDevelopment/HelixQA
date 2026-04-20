@@ -11,15 +11,27 @@ import (
 	"sync/atomic"
 
 	dbus "github.com/godbus/dbus/v5"
+
+	"digital.vasic.helixqa/pkg/bridge/dbusportal"
 )
 
-// Portal destination + object paths (xdg-desktop-portal ScreenCast spec).
-const (
-	portalDestination      = "org.freedesktop.portal.Desktop"
-	portalObjectPath       = "/org/freedesktop/portal/desktop"
-	portalScreenCastIface  = "org.freedesktop.portal.ScreenCast"
-	portalRequestInterface = "org.freedesktop.portal.Request"
+// Portal destination + object path are shared across every xdg-desktop-portal
+// interface; they live in pkg/bridge/dbusportal. Kept local here only:
+// the ScreenCast-specific interface name.
+const portalScreenCastIface = "org.freedesktop.portal.ScreenCast"
+
+// Caller re-exports dbusportal.Caller so existing callers continue to compile
+// without churning import paths. New code should import dbusportal directly.
+// CallerFactory already exists in pipewire.go with identical signature — we
+// do not re-alias it here to avoid a duplicate declaration; callers use
+// either linux.CallerFactory (the original) or dbusportal.CallerFactory.
+type (
+	Caller          = dbusportal.Caller
+	ErrPortalStatus = dbusportal.ErrPortalStatus
 )
+
+// IsUserCancelled forwards to dbusportal.IsUserCancelled.
+var IsUserCancelled = dbusportal.IsUserCancelled
 
 // StreamSourceType is the `types` bitmask accepted by SelectSources (spec §1).
 type StreamSourceType uint32
@@ -75,36 +87,6 @@ type StartResult struct {
 	RestoreToken string
 }
 
-// Caller abstracts the godbus Request/Response handshake the portal uses.
-// Production code uses dbusCaller (in portal_dbus.go) which holds a live
-// *dbus.Conn; tests inject a fake that records invocations and returns
-// scripted responses.
-//
-// CallPortal performs a portal method call that returns a Request object
-// (CreateSession, SelectSources, Start): the implementation MUST add a
-// Response signal match for the request path, make the call, wait for the
-// signal, and return (status, results). status==0 means success per
-// org.freedesktop.portal.Request.
-//
-// CallImmediate performs a method call whose return body is the result
-// (OpenPipeWireRemote): no Response signal waits. The returned []any is the
-// raw godbus Body slice so callers can extract UnixFDs without rewrapping.
-type Caller interface {
-	CallPortal(
-		ctx context.Context,
-		dest, path, iface, method string,
-		args ...any,
-	) (status uint32, results map[string]any, err error)
-
-	CallImmediate(
-		ctx context.Context,
-		dest, path, iface, method string,
-		args ...any,
-	) (raw []any, err error)
-
-	Close() error
-}
-
 // Portal wraps a Caller and exposes the four ScreenCast operations HelixQA
 // needs: CreateSession, SelectSources, Start, OpenPipeWireRemote.
 type Portal struct {
@@ -119,29 +101,6 @@ type Portal struct {
 // NewPortal returns a Portal driven by caller.
 func NewPortal(caller Caller) *Portal { return &Portal{caller: caller} }
 
-// ErrPortalStatus is returned when the portal emits a non-zero Response
-// status (1 == user cancelled, 2 == other failure).
-type ErrPortalStatus struct {
-	Method string
-	Status uint32
-	Result map[string]any
-}
-
-func (e *ErrPortalStatus) Error() string {
-	return fmt.Sprintf("linux/capture: portal %s returned status=%d results=%v", e.Method, e.Status, e.Result)
-}
-
-// IsUserCancelled reports whether err is a portal status=1 (user dismissed
-// the consent dialog). Useful for distinguishing "operator said no" from
-// technical failures.
-func IsUserCancelled(err error) bool {
-	var s *ErrPortalStatus
-	if errors.As(err, &s) {
-		return s.Status == 1
-	}
-	return false
-}
-
 // CreateSession opens a portal ScreenCast session. Returns the session object
 // path that SelectSources / Start / OpenPipeWireRemote need.
 func (p *Portal) CreateSession(ctx context.Context) (string, error) {
@@ -150,7 +109,7 @@ func (p *Portal) CreateSession(ctx context.Context) (string, error) {
 		"session_handle_token": dbus.MakeVariant(p.nextSessionToken("helixqa")),
 	}
 	status, results, err := p.caller.CallPortal(
-		ctx, portalDestination, portalObjectPath, portalScreenCastIface,
+		ctx, dbusportal.PortalDestination, dbusportal.PortalObjectPath, portalScreenCastIface,
 		"CreateSession", options,
 	)
 	if err != nil {
@@ -210,7 +169,7 @@ func (p *Portal) SelectSources(ctx context.Context, sessionPath string, opts Sel
 		options["restore_token"] = dbus.MakeVariant(opts.RestoreToken)
 	}
 	status, results, err := p.caller.CallPortal(
-		ctx, portalDestination, sessionPath, portalScreenCastIface,
+		ctx, dbusportal.PortalDestination, sessionPath, portalScreenCastIface,
 		"SelectSources", options,
 	)
 	if err != nil {
@@ -233,7 +192,7 @@ func (p *Portal) Start(ctx context.Context, sessionPath, parentWindow string) (S
 		"handle_token": dbus.MakeVariant(p.nextHandleToken("helixqa")),
 	}
 	status, results, err := p.caller.CallPortal(
-		ctx, portalDestination, sessionPath, portalScreenCastIface,
+		ctx, dbusportal.PortalDestination, sessionPath, portalScreenCastIface,
 		"Start", parentWindow, options,
 	)
 	if err != nil {
@@ -292,24 +251,8 @@ func parseStreamEntry(entry any) (Stream, bool) {
 	if !ok {
 		return Stream{}, false
 	}
-	meta := decodeVariantMap(tuple[1])
+	meta := dbusportal.DecodeVariantMap(tuple[1])
 	return Stream{NodeID: nodeID, Metadata: meta}, true
-}
-
-// decodeVariantMap converts a map[string]dbus.Variant (or equivalent raw form)
-// into a plain map[string]any so downstream code doesn't import godbus.
-func decodeVariantMap(v any) map[string]any {
-	switch m := v.(type) {
-	case map[string]dbus.Variant:
-		out := make(map[string]any, len(m))
-		for k, vv := range m {
-			out[k] = vv.Value()
-		}
-		return out
-	case map[string]any:
-		return m
-	}
-	return map[string]any{}
 }
 
 // OpenPipeWireRemote returns an *os.File holding the PipeWire socket the
@@ -321,7 +264,7 @@ func (p *Portal) OpenPipeWireRemote(ctx context.Context, sessionPath string) (*o
 	}
 	options := map[string]dbus.Variant{}
 	raw, err := p.caller.CallImmediate(
-		ctx, portalDestination, sessionPath, portalScreenCastIface,
+		ctx, dbusportal.PortalDestination, sessionPath, portalScreenCastIface,
 		"OpenPipeWireRemote", options,
 	)
 	if err != nil {

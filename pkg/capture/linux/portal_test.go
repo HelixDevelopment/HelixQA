@@ -12,6 +12,8 @@ import (
 	"testing"
 
 	dbus "github.com/godbus/dbus/v5"
+
+	"digital.vasic.helixqa/pkg/bridge/dbusportal"
 )
 
 // fakeCaller records every invocation and returns scripted responses.
@@ -84,7 +86,7 @@ func TestPortal_CreateSession_Success(t *testing.T) {
 		t.Fatalf("calls = %d", got)
 	}
 	c := fc.portalCalls[0]
-	if c.Dest != portalDestination || c.Path != portalObjectPath || c.Iface != portalScreenCastIface || c.Method != "CreateSession" {
+	if c.Dest != dbusportal.PortalDestination || c.Path != dbusportal.PortalObjectPath || c.Iface != portalScreenCastIface || c.Method != "CreateSession" {
 		t.Errorf("wrong call target: %+v", c)
 	}
 	// Options arg must include handle_token + session_handle_token.
@@ -419,12 +421,12 @@ func TestDecodeVariantMap(t *testing.T) {
 		"a": dbus.MakeVariant(uint32(5)),
 		"b": dbus.MakeVariant("hello"),
 	}
-	got := decodeVariantMap(in)
+	got := dbusportal.DecodeVariantMap(in)
 	if got["a"].(uint32) != 5 || got["b"].(string) != "hello" {
 		t.Errorf("got %+v", got)
 	}
 	// Nil / wrong type -> empty map (non-nil).
-	if got := decodeVariantMap("nope"); got == nil || len(got) != 0 {
+	if got := dbusportal.DecodeVariantMap("nope"); got == nil || len(got) != 0 {
 		t.Errorf("unexpected: %v", got)
 	}
 }
