@@ -1370,3 +1370,30 @@ test_cases:
       description: "Guards four orthogonal Runner invariants. (1) The Done action is the VLM's 'goal reached' signal — dispatching it to the device executor (uinput / scrcpy control) would result in a no-op at best and undefined behaviour at worst; Runner records Done in History but stops before Execute. (2) MaxSteps / Stuck termination must return a successful (err=nil) Result so callers can branch on Done/Stuck/MaxSteps flags — hard-erroring would force every caller into error wrapping for normal outcomes. (3) sameCore(a, b) ignores Reason because VLMs emit different rationalizations for the same literal action on each call; stuck detection must see through prose drift to catch the actual repetition. (4) StepTimeout bounds each iteration; without it, a hanging Screenshotter can wedge the agent loop indefinitely under the parent context's much-longer deadline."
       fix_file: "HelixQA/pkg/agent/graph/graph.go"
       fix_commit: "pending"
+
+  - id: FIX-OC4-013
+    name: "pkg/agent/sglang — schema enforcement + retry-with-feedback semantics"
+    category: regression
+    priority: critical
+    platforms: [linux, all]
+    steps:
+      - name: "MaxTextLen counts runes not bytes (Cyrillic 3-char text fits under MaxTextLen=3)"
+        action: "go test -mod=vendor -count=1 -run TestCheck_MaxTextLenCountsRunesNotBytes ./pkg/agent/sglang/..."
+        expected: "PASS — utf8.RuneCountInString-based counting preserves i18n inputs"
+      - name: "ScreenBounds ignored for non-coord Kinds so Type/Key/Done/Wait aren't falsely rejected"
+        action: "go test -mod=vendor -count=1 -run TestCheck_ScreenBoundsIgnoredForNonCoordKinds ./pkg/agent/sglang/..."
+        expected: "PASS"
+      - name: "Retry instruction preserves the original and appends the validation error"
+        action: "go test -mod=vendor -count=1 -run TestGuard_InvalidThenValidRetries ./pkg/agent/sglang/..."
+        expected: "PASS — retry.lastInstr contains the original 'fill field' AND the error 'Text exceeds MaxTextLen'"
+      - name: "Retries exhausted returns ErrRetriesExhausted so callers can errors.Is-branch"
+        action: "go test -mod=vendor -count=1 -run TestGuard_RetriesExhaustedReturnsSentinel ./pkg/agent/sglang/..."
+        expected: "PASS"
+    tags: [regression, phase3, openclawing4, agent, sglang, schema, retry]
+    estimated_duration: "1s"
+    expected_result: "Guard enforces structured-generation constraints even on non-deterministic VLM output"
+    fix_reference:
+      bug_id: "FIX-OC4-013"
+      description: "Guards four structured-generation invariants. (1) MaxTextLen MUST count runes, not bytes — HelixQA runs multilingual (Cyrillic, CJK, etc.) and byte-counting would falsely reject perfectly valid 3-character Cyrillic input under MaxTextLen=3. (2) ScreenBounds checks MUST only fire on Kinds with coordinates (Click, Swipe); Type/Key/Done/Wait have no coords and must not be rejected for being 'outside bounds'. (3) The retry instruction MUST preserve the original goal text AND append the specific validation error — just re-sending the original wastes a VLM call because the model has no signal that the previous attempt failed. (4) ErrRetriesExhausted MUST be a unique sentinel so callers can errors.Is-branch on 'retries exhausted' vs 'VLM unreachable' vs 'context canceled' — all three are different failure modes with different recovery strategies."
+      fix_file: "HelixQA/pkg/agent/sglang/sglang.go"
+      fix_commit: "pending"

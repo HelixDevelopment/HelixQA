@@ -469,3 +469,96 @@ test_cases:
         action: "TestUnwrapMaxStepsOrStuck_MaxSteps"
         expected: "PASS"
     tags: [phase3, agent, graph, result, unit]
+
+  # ─── M40 · pkg/agent/sglang · structured-generation guardrails ───
+  - id: PH3-SGLANG-001
+    name: "pkg/agent/sglang — Schema.Check invariants"
+    category: unit
+    priority: critical
+    platforms: [linux]
+    steps:
+      - name: "Baseline action.Validate() failure wraps ErrBaseValidate"
+        action: "TestCheck_BaselineValidateFails"
+        expected: "PASS"
+      - name: "Empty Schema accepts any valid action"
+        action: "TestCheck_EmptySchemaAcceptsValidAction"
+        expected: "PASS"
+      - name: "AllowedKinds whitelist filters correctly"
+        action: "TestCheck_AllowedKindsFilter + TestCheck_EmptyAllowedKindsMeansAll"
+        expected: "Both PASS"
+      - name: "RequireReason rejects empty + whitespace-only"
+        action: "TestCheck_RequireReasonAccepts + TestCheck_RequireReasonRejectsEmpty + TestCheck_RequireReasonRejectsWhitespaceOnly"
+        expected: "All PASS"
+    tags: [phase3, agent, sglang, schema, unit]
+
+  - id: PH3-SGLANG-002
+    name: "pkg/agent/sglang — MaxTextLen (runes, not bytes) + ScreenBounds"
+    category: unit
+    priority: critical
+    platforms: [linux]
+    steps:
+      - name: "MaxTextLen rejects overflow, accepts boundary, 0 means uncapped"
+        action: "TestCheck_MaxTextLenRejectsOverflow + TestCheck_MaxTextLenAcceptsBoundary + TestCheck_MaxTextLenZeroMeansUncapped"
+        expected: "All PASS"
+      - name: "MaxTextLen counts runes (Cyrillic 3-char text fits in MaxTextLen=3)"
+        action: "TestCheck_MaxTextLenCountsRunesNotBytes"
+        expected: "PASS"
+      - name: "ScreenBounds accepts inside click, rejects outside click"
+        action: "TestCheck_ScreenBoundsAcceptsInsideClick + TestCheck_ScreenBoundsRejectsOutsideClick"
+        expected: "Both PASS"
+      - name: "ScreenBounds checks both swipe endpoints"
+        action: "TestCheck_ScreenBoundsChecksBothSwipeEndpoints"
+        expected: "PASS"
+      - name: "ScreenBounds ignored for non-coord Kinds + zero rect means uncapped"
+        action: "TestCheck_ScreenBoundsIgnoredForNonCoordKinds + TestCheck_ScreenBoundsZeroMeansUncapped"
+        expected: "Both PASS"
+    tags: [phase3, agent, sglang, schema, bounds, unit]
+
+  - id: PH3-SGLANG-003
+    name: "pkg/agent/sglang — Guard retry behaviour"
+    category: unit
+    priority: critical
+    platforms: [linux]
+    steps:
+      - name: "First-attempt valid passes through (no retry, no extra actor call)"
+        action: "TestGuard_FirstAttemptValidPassesThrough"
+        expected: "PASS"
+      - name: "Invalid then valid → retries once, returns the valid action"
+        action: "TestGuard_InvalidThenValidRetries"
+        expected: "PASS — retry instruction preserves original + injects error"
+      - name: "OnRetry hook fires per retry attempt"
+        action: "TestGuard_OnRetryHookFiresPerRetry"
+        expected: "PASS"
+      - name: "Retries exhausted returns ErrRetriesExhausted"
+        action: "TestGuard_RetriesExhaustedReturnsSentinel"
+        expected: "PASS — actor called MaxRetries+1 times"
+      - name: "MaxRetries=0 defaults to 2"
+        action: "TestGuard_ZeroMaxRetriesUsesDefaultOfTwo"
+        expected: "PASS — actor called 3 times (2 retries + 1 initial)"
+      - name: "Custom RetryHeader honored"
+        action: "TestGuard_CustomRetryHeader"
+        expected: "PASS"
+    tags: [phase3, agent, sglang, guard, retry, unit]
+
+  - id: PH3-SGLANG-004
+    name: "pkg/agent/sglang — error paths + utility"
+    category: unit
+    priority: high
+    platforms: [linux]
+    steps:
+      - name: "Actor error wraps with attempt number"
+        action: "TestGuard_ActorErrorPropagatesWithAttempt"
+        expected: "PASS"
+      - name: "nil Actor returns ErrNoActor"
+        action: "TestGuard_NilActorReturnsErrNoActor"
+        expected: "PASS"
+      - name: "Canceled context bails out"
+        action: "TestGuard_ContextCanceled"
+        expected: "PASS"
+      - name: "ActorFunc adapter dispatches"
+        action: "TestActorFunc_Dispatches"
+        expected: "PASS"
+      - name: "pointIn honors Min-inclusive / Max-exclusive rect semantics"
+        action: "TestPointIn_MinInclusiveMaxExclusive"
+        expected: "PASS"
+    tags: [phase3, agent, sglang, error-paths, util, unit]

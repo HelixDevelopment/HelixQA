@@ -642,6 +642,30 @@ test_cases:
         expected: "PASS — Steps=3, executor saw 2 actions (Done excluded)"
     tags: [phase3, gocore, agent, graph, runner, regression]
 
+  - id: HQA-PHASE3-GOCORE-005
+    name: "OpenClawing4 Phase 3 Go-core — SGLang-style structured-generation guard"
+    category: regression
+    priority: critical
+    platforms: [all]
+    steps:
+      - name: "pkg/agent/sglang builds clean"
+        action: "go build -mod=vendor ./pkg/agent/sglang/..."
+        expected: "exit 0"
+      - name: "All Guard tests pass under -race with 100% coverage"
+        action: "go test -mod=vendor -count=1 -race -cover ./pkg/agent/sglang/..."
+        expected: "PASS, coverage = 100.0% of statements, zero data races"
+      - name: "Phase-3 bank has all sglang entries"
+        action: "helixqa list --banks banks/phase3-gocore.yaml"
+        expected: "25 test cases total (prior 21 + 4 sglang)"
+      - name: "Schema.Check enforces AllowedKinds / RequireReason / MaxTextLen / ScreenBounds"
+        action: "go test -mod=vendor -count=1 -run 'TestCheck_' ./pkg/agent/sglang/..."
+        expected: "All PASS (13 Check tests)"
+      - name: "Guard retry loop preserves original instruction + appends error on retry"
+        action: "go test -mod=vendor -count=1 -run 'TestGuard_InvalidThenValidRetries|TestGuard_RetriesExhaustedReturnsSentinel' ./pkg/agent/sglang/..."
+        expected: "Both PASS — retry instruction contains 'fill field' + 'Text exceeds MaxTextLen'"
+    tags: [phase3, gocore, agent, sglang, guard, schema, regression]
+
+
 
 
 
