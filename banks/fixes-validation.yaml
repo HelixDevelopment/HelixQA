@@ -1505,3 +1505,24 @@ test_cases:
       description: "Initial Reporter impl used plain string fields for the base64 data URLs. html/template's contextual autoescape sanitizes data: URLs by default (replacing them with #ZgotmplZ) because arbitrary data URLs CAN carry XSS payloads. Since our data URLs are produced by encodePNGDataURL under our control (always data:image/png;base64,<safe-base64>), switching the DataURL fields to template.URL bypasses the sanitization safely. The regression test asserts the unescaped prefix appears in output — any future refactor that drops the template.URL cast will fail this test immediately, before broken reports ship to QA sessions."
       fix_file: "HelixQA/pkg/regression/report.go"
       fix_commit: "pending"
+
+  - id: FIX-QA-2026-04-20-001
+    name: "E2E pipeline test — feature-rich fixture + fatal assertion"
+    category: regression
+    priority: critical
+    platforms: [linux, all]
+    steps:
+      - name: "TestFullPipeline uses createTestImageWithText (not smooth gradient) and require (not assert)"
+        action: "cd HelixQA && GOTOOLCHAIN=local go test -mod=vendor -count=1 -run 'TestE2E/TestFullPipeline' -timeout=60s ./tests/e2e/..."
+        expected: "PASS — detector returns >=1 element for button+text fixture; success log only fires when assertion genuinely passed"
+      - name: "Full e2e suite green"
+        action: "cd HelixQA && GOTOOLCHAIN=local go test -mod=vendor -count=1 -timeout=300s ./tests/e2e/..."
+        expected: "PASS — zero FAIL, zero false-positive success logs"
+    tags: [regression, e2e, pipeline, vision, false-positive, article-vii]
+    estimated_duration: "3s"
+    expected_result: "E2E pipeline test exercises real detectable features and fails hard (not just loud) on detector regressions"
+    fix_reference:
+      bug_id: "FIX-QA-2026-04-20-001"
+      description: "Two compounding bugs at the same site in tests/e2e/pipeline_test.go. (1) createTestFrames() output is a smooth RGB gradient — the contour-based ElementDetector correctly returns zero elements on featureless images, so the step was structurally guaranteed to fail. Fixed by routing the feature-rich createTestImageWithText helper (white canvas + blue button rect + text stripes) through the vision step — matches what the detector is designed to find. (2) The step used assert.NotEmpty (non-fatal in testify) and then unconditionally logged the success line — the exact false-positive anti-pattern that CLAUDE.md Article VII prohibits. Converted to require.NotEmpty so the success log is only reachable after every upstream assertion genuinely passed. Guards the invariant that 'test passed + success log printed' implies 'feature actually worked'."
+      fix_file: "HelixQA/tests/e2e/pipeline_test.go"
+      fix_commit: "pending"

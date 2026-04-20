@@ -34,23 +34,46 @@ func (s *E2ETestSuite) TearDownSuite() {
 	s.cancel()
 }
 
-// TestFullPipeline tests the complete video processing pipeline
+// TestFullPipeline tests the complete video processing pipeline.
+//
+// FIX-QA-2026-04-20-001: two bugs at the same site:
+//
+//  1. The test fed createTestFrames() output (a smooth RGB
+//     gradient) into the contour-based ElementDetector, which
+//     correctly returns zero elements for featureless images.
+//     The test's expectation that a smooth gradient would yield
+//     elements was wrong by construction. Fixed by routing the
+//     feature-rich createTestImageWithText helper (white canvas
+//     with a blue button rect + text stripes) through the
+//     vision step.
+//
+//  2. The test used `assert.NotEmpty` (non-fatal) and then
+//     unconditionally logged "✅ Full pipeline test completed
+//     successfully" — a false-positive pattern that printed
+//     success even when the assertion above failed. Converted
+//     to `require.NotEmpty` so the success log only fires when
+//     every step genuinely passed.
 func (s *E2ETestSuite) TestFullPipeline() {
-	// 1. Create test video source (simulated)
+	// 1. Create test video source (simulated).
 	s.T().Log("Step 1: Creating test video source...")
 	testFrames := s.createTestFrames(30)
 	require.NotEmpty(s.T(), testFrames)
 
-	// 2. Test GStreamer frame extraction
+	// 2. Test GStreamer frame extraction.
 	s.T().Log("Step 2: Testing frame extraction...")
 	extractor := s.setupFrameExtractor()
 	require.NotNil(s.T(), extractor)
 
-	// 3. Test vision processing
+	// 3. Test vision processing on an image with detectable
+	//    features (button rect + text stripes). Using the smooth
+	//    gradient from createTestFrames would be pointless — the
+	//    detector correctly returns no elements for featureless
+	//    inputs.
 	s.T().Log("Step 3: Testing vision processing...")
-	visionResult := s.processWithVision(testFrames[0])
-	require.NotNil(s.T(), visionResult)
-	assert.NotEmpty(s.T(), visionResult.Elements)
+	visionResult := s.processWithVision(s.createTestImageWithText())
+	require.NotNil(s.T(), visionResult, "detector must return a non-nil FrameResult")
+	require.NotEmpty(s.T(), visionResult.Elements,
+		"detector must find at least one element in the button + text fixture")
 
 	s.T().Log("✅ Full pipeline test completed successfully")
 }
