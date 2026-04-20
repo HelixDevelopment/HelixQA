@@ -1,6 +1,6 @@
 module digital.vasic.helixqa
 
-go 1.25.3
+go 1.26
 
 require (
 	digital.vasic.challenges v0.0.0
@@ -160,9 +160,8 @@ require (
 	google.golang.org/protobuf v1.36.11
 )
 
-// digital.vasic.llmsverifier is the module name inside
-// LLMsVerifier/llm-verifier/go.mod. The outer LLMsVerifier/ go.mod is a
-// wrapper module named "llmsverifier" that re-replaces to ./llm-verifier,
-// so pointing this replace at ../LLMsVerifier breaks the module-path
-// match. Point directly at the real module location.
-replace digital.vasic.llmsverifier => ../LLMsVerifier/llm-verifier
+// digital.vasic.llmsverifier — the LLMsVerifier submodule has a flat
+// layout with go.mod at the root (module path
+// digital.vasic.llmsverifier). The earlier llm-verifier/ wrapper is
+// historical; the correct replace target is the repo root.
+replace digital.vasic.llmsverifier => ../LLMsVerifier
