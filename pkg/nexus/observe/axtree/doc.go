@@ -30,7 +30,11 @@
 //                   impl). 44-role AXRole→ARIA mapping. Shipped M42.
 //                   Swift sidecar in cmd/helixqa-axtree-darwin/
 //                   remains operator-action (§10.3).
-//   - windows.go  — ⏳ go-ole client wrapping IUIAutomation.
+//   - windows.go  — ✅ Windows sidecar over HTTP emitting JSON
+//                   IUIAutomation tree. WindowsFetcher abstraction
+//                   + 32-control-type + 19-numeric-ID ARIA mapping.
+//                   Same sidecar pattern as darwin.go (Go host
+//                   stays CGO/COM-free). Shipped M48.
 //   - ios.go      — ✅ idb describe-all JSON parser via IDBDumper
 //                   abstraction (IDBShellDumper shells out to
 //                   `idb ui describe-all --udid <UDID> --json`).

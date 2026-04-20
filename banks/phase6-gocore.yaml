@@ -226,6 +226,118 @@ test_cases:
         expected: "PASS"
     tags: [phase6, axtree, darwin, http-fetcher, end-to-end]
 
+  # ─── M48 · pkg/nexus/observe/axtree/windows.go · UIA sidecar ───
+  - id: PH6-AXTREE-WINDOWS-001
+    name: "pkg/nexus/observe/axtree — WindowsSnapshotter happy path"
+    category: unit
+    priority: critical
+    platforms: [windows]
+    steps:
+      - name: "Snapshot with canned UIA JSON returns full tree (Platform=PlatformWindows)"
+        action: "TestWindowsSnapshotter_Snapshot_FullTree"
+        expected: "PASS — 4 descendants, role=window, RawID=main-window"
+      - name: "Attributes translate: Name > HelpText > AutomationID precedence, UIA flags"
+        action: "TestWindowsSnapshotter_Snapshot_AttributesTranslated + TestWindowsSnapshotter_Snapshot_NamePrecedence"
+        expected: "Both PASS — button focused + enabled, textbox value=admin + selected, HelpText fills in when Name empty"
+      - name: "RawID falls back to 'ClassName:Name' when AutomationID empty"
+        action: "TestWindowsSnapshotter_Snapshot_RawIDFallsBackToClassName"
+        expected: "PASS"
+      - name: "Snapshotter interface conformance"
+        action: "TestWindowsSnapshotter_SatisfiesSnapshotterInterface"
+        expected: "PASS"
+    tags: [phase6, axtree, windows, uia, unit]
+
+  - id: PH6-AXTREE-WINDOWS-002
+    name: "pkg/nexus/observe/axtree — Windows top-level JSON tolerance"
+    category: unit
+    priority: high
+    platforms: [windows]
+    steps:
+      - name: "JSON array with multiple windows (MDI) wraps in synthetic application root"
+        action: "TestWindowsSnapshotter_Snapshot_JSONArrayWrapped"
+        expected: "PASS"
+      - name: "Single-element array unwraps to the element directly"
+        action: "TestWindowsSnapshotter_Snapshot_SingleElementArrayUnwrapped"
+        expected: "PASS"
+    tags: [phase6, axtree, windows, json-tolerance]
+
+  - id: PH6-AXTREE-WINDOWS-003
+    name: "pkg/nexus/observe/axtree — UIA ControlType → ARIA mapping"
+    category: unit
+    priority: high
+    platforms: [windows]
+    steps:
+      - name: "All 32 symbolic ControlType names map correctly"
+        action: "TestWindowsControlTypeToARIA_SymbolicNames"
+        expected: "PASS — Button / Window / Pane / Edit / Text / Document / CheckBox / ... / Custom"
+      - name: "All 19 numeric ControlType IDs map correctly (UIAutomationCore.h ids)"
+        action: "TestWindowsControlTypeToARIA_NumericIDs"
+        expected: "PASS — 50000 / 50002 / 50004 / ... / 50038"
+      - name: "Unknown ControlType passes through as-is"
+        action: "TestWindowsControlTypeToARIA_UnknownPassesThrough"
+        expected: "PASS — custom controls still reasoned about"
+    tags: [phase6, axtree, windows, role-mapping]
+
+  - id: PH6-AXTREE-WINDOWS-004
+    name: "pkg/nexus/observe/axtree — Windows error + lifecycle"
+    category: unit
+    priority: high
+    platforms: [windows]
+    steps:
+      - name: "Empty / empty-array dump returns ErrNoRoot"
+        action: "TestWindowsSnapshotter_Snapshot_EmptyDumpError + TestWindowsSnapshotter_Snapshot_EmptyArrayError"
+        expected: "Both PASS"
+      - name: "Malformed JSON (object / array / scalar) returns parse errors"
+        action: "TestWindowsSnapshotter_Snapshot_MalformedJSON + TestWindowsSnapshotter_Snapshot_MalformedArray + TestWindowsSnapshotter_Snapshot_ScalarJSONError"
+        expected: "All PASS"
+      - name: "Fetcher error propagates"
+        action: "TestWindowsSnapshotter_Snapshot_FetcherError"
+        expected: "PASS"
+      - name: "Canceled context bails out"
+        action: "TestWindowsSnapshotter_Snapshot_ContextCanceled"
+        expected: "PASS"
+      - name: "Close is idempotent; Snapshot-after-Close returns ErrSnapshotClosed"
+        action: "TestWindowsSnapshotter_Close_Idempotent + TestWindowsSnapshotter_Snapshot_AfterCloseReturnsError"
+        expected: "Both PASS"
+    tags: [phase6, axtree, windows, error-paths]
+
+  - id: PH6-AXTREE-WINDOWS-005
+    name: "pkg/nexus/observe/axtree — WindowsHTTPFetcher httptest end-to-end"
+    category: unit
+    priority: high
+    platforms: [windows]
+    steps:
+      - name: "HTTPFetcher GETs sidecar URL + returns body"
+        action: "TestWindowsHTTPFetcher_ReturnsBody"
+        expected: "PASS"
+      - name: "HTTP 5xx / empty URL / invalid URL all error correctly"
+        action: "TestWindowsHTTPFetcher_HTTPErrorPropagates + TestWindowsHTTPFetcher_EmptyURLError + TestWindowsHTTPFetcher_InvalidURLError"
+        expected: "All PASS"
+      - name: "End-to-end: NewWindowsSnapshotter + httptest Windows sidecar"
+        action: "TestWindowsSnapshotter_EndToEndViaHTTPFetcher"
+        expected: "PASS — real HTTP roundtrip"
+      - name: "NewWindowsSnapshotter wires HTTPFetcher with URL"
+        action: "TestNewWindowsSnapshotter_UsesHTTPFetcher"
+        expected: "PASS"
+    tags: [phase6, axtree, windows, http-fetcher, end-to-end]
+
+  # Production UIA sidecar integration (blocked on operator-action —
+  # Windows sidecar build + IUIAutomation permissions).
+  - id: PH6-AXTREE-WINDOWS-INT-001
+    name: "pkg/nexus/observe/axtree — live Windows UIA sidecar smoke test"
+    category: integration
+    priority: high
+    platforms: [windows]
+    requires: [windows-helixqa-axtree-sidecar-running]
+    steps:
+      - name: "WindowsHTTPFetcher returns non-empty JSON from live sidecar"
+        action: "WindowsHTTPFetcher{URL: 'http://127.0.0.1:17421/snapshot'}.Fetch(ctx)"
+        expected: "len(body) > 100, starts with '{' or '['"
+      - name: "Snapshot on live frontmost Windows app enumerates UIA elements"
+        action: "Run WindowsSnapshotter.Snapshot against the frontmost Windows app"
+        expected: "≥ 5 descendants, at least one Button/Edit/Pane"
+    tags: [phase6, axtree, windows, integration, manual, uia]
+
   # Production Swift sidecar integration (blocked on operator-action
   # per OPEN_POINTS_CLOSURE.md §10.3 — macOS Xcode build of the
   # Swift sidecar + ScreenCaptureKit + Accessibility entitlements).

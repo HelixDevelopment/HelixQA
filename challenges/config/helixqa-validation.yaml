@@ -823,6 +823,27 @@ test_cases:
         expected: "PASS — real HTTP roundtrip"
     tags: [phase6, gocore, axtree, darwin, macos, swift-sidecar, cross-platform, regression]
 
+  - id: HQA-PHASE6-GOCORE-003
+    name: "OpenClawing4 Phase 6 — Windows axtree via UIA sidecar (6th backend)"
+    category: regression
+    priority: critical
+    platforms: [all]
+    steps:
+      - name: "pkg/nexus/observe/axtree builds clean with windows.go added"
+        action: "go build -mod=vendor ./pkg/nexus/observe/axtree/..."
+        expected: "exit 0"
+      - name: "All windows axtree tests pass under -race"
+        action: "go test -mod=vendor -count=1 -race -run 'Windows|WindowsControl' ./pkg/nexus/observe/axtree/..."
+        expected: "PASS, zero data races"
+      - name: "Cross-platform contract holds across SIX axtree backends"
+        action: "go test -mod=vendor -count=1 -run '_SatisfiesSnapshotterInterface' ./pkg/nexus/observe/axtree/..."
+        expected: "All 6 PASS — Linux + Android + iOS + Darwin + Web + Windows"
+      - name: "UIA ControlType mapping covers 32 symbolic + 19 numeric IDs"
+        action: "go test -mod=vendor -count=1 -run 'TestWindowsControlTypeToARIA_' ./pkg/nexus/observe/axtree/..."
+        expected: "All PASS — full ControlType coverage"
+    tags: [phase6, gocore, axtree, windows, uia, cross-platform, regression]
+
+
 
 
 
