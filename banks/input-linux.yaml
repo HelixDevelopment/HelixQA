@@ -1,0 +1,150 @@
+# SPDX-FileCopyrightText: 2026 Milos Vasic
+# SPDX-License-Identifier: Apache-2.0
+#
+# HelixQA Test Bank: Linux Input — feature-level integration (OpenClawing4 Phase 1)
+#
+# Exercises pkg/navigator/linux/uinput (direct /dev/uinput driver) and
+# pkg/navigator/linux/libei (RemoteDesktop portal handshake, future EI
+# wire client).
+#
+# Prerequisites per test — SKIP cleanly when absent:
+#   - /dev/uinput world-readable via udev rule (operator setup, no sudo)
+#   - xdg-desktop-portal-* implementing RemoteDesktop (GNOME 46+ / KDE 6+)
+#   - X11 session for x11_executor (optional; libei is primary)
+
+version: "1.0"
+name: "Linux Input Feature Bank"
+description: "Integration-level tests for pkg/navigator/linux/uinput + pkg/navigator/linux/libei (Wayland input via RemoteDesktop portal). X11 path via existing pkg/navigator/x11_executor remains as legacy fallback."
+metadata:
+  author: "vasic-digital"
+  app: "HelixQA"
+  version: "1.0.0"
+
+test_cases:
+  # ==================== uinput event encoder (offline, byte-exact) ====================
+
+  - id: INP-LIN-UINPUT-001
+    name: "/dev/uinput input_event wire format byte-exact on 64-bit Linux"
+    category: unit
+    priority: critical
+    platforms: [all]
+    steps:
+      - name: "EncodeEvent layout + size"
+        action: "go test -run 'TestEncodeEvent_' -count=1 ./pkg/navigator/linux/uinput/..."
+        expected: "PASS — EventSize=24; time 16 zero bytes; type@16 + code@18 + value@20 LE"
+      - name: "High-level writers emit expected event sequences"
+        action: "go test -run 'TestWrite' -count=1 ./pkg/navigator/linux/uinput/..."
+        expected: "PASS — KeyTap (4 events press/syn/release/syn); ClickAbs (6 events); MoveRel zero-delta suppression; Scroll zero-ticks suppression"
+    tags: [unit, uinput, wire-format, phase1]
+    estimated_duration: "2s"
+    expected_result: "input_event on-the-wire layout matches kernel ABI"
+    fix_reference:
+      bug_id: "OPENCLAWING4-PHASE1-INP-LIN-UINPUT"
+      description: "Pure-Go /dev/uinput driver"
+      fix_file: "pkg/navigator/linux/uinput/event.go"
+      fix_commit: "pending"
+
+  - id: INP-LIN-UINPUT-002
+    name: "/dev/uinput Open + ioctl sequence (integration; requires udev rule)"
+    category: integration
+    priority: high
+    platforms: [desktop]
+    steps:
+      - name: "Prerequisite: /dev/uinput writable by the helixqa group"
+        action: "stat -c '%a %G' /dev/uinput"
+        expected: "Mode 0660 GROUP helixqa (or equivalent); SKIP if /dev/uinput unreadable"
+      - name: "Operator test: open + create + destroy via small Go program"
+        action: "go run ./pkg/navigator/linux/uinput/... (integration main; not yet written)"
+        expected: "Device appears in /proc/bus/input/devices then disappears; no udev errors in dmesg"
+    tags: [integration, uinput, udev, phase1]
+    estimated_duration: "5s"
+    expected_result: "Real /dev/uinput create/destroy cycle works at operator-level permissions"
+    fix_reference:
+      bug_id: "OPENCLAWING4-PHASE1-INP-LIN-UINPUT-IOCTL"
+      description: "UI_DEV_CREATE / UI_DEV_DESTROY via unix.Syscall(SYS_IOCTL, ...)"
+      fix_file: "pkg/navigator/linux/uinput/device_linux.go"
+      fix_commit: "pending"
+
+  # ==================== libei RemoteDesktop portal handshake ====================
+
+  - id: INP-LIN-LIBEI-PORTAL-001
+    name: "libei portal handshake: CreateSession + SelectDevices + Start + ConnectToEIS"
+    category: integration
+    priority: critical
+    platforms: [all]
+    steps:
+      - name: "Unit tests with fakeCaller"
+        action: "go test -count=1 -race ./pkg/navigator/linux/libei/..."
+        expected: "PASS; coverage >= 90%"
+      - name: "Integration: against a real RemoteDesktop portal"
+        action: "Operator test (on GNOME 46+ / KDE 6+): small Go program calls libei.NewDefaultService; consent dialog appears"
+        expected: "Consent granted -> Service.EISFile() returns a valid Unix socket FD; libei-client can attach via this FD"
+    tags: [integration, libei, portal, wayland, phase1]
+    estimated_duration: "30s"
+    expected_result: "RemoteDesktop portal delivers an EIS FD ready for an EI client"
+    fix_reference:
+      bug_id: "OPENCLAWING4-PHASE1-INP-LIN-LIBEI-PORTAL"
+      description: "RemoteDesktop portal handshake"
+      fix_file: "pkg/navigator/linux/libei/portal.go"
+      fix_commit: "pending"
+
+  - id: INP-LIN-LIBEI-SERVICE-001
+    name: "libei.NewDefaultService + NewServiceWithFactory + NewServiceWithPortal"
+    category: integration
+    priority: high
+    platforms: [all]
+    steps:
+      - name: "Full fake-backed service test"
+        action: "go test -run 'TestNewServiceWithFactory_HappyPath' -count=1 -race ./pkg/navigator/linux/libei/..."
+        expected: "PASS — 3 portal calls + 1 immediate call (ConnectToEIS); EISFile non-nil; GrantedDevices = Keyboard | Pointer; RestoreToken='tok-42'"
+      - name: "Failure rollback branches"
+        action: "go test -run 'TestNewServiceWithFactory_(CreateSessionFails|UserCancelled|FactoryError|NilFactory)' -count=1 ./pkg/navigator/linux/libei/..."
+        expected: "PASS — caller.Close invoked; dbusportal.IsUserCancelled catches status=1"
+    tags: [integration, libei, service, phase1]
+    estimated_duration: "3s"
+    expected_result: "Service layer runs the full handshake + cleans up on failure"
+    fix_reference:
+      bug_id: "OPENCLAWING4-PHASE1-M18-LIBEI"
+      description: "libei.NewDefaultService orchestrator"
+      fix_file: "pkg/navigator/linux/libei/service.go"
+      fix_commit: "pending"
+
+  # ==================== Future EI wire-protocol client (placeholder) ====================
+
+  - id: INP-LIN-LIBEI-EI-001
+    name: "EI wire-protocol client emits valid key-down / key-up events (FUTURE — Phase 1 tail)"
+    category: integration
+    priority: medium
+    platforms: [all]
+    steps:
+      - name: "Placeholder: test will land with pkg/navigator/linux/libei/ei_client.go"
+        action: "SKIP — EI flatbuffers wire protocol not yet implemented (see OpenClawing4-Handover.md §3.1)"
+        expected: "Test marks itself skipped with OPENCLAWING4-PHASE1-INP-LIN-EI-CLIENT link"
+    tags: [integration, libei, ei-protocol, future, phase1-tail]
+    estimated_duration: "0s"
+    expected_result: "SKIP until ei_client.go lands"
+    fix_reference:
+      bug_id: "OPENCLAWING4-PHASE1-INP-LIN-EI-CLIENT"
+      description: "EI wire-protocol client (flatbuffers over Unix socket)"
+      fix_file: "pkg/navigator/linux/libei/ei_client.go"
+      fix_commit: "future"
+
+  # ==================== Regression gate ====================
+
+  - id: INP-LIN-REGRESSION-001
+    name: "All input-linux packages pass under -race"
+    category: regression
+    priority: critical
+    platforms: [all]
+    steps:
+      - name: "Race-detector sweep"
+        action: "go test -count=1 -race ./pkg/navigator/linux/uinput/... ./pkg/navigator/linux/libei/..."
+        expected: "PASS; zero races"
+    tags: [regression, race, phase1]
+    estimated_duration: "3s"
+    expected_result: "Input subsystem free of concurrency regressions"
+    fix_reference:
+      bug_id: "OPENCLAWING4-PHASE1-INP-LIN-REGR"
+      description: "Race-detector gate"
+      fix_file: "pkg/navigator/linux/{uinput,libei}/*.go"
+      fix_commit: "pending"

@@ -1,0 +1,155 @@
+# SPDX-FileCopyrightText: 2026 Milos Vasic
+# SPDX-License-Identifier: Apache-2.0
+#
+# HelixQA Test Bank: Android Capture — feature-level integration (OpenClawing4 Phase 1)
+#
+# Exercises pkg/capture/android (DirectSource + scrcpy-direct path) and
+# pkg/bridge/scrcpy (server lifecycle + v3 wire protocol) end-to-end.
+#
+# Prerequisites per test — all SKIP cleanly when absent:
+#   - ADB on PATH + a device reachable via `adb devices`
+#   - scrcpy-server.jar (pinned version; see OpenClawing4-Handover.md §3.1)
+#   - .devconnect listing the device IP (for reachability)
+#   - .devignore NOT listing the target device model
+
+version: "1.0"
+name: "Android Capture Feature Bank"
+description: "Integration-level tests for pkg/capture/android scrcpy-direct path + pkg/bridge/scrcpy server lifecycle + v3 wire protocol."
+metadata:
+  author: "vasic-digital"
+  app: "HelixQA"
+  version: "1.0.0"
+
+test_cases:
+  # ==================== scrcpy server lifecycle ====================
+
+  - id: CAP-AND-SERVER-001
+    name: "scrcpy.StartServer: full bring-up sequence against a real device"
+    category: integration
+    priority: critical
+    platforms: [android]
+    steps:
+      - name: "Prerequisite: device connected, helixqa-capture-demo installed, scrcpy-server.jar available"
+        action: "adb devices -l | grep device; test -x $(which helixqa-capture-demo); test -f /tmp/scrcpy-server.jar"
+        expected: "All three present; skip if any fails"
+      - name: "Run scrcpy-direct demo"
+        action: "helixqa-capture-demo --platform android --serial ${SERIAL} --jar /tmp/scrcpy-server.jar --scrcpy-version 3.0 --width 1920 --height 1080 --duration 5s"
+        expected: "Server launches; 3 sockets accepted; stdout lists 'frame N pts=... source=scrcpy-direct ...' lines; summary 'frames=~150'"
+      - name: "Verify clean teardown"
+        action: "adb reverse --list | grep scrcpy || true"
+        expected: "No scrcpy reverse forward left after the demo exits"
+    tags: [integration, scrcpy, server-lifecycle, android, phase1]
+    estimated_duration: "60s"
+    expected_result: "scrcpy server starts, streams video for 5s, tears down cleanly"
+    fix_reference:
+      bug_id: "OPENCLAWING4-PHASE1-CAP-AND-SERVER"
+      description: "scrcpy StartServer full lifecycle"
+      fix_file: "pkg/bridge/scrcpy/server.go"
+      fix_commit: "pending"
+
+  - id: CAP-AND-DEVGUARD-001
+    name: ".devignore enforcement: blocked device cannot start a scrcpy session"
+    category: security
+    priority: critical
+    platforms: [android]
+    steps:
+      - name: "Set up .devignore to include the attached device's model"
+        action: "getprop=$(adb -s $SERIAL shell getprop ro.product.model); echo $getprop > /tmp/ignore.test"
+        expected: ".devignore file contains the target device's product model"
+      - name: "Attempt to start scrcpy"
+        action: "helixqa-capture-demo --platform android --serial $SERIAL --devignore /tmp/ignore.test --jar /tmp/scrcpy-server.jar --scrcpy-version 3.0 --width 1 --height 1 --duration 1s"
+        expected: "Exits with error wrapping ErrDeviceBlocked; launcher never invoked; no scrcpy-server.jar pushed to device"
+    tags: [security, devguard, devignore, constitution, phase1]
+    estimated_duration: "10s"
+    expected_result: "Constitution-mandated .devignore check prevents capture on listed devices"
+    fix_reference:
+      bug_id: "OPENCLAWING4-PHASE1-CAP-AND-DEVGUARD"
+      description: "EnforceDevIgnore gate before any socket opens"
+      fix_file: "pkg/bridge/scrcpy/devguard.go"
+      fix_commit: "pending"
+
+  # ==================== v3 wire format regression ====================
+
+  - id: CAP-AND-WIRE-V3-001
+    name: "InjectTouchEvent byte-exact wire format (FIX-OC3-011 regression)"
+    category: regression
+    priority: critical
+    platforms: [all]
+    steps:
+      - name: "Unit test: 31-byte body including action_button + buttons uint32s"
+        action: "go test -run 'TestInjectTouchEvent_Marshal_v3Fields' -count=1 -v ./pkg/bridge/scrcpy/..."
+        expected: "PASS — wire bytes exact; v1.x (23-byte) format must never regress"
+    tags: [regression, wire-format, scrcpy, FIX-OC3-011, phase1]
+    estimated_duration: "1s"
+    expected_result: "scrcpy v3 control-packet layout is locked"
+    fix_reference:
+      bug_id: "FIX-OC3-011"
+      description: "OpenClawing3 §6.5 used wrong v1.x touch layout; v3 adds action_button+buttons uint32s"
+      fix_file: "pkg/bridge/scrcpy/protocol.go"
+      fix_commit: "pending"
+
+  # ==================== DirectSource <-> Session integration ====================
+
+  - id: CAP-AND-DIRECT-001
+    name: "DirectSource pumps scrcpy.VideoPacket into frames.Frame channel"
+    category: unit
+    priority: critical
+    platforms: [all]
+    steps:
+      - name: "Unit test with net.Pipe + canned v3 packets"
+        action: "go test -run 'TestDirectSource_PumpsFrames|TestDirectSource_SkipsConfigByDefault' -count=1 -race ./pkg/capture/android/..."
+        expected: "PASS — keyframes delivered; SPS/PPS skipped unless IncludeConfig=true; PTS carry-through"
+    tags: [unit, direct-source, android, phase1]
+    estimated_duration: "2s"
+    expected_result: "DirectSource correctly adapts VideoPacket -> frames.Frame"
+    fix_reference:
+      bug_id: "OPENCLAWING4-PHASE1-M12"
+      description: "DirectSource wire-format handling"
+      fix_file: "pkg/capture/android/direct.go"
+      fix_commit: "pending"
+
+  # ==================== Service-layer one-liner ====================
+
+  - id: CAP-AND-SERVICE-001
+    name: "android.NewDirectFromServerConfig chains Server + DirectSource with rollback"
+    category: integration
+    priority: critical
+    platforms: [all]
+    steps:
+      - name: "Happy path with fake Server/Launcher serialising dials"
+        action: "go test -run 'TestNewDirectFromServerConfig_HappyPath' -count=1 -race ./pkg/capture/android/..."
+        expected: "PASS — 1 keyframe delivered; frame metadata correct"
+      - name: "Bad dims + StartServer error rollback"
+        action: "go test -run 'TestNewDirectFromServerConfig_(BadDimensions|StartServerError)' -count=1 ./pkg/capture/android/..."
+        expected: "PASS"
+      - name: "EnableControl always forced true"
+        action: "go test -run 'TestNewDirectFromServerConfig_ForcesEnableControl' -count=1 ./pkg/capture/android/..."
+        expected: "PASS — argv contains control=true even when ServerConfig.EnableControl=false"
+    tags: [integration, service, android, phase1]
+    estimated_duration: "3s"
+    expected_result: "Production one-liner wires everything correctly + rolls back on failure"
+    fix_reference:
+      bug_id: "OPENCLAWING4-PHASE1-M18-ANDROID"
+      description: "NewDirectFromServerConfig"
+      fix_file: "pkg/capture/android/service.go"
+      fix_commit: "pending"
+
+  # ==================== Regression gate ====================
+
+  - id: CAP-AND-REGRESSION-001
+    name: "All pkg/capture/android + pkg/bridge/scrcpy tests pass under -race"
+    category: regression
+    priority: critical
+    platforms: [all]
+    steps:
+      - name: "Race-detector sweep across both packages"
+        action: "go test -count=1 -race ./pkg/capture/android/... ./pkg/bridge/scrcpy/..."
+        expected: "PASS; zero races; coverage >= 80% each"
+    tags: [regression, race, phase1]
+    estimated_duration: "5s"
+    expected_result: "Subsystem maintains coverage floor with no concurrency regressions"
+    fix_reference:
+      bug_id: "OPENCLAWING4-PHASE1-CAP-AND-REGR"
+      description: "Race-detector + coverage gate"
+      fix_file: "pkg/capture/android/*.go, pkg/bridge/scrcpy/*.go"
+      fix_commit: "pending"
