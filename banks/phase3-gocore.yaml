@@ -270,3 +270,104 @@ test_cases:
         action: "Cross-check a UI-TARS-proposed click coordinate against the live element grid"
         expected: "Returns (Element, true) with matching Type + Text"
     tags: [phase3, agent, omniparser, integration, manual, sidecar]
+
+  # ─── M38 · pkg/agent/ground · VLM + detector grounding layer ───
+  - id: PH3-GROUND-001
+    name: "pkg/agent/ground — Resolve bypass + pass-through semantics"
+    category: unit
+    priority: critical
+    platforms: [linux]
+    steps:
+      - name: "Non-click actions (type, key, wait, etc.) pass through unchanged"
+        action: "TestResolve_NonClickActionPassesThrough"
+        expected: "PASS — Grounder never rewrites non-click actions"
+      - name: "nil Detector bypasses grounding — Actor output flows through verbatim"
+        action: "TestResolve_NilDetectorBypassesGrounding"
+        expected: "PASS — operator can deploy without OmniParser and still get UI-TARS actions"
+    tags: [phase3, agent, ground, bypass, unit]
+
+  - id: PH3-GROUND-002
+    name: "pkg/agent/ground — click-inside-element snap to center"
+    category: unit
+    priority: critical
+    platforms: [linux]
+    steps:
+      - name: "Click inside a button snaps to the button center"
+        action: "TestResolve_ClickInsideElement_SnapsToCenterAndAnnotates"
+        expected: "PASS — coords move to bbox center, Reason annotated with [button: Sign in]"
+      - name: "Nested elements: smallest-enclosing wins over outer group"
+        action: "TestResolve_ClickInsideElement_PrefersSmallestEnclosing"
+        expected: "PASS — inner 100x100 button preferred over 1000x1000 group"
+      - name: "Low-confidence phantoms filtered below MinConfidence floor (0.5 default)"
+        action: "TestResolve_ClickInsideElement_FiltersLowConfidence"
+        expected: "PASS — 0.1-conf noise ignored, 0.95-conf button wins"
+      - name: "Output action always passes Action.Validate()"
+        action: "TestResolve_OutputPassesValidate"
+        expected: "PASS — grounding never produces an invalid action"
+    tags: [phase3, agent, ground, snap, unit]
+
+  - id: PH3-GROUND-003
+    name: "pkg/agent/ground — SnapToNearest behaviour"
+    category: unit
+    priority: high
+    platforms: [linux]
+    steps:
+      - name: "SnapToNearest=true snaps click to nearest element within MaxSnapDist"
+        action: "TestResolve_SnapToNearest_SnapsWhenClose"
+        expected: "PASS — 50px-off click snaps to button, Reason contains 'snapped'"
+      - name: "SnapToNearest=false passes the raw click through"
+        action: "TestResolve_SnapToNearest_DisabledPassesThrough"
+        expected: "PASS"
+      - name: "Click beyond default MaxSnapDist=64 is not snapped"
+        action: "TestResolve_SnapToNearest_RespectsMaxSnapDist"
+        expected: "PASS — 1800px-off click passes through"
+      - name: "Custom MaxSnapDist extends the snap range"
+        action: "TestResolve_SnapToNearest_CustomMaxSnapDist"
+        expected: "PASS — MaxSnapDist=200 enables a 100px snap the default wouldn't do"
+      - name: "Empty element grid passes the click through"
+        action: "TestResolve_SnapToNearest_NoElementsAvailable"
+        expected: "PASS"
+    tags: [phase3, agent, ground, snap-to-nearest, unit]
+
+  - id: PH3-GROUND-004
+    name: "pkg/agent/ground — error paths"
+    category: unit
+    priority: high
+    platforms: [linux]
+    steps:
+      - name: "nil Actor returns ErrNoActor"
+        action: "TestResolve_NilActorError"
+        expected: "PASS"
+      - name: "Actor error wraps with 'Actor.Act' in the chain"
+        action: "TestResolve_ActorErrorPropagates"
+        expected: "PASS"
+      - name: "Detector error wraps with 'Detector.Parse' in the chain"
+        action: "TestResolve_DetectorErrorPropagates"
+        expected: "PASS"
+      - name: "Canceled context bails out via the fake Actor"
+        action: "TestResolve_ContextCanceled"
+        expected: "PASS"
+    tags: [phase3, agent, ground, error-paths, unit]
+
+  - id: PH3-GROUND-005
+    name: "pkg/agent/ground — distToRect / findContaining / findNearest math"
+    category: unit
+    priority: high
+    platforms: [linux]
+    steps:
+      - name: "distToRect = 0 inside, correct for left/right/above/diagonal"
+        action: "TestDistToRect_PointInside + TestDistToRect_PointLeft + TestDistToRect_PointRight + TestDistToRect_PointAbove + TestDistToRect_PointDiagonal"
+        expected: "All PASS — Euclidean distance to nearest rect point"
+      - name: "findContaining ignores non-interactive elements"
+        action: "TestFindContaining_IgnoresNonInteractive"
+        expected: "PASS"
+      - name: "findNearest returns (_, _, false) on empty or all-low-conf input"
+        action: "TestFindNearest_Empty + TestFindNearest_FiltersConfidence"
+        expected: "Both PASS"
+      - name: "mergeReason + truncate + pointIn + bboxArea utilities"
+        action: "TestMergeReason_EmptyVLM + TestMergeReason_Both + TestTruncate + TestPointIn_Boundaries + TestBboxArea"
+        expected: "All PASS"
+      - name: "Actor + Detector interfaces satisfied by fakes (compile-time guard)"
+        action: "TestActorAndDetectorInterfaces_SatisfiedByFakes"
+        expected: "PASS"
+    tags: [phase3, agent, ground, geometry, util, unit]

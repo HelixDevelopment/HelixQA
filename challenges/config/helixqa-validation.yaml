@@ -596,6 +596,30 @@ test_cases:
         expected: "All PASS"
     tags: [phase3, gocore, agent, omniparser, grounding, regression]
 
+  - id: HQA-PHASE3-GOCORE-003
+    name: "OpenClawing4 Phase 3 Go-core — Grounder (VLM + Detector) cross-validation"
+    category: regression
+    priority: critical
+    platforms: [all]
+    steps:
+      - name: "pkg/agent/ground builds clean"
+        action: "go build -mod=vendor ./pkg/agent/ground/..."
+        expected: "exit 0"
+      - name: "All Grounder tests pass under -race with 100% coverage"
+        action: "go test -mod=vendor -count=1 -race -cover ./pkg/agent/ground/..."
+        expected: "PASS, coverage = 100.0% of statements, zero data races"
+      - name: "Phase-3 bank has the grounding entries"
+        action: "helixqa list --banks banks/phase3-gocore.yaml"
+        expected: "16 test cases total (prior 11 + 5 ground)"
+      - name: "Grounder degrades gracefully without the OmniParser sidecar"
+        action: "go test -mod=vendor -count=1 -run 'TestResolve_NilDetectorBypassesGrounding|TestResolve_NonClickActionPassesThrough' ./pkg/agent/ground/..."
+        expected: "Both PASS — nil Detector = pass-through, non-click actions untouched"
+      - name: "Snap-to-center + snap-to-nearest both respect MinConfidence + MaxSnapDist"
+        action: "go test -mod=vendor -count=1 -run 'TestResolve_ClickInsideElement|TestResolve_SnapToNearest' ./pkg/agent/ground/..."
+        expected: "All PASS — grounding is guarded against phantom detections and distant snaps"
+    tags: [phase3, gocore, agent, ground, grounding, vlm, regression]
+
+
 
 
 

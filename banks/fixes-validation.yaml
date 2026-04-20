@@ -1316,3 +1316,30 @@ test_cases:
       description: "Two orthogonal invariants are guarded. (1) Wire: Python sidecars canonically accept multipart/form-data uploads with an 'image' field — drifting to JSON+base64 or a different field name would silently break the sidecar, and the request-shape test catches that at commit time. (2) Geometry: Go's image.Rectangle uses Min-inclusive/Max-exclusive semantics, and FindInteractiveContaining must return the smallest enclosing interactive element (not any enclosing one) — otherwise a huge toolbar or background group would swallow every click the VLM proposes. Both invariants have explicit tests that would fail on any regression."
       fix_file: "HelixQA/pkg/agent/omniparser/omniparser.go"
       fix_commit: "pending"
+
+  - id: FIX-OC4-011
+    name: "pkg/agent/ground — VLM coordinate snap semantics + graceful degradation"
+    category: regression
+    priority: critical
+    platforms: [linux, all]
+    steps:
+      - name: "Grounder degrades to pass-through when Detector is nil"
+        action: "go test -mod=vendor -count=1 -run TestResolve_NilDetectorBypassesGrounding ./pkg/agent/ground/..."
+        expected: "PASS — Operator can deploy without OmniParser sidecar and still run"
+      - name: "Snap-to-center only fires inside an interactive, above-confidence element"
+        action: "go test -mod=vendor -count=1 -run 'TestResolve_ClickInsideElement_FiltersLowConfidence|TestFindContaining_IgnoresNonInteractive' ./pkg/agent/ground/..."
+        expected: "Both PASS"
+      - name: "Snap-to-nearest respects MaxSnapDist — never produces nonsensical long snaps"
+        action: "go test -mod=vendor -count=1 -run TestResolve_SnapToNearest_RespectsMaxSnapDist ./pkg/agent/ground/..."
+        expected: "PASS — 1800px-off click passes through with default MaxSnapDist=64"
+      - name: "Grounded output always passes Action.Validate()"
+        action: "go test -mod=vendor -count=1 -run TestResolve_OutputPassesValidate ./pkg/agent/ground/..."
+        expected: "PASS"
+    tags: [regression, phase3, openclawing4, agent, ground, snap, degradation]
+    estimated_duration: "1s"
+    expected_result: "Grounder stays safe, auditable, and degradable"
+    fix_reference:
+      bug_id: "FIX-OC4-011"
+      description: "Guards three grounding invariants. (1) Graceful degradation: the Grounder must pass UI-TARS actions through unchanged when the Detector (OmniParser sidecar) is nil — the sidecar is operator-action-gated (§10.3), and hard-failing when it is unavailable would brick the agent pipeline in every deployment without one. (2) Confidence floor: low-confidence OmniParser elements (< 0.5 default) are phantom detections on busy screens and MUST NOT capture VLM clicks, otherwise the agent targets noise. (3) MaxSnapDist cap: snap-to-nearest without a distance ceiling produces nonsensical long-range snaps across huge empty regions; the default 64px keeps snaps visually local. All three are guarded by explicit tests."
+      fix_file: "HelixQA/pkg/agent/ground/ground.go"
+      fix_commit: "pending"
