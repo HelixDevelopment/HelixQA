@@ -503,6 +503,27 @@ test_cases:
         expected: "PASS — best-of-20 under 5 ms, typically ~4 ms on commodity CPU"
     tags: [phase2, gocore, perceptual, ssim, regression]
 
+  - id: HQA-PHASE2-GOCORE-007
+    name: "OpenClawing4 Phase 2 Go-core — DreamSim tier-3 REST client"
+    category: regression
+    priority: critical
+    platforms: [all]
+    steps:
+      - name: "pkg/vision/perceptual still builds clean with dreamsim.go added"
+        action: "go build -mod=vendor ./pkg/vision/perceptual/..."
+        expected: "exit 0"
+      - name: "All DreamSim tests pass under -race (httptest mock covers the full wire path)"
+        action: "go test -mod=vendor -count=1 -race -run DreamSim ./pkg/vision/perceptual/..."
+        expected: "PASS, zero data races"
+      - name: "Phase-2 gocore bank entries for DreamSim loaded"
+        action: "helixqa list --banks banks/phase2-gocore.yaml"
+        expected: "30 test cases total (prior 26 + 3 DreamSim unit + 1 integration)"
+      - name: "Similarity mapping preserves the [-1, 1] canonical range"
+        action: "go test -mod=vendor -count=1 -run 'TestDreamSim_IdenticalImages|TestDreamSim_HalfSimilarity|TestDreamSim_Disagreement' ./pkg/vision/perceptual/..."
+        expected: "All PASS — 1.0 → 1.0, 0.5 → 0.0, 0.0 → -1.0"
+    tags: [phase2, gocore, perceptual, dreamsim, triton, kserve, regression]
+
+
 
 
 

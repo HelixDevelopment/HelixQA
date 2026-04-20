@@ -11,8 +11,13 @@
 //                     blocks. < 5 ms / 480p on commodity CPU. Tier-2
 //                     verifier that runs only when tier-1 dHash flags a
 //                     suspicious frame. Shipped M33.
-//   - dreamsim.go   — ⏳ DreamSim REST client against a Triton-hosted
-//                     model (tier 3; 96% human agreement).
+//   - dreamsim.go   — ✅ DreamSim REST client (Sundar 2023) against a
+//                     Triton-hosted model (tier 3; 96% human
+//                     agreement). KServe v2 /infer wire format,
+//                     base64-PNG inputs, similarity mapped from [0, 1]
+//                     to the canonical [-1, 1]. Shipped M34; Triton
+//                     deployment remains an operator action tracked
+//                     in docs/OPEN_POINTS_CLOSURE.md §10.3.
 //   - lpips.go      — ⏳ Optional LPIPS fallback when DreamSim isn't
 //                     deployed.
 //

@@ -534,3 +534,93 @@ test_cases:
         expected: "Sub-5 ms/op on commodity CPU"
     tags: [phase2, perceptual, ssim, benchmark, article-v-8]
 
+  # ─── M34 · pkg/vision/perceptual · DreamSim REST client ───
+  - id: PH2-DREAMSIM-001
+    name: "pkg/vision/perceptual — DreamSim tier-3 similarity mapping"
+    category: unit
+    priority: critical
+    platforms: [linux]
+    steps:
+      - name: "Raw similarity 1.0 → canonical 1.0"
+        action: "TestDreamSim_IdenticalImagesMapToOne"
+        expected: "PASS"
+      - name: "Raw 0.5 → canonical 0.0"
+        action: "TestDreamSim_HalfSimilarityMapsToZero"
+        expected: "PASS"
+      - name: "Raw 0.0 → canonical -1.0"
+        action: "TestDreamSim_DisagreementMapsToMinusOne"
+        expected: "PASS"
+      - name: "Comparator interface conformance"
+        action: "TestDreamSim_SatisfiesComparatorInterface"
+        expected: "PASS"
+    tags: [phase2, perceptual, dreamsim, unit]
+
+  - id: PH2-DREAMSIM-002
+    name: "pkg/vision/perceptual — DreamSim Triton KServe v2 wire format"
+    category: unit
+    priority: high
+    platforms: [linux]
+    steps:
+      - name: "Request body has 2 BYTES inputs named IMAGE_A / IMAGE_B, PNG-base64"
+        action: "TestDreamSim_RequestShapeIsKServeV2"
+        expected: "PASS"
+      - name: "URL path uses the configured model name"
+        action: "TestDreamSim_URLIncludesModelName"
+        expected: "PASS — /v2/models/{model}/infer"
+      - name: "Output-name resolution handles SIMILARITY / similarity / arbitrary"
+        action: "TestDreamSim_LowercaseSimilarityOutputName + TestDreamSim_OutputNameFallback"
+        expected: "Both PASS"
+      - name: "encodePNGBase64 produces valid PNG magic prefix"
+        action: "TestEncodePNGBase64_NotEmpty"
+        expected: "PASS"
+    tags: [phase2, perceptual, dreamsim, wire-format, kserve]
+
+  - id: PH2-DREAMSIM-003
+    name: "pkg/vision/perceptual — DreamSim error paths"
+    category: unit
+    priority: high
+    platforms: [linux]
+    steps:
+      - name: "nil images → ErrNilImage"
+        action: "TestDreamSim_NilImagesError"
+        expected: "PASS"
+      - name: "empty endpoint → ErrDreamSimEndpoint"
+        action: "TestDreamSim_EmptyEndpointError"
+        expected: "PASS"
+      - name: "HTTP 5xx propagates with status + body in error"
+        action: "TestDreamSim_HTTPErrorPropagates"
+        expected: "PASS"
+      - name: "malformed JSON response fails with decode error"
+        action: "TestDreamSim_MalformedResponseError"
+        expected: "PASS"
+      - name: "no outputs / empty SIMILARITY data → ErrDreamSimResponse"
+        action: "TestDreamSim_NoOutputsReturnsErrDreamSimResponse + TestDreamSim_EmptySimilarityDataReturnsError"
+        expected: "Both PASS"
+      - name: "Canceled context bails out of the HTTP call"
+        action: "TestDreamSim_ContextCanceled"
+        expected: "PASS"
+      - name: "Zero-value Model + HTTPClient defaults apply"
+        action: "TestDreamSim_DefaultsAppliedWhenFieldsZeroed"
+        expected: "PASS — Model defaults to 'dreamsim', HTTPClient to 200 ms timeout"
+      - name: "Invalid endpoint URL fails at request construction"
+        action: "TestDreamSim_InvalidEndpointURLError"
+        expected: "PASS"
+    tags: [phase2, perceptual, dreamsim, error-paths]
+
+  # Production Triton integration (blocked on operator action per
+  # OPEN_POINTS_CLOSURE.md §10.3 — DreamSim ONNX deployment to thinker.local)
+  - id: PH2-DREAMSIM-INT-001
+    name: "pkg/vision/perceptual — DreamSim live Triton smoke test"
+    category: integration
+    priority: high
+    platforms: [linux]
+    requires: [triton-thinker-local-dreamsim-deployed]
+    steps:
+      - name: "Live endpoint returns similarity ≈ 1.0 for identical inputs"
+        action: "DreamSim{Endpoint: 'http://thinker.local:8000'}.Compare(identical, identical)"
+        expected: "similarity > 0.95"
+      - name: "Live endpoint handles 480p inputs within the 200 ms budget"
+        action: "Compare twice against a 854×480 pair"
+        expected: "< 200 ms GPU round-trip per OpenClawing4.md §5.8 tier-3 budget"
+    tags: [phase2, perceptual, dreamsim, integration, manual, triton]
+

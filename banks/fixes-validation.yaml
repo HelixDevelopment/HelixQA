@@ -1223,3 +1223,24 @@ test_cases:
       description: "Initial SSIM impl landed at 6.5 ms / 480p frame — over the Phase-2 tier-2 budget (5 ms). Fixed in three steps: (1) uint64 accumulators in the block-stats inner loop to avoid float64 conversion per pixel; (2) rec709Luma fast-path rewrite for image.RGBA/NRGBA/Gray using direct Pix-slice indexing with pre-computed base offsets; (3) warm-up iterations + best-of-20 measurement in the perf test to eliminate first-run allocator/cache noise. Also adds build-tag-based underRace constant so the perf test skips under -race instrumentation, which inflates timing 5-30× and makes the budget assertion meaningless."
       fix_file: "HelixQA/pkg/vision/perceptual/ssim.go"
       fix_commit: "pending"
+
+  - id: FIX-OC4-007
+    name: "pkg/vision/perceptual/dreamsim — Triton KServe v2 wire-format regression guard"
+    category: regression
+    priority: high
+    platforms: [linux, all]
+    steps:
+      - name: "Request shape matches KServe v2 /infer contract (2 BYTES inputs named IMAGE_A/IMAGE_B with PNG-base64 data, Shape=[1])"
+        action: "go test -mod=vendor -count=1 -run 'TestDreamSim_RequestShapeIsKServeV2|TestDreamSim_URLIncludesModelName' ./pkg/vision/perceptual/..."
+        expected: "Both PASS — the wire format is frozen against breakage"
+      - name: "Similarity mapping from [0, 1] → [-1, 1] stays linear"
+        action: "go test -mod=vendor -count=1 -run 'TestDreamSim_IdenticalImages|TestDreamSim_HalfSimilarity|TestDreamSim_Disagreement' ./pkg/vision/perceptual/..."
+        expected: "1.0 → 1.0, 0.5 → 0.0, 0.0 → -1.0"
+    tags: [regression, phase2, openclawing4, perceptual, dreamsim, triton, kserve]
+    estimated_duration: "1s"
+    expected_result: "DreamSim client stays compatible with Triton KServe v2 even as the Go client and Triton server version independently"
+    fix_reference:
+      bug_id: "FIX-OC4-007"
+      description: "Guards the DreamSim client's compliance with Triton KServe v2 /infer — the wire format that the deployed DreamSim ONNX runtime expects. The client uses BYTES datatype with Shape=[1] and base64-PNG data, the canonical envelope for image-in-bytes inputs. The similarity output is mapped from DreamSim's native [0, 1] to the canonical Comparator [-1, 1] range (1.0 → 1.0, 0.5 → 0.0, 0.0 → -1.0); this mapping must stay linear or the tier-3 tiebreaker score loses comparability with SSIM and dHash distances."
+      fix_file: "HelixQA/pkg/vision/perceptual/dreamsim.go"
+      fix_commit: "pending"
