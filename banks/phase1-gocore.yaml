@@ -18,6 +18,8 @@
 #   - pkg/capture/linux         (M9) — ScreenCast portal client via godbus
 #   - pkg/capture/linux         (M10) — PortalFactory + KMSGrabFactory helpers
 #   - pkg/capture/android       (M12) — scrcpy-direct DirectSource emitting frames.Frame
+#   - pkg/capture/linux         (M13) — production DBusCaller wrapping *dbus.Conn
+#   - pkg/capture/linux         (M14) — X11GrabFactory completing the BackendFactory triad
 #
 # Each entry pairs a concrete `go test` invocation with a coverage / behaviour
 # expectation. No entry here requires adb, an Android device, a desktop
@@ -512,4 +514,59 @@ test_cases:
       bug_id: "OPENCLAWING4-PHASE1-M12"
       description: "scrcpy-direct delegation via pkg/capture/android/direct.go"
       fix_file: "pkg/capture/android/direct.go"
+      fix_commit: "pending"
+
+  # ==================== M13: portal_dbus production Caller ====================
+
+  - id: P1G-CAP-LIN-PORTAL-DBUS-001
+    name: "pkg/capture/linux: DBusCaller production Caller — constructors + nil-safety + integration smoke"
+    category: integration
+    priority: critical
+    platforms: [all]
+    steps:
+      - name: "NewDBusCaller returns ErrNoSessionBus when bus is unreachable"
+        action: "go test -run 'TestNewDBusCaller_RequiresBus' -count=1 ./pkg/capture/linux/..."
+        expected: "PASS — bogus DBUS_SESSION_BUS_ADDRESS wraps ErrNoSessionBus"
+      - name: "NewDBusCallerWithConn(nil) + nil-receiver are safe"
+        action: "go test -run 'TestNewDBusCallerWithConn_NilConn|TestDBusCaller_NilReceiver' -count=1 ./pkg/capture/linux/..."
+        expected: "PASS — CallPortal/CallImmediate return clear 'nil conn' errors; Close is safe"
+      - name: "DBusCallerFactory satisfies CallerFactory at compile time"
+        action: "go test -run 'TestDBusCallerFactory_MatchesInterface' -count=1 ./pkg/capture/linux/..."
+        expected: "PASS — compile-time interface check holds"
+      - name: "Integration smoke (skips when no session bus): bogus portal destination returns a godbus error"
+        action: "go test -run 'TestDBusCaller_CallPortal_BadDestinationReturnsError' -count=1 ./pkg/capture/linux/..."
+        expected: "PASS or SKIP — when DBUS_SESSION_BUS_ADDRESS is set, the call returns a godbus error within 2s and does not hang; when unset, the test SKIPs cleanly"
+    tags: [phase1, gocore, capture-linux, portal, godbus, production]
+    estimated_duration: "3s"
+    expected_result: "Production DBusCaller is ready to drop in as PortalConfig.CallerFactory — no further Go-side work needed on the portal path"
+    fix_reference:
+      bug_id: "OPENCLAWING4-PHASE1-M13"
+      description: "Production DBusCaller wrapping *dbus.Conn with Request/Response signal handshake"
+      fix_file: "pkg/capture/linux/portal_dbus.go"
+      fix_commit: "pending"
+
+  # ==================== M14: x11grab factory ====================
+
+  - id: P1G-CAP-LIN-X11GRAB-001
+    name: "pkg/capture/linux: X11GrabFactory completes the BackendFactory triad"
+    category: integration
+    priority: high
+    platforms: [all]
+    steps:
+      - name: "ArgShape full config roundtrip"
+        action: "go test -run 'TestNewX11GrabFactory_ArgShape' -count=1 -race ./pkg/capture/linux/..."
+        expected: "PASS — [--display :99 --fps 60 --region 0,0,1920,1080] argv order; Source='x11grab'; envelope frame delivered"
+      - name: "Defaults (display :0, no --fps when FPS==0, default binary)"
+        action: "go test -run 'TestNewX11GrabFactory_DefaultsDisplay' -count=1 ./pkg/capture/linux/..."
+        expected: "PASS — argv only [--display :0]; binary == DefaultX11GrabSidecarBinary"
+      - name: "Bad dimensions + missing-binary path"
+        action: "go test -run 'TestNewX11GrabFactory_(BadDimensions|MissingBinary_PropagatesRunnerError)' -count=1 ./pkg/capture/linux/..."
+        expected: "PASS — ErrInvalidConfig for zero dims; underlying exec error propagates when helixqa-x11grab absent"
+    tags: [phase1, gocore, capture-linux, x11grab]
+    estimated_duration: "3s"
+    expected_result: "Every Config.{Portal,KMSGrab,X11Grab}Factory slot has a concrete helper — NewSource resolves on every backend"
+    fix_reference:
+      bug_id: "OPENCLAWING4-PHASE1-M14"
+      description: "X11GrabFactory mirroring KMSGrabFactory pattern"
+      fix_file: "pkg/capture/linux/x11grab.go"
       fix_commit: "pending"
