@@ -201,3 +201,70 @@ test_cases:
         expected: "PASS"
     tags: [phase2, autonomous, stagnation, bocpd, dhash, integration]
 
+  # ─── M30 · pkg/regression · pixelmatch Go port ───
+  - id: PH2-PIXELMATCH-001
+    name: "pkg/regression — PixelMatch.Diff basic invariants"
+    category: unit
+    priority: critical
+    platforms: [linux]
+    steps:
+      - name: "Identical images produce zero DiffCount"
+        action: "TestDiff_IdenticalImagesYieldZeroDiff"
+        expected: "PASS"
+      - name: "Completely different images flag every pixel"
+        action: "TestDiff_CompletelyDifferentImagesFlagEveryPixel"
+        expected: "PASS — 256 pixels flagged on a 16×16 all-black vs all-white diff"
+      - name: "Partial differences are correctly scoped"
+        action: "TestDiff_PartialDifference"
+        expected: "PASS — 4×4 patch produces 4-16 flagged pixels"
+      - name: "Higher threshold ignores small differences"
+        action: "TestDiff_HigherThresholdIgnoresSmallDifferences"
+        expected: "PASS — strict threshold flags more pixels than loose"
+      - name: "Custom DiffColor renders in output"
+        action: "TestDiff_CustomDiffColorRenderedInOutput"
+        expected: "PASS — output pixels match the requested color"
+    tags: [phase2, regression, pixelmatch, unit]
+
+  - id: PH2-PIXELMATCH-002
+    name: "pkg/regression — PixelMatch.Diff error + edge cases"
+    category: unit
+    priority: high
+    platforms: [linux]
+    steps:
+      - name: "nil images return ErrNilImage"
+        action: "TestDiff_NilImageErrors"
+        expected: "PASS — both a=nil and b=nil produce the sentinel"
+      - name: "dimension mismatch returns ErrDimensionMismatch"
+        action: "TestDiff_DimensionMismatchErrors"
+        expected: "PASS"
+      - name: "zero-sized images return empty report"
+        action: "TestDiff_ZeroSizedImagesReturnEmptyReport"
+        expected: "PASS — empty Output, zero counts"
+      - name: "IncludeAA flag rolls AA pixels into DiffCount"
+        action: "TestDiff_IncludeAAFlagCountsAAPixelsAsDifferences"
+        expected: "PASS"
+    tags: [phase2, regression, pixelmatch, error-paths]
+
+  - id: PH2-PIXELMATCH-003
+    name: "pkg/regression — YIQ + anti-aliasing math"
+    category: unit
+    priority: high
+    platforms: [linux]
+    steps:
+      - name: "colorDelta Y-only mode captures luma"
+        action: "TestColorDelta_YOnlyMode"
+        expected: "PASS"
+      - name: "rgb2y/i/q are zero at black"
+        action: "TestRGB2YIQ_BlackIsZero"
+        expected: "PASS"
+      - name: "blendWhite preserves opaque color, returns white at zero alpha"
+        action: "TestBlendWhite_FullOpaquePreservesColor + TestBlendWhite_ZeroAlphaProducesWhite"
+        expected: "Both PASS"
+      - name: "hasManySiblings correctly classifies uniform vs noisy patches"
+        action: "TestHasManySiblings_UniformPatchIsSibling + TestHasManySiblings_NoiseIsSolitary"
+        expected: "Both PASS"
+      - name: "Differ interface conformance"
+        action: "TestPixelMatch_SatisfiesDifferInterface"
+        expected: "PASS"
+    tags: [phase2, regression, pixelmatch, yiq, aa]
+

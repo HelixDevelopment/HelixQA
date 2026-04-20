@@ -420,3 +420,24 @@ test_cases:
         expected: "PASS — stable frames then scene change produces cp > 0.5 within 10 frames"
     tags: [phase2, gocore, autonomous, bocpd, stagnation, dhash, regression]
 
+  - id: HQA-PHASE2-GOCORE-003
+    name: "OpenClawing4 Phase 2 Go-core — pixelmatch visual diff primitive"
+    category: regression
+    priority: critical
+    platforms: [all]
+    steps:
+      - name: "pkg/regression builds clean with pixelmatch addition"
+        action: "go build -mod=vendor ./pkg/regression/..."
+        expected: "exit 0"
+      - name: "All tests pass under -race (existing LLM visual + new pixelmatch)"
+        action: "go test -mod=vendor -count=1 -race ./pkg/regression/..."
+        expected: "PASS, zero data races, existing visual.go regression untouched"
+      - name: "Phase-2 gocore bank entries for pixelmatch loaded"
+        action: "helixqa list --banks banks/phase2-gocore.yaml"
+        expected: "13 test cases total (6 DHASH + 2 BOCPD + 2 STAGNATION + 3 PIXELMATCH)"
+      - name: "YIQ + AA math is correct"
+        action: "go test -mod=vendor -count=1 -run 'TestColorDelta|TestRGB2YIQ|TestBlendWhite|TestIsAA|TestHasManySiblings' ./pkg/regression/..."
+        expected: "All PASS"
+    tags: [phase2, gocore, regression, pixelmatch, visual-diff]
+
+

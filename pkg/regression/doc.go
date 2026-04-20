@@ -4,22 +4,25 @@
 // Package regression implements visual-regression primitives for HelixQA
 // Phase-2 pixel-diff reports. See OpenClawing4.md §5.9.
 //
-// Planned contents:
+// Contents:
 //
-//   - pixelmatch.go — Port of mapbox/pixelmatch (150 LoC, MIT, AA-aware
+//   - pixelmatch.go — ✅ Pure-Go port of mapbox/pixelmatch (MIT, AA-aware
 //                     with YIQ colour diff). The fast "did any pixel
-//                     change?" primitive.
-//   - deltae.go     — CIEDE2000 perceptual colour delta on changed tiles
-//                     (brand-compliance / dark-mode verification).
-//   - report.go     — HTML reporter emitting per-session analysis under
-//                     docs/reports/qa-sessions/.../analysis/ (reg-cli
-//                     compatible).
+//                     change?" primitive. Shipped M30.
+//   - deltae.go     — ⏳ CIEDE2000 perceptual colour delta on changed
+//                     tiles (brand-compliance / dark-mode verification).
+//   - report.go     — ⏳ HTML reporter emitting per-session analysis
+//                     under docs/reports/qa-sessions/.../analysis/
+//                     (reg-cli compatible).
 //
-// Interface target (regression.Differ):
+// Interface (regression.Differ) — satisfied by PixelMatch{}:
 //
 //	type Differ interface {
 //	    Diff(a, b image.Image, opts DiffOptions) (DiffReport, error)
 //	}
 //
-// Nothing is implemented in this commit — placeholder for Phase 2.
+// visual.go in the same package ships the LLM-driven screenshot
+// comparison path (unchanged from pre-Phase-2) — the two Differ paths
+// complement each other: pixelmatch for deterministic pixel-level diffs,
+// visual.go for VLM-driven semantic comparisons.
 package regression
