@@ -1289,3 +1289,30 @@ test_cases:
       description: "Guards the UI-TARS client's compliance with llama-server's OpenAI /v1/chat/completions endpoint — the wire format that every VLM backend HelixQA targets (llama-server, vLLM, TGI) implements. The client sends image_url content parts with base64 PNG data URLs, the canonical envelope for OpenAI vision. ExtractAction's brace-count parser is deliberately tolerant of surrounding prose because real-world VLM outputs frequently emit 'Thought: ... Action: {json}' chain-of-thought prefixes, and upgrading to a strict JSON-only parser would silently break on every minor model update."
       fix_file: "HelixQA/pkg/agent/uitars/uitars.go"
       fix_commit: "pending"
+
+  - id: FIX-OC4-010
+    name: "pkg/agent/omniparser — multipart PNG wire + Min-inclusive/Max-exclusive geometry"
+    category: regression
+    priority: high
+    platforms: [linux, all]
+    steps:
+      - name: "Multipart wire stays 'image' field + PNG payload so the Python sidecar never breaks"
+        action: "go test -mod=vendor -count=1 -run 'TestParse_RequestShapeIsMultipartPNG|TestBuildMultipartPNG_WellFormed' ./pkg/agent/omniparser/..."
+        expected: "Both PASS — field name 'image', Content-Type starts with multipart/form-data, body has PNG magic"
+      - name: "pointIn honors Go's Min-inclusive/Max-exclusive rect semantics"
+        action: "go test -mod=vendor -count=1 -run TestPointIn ./pkg/agent/omniparser/..."
+        expected: "PASS — (10,10) is inside Rect(10,10,20,20); (20,20) is outside"
+      - name: "bboxArea returns 0 for inverted / zero-sized rects"
+        action: "go test -mod=vendor -count=1 -run TestBboxArea_InvalidReturnsZero ./pkg/agent/omniparser/..."
+        expected: "PASS — malformed server responses can't poison grounding"
+      - name: "FindInteractiveContaining returns smallest-enclosing element (never a parent over a child)"
+        action: "go test -mod=vendor -count=1 -run TestResult_FindInteractiveContaining_HitsSmallestEnclosing ./pkg/agent/omniparser/..."
+        expected: "PASS — nested button wins over enclosing group"
+    tags: [regression, phase3, openclawing4, agent, omniparser, wire-format, geometry]
+    estimated_duration: "1s"
+    expected_result: "OmniParser client stays wire-compatible with the Python sidecar and geometrically correct against Go's rect semantics"
+    fix_reference:
+      bug_id: "FIX-OC4-010"
+      description: "Two orthogonal invariants are guarded. (1) Wire: Python sidecars canonically accept multipart/form-data uploads with an 'image' field — drifting to JSON+base64 or a different field name would silently break the sidecar, and the request-shape test catches that at commit time. (2) Geometry: Go's image.Rectangle uses Min-inclusive/Max-exclusive semantics, and FindInteractiveContaining must return the smallest enclosing interactive element (not any enclosing one) — otherwise a huge toolbar or background group would swallow every click the VLM proposes. Both invariants have explicit tests that would fail on any regression."
+      fix_file: "HelixQA/pkg/agent/omniparser/omniparser.go"
+      fix_commit: "pending"

@@ -570,6 +570,33 @@ test_cases:
         expected: "Both PASS"
     tags: [phase3, gocore, agent, action, uitars, vlm, regression]
 
+  - id: HQA-PHASE3-GOCORE-002
+    name: "OpenClawing4 Phase 3 Go-core — OmniParser sidecar REST client"
+    category: regression
+    priority: critical
+    platforms: [all]
+    steps:
+      - name: "pkg/agent/omniparser builds clean"
+        action: "go build -mod=vendor ./pkg/agent/omniparser/..."
+        expected: "exit 0"
+      - name: "All OmniParser tests pass under -race"
+        action: "go test -mod=vendor -count=1 -race ./pkg/agent/omniparser/..."
+        expected: "PASS, zero data races"
+      - name: "Coverage is ≥ 92% (remainder = defensive I/O error guards)"
+        action: "go test -mod=vendor -count=1 -cover ./pkg/agent/omniparser/..."
+        expected: "coverage ≥ 92.0% of statements"
+      - name: "Phase-3 bank entries for OmniParser loaded"
+        action: "helixqa list --banks banks/phase3-gocore.yaml"
+        expected: "11 test cases total (prior 7 + 3 OmniParser unit + 1 OmniParser integration)"
+      - name: "Multipart PNG wire format stays frozen"
+        action: "go test -mod=vendor -count=1 -run 'TestParse_RequestShapeIsMultipartPNG|TestBuildMultipartPNG_WellFormed' ./pkg/agent/omniparser/..."
+        expected: "Both PASS"
+      - name: "Grounding helpers (FindInteractiveContaining, bboxArea, pointIn) stay correct"
+        action: "go test -mod=vendor -count=1 -run 'TestResult_FindInteractive|TestBboxArea|TestPointIn|TestElement_Center' ./pkg/agent/omniparser/..."
+        expected: "All PASS"
+    tags: [phase3, gocore, agent, omniparser, grounding, regression]
+
+
 
 
 

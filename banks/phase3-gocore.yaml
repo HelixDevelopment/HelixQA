@@ -173,3 +173,100 @@ test_cases:
         action: "Time 3 consecutive Acts on 1080p screenshots"
         expected: "< 5s per call on a 7B model + GPU; < 30s on CPU fallback"
     tags: [phase3, agent, uitars, integration, manual, llama-server]
+
+  # ─── M37 · pkg/agent/omniparser · OmniParser REST client ───
+  - id: PH3-OMNIPARSER-001
+    name: "pkg/agent/omniparser — Parse happy path + multipart PNG wire format"
+    category: unit
+    priority: critical
+    platforms: [linux]
+    steps:
+      - name: "Parse decodes wireResult into Result with width/height/element fields"
+        action: "TestParse_HappyPath"
+        expected: "PASS — 2 elements round-trip, button bbox + interactive + confidence preserved"
+      - name: "Request uses multipart/form-data with single 'image' field carrying PNG"
+        action: "TestParse_RequestShapeIsMultipartPNG"
+        expected: "PASS — field name 'image', PNG payload > 50 bytes"
+      - name: "Custom ParsePath honored"
+        action: "TestParse_CustomParsePath"
+        expected: "PASS"
+      - name: "buildMultipartPNG produces valid multipart body with PNG magic"
+        action: "TestBuildMultipartPNG_WellFormed"
+        expected: "PASS — mime/multipart parser round-trips the form"
+    tags: [phase3, agent, omniparser, wire-format, unit]
+
+  - id: PH3-OMNIPARSER-002
+    name: "pkg/agent/omniparser — Element + Result grounding helpers"
+    category: unit
+    priority: high
+    platforms: [linux]
+    steps:
+      - name: "Element.Center computes bbox center"
+        action: "TestElement_Center"
+        expected: "PASS"
+      - name: "FindInteractiveContaining returns smallest enclosing interactive element"
+        action: "TestResult_FindInteractiveContaining_HitsSmallestEnclosing"
+        expected: "PASS — inner 100x100 button wins over outer 1000x1000 group"
+      - name: "FindInteractiveContaining returns (_, false) for no match"
+        action: "TestResult_FindInteractiveContaining_NoMatch + TestResult_FindInteractiveContaining_EmptyResult"
+        expected: "Both PASS"
+      - name: "FindInteractiveContaining skips non-interactive elements"
+        action: "TestResult_FindInteractiveContaining_IgnoresNonInteractive"
+        expected: "PASS"
+      - name: "bboxArea returns 0 for inverted / zero-sized rects, correct otherwise"
+        action: "TestBboxArea_InvalidReturnsZero"
+        expected: "PASS"
+      - name: "pointIn honors Min-inclusive / Max-exclusive semantics"
+        action: "TestPointIn"
+        expected: "PASS"
+    tags: [phase3, agent, omniparser, grounding, geometry]
+
+  - id: PH3-OMNIPARSER-003
+    name: "pkg/agent/omniparser — error paths"
+    category: unit
+    priority: high
+    platforms: [linux]
+    steps:
+      - name: "Empty endpoint → ErrEmptyEndpoint"
+        action: "TestParse_EmptyEndpointError"
+        expected: "PASS"
+      - name: "nil screenshot → ErrNilImage"
+        action: "TestParse_NilScreenshotError"
+        expected: "PASS"
+      - name: "HTTP 5xx propagates with status + body in error"
+        action: "TestParse_HTTPErrorPropagates"
+        expected: "PASS"
+      - name: "Malformed JSON response surfaces decode error"
+        action: "TestParse_MalformedJSONError"
+        expected: "PASS"
+      - name: "bbox with != 4 values → ErrInvalidBBox"
+        action: "TestParse_InvalidBBoxShapeError"
+        expected: "PASS"
+      - name: "Canceled context bails out of the HTTP call"
+        action: "TestParse_ContextCanceled"
+        expected: "PASS"
+      - name: "Invalid endpoint URL fails at request construction"
+        action: "TestParse_InvalidEndpointURLError"
+        expected: "PASS"
+      - name: "New constructor sets Endpoint correctly"
+        action: "TestNew_SetsEndpoint"
+        expected: "PASS"
+    tags: [phase3, agent, omniparser, error-paths]
+
+  # Production sidecar integration (blocked on operator action per
+  # OPEN_POINTS_CLOSURE.md §10.3 — OmniParser v2 weights + Python
+  # sidecar container).
+  - id: PH3-OMNIPARSER-INT-001
+    name: "pkg/agent/omniparser — live Python sidecar smoke test"
+    category: integration
+    priority: high
+    platforms: [linux]
+    requires: [omniparser-sidecar-running]
+    steps:
+      - name: "Live sidecar returns ≥ 3 elements for a busy screenshot"
+        action: "Client{Endpoint: 'http://thinker.local:7860'}.Parse(1080p screenshot)"
+        expected: "len(Result.Elements) ≥ 3, at least one Interactive=true"
+      - name: "FindInteractiveContaining resolves a click target to the right element"
+        action: "Cross-check a UI-TARS-proposed click coordinate against the live element grid"
+        expected: "Returns (Element, true) with matching Type + Text"
+    tags: [phase3, agent, omniparser, integration, manual, sidecar]
