@@ -1,0 +1,233 @@
+# SPDX-FileCopyrightText: 2026 Milos Vasic
+# SPDX-License-Identifier: Apache-2.0
+#
+# HelixQA Test Bank: OpenClawing4 Phase 1 Go-Core (pure-Go portions)
+#
+# This bank validates the three pure-Go packages that land before the
+# native sidecars (helixqa-capture-linux, helixqa-kmsgrab) can be built on
+# their target hosts:
+#
+#   - pkg/capture/frames        (M1) — normalised Frame type
+#   - pkg/bridge/sidecarutil    (M2) — stdio framing + SCM_RIGHTS + --health probe
+#   - pkg/bridge/scrcpy         (M3) — v3 wire-format + .devignore enforcement
+#
+# Each entry pairs a concrete `go test` invocation with a coverage / behaviour
+# expectation. No entry here requires adb, an Android device, a desktop
+# session, or GPU — every test runs on a clean Linux container.
+#
+# Cross-references:
+#   - OpenClawing4.md §5.1.3, §5.2.1, §6.1, §7 (landing points + contracts)
+#   - OpenClawing4-Handover.md §3.1 (Phase 1 detailed file list)
+#   - banks/fixes-validation.yaml (FIX-OC3-011: InjectTouchEvent v3 wire fields)
+
+version: "1.0"
+name: "OpenClawing4 Phase 1 Go-Core"
+description: "Pure-Go deliverables that land before native sidecars. Validates normalised Frame type, stdio framing + FD-passing + --health, and the scrcpy v3 wire format + .devignore enforcement."
+metadata:
+  author: "vasic-digital"
+  app: "HelixQA"
+  version: "1.0.0"
+
+test_cases:
+  # ==================== M1: pkg/capture/frames ====================
+
+  - id: P1G-FRAMES-001
+    name: "pkg/capture/frames: unit tests pass, coverage >= 95%"
+    category: unit
+    priority: critical
+    platforms: [all]
+    steps:
+      - name: "Run package tests under race detector"
+        action: "go test -count=1 -race ./pkg/capture/frames/..."
+        expected: "PASS; zero data races; every TestNew_Invalid sub-test PASS"
+      - name: "Coverage threshold"
+        action: "go test -cover -count=1 ./pkg/capture/frames/..."
+        expected: "coverage >= 95% of statements"
+      - name: "Build as part of full repo"
+        action: "go build ./..."
+        expected: "exit 0"
+    tags: [phase1, gocore, frames, unit]
+    estimated_duration: "5s"
+    expected_result: "Normalised Frame type compiles, tests green, coverage budget respected"
+    fix_reference:
+      bug_id: "OPENCLAWING4-PHASE1-M1"
+      description: "Frame{PTS,Width,Height,Format,Source,DataFD,DataLen,Data,AXTree} normalised across every capture backend"
+      fix_file: "pkg/capture/frames/frame.go"
+      fix_commit: "pending"
+
+  - id: P1G-FRAMES-002
+    name: "pkg/capture/frames: Close() idempotency + inline vs FD exclusivity"
+    category: regression
+    priority: high
+    platforms: [all]
+    steps:
+      - name: "TestClose_NilReceiver and TestClose_InlinePayload pass"
+        action: "go test -run 'TestClose_' -count=1 ./pkg/capture/frames/..."
+        expected: "PASS"
+      - name: "TestValidate_BothPayloads rejects inline+FD"
+        action: "go test -run 'TestValidate_BothPayloads' -count=1 ./pkg/capture/frames/..."
+        expected: "PASS"
+    tags: [phase1, gocore, frames, regression]
+    estimated_duration: "3s"
+    expected_result: "Frame.Close is nil-receiver-safe; Frame.Validate rejects both-payload-kinds state"
+    fix_reference:
+      bug_id: "OPENCLAWING4-PHASE1-M1-CLOSE"
+      description: "Frame must release memfd exactly once and never when only inline Data is present"
+      fix_file: "pkg/capture/frames/frame.go"
+      fix_commit: "pending"
+
+  # ==================== M2: pkg/bridge/sidecarutil ====================
+
+  - id: P1G-SIDECARUTIL-001
+    name: "pkg/bridge/sidecarutil: unit tests pass, coverage >= 80%"
+    category: unit
+    priority: critical
+    platforms: [all]
+    steps:
+      - name: "Run tests under race detector"
+        action: "go test -count=1 -race ./pkg/bridge/sidecarutil/..."
+        expected: "PASS; zero data races"
+      - name: "Coverage threshold"
+        action: "go test -cover -count=1 ./pkg/bridge/sidecarutil/..."
+        expected: "coverage >= 80% of statements (remaining is syscall error branches)"
+    tags: [phase1, gocore, sidecarutil, unit]
+    estimated_duration: "5s"
+    expected_result: "Framing + health-probe + FD passing all pass tests"
+    fix_reference:
+      bug_id: "OPENCLAWING4-PHASE1-M2"
+      description: "Stdio framing + SCM_RIGHTS + --health — the sidecar contract"
+      fix_file: "pkg/bridge/sidecarutil/framing.go"
+      fix_commit: "pending"
+
+  - id: P1G-SIDECARUTIL-002
+    name: "pkg/bridge/sidecarutil: SCM_RIGHTS FD roundtrip over socketpair"
+    category: integration
+    priority: critical
+    platforms: [all]
+    steps:
+      - name: "TestPassFD_RecvFD_Roundtrip passes on Linux"
+        action: "go test -run 'TestPassFD_RecvFD_Roundtrip' -count=1 -race ./pkg/bridge/sidecarutil/..."
+        expected: "PASS (test opens a socketpair, sends a pipe's write-end via PassFD, receives it via RecvFD, writes through the received FD, reads on the pipe's read-end)"
+    tags: [phase1, gocore, sidecarutil, integration]
+    estimated_duration: "2s"
+    expected_result: "FD passing actually transfers a usable FD"
+    fix_reference:
+      bug_id: "OPENCLAWING4-PHASE1-M2-FD"
+      description: "FD passing must survive the kernel round-trip and deliver a live descriptor"
+      fix_file: "pkg/bridge/sidecarutil/framing.go"
+      fix_commit: "pending"
+
+  - id: P1G-SIDECARUTIL-003
+    name: "pkg/bridge/sidecarutil: HealthProbe enforces exact 'ok\\n' + exit 0"
+    category: unit
+    priority: high
+    platforms: [all]
+    steps:
+      - name: "TestHealthProbe_OK passes"
+        action: "go test -run 'TestHealthProbe_OK' -count=1 ./pkg/bridge/sidecarutil/..."
+        expected: "PASS"
+      - name: "Wrong stdout is rejected"
+        action: "go test -run 'TestHealthProbe_WrongStdout' -count=1 ./pkg/bridge/sidecarutil/..."
+        expected: "PASS — HealthProbe returns error on any stdout != 'ok\\n'"
+      - name: "Non-zero exit is rejected"
+        action: "go test -run 'TestHealthProbe_NonZeroExit' -count=1 ./pkg/bridge/sidecarutil/..."
+        expected: "PASS"
+    tags: [phase1, gocore, sidecarutil, health]
+    estimated_duration: "3s"
+    expected_result: "Health probe contract is strictly enforced — no fuzzy stdout tolerance"
+    fix_reference:
+      bug_id: "OPENCLAWING4-PHASE1-M2-HEALTH"
+      description: "Sidecar health contract: exit 0 + stdout 'ok\\n' exactly"
+      fix_file: "pkg/bridge/sidecarutil/framing.go"
+      fix_commit: "pending"
+
+  # ==================== M3: pkg/bridge/scrcpy ====================
+
+  - id: P1G-SCRCPY-001
+    name: "pkg/bridge/scrcpy: v3 protocol tests pass, coverage >= 90%"
+    category: unit
+    priority: critical
+    platforms: [all]
+    steps:
+      - name: "Run tests under race detector"
+        action: "go test -count=1 -race ./pkg/bridge/scrcpy/..."
+        expected: "PASS; zero data races"
+      - name: "Coverage threshold"
+        action: "go test -cover -count=1 ./pkg/bridge/scrcpy/..."
+        expected: "coverage >= 90% of statements"
+    tags: [phase1, gocore, scrcpy, unit]
+    estimated_duration: "5s"
+    expected_result: "Wire-format encoders + device-message decoders + video/audio packet decoders all green"
+    fix_reference:
+      bug_id: "OPENCLAWING4-PHASE1-M3"
+      description: "Pure-Go scrcpy-server v3 wire protocol (video/audio/control)"
+      fix_file: "pkg/bridge/scrcpy/protocol.go"
+      fix_commit: "pending"
+
+  - id: P1G-SCRCPY-002
+    name: "pkg/bridge/scrcpy: InjectTouchEvent includes v3 action_button + buttons uint32s (regression for FIX-OC3-011)"
+    category: regression
+    priority: critical
+    platforms: [all]
+    steps:
+      - name: "TestInjectTouchEvent_Marshal_v3Fields passes"
+        action: "go test -run 'TestInjectTouchEvent_Marshal_v3Fields' -count=1 -v ./pkg/bridge/scrcpy/..."
+        expected: "PASS — total body size is 31 bytes (OpenClawing3 had 23 bytes missing the v3 additions), action_button and buttons uint32s present at expected offsets"
+    tags: [phase1, gocore, scrcpy, regression, openclawing3, FIX-OC3-011]
+    estimated_duration: "2s"
+    expected_result: "Touch events match scrcpy v3 wire format exactly, not v1.x"
+    fix_reference:
+      bug_id: "FIX-OC3-011"
+      description: "OpenClawing3 §6.5 used v1.x control packet layout missing action_button/buttons uint32 fields"
+      fix_file: "pkg/bridge/scrcpy/protocol.go"
+      fix_commit: "pending"
+
+  - id: P1G-SCRCPY-003
+    name: "pkg/bridge/scrcpy: .devignore enforcement gate blocks listed devices"
+    category: security
+    priority: critical
+    platforms: [all]
+    steps:
+      - name: "TestEnforceDevIgnore_Blocked fires ErrDeviceBlocked on match"
+        action: "go test -run 'TestEnforceDevIgnore_Blocked' -count=1 ./pkg/bridge/scrcpy/..."
+        expected: "PASS — errors.Is(err, ErrDeviceBlocked) is true for ATMOSphere match"
+      - name: "TestEnforceDevIgnore_Safe allows non-listed device"
+        action: "go test -run 'TestEnforceDevIgnore_Safe' -count=1 ./pkg/bridge/scrcpy/..."
+        expected: "PASS"
+      - name: "TestEnforceDevIgnore_NoIgnoreFile tolerates missing file"
+        action: "go test -run 'TestEnforceDevIgnore_NoIgnoreFile' -count=1 ./pkg/bridge/scrcpy/..."
+        expected: "PASS — missing .devignore is allowed (no error)"
+    tags: [phase1, gocore, scrcpy, devguard, security, constitution]
+    estimated_duration: "3s"
+    expected_result: ".devignore is enforced before any control socket is opened, per CLAUDE.md"
+    fix_reference:
+      bug_id: "OPENCLAWING4-PHASE1-M3-DEVGUARD"
+      description: "Every scrcpy entry point MUST pass through EnforceDevIgnore; matches CLAUDE.md .devignore policy"
+      fix_file: "pkg/bridge/scrcpy/devguard.go"
+      fix_commit: "pending"
+
+  # ==================== Full-repo gates ====================
+
+  - id: P1G-FULL-001
+    name: "Full repo builds, vets, and passes the no-sudo hook"
+    category: security
+    priority: critical
+    platforms: [all]
+    steps:
+      - name: "Full build"
+        action: "go build ./..."
+        expected: "exit 0"
+      - name: "go vet clean"
+        action: "go vet ./..."
+        expected: "no diagnostics"
+      - name: "no-sudo hook against new Phase-1 files"
+        action: "./scripts/hooks/no-sudo.sh pkg/capture/frames/frame.go pkg/bridge/sidecarutil/framing.go pkg/bridge/scrcpy/protocol.go pkg/bridge/scrcpy/devguard.go pkg/bridge/scrcpy/doc.go"
+        expected: "exit 0 (no bare sudo in any Phase-1 Go-core file)"
+    tags: [phase1, gocore, build, vet, security]
+    estimated_duration: "30s"
+    expected_result: "Phase 1 Go-core is build-ready and constitutionally clean"
+    fix_reference:
+      bug_id: "OPENCLAWING4-PHASE1-GATE"
+      description: "Nothing ships broken — build + vet + hook must all be green"
+      fix_file: "multiple"
+      fix_commit: "pending"

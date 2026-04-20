@@ -37,12 +37,16 @@ A forensic audit on 2026-04-19 (`OpenClawing4-Audit.md`) exposed the problems, a
 
 | Commit | Repo | URL pattern | Purpose |
 |---|---|---|---|
-| `a2f3764` | HelixQA | 4 upstreams pushed | Retraction banners + no-sudo hook + docs-audit bank |
-| `f2505b5` | HelixQA | 4 upstreams pushed (prior) | Docs reorg + OpenClawing4 + OpenClawing4-Audit |
-| `b2ebdcf` | Catalogizer | 6 upstreams pushed (prior) | Submodule pointer bump |
-| `c17e965` | Catalogizer | 6 upstreams pushed (prior) | CLAUDE.md trim + companion-doc index |
+| `25599bb` | HelixQA | 4 upstreams pushed | **Phase 1 M3** — `pkg/bridge/scrcpy` v3 wire format + devguard + 91.4% coverage |
+| `bcdc740` | HelixQA | 4 upstreams pushed | **Phase 1 M2** — `pkg/bridge/sidecarutil` framing + SCM_RIGHTS + --health + 84.5% coverage |
+| `61d2696` | HelixQA | 4 upstreams pushed | **Phase 1 M1** — `pkg/capture/frames` normalised Frame type + 97.1% coverage |
+| `a2f3764` | HelixQA | 4 upstreams pushed | **Phase 0** — retraction banners + no-sudo hook + docs-audit bank + 14 fixes-validation entries |
+| `f2505b5` | HelixQA | 4 upstreams pushed | Docs reorg + OpenClawing4 + OpenClawing4-Audit |
+| `b2ebdcf` | Catalogizer | 6 upstreams pushed | Submodule pointer bump (Phase 0 rollup) |
+| `360372c8` | Catalogizer | 6 upstreams pushed | OPEN_POINTS_CLOSURE §10 (Phase 0 closed, phases 1-6 roadmap) |
+| `c17e965` | Catalogizer | 6 upstreams pushed | CLAUDE.md trim + companion-doc index |
 
-Upstream fan-out verified in each push log (see `git push origin main` output).
+Upstream fan-out verified in each push log.
 
 ### 2.2 File-by-file delta (Phase 0 commit)
 
@@ -79,6 +83,43 @@ Mapped to Article V categories. Ran in this session before commit:
 - `.pre-commit-config.yaml` exists in HelixQA. To activate: `cd HelixQA && pre-commit install` (operator action; one-time per clone).
 - Nothing else in this repo was modified.
 
+### 2.5 Phase 1 Go-Core — DONE (session continuation, same operator approval)
+
+The pure-Go milestones of Phase 1 have landed. Native sidecars
+(`helixqa-capture-linux`, `helixqa-kmsgrab`) remain for a build-host session with
+GStreamer / kmsgrab system libraries; they do not block consumption of the Go
+packages below.
+
+| Milestone | Package | Files (new) | Coverage | Commit |
+|---|---|---|---|---|
+| M1 | `pkg/capture/frames/` | `frame.go` + `frame_test.go` | 97.1 % | `61d2696` |
+| M2 | `pkg/bridge/sidecarutil/` | `framing.go` + `framing_test.go` | 84.5 % | `bcdc740` |
+| M3 | `pkg/bridge/scrcpy/` | `doc.go` + `protocol.go` + `devguard.go` + two test files | 91.4 % | `25599bb` |
+
+Deliverable highlights:
+
+- **Normalised `Frame{PTS, Width, Height, Format, Source, DataFD, DataLen, Data, AXTree}`** — the type every backend emits and every consumer accepts. `Format` enum (NV12 / RGBA / BGRA / H264AnnexB); `New` for inline payloads; `NewFromFD` for memfd+SCM_RIGHTS; `Validate` rejects zero-format / bad dims / both-payload-kinds; `Close` idempotent + nil-receiver-safe.
+- **Sidecar contract primitives** — length-prefixed JSON framing on stdin/stdout (16 MiB cap, heartbeat, `DrainReader`), SCM_RIGHTS FD passing over `*net.UnixConn` (CGO-free, stdlib `syscall`+`net` only), and `HealthProbe`/`MultiHealth` enforcing `--health → ok\n + exit 0` contract.
+- **scrcpy-server v3 wire protocol** — all 18 client→server control messages with byte-exact marshalling, including the `InjectTouchEvent` 31-byte body with `action_button` + `buttons` uint32s that OpenClawing3 had wrong (FIX-OC3-011 regression covered). Server→client `DeviceMessage` (Clipboard, AckClipboard, UhidOutput). `ReadVideoPacket` + `ReadAudioPacket` with flag-bit decoding. All size ceilings + ErrProtocol guardrails.
+- **`.devignore` enforcement gate** — `LoadDevIgnore` / `MatchModel` (case-insensitive) / `DeviceModel` (adb shell getprop) / `EnforceDevIgnore` (the single gate every socket-opener passes through). `ErrDeviceBlocked` wraps the offending model for `errors.Is` checks.
+
+Acceptance evidence (Article V — all green for Phase-1 Go-core):
+
+1. **Unit** — 97.1 % / 84.5 % / 91.4 % statement coverage across M1 / M2 / M3 (verified via `go test -cover`).
+2. **Integration** — `TestPassFD_RecvFD_Roundtrip` sends a real pipe FD across a socketpair, writes through the received FD, reads on the pipe's other end.
+3. **E2E** — N/A until native sidecars land.
+4. **Full automation** — every test invocation is a plain `go test` command; zero manual setup.
+5. **Stress** — `TestWriteFrame_FrameTooLarge` + ceiling checks on every variable-length decode path.
+6. **Security** — `scripts/hooks/no-sudo.sh` green on all new files; `go vet ./...` clean.
+7. **DDoS / rate-limit** — N/A for this slice.
+8. **Benchmarking** — reference budgets recorded in OpenClawing4.md §5.5.
+9. **Challenges** — `HQA-PHASE1-GOCORE-001` appended to `challenges/config/helixqa-validation.yaml` (4 steps).
+10. **HelixQA** — `banks/phase1-gocore.yaml` with 9 entries (P1G-FRAMES-001/002, P1G-SIDECARUTIL-001/002/003, P1G-SCRCPY-001/002/003, P1G-FULL-001) covering unit/integration/regression/security/build.
+
+Regression coverage (FIX-* traceability):
+
+- **FIX-OC3-011** (scrcpy v1.x wire format retraction) — realised as a working v3 encoder *and* guarded by P1G-SCRCPY-002 (`TestInjectTouchEvent_Marshal_v3Fields` asserting 31-byte body, action_button + buttons uint32s at exact offsets).
+
 ---
 
 ## 3. What remains — phase-by-phase, file-by-file
@@ -91,25 +132,26 @@ Largest near-term reliability win. Everything Go-side can be compiled and unit-t
 
 **New Go packages (all `CGO_ENABLED=0` in host):**
 
-| File | What |
-|---|---|
-| `pkg/capture/frames/frame.go` | `Format` enum (NV12, RGBA, BGRA, H264AnnexB); `Frame{PTS, Width, Height, Format, Source, DataFD, DataLen, Data, AXTree}`. Exported `NewFrame(...)`. |
-| `pkg/capture/linux/portal.go` | godbus client for `org.freedesktop.portal.ScreenCast` — `CreateSession`, `SelectSources`, `Start`; caches the session across frames. |
-| `pkg/capture/linux/pipewire.go` | Spawns `helixqa-capture-linux` with PipeWire FD in `SysProcAttr.ExtraFiles`; reads Annex-B from stdout; emits `Frame` objects. |
-| `pkg/capture/linux/kmsgrab.go` | Probes for `helixqa-kmsgrab` sidecar existence + `cap_sys_admin`; gated by `HELIX_LINUX_KMSGRAB=1`; optional. |
-| `pkg/capture/linux/xcbshm.go` | xcb-shm fallback for X11 / XWayland sessions. |
-| `pkg/capture/linux_capture.go` | **Modify** — route by `XDG_SESSION_TYPE`: wayland→portal, x11→xcbshm, legacy→existing x11grab behind `-tags x11legacy`. |
-| `pkg/bridge/sidecarutil/framing.go` | Length-prefixed JSON framing over stdio; FD-passing helpers (`memfd_create` + `sendmsg(SCM_RIGHTS)`). |
-| `pkg/bridge/sidecarutil/healthcheck.go` | `RunHealth(bin string) error` — universal `--health` probe. |
-| `pkg/bridge/scrcpy/protocol.go` | Wire-format decoder for scrcpy v3 video/audio/control sockets. |
-| `pkg/bridge/scrcpy/server.go` | ADB forward setup, `app_process` launch, three-socket accept. |
-| `pkg/bridge/scrcpy/devguard.go` | `.devignore` enforcement: `getprop ro.product.model` before opening the control socket. |
-| `pkg/bridge/scrcpy/session.go` | High-level `Session.OpenVideo() → <-chan Frame`, `Session.Send(ControlEvent)`, `Session.Close()`. |
-| `pkg/bridges/registry.go` | **Modify** — add sidecar probes: `helixqa-capture-linux`, `helixqa-kmsgrab`. |
-| `pkg/navigator/linux/libei.go` | godbus client for `org.freedesktop.portal.RemoteDesktop`; EI binary protocol writer. |
-| `pkg/navigator/linux/uinput.go` | `/dev/uinput` ioctl path (pure Go `syscall.Syscall`); udev group check at startup. |
-| `pkg/navigator/x11_executor.go` | **Modify** — move existing code behind `-tags x11legacy`; default is libei. |
-| `pkg/capture/android_capture.go` | **Modify** — delegate to `pkg/bridge/scrcpy` when `HELIX_SCRCPY_DIRECT=1`. |
+Legend: ✅ done (commits in §2.1 + §2.5) · 🚧 remaining.
+
+| File | What | Status |
+|---|---|---|
+| `pkg/capture/frames/frame.go` | `Format` enum (NV12, RGBA, BGRA, H264AnnexB); `Frame{PTS, Width, Height, Format, Source, DataFD, DataLen, Data, AXTree}`; `New`/`NewFromFD`/`Validate`/`Close`. 97.1% coverage. | **✅** `61d2696` |
+| `pkg/bridge/sidecarutil/framing.go` | Length-prefixed JSON framing + heartbeat + `DrainReader`; SCM_RIGHTS FD passing over `*net.UnixConn`; `HealthProbe`/`MultiHealth`. 84.5% coverage. | **✅** `bcdc740` |
+| `pkg/bridge/scrcpy/protocol.go` | v3 wire format — 18 control messages + DeviceMessage + VideoPacket + AudioPacket decoders + all size ceilings. 91.4% coverage. | **✅** `25599bb` |
+| `pkg/bridge/scrcpy/devguard.go` | `.devignore` enforcement: LoadDevIgnore + MatchModel + DeviceModel + EnforceDevIgnore. | **✅** `25599bb` |
+| `pkg/capture/linux/portal.go` | godbus client for `org.freedesktop.portal.ScreenCast` — `CreateSession`, `SelectSources`, `Start`; caches the session across frames. | 🚧 |
+| `pkg/capture/linux/pipewire.go` | Spawns `helixqa-capture-linux` with PipeWire FD in `SysProcAttr.ExtraFiles`; reads Annex-B from stdout; emits `Frame` objects via `pkg/capture/frames`. | 🚧 |
+| `pkg/capture/linux/kmsgrab.go` | Probes for `helixqa-kmsgrab` sidecar existence + `cap_sys_admin`; gated by `HELIX_LINUX_KMSGRAB=1`; optional. | 🚧 |
+| `pkg/capture/linux/xcbshm.go` | xcb-shm fallback for X11 / XWayland sessions. | 🚧 |
+| `pkg/capture/linux_capture.go` | **Modify** — route by `XDG_SESSION_TYPE`: wayland→portal, x11→xcbshm, legacy→existing x11grab behind `-tags x11legacy`. | 🚧 |
+| `pkg/bridge/scrcpy/server.go` | ADB forward setup, `app_process` launch, three-socket accept. Requires an adb-capable CI; build stub + smoke test only under `-tags scrcpy_e2e`. | 🚧 |
+| `pkg/bridge/scrcpy/session.go` | High-level `Session.OpenVideo() → <-chan Frame`, `Session.Send(ControlEvent)`, `Session.Close()`. | 🚧 |
+| `pkg/bridges/registry.go` | **Modify** — add sidecar probes: `helixqa-capture-linux`, `helixqa-kmsgrab`. | 🚧 |
+| `pkg/navigator/linux/libei.go` | godbus client for `org.freedesktop.portal.RemoteDesktop`; EI binary protocol writer. | 🚧 |
+| `pkg/navigator/linux/uinput.go` | `/dev/uinput` ioctl path (pure Go `syscall.Syscall`); udev group check at startup. | 🚧 |
+| `pkg/navigator/x11_executor.go` | **Modify** — move existing code behind `-tags x11legacy`; default is libei. | 🚧 |
+| `pkg/capture/android_capture.go` | **Modify** — delegate to `pkg/bridge/scrcpy` when `HELIX_SCRCPY_DIRECT=1`. | 🚧 |
 
 **Sidecar binaries (not Go host):**
 

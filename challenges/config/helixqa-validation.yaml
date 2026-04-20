@@ -354,3 +354,24 @@ test_cases:
         action: "helixqa list --banks banks/docs-audit.yaml"
         expected: "7 test cases enumerated (AUDIT-001..007)"
     tags: [docs, retraction, hook, phase0]
+
+  # ─── OpenClawing4 Phase 1 Go-Core ───
+  - id: HQA-PHASE1-GOCORE-001
+    name: "OpenClawing4 Phase 1 Go-core — frames + sidecarutil + scrcpy v3 wire + devguard"
+    category: regression
+    priority: critical
+    platforms: [all]
+    steps:
+      - name: "Three new packages build clean"
+        action: "go build ./pkg/capture/frames/... ./pkg/bridge/sidecarutil/... ./pkg/bridge/scrcpy/..."
+        expected: "exit 0"
+      - name: "All tests pass under -race"
+        action: "go test -count=1 -race ./pkg/capture/frames/... ./pkg/bridge/sidecarutil/... ./pkg/bridge/scrcpy/..."
+        expected: "PASS in all three packages, zero data races"
+      - name: "Phase-1 gocore bank loads"
+        action: "helixqa list --banks banks/phase1-gocore.yaml"
+        expected: "9 test cases enumerated (P1G-FRAMES-001/002, P1G-SIDECARUTIL-001/002/003, P1G-SCRCPY-001/002/003, P1G-FULL-001)"
+      - name: "InjectTouchEvent v3 wire regression (FIX-OC3-011)"
+        action: "go test -run 'TestInjectTouchEvent_Marshal_v3Fields' -count=1 ./pkg/bridge/scrcpy/..."
+        expected: "PASS — 31-byte body including action_button + buttons uint32s"
+    tags: [phase1, gocore, scrcpy, sidecarutil, regression]

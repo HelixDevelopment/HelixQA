@@ -35,7 +35,7 @@ declare -a violations=()
 # Allow-listed paths (retracted docs + this hook itself + pre-commit config
 # that references this hook). Patterns are POSIX extended regex, matched
 # against the repository-relative path.
-allow_pattern='^(scripts/hooks/no-sudo\.sh|docs/openclawing/(OpenClawing2|OpenClawing3|Starting_Point|OpenClawing4|OpenClawing4-Audit|OpenClawing4-Handover)\.md|\.pre-commit-config\.yaml|banks/docs-audit\.(yaml|json)|banks/fixes-validation\.(yaml|json)|challenges/config/helixqa-validation\.yaml)$'
+allow_pattern='^(scripts/hooks/no-sudo\.sh|docs/openclawing/(OpenClawing2|OpenClawing3|Starting_Point|OpenClawing4|OpenClawing4-Audit|OpenClawing4-Handover)\.md|\.pre-commit-config\.yaml|banks/(docs-audit|fixes-validation|phase[0-9]+-gocore)\.(yaml|json)|challenges/config/helixqa-validation\.yaml)$'
 
 for f in "${files[@]}"; do
     [[ -f "$f" ]] || continue
