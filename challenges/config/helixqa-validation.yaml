@@ -399,3 +399,24 @@ test_cases:
         action: "go test -mod=vendor -bench=. -benchtime=100ms -run=^$ ./pkg/vision/hash/..."
         expected: "BenchmarkDHash64_1080p < 5 µs/op; BenchmarkDHash256_1080p < 20 µs/op"
     tags: [phase2, gocore, vision, hash, dhash, regression]
+
+  - id: HQA-PHASE2-GOCORE-002
+    name: "OpenClawing4 Phase 2 Go-core — BOCPD + stagnation detection"
+    category: regression
+    priority: critical
+    platforms: [all]
+    steps:
+      - name: "pkg/autonomous builds clean with new BOCPD + stagnation code"
+        action: "go build -mod=vendor ./pkg/autonomous/..."
+        expected: "exit 0"
+      - name: "All BOCPD + stagnation tests pass under -race"
+        action: "go test -mod=vendor -count=1 -race -run 'BOCPD|Observe|StudentT|IsFinite|Stagnation' ./pkg/autonomous/..."
+        expected: "PASS, zero data races"
+      - name: "Phase-2 gocore bank entries loaded"
+        action: "helixqa list --banks banks/phase2-gocore.yaml"
+        expected: "10 test cases total (6 DHASH + 2 BOCPD + 2 STAGNATION)"
+      - name: "Change-point detection integration works end-to-end"
+        action: "go test -mod=vendor -count=1 -run 'TestStagnationDetector_AddFrame_SceneChangeTriggersChangePoint' ./pkg/autonomous/..."
+        expected: "PASS — stable frames then scene change produces cp > 0.5 within 10 frames"
+    tags: [phase2, gocore, autonomous, bocpd, stagnation, dhash, regression]
+

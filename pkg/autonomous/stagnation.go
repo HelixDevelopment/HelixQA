@@ -4,14 +4,34 @@
 package autonomous
 
 import (
+	"image"
 	"time"
+
+	"digital.vasic.helixqa/pkg/vision/hash"
 )
 
-// StagnationDetector tracks screen states and detects when UI is stuck
+// StagnationDetector tracks screen states and flags both:
+//
+//   - window-based stagnation — "no pixels have changed in ≥ stagnantTime"
+//     (cruder, drives the 10-second "UI is stuck" heuristic);
+//   - online change-point detection — Bayesian Online Change-Point
+//     Detection (Adams & MacKay 2007) over the dHash Hamming-distance
+//     stream. Emits a per-frame change probability that flips high on the
+//     exact frame the UI transitioned, without the 10-second wait.
+//
+// The BOCPD channel is optional — it activates once the first image.Image
+// is fed via AddFrame(). Callers that only need the legacy byte-hash
+// behaviour can keep using AddScreenshot() and never touch BOCPD.
 type StagnationDetector struct {
 	history      []screenSnapshot
 	maxHistory   int
 	stagnantTime time.Duration
+
+	hasher     hash.DHasher
+	bocpd      *BOCPD
+	lastDHash  uint64
+	hasDHash   bool
+	lastCPProb float64
 }
 
 // screenSnapshot captures a point-in-time screen state
@@ -23,16 +43,24 @@ type screenSnapshot struct {
 	screenName string
 }
 
-// NewStagnationDetector creates a new detector
+// NewStagnationDetector creates a new detector with sensible defaults
+// (maxHistory=30, stagnantTime=10s, BOCPD hazard=1/250 dHash-64). Errors
+// surface only on bad cfg math in BOCPD; the default cfg is clean.
 func NewStagnationDetector() *StagnationDetector {
+	b, _ := NewBOCPD(BOCPDConfig{})
 	return &StagnationDetector{
 		history:      make([]screenSnapshot, 0, 30),
 		maxHistory:   30,
-		stagnantTime: 10 * time.Second, // Consider stagnant after 10s of no change
+		stagnantTime: 10 * time.Second,
+		hasher:       hash.DHasher{Kind: hash.DHash64},
+		bocpd:        b,
 	}
 }
 
-// AddScreenshot records a new screen state
+// AddScreenshot records a new screen state from raw pixel bytes (legacy
+// path — the crude 5-sample FNV hash). Prefer AddFrame when an
+// image.Image is available; it feeds the BOCPD channel and produces
+// per-frame change probabilities.
 func (sd *StagnationDetector) AddScreenshot(data []byte, screenName string) {
 	if len(data) == 0 {
 		return
@@ -51,6 +79,60 @@ func (sd *StagnationDetector) AddScreenshot(data []byte, screenName string) {
 		sd.history = sd.history[1:]
 	}
 }
+
+// AddFrame records a new frame via its image.Image. Computes a dHash-64
+// for window-stagnation bookkeeping, then feeds the Hamming distance
+// from the previous frame into the BOCPD channel. After the first call,
+// LastChangeProbability() returns a meaningful per-frame change
+// probability — high means "the UI just changed".
+//
+// Returns the BOCPD change probability for this frame, or 0 on the very
+// first frame (there is no distance to feed yet).
+func (sd *StagnationDetector) AddFrame(img image.Image, screenName string) (float64, error) {
+	h, err := sd.hasher.Hash(img)
+	if err != nil {
+		return 0, err
+	}
+
+	snapshot := screenSnapshot{
+		timestamp:  time.Now(),
+		hash:       h,
+		screenName: screenName,
+	}
+	sd.history = append(sd.history, snapshot)
+	if len(sd.history) > sd.maxHistory {
+		sd.history = sd.history[1:]
+	}
+
+	if !sd.hasDHash {
+		sd.lastDHash = h
+		sd.hasDHash = true
+		sd.lastCPProb = 0
+		return 0, nil
+	}
+	dist := float64(sd.hasher.Distance(sd.lastDHash, h))
+	sd.lastDHash = h
+	sd.lastCPProb = sd.bocpd.Observe(dist)
+	return sd.lastCPProb, nil
+}
+
+// LastChangeProbability returns the most recent per-frame change
+// probability emitted by the BOCPD channel. Before any AddFrame call,
+// returns 0.
+func (sd *StagnationDetector) LastChangeProbability() float64 {
+	return sd.lastCPProb
+}
+
+// IsChangePoint is a convenience predicate — true when the last change
+// probability exceeds the conventional 0.5 threshold.
+func (sd *StagnationDetector) IsChangePoint() bool {
+	return sd.lastCPProb > 0.5
+}
+
+// BOCPD exposes the underlying change-point detector for diagnostics
+// (most-likely run length, observation count) and for callers that want
+// to Reset() the BOCPD channel independently of the history window.
+func (sd *StagnationDetector) BOCPD() *BOCPD { return sd.bocpd }
 
 // IsStagnant returns true if screen hasn't changed in stagnantTime
 func (sd *StagnationDetector) IsStagnant() bool {
