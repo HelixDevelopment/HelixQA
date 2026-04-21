@@ -1688,3 +1688,24 @@ test_cases:
       description: "Partial closure of DEFER-QA-2026-04-21-002. The 3× heap-growth threshold was too tight for legitimate burst workloads — the 2026-04-20 RunAll session fired 26 false-positive alerts (peak heap 53.5× baseline, settling back <2× within 5 minutes of the burst). Raised to 10× so pathological leaks still trip the alarm but transient bursts don't flood logs."
       fix_file: "catalog-api/internal/modules/registry.go"
       fix_commit: "pending"
+
+  - id: FIX-QA-2026-04-21-008
+    name: "catalog-api RunAll/RunByCategory — detached request ctx (WithoutCancel)"
+    category: regression
+    priority: medium
+    platforms: [api]
+    steps:
+      - name: "RunAll receives a ctx that inherits request values AND survives request cancel"
+        action: "cd catalog-api && GOTOOLCHAIN=local go test -count=1 -run 'TestChallengeHandler_RunAll_CtxInheritsValuesButSurvivesRequestCancel' ./handlers/..."
+        expected: "PASS — mock sees a ctx with the custom probe value; ctx.Done channel NOT fired; ctx.Err nil even after request ctx cancelled"
+      - name: "Single-challenge handler + service observe client disconnect within 500ms"
+        action: "cd catalog-api && GOTOOLCHAIN=local go test -count=1 -run 'TestChallengeHandler_RunChallenge_ObservesClientDisconnect' ./handlers/..."
+        expected: "PASS — mock blocks on <-ctx.Done() which fires within 500ms of the client-side cancel"
+    tags: [regression, api, challenges, context, without-cancel, defer-001-partial]
+    estimated_duration: "1s"
+    expected_result: "RunAll/RunByCategory stay long-running but traceable; single-challenge POSTs terminate on client disconnect"
+    fix_reference:
+      bug_id: "FIX-QA-2026-04-21-008"
+      description: "U-cycle partial closure of DEFER-QA-2026-04-21-001 items #3 and #5. Previously, RunAll / RunByCategory passed context.Background() to their services — long-running safely, but losing every request-scoped value (tracing, request_id, auth subject). Switched to context.WithoutCancel(c.Request.Context()) which is the Go 1.21+ primitive built exactly for this shape: inherit values, ignore cancel. Only item #4 of DEFER-001 remains open — threading ctx end-to-end through Challenges/pkg/runner so individual challenges co-operatively observe progress, which is a submodule refactor across 508 challenges."
+      fix_file: "catalog-api/handlers/challenge.go"
+      fix_commit: "pending"
