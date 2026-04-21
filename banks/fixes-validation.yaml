@@ -1631,3 +1631,60 @@ test_cases:
       description: "Partial mitigation of DEFER-QA-2026-04-21-001. After a 508-challenge RunAll, the full results slice contains tens of MB of embedded assertion + output data; serialising all of it through gin's JSON encoder can sit past the 60s RequestTimeout and present as a hung endpoint (observed in the 2026-04-20 session). GetResults now accepts an optional `?limit=N` query parameter with a default of 100 (last-N semantic) and reports `total_count` so callers can page. `?limit=0` opts into the old unlimited behaviour for callers that genuinely need the whole list. Full ctx-threading through the Challenges runner remains in DEFER-QA-2026-04-21-001."
       fix_file: "catalog-api/handlers/challenge.go"
       fix_commit: "pending"
+
+  - id: FIX-QA-2026-04-21-005
+    name: "catalog-api RunChallenge — propagate request context"
+    category: regression
+    priority: medium
+    platforms: [api]
+    steps:
+      - name: "Mock service receives ctx with request's deadline, not context.Background()"
+        action: "cd catalog-api && GOTOOLCHAIN=local go test -count=1 -run 'TestChallengeHandler_RunChallenge_PropagatesRequestContext' ./handlers/..."
+        expected: "PASS — mock.runChallengeFunc observes a ctx with the same deadline as the inbound request"
+    tags: [regression, api, challenges, context, client-disconnect, defer-001-partial]
+    estimated_duration: "1s"
+    expected_result: "Single-challenge POST runs now terminate cleanly when the HTTP client disconnects"
+    fix_reference:
+      bug_id: "FIX-QA-2026-04-21-005"
+      description: "Partial closure of DEFER-QA-2026-04-21-001. Prior to this fix, handlers/challenge.go RunChallenge passed context.Background() to the service; a curl that timed out left the challenge running server-side, and the concurrency limiter accumulated zombie handlers until it saturated — the exact pathology observed on 2026-04-20 (post-RunAll /challenges/results hang). Now RunChallenge passes c.Request.Context() so the service/runner can observe ctx.Done() on client disconnect. RunAll/RunByCategory deliberately keep context.Background() — their long-running design requires bypassing the outer 60s RequestTimeout middleware; their full ctx-threading stays in DEFER-001."
+      fix_file: "catalog-api/handlers/challenge.go"
+      fix_commit: "pending"
+
+  - id: FIX-QA-2026-04-21-006
+    name: "catalog-api pprof endpoint — opt-in profiling for memory/goroutine capture"
+    category: instrumentation
+    priority: low
+    platforms: [api]
+    steps:
+      - name: "pprof endpoints register when HELIX_PPROF_ENABLED=true"
+        action: "HELIX_PPROF_ENABLED=true ./catalog-api & curl -s -o /dev/null -w '%{http_code}' http://localhost:8080/debug/pprof/heap"
+        expected: "200"
+      - name: "pprof endpoints absent when flag is unset (default)"
+        action: "./catalog-api & curl -s -o /dev/null -w '%{http_code}' http://localhost:8080/debug/pprof/heap"
+        expected: "404"
+    tags: [instrumentation, pprof, heap, defer-002-partial]
+    estimated_duration: "2s"
+    expected_result: "Operators can capture heap/goroutine/block/mutex profiles on demand without exposing profiling surface to untrusted networks"
+    fix_reference:
+      bug_id: "FIX-QA-2026-04-21-006"
+      description: "Partial closure of DEFER-QA-2026-04-21-002. Wires net/http/pprof handlers under /debug/pprof/{heap,goroutine,profile,trace,cmdline,symbol,allocs,block,mutex,threadcreate} in main.go, gated by HELIX_PPROF_ENABLED=true. Flag defaults OFF so the profiling surface is never on in untrusted environments by accident. Unblocks the heap-profile capture that was blocking the bounded-result-store decision."
+      fix_file: "catalog-api/main.go"
+      fix_commit: "pending"
+
+  - id: FIX-QA-2026-04-21-007
+    name: "catalog-api MemoryMonitor threshold — 3× → 10× baseline"
+    category: instrumentation
+    priority: low
+    platforms: [api]
+    steps:
+      - name: "MemoryMonitor constructor receives the 10× threshold"
+        action: "grep 'NewMemoryMonitor(60\\*time.Second, 10.0)' catalog-api/internal/modules/registry.go"
+        expected: "match — threshold is 10.0"
+    tags: [instrumentation, memory, alerts, defer-002-partial]
+    estimated_duration: "1s"
+    expected_result: "Memory alerts no longer fire during documented burst workloads (RunAll peak ~50× transient)"
+    fix_reference:
+      bug_id: "FIX-QA-2026-04-21-007"
+      description: "Partial closure of DEFER-QA-2026-04-21-002. The 3× heap-growth threshold was too tight for legitimate burst workloads — the 2026-04-20 RunAll session fired 26 false-positive alerts (peak heap 53.5× baseline, settling back <2× within 5 minutes of the burst). Raised to 10× so pathological leaks still trip the alarm but transient bursts don't flood logs."
+      fix_file: "catalog-api/internal/modules/registry.go"
+      fix_commit: "pending"
