@@ -304,6 +304,15 @@ func (ste *StructuredTestExecutor) executeStep(
 		return result
 	}
 
+	// FIX-QA-2026-04-21-019 part 2: post-action drift check. The
+	// previous step may have been a DPAD_ENTER on a launcher tile
+	// that handed control to a foreign app (RuTube, IPTV, YouTube,
+	// …). Re-check foreground immediately; if drift to a foreign
+	// app is detected, force-stop + relaunch before screenshotting
+	// so the after-action screenshot reflects Catalogizer's UI (or
+	// the launcher), not the foreign app's.
+	ste.ensureAppForeground(ctx, platform, tc, stepNum)
+
 	// Take screenshot after action.
 	// 500ms is enough for UI to settle after a keypress/tap.
 	time.Sleep(500 * time.Millisecond)
@@ -553,14 +562,70 @@ func (ste *StructuredTestExecutor) preflightStopCompetingApps(
 	)
 }
 
+// isLauncherPackage returns true when the package string identifies
+// one of the known Android TV launcher packages. Focus on a launcher
+// is a legitimate intermediate state for tv-channel-* / tv-watch-next-*
+// tests, which intentionally navigate to home to click a channel tile.
+// Focus on any other foreign app is drift.
+func isLauncherPackage(pkg string) bool {
+	if pkg == "" {
+		return false
+	}
+	switch pkg {
+	case
+		"com.mitv.tvhome.atv",
+		"com.mitv.tvhome.michannel",
+		"com.google.android.tvlauncher",
+		"com.google.android.leanbacklauncher",
+		"com.amazon.tv.launcher",
+		"com.android.tv.launcher":
+		return true
+	}
+	return false
+}
+
+// currentForegroundPackage extracts the foreground package name from
+// `adb shell dumpsys window windows` output. Returns empty string on
+// parse failure.
+func currentForegroundPackage(dumpsysOut string) string {
+	line := extractLine(dumpsysOut, "mCurrentFocus=")
+	if line == "" {
+		return ""
+	}
+	// Format: "mCurrentFocus=Window{... u0 <package>/<component>}"
+	// Find the last '{...}' and split by space.
+	i := strings.LastIndex(line, "{")
+	if i < 0 {
+		return ""
+	}
+	j := strings.LastIndex(line, "}")
+	if j < 0 || j <= i {
+		return ""
+	}
+	inner := line[i+1 : j]
+	parts := strings.Fields(inner)
+	if len(parts) == 0 {
+		return ""
+	}
+	// Last field is "<package>/<component>".
+	compStr := parts[len(parts)-1]
+	slash := strings.Index(compStr, "/")
+	if slash < 0 {
+		return compStr
+	}
+	return compStr[:slash]
+}
+
 // ensureAppForeground guards against silent app-swap drift where
 // a DPAD_ENTER on an Android TV launcher channel tile has handed
 // control to a different app. The guard only applies to android /
 // androidtv platforms where a target package is configured.
 //
-// On drift, emits a CRITICAL finding (so session analysis reports
-// it) and force-relaunches the target app with qa_username /
-// qa_password extras so the app starts from a known entry point.
+// On drift to a foreign app (non-launcher, non-target): emits a
+// CRITICAL finding and force-relaunches the target app. Drift to a
+// launcher is tolerated silently — tv-channel-* tests legitimately
+// visit the launcher to click channel tiles.
+//
 // A foreground drift during a structured bank step is a
 // Constitution-class failure — the affected test's remaining
 // steps cannot be trusted, but the session continues so that
@@ -596,7 +661,17 @@ func (ste *StructuredTestExecutor) ensureAppForeground(
 	if len(fgStr) == 0 {
 		return
 	}
-	if strings.Contains(fgStr, expectedPkg) {
+	currentPkg := currentForegroundPackage(fgStr)
+	if currentPkg == "" {
+		return
+	}
+	if currentPkg == expectedPkg {
+		return
+	}
+	// Launcher foreground is a legitimate intermediate state for
+	// tv-channel-* / tv-watch-next-* tests that navigate to home to
+	// select a channel tile. Only relaunch on true foreign-app drift.
+	if isLauncherPackage(currentPkg) {
 		return
 	}
 
@@ -608,9 +683,17 @@ func (ste *StructuredTestExecutor) ensureAppForeground(
 
 	fmt.Printf(
 		"  [structured] [%s] ⚠ FOREGROUND DRIFT at step %d: "+
-			"expected %s, found %q — relaunching\n",
-		tc.ID, stepNum, expectedPkg, currentFocus,
+			"expected %s, found %q (package=%s) — force-stopping and relaunching\n",
+		tc.ID, stepNum, expectedPkg, currentFocus, currentPkg,
 	)
+
+	// Force-stop the hijacker so subsequent DPAD events cannot land
+	// back in it.
+	_, _ = osexec.CommandContext(
+		ctx,
+		"adb", "-s", device,
+		"shell", "am", "force-stop", currentPkg,
+	).CombinedOutput()
 
 	if ste.onFinding != nil {
 		ste.onFinding(analysis.AnalysisFinding{
