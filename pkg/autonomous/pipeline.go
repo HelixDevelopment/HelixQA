@@ -1168,8 +1168,26 @@ func (sp *SessionPipeline) Run(
 
 		switch platform {
 		case "android", "androidtv":
+			// FIX-QA-2026-04-21-016: when only AndroidDevices[] is
+			// populated (multi-device config via .devconnect), the
+			// singular AndroidDevice is "". Passing "" to the recorder
+			// resulted in `adb -s "" shell screenrecord` → "more than
+			// one device/emulator" and the segment loop hit its
+			// 5-failure fuse. Fall back to the first entry in the
+			// detected-devices slice.
+			recordDevice := sp.config.AndroidDevice
+			if recordDevice == "" && len(sp.config.AndroidDevices) > 0 {
+				recordDevice = sp.config.AndroidDevices[0]
+			}
+			if recordDevice == "" {
+				fmt.Printf(
+					"  [exec] video recording skipped for %s: no device\n",
+					platform,
+				)
+				continue
+			}
 			rec := video.NewScrcpyRecorder(
-				sp.config.AndroidDevice, videoPath,
+				recordDevice, videoPath,
 				video.WithMethod(
 					video.MethodADBScreenrecord,
 				),
@@ -1820,6 +1838,16 @@ func (sp *SessionPipeline) Run(
 				expectedPkg = sp.config.AndroidPackage
 			}
 
+			// FIX-QA-2026-04-21-018 (Controller stagnation abort):
+			// count consecutive "screen unchanged" steps. If the
+			// device never reacts to any action for too long, the
+			// session is worthless — abort the loop and surface the
+			// failure loudly instead of running the full budget on a
+			// frozen screen (operator-reported on 2026-04-21: 28 min
+			// of video with only app close/reopen, zero UI motion).
+			const maxConsecutiveUnchanged = 8
+			consecutiveUnchanged := 0
+
 			for i := 0; i < maxCuriositySteps; i++ {
 				if curiosityCtx.Err() != nil {
 					break
@@ -1989,6 +2017,7 @@ func (sp *SessionPipeline) Run(
 						screenshot,
 					)
 					if diffResult.IsSame {
+						consecutiveUnchanged++
 						stepHistory = append(
 							stepHistory,
 							"WARNING: Previous action had "+
@@ -1999,10 +2028,59 @@ func (sp *SessionPipeline) Run(
 						fmt.Printf(
 							"  [curiosity %s #%d] "+
 								"screen unchanged "+
-								"(similarity=%.2f)\n",
+								"(similarity=%.2f, "+
+								"consecutive=%d/%d)\n",
 							platform, i+1,
 							diffResult.Similarity,
+							consecutiveUnchanged,
+							maxConsecutiveUnchanged,
 						)
+						// FIX-QA-2026-04-21-018: abort if nothing
+						// on the device has reacted for many
+						// consecutive steps. The session is
+						// testing nothing at that point.
+						if consecutiveUnchanged >= maxConsecutiveUnchanged {
+							fmt.Printf(
+								"  [curiosity %s] ✗ STAGNATION ABORT: "+
+									"%d consecutive steps with no "+
+									"screen change — device is not "+
+									"reacting to any action. "+
+									"Check ADB + device state.\n",
+								platform,
+								consecutiveUnchanged,
+							)
+							// Surface as a critical finding so the
+							// session report flags this as infra
+							// failure rather than a clean run.
+							// Appended to allFindings like every other
+							// finding in this phase.
+							allFindings = append(allFindings,
+								analysis.AnalysisFinding{
+									Category: analysis.CategoryFunctional,
+									Severity: analysis.SeverityCritical,
+									Title: fmt.Sprintf(
+										"HelixQA stagnation on %s — "+
+											"device did not react to "+
+											"%d consecutive actions",
+										platform,
+										consecutiveUnchanged,
+									),
+									Description: "Screen hash was identical " +
+										"across maxConsecutiveUnchanged " +
+										"curiosity steps. Either ADB " +
+										"commands are silently failing " +
+										"(e.g., `cmd input` returning " +
+										"'No shell command implementation.' " +
+										"on Android 9) or the app is frozen. " +
+										"See FIX-QA-2026-04-21-017/018.",
+									Platform: platform,
+								},
+							)
+							break
+						}
+					} else {
+						// Screen changed — reset the run.
+						consecutiveUnchanged = 0
 					}
 				}
 

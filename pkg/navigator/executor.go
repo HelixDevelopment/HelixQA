@@ -107,24 +107,29 @@ func (a *ADBExecutor) DeviceSerial() string {
 
 // Click taps at coordinates via adb shell. Uses "cmd input" for
 // speed (~70ms vs ~1s) on Android 8+ devices.
+//
+// FIX-QA-2026-04-21-017 also applies here: on Android 9 the fast
+// path returns exit=0 with "No shell command implementation." and
+// the tap never lands. Fall back to legacy `input tap` whenever the
+// output indicates a no-op OR the fast path errored.
 func (a *ADBExecutor) Click(
 	ctx context.Context, x, y int,
 ) error {
 	// Fast path: cmd input tap
-	_, err := a.cmdRunner.Run(ctx,
+	out, err := a.cmdRunner.Run(ctx,
 		"adb", "-s", a.device, "shell",
 		"cmd", "input", "tap",
 		fmt.Sprintf("%d", x), fmt.Sprintf("%d", y),
 	)
-	if err == nil {
+	if err == nil && !adbOutputIndicatesNoOp(out) {
 		return nil
 	}
 	// Fallback: legacy input tap
-	_, err = a.cmdRunner.Run(ctx,
+	_, legacyErr := a.cmdRunner.Run(ctx,
 		"adb", "-s", a.device, "shell", "input", "tap",
 		fmt.Sprintf("%d", x), fmt.Sprintf("%d", y),
 	)
-	return err
+	return legacyErr
 }
 
 // Type enters text via adb shell input text.
@@ -218,10 +223,29 @@ func (a *ADBExecutor) Swipe(
 	return err
 }
 
-// KeyPress sends a key event via adb shell. Uses "cmd input" for
-// speed (~90ms) on devices that support it (Android 8+), falling
-// back to "input" (~1s) on older devices. The "cmd input" approach
-// uses a direct binder call instead of spawning a Java VM.
+// KeyPress sends a key event via adb shell.
+//
+// FIX-QA-2026-04-21-017: the original two bugs were catastrophic.
+//
+//  1. **"cmd input" silently does nothing on older Android versions.**
+//     On Android 9 (MIBOX4), running `adb shell cmd input keyevent …`
+//     prints the literal string `"No shell command implementation."`
+//     and exits 0. Every KeyPress returned nil, HelixQA logged
+//     "executed: dpad_up" for 38 steps, but the device received
+//     nothing — the 41-minute run7 session on 2026-04-21 produced a
+//     video with zero UI interaction (only app close/reopen). The
+//     old code only detected "not found" as a reason to fall back to
+//     the legacy path; "No shell command" slipped through.
+//
+//  2. **On any other failure the function also returned nil** — an
+//     outright false-positive contrary to Constitution Article IX.
+//
+// Fix: detect BOTH strings AND any non-zero exit as a signal to use
+// the legacy `adb shell input keyevent` path, and PROPAGATE the error
+// if that fails too. Also sanity-check that "cmd input" actually did
+// something by scanning the output for known no-op markers even on
+// exit=0. Devices where `cmd input` works (Android 10+) stay on the
+// fast path untouched.
 func (a *ADBExecutor) KeyPress(
 	ctx context.Context, key string,
 ) error {
@@ -230,21 +254,43 @@ func (a *ADBExecutor) KeyPress(
 		"adb", "-s", a.device, "shell",
 		"cmd", "input", "keyevent", key,
 	)
-	// "cmd input" prints warnings but still works on most devices.
-	// Only fall back if the command truly failed (exit code != 0).
-	if err == nil {
+
+	if err == nil && !adbOutputIndicatesNoOp(out) {
 		return nil
 	}
-	// Check if it's just the "No shell command" warning vs real failure
-	if len(out) > 0 && strings.Contains(string(out), "not found") {
-		// Device doesn't support cmd input — use legacy path
-		_, err = a.cmdRunner.Run(ctx,
-			"adb", "-s", a.device, "shell",
-			"input", "keyevent", key,
-		)
-		return err
+	// Fall back to legacy `input keyevent` path. Works on every
+	// Android version but is ~1s per call.
+	_, legacyErr := a.cmdRunner.Run(ctx,
+		"adb", "-s", a.device, "shell",
+		"input", "keyevent", key,
+	)
+	return legacyErr
+}
+
+// adbOutputIndicatesNoOp returns true when the `cmd input` fast path
+// returned exit=0 but produced output that indicates the binder call
+// didn't actually happen. Observed markers:
+//
+//   - "No shell command implementation."  — Android 9 / MIBOX4
+//   - "not found"                         — some vendored builds
+//   - "cmd: Can't find service"           — very old adbd
+//
+// On any match the caller should fall back to the legacy
+// `input keyevent` path.
+func adbOutputIndicatesNoOp(out []byte) bool {
+	if len(out) == 0 {
+		return false
 	}
-	return nil // cmd input succeeded despite warning text
+	s := string(out)
+	switch {
+	case strings.Contains(s, "No shell command"):
+		return true
+	case strings.Contains(s, "not found"):
+		return true
+	case strings.Contains(s, "Can't find service"):
+		return true
+	}
+	return false
 }
 
 // Back sends the BACK key event.
