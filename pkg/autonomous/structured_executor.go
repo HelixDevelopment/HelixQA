@@ -13,6 +13,7 @@ import (
 	// JPEG on some ADB versions.
 	_ "image/jpeg"
 	_ "image/png"
+	osexec "os/exec"
 	"path/filepath"
 	"strings"
 	"time"
@@ -98,6 +99,15 @@ func (ste *StructuredTestExecutor) Execute(
 		"  [structured] Loaded %d test banks from %s\n",
 		len(banks), banksDir,
 	)
+
+	// FIX-QA-2026-04-21-019 preflight: on Android TV launchers the
+	// home screen stacks channel rows from every app that published
+	// TV channels. If any of those non-target apps is running when
+	// structured tests start pressing DPAD, the first ENTER can hand
+	// control to the foreign app. Proactively force-stop the apps
+	// most commonly observed stealing focus before the first step.
+	// The target app itself is never in this list.
+	ste.preflightStopCompetingApps(ctx)
 
 	// Execute each bank's test cases
 	for _, bank := range banks {
@@ -263,6 +273,17 @@ func (ste *StructuredTestExecutor) executeStep(
 	// 500ms is sufficient for most UI transitions on Android TV.
 	// Cold start handled separately by the test step's own sleep action.
 	time.Sleep(500 * time.Millisecond)
+
+	// FIX-QA-2026-04-21-019: Foreground guard. Before every step,
+	// verify the app under test is still in the foreground. If the
+	// previous step navigated to an Android TV home-screen channel
+	// tile that belongs to a different app (RuTube, IPTV, YouTube,
+	// mitv-videoplayer), a raw DPAD_ENTER can launch that foreign
+	// app — all subsequent keypresses then land in the wrong app
+	// and the LLM dutifully reports "home screen visible" because
+	// it truly is, just the wrong app's home. Emit a CRITICAL
+	// finding, force-launch the target app, and continue.
+	ste.ensureAppForeground(ctx, platform, tc, stepNum)
 
 	// Take screenshot before action
 	beforeSS, _ := executor.Screenshot(ctx)
@@ -475,6 +496,167 @@ func (ste *StructuredTestExecutor) performAction(
 	default:
 		return ActionResult{Success: false, Message: fmt.Sprintf("Unknown action type: %s", actionType)}
 	}
+}
+
+// preflightStopCompetingApps force-stops known channel-publishing
+// apps on Android TV so that a rogue DPAD_ENTER on a foreign
+// channel tile does not silently hand control over and void the
+// structured phase. The list is a generic set of Android TV apps
+// observed in the wild to publish home channels; it is NOT the
+// app under test. The target app (ste.config.AndroidPackage) is
+// excluded from the stop list as a defensive measure even though
+// it would never appear here, to keep this library
+// project-agnostic (HelixQA Constitution §1).
+//
+// Failures to stop an app (not installed, already stopped, adb
+// unavailable) are ignored — this is best-effort hygiene, not a
+// test-fatal operation.
+func (ste *StructuredTestExecutor) preflightStopCompetingApps(
+	ctx context.Context,
+) {
+	device := ste.config.AndroidDevice
+	if device == "" && len(ste.config.AndroidDevices) > 0 {
+		device = ste.config.AndroidDevices[0]
+	}
+	if device == "" {
+		return
+	}
+
+	// Optional operator-supplied list via config.CompetingAppPackages;
+	// fall back to the empirically-observed Android TV channel publishers
+	// from the 2026-04-21 cycle.
+	competitors := ste.config.CompetingAppPackages
+	if len(competitors) == 0 {
+		competitors = []string{
+			"ru.rutube.app",
+			"ru.iptvremote.android.iptv.pro",
+			"com.mitv.videoplayer",
+			"com.google.android.youtube.tv",
+			"com.google.android.youtube.tvmusic",
+		}
+	}
+
+	target := ste.config.AndroidPackage
+	for _, pkg := range competitors {
+		if pkg == "" || pkg == target {
+			continue
+		}
+		_, _ = osexec.CommandContext(
+			ctx,
+			"adb", "-s", device,
+			"shell", "am", "force-stop", pkg,
+		).CombinedOutput()
+	}
+	fmt.Printf(
+		"  [structured] preflight: force-stopped %d competing apps on %s\n",
+		len(competitors), device,
+	)
+}
+
+// ensureAppForeground guards against silent app-swap drift where
+// a DPAD_ENTER on an Android TV launcher channel tile has handed
+// control to a different app. The guard only applies to android /
+// androidtv platforms where a target package is configured.
+//
+// On drift, emits a CRITICAL finding (so session analysis reports
+// it) and force-relaunches the target app with qa_username /
+// qa_password extras so the app starts from a known entry point.
+// A foreground drift during a structured bank step is a
+// Constitution-class failure — the affected test's remaining
+// steps cannot be trusted, but the session continues so that
+// subsequent test cases (which relaunch the app via their own
+// adb_shell: am start seed steps) still run.
+func (ste *StructuredTestExecutor) ensureAppForeground(
+	ctx context.Context,
+	platform string,
+	tc testbank.TestCase,
+	stepNum int,
+) {
+	if platform != "android" && platform != "androidtv" {
+		return
+	}
+	expectedPkg := ste.config.AndroidPackage
+	if expectedPkg == "" {
+		return
+	}
+	device := ste.config.AndroidDevice
+	if device == "" && len(ste.config.AndroidDevices) > 0 {
+		device = ste.config.AndroidDevices[0]
+	}
+	if device == "" {
+		return
+	}
+
+	fgOut, _ := osexec.CommandContext(
+		ctx,
+		"adb", "-s", device,
+		"shell", "dumpsys", "window", "windows",
+	).CombinedOutput()
+	fgStr := string(fgOut)
+	if len(fgStr) == 0 {
+		return
+	}
+	if strings.Contains(fgStr, expectedPkg) {
+		return
+	}
+
+	// Foreground drift detected — extract current focus for finding.
+	currentFocus := extractLine(fgStr, "mCurrentFocus=")
+	if currentFocus == "" {
+		currentFocus = "(unknown - dumpsys window windows did not report mCurrentFocus)"
+	}
+
+	fmt.Printf(
+		"  [structured] [%s] ⚠ FOREGROUND DRIFT at step %d: "+
+			"expected %s, found %q — relaunching\n",
+		tc.ID, stepNum, expectedPkg, currentFocus,
+	)
+
+	if ste.onFinding != nil {
+		ste.onFinding(analysis.AnalysisFinding{
+			Category: analysis.CategoryFunctional,
+			Severity: analysis.SeverityCritical,
+			Title: fmt.Sprintf(
+				"Foreground Drift During Structured Test: %s (step %d)",
+				tc.Name, stepNum,
+			),
+			Description: fmt.Sprintf(
+				"Test case %q step %d detected that the target app "+
+					"(%s) is no longer in the foreground. Current focus: %s. "+
+					"This typically happens when a previous step's "+
+					"DPAD_ENTER landed on a non-Catalogizer Android TV "+
+					"home channel tile (RuTube, IPTV Pro, YouTube TV, "+
+					"mitv-videoplayer) and launched that app. All "+
+					"subsequent keypresses in the test landed in the "+
+					"wrong app, producing false-positive PASS results. "+
+					"The guard force-relaunched the target app; this "+
+					"test's remaining steps were not trusted.",
+				tc.ID, stepNum, expectedPkg, currentFocus,
+			),
+			Platform: platform,
+			AcceptanceCriteria: fmt.Sprintf(
+				"Every structured test step must execute against package %s. "+
+					"Foreground drift into any other package is a CRITICAL "+
+					"test-infrastructure failure and voids the step's result.",
+				expectedPkg,
+			),
+		})
+	}
+
+	launchArgs := []string{
+		"-s", device, "shell", "am", "start",
+		"-n", expectedPkg + "/.ui.MainActivity",
+	}
+	user := ste.config.qaUsername()
+	pass := ste.config.qaPassword()
+	if user != "" && pass != "" {
+		launchArgs = append(launchArgs,
+			"--es", "qa_username", user,
+			"--es", "qa_password", pass,
+		)
+	}
+	_, _ = osexec.CommandContext(ctx, "adb", launchArgs...).CombinedOutput()
+	time.Sleep(3 * time.Second)
 }
 
 // verifyOutcome uses LLM vision to verify if the screenshot matches expected state.

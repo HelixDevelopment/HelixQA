@@ -84,6 +84,20 @@ type PipelineConfig struct {
 	// name (e.g. "com.example.app").
 	AndroidPackage string
 
+	// CompetingAppPackages lists Android TV apps the caller
+	// wants proactively force-stopped before structured and
+	// curiosity phases begin. On Android TV, the home screen
+	// aggregates channel rows from every installed app that
+	// published TvContractCompat channels — a stray
+	// DPAD_ENTER on a foreign app's channel tile can hand
+	// control to the foreign app, and every subsequent
+	// keypress then lands in the wrong UI. This list is
+	// consumer-owned (HelixQA Constitution §1 — no
+	// project-specific data baked into the library); leave
+	// empty to use a generic empirically-observed default
+	// of apps seen publishing channels in the wild.
+	CompetingAppPackages []string
+
 	// WebURL is the URL for web platform testing.
 	WebURL string
 

@@ -635,6 +635,18 @@ func cmdAutonomous(args []string) {
 			}
 		}
 	}
+	// Parse HELIX_COMPETING_APP_PACKAGES (comma-separated) — apps
+	// the caller wants proactively force-stopped before structured
+	// and curiosity phases, so stray Android TV home channel taps
+	// do not silently hand control to a foreign app.
+	if compEnv := os.Getenv("HELIX_COMPETING_APP_PACKAGES"); compEnv != "" {
+		for _, p := range strings.Split(compEnv, ",") {
+			p = strings.TrimSpace(p)
+			if p != "" {
+				cfg.CompetingAppPackages = append(cfg.CompetingAppPackages, p)
+			}
+		}
+	}
 	pipeline := autonomous.NewSessionPipeline(
 		cfg, provider, store,
 	)
