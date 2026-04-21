@@ -1730,3 +1730,21 @@ test_cases:
       description: "V-cycle fuzzing (FuzzSanitizeInput_Idempotent) surfaced this on the first run. Input \\xdd 0 went through SanitizeInput once and produced ' 0' (leading space appeared when the invalid UTF-8 byte \\xdd was dropped); a second pass produced '0' (TrimSpace saw the leading space this time). Any multi-hop pipeline that re-sanitises between middleware would mutate the data between hops. Fix: move strings.TrimSpace to run LAST, after the UTF-8 cleanup. The failing seed is permanent in testdata/fuzz/FuzzSanitizeInput_Idempotent/f0b2de960c073e5d so every future test run exercises it."
       fix_file: "catalog-api/middleware/input_validation.go"
       fix_commit: "pending"
+
+  - id: FIX-QA-2026-04-21-010
+    name: "catalog-api utils.SanitizeString — same idempotency bug (fuzz-found)"
+    category: regression
+    priority: high
+    platforms: [api]
+    steps:
+      - name: "FuzzSanitizeString_Idempotent seed corpus + 5s fuzz burst are green"
+        action: "cd catalog-api && GOTOOLCHAIN=local go test -count=1 -run 'FuzzSanitizeString_Idempotent' ./utils/... && GOTOOLCHAIN=local go test -fuzz='^FuzzSanitizeString_Idempotent$' -fuzztime=5s ./utils/..."
+        expected: "PASS — 'FF FE invalid utf8' no longer produces ' invalid utf8' then 'invalid utf8'"
+    tags: [regression, utils, sanitiser, fuzz, idempotency, sibling-of-fix-009]
+    estimated_duration: "1s"
+    expected_result: "utils.SanitizeString is idempotent"
+    fix_reference:
+      bug_id: "FIX-QA-2026-04-21-010"
+      description: "W-cycle: while adding idempotency fuzzers for every Sanitize*/Normalize*/Clean*/Strip* function across catalog-api, FuzzSanitizeString_Idempotent in utils/ caught the same TrimSpace-before-UTF8-cleanup bug that FIX-QA-2026-04-21-009 fixed in middleware/. Both functions had the identical anti-pattern independently. The lesson: finding one instance of a bug class must trigger a sweep for ALL instances — which is exactly what the idempotency-fuzzer-for-every-sanitiser pattern enforces. Fix is mechanical: TrimSpace runs LAST."
+      fix_file: "catalog-api/utils/validation.go"
+      fix_commit: "pending"
