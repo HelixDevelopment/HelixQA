@@ -891,9 +891,24 @@ func containsIgnoreCase(s, substr string) bool {
 	return strings.Contains(strings.ToLower(s), strings.ToLower(substr))
 }
 
+// extractLine scans text line-by-line and returns the first line whose
+// trimmed form contains (or starts with) prefix. Returns the trimmed
+// line. Returns "" if no match. Used to pluck mCurrentFocus= out of a
+// multi-kilobyte dumpsys dump without confusing the foreground-drift
+// guard (FIX-QA-2026-04-21-019 part 3 — previously a stub that returned
+// the entire text, which made currentForegroundPackage see the whole
+// dumpsys as one giant line and classify InputMethod windows as drift).
 func extractLine(text, prefix string) string {
-	// Simple extraction - would need proper implementation
-	return text
+	for _, raw := range strings.Split(text, "\n") {
+		line := strings.TrimSpace(raw)
+		if line == "" {
+			continue
+		}
+		if strings.HasPrefix(line, prefix) || strings.Contains(line, prefix) {
+			return line
+		}
+	}
+	return ""
 }
 
 // truncateOutput clips command output to n runes so error messages
