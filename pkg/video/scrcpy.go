@@ -178,11 +178,19 @@ func (r *ScrcpyRecorder) Start(ctx context.Context) error {
 		// device. Run it in a loop so a 2-hour session actually
 		// records 2 hours of video (as a sequence of segments that
 		// Stop concatenates at the end).
+		//
+		// FIX-QA-2026-04-21-014: loop lifetime MUST be bound to
+		// Stop(), not to the caller's ctx. A bug in an earlier cut
+		// chained loopCtx to the phase ctx passed into Start(); when
+		// Execute phase ended its ctx was cancelled and every new
+		// CommandContext returned exit=1 instantly, causing a
+		// 20,000+-iteration spin in 4 minutes. Bind to Background so
+		// the loop survives phase transitions and only exits on Stop.
 		r.segmentsDir = r.outputPath + ".segments"
 		if err := os.MkdirAll(r.segmentsDir, 0o755); err != nil {
 			return fmt.Errorf("mkdir segments dir: %w", err)
 		}
-		r.loopCtx, r.loopCancel = context.WithCancel(ctx)
+		r.loopCtx, r.loopCancel = context.WithCancel(context.Background())
 		r.loopDone = make(chan struct{})
 		r.segments = nil
 		r.segmentNumber = 0
@@ -201,14 +209,33 @@ func (r *ScrcpyRecorder) Start(ctx context.Context) error {
 
 // runSegmentLoop re-invokes `adb shell screenrecord` repeatedly,
 // pulling each segment to the host and appending it to r.segments.
-// Exits when r.loopCtx is cancelled.
+// Exits when r.loopCtx is cancelled or after too many consecutive
+// failures.
+//
+// Safety fuses added after the 2026-04-21 X-cycle incident where an
+// earlier version spun 20,000+ failed segments in 4 minutes because
+// each exec.Run returned exit 1 instantly (adb error) and there was
+// no backoff. Now: minimum 2-second floor per iteration, exponential
+// backoff on failure, hard ceiling of 5 consecutive failures.
 func (r *ScrcpyRecorder) runSegmentLoop() {
 	defer close(r.loopDone)
+
+	consecutiveFailures := 0
+	const maxConsecutiveFailures = 5
 
 	for {
 		if r.loopCtx.Err() != nil {
 			return
 		}
+		if consecutiveFailures >= maxConsecutiveFailures {
+			fmt.Printf(
+				"  [video] segment loop: %d consecutive failures, giving up\n",
+				consecutiveFailures,
+			)
+			return
+		}
+
+		iterStart := time.Now()
 
 		r.mu.Lock()
 		r.segmentNumber++
@@ -230,27 +257,40 @@ func (r *ScrcpyRecorder) runSegmentLoop() {
 			devicePath,
 		}
 		cmd := exec.CommandContext(r.loopCtx, "adb", args...)
-		// Store current cmd so Stop can kill it promptly.
 		r.mu.Lock()
 		r.cmd = cmd
 		r.mu.Unlock()
 
-		if err := cmd.Run(); err != nil {
-			// Context cancel comes through here too — that's
-			// expected at Stop time.
+		out, runErr := cmd.CombinedOutput()
+		iterElapsed := time.Since(iterStart)
+
+		// An immediate (sub-second) exit means screenrecord never
+		// ran — almost certainly adb error (device offline, file
+		// perms, encoder issue). Back off exponentially and bump
+		// the consecutive-failure counter.
+		if runErr != nil && iterElapsed < 2*time.Second {
 			if r.loopCtx.Err() != nil {
-				// Make sure the device-side screenrecord is
-				// killed so the partial file finalizes.
-				_ = exec.Command("adb", "-s", r.device,
-					"shell", "killall", "-INT", "screenrecord").Run()
-				time.Sleep(500 * time.Millisecond)
-			} else {
-				fmt.Printf(
-					"  [video] segment %d screenrecord exit: %v\n",
-					segN, err,
-				)
+				return
 			}
+			consecutiveFailures++
+			backoff := time.Duration(consecutiveFailures) * 2 * time.Second
+			fmt.Printf(
+				"  [video] segment %d failed in %v: %v — %s (backoff %v, fail %d/%d)\n",
+				segN, iterElapsed, runErr,
+				strings.TrimSpace(string(out)),
+				backoff, consecutiveFailures, maxConsecutiveFailures,
+			)
+			select {
+			case <-r.loopCtx.Done():
+				return
+			case <-time.After(backoff):
+			}
+			continue
 		}
+
+		// Any real run (successful or interrupted after some time
+		// on the device) resets the failure counter.
+		consecutiveFailures = 0
 
 		// Pull this segment to the host, even on context cancel,
 		// because the device wrote at least a partial MP4.
@@ -264,13 +304,12 @@ func (r *ScrcpyRecorder) runSegmentLoop() {
 
 		if pullErr == nil {
 			if info, err := os.Stat(hostPath); err == nil &&
-				info.Size() > 50*1024 {
+				info.Size() > 20*1024 {
 				r.mu.Lock()
 				r.segments = append(r.segments, hostPath)
 				r.mu.Unlock()
 			}
 		}
-		// Clean device side regardless.
 		_ = exec.Command("adb", "-s", r.device,
 			"shell", "rm", "-f", devicePath).Run()
 	}

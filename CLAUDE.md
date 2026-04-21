@@ -119,6 +119,23 @@ Violations of this constitution void the entire QA session's results for the aff
 - Video recordings MUST be valid (non-trivial file size, playable, correct duration) — a 20KB recording for a 30-minute session is a CRITICAL infrastructure failure
 - Screenshots MUST show visual changes between steps — consecutive identical screenshots indicate a navigation or capture failure
 
+## MANDATORY: Device State Preservation
+
+**A QA session MUST return every test device to the exact state it was in at session start. This is NON-NEGOTIABLE.** (Catalogizer Constitution Article VIII.)
+
+- The pipeline captures sensitive `settings get system|secure` keys at Phase 0b (right after ADB reverse proxy) and registers a `defer` to restore them on any exit path (normal, crash, ctrl-C, context timeout). Implementation: `pkg/autonomous/device_preserve.go`.
+- Preserved keys include: `system.font_scale`, `system.screen_off_timeout`, `system.screen_brightness`, `system.screen_brightness_mode`, `system.accelerometer_rotation`, `secure.accessibility_font_scaling_has_been_changed`. Add new keys as operator reports surface them.
+- The LLM-driven curiosity phase MUST NOT navigate into device Settings → Accessibility / Display / Font areas. If it does, that's a curiosity-policy bug, not justification for relaxing the preservation hook (which is defence in depth).
+- A session that leaves a device with a different `font_scale`, `wm density`, brightness, or rotation than it started with is a Constitution violation.
+
+## MANDATORY: No Manual Tooling Workarounds
+
+**HelixQA is testing infrastructure. If it produces broken output, fix the Go code — don't paper over it with a bash script.** (Constitution Article IX.)
+
+- No manually-invoked `adb shell screenrecord` loops pulled from the operator side. The recorder (`pkg/video/scrcpy.go`) handles the 180-second `screenrecord` cap by looping segments and concatenating them via `ffmpeg -f concat -c copy`. A 2-hour session produces a continuous 2-hour MP4.
+- No `tee`-style exit-code laundering in the orchestrator. The shell script captures the exit code of the HelixQA binary directly (`PIPESTATUS[0]`) and refuses to print "✓ completed successfully" unless the real exit code is zero AND the `pipeline-report.json` doesn't contain `"Session failed"`.
+- No log line that says "✓ PASSED" or "✓ completed successfully" may be reachable without its gating assertion passing (FIX-QA-2026-04-20-001/002).
+
 ## MANDATORY: Flawless Session Documentation
 
 **Every QA session MUST produce complete, valid, and analyzable documentation. This is NON-NEGOTIABLE.**

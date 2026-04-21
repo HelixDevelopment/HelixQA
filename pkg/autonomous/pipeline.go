@@ -900,6 +900,28 @@ func (sp *SessionPipeline) Run(
 	if len(allDevices) == 0 && sp.config.AndroidDevice != "" {
 		allDevices = []string{sp.config.AndroidDevice}
 	}
+
+	// FIX-QA-2026-04-21-015 (device-pollution guard): snapshot the
+	// sensitive system settings (font_scale, brightness, rotation…)
+	// BEFORE any phase runs, and register a defer to restore them
+	// verbatim when Run() returns. Addresses a 2026-04-21 operator
+	// report that two consecutive sessions had left the devices
+	// with system font_scale=2.0 (LLM-driven curiosity presumably
+	// wandered into Settings → Accessibility). This is defence in
+	// depth — the LLM still shouldn't navigate into device settings,
+	// but if it does, the device never stays polluted.
+	for _, device := range allDevices {
+		snap, err := captureDeviceSettings(ctx, device)
+		if err != nil {
+			fmt.Printf(
+				"[pipeline] warning: capture settings on %s: %v\n",
+				device, err,
+			)
+			continue
+		}
+		defer snap.restore(context.Background())
+	}
+
 	for _, device := range allDevices {
 		revCtx, revCancel := context.WithTimeout(
 			ctx, 10*time.Second,
