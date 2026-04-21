@@ -1709,3 +1709,24 @@ test_cases:
       description: "U-cycle partial closure of DEFER-QA-2026-04-21-001 items #3 and #5. Previously, RunAll / RunByCategory passed context.Background() to their services — long-running safely, but losing every request-scoped value (tracing, request_id, auth subject). Switched to context.WithoutCancel(c.Request.Context()) which is the Go 1.21+ primitive built exactly for this shape: inherit values, ignore cancel. Only item #4 of DEFER-001 remains open — threading ctx end-to-end through Challenges/pkg/runner so individual challenges co-operatively observe progress, which is a submodule refactor across 508 challenges."
       fix_file: "catalog-api/handlers/challenge.go"
       fix_commit: "pending"
+
+  - id: FIX-QA-2026-04-21-009
+    name: "catalog-api SanitizeInput — idempotency violation (fuzz-found)"
+    category: regression
+    priority: high
+    platforms: [api]
+    steps:
+      - name: "Fuzz-regression seed \\xdd 0 produces identical output on both passes"
+        action: "cd catalog-api && GOTOOLCHAIN=local go test -count=1 -run 'FuzzSanitizeInput_Idempotent' ./middleware/..."
+        expected: "PASS — includes the testdata/fuzz seed f0b2de960c073e5d that used to produce ' 0' on pass 1 and '0' on pass 2"
+      - name: "30s fuzz burst finds no new idempotency violations"
+        action: "cd catalog-api && GOTOOLCHAIN=local go test -fuzz='^FuzzSanitizeInput_Idempotent$' -fuzztime=30s ./middleware/..."
+        expected: "no FAIL output; new corpus entries are fine"
+    tags: [regression, middleware, sanitiser, fuzz, idempotency, false-positive]
+    estimated_duration: "1s"
+    expected_result: "SanitizeInput is a fixed point: SanitizeInput(SanitizeInput(x)) == SanitizeInput(x) for every input that fuzzing can surface"
+    fix_reference:
+      bug_id: "FIX-QA-2026-04-21-009"
+      description: "V-cycle fuzzing (FuzzSanitizeInput_Idempotent) surfaced this on the first run. Input \\xdd 0 went through SanitizeInput once and produced ' 0' (leading space appeared when the invalid UTF-8 byte \\xdd was dropped); a second pass produced '0' (TrimSpace saw the leading space this time). Any multi-hop pipeline that re-sanitises between middleware would mutate the data between hops. Fix: move strings.TrimSpace to run LAST, after the UTF-8 cleanup. The failing seed is permanent in testdata/fuzz/FuzzSanitizeInput_Idempotent/f0b2de960c073e5d so every future test run exercises it."
+      fix_file: "catalog-api/middleware/input_validation.go"
+      fix_commit: "pending"
