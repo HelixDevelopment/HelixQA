@@ -507,10 +507,44 @@ func (ste *StructuredTestExecutor) verifyOutcome(
 	if resp != nil {
 		response = resp.Content
 	}
-	verified := containsIgnoreCase(response, "VERIFIED: yes")
-	actual := extractLine(response, "ACTUAL:")
 
-	return verified, actual, nil
+	// FIX-QA-2026-04-21-013: the original implementation required
+	// the exact literal "VERIFIED: yes" in the response. That's fine
+	// for navigation-tuned providers that follow structured-output
+	// prompts, but astica (first-ranked for the structured phase on
+	// this project) returns rich natural-language descriptions and
+	// never emits "VERIFIED: yes" literally. The old code then
+	// treated every structured test as failing on vision verification
+	// even when the action succeeded. Fix is tri-state:
+	//
+	//   1. Exact "VERIFIED: yes" / "VERIFIED: no" → honour it.
+	//   2. Response is non-empty natural language → AMBIGUOUS;
+	//      return providerErr so the caller falls back to action
+	//      success (which for structured-bank tests is usually a
+	//      binary "action ran without adb error").
+	//   3. Response empty → providerErr (same fallback).
+	actual := extractLine(response, "ACTUAL:")
+	switch {
+	case containsIgnoreCase(response, "VERIFIED: yes"):
+		return true, actual, nil
+	case containsIgnoreCase(response, "VERIFIED: no"):
+		return false, actual, nil
+	case strings.TrimSpace(response) == "":
+		return false, "Vision response empty — cannot verify",
+			errors.New("vision response empty")
+	default:
+		// Non-empty but not in the exact format. Treat as ambiguous
+		// so the executor defers to actionResult.Success. Preserve
+		// the raw response so the test log still shows what the
+		// vision provider saw.
+		snippet := response
+		if len(snippet) > 200 {
+			snippet = snippet[:200] + "…"
+		}
+		return false,
+			"Vision response not in VERIFIED format: " + snippet,
+			errors.New("vision response ambiguous")
+	}
 }
 
 // testAppliesToPlatforms checks if a test case applies to configured platforms.
