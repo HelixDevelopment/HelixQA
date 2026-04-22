@@ -531,18 +531,20 @@ func (ste *StructuredTestExecutor) preflightStopCompetingApps(
 		return
 	}
 
-	// Optional operator-supplied list via config.CompetingAppPackages;
-	// fall back to the empirically-observed Android TV channel publishers
-	// from the 2026-04-21 cycle.
+	// Consumer-owned list via config.CompetingAppPackages (HelixQA
+	// Constitution §1 — no project-specific names baked into the
+	// library). Callers populate this from their own env var; see
+	// cmd/helixqa/main.go which reads HELIX_COMPETING_APP_PACKAGES
+	// and passes it through. If empty, the preflight is a no-op
+	// and the per-step foreground guard still catches drift.
 	competitors := ste.config.CompetingAppPackages
 	if len(competitors) == 0 {
-		competitors = []string{
-			"ru.rutube.app",
-			"ru.iptvremote.android.iptv.pro",
-			"com.mitv.videoplayer",
-			"com.google.android.youtube.tv",
-			"com.google.android.youtube.tvmusic",
-		}
+		fmt.Printf(
+			"  [structured] preflight: no competing-app packages configured " +
+				"(HELIX_COMPETING_APP_PACKAGES) — per-step foreground guard " +
+				"will still catch drift to foreign apps\n",
+		)
+		return
 	}
 
 	target := ste.config.AndroidPackage
