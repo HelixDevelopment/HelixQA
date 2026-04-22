@@ -628,11 +628,18 @@ func currentForegroundPackage(dumpsysOut string) string {
 // launcher is tolerated silently — tv-channel-* tests legitimately
 // visit the launcher to click channel tiles.
 //
-// A foreground drift during a structured bank step is a
-// Constitution-class failure — the affected test's remaining
-// steps cannot be trusted, but the session continues so that
-// subsequent test cases (which relaunch the app via their own
-// adb_shell: am start seed steps) still run.
+// Test cases that INTENTIONALLY exercise system overlays (voice
+// search → Google Katniss / `ihq` input method, launcher channel
+// deep-links → RuTube / IPTV Pro by design) can opt out via
+// `allow_foreground_leave: true` in the bank YAML — the guard then
+// treats their drift events as expected behaviour rather than
+// infrastructure failures.
+//
+// A foreground drift during a structured bank step that does NOT
+// opt out is a Constitution-class failure — the affected test's
+// remaining steps cannot be trusted, but the session continues so
+// that subsequent test cases (which relaunch the app via their
+// own adb_shell: am start seed steps) still run.
 func (ste *StructuredTestExecutor) ensureAppForeground(
 	ctx context.Context,
 	platform string,
@@ -640,6 +647,10 @@ func (ste *StructuredTestExecutor) ensureAppForeground(
 	stepNum int,
 ) {
 	if platform != "android" && platform != "androidtv" {
+		return
+	}
+	// Per-test opt-out for tests that intentionally leave the app.
+	if tc.AllowForegroundLeave {
 		return
 	}
 	expectedPkg := ste.config.AndroidPackage
