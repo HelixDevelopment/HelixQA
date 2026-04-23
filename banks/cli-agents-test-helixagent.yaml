@@ -59,13 +59,13 @@ test_cases:
     executor_agent: claude_code
     steps:
       - name: "Health check via bash"
-        action: "Execute: 'curl -s http://localhost:7061/health | jq .'"
+        action: "Execute: 'curl -s http://localhost:8100/health | jq .'"
         expected: "Returns HelixAgent health status, containers, providers"
       - name: "Check provider status"
-        action: "Execute: 'curl -s http://localhost:7061/v1/providers | jq '.providers | length''"
+        action: "Execute: 'curl -s http://localhost:8100/v1/providers | jq '.providers | length''"
         expected: "Returns 22+ providers"
       - name: "Verify metrics endpoint"
-        action: "Execute: 'curl -s http://localhost:7061/metrics | grep helixagent'"
+        action: "Execute: 'curl -s http://localhost:8100/metrics | grep helixagent'"
         expected: "Prometheus metrics visible"
     tags: [claude_code, bash, health, monitoring]
     estimated_duration: "30s"
@@ -272,7 +272,7 @@ test_cases:
       - composer
     steps:
       - name: "Configure Cursor with HelixAgent"
-        action: "cursor set-api http://localhost:7061/v1"
+        action: "cursor set-api http://localhost:8100/v1"
         expected: "Cursor uses HelixAgent ensemble"
       - name: "Test tab completion"
         action: "Type code, press Tab"
@@ -331,7 +331,7 @@ test_cases:
       - file_relationships
     steps:
       - name: "Configure Kiro for HelixAgent"
-        action: "kiro --helixagent-endpoint http://localhost:7061"
+        action: "kiro --helixagent-endpoint http://localhost:8100"
         expected: "Kiro uses HelixAgent context API"
       - name: "Test intent detection"
         action: "Type: 'Fix the bug in auth'"
@@ -359,7 +359,7 @@ test_cases:
       - document_processing
     steps:
       - name: "Configure Gemini for HelixAgent"
-        action: "gemini config set endpoint http://localhost:7061"
+        action: "gemini config set endpoint http://localhost:8100"
         expected: "Gemini routes through HelixAgent"
       - name: "Test image input"
         action: "Upload architecture diagram, ask for analysis"
@@ -387,7 +387,7 @@ test_cases:
       - compliance_check
     steps:
       - name: "Configure Amazon Q for HelixAgent"
-        action: "q configure --endpoint http://localhost:7061"
+        action: "q configure --endpoint http://localhost:8100"
         expected: "Amazon Q uses HelixAgent backend"
       - name: "Test code transformation"
         action: "'Transform this Java code to Go'"

@@ -30,7 +30,7 @@ test_cases:
     executor_agent: claude_code
     steps:
       - name: "Agent calls /v1/ensemble/completions"
-        action: "claude_code.Execute('bash', {command: 'curl -X POST http://localhost:7061/v1/ensemble/completions -H \"Content-Type: application/json\" -d '{\"model\":\"ensemble\",\"messages\":[{\"role\":\"user\",\"content\":\"Hello\"}]}'"})"
+        action: "claude_code.Execute('bash', {command: 'curl -X POST http://localhost:8100/v1/ensemble/completions -H \"Content-Type: application/json\" -d '{\"model\":\"ensemble\",\"messages\":[{\"role\":\"user\",\"content\":\"Hello\"}]}'"})"
         expected: "HTTP 200 with ensemble response from multiple providers"
       - name: "Verify multiple provider responses"
         action: "Parse response JSON, check 'responses' array length >= 2"

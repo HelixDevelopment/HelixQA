@@ -42,7 +42,7 @@ test_cases:
     priority: critical
     steps:
       - name: "Start HelixAgent"
-        action: "Ensure HelixAgent running on :7061"
+        action: "Ensure HelixAgent running on :8100"
         expected: "Healthy"
       - name: "Configure AIChat"
         action: "Set AICHAT_CONFIG_DIR and use generated config"
