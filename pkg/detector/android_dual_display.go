@@ -13,8 +13,12 @@ import (
 	"time"
 )
 
-// presenterPackage is the ATMOSphere Presenter app package.
-const presenterPackage = "com.atmosphere.presenter"
+// defaultPresenterPackage is left empty to honour HelixQA
+// Constitution §1 (no project-specific names baked into the
+// library). Callers set the package via WithPresenterPackage; if
+// unset, dual-display presenter checks are skipped rather than
+// running against a bogus package name.
+const defaultPresenterPackage = ""
 
 // Playback state constants matching Android PlaybackState.
 const (
@@ -144,8 +148,11 @@ type DualDisplayResult struct {
 type DualDisplayOption func(*DualDisplayDetector)
 
 // DualDisplayDetector extends the base Detector with
-// dual-display awareness for the ATMOSphere device (Orange Pi
-// 5 Max with two HDMI outputs).
+// dual-display awareness for any Android device with two HDMI
+// outputs (originally written against the ATMOSphere Orange Pi
+// 5 Max reference hardware; the detector itself is hardware-
+// agnostic and the caller supplies the Presenter package via
+// WithPresenterPackage).
 type DualDisplayDetector struct {
 	detector           *Detector
 	primaryDisplayID   int
@@ -153,6 +160,7 @@ type DualDisplayDetector struct {
 	device             string
 	evidenceDir        string
 	cmdRunner          CommandRunner
+	presenterPackage   string
 }
 
 // WithSecondaryDisplayID sets the secondary display ID. By
@@ -184,6 +192,17 @@ func WithDualDisplayEvidenceDir(
 	}
 }
 
+// WithPresenterPackage sets the Android Presenter package that
+// drives the secondary display. Consumer-owned (HelixQA
+// Constitution §1); if left empty, video-routing and presenter
+// liveness checks return zero values rather than probing a
+// wrong package.
+func WithPresenterPackage(pkg string) DualDisplayOption {
+	return func(d *DualDisplayDetector) {
+		d.presenterPackage = pkg
+	}
+}
+
 // NewDualDisplayDetector creates a DualDisplayDetector for the
 // specified ADB device serial. The primary display defaults to
 // ID 0 (touch screen). The secondary display ID is discovered
@@ -198,6 +217,7 @@ func NewDualDisplayDetector(
 		device:             device,
 		evidenceDir:        "evidence",
 		cmdRunner:          &execRunner{},
+		presenterPackage:   defaultPresenterPackage,
 	}
 	for _, opt := range opts {
 		opt(d)
@@ -392,10 +412,15 @@ func (d *DualDisplayDetector) CheckVideoRouting(
 		result.VideoPlaying = true
 	}
 
-	// 2. Check Presenter services for video output state.
+	// 2. Check Presenter services for video output state. Skip
+	// when no presenter package is configured (library default
+	// per HelixQA Constitution §1).
+	if d.presenterPackage == "" {
+		return result, nil
+	}
 	servicesArgs := d.adbArgs(
 		"shell", "dumpsys", "activity", "services",
-		presenterPackage,
+		d.presenterPackage,
 	)
 	servicesOutput, err := d.cmdRunner.Run(
 		ctx, "adb", servicesArgs...,
@@ -515,9 +540,15 @@ func (d *DualDisplayDetector) CheckPresenter(
 ) (*PresenterStatus, error) {
 	status := &PresenterStatus{}
 
+	// Skip presenter probes when no package is configured
+	// (HelixQA Constitution §1 — library stays project-agnostic).
+	if d.presenterPackage == "" {
+		return status, nil
+	}
+
 	// Check if Presenter process is alive.
 	pidArgs := d.adbArgs(
-		"shell", "pidof", presenterPackage,
+		"shell", "pidof", d.presenterPackage,
 	)
 	pidOutput, err := d.cmdRunner.Run(
 		ctx, "adb", pidArgs...,
@@ -534,7 +565,7 @@ func (d *DualDisplayDetector) CheckPresenter(
 	// Check service state via dumpsys.
 	svcArgs := d.adbArgs(
 		"shell", "dumpsys", "activity", "services",
-		presenterPackage,
+		d.presenterPackage,
 	)
 	svcOutput, err := d.cmdRunner.Run(
 		ctx, "adb", svcArgs...,

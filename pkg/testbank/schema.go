@@ -67,6 +67,14 @@ type TestCase struct {
 
 	// ExpectedResult describes the expected outcome.
 	ExpectedResult string `yaml:"expected_result" json:"expected_result"`
+
+	// AllowForegroundLeave opts this test out of the structured-phase
+	// foreground-drift guard. Set to true for tests that intentionally
+	// exercise system overlays or the launcher (voice search, tv
+	// channels, watch-next-row), where drifting to `ihq`, Google
+	// Katniss, IPTV Pro, RuTube, etc. is the test subject, not a
+	// bug. Defaults to false — tests MUST stay in the target app.
+	AllowForegroundLeave bool `yaml:"allow_foreground_leave,omitempty" json:"allow_foreground_leave,omitempty"`
 }
 
 // ActionType identifies the type of action to execute.
