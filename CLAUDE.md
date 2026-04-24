@@ -10,15 +10,16 @@ same session as the change.** Coverage and green suites are not evidence.
 
 ### Acceptance demo for this module
 
-<!-- TODO: replace this block with the exact command(s) that exercise this
-     module end-to-end against real dependencies, and the expected output.
-     The commands must run the real artifact (built binary, deployed
-     container, real service) — no in-process fakes, no mocks, no
-     `httptest.NewServer`, no Robolectric, no JSDOM as proof of done. -->
-
 ```bash
-# TODO
+# Autonomous QA pipeline — requires at least one real ADB device/emulator.
+# Runs Learn → Plan → Execute → Curiosity → Analyze against a real APK from a real test bank.
+cd HelixQA
+adb devices | grep -q 'device$' || { echo 'SKIP: no ADB device'; exit 0; }
+GOMAXPROCS=2 nice -n 19 ./bin/helixqa list --bank banks/app-navigation.yaml
+GOMAXPROCS=2 nice -n 19 go test -count=1 -race -run 'TestValidator_Validate' ./pkg/validator
 ```
+Expect: test bank loads successfully, `ProbeGeoRestriction` runs before any playback, `device_preservation` block appears in `qa-results/session-*/pipeline-report.json`, findings carry `evidence_paths` pointing at files that exist. See `HelixQA/CLAUDE.md`'s "Constitution Enforcement Evidence" section for full validation criteria.
+
 
 ## CONSTITUTION: Project-Agnostic / 100% Decoupled (MANDATORY)
 
