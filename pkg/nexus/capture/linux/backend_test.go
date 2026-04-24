@@ -20,10 +20,10 @@ import (
 // machines without X11 tools stay green.
 func TestDetectBackend_PrefersXwd(t *testing.T) {
 	if _, err := exec.LookPath("xwd"); err != nil {
-		t.Skip("xwd not on PATH — skipping xwd-preference test")
+		t.Skip("xwd not on PATH — skipping xwd-preference test")  // SKIP-OK: #legacy-untriaged
 	}
 	if _, err := exec.LookPath("convert"); err != nil {
-		t.Skip("convert not on PATH — skipping xwd-preference test")
+		t.Skip("convert not on PATH — skipping xwd-preference test")  // SKIP-OK: #legacy-untriaged
 	}
 	backend, err := detectBackend()
 	require.NoError(t, err)
@@ -35,10 +35,10 @@ func TestDetectBackend_PrefersXwd(t *testing.T) {
 // Skipped unless gnome-screenshot is on PATH and xwd is not.
 func TestDetectBackend_FallsBackToGnome(t *testing.T) {
 	if _, err := exec.LookPath("xwd"); err == nil {
-		t.Skip("xwd is present — fallback-to-gnome test not applicable")
+		t.Skip("xwd is present — fallback-to-gnome test not applicable")  // SKIP-OK: #legacy-untriaged
 	}
 	if _, err := exec.LookPath("gnome-screenshot"); err != nil {
-		t.Skip("gnome-screenshot not on PATH — skipping fallback test")
+		t.Skip("gnome-screenshot not on PATH — skipping fallback test")  // SKIP-OK: #legacy-untriaged
 	}
 	backend, err := detectBackend()
 	require.NoError(t, err)

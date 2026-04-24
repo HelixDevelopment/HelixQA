@@ -19,7 +19,7 @@ func TestDefaultDesktopConfig(t *testing.T) {
 
 func TestNewDesktopCapture(t *testing.T) {
 	if !IsPlatformSupported() {
-		t.Skip("platform not supported")
+		t.Skip("platform not supported")  // SKIP-OK: #legacy-untriaged
 	}
 
 	config := DefaultDesktopConfig()
@@ -87,7 +87,7 @@ func TestWindow_String(t *testing.T) {
 
 func TestDesktopCapture_GetSource(t *testing.T) {
 	if !IsPlatformSupported() {
-		t.Skip("platform not supported")
+		t.Skip("platform not supported")  // SKIP-OK: #legacy-untriaged
 	}
 
 	config := DefaultDesktopConfig()
@@ -117,7 +117,7 @@ func TestVerifyPlatformSupport(t *testing.T) {
 
 func TestListDisplays(t *testing.T) {
 	if !IsPlatformSupported() {
-		t.Skip("platform not supported")
+		t.Skip("platform not supported")  // SKIP-OK: #legacy-untriaged
 	}
 
 	displays, err := ListDisplays()
@@ -137,7 +137,7 @@ func TestListDisplays(t *testing.T) {
 
 func TestListWindows(t *testing.T) {
 	if !IsPlatformSupported() {
-		t.Skip("platform not supported")
+		t.Skip("platform not supported")  // SKIP-OK: #legacy-untriaged
 	}
 
 	windows, err := ListWindows()
@@ -160,7 +160,7 @@ func TestListWindows(t *testing.T) {
 
 func TestFindWindow(t *testing.T) {
 	if !IsPlatformSupported() {
-		t.Skip("platform not supported")
+		t.Skip("platform not supported")  // SKIP-OK: #legacy-untriaged
 	}
 
 	// Try to find a window with common keywords
@@ -179,12 +179,12 @@ func TestFindWindow(t *testing.T) {
 
 func TestCaptureScreenshot(t *testing.T) {
 	if !IsPlatformSupported() {
-		t.Skip("platform not supported")
+		t.Skip("platform not supported")  // SKIP-OK: #legacy-untriaged
 	}
 
 	// Skip in CI environments
 	if CommandExists("xvfb-run") || CommandExists("Xvfb") {
-		t.Skip("skipping screenshot test in headless environment")
+		t.Skip("skipping screenshot test in headless environment")  // SKIP-OK: #legacy-untriaged
 	}
 
 	outputPath := "/tmp/helixqa_test_screenshot.png"
@@ -294,7 +294,7 @@ func TestGetDesktopEnvironment(t *testing.T) {
 
 func TestIsScreenCaptureKitAvailable(t *testing.T) {
 	if runtime.GOOS != "darwin" {
-		t.Skip("macOS only test")
+		t.Skip("macOS only test")  // SKIP-OK: #legacy-untriaged
 	}
 
 	available := IsScreenCaptureKitAvailable()
@@ -303,7 +303,7 @@ func TestIsScreenCaptureKitAvailable(t *testing.T) {
 
 func TestCheckScreenRecordingPermission(t *testing.T) {
 	if runtime.GOOS != "darwin" {
-		t.Skip("macOS only test")
+		t.Skip("macOS only test")  // SKIP-OK: #legacy-untriaged
 	}
 
 	// This will likely fail in test environment
@@ -315,12 +315,12 @@ func TestCheckScreenRecordingPermission(t *testing.T) {
 
 func TestDesktopCapture_StartStop(t *testing.T) {
 	if !IsPlatformSupported() {
-		t.Skip("platform not supported")
+		t.Skip("platform not supported")  // SKIP-OK: #legacy-untriaged
 	}
 
 	// Skip if GStreamer not available
 	if !CommandExists("gst-launch-1.0") {
-		t.Skip("GStreamer not available")
+		t.Skip("GStreamer not available")  // SKIP-OK: #legacy-untriaged
 	}
 
 	config := DefaultDesktopConfig()
@@ -351,7 +351,7 @@ func TestDesktopCapture_StartStop(t *testing.T) {
 
 func TestDesktopCapture_GetFrameChan(t *testing.T) {
 	if !IsPlatformSupported() {
-		t.Skip("platform not supported")
+		t.Skip("platform not supported")  // SKIP-OK: #legacy-untriaged
 	}
 
 	config := DefaultDesktopConfig()

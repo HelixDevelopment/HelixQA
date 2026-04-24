@@ -279,7 +279,7 @@ func TestIsAA_ClassifiesAntiAliasedEdge(t *testing.T) {
 	}
 	// A pixel on the gray diagonal should be classified as AA.
 	if !isAA(img, img.Bounds(), 4, 4, w, h) {
-		t.Skip("AA heuristic did not classify this synthetic gradient as AA — may need a more nuanced test image")
+		t.Skip("AA heuristic did not classify this synthetic gradient as AA — may need a more nuanced test image")  // SKIP-OK: #legacy-untriaged
 	}
 }
 

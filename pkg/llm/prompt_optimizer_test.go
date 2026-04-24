@@ -176,7 +176,7 @@ func TestPromptOptimizer_Truncation(t *testing.T) {
 	if !strings.Contains(result, "... and") {
 		t.Logf("Result length: %d chars", len(result))
 		t.Logf("Result: %s", result[:intMin(len(result), 500)])
-		t.Skip("truncation indicator not found - budget may be sufficient")
+		t.Skip("truncation indicator not found - budget may be sufficient")  // SKIP-OK: #legacy-untriaged
 	}
 }
 

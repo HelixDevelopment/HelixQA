@@ -88,7 +88,7 @@ func TestNewDBusCaller_RequiresBus(t *testing.T) {
 
 func TestNewDBusCaller_SessionBusSucceedsIfAvailable(t *testing.T) {
 	if os.Getenv("DBUS_SESSION_BUS_ADDRESS") == "" {
-		t.Skip("no DBUS_SESSION_BUS_ADDRESS; skipping")
+		t.Skip("no DBUS_SESSION_BUS_ADDRESS; skipping")  // SKIP-OK: #legacy-untriaged
 	}
 	c, err := NewDBusCaller()
 	if err != nil {
@@ -172,7 +172,7 @@ func TestDBusCallerFactory_SatisfiesInterface(t *testing.T) {
 
 func TestDBusCaller_CallPortal_BadDestinationReturnsError(t *testing.T) {
 	if os.Getenv("DBUS_SESSION_BUS_ADDRESS") == "" {
-		t.Skip("no DBUS_SESSION_BUS_ADDRESS; skipping")
+		t.Skip("no DBUS_SESSION_BUS_ADDRESS; skipping")  // SKIP-OK: #legacy-untriaged
 	}
 	c, err := NewDBusCaller()
 	if err != nil {

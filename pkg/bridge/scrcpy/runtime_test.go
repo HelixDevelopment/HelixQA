@@ -16,7 +16,7 @@ import (
 
 func TestExecRunner_Echo(t *testing.T) {
 	if runtime.GOOS == "windows" {
-		t.Skip("POSIX /bin/echo not available")
+		t.Skip("POSIX /bin/echo not available")  // SKIP-OK: #legacy-untriaged
 	}
 	r := ExecRunner{}
 	out, err := r.Run(context.Background(), "/bin/echo", "hello", "world")
@@ -41,7 +41,7 @@ func TestExecRunner_NonexistentBinary(t *testing.T) {
 
 func TestExecRunner_NonZeroExit(t *testing.T) {
 	if runtime.GOOS == "windows" {
-		t.Skip("POSIX /bin/false not available")
+		t.Skip("POSIX /bin/false not available")  // SKIP-OK: #legacy-untriaged
 	}
 	r := ExecRunner{}
 	_, err := r.Run(context.Background(), "/bin/false")
@@ -52,7 +52,7 @@ func TestExecRunner_NonZeroExit(t *testing.T) {
 
 func TestExecRunner_NonZeroExit_IncludesStderr(t *testing.T) {
 	if runtime.GOOS == "windows" {
-		t.Skip("POSIX shell not available")
+		t.Skip("POSIX shell not available")  // SKIP-OK: #legacy-untriaged
 	}
 	r := ExecRunner{}
 	// `sh -c "echo oops >&2; exit 2"` — stderr content + non-zero exit.
@@ -67,7 +67,7 @@ func TestExecRunner_NonZeroExit_IncludesStderr(t *testing.T) {
 
 func TestExecRunner_ContextCancel(t *testing.T) {
 	if runtime.GOOS == "windows" {
-		t.Skip("POSIX /bin/sleep not available")
+		t.Skip("POSIX /bin/sleep not available")  // SKIP-OK: #legacy-untriaged
 	}
 	r := ExecRunner{}
 	ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
@@ -82,7 +82,7 @@ func TestExecRunner_ContextCancel(t *testing.T) {
 
 func TestOSProcessLauncher_SpawnAndSignal(t *testing.T) {
 	if runtime.GOOS == "windows" {
-		t.Skip("POSIX /bin/sleep not available")
+		t.Skip("POSIX /bin/sleep not available")  // SKIP-OK: #legacy-untriaged
 	}
 	l := OSProcessLauncher{}
 	p, err := l.Launch(context.Background(), "/bin/sleep", "10")
@@ -101,7 +101,7 @@ func TestOSProcessLauncher_SpawnAndSignal(t *testing.T) {
 
 func TestOSProcessLauncher_Kill(t *testing.T) {
 	if runtime.GOOS == "windows" {
-		t.Skip("POSIX /bin/sleep not available")
+		t.Skip("POSIX /bin/sleep not available")  // SKIP-OK: #legacy-untriaged
 	}
 	l := OSProcessLauncher{}
 	p, err := l.Launch(context.Background(), "/bin/sleep", "10")
@@ -139,7 +139,7 @@ func TestOSProcessLauncher_SignalNoProcess(t *testing.T) {
 
 func TestOSProcessLauncher_StderrIsNonNil(t *testing.T) {
 	if runtime.GOOS == "windows" {
-		t.Skip("POSIX /bin/sh not available")
+		t.Skip("POSIX /bin/sh not available")  // SKIP-OK: #legacy-untriaged
 	}
 	l := OSProcessLauncher{}
 	// sh -c emits a line to stderr immediately so we can observe it.

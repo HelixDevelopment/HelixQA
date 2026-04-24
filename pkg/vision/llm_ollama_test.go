@@ -238,7 +238,7 @@ func TestVisionLLM_GetStats(t *testing.T) {
 
 func TestOllamaService(t *testing.T) {
 	// Skip in CI environment
-	t.Skip("Requires Ollama installation")
+	t.Skip("Requires Ollama installation")  // SKIP-OK: #legacy-untriaged
 }
 
 func TestCheckGPUAvailable(t *testing.T) {
@@ -249,7 +249,7 @@ func TestCheckGPUAvailable(t *testing.T) {
 
 func TestGetAvailableModels(t *testing.T) {
 	if !CheckOllamaAvailable("") {
-		t.Skip("Ollama not available")
+		t.Skip("Ollama not available")  // SKIP-OK: #legacy-untriaged
 	}
 
 	models, err := GetAvailableModels("")

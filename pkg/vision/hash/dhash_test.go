@@ -376,7 +376,7 @@ func BenchmarkDHash256_1080p(b *testing.B) {
 // regressions without needing a separate bench harness.
 func TestPerformance_DHash64_Under5msPer1080pFrame(t *testing.T) {
 	if testing.Short() {
-		t.Skip("long perf test — skip in short mode")
+		t.Skip("long perf test — skip in short mode")  // SKIP-OK: #short-mode
 	}
 	h := DHasher{Kind: DHash64}
 	img := gradientRGBA(1920, 1080)

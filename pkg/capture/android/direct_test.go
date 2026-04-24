@@ -311,7 +311,7 @@ func collect(t *testing.T, ch <-chan frames.Frame, n int, timeout time.Duration)
 func TestCwdSanity(t *testing.T) {
 	wd, err := os.Getwd()
 	if err != nil {
-		t.Skip(err)
+		t.Skip(err)  // SKIP-OK: #legacy-untriaged
 	}
 	if filepath.Base(wd) != "android" {
 		t.Logf("cwd = %s (informational)", wd)

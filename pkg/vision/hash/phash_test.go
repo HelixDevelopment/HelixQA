@@ -226,7 +226,7 @@ func BenchmarkPHash_1080p(b *testing.B) {
 // regression guard.
 func TestPerformance_PHash_Under25msPer1080pFrame(t *testing.T) {
 	if testing.Short() {
-		t.Skip("long perf test — skip in short mode")
+		t.Skip("long perf test — skip in short mode")  // SKIP-OK: #short-mode
 	}
 	h := PHasher{}
 	img := gradientRGBA(1920, 1080)

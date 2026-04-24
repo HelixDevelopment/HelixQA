@@ -171,6 +171,6 @@ func TestNewDefaultService_UsesProductionFactory(t *testing.T) {
 	// portal and expect a NameHasNoOwner or similar error (we have no
 	// RemoteDesktop portal registered on the tested host).
 	if _, err := NewDefaultService(context.Background(), ServiceConfig{}); err == nil {
-		t.Skip("unexpected: RemoteDesktop portal is actually registered on this host")
+		t.Skip("unexpected: RemoteDesktop portal is actually registered on this host")  // SKIP-OK: #legacy-untriaged
 	}
 }

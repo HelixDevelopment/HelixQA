@@ -313,7 +313,7 @@ func TestPeerConnectionConfiguration(t *testing.T) {
 // Integration test - requires network
 func TestWebRTCServer_Integration(t *testing.T) {
 	if testing.Short() {
-		t.Skip("Skipping integration test")
+		t.Skip("Skipping integration test")  // SKIP-OK: #integration-mode-only
 	}
 
 	config := &WebRTCConfig{
