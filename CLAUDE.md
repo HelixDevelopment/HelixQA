@@ -1,5 +1,25 @@
 # CLAUDE.md - HelixQA Module
 
+
+## Definition of Done
+
+This module inherits HelixAgent's universal Definition of Done — see the root
+`CLAUDE.md` and `docs/development/definition-of-done.md`. In one line: **no
+task is done without pasted output from a real run of the real system in the
+same session as the change.** Coverage and green suites are not evidence.
+
+### Acceptance demo for this module
+
+<!-- TODO: replace this block with the exact command(s) that exercise this
+     module end-to-end against real dependencies, and the expected output.
+     The commands must run the real artifact (built binary, deployed
+     container, real service) — no in-process fakes, no mocks, no
+     `httptest.NewServer`, no Robolectric, no JSDOM as proof of done. -->
+
+```bash
+# TODO
+```
+
 ## CONSTITUTION: Project-Agnostic / 100% Decoupled (MANDATORY)
 
 **HelixQA and ALL its submodule dependencies (Challenges, Containers, DocProcessor, LLMOrchestrator, LLMProvider, VisionEngine) MUST be 100% decoupled and ready for generic use with ANY project — not just ATMOSphere, not just any single consumer.**
@@ -173,6 +193,117 @@ Violations of this constitution void the entire QA session's results for the aff
 - `uiautomator dump` failures ("null root node") are real bugs to fix, not to ignore
 - Every connected ADB device MUST be tested. Skipping devices = failure
 - **Stay in the fix-test loop** until the pipeline completes with verified screenshots showing ALL screens navigated with real data
+
+## Constitution Enforcement Evidence (non-negotiable)
+
+The sections above state five mandatory constitutions. This section documents how each is *actually enforced* in code, what a passing-run artifact looks like, and how a reviewer catches a violation from the evidence alone. Without this, the constitutions are documentation with no teeth; with this, a failing run is visible in the session log.
+
+### 1. Fully Autonomous LLM-Driven QA
+
+**Enforcement:**
+- `pkg/autonomous/fallback.go` — `FallbackChain.Execute()` refuses to fall back to scripted/hardcoded actions if all vision providers fail; it returns an error. There is no code path from "LLM unavailable" to "scripted tap at (x,y)".
+- `pkg/autonomous/real_executor.go` — `ActionExecutor` factory builds platform-specific executors (ADB, Playwright, X11) that only act on action arrays received from LLM output; they have no pre-wired navigation scripts.
+- `pkg/autonomous/screenshot.go` — `IsBlankScreenshot()` validates that the vision analysis ran on meaningful content (samples 81 pixels in a 9×9 grid; fails if max channel range < 20).
+
+**Passing-run artifact:**
+```json
+{"step":5,"llm_provider":"ollama:llava-7b","action_from_vision":"tap_element[search_button]","fallback_used":false}
+```
+
+**Violation signal:** any step whose action is a raw coordinate (`"tap 640 480"`) or a sleep (`"sleep 2000"`). Reviewer grep:
+```bash
+jq '.phases[].steps[].action' qa-results/session-*/pipeline-report.json | grep -E 'sleep|^[0-9]+ [0-9]+$'
+# Must return no matches
+```
+
+### 2. Video App Geo-Restriction / VPN Detection
+
+**Enforcement:**
+- `pkg/autonomous/geo_probe.go` — `ProbeGeoRestriction()` probes the configured endpoint with adb+curl (with ping fallback); HTTP 4xx or timeout → `Restricted=true`. Results cached per `device|package` key so the same device+app isn't re-probed.
+- `RegisterEndpoint` / `RegisterAlternative` / `SetGenericAlternative` — caller-supplied registration, no project-specific defaults baked into the library (CONST-031-adjacent).
+- 16 test cases in `pkg/autonomous/geo_probe_test.go` cover registration, substitution, per-device caching, context timeout, and probe skipping.
+
+**Passing-run artifact:**
+```json
+{"package":"com.google.android.youtube","geo_probed":true,"restricted":true,"reason":"HTTP 403","alternative":"ru.rutube.app","test_skipped_not_failed":true}
+```
+
+**Violation signal:** a playback test for a video app with no prior `geo_probed:true` entry; or `restricted:true` but the test ran anyway instead of being marked skipped. Reviewer check:
+```bash
+jq '.phases[].steps[] | select(.action_type=="play_video")' qa-results/session-*/pipeline-report.json \
+  | jq 'select(.geo_probed != true)'
+# Must return nothing — every playback must be preceded by a probe
+```
+
+### 3. QA Testing Priority Order
+
+**Enforcement:**
+- `pkg/autonomous/phase.go` — `PhaseManager` is a state machine with phases `setup → doc-driven → curiosity → report`. `Start()` transitions `Pending → Running`, `Complete()` transitions `Running → Completed`; out-of-order calls return an error.
+- Test bank YAML files carry `priority` fields (`happy` / `standard` / `edge` / `adversarial`). Planning logic in `pkg/planning/` reads banks and generates test cases in priority order within each phase.
+
+**Passing-run artifact:**
+```json
+{"phases":[
+  {"name":"setup","status":"completed"},
+  {"name":"doc-driven","status":"completed"},
+  {"name":"curiosity","status":"completed"},
+  {"name":"report","status":"completed"}],
+ "test_execution_order":[
+  {"priority":"happy","count":8,"status":"passed"},
+  {"priority":"standard","count":5,"status":"passed"},
+  {"priority":"edge","count":3,"status":"failed"},
+  {"priority":"adversarial","count":1,"status":"skipped"}]}
+```
+
+**Violation signal:** phases out of order in the session log, or adversarial tests running before happy-path tests in `test_execution_order`. Reviewer check:
+```bash
+jq '.phases | map(.name)' qa-results/session-*/pipeline-report.json
+# Must equal: ["setup","doc-driven","curiosity","report"]
+```
+
+### 4. Device State Preservation
+
+**Enforcement:**
+- `pkg/autonomous/device_preserve.go` — `captureDeviceSettings()` reads six keys at session start (`system.font_scale`, `system.screen_off_timeout`, `system.screen_brightness`, `system.screen_brightness_mode`, `system.accelerometer_rotation`, `secure.accessibility_font_scaling_has_been_changed`) via `adb shell settings get`.
+- `restore()` is registered as a `defer` at pipeline start, so it runs on normal, crash, and context-cancel exit paths. It compares current to captured and only writes when they differ (avoids unnecessary churn).
+
+**Passing-run artifact:** a `device_preservation` block in `pipeline-report.json` with `captured_state`, `restored_at`, and a `restore_log` showing each of the six keys either restored or skipped-as-unchanged.
+
+**Violation signal:** post-session device probe shows a setting different from the captured value; or `captured_state` is empty; or `restore_log` is absent. Reviewer check:
+```bash
+adb -s <device> shell settings get system font_scale  # before session
+# ... run helixqa ...
+adb -s <device> shell settings get system font_scale  # after session — must match
+jq '.device_preservation.restore_log' qa-results/session-*/pipeline-report.json
+# Must contain restore entries for all six keys
+```
+
+### 5. Screenshot/Video Validation + Evidence-Backed Issue Tickets
+
+**Enforcement:**
+- `pkg/autonomous/screenshot.go` `IsBlankScreenshot()` — gates screenshots before they reach the vision model (see constitution 1).
+- `pkg/evidence/collector.go` `Collector` — tracks evidence items by type (screenshot / video / ticket) with path + timestamp + size.
+- `pkg/analysis/types.go` `AnalysisFinding` — includes `Evidence` field (visual observation excerpt), `Platform`, `Screen`, `AcceptanceCriteria`.
+- `pkg/autonomous/findings_bridge.go` `FindingsBridge.Process()` — persists findings to memory store with `EvidencePaths`, deduplicates by title, groups related findings; Markdown tickets carry session ID and step references.
+
+**Passing-run artifact:** every finding carries non-empty `evidence_paths` pointing at files that exist on disk, plus a `session_id`, `step_number`, and `repro_steps`.
+
+**Violation signal:** a finding with empty / null `evidence_paths`; or paths that don't resolve to actual files. Reviewer check:
+```bash
+jq -r '.findings[].evidence_paths[]' qa-results/session-*/pipeline-report.json | sort -u | while read f; do
+  test -f "$f" || echo "VIOLATION: missing evidence file: $f"
+done
+# Must print no VIOLATION lines
+jq '.findings[] | select((.evidence_paths // []) | length == 0)' qa-results/session-*/pipeline-report.json
+# Must return nothing
+```
+
+### Known enforcement gaps (candidates for follow-up work)
+
+- **Constitution 5:** `FindingsBridge.Process()` does not currently validate that `evidence_paths` files exist on disk before persisting a ticket. A session that deletes `qa-results/` before ticket generation would persist dangling references. *Fix:* add file existence check in Process().
+- **Constitution 1:** no per-phase assertion that every action went through the LLM. A bypass would be caught by the FallbackChain for vision-level decisions but not for direct executor calls. *Fix:* context-key gating — `AnalyzedByLLM` must be set before executor actions are permitted.
+
+These gaps are not regressions — they are the next tightening pass. Track them explicitly rather than discovering them during an incident.
 
 ## Overview
 
@@ -463,3 +594,12 @@ If any script or command suggests using `sudo` or `su`:
 - `.env.example` files (templates with placeholder keys) are OK to commit
 - `.env` file permissions MUST be `chmod 600` (owner read/write only)
 - Before every commit: verify `git ls-files --cached | grep ".env"` shows NO `.env` files
+
+## Integration Seams
+
+| Direction | Sibling modules |
+|-----------|-----------------|
+| Upstream (this module imports) | Challenges, Containers, DocProcessor, LLMOrchestrator, LLMsVerifier, Security, VisionEngine |
+| Downstream (these import this module) | root only |
+
+*Siblings* means other project-owned modules at the HelixAgent repo root. The root HelixAgent app and external systems are not listed here — the list above is intentionally scoped to module-to-module seams, because drift *between* sibling modules is where the "tests pass, product broken" class of bug most often lives. See root `CLAUDE.md` for the rules that keep these seams contract-tested.
