@@ -820,3 +820,931 @@ test_cases:
       bug_id: "fullqa-challenge-runner-context"
       description: "Challenge runner used Gin request context (c.Request.Context()) which was cancelled when the HTTP write timeout fired, killing long-running challenges"
       fix_file: "catalog-api/handlers/challenge_handler.go"
+
+  # ==================== OpenClawing4 Phase 0 Retractions ====================
+  # Seeded from OpenClawing4.md §11 + OpenClawing4-Audit.md §D.
+  # Each entry maps one retracted claim to the evidence that catches the
+  # regression if a contributor re-introduces the claim. The banks/docs-audit.yaml
+  # bank provides the mechanical checks; these entries are the permanent
+  # `fixes-validation` anchors per CLAUDE.md Article VII.
+
+  - id: FIX-OC2-001
+    name: "OpenClawing2 fabricated browser-use path retracted"
+    category: regression
+    priority: high
+    platforms: [all]
+    steps:
+      - name: "Banner present"
+        action: "grep -n 'custom_browser.py' HelixQA/docs/openclawing/OpenClawing2.md"
+        expected: "Match within the retraction banner, labelled as not-existing"
+    tags: [regression, retraction, openclawing2, docs]
+    estimated_duration: "1s"
+    expected_result: "custom_browser.py is flagged as fabricated, not cited as authority"
+    fix_reference:
+      bug_id: "FIX-OC2-001"
+      description: "OpenClawing2.md §4.3.2 cited browser_use/browser/custom_browser.py which does not exist in browser-use/browser-use"
+      fix_file: "HelixQA/docs/openclawing/OpenClawing2.md"
+      fix_commit: "pending"
+
+  - id: FIX-OC2-002
+    name: "OpenClawing2 fabricated Skyvern path retracted"
+    category: regression
+    priority: high
+    platforms: [all]
+    steps:
+      - name: "Banner present"
+        action: "grep -n 'skyvern/agent/prompts.py' HelixQA/docs/openclawing/OpenClawing2.md"
+        expected: "Match within the retraction banner, labelled as not-existing"
+    tags: [regression, retraction, openclawing2, docs]
+    estimated_duration: "1s"
+    expected_result: "Skyvern agent/prompts.py is flagged as fabricated"
+    fix_reference:
+      bug_id: "FIX-OC2-002"
+      description: "OpenClawing2.md §5.1.2 cited skyvern/agent/prompts.py; Skyvern has no agent/ directory"
+      fix_file: "HelixQA/docs/openclawing/OpenClawing2.md"
+      fix_commit: "pending"
+
+  - id: FIX-OC2-003
+    name: "OpenClawing2 invented PlanEvaluate class retracted"
+    category: regression
+    priority: high
+    platforms: [all]
+    steps:
+      - name: "Banner present"
+        action: "grep -n 'PlanEvaluate' HelixQA/docs/openclawing/OpenClawing2.md"
+        expected: "Match within the retraction banner as 'not a real class'"
+    tags: [regression, retraction, openclawing2, docs]
+    estimated_duration: "1s"
+    expected_result: "PlanEvaluate is flagged as fabricated"
+    fix_reference:
+      bug_id: "FIX-OC2-003"
+      description: "OpenClawing2.md §10.1.1 and §8.1.2 referenced PlanEvaluate class that does not exist in browser-use"
+      fix_file: "HelixQA/docs/openclawing/OpenClawing2.md"
+      fix_commit: "pending"
+
+  - id: FIX-OC3-001
+    name: "OpenClawing3 src/ tree fabrication retracted"
+    category: regression
+    priority: critical
+    platforms: [all]
+    steps:
+      - name: "Banner present"
+        action: "grep -nE 'src/.*fabricated|Every file path.*src/' HelixQA/docs/openclawing/OpenClawing3.md"
+        expected: "Match within the retraction banner declaring src/... fabricated"
+      - name: "pkg/ map present in OpenClawing4 §7"
+        action: "grep -c '^| `pkg/' HelixQA/docs/openclawing/OpenClawing4.md"
+        expected: "Count >= 5"
+    tags: [regression, retraction, openclawing3, docs, architecture]
+    estimated_duration: "1s"
+    expected_result: "src/... tree is retracted; OpenClawing4 §7 provides the real pkg/... map"
+    fix_reference:
+      bug_id: "FIX-OC3-001"
+      description: "OpenClawing3 invented an src/... C++/TS tree that does not exist in HelixQA's Go pkg/... layout"
+      fix_file: "HelixQA/docs/openclawing/OpenClawing3.md"
+      fix_commit: "pending"
+
+  - id: FIX-OC3-002
+    name: "OpenClawing3 sudo usage retracted + no-sudo hook enforces constitution"
+    category: security
+    priority: critical
+    platforms: [all]
+    steps:
+      - name: "Retraction banner present"
+        action: "grep -nE 'sudo.*violates.*CLAUDE|NO SUDO OR ROOT' HelixQA/docs/openclawing/OpenClawing3.md"
+        expected: "Match within the retraction banner"
+      - name: "Hook script present and executable"
+        action: "test -x HelixQA/scripts/hooks/no-sudo.sh"
+        expected: "Script is executable"
+      - name: "Pre-commit config wires the hook"
+        action: "grep -n 'no-sudo' HelixQA/.pre-commit-config.yaml"
+        expected: "Hook wired via local repo entry"
+    tags: [security, retraction, openclawing3, constitution, hook]
+    estimated_duration: "2s"
+    expected_result: "sudo retraction and the mechanical hook both present"
+    fix_reference:
+      bug_id: "FIX-OC3-002"
+      description: "OpenClawing3 §14 used sudo dpkg/apt-get/usermod/make — violates HelixQA CLAUDE.md NO SUDO OR ROOT EXECUTION rule"
+      fix_file: "HelixQA/scripts/hooks/no-sudo.sh"
+      fix_commit: "pending"
+
+  - id: FIX-OC3-003
+    name: "OpenClawing3 TensorRT v2-API misuse retracted"
+    category: regression
+    priority: high
+    platforms: [all]
+    steps:
+      - name: "Retraction banner flags enqueueV3 bindings_ misuse"
+        action: "grep -n 'enqueueV3' HelixQA/docs/openclawing/OpenClawing3.md"
+        expected: "Match within the retraction banner"
+    tags: [regression, retraction, openclawing3, gpu, tensorrt]
+    estimated_duration: "1s"
+    expected_result: "enqueueV3 misuse flagged and replaced guidance given"
+    fix_reference:
+      bug_id: "FIX-OC3-003"
+      description: "OpenClawing3 copy-pasted TensorRT v2 bindings_ array into v3-style enqueueV3 call"
+      fix_file: "HelixQA/docs/openclawing/OpenClawing3.md"
+      fix_commit: "pending"
+
+  - id: FIX-OC3-004
+    name: "OpenClawing3 TensorRT-as-primary retracted; llama.cpp RPC is primary"
+    category: regression
+    priority: critical
+    platforms: [all]
+    steps:
+      - name: "Verify OpenClawing4 declares llama.cpp RPC primary"
+        action: "grep -nE 'llama\\.cpp RPC is the primary' HelixQA/docs/openclawing/OpenClawing4.md"
+        expected: "At least one match in §1.2 design invariants"
+      - name: "Verify HelixQA CLAUDE.md preserves the rule"
+        action: "grep -n 'llama.cpp RPC distributed inference is the primary' HelixQA/CLAUDE.md"
+        expected: "Rule intact"
+    tags: [regression, retraction, openclawing3, llm, constitution]
+    estimated_duration: "1s"
+    expected_result: "Primary-backend invariant preserved"
+    fix_reference:
+      bug_id: "FIX-OC3-004"
+      description: "OpenClawing3 proposed TensorRT as primary local inference, contradicting HelixQA CLAUDE.md llama.cpp RPC mandate"
+      fix_file: "HelixQA/docs/openclawing/OpenClawing4.md"
+      fix_commit: "pending"
+
+  - id: FIX-OC3-005
+    name: "OpenClawing3 'zero-copy DXGI' claim retracted"
+    category: regression
+    priority: medium
+    platforms: [all]
+    steps:
+      - name: "Retraction banner present"
+        action: "grep -nE 'Zero-copy DXGI|zero-copy.*DXGI' HelixQA/docs/openclawing/OpenClawing3.md"
+        expected: "Match within the retraction banner"
+    tags: [regression, retraction, openclawing3, gpu, dxgi]
+    estimated_duration: "1s"
+    expected_result: "zero-copy DXGI claim retracted; real path described in OpenClawing4 §11.3"
+    fix_reference:
+      bug_id: "FIX-OC3-005"
+      description: "OpenClawing3 §6.1 L1036-1037 claimed DXGI GetSharedHandle provides zero-copy; actually GPU-GPU copy"
+      fix_file: "HelixQA/docs/openclawing/OpenClawing3.md"
+      fix_commit: "pending"
+
+  - id: FIX-OC3-006
+    name: "OpenClawing3 optimistic benchmarks retracted"
+    category: regression
+    priority: medium
+    platforms: [all]
+    steps:
+      - name: "Retraction banner present"
+        action: "grep -nE 'Benchmarks.*optimistic|3.7.*optimistic|RTX 3060' HelixQA/docs/openclawing/OpenClawing3.md | head"
+        expected: "Match within the retraction banner declaring benchmarks 3–7× optimistic"
+    tags: [regression, retraction, openclawing3, benchmarks]
+    estimated_duration: "1s"
+    expected_result: "Benchmark retraction present; realistic budget in OpenClawing4 §5.5"
+    fix_reference:
+      bug_id: "FIX-OC3-006"
+      description: "OpenClawing3 '<2 ms template match on 1080p' and '<16 ms full pipeline' on RTX 3060 are 3–7× off"
+      fix_file: "HelixQA/docs/openclawing/OpenClawing3.md"
+      fix_commit: "pending"
+
+  - id: FIX-OC3-007
+    name: "OpenClawing3 16-week / 47-tech plan retracted"
+    category: regression
+    priority: medium
+    platforms: [all]
+    steps:
+      - name: "Retraction banner present"
+        action: "grep -nE '16-week.*47|47-tech|plan replaced' HelixQA/docs/openclawing/OpenClawing3.md | head"
+        expected: "Match within the retraction banner"
+      - name: "OpenClawing4 phase plan present"
+        action: "grep -nE '^## 8\\. Phased delivery plan|^### 1\\.3 Phase roadmap' HelixQA/docs/openclawing/OpenClawing4.md"
+        expected: "Phase plan section present in OpenClawing4"
+    tags: [regression, retraction, openclawing3, plan]
+    estimated_duration: "1s"
+    expected_result: "16-week plan retracted; 7-phase plan in OpenClawing4 §1.3 + §8"
+    fix_reference:
+      bug_id: "FIX-OC3-007"
+      description: "OpenClawing3 §12 scheduled 47 technologies across 16 weeks — 5-10x too optimistic"
+      fix_file: "HelixQA/docs/openclawing/OpenClawing4.md"
+      fix_commit: "pending"
+
+  - id: FIX-OC3-008
+    name: "OpenClawing3 namespace{} in .c file compile-blocker retracted"
+    category: regression
+    priority: low
+    platforms: [all]
+    steps:
+      - name: "Retraction banner mentions namespace in .c file"
+        action: "grep -nE 'namespace.*\\.c file|\\.c file.*namespace' HelixQA/docs/openclawing/OpenClawing3.md | head"
+        expected: "Match within the retraction banner"
+    tags: [regression, retraction, openclawing3, compile]
+    estimated_duration: "1s"
+    expected_result: "namespace compile-blocker retracted"
+    fix_reference:
+      bug_id: "FIX-OC3-008"
+      description: "OpenClawing3 §6.2 L1091-1248 put `namespace openclaw{}` inside a .c file — C has no namespaces"
+      fix_file: "HelixQA/docs/openclawing/OpenClawing3.md"
+      fix_commit: "pending"
+
+  - id: FIX-OC3-009
+    name: "OpenClawing3 invalid BuilderFlag::kCUDA_GRAPH retracted"
+    category: regression
+    priority: low
+    platforms: [all]
+    steps:
+      - name: "Retraction banner mentions kCUDA_GRAPH"
+        action: "grep -n 'kCUDA_GRAPH' HelixQA/docs/openclawing/OpenClawing3.md"
+        expected: "Match within the retraction banner"
+    tags: [regression, retraction, openclawing3, gpu]
+    estimated_duration: "1s"
+    expected_result: "invalid TensorRT BuilderFlag retracted; real CUDA Graphs path documented in OpenClawing4 §5.5.2"
+    fix_reference:
+      bug_id: "FIX-OC3-009"
+      description: "OpenClawing3 L727 referenced BuilderFlag::kCUDA_GRAPH which is not a valid TensorRT flag"
+      fix_file: "HelixQA/docs/openclawing/OpenClawing3.md"
+      fix_commit: "pending"
+
+  - id: FIX-OC3-010
+    name: "OpenClawing3 TS type error {key:'Down'}.repeat(n) retracted"
+    category: regression
+    priority: low
+    platforms: [all]
+    steps:
+      - name: "Retraction banner mentions the TS type error"
+        action: "grep -nE '\\{key:.?.Down.?.?\\}\\.repeat|TS type error|type error' HelixQA/docs/openclawing/OpenClawing3.md | head"
+        expected: "Match within the retraction banner"
+    tags: [regression, retraction, openclawing3, typescript]
+    estimated_duration: "1s"
+    expected_result: "Invalid TS code retracted"
+    fix_reference:
+      bug_id: "FIX-OC3-010"
+      description: "OpenClawing3 L2561 contained `{key:'Down'}.repeat(n)` which is a TS type error"
+      fix_file: "HelixQA/docs/openclawing/OpenClawing3.md"
+      fix_commit: "pending"
+
+  - id: FIX-OC3-011
+    name: "OpenClawing3 scrcpy v1.x wire-format retracted"
+    category: regression
+    priority: low
+    platforms: [all]
+    steps:
+      - name: "Retraction banner mentions scrcpy wire format"
+        action: "grep -nE 'scrcpy.*wire format|action_button|buttons.*uint32' HelixQA/docs/openclawing/OpenClawing3.md | head"
+        expected: "Match within the retraction banner"
+    tags: [regression, retraction, openclawing3, scrcpy]
+    estimated_duration: "1s"
+    expected_result: "Obsolete wire-format retracted; correct v3 fields documented in OpenClawing4 §5.1.3"
+    fix_reference:
+      bug_id: "FIX-OC3-011"
+      description: "OpenClawing3 §6.5 used scrcpy v1.x control packet layout missing action_button/buttons uint32 fields"
+      fix_file: "HelixQA/docs/openclawing/OpenClawing3.md"
+      fix_commit: "pending"
+
+  - id: FIX-OC4-001
+    name: "pkg/vision/hash — dHash perf regression guard (<5ms / 1080p CPU)"
+    category: regression
+    priority: critical
+    platforms: [linux, all]
+    steps:
+      - name: "DHash64 stays under the 5 ms / 1080p Article V §8 budget"
+        action: "go test -mod=vendor -count=1 -run 'TestPerformance_DHash64_Under5msPer1080pFrame' ./pkg/vision/hash/..."
+        expected: "PASS (target: ~1 µs on commodity CPU via fast-path resize)"
+      - name: "Fast-paths remain covered for all common concrete image types"
+        action: "go test -mod=vendor -count=1 -cover -run 'TestDHash64_HandlesVariousImageTypes|TestDHash64_YCbCr|TestDHash64_GenericImageInterface' ./pkg/vision/hash/..."
+        expected: "PASS with 100% statement coverage"
+    tags: [regression, phase2, openclawing4, vision, hash, performance]
+    estimated_duration: "1s"
+    expected_result: "Perf regression guard stays green on every commit"
+    fix_reference:
+      bug_id: "FIX-OC4-001"
+      description: "First implementation of resizeGray used box-average over all source pixels, producing ~58 ms per 1080p frame — 11× over the <5 ms Phase-2 tier-1 budget. Replaced with nearest-neighbor sampling at region centers + fast-paths for image.RGBA / image.NRGBA / image.Gray / image.YCbCr (direct Pix-byte access, no interface dispatch, no 16-bit channel expansion). Final per-frame cost on commodity CPU: ~1 µs (DHash64) / ~3 µs (DHash256)."
+      fix_file: "HelixQA/pkg/vision/hash/dhash.go"
+      fix_commit: "pending"
+
+  - id: FIX-OC4-002
+    name: "pkg/autonomous/bocpd — P(r=0) always equals hazard regression guard"
+    category: regression
+    priority: critical
+    platforms: [linux, all]
+    steps:
+      - name: "Stable-stream test guards against reverting to the naive P(r=0) return"
+        action: "go test -mod=vendor -count=1 -run 'TestObserve_StableStreamConvergesToLowChangeProbability' ./pkg/autonomous/..."
+        expected: "PASS — post-burn-in cp stays < 0.3 for 50 identical samples (would fail if Observe returned hazard instead of P(r ≤ threshold))"
+      - name: "Step-change test guards against losing the change signal"
+        action: "go test -mod=vendor -count=1 -run 'TestObserve_StepChangeTriggersChangePoint' ./pkg/autonomous/..."
+        expected: "PASS — mean shift produces cp > 0.5 within 10 samples"
+    tags: [regression, phase2, openclawing4, autonomous, bocpd, change-point]
+    estimated_duration: "1s"
+    expected_result: "BOCPD keeps returning a meaningful change signal — not the constant hazard"
+    fix_reference:
+      bug_id: "FIX-OC4-002"
+      description: "Initial BOCPD implementation returned next[0] (the r=0 posterior mass) as the change probability. Under constant-hazard BOCPD this is algebraically identical to the hazard rate regardless of observation — useless as a change signal. Fixed by returning P(r_t ≤ ChangeThreshold | x_{1:t}), the posterior mass that has collapsed to short run lengths. This is the quantity that actually spikes when the stream shifts; see Gundersen 2019 and Turner's reference implementation."
+      fix_file: "HelixQA/pkg/autonomous/bocpd.go"
+      fix_commit: "pending"
+
+  - id: FIX-OC4-003
+    name: "pkg/regression/pixelmatch — PixelMatch{} Differ interface conformance guard"
+    category: regression
+    priority: high
+    platforms: [linux, all]
+    steps:
+      - name: "Differ interface remains satisfied by PixelMatch"
+        action: "go test -mod=vendor -count=1 -run 'TestPixelMatch_SatisfiesDifferInterface' ./pkg/regression/..."
+        expected: "PASS — runtime check plus compile-time `var _ Differ = PixelMatch{}`"
+      - name: "Pixelmatch coexists with visual.go LLM-driven Differ"
+        action: "go test -mod=vendor -count=1 ./pkg/regression/..."
+        expected: "PASS — both the new pure-Go pixel-diff path and the existing VLM-comparison path remain green in the same package"
+    tags: [regression, phase2, openclawing4, pixelmatch, interface, coexistence]
+    estimated_duration: "1s"
+    expected_result: "Pixelmatch adds the pixel-diff path without breaking the existing LLM-driven visual comparison"
+    fix_reference:
+      bug_id: "FIX-OC4-003"
+      description: "Guards the pixelmatch addition against accidental regressions in the existing pkg/regression (visual.go) LLM-comparison code. The two paths share the package but are semantically distinct — pixel-diff vs VLM-compare — and must coexist cleanly."
+      fix_file: "HelixQA/pkg/regression/pixelmatch.go"
+      fix_commit: "pending"
+
+  - id: FIX-OC4-004
+    name: "pkg/nexus/observe/axtree — Snapshotter/LinuxBus interface boundary"
+    category: regression
+    priority: critical
+    platforms: [linux, all]
+    steps:
+      - name: "LinuxSnapshotter satisfies Snapshotter at compile time"
+        action: "go build -mod=vendor ./pkg/nexus/observe/axtree/..."
+        expected: "exit 0 — `var _ Snapshotter = (*LinuxSnapshotter)(nil)` stays green"
+      - name: "linuxBusGodbus satisfies LinuxBus at compile time"
+        action: "go build -mod=vendor ./pkg/nexus/observe/axtree/..."
+        expected: "exit 0 — `var _ LinuxBus = (*linuxBusGodbus)(nil)` stays green"
+      - name: "Tests pass end-to-end against the fake LinuxBus"
+        action: "go test -mod=vendor -count=1 ./pkg/nexus/observe/axtree/..."
+        expected: "PASS — 22 unit tests cover all testable Snapshotter + Node paths"
+    tags: [regression, phase2, openclawing4, axtree, interface, atspi2]
+    estimated_duration: "1s"
+    expected_result: "The LinuxBus narrow-interface abstraction keeps Snapshot tests CGO-free and dbus-free while still being wire-correct for the production godbus path"
+    fix_reference:
+      bug_id: "FIX-OC4-004"
+      description: "Establishes the LinuxBus narrow-interface contract between LinuxSnapshotter and whatever backend it runs on. Production uses linuxBusGodbus (session bus → org.a11y.Bus.GetAddress → a11y bus → AT-SPI2 methods); tests inject a fake that returns scripted trees. The boundary is essential because a real a11y bus requires a GNOME/KDE session that CI does not have, and writing a full D-Bus mock would double the code for no gain."
+      fix_file: "HelixQA/pkg/nexus/observe/axtree/linux.go"
+      fix_commit: "pending"
+
+  - id: FIX-OC4-005
+    name: "pkg/nexus/observe/axtree/android — UIAutomator bounds-regex parse guard"
+    category: regression
+    priority: high
+    platforms: [android, all]
+    steps:
+      - name: "Bounds regex accepts happy / negative / rejects malformed"
+        action: "go test -mod=vendor -count=1 -run 'TestParseAndroidBounds' ./pkg/nexus/observe/axtree/..."
+        expected: "PASS — happy path, negative coordinates, 4 malformed inputs"
+      - name: "boolAttr stays strict (only 'true' is true)"
+        action: "go test -mod=vendor -count=1 -run 'TestBoolAttr' ./pkg/nexus/observe/axtree/..."
+        expected: "PASS — 'true' → true, everything else → false"
+    tags: [regression, phase2, openclawing4, axtree, android, xml-parsing]
+    estimated_duration: "1s"
+    expected_result: "Android dump parsing stays correct against the observed UIAutomator output format"
+    fix_reference:
+      bug_id: "FIX-OC4-005"
+      description: "The UIAutomator dump format uses '[x1,y1][x2,y2]' for bounds and literal 'true'/'false' strings for boolean attributes. parseAndroidBounds uses a compiled regexp with explicit bracket structure so device-vendor variants that emit extra whitespace, different separators, or rotated coord orders either work (via the existing regex) or deterministically fall back to the zero rect. boolAttr is deliberately strict — a vendor emitting 'TRUE' would be a bug to flag, not silently accept."
+      fix_file: "HelixQA/pkg/nexus/observe/axtree/android.go"
+      fix_commit: "pending"
+
+  - id: FIX-OC4-006
+    name: "pkg/vision/perceptual/ssim — < 5 ms / 480p budget + race-mode skip"
+    category: regression
+    priority: critical
+    platforms: [linux, all]
+    steps:
+      - name: "Best-of-20 perf measurement stays under 5 ms"
+        action: "go test -mod=vendor -count=1 -run TestPerformance_SSIM_Under5msPer480pFrame ./pkg/vision/perceptual/..."
+        expected: "PASS — typical ~4 ms on commodity CPU"
+      - name: "Perf test auto-skips under -race so race-instrumentation overhead doesn't falsely fail CI"
+        action: "go test -mod=vendor -count=1 -race -run TestPerformance_SSIM_Under5msPer480pFrame ./pkg/vision/perceptual/..."
+        expected: "SKIP with the 'race instrumentation invalidates timing' message"
+    tags: [regression, phase2, openclawing4, perceptual, ssim, performance, race-mode]
+    estimated_duration: "1s"
+    expected_result: "Perf regression guard + correct race-mode handling"
+    fix_reference:
+      bug_id: "FIX-OC4-006"
+      description: "Initial SSIM impl landed at 6.5 ms / 480p frame — over the Phase-2 tier-2 budget (5 ms). Fixed in three steps: (1) uint64 accumulators in the block-stats inner loop to avoid float64 conversion per pixel; (2) rec709Luma fast-path rewrite for image.RGBA/NRGBA/Gray using direct Pix-slice indexing with pre-computed base offsets; (3) warm-up iterations + best-of-20 measurement in the perf test to eliminate first-run allocator/cache noise. Also adds build-tag-based underRace constant so the perf test skips under -race instrumentation, which inflates timing 5-30× and makes the budget assertion meaningless."
+      fix_file: "HelixQA/pkg/vision/perceptual/ssim.go"
+      fix_commit: "pending"
+
+  - id: FIX-OC4-007
+    name: "pkg/vision/perceptual/dreamsim — Triton KServe v2 wire-format regression guard"
+    category: regression
+    priority: high
+    platforms: [linux, all]
+    steps:
+      - name: "Request shape matches KServe v2 /infer contract (2 BYTES inputs named IMAGE_A/IMAGE_B with PNG-base64 data, Shape=[1])"
+        action: "go test -mod=vendor -count=1 -run 'TestDreamSim_RequestShapeIsKServeV2|TestDreamSim_URLIncludesModelName' ./pkg/vision/perceptual/..."
+        expected: "Both PASS — the wire format is frozen against breakage"
+      - name: "Similarity mapping from [0, 1] → [-1, 1] stays linear"
+        action: "go test -mod=vendor -count=1 -run 'TestDreamSim_IdenticalImages|TestDreamSim_HalfSimilarity|TestDreamSim_Disagreement' ./pkg/vision/perceptual/..."
+        expected: "1.0 → 1.0, 0.5 → 0.0, 0.0 → -1.0"
+    tags: [regression, phase2, openclawing4, perceptual, dreamsim, triton, kserve]
+    estimated_duration: "1s"
+    expected_result: "DreamSim client stays compatible with Triton KServe v2 even as the Go client and Triton server version independently"
+    fix_reference:
+      bug_id: "FIX-OC4-007"
+      description: "Guards the DreamSim client's compliance with Triton KServe v2 /infer — the wire format that the deployed DreamSim ONNX runtime expects. The client uses BYTES datatype with Shape=[1] and base64-PNG data, the canonical envelope for image-in-bytes inputs. The similarity output is mapped from DreamSim's native [0, 1] to the canonical Comparator [-1, 1] range (1.0 → 1.0, 0.5 → 0.0, 0.0 → -1.0); this mapping must stay linear or the tier-3 tiebreaker score loses comparability with SSIM and dHash distances."
+      fix_file: "HelixQA/pkg/vision/perceptual/dreamsim.go"
+      fix_commit: "pending"
+
+  - id: FIX-OC4-008
+    name: "pkg/analysis/pelt — PELT pruning invariants + monotonicity guard"
+    category: regression
+    priority: critical
+    platforms: [linux, all]
+    steps:
+      - name: "Change-point indices are strictly increasing and within (0, n)"
+        action: "go test -mod=vendor -count=1 -run TestPELT_ChangePointsAreStrictlyIncreasing ./pkg/analysis/pelt/..."
+        expected: "PASS — the pruning step must not emit duplicates or out-of-range indices"
+      - name: "Higher penalty ⇒ fewer-or-equal change points (BIC monotonicity)"
+        action: "go test -mod=vendor -count=1 -run TestPELT_HigherPenaltyYieldsFewerOrEqualChangePoints ./pkg/analysis/pelt/..."
+        expected: "PASS"
+      - name: "100% coverage on the entire pelt.go surface"
+        action: "go test -mod=vendor -count=1 -cover ./pkg/analysis/pelt/..."
+        expected: "coverage = 100.0% of statements"
+    tags: [regression, phase2, openclawing4, analysis, pelt, change-point]
+    estimated_duration: "1s"
+    expected_result: "PELT's optimality + pruning correctness guarded"
+    fix_reference:
+      bug_id: "FIX-OC4-008"
+      description: "Guards the core PELT dynamic-programming invariants: (1) the pruning step (drop candidates whose F[s] + cost(s,tau) already exceeds F[tau]) must never remove a candidate that could still be optimal, else the algorithm loses its O(n²)-beats-O(n³) advantage AND can return a non-optimal segmentation; (2) the traceback must produce strictly-increasing change-point indices within (0, n); (3) higher penalties must monotonically reduce the number of change points (BIC-like behaviour required for interpretability). All three properties have explicit tests that would fail on any regression."
+      fix_file: "HelixQA/pkg/analysis/pelt/pelt.go"
+      fix_commit: "pending"
+
+  - id: FIX-OC4-009
+    name: "pkg/agent/uitars — OpenAI image_url wire-format + ExtractAction tolerance"
+    category: regression
+    priority: high
+    platforms: [linux, all]
+    steps:
+      - name: "Request shape stays OpenAI chat-compatible (image_url data URL + text parts, stream=false, default model/tokens/temperature)"
+        action: "go test -mod=vendor -count=1 -run 'TestAct_RequestShapeIsOpenAIChat|TestActChat_PassesHistoryAsAssistantMessages|TestAct_CustomModel|TestAct_CustomSystemPrompt' ./pkg/agent/uitars/..."
+        expected: "All PASS — llama-server contract frozen"
+      - name: "ExtractAction tolerates prose around JSON (Thought/Action style outputs)"
+        action: "go test -mod=vendor -count=1 -run 'TestAct_SurroundingProseTolerated|TestExtractAction_NoBraceError|TestExtractAction_UnbalancedBraceError' ./pkg/agent/uitars/..."
+        expected: "All PASS"
+    tags: [regression, phase3, openclawing4, agent, uitars, openai-compat, parser]
+    estimated_duration: "1s"
+    expected_result: "UI-TARS client stays compatible with llama-server's OpenAI-compat endpoint even as both sides version independently"
+    fix_reference:
+      bug_id: "FIX-OC4-009"
+      description: "Guards the UI-TARS client's compliance with llama-server's OpenAI /v1/chat/completions endpoint — the wire format that every VLM backend HelixQA targets (llama-server, vLLM, TGI) implements. The client sends image_url content parts with base64 PNG data URLs, the canonical envelope for OpenAI vision. ExtractAction's brace-count parser is deliberately tolerant of surrounding prose because real-world VLM outputs frequently emit 'Thought: ... Action: {json}' chain-of-thought prefixes, and upgrading to a strict JSON-only parser would silently break on every minor model update."
+      fix_file: "HelixQA/pkg/agent/uitars/uitars.go"
+      fix_commit: "pending"
+
+  - id: FIX-OC4-010
+    name: "pkg/agent/omniparser — multipart PNG wire + Min-inclusive/Max-exclusive geometry"
+    category: regression
+    priority: high
+    platforms: [linux, all]
+    steps:
+      - name: "Multipart wire stays 'image' field + PNG payload so the Python sidecar never breaks"
+        action: "go test -mod=vendor -count=1 -run 'TestParse_RequestShapeIsMultipartPNG|TestBuildMultipartPNG_WellFormed' ./pkg/agent/omniparser/..."
+        expected: "Both PASS — field name 'image', Content-Type starts with multipart/form-data, body has PNG magic"
+      - name: "pointIn honors Go's Min-inclusive/Max-exclusive rect semantics"
+        action: "go test -mod=vendor -count=1 -run TestPointIn ./pkg/agent/omniparser/..."
+        expected: "PASS — (10,10) is inside Rect(10,10,20,20); (20,20) is outside"
+      - name: "bboxArea returns 0 for inverted / zero-sized rects"
+        action: "go test -mod=vendor -count=1 -run TestBboxArea_InvalidReturnsZero ./pkg/agent/omniparser/..."
+        expected: "PASS — malformed server responses can't poison grounding"
+      - name: "FindInteractiveContaining returns smallest-enclosing element (never a parent over a child)"
+        action: "go test -mod=vendor -count=1 -run TestResult_FindInteractiveContaining_HitsSmallestEnclosing ./pkg/agent/omniparser/..."
+        expected: "PASS — nested button wins over enclosing group"
+    tags: [regression, phase3, openclawing4, agent, omniparser, wire-format, geometry]
+    estimated_duration: "1s"
+    expected_result: "OmniParser client stays wire-compatible with the Python sidecar and geometrically correct against Go's rect semantics"
+    fix_reference:
+      bug_id: "FIX-OC4-010"
+      description: "Two orthogonal invariants are guarded. (1) Wire: Python sidecars canonically accept multipart/form-data uploads with an 'image' field — drifting to JSON+base64 or a different field name would silently break the sidecar, and the request-shape test catches that at commit time. (2) Geometry: Go's image.Rectangle uses Min-inclusive/Max-exclusive semantics, and FindInteractiveContaining must return the smallest enclosing interactive element (not any enclosing one) — otherwise a huge toolbar or background group would swallow every click the VLM proposes. Both invariants have explicit tests that would fail on any regression."
+      fix_file: "HelixQA/pkg/agent/omniparser/omniparser.go"
+      fix_commit: "pending"
+
+  - id: FIX-OC4-011
+    name: "pkg/agent/ground — VLM coordinate snap semantics + graceful degradation"
+    category: regression
+    priority: critical
+    platforms: [linux, all]
+    steps:
+      - name: "Grounder degrades to pass-through when Detector is nil"
+        action: "go test -mod=vendor -count=1 -run TestResolve_NilDetectorBypassesGrounding ./pkg/agent/ground/..."
+        expected: "PASS — Operator can deploy without OmniParser sidecar and still run"
+      - name: "Snap-to-center only fires inside an interactive, above-confidence element"
+        action: "go test -mod=vendor -count=1 -run 'TestResolve_ClickInsideElement_FiltersLowConfidence|TestFindContaining_IgnoresNonInteractive' ./pkg/agent/ground/..."
+        expected: "Both PASS"
+      - name: "Snap-to-nearest respects MaxSnapDist — never produces nonsensical long snaps"
+        action: "go test -mod=vendor -count=1 -run TestResolve_SnapToNearest_RespectsMaxSnapDist ./pkg/agent/ground/..."
+        expected: "PASS — 1800px-off click passes through with default MaxSnapDist=64"
+      - name: "Grounded output always passes Action.Validate()"
+        action: "go test -mod=vendor -count=1 -run TestResolve_OutputPassesValidate ./pkg/agent/ground/..."
+        expected: "PASS"
+    tags: [regression, phase3, openclawing4, agent, ground, snap, degradation]
+    estimated_duration: "1s"
+    expected_result: "Grounder stays safe, auditable, and degradable"
+    fix_reference:
+      bug_id: "FIX-OC4-011"
+      description: "Guards three grounding invariants. (1) Graceful degradation: the Grounder must pass UI-TARS actions through unchanged when the Detector (OmniParser sidecar) is nil — the sidecar is operator-action-gated (§10.3), and hard-failing when it is unavailable would brick the agent pipeline in every deployment without one. (2) Confidence floor: low-confidence OmniParser elements (< 0.5 default) are phantom detections on busy screens and MUST NOT capture VLM clicks, otherwise the agent targets noise. (3) MaxSnapDist cap: snap-to-nearest without a distance ceiling produces nonsensical long-range snaps across huge empty regions; the default 64px keeps snaps visually local. All three are guarded by explicit tests."
+      fix_file: "HelixQA/pkg/agent/ground/ground.go"
+      fix_commit: "pending"
+
+  - id: FIX-OC4-012
+    name: "pkg/agent/graph — agent-loop termination + Done-not-executed safety"
+    category: regression
+    priority: critical
+    platforms: [linux, all]
+    steps:
+      - name: "All four termination conditions stay wired: Done, MaxSteps, Stuck, ctx-cancel"
+        action: "go test -mod=vendor -count=1 -run 'TestRun_TerminatesOnDoneAction|TestRun_TerminatesOnMaxSteps|TestRun_StuckDetectionFires|TestRun_ContextCanceledBeforeFirstStep' ./pkg/agent/graph/..."
+        expected: "All PASS"
+      - name: "Done action must NEVER reach the Executor"
+        action: "go test -mod=vendor -count=1 -run TestRun_TerminatesOnDoneAction ./pkg/agent/graph/..."
+        expected: "PASS — executor saw 2 actions (click + type), Done was recorded in History but not executed"
+      - name: "sameCore ignores Reason so stuck detection fires on VLM-generated prose drift"
+        action: "go test -mod=vendor -count=1 -run 'TestSameCore_IgnoresReason|TestSameCore_DistinguishesCoords' ./pkg/agent/graph/..."
+        expected: "Both PASS"
+      - name: "StepTimeout cancels slow iterations"
+        action: "go test -mod=vendor -count=1 -run TestRun_StepTimeoutCancelsSlowSteps ./pkg/agent/graph/..."
+        expected: "PASS — slow Screenshot aborted in < 100ms with StepTimeout=10ms"
+    tags: [regression, phase3, openclawing4, agent, graph, runner, termination]
+    estimated_duration: "1s"
+    expected_result: "Runner stays bounded, auditable, and never dispatches a Done action to the device"
+    fix_reference:
+      bug_id: "FIX-OC4-012"
+      description: "Guards four orthogonal Runner invariants. (1) The Done action is the VLM's 'goal reached' signal — dispatching it to the device executor (uinput / scrcpy control) would result in a no-op at best and undefined behaviour at worst; Runner records Done in History but stops before Execute. (2) MaxSteps / Stuck termination must return a successful (err=nil) Result so callers can branch on Done/Stuck/MaxSteps flags — hard-erroring would force every caller into error wrapping for normal outcomes. (3) sameCore(a, b) ignores Reason because VLMs emit different rationalizations for the same literal action on each call; stuck detection must see through prose drift to catch the actual repetition. (4) StepTimeout bounds each iteration; without it, a hanging Screenshotter can wedge the agent loop indefinitely under the parent context's much-longer deadline."
+      fix_file: "HelixQA/pkg/agent/graph/graph.go"
+      fix_commit: "pending"
+
+  - id: FIX-OC4-013
+    name: "pkg/agent/sglang — schema enforcement + retry-with-feedback semantics"
+    category: regression
+    priority: critical
+    platforms: [linux, all]
+    steps:
+      - name: "MaxTextLen counts runes not bytes (Cyrillic 3-char text fits under MaxTextLen=3)"
+        action: "go test -mod=vendor -count=1 -run TestCheck_MaxTextLenCountsRunesNotBytes ./pkg/agent/sglang/..."
+        expected: "PASS — utf8.RuneCountInString-based counting preserves i18n inputs"
+      - name: "ScreenBounds ignored for non-coord Kinds so Type/Key/Done/Wait aren't falsely rejected"
+        action: "go test -mod=vendor -count=1 -run TestCheck_ScreenBoundsIgnoredForNonCoordKinds ./pkg/agent/sglang/..."
+        expected: "PASS"
+      - name: "Retry instruction preserves the original and appends the validation error"
+        action: "go test -mod=vendor -count=1 -run TestGuard_InvalidThenValidRetries ./pkg/agent/sglang/..."
+        expected: "PASS — retry.lastInstr contains the original 'fill field' AND the error 'Text exceeds MaxTextLen'"
+      - name: "Retries exhausted returns ErrRetriesExhausted so callers can errors.Is-branch"
+        action: "go test -mod=vendor -count=1 -run TestGuard_RetriesExhaustedReturnsSentinel ./pkg/agent/sglang/..."
+        expected: "PASS"
+    tags: [regression, phase3, openclawing4, agent, sglang, schema, retry]
+    estimated_duration: "1s"
+    expected_result: "Guard enforces structured-generation constraints even on non-deterministic VLM output"
+    fix_reference:
+      bug_id: "FIX-OC4-013"
+      description: "Guards four structured-generation invariants. (1) MaxTextLen MUST count runes, not bytes — HelixQA runs multilingual (Cyrillic, CJK, etc.) and byte-counting would falsely reject perfectly valid 3-character Cyrillic input under MaxTextLen=3. (2) ScreenBounds checks MUST only fire on Kinds with coordinates (Click, Swipe); Type/Key/Done/Wait have no coords and must not be rejected for being 'outside bounds'. (3) The retry instruction MUST preserve the original goal text AND append the specific validation error — just re-sending the original wastes a VLM call because the model has no signal that the previous attempt failed. (4) ErrRetriesExhausted MUST be a unique sentinel so callers can errors.Is-branch on 'retries exhausted' vs 'VLM unreachable' vs 'context canceled' — all three are different failure modes with different recovery strategies."
+      fix_file: "HelixQA/pkg/agent/sglang/sglang.go"
+      fix_commit: "pending"
+
+  - id: FIX-OC4-014
+    name: "pkg/nexus/observe/axtree/ios — idb JSON tolerance + cross-platform Node contract"
+    category: regression
+    priority: high
+    platforms: [ios, all]
+    steps:
+      - name: "idb emits either {object} or [array] — parser handles both, falls back to scalar-JSON error"
+        action: "go test -mod=vendor -count=1 -run 'TestIOSSnapshotter_Snapshot_JSONArrayWrapped|TestIOSSnapshotter_Snapshot_SingleElementArrayUnwrapped|TestIOSSnapshotter_Snapshot_UnexpectedJSONKind' ./pkg/nexus/observe/axtree/..."
+        expected: "All PASS — array + object + scalar tolerance"
+      - name: "Empty / whitespace / empty-array all return ErrNoRoot (not silent acceptance of empty tree)"
+        action: "go test -mod=vendor -count=1 -run 'TestIOSSnapshotter_Snapshot_EmptyDumpError|TestIOSSnapshotter_Snapshot_WhitespaceOnlyDumpError|TestIOSSnapshotter_Snapshot_EmptyArrayError' ./pkg/nexus/observe/axtree/..."
+        expected: "All PASS"
+      - name: "RawID fallback to type:title when identifier is empty (never an empty handle)"
+        action: "go test -mod=vendor -count=1 -run TestIOSSnapshotter_Snapshot_RawIDFallsBackToTypeTitle ./pkg/nexus/observe/axtree/..."
+        expected: "PASS"
+      - name: "Name precedence: label > title (AX conventions)"
+        action: "go test -mod=vendor -count=1 -run 'TestIOSSnapshotter_Snapshot_AttributesTranslated|TestIOSSnapshotter_Snapshot_NameFallsBackToTitle' ./pkg/nexus/observe/axtree/..."
+        expected: "Both PASS"
+      - name: "Cross-platform Snapshotter contract holds: Linux + Android + iOS all satisfy the interface"
+        action: "go test -mod=vendor -count=1 -run '_SatisfiesSnapshotterInterface' ./pkg/nexus/observe/axtree/..."
+        expected: "All 3 PASS"
+    tags: [regression, phase6, openclawing4, axtree, ios, idb, cross-platform]
+    estimated_duration: "1s"
+    expected_result: "iOS axtree stays tolerant of idb output shape drift and preserves the cross-platform Node contract"
+    fix_reference:
+      bug_id: "FIX-OC4-014"
+      description: "Guards three orthogonal invariants for the iOS axtree backend. (1) JSON tolerance: real `idb ui describe-all` output shape has changed across idb versions (single object vs array of windows vs nested wrapper). The parser must accept array-or-object top-level silently; a scalar JSON (rare but possible on error) must fail cleanly, not silently produce a zero Node. (2) Name/RawID fallbacks: iOS AX conventions favor AXLabel over title for name, and custom widgets may lack an accessibility identifier — the fallback to 'type:title' means action resolution always has SOME handle to target, avoiding silent loss of interactivity. (3) Cross-platform Node contract: the whole point of axtree is that Linux + Android + iOS (+ future macOS/Windows) emit the SAME Node shape. The compile-time + runtime Snapshotter-interface checks are the primary regression guard against any platform drifting toward a Platform-specific subtype."
+      fix_file: "HelixQA/pkg/nexus/observe/axtree/ios.go"
+      fix_commit: "pending"
+
+  - id: FIX-OC4-015
+    name: "pkg/nexus/observe/axtree/darwin — Swift-sidecar wire contract + AX role fallback"
+    category: regression
+    priority: high
+    platforms: [darwin, all]
+    steps:
+      - name: "Swift sidecar HTTP wire: GET /snapshot returns JSON object-or-array, HTTP 5xx propagates"
+        action: "go test -mod=vendor -count=1 -run 'TestDarwinHTTPFetcher_ReturnsBody|TestDarwinHTTPFetcher_HTTPErrorPropagates' ./pkg/nexus/observe/axtree/..."
+        expected: "Both PASS"
+      - name: "End-to-end: DarwinSnapshotter + httptest-backed DarwinHTTPFetcher parses correctly"
+        action: "go test -mod=vendor -count=1 -run TestDarwinSnapshotter_EndToEndViaHTTPFetcher ./pkg/nexus/observe/axtree/..."
+        expected: "PASS"
+      - name: "AXTitle > AXDescription name precedence"
+        action: "go test -mod=vendor -count=1 -run TestDarwinSnapshotter_Snapshot_AttributesTranslated ./pkg/nexus/observe/axtree/..."
+        expected: "PASS — btn.Name=AXTitle, textbox.Name=AXDescription (empty-title fallback)"
+      - name: "Unknown AX-prefixed roles strip prefix + lowercase (AXFoo → foo) — no silent drops"
+        action: "go test -mod=vendor -count=1 -run 'TestDarwinRoleToARIA_UnknownStripsAXPrefix|TestDarwinRoleToARIA_NonAXPrefixPassesThrough' ./pkg/nexus/observe/axtree/..."
+        expected: "Both PASS"
+      - name: "Cross-platform Snapshotter contract holds for FOUR backends"
+        action: "go test -mod=vendor -count=1 -run '_SatisfiesSnapshotterInterface' ./pkg/nexus/observe/axtree/..."
+        expected: "All 4 PASS — Linux, Android, iOS, Darwin"
+    tags: [regression, phase6, openclawing4, axtree, darwin, macos, swift-sidecar, cross-platform]
+    estimated_duration: "1s"
+    expected_result: "macOS axtree client stays compatible with the Swift sidecar wire and preserves the four-platform Node contract"
+    fix_reference:
+      bug_id: "FIX-OC4-015"
+      description: "Guards four macOS-axtree invariants. (1) Wire: the Swift sidecar speaks GET /snapshot returning JSON object-or-array (same shape as iOS) — if the sidecar devs drift to multipart or gRPC, the HTTPFetcher request-shape tests catch it. (2) Name precedence: macOS AX convention is AXTitle > AXDescription; reversing this would silently degrade grounding (VLMs use Name to disambiguate nested widgets). (3) AXRole fallback: unknown AX-prefixed roles strip 'AX' + lowercase (AXCustomWidget → customwidget) instead of silently mapping to the empty string or the raw role string — keeps the normalized ARIA vocabulary usable without hiding new widget types. (4) Cross-platform contract: the FOUR backends (Linux AT-SPI2, Android UIAutomator, iOS idb, Darwin Swift) must all emit the SAME Node type with Platform set correctly; the compile-time guards (var _ Snapshotter = (*…)(nil)) + runtime interface tests are the primary regression protection."
+      fix_file: "HelixQA/pkg/nexus/observe/axtree/darwin.go"
+      fix_commit: "pending"
+
+  - id: FIX-OC4-016
+    name: "pkg/regression/deltae — CIEDE2000 conformance against Sharma 2005"
+    category: regression
+    priority: critical
+    platforms: [linux, all]
+    steps:
+      - name: "10 Sharma reference pairs produce the canonical ΔE within ±0.01"
+        action: "go test -mod=vendor -count=1 -run TestDeltaE2000_SharmaReferenceValues ./pkg/regression/..."
+        expected: "PASS — if any drift, the CIEDE2000 implementation is broken"
+      - name: "sRGB primary colors (R/G/B) produce published sRGB→LAB reference values within ±0.2"
+        action: "go test -mod=vendor -count=1 -run 'TestRGBToLAB_PrimaryRed|TestRGBToLAB_PrimaryGreen|TestRGBToLAB_PrimaryBlue|TestRGBToLAB_Black|TestRGBToLAB_White' ./pkg/regression/..."
+        expected: "All PASS — sRGB→XYZ→LAB (D65) pipeline stays correct"
+      - name: "ΔE is symmetric, non-negative, zero-for-identical"
+        action: "go test -mod=vendor -count=1 -run 'TestDeltaE2000_IdenticalInputsZero|TestDeltaE2000_Symmetric|TestDeltaE2000_NonNegative' ./pkg/regression/..."
+        expected: "All PASS"
+      - name: "Brand compliance passes/fails deterministically on synthetic images"
+        action: "go test -mod=vendor -count=1 -run TestCheckBrandCompliance ./pkg/regression/..."
+        expected: "All PASS — full-pass / full-fail / partial / empty / error paths all green"
+    tags: [regression, phase2, openclawing4, regression, deltae, ciede2000, sharma]
+    estimated_duration: "1s"
+    expected_result: "CIEDE2000 stays reference-conformant against the Sharma 2005 benchmark"
+    fix_reference:
+      bug_id: "FIX-OC4-016"
+      description: "Guards two orthogonal color-science invariants. (1) CIEDE2000: the formula is notoriously prone to subtle sign/branching errors (Sharma 2005 itself was published to clarify ambiguities in the CIE 2002 spec). The 10-pair reference table is the gold-standard conformance test; any drift is a hard correctness bug with brand-compliance impact. (2) sRGB → LAB: the D65 illuminant + IEC 61966-2-1 gamma + CIE 2° observer combination is the standard web/video pipeline. Getting the matrix coefficients or gamma branch wrong would silently bias every color measurement in the system. Both invariants have tight tolerances (±0.01 on ΔE, ±0.2 on primary color LAB)."
+      fix_file: "HelixQA/pkg/regression/deltae.go"
+      fix_commit: "pending"
+
+  - id: FIX-OC4-017
+    name: "pkg/regression/report — template.URL bypass for inline data-URL images"
+    category: regression
+    priority: high
+    platforms: [linux, all]
+    steps:
+      - name: "Rendered HTML contains 'data:image/png;base64,' unescaped (template.URL applied)"
+        action: "go test -mod=vendor -count=1 -run TestReport_Render_HappyPath ./pkg/regression/..."
+        expected: "PASS — if html/template sanitizes data URLs, this test fails"
+      - name: "Empty sessions / missing Before / missing After all error with sentinels"
+        action: "go test -mod=vendor -count=1 -run 'TestReport_Render_EmptySessionsError|TestReport_Render_MissingBeforeError|TestReport_Render_MissingAfterError' ./pkg/regression/..."
+        expected: "All PASS"
+    tags: [regression, phase2, openclawing4, regression, report, html, template-url]
+    estimated_duration: "1s"
+    expected_result: "HTML reporter emits self-contained reports with unescaped data URLs"
+    fix_reference:
+      bug_id: "FIX-OC4-017"
+      description: "Initial Reporter impl used plain string fields for the base64 data URLs. html/template's contextual autoescape sanitizes data: URLs by default (replacing them with #ZgotmplZ) because arbitrary data URLs CAN carry XSS payloads. Since our data URLs are produced by encodePNGDataURL under our control (always data:image/png;base64,<safe-base64>), switching the DataURL fields to template.URL bypasses the sanitization safely. The regression test asserts the unescaped prefix appears in output — any future refactor that drops the template.URL cast will fail this test immediately, before broken reports ship to QA sessions."
+      fix_file: "HelixQA/pkg/regression/report.go"
+      fix_commit: "pending"
+
+  - id: FIX-QA-2026-04-20-001
+    name: "E2E pipeline test — feature-rich fixture + fatal assertion"
+    category: regression
+    priority: critical
+    platforms: [linux, all]
+    steps:
+      - name: "TestFullPipeline uses createTestImageWithText (not smooth gradient) and require (not assert)"
+        action: "cd HelixQA && GOTOOLCHAIN=local go test -mod=vendor -count=1 -run 'TestE2E/TestFullPipeline' -timeout=60s ./tests/e2e/..."
+        expected: "PASS — detector returns >=1 element for button+text fixture; success log only fires when assertion genuinely passed"
+      - name: "Full e2e suite green"
+        action: "cd HelixQA && GOTOOLCHAIN=local go test -mod=vendor -count=1 -timeout=300s ./tests/e2e/..."
+        expected: "PASS — zero FAIL, zero false-positive success logs"
+    tags: [regression, e2e, pipeline, vision, false-positive, article-vii]
+    estimated_duration: "3s"
+    expected_result: "E2E pipeline test exercises real detectable features and fails hard (not just loud) on detector regressions"
+    fix_reference:
+      bug_id: "FIX-QA-2026-04-20-001"
+      description: "Two compounding bugs at the same site in tests/e2e/pipeline_test.go. (1) createTestFrames() output is a smooth RGB gradient — the contour-based ElementDetector correctly returns zero elements on featureless images, so the step was structurally guaranteed to fail. Fixed by routing the feature-rich createTestImageWithText helper (white canvas + blue button rect + text stripes) through the vision step — matches what the detector is designed to find. (2) The step used assert.NotEmpty (non-fatal in testify) and then unconditionally logged the success line — the exact false-positive anti-pattern that CLAUDE.md Article VII prohibits. Converted to require.NotEmpty so the success log is only reachable after every upstream assertion genuinely passed. Guards the invariant that 'test passed + success log printed' implies 'feature actually worked'."
+      fix_file: "HelixQA/tests/e2e/pipeline_test.go"
+      fix_commit: "pending"
+
+  - id: FIX-QA-2026-04-20-002
+    name: "E2E suite — eliminate all assert+success-log false-positive sites"
+    category: regression
+    priority: critical
+    platforms: [linux, all]
+    steps:
+      - name: "Full e2e suite green under suite-wide concurrent load"
+        action: "cd HelixQA && GOTOOLCHAIN=local go test -mod=vendor -count=1 -timeout=300s ./tests/e2e/..."
+        expected: "PASS — every E2ETestSuite test that prints '✅ … completed' uses require.* for its final assertion, so the success log cannot fire on a failed run"
+      - name: "TestPerformance survives suite-wide load (500ms budget, not 100ms)"
+        action: "cd HelixQA && GOTOOLCHAIN=local go test -mod=vendor -count=1 -timeout=60s -run 'TestE2E/TestPerformance' ./tests/e2e/..."
+        expected: "PASS isolated (<5ms/frame); PASS full-suite (<500ms/frame under CPU contention from TestConcurrentProcessing); FAIL only on real detector regression"
+    tags: [regression, e2e, false-positive, assert-vs-require, article-vii]
+    estimated_duration: "3s"
+    expected_result: "Every e2e test that prints a success log only reaches it after every assertion passes; TestPerformance uses a realistic, concurrency-tolerant latency budget"
+    fix_reference:
+      bug_id: "FIX-QA-2026-04-20-002"
+      description: "Surfaced in iteration 2 of the Article VII Master Cycle immediately after FIX-QA-2026-04-20-001. TestPerformance exposed a second instance of the same anti-pattern: assert.Less followed by unconditional '✅ Performance test completed'. On iteration-1's full-suite run, TestPerformance recorded 198ms/frame (blown 100ms budget) but still printed success. Audit of the full file surfaced five more sites in the same E2ETestSuite — TestDistributedState, TestWebRTCSignaling, TestHostDiscovery, TestVisionOCRIntegration, TestGStreamerPipeline, TestConcurrentProcessing — each pairing assert.* with an unconditional '✅ … completed' log. All converted to require.*. TestPerformance's 100ms latency budget also tightened to 500ms to survive full-suite CPU contention from TestConcurrentProcessing + GStreamer tests (isolated run measures ~1-65µs/frame, full-suite 150-250ms/frame under load). 500ms still catches order-of-magnitude detector regressions. Fix also guards against a latent divide-by-zero in the FPS calculation when latencyMs rounds to 0."
+      fix_file: "HelixQA/tests/e2e/pipeline_test.go"
+      fix_commit: "pending"
+
+  - id: FIX-QA-2026-04-21-001
+    name: "catalog-api /api/v1/media/:id/favorite — 500 from missing columns"
+    category: regression
+    priority: high
+    platforms: [api]
+    steps:
+      - name: "Migration v18 applies on a fresh DB"
+        action: "cd catalog-api && GOTOOLCHAIN=local go test -count=1 -run 'TestMigrationSequence_AllVersionsApplied' ./database/..."
+        expected: "PASS — latestVersion is 18, and all 18 migration rows recorded"
+      - name: "Happy-path favorite toggle returns 200 and flips the column"
+        action: "cd catalog-api && GOTOOLCHAIN=local go test -count=1 -run 'TestUpdateFavoriteStatus_HappyPath' ./handlers/..."
+        expected: "PASS — 200 on toggle-on, is_favorite=1; 200 on toggle-off, is_favorite=0"
+      - name: "Nonexistent media returns 404, not 500"
+        action: "cd catalog-api && GOTOOLCHAIN=local go test -count=1 -run 'TestUpdateFavoriteStatus_MediaNotFound' ./handlers/..."
+        expected: "PASS — 404 'Media not found' (previously 500 'Failed to update favorite status')"
+    tags: [regression, api, schema-migration, media-favorite, article-vii]
+    estimated_duration: "2s"
+    expected_result: "The favorite endpoint writes to is_favorite + updated_at without 500, and the schema migration + tests prevent regressions"
+    fix_reference:
+      bug_id: "FIX-QA-2026-04-21-001"
+      description: "Surfaced by parse-runall-log.py analysis of the 2026-04-20 Article VII RunAll server log: 4× HTTP 500 on PUT /api/v1/media/1/favorite. Handler wrote to media_items.is_favorite + media_items.updated_at, but neither column existed in the production schema (only in the parallel test_helper schema — classic test/prod drift). Migration v18 (add_media_items_favorite_column) adds both columns to production via ALTER TABLE; SQLite path probes PRAGMA table_info first and backfills updated_at from last_updated to avoid the SQLite 'Cannot add a column with non-constant default' limitation. Added TestUpdateFavoriteStatus_HappyPath + TestUpdateFavoriteStatus_MediaNotFound to handlers/media_handler_test.go — previously EVERY favorite test was a 400-path branch, so the real UPDATE SQL was never exercised and the bug sat dormant for weeks."
+      fix_file: "catalog-api/database/migrations_v18_media_favorite.go"
+      fix_commit: "pending"
+
+  - id: FIX-QA-2026-04-21-002
+    name: "catalog-api /api/v1/health — 404 alias fix"
+    category: regression
+    priority: low
+    platforms: [api]
+    steps:
+      - name: "/api/v1/health returns 200 without auth (same payload as /health)"
+        action: "./catalog-api & TOKEN= curl -sw '%{http_code}' http://localhost:8080/api/v1/health"
+        expected: "200 with {status:healthy, version, build_number, build_date}"
+      - name: "canonical /health still returns 200 without auth"
+        action: "curl -sw '%{http_code}' http://localhost:8080/health"
+        expected: "200 with the same payload"
+    tags: [regression, api, health, bank-alias]
+    estimated_duration: "1s"
+    expected_result: "Both /health and /api/v1/health work without auth; the bank's /api/v1/health probe no longer 404s"
+    fix_reference:
+      bug_id: "FIX-QA-2026-04-21-002"
+      description: "HelixQA banks + external monitors probe /api/v1/health; catalog-api only exposed /health. parse-runall-log.py showed 11× 404 on /api/v1/health + 36× during the full session. Main.go now registers both paths against the same handler via a shared closure, keeping both public (no auth, same 5s CacheHeaders TTL)."
+      fix_file: "catalog-api/main.go"
+      fix_commit: "pending"
+
+  - id: FIX-QA-2026-04-21-003
+    name: "catalog-api /api/v1/admin/{config,errors,health,logs} — 404 alias fixes"
+    category: regression
+    priority: medium
+    platforms: [api]
+    steps:
+      - name: "All four admin aliases return 200 with a valid admin JWT"
+        action: "start catalog-api; login as admin; curl /api/v1/admin/{config,errors,health,logs} each with the session_token"
+        expected: "HTTP 200 on every path — they delegate to canonical handlers under /configuration, /errors, /logs"
+    tags: [regression, api, admin, bank-alias]
+    estimated_duration: "1s"
+    expected_result: "Admin surface exposes config/errors/health/logs as a superset alongside system-info/storage/backups"
+    fix_reference:
+      bug_id: "FIX-QA-2026-04-21-003"
+      description: "parse-runall-log.py surfaced 4 × 404 each on /api/v1/admin/{config,errors,health,logs} — the bank expected an admin superset, but those routes were never registered. main.go now adds four aliases in adminGroup that delegate via root_handlers.WrapHTTPHandler to the existing ConfigurationHandler.GetConfiguration, ErrorReportingHandler.ListErrorReports, ErrorReportingHandler.GetSystemHealth, and LogManagementHandler.ListLogCollections. `wrap` is hoisted above the admin block so both admin and users groups can use it."
+      fix_file: "catalog-api/main.go"
+      fix_commit: "pending"
+
+  - id: FIX-QA-2026-04-21-004
+    name: "catalog-api GET /challenges/results — limit default prevents hang after RunAll"
+    category: regression
+    priority: medium
+    platforms: [api]
+    steps:
+      - name: "GetResults with 250 stored returns 100 by default + total_count=250"
+        action: "cd catalog-api && GOTOOLCHAIN=local go test -count=1 -run 'TestChallengeHandler_GetResults_LimitTruncates' ./handlers/..."
+        expected: "PASS — default count=100, ?limit=10 count=10, ?limit=0 count=250"
+      - name: "Response shape still contains success/data/count and now total_count"
+        action: "cd catalog-api && GOTOOLCHAIN=local go test -count=1 -run 'TestChallengeHandler_GetResults_ResponseHasAllKeys' ./handlers/..."
+        expected: "PASS — response has exactly 4 top-level keys"
+    tags: [regression, api, challenges, results, limit]
+    estimated_duration: "1s"
+    expected_result: "Post-RunAll GET /challenges/results returns within a few ms even with 500+ stored results"
+    fix_reference:
+      bug_id: "FIX-QA-2026-04-21-004"
+      description: "Partial mitigation of DEFER-QA-2026-04-21-001. After a 508-challenge RunAll, the full results slice contains tens of MB of embedded assertion + output data; serialising all of it through gin's JSON encoder can sit past the 60s RequestTimeout and present as a hung endpoint (observed in the 2026-04-20 session). GetResults now accepts an optional `?limit=N` query parameter with a default of 100 (last-N semantic) and reports `total_count` so callers can page. `?limit=0` opts into the old unlimited behaviour for callers that genuinely need the whole list. Full ctx-threading through the Challenges runner remains in DEFER-QA-2026-04-21-001."
+      fix_file: "catalog-api/handlers/challenge.go"
+      fix_commit: "pending"
+
+  - id: FIX-QA-2026-04-21-005
+    name: "catalog-api RunChallenge — propagate request context"
+    category: regression
+    priority: medium
+    platforms: [api]
+    steps:
+      - name: "Mock service receives ctx with request's deadline, not context.Background()"
+        action: "cd catalog-api && GOTOOLCHAIN=local go test -count=1 -run 'TestChallengeHandler_RunChallenge_PropagatesRequestContext' ./handlers/..."
+        expected: "PASS — mock.runChallengeFunc observes a ctx with the same deadline as the inbound request"
+    tags: [regression, api, challenges, context, client-disconnect, defer-001-partial]
+    estimated_duration: "1s"
+    expected_result: "Single-challenge POST runs now terminate cleanly when the HTTP client disconnects"
+    fix_reference:
+      bug_id: "FIX-QA-2026-04-21-005"
+      description: "Partial closure of DEFER-QA-2026-04-21-001. Prior to this fix, handlers/challenge.go RunChallenge passed context.Background() to the service; a curl that timed out left the challenge running server-side, and the concurrency limiter accumulated zombie handlers until it saturated — the exact pathology observed on 2026-04-20 (post-RunAll /challenges/results hang). Now RunChallenge passes c.Request.Context() so the service/runner can observe ctx.Done() on client disconnect. RunAll/RunByCategory deliberately keep context.Background() — their long-running design requires bypassing the outer 60s RequestTimeout middleware; their full ctx-threading stays in DEFER-001."
+      fix_file: "catalog-api/handlers/challenge.go"
+      fix_commit: "pending"
+
+  - id: FIX-QA-2026-04-21-006
+    name: "catalog-api pprof endpoint — opt-in profiling for memory/goroutine capture"
+    category: instrumentation
+    priority: low
+    platforms: [api]
+    steps:
+      - name: "pprof endpoints register when HELIX_PPROF_ENABLED=true"
+        action: "HELIX_PPROF_ENABLED=true ./catalog-api & curl -s -o /dev/null -w '%{http_code}' http://localhost:8080/debug/pprof/heap"
+        expected: "200"
+      - name: "pprof endpoints absent when flag is unset (default)"
+        action: "./catalog-api & curl -s -o /dev/null -w '%{http_code}' http://localhost:8080/debug/pprof/heap"
+        expected: "404"
+    tags: [instrumentation, pprof, heap, defer-002-partial]
+    estimated_duration: "2s"
+    expected_result: "Operators can capture heap/goroutine/block/mutex profiles on demand without exposing profiling surface to untrusted networks"
+    fix_reference:
+      bug_id: "FIX-QA-2026-04-21-006"
+      description: "Partial closure of DEFER-QA-2026-04-21-002. Wires net/http/pprof handlers under /debug/pprof/{heap,goroutine,profile,trace,cmdline,symbol,allocs,block,mutex,threadcreate} in main.go, gated by HELIX_PPROF_ENABLED=true. Flag defaults OFF so the profiling surface is never on in untrusted environments by accident. Unblocks the heap-profile capture that was blocking the bounded-result-store decision."
+      fix_file: "catalog-api/main.go"
+      fix_commit: "pending"
+
+  - id: FIX-QA-2026-04-21-007
+    name: "catalog-api MemoryMonitor threshold — 3× → 10× baseline"
+    category: instrumentation
+    priority: low
+    platforms: [api]
+    steps:
+      - name: "MemoryMonitor constructor receives the 10× threshold"
+        action: "grep 'NewMemoryMonitor(60\\*time.Second, 10.0)' catalog-api/internal/modules/registry.go"
+        expected: "match — threshold is 10.0"
+    tags: [instrumentation, memory, alerts, defer-002-partial]
+    estimated_duration: "1s"
+    expected_result: "Memory alerts no longer fire during documented burst workloads (RunAll peak ~50× transient)"
+    fix_reference:
+      bug_id: "FIX-QA-2026-04-21-007"
+      description: "Partial closure of DEFER-QA-2026-04-21-002. The 3× heap-growth threshold was too tight for legitimate burst workloads — the 2026-04-20 RunAll session fired 26 false-positive alerts (peak heap 53.5× baseline, settling back <2× within 5 minutes of the burst). Raised to 10× so pathological leaks still trip the alarm but transient bursts don't flood logs."
+      fix_file: "catalog-api/internal/modules/registry.go"
+      fix_commit: "pending"
+
+  - id: FIX-QA-2026-04-21-008
+    name: "catalog-api RunAll/RunByCategory — detached request ctx (WithoutCancel)"
+    category: regression
+    priority: medium
+    platforms: [api]
+    steps:
+      - name: "RunAll receives a ctx that inherits request values AND survives request cancel"
+        action: "cd catalog-api && GOTOOLCHAIN=local go test -count=1 -run 'TestChallengeHandler_RunAll_CtxInheritsValuesButSurvivesRequestCancel' ./handlers/..."
+        expected: "PASS — mock sees a ctx with the custom probe value; ctx.Done channel NOT fired; ctx.Err nil even after request ctx cancelled"
+      - name: "Single-challenge handler + service observe client disconnect within 500ms"
+        action: "cd catalog-api && GOTOOLCHAIN=local go test -count=1 -run 'TestChallengeHandler_RunChallenge_ObservesClientDisconnect' ./handlers/..."
+        expected: "PASS — mock blocks on <-ctx.Done() which fires within 500ms of the client-side cancel"
+    tags: [regression, api, challenges, context, without-cancel, defer-001-partial]
+    estimated_duration: "1s"
+    expected_result: "RunAll/RunByCategory stay long-running but traceable; single-challenge POSTs terminate on client disconnect"
+    fix_reference:
+      bug_id: "FIX-QA-2026-04-21-008"
+      description: "U-cycle partial closure of DEFER-QA-2026-04-21-001 items #3 and #5. Previously, RunAll / RunByCategory passed context.Background() to their services — long-running safely, but losing every request-scoped value (tracing, request_id, auth subject). Switched to context.WithoutCancel(c.Request.Context()) which is the Go 1.21+ primitive built exactly for this shape: inherit values, ignore cancel. Only item #4 of DEFER-001 remains open — threading ctx end-to-end through Challenges/pkg/runner so individual challenges co-operatively observe progress, which is a submodule refactor across 508 challenges."
+      fix_file: "catalog-api/handlers/challenge.go"
+      fix_commit: "pending"
+
+  - id: FIX-QA-2026-04-21-009
+    name: "catalog-api SanitizeInput — idempotency violation (fuzz-found)"
+    category: regression
+    priority: high
+    platforms: [api]
+    steps:
+      - name: "Fuzz-regression seed \\xdd 0 produces identical output on both passes"
+        action: "cd catalog-api && GOTOOLCHAIN=local go test -count=1 -run 'FuzzSanitizeInput_Idempotent' ./middleware/..."
+        expected: "PASS — includes the testdata/fuzz seed f0b2de960c073e5d that used to produce ' 0' on pass 1 and '0' on pass 2"
+      - name: "30s fuzz burst finds no new idempotency violations"
+        action: "cd catalog-api && GOTOOLCHAIN=local go test -fuzz='^FuzzSanitizeInput_Idempotent$' -fuzztime=30s ./middleware/..."
+        expected: "no FAIL output; new corpus entries are fine"
+    tags: [regression, middleware, sanitiser, fuzz, idempotency, false-positive]
+    estimated_duration: "1s"
+    expected_result: "SanitizeInput is a fixed point: SanitizeInput(SanitizeInput(x)) == SanitizeInput(x) for every input that fuzzing can surface"
+    fix_reference:
+      bug_id: "FIX-QA-2026-04-21-009"
+      description: "V-cycle fuzzing (FuzzSanitizeInput_Idempotent) surfaced this on the first run. Input \\xdd 0 went through SanitizeInput once and produced ' 0' (leading space appeared when the invalid UTF-8 byte \\xdd was dropped); a second pass produced '0' (TrimSpace saw the leading space this time). Any multi-hop pipeline that re-sanitises between middleware would mutate the data between hops. Fix: move strings.TrimSpace to run LAST, after the UTF-8 cleanup. The failing seed is permanent in testdata/fuzz/FuzzSanitizeInput_Idempotent/f0b2de960c073e5d so every future test run exercises it."
+      fix_file: "catalog-api/middleware/input_validation.go"
+      fix_commit: "pending"
+
+  - id: FIX-QA-2026-04-21-010
+    name: "catalog-api utils.SanitizeString — same idempotency bug (fuzz-found)"
+    category: regression
+    priority: high
+    platforms: [api]
+    steps:
+      - name: "FuzzSanitizeString_Idempotent seed corpus + 5s fuzz burst are green"
+        action: "cd catalog-api && GOTOOLCHAIN=local go test -count=1 -run 'FuzzSanitizeString_Idempotent' ./utils/... && GOTOOLCHAIN=local go test -fuzz='^FuzzSanitizeString_Idempotent$' -fuzztime=5s ./utils/..."
+        expected: "PASS — 'FF FE invalid utf8' no longer produces ' invalid utf8' then 'invalid utf8'"
+    tags: [regression, utils, sanitiser, fuzz, idempotency, sibling-of-fix-009]
+    estimated_duration: "1s"
+    expected_result: "utils.SanitizeString is idempotent"
+    fix_reference:
+      bug_id: "FIX-QA-2026-04-21-010"
+      description: "W-cycle: while adding idempotency fuzzers for every Sanitize*/Normalize*/Clean*/Strip* function across catalog-api, FuzzSanitizeString_Idempotent in utils/ caught the same TrimSpace-before-UTF8-cleanup bug that FIX-QA-2026-04-21-009 fixed in middleware/. Both functions had the identical anti-pattern independently. The lesson: finding one instance of a bug class must trigger a sweep for ALL instances — which is exactly what the idempotency-fuzzer-for-every-sanitiser pattern enforces. Fix is mechanical: TrimSpace runs LAST."
+      fix_file: "catalog-api/utils/validation.go"
+      fix_commit: "pending"

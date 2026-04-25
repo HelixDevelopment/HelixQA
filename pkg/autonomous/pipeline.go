@@ -84,6 +84,20 @@ type PipelineConfig struct {
 	// name (e.g. "com.example.app").
 	AndroidPackage string
 
+	// CompetingAppPackages lists Android TV apps the caller
+	// wants proactively force-stopped before structured and
+	// curiosity phases begin. On Android TV, the home screen
+	// aggregates channel rows from every installed app that
+	// published TvContractCompat channels — a stray
+	// DPAD_ENTER on a foreign app's channel tile can hand
+	// control to the foreign app, and every subsequent
+	// keypress then lands in the wrong UI. This list is
+	// consumer-owned (HelixQA Constitution §1 — no
+	// project-specific data baked into the library); leave
+	// empty to use a generic empirically-observed default
+	// of apps seen publishing channels in the wild.
+	CompetingAppPackages []string
+
 	// WebURL is the URL for web platform testing.
 	WebURL string
 
@@ -900,6 +914,28 @@ func (sp *SessionPipeline) Run(
 	if len(allDevices) == 0 && sp.config.AndroidDevice != "" {
 		allDevices = []string{sp.config.AndroidDevice}
 	}
+
+	// FIX-QA-2026-04-21-015 (device-pollution guard): snapshot the
+	// sensitive system settings (font_scale, brightness, rotation…)
+	// BEFORE any phase runs, and register a defer to restore them
+	// verbatim when Run() returns. Addresses a 2026-04-21 operator
+	// report that two consecutive sessions had left the devices
+	// with system font_scale=2.0 (LLM-driven curiosity presumably
+	// wandered into Settings → Accessibility). This is defence in
+	// depth — the LLM still shouldn't navigate into device settings,
+	// but if it does, the device never stays polluted.
+	for _, device := range allDevices {
+		snap, err := captureDeviceSettings(ctx, device)
+		if err != nil {
+			fmt.Printf(
+				"[pipeline] warning: capture settings on %s: %v\n",
+				device, err,
+			)
+			continue
+		}
+		defer snap.restore(context.Background())
+	}
+
 	for _, device := range allDevices {
 		revCtx, revCancel := context.WithTimeout(
 			ctx, 10*time.Second,
@@ -1146,8 +1182,26 @@ func (sp *SessionPipeline) Run(
 
 		switch platform {
 		case "android", "androidtv":
+			// FIX-QA-2026-04-21-016: when only AndroidDevices[] is
+			// populated (multi-device config via .devconnect), the
+			// singular AndroidDevice is "". Passing "" to the recorder
+			// resulted in `adb -s "" shell screenrecord` → "more than
+			// one device/emulator" and the segment loop hit its
+			// 5-failure fuse. Fall back to the first entry in the
+			// detected-devices slice.
+			recordDevice := sp.config.AndroidDevice
+			if recordDevice == "" && len(sp.config.AndroidDevices) > 0 {
+				recordDevice = sp.config.AndroidDevices[0]
+			}
+			if recordDevice == "" {
+				fmt.Printf(
+					"  [exec] video recording skipped for %s: no device\n",
+					platform,
+				)
+				continue
+			}
 			rec := video.NewScrcpyRecorder(
-				sp.config.AndroidDevice, videoPath,
+				recordDevice, videoPath,
 				video.WithMethod(
 					video.MethodADBScreenrecord,
 				),
@@ -1798,6 +1852,16 @@ func (sp *SessionPipeline) Run(
 				expectedPkg = sp.config.AndroidPackage
 			}
 
+			// FIX-QA-2026-04-21-018 (Controller stagnation abort):
+			// count consecutive "screen unchanged" steps. If the
+			// device never reacts to any action for too long, the
+			// session is worthless — abort the loop and surface the
+			// failure loudly instead of running the full budget on a
+			// frozen screen (operator-reported on 2026-04-21: 28 min
+			// of video with only app close/reopen, zero UI motion).
+			const maxConsecutiveUnchanged = 8
+			consecutiveUnchanged := 0
+
 			for i := 0; i < maxCuriositySteps; i++ {
 				if curiosityCtx.Err() != nil {
 					break
@@ -1967,6 +2031,7 @@ func (sp *SessionPipeline) Run(
 						screenshot,
 					)
 					if diffResult.IsSame {
+						consecutiveUnchanged++
 						stepHistory = append(
 							stepHistory,
 							"WARNING: Previous action had "+
@@ -1977,10 +2042,59 @@ func (sp *SessionPipeline) Run(
 						fmt.Printf(
 							"  [curiosity %s #%d] "+
 								"screen unchanged "+
-								"(similarity=%.2f)\n",
+								"(similarity=%.2f, "+
+								"consecutive=%d/%d)\n",
 							platform, i+1,
 							diffResult.Similarity,
+							consecutiveUnchanged,
+							maxConsecutiveUnchanged,
 						)
+						// FIX-QA-2026-04-21-018: abort if nothing
+						// on the device has reacted for many
+						// consecutive steps. The session is
+						// testing nothing at that point.
+						if consecutiveUnchanged >= maxConsecutiveUnchanged {
+							fmt.Printf(
+								"  [curiosity %s] ✗ STAGNATION ABORT: "+
+									"%d consecutive steps with no "+
+									"screen change — device is not "+
+									"reacting to any action. "+
+									"Check ADB + device state.\n",
+								platform,
+								consecutiveUnchanged,
+							)
+							// Surface as a critical finding so the
+							// session report flags this as infra
+							// failure rather than a clean run.
+							// Appended to allFindings like every other
+							// finding in this phase.
+							allFindings = append(allFindings,
+								analysis.AnalysisFinding{
+									Category: analysis.CategoryFunctional,
+									Severity: analysis.SeverityCritical,
+									Title: fmt.Sprintf(
+										"HelixQA stagnation on %s — "+
+											"device did not react to "+
+											"%d consecutive actions",
+										platform,
+										consecutiveUnchanged,
+									),
+									Description: "Screen hash was identical " +
+										"across maxConsecutiveUnchanged " +
+										"curiosity steps. Either ADB " +
+										"commands are silently failing " +
+										"(e.g., `cmd input` returning " +
+										"'No shell command implementation.' " +
+										"on Android 9) or the app is frozen. " +
+										"See FIX-QA-2026-04-21-017/018.",
+									Platform: platform,
+								},
+							)
+							break
+						}
+					} else {
+						// Screen changed — reset the run.
+						consecutiveUnchanged = 0
 					}
 				}
 

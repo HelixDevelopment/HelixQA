@@ -1,0 +1,210 @@
+# SPDX-FileCopyrightText: 2026 Milos Vasic
+# SPDX-License-Identifier: Apache-2.0
+#
+# HelixQA Test Bank: OpenClawing Docs Audit (Phase 0 of OpenClawing4)
+#
+# Every test here is a mechanical verification that the doc-audit artefacts
+# stay in place. Intended to run as part of the full-QA master cycle — any
+# failure means a contributor has silently removed a retraction banner,
+# reintroduced a fabricated path, or added a bare sudo invocation.
+#
+# Cross-references:
+#   - OpenClawing4.md §11 (retractions) — forensic list these tests enforce
+#   - OpenClawing4-Audit.md §D — source material for every retraction
+#   - scripts/hooks/no-sudo.sh — the mechanical enforcer for item AUDIT-004
+
+version: "1.0"
+name: "OpenClawing Documentation Audit"
+description: "Phase-0 mechanical verification: retraction banners intact; fabricated OpenClawing2/3 paths not reintroduced; no bare sudo anywhere outside allow-listed retraction docs."
+metadata:
+  author: "vasic-digital"
+  app: "HelixQA"
+  version: "1.0.0"
+
+test_cases:
+  # ==================== Retraction banners present ====================
+
+  - id: AUDIT-001
+    name: "Starting_Point.md carries a RETRACTION NOTICE banner"
+    category: regression
+    priority: critical
+    platforms: [all]
+    steps:
+      - name: "Grep head of Starting_Point.md for RETRACTION NOTICE"
+        action: "grep -n 'RETRACTION NOTICE' HelixQA/docs/openclawing/Starting_Point.md"
+        expected: "Match on line <= 20 with '2026-04-19' date on a nearby line"
+      - name: "Verify reference to OpenClawing4-Audit.md §D.1"
+        action: "grep -n 'OpenClawing4-Audit.md.*D.1' HelixQA/docs/openclawing/Starting_Point.md"
+        expected: "At least one match"
+    tags: [audit, retraction, docs]
+    estimated_duration: "1s"
+    expected_result: "Retraction banner intact on Starting_Point.md"
+    fix_reference:
+      bug_id: "OPENCLAWING4-PHASE0-001"
+      description: "Starting_Point.md contains 9/24 dead URLs + 10 inconsistent URLs + unsourced baseline OpenClaw facts"
+      fix_file: "HelixQA/docs/openclawing/Starting_Point.md"
+      fix_commit: "pending"
+
+  - id: AUDIT-002
+    name: "OpenClawing2.md carries a RETRACTION NOTICE banner listing the 3 fabricated internal paths"
+    category: regression
+    priority: critical
+    platforms: [all]
+    steps:
+      - name: "Grep head of OpenClawing2.md for RETRACTION NOTICE"
+        action: "grep -n 'RETRACTION NOTICE' HelixQA/docs/openclawing/OpenClawing2.md"
+        expected: "Match on line <= 20 with 2026-04-19 date"
+      - name: "Verify custom_browser.py retraction is called out"
+        action: "grep -n 'custom_browser.py' HelixQA/docs/openclawing/OpenClawing2.md | head -1"
+        expected: "Match within the retraction banner section"
+      - name: "Verify skyvern/agent/prompts.py retraction is called out"
+        action: "grep -n 'skyvern/agent/prompts.py' HelixQA/docs/openclawing/OpenClawing2.md | head -1"
+        expected: "Match within the retraction banner section"
+      - name: "Verify PlanEvaluate retraction is called out"
+        action: "grep -n 'PlanEvaluate' HelixQA/docs/openclawing/OpenClawing2.md | head -1"
+        expected: "Match within the retraction banner section"
+    tags: [audit, retraction, docs, openclawing2]
+    estimated_duration: "1s"
+    expected_result: "All three fabricated paths flagged in the retraction banner"
+    fix_reference:
+      bug_id: "FIX-OC2-001"
+      description: "Fabricated internal paths in OpenClawing2.md §4.3.2, §5.1.2, §10.1.1"
+      fix_file: "HelixQA/docs/openclawing/OpenClawing2.md"
+      fix_commit: "pending"
+
+  - id: AUDIT-003
+    name: "OpenClawing3.md carries a RETRACTION NOTICE banner covering sudo/src/compile-blockers"
+    category: regression
+    priority: critical
+    platforms: [all]
+    steps:
+      - name: "Grep head of OpenClawing3.md for RETRACTION NOTICE"
+        action: "grep -n 'RETRACTION NOTICE' HelixQA/docs/openclawing/OpenClawing3.md"
+        expected: "Match on line <= 30"
+      - name: "Verify sudo retraction"
+        action: "grep -n 'sudo.*violates.*CLAUDE' HelixQA/docs/openclawing/OpenClawing3.md"
+        expected: "Match within the retraction banner"
+      - name: "Verify src/ fabrication retraction"
+        action: "grep -nE 'src/.*fabricated|fabricated.*src' HelixQA/docs/openclawing/OpenClawing3.md"
+        expected: "Match within the retraction banner"
+      - name: "Verify compile-blocker list"
+        action: "grep -n 'enqueueV3' HelixQA/docs/openclawing/OpenClawing3.md"
+        expected: "Match within the retraction banner"
+      - name: "Verify zero-copy DXGI retraction"
+        action: "grep -nE 'zero-copy.*DXGI|DXGI.*zero-copy|Zero-copy DXGI' HelixQA/docs/openclawing/OpenClawing3.md"
+        expected: "Match within the retraction banner"
+    tags: [audit, retraction, docs, openclawing3]
+    estimated_duration: "1s"
+    expected_result: "All OpenClawing3 retraction categories present"
+    fix_reference:
+      bug_id: "FIX-OC3-001"
+      description: "Aggregate OpenClawing3 retractions (sudo, src/ paths, compile-blockers, DXGI, benchmarks, missing llama.cpp RPC)"
+      fix_file: "HelixQA/docs/openclawing/OpenClawing3.md"
+      fix_commit: "pending"
+
+  # ==================== no-sudo enforcement ====================
+
+  - id: AUDIT-004
+    name: "no-sudo.sh hook rejects bare sudo outside retraction docs"
+    category: security
+    priority: critical
+    platforms: [all]
+    steps:
+      - name: "Create a fixture with bare sudo"
+        action: "printf 'bad line\\nsudo apt-get install foo\\n' > /tmp/audit-sudo-pos.txt"
+        expected: "Fixture written"
+      - name: "Run hook — must exit 1"
+        action: "HelixQA/scripts/hooks/no-sudo.sh /tmp/audit-sudo-pos.txt"
+        expected: "Exit code 1, stderr lists /tmp/audit-sudo-pos.txt"
+      - name: "Create a strike-through / quoted fixture"
+        action: "printf 'ok: ~~sudo~~ strike and \"sudo\" quoted\\n' > /tmp/audit-sudo-neg.txt"
+        expected: "Fixture written"
+      - name: "Run hook — must exit 0"
+        action: "HelixQA/scripts/hooks/no-sudo.sh /tmp/audit-sudo-neg.txt"
+        expected: "Exit code 0 (quoted / strike-through is permitted in design docs)"
+      - name: "Run hook against retraction docs"
+        action: "HelixQA/scripts/hooks/no-sudo.sh docs/openclawing/OpenClawing3.md docs/openclawing/OpenClawing4.md"
+        expected: "Exit code 0 (allow-listed paths)"
+      - name: "Clean up fixtures"
+        action: "rm -f /tmp/audit-sudo-pos.txt /tmp/audit-sudo-neg.txt"
+        expected: "Files removed"
+    tags: [security, hook, audit, constitution]
+    estimated_duration: "2s"
+    expected_result: "Hook behaves as specified: rejects bare sudo, accepts strike-through/quoted, allow-lists retraction docs"
+    fix_reference:
+      bug_id: "FIX-OC3-002"
+      description: "OpenClawing3 §14 proposed 4 sudo commands; hook prevents regression"
+      fix_file: "HelixQA/scripts/hooks/no-sudo.sh"
+      fix_commit: "pending"
+
+  # ==================== Real pkg/ layout referenced ====================
+
+  - id: AUDIT-005
+    name: "OpenClawing4.md references the real HelixQA pkg/ tree (no fabricated src/...)"
+    category: regression
+    priority: high
+    platforms: [all]
+    steps:
+      - name: "Count src/... references in OpenClawing4.md"
+        action: "grep -cE '(^|[^a-zA-Z])src/[a-zA-Z]' HelixQA/docs/openclawing/OpenClawing4.md"
+        expected: "Count appears only inside §11 retraction block (fabricated paths listed)"
+      - name: "Verify pkg/ landing points in §7"
+        action: "grep -nE '^\\| `pkg/' HelixQA/docs/openclawing/OpenClawing4.md | head -5"
+        expected: "At least 5 real pkg/ landing points in tables"
+    tags: [audit, docs, openclawing4]
+    estimated_duration: "1s"
+    expected_result: "OpenClawing4 anchors every recommendation to real pkg/ paths"
+    fix_reference:
+      bug_id: "FIX-OC3-003"
+      description: "OpenClawing3 invented src/ tree; OpenClawing4 restored pkg/ alignment"
+      fix_file: "HelixQA/docs/openclawing/OpenClawing4.md"
+      fix_commit: "pending"
+
+  # ==================== OpenClawing4 structural integrity ====================
+
+  - id: AUDIT-006
+    name: "OpenClawing4.md + OpenClawing4-Audit.md exist and are non-empty"
+    category: regression
+    priority: critical
+    platforms: [all]
+    steps:
+      - name: "Verify OpenClawing4.md exists and >= 1000 lines"
+        action: "wc -l HelixQA/docs/openclawing/OpenClawing4.md"
+        expected: "Line count >= 1000"
+      - name: "Verify OpenClawing4-Audit.md exists and >= 500 lines"
+        action: "wc -l HelixQA/docs/openclawing/OpenClawing4-Audit.md"
+        expected: "Line count >= 500"
+      - name: "Verify OpenClawing4-Handover.md exists"
+        action: "test -f HelixQA/docs/openclawing/OpenClawing4-Handover.md"
+        expected: "File present (Phase-0 handover ready for next session)"
+    tags: [audit, docs]
+    estimated_duration: "1s"
+    expected_result: "Core OpenClawing4 documents present"
+    fix_reference:
+      bug_id: "OPENCLAWING4-PHASE0-002"
+      description: "Doc set must stay coherent for future session continuation"
+      fix_file: "HelixQA/docs/openclawing/*.md"
+      fix_commit: "pending"
+
+  # ==================== llama.cpp RPC anchoring ====================
+
+  - id: AUDIT-007
+    name: "OpenClawing4.md anchors primary local inference on llama.cpp RPC (not TensorRT)"
+    category: regression
+    priority: high
+    platforms: [all]
+    steps:
+      - name: "Grep for llama.cpp RPC primary directive"
+        action: "grep -nE 'llama\\.cpp RPC is the primary' HelixQA/docs/openclawing/OpenClawing4.md"
+        expected: "At least one match"
+      - name: "Grep for TRT as secondary"
+        action: "grep -nE 'Triton.*vLLM.*secondary|secondary.*Triton|TensorRT.*secondary' HelixQA/docs/openclawing/OpenClawing4.md | head"
+        expected: "At least one match demoting TRT/Triton to secondary role"
+    tags: [audit, docs, llm, constitution]
+    estimated_duration: "1s"
+    expected_result: "Primary-backend invariant preserved"
+    fix_reference:
+      bug_id: "FIX-OC3-004"
+      description: "OpenClawing3 proposed TensorRT as primary; OpenClawing4 restored llama.cpp RPC primacy per HelixQA CLAUDE.md"
+      fix_file: "HelixQA/docs/openclawing/OpenClawing4.md"
+      fix_commit: "pending"

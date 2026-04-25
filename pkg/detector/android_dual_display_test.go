@@ -233,6 +233,13 @@ func TestCheckFrozenFrame_NoLogs(t *testing.T) {
 
 // --- CheckPresenter tests ---
 
+// presenterPkgForTest is a test-only fixture identifying the app
+// whose service state is probed by presenter-dependent tests.
+// Declared here (once) so the tests can share a single value and
+// keep the library code itself project-agnostic (HelixQA
+// Constitution §1).
+const presenterPkgForTest = "com.atmosphere.presenter"
+
 func TestCheckPresenter_Running(t *testing.T) {
 	mock := newMockRunner()
 	mock.On(
@@ -254,6 +261,7 @@ func TestCheckPresenter_Running(t *testing.T) {
 	d := NewDualDisplayDetector(
 		"dev1",
 		WithDualDisplayCommandRunner(mock),
+		WithPresenterPackage(presenterPkgForTest),
 	)
 
 	status, err := d.CheckPresenter(context.Background())
@@ -280,6 +288,7 @@ func TestCheckPresenter_NotRunning(t *testing.T) {
 	d := NewDualDisplayDetector(
 		"dev1",
 		WithDualDisplayCommandRunner(mock),
+		WithPresenterPackage(presenterPkgForTest),
 	)
 
 	status, err := d.CheckPresenter(context.Background())
@@ -394,6 +403,7 @@ func TestCheckVideoRouting_Active(t *testing.T) {
 	d := NewDualDisplayDetector(
 		"dev1",
 		WithDualDisplayCommandRunner(mock),
+		WithPresenterPackage(presenterPkgForTest),
 	)
 
 	result, err := d.CheckVideoRouting(
@@ -476,6 +486,7 @@ func TestCheckAll_FullCheck(t *testing.T) {
 		"dev1",
 		WithDualDisplayCommandRunner(mock),
 		WithDualDisplayEvidenceDir(t.TempDir()),
+		WithPresenterPackage("com.atmosphere.presenter"),
 	)
 
 	result, err := d.CheckAll(context.Background())

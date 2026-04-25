@@ -336,3 +336,620 @@ test_cases:
         action: "podman-compose -f docker-compose.qa-robot.yml config"
         expected: "Valid compose configuration"
     tags: [container, compose]
+
+  # ─── OpenClawing Docs Audit (Phase 0) ───
+  - id: HQA-DOCS-001
+    name: "OpenClawing docs audit — retraction banners intact, no-sudo hook wired"
+    category: regression
+    priority: critical
+    platforms: [all]
+    steps:
+      - name: "Retraction banners present on 3 prior docs"
+        action: "grep -q 'RETRACTION NOTICE' docs/openclawing/Starting_Point.md && grep -q 'RETRACTION NOTICE' docs/openclawing/OpenClawing2.md && grep -q 'RETRACTION NOTICE' docs/openclawing/OpenClawing3.md"
+        expected: "All three grep calls succeed"
+      - name: "no-sudo hook rejects bare sudo"
+        action: "printf 'sudo foo\\n' | ./scripts/hooks/no-sudo.sh /dev/stdin || true"
+        expected: "Exit 1 stderr reports violation"
+      - name: "docs-audit bank loads"
+        action: "helixqa list --banks banks/docs-audit.yaml"
+        expected: "7 test cases enumerated (AUDIT-001..007)"
+    tags: [docs, retraction, hook, phase0]
+
+  # ─── OpenClawing4 Phase 1 Go-Core ───
+  - id: HQA-PHASE1-GOCORE-001
+    name: "OpenClawing4 Phase 1 Go-core — frames + sidecarutil + scrcpy v3 wire + devguard"
+    category: regression
+    priority: critical
+    platforms: [all]
+    steps:
+      - name: "Three new packages build clean"
+        action: "go build ./pkg/capture/frames/... ./pkg/bridge/sidecarutil/... ./pkg/bridge/scrcpy/..."
+        expected: "exit 0"
+      - name: "All tests pass under -race"
+        action: "go test -count=1 -race ./pkg/capture/frames/... ./pkg/bridge/sidecarutil/... ./pkg/bridge/scrcpy/..."
+        expected: "PASS in all three packages, zero data races"
+      - name: "Phase-1 gocore bank loads"
+        action: "helixqa list --banks banks/phase1-gocore.yaml"
+        expected: "9 test cases enumerated (P1G-FRAMES-001/002, P1G-SIDECARUTIL-001/002/003, P1G-SCRCPY-001/002/003, P1G-FULL-001)"
+      - name: "InjectTouchEvent v3 wire regression (FIX-OC3-011)"
+        action: "go test -run 'TestInjectTouchEvent_Marshal_v3Fields' -count=1 ./pkg/bridge/scrcpy/..."
+        expected: "PASS — 31-byte body including action_button + buttons uint32s"
+    tags: [phase1, gocore, scrcpy, sidecarutil, regression]
+
+  # ─── OpenClawing4 Phase 2 Go-Core ───
+  - id: HQA-PHASE2-GOCORE-001
+    name: "OpenClawing4 Phase 2 Go-core — dHash-64 / dHash-256 tier-1 perception primitive"
+    category: regression
+    priority: critical
+    platforms: [all]
+    steps:
+      - name: "pkg/vision/hash builds clean"
+        action: "go build -mod=vendor ./pkg/vision/hash/..."
+        expected: "exit 0"
+      - name: "All tests pass under -race with 100% coverage"
+        action: "go test -mod=vendor -count=1 -race -cover ./pkg/vision/hash/..."
+        expected: "PASS, coverage = 100.0% of statements, zero data races"
+      - name: "Phase-2 gocore bank loads"
+        action: "helixqa list --banks banks/phase2-gocore.yaml"
+        expected: "6 test cases enumerated (PH2-HASH-DHASH-001..006)"
+      - name: "Article V §8 perf target — dHash < 5 ms / 1080p CPU"
+        action: "go test -mod=vendor -run 'TestPerformance_DHash64_Under5msPer1080pFrame' ./pkg/vision/hash/..."
+        expected: "PASS — average per-frame latency well under 5 ms (target: ~1 µs)"
+      - name: "Micro-benchmarks complete"
+        action: "go test -mod=vendor -bench=. -benchtime=100ms -run=^$ ./pkg/vision/hash/..."
+        expected: "BenchmarkDHash64_1080p < 5 µs/op; BenchmarkDHash256_1080p < 20 µs/op"
+    tags: [phase2, gocore, vision, hash, dhash, regression]
+
+  - id: HQA-PHASE2-GOCORE-002
+    name: "OpenClawing4 Phase 2 Go-core — BOCPD + stagnation detection"
+    category: regression
+    priority: critical
+    platforms: [all]
+    steps:
+      - name: "pkg/autonomous builds clean with new BOCPD + stagnation code"
+        action: "go build -mod=vendor ./pkg/autonomous/..."
+        expected: "exit 0"
+      - name: "All BOCPD + stagnation tests pass under -race"
+        action: "go test -mod=vendor -count=1 -race -run 'BOCPD|Observe|StudentT|IsFinite|Stagnation' ./pkg/autonomous/..."
+        expected: "PASS, zero data races"
+      - name: "Phase-2 gocore bank entries loaded"
+        action: "helixqa list --banks banks/phase2-gocore.yaml"
+        expected: "10 test cases total (6 DHASH + 2 BOCPD + 2 STAGNATION)"
+      - name: "Change-point detection integration works end-to-end"
+        action: "go test -mod=vendor -count=1 -run 'TestStagnationDetector_AddFrame_SceneChangeTriggersChangePoint' ./pkg/autonomous/..."
+        expected: "PASS — stable frames then scene change produces cp > 0.5 within 10 frames"
+    tags: [phase2, gocore, autonomous, bocpd, stagnation, dhash, regression]
+
+  - id: HQA-PHASE2-GOCORE-003
+    name: "OpenClawing4 Phase 2 Go-core — pixelmatch visual diff primitive"
+    category: regression
+    priority: critical
+    platforms: [all]
+    steps:
+      - name: "pkg/regression builds clean with pixelmatch addition"
+        action: "go build -mod=vendor ./pkg/regression/..."
+        expected: "exit 0"
+      - name: "All tests pass under -race (existing LLM visual + new pixelmatch)"
+        action: "go test -mod=vendor -count=1 -race ./pkg/regression/..."
+        expected: "PASS, zero data races, existing visual.go regression untouched"
+      - name: "Phase-2 gocore bank entries for pixelmatch loaded"
+        action: "helixqa list --banks banks/phase2-gocore.yaml"
+        expected: "13 test cases total (6 DHASH + 2 BOCPD + 2 STAGNATION + 3 PIXELMATCH)"
+      - name: "YIQ + AA math is correct"
+        action: "go test -mod=vendor -count=1 -run 'TestColorDelta|TestRGB2YIQ|TestBlendWhite|TestIsAA|TestHasManySiblings' ./pkg/regression/..."
+        expected: "All PASS"
+    tags: [phase2, gocore, regression, pixelmatch, visual-diff]
+
+  - id: HQA-PHASE2-GOCORE-009
+    name: "OpenClawing4 Phase 2 Go-core — CIEDE2000 color delta + brand compliance"
+    category: regression
+    priority: critical
+    platforms: [all]
+    steps:
+      - name: "pkg/regression builds clean with deltae.go added"
+        action: "go build -mod=vendor ./pkg/regression/..."
+        expected: "exit 0"
+      - name: "All deltae tests pass under -race"
+        action: "go test -mod=vendor -count=1 -race -run 'DeltaE|RGBToLAB|ColorToLAB|CheckBrandCompliance|SRGBToLinear|LabF|HueAngle|Deg2Rad' ./pkg/regression/..."
+        expected: "PASS, zero data races"
+      - name: "Coverage is ≥ 95% on deltae.go (the 4.3% gap is pure-gray edge cases in deltaE2000KParams)"
+        action: "go test -mod=vendor -count=1 -cover ./pkg/regression/..."
+        expected: "coverage ≥ 95.0% of statements (package-wide)"
+      - name: "Phase-2 bank has all deltae entries"
+        action: "helixqa list --banks banks/phase2-gocore.yaml"
+        expected: "37 test cases total (prior 34 + 3 deltae)"
+      - name: "Sharma 2005 reference table reproduced within ±0.01 ΔE"
+        action: "go test -mod=vendor -count=1 -run TestDeltaE2000_SharmaReferenceValues ./pkg/regression/..."
+        expected: "PASS — 10 canonical reference pairs match"
+    tags: [phase2, gocore, regression, deltae, ciede2000, brand-compliance, regression]
+
+  - id: HQA-PHASE2-GOCORE-010
+    name: "OpenClawing4 Phase 2 Go-core — HTML visual-regression reporter"
+    category: regression
+    priority: critical
+    platforms: [all]
+    steps:
+      - name: "pkg/regression builds clean with report.go added"
+        action: "go build -mod=vendor ./pkg/regression/..."
+        expected: "exit 0"
+      - name: "All reporter tests pass under -race"
+        action: "go test -mod=vendor -count=1 -race -run 'Report|EncodePNGDataURL|VerdictForDiff|Summarize' ./pkg/regression/..."
+        expected: "PASS, zero data races"
+      - name: "Reporter produces self-contained HTML with base64 images (template.URL bypass)"
+        action: "go test -mod=vendor -count=1 -run TestReport_Render_HappyPath ./pkg/regression/..."
+        expected: "PASS — output contains 'data:image/png;base64,' (unescaped)"
+      - name: "Phase-2 bank has all reporter entries"
+        action: "helixqa list --banks banks/phase2-gocore.yaml"
+        expected: "41 test cases total (prior 37 + 4 reporter)"
+    tags: [phase2, gocore, regression, report, html, regression]
+
+  - id: HQA-PHASE2-GOCORE-011
+    name: "OpenClawing4 Phase 2 Go-core — pHash DCT-based perceptual hash"
+    category: regression
+    priority: high
+    platforms: [all]
+    steps:
+      - name: "pkg/vision/hash builds clean with phash.go added"
+        action: "go build -mod=vendor ./pkg/vision/hash/..."
+        expected: "exit 0"
+      - name: "All pHash tests pass under -race"
+        action: "go test -mod=vendor -count=1 -race -run 'PHash|DCT32' ./pkg/vision/hash/..."
+        expected: "PASS, zero data races"
+      - name: "Coverage is ≥ 95% (package-wide)"
+        action: "go test -mod=vendor -count=1 -cover ./pkg/vision/hash/..."
+        expected: "coverage ≥ 95.0%"
+      - name: "Phase-2 bank has all pHash entries"
+        action: "helixqa list --banks banks/phase2-gocore.yaml"
+        expected: "44 test cases total (prior 41 + 3 pHash)"
+      - name: "DCT fundamental property: constant input → only DC coefficient"
+        action: "go test -mod=vendor -count=1 -run TestDCT32_ConstantInputHasOnlyDC ./pkg/vision/hash/..."
+        expected: "PASS"
+    tags: [phase2, gocore, vision, hash, phash, dct, regression]
+
+  - id: HQA-PHASE2-GOCORE-013
+    name: "OpenClawing4 Phase 2 Step 2.6 — CDP web axtree (chromedp/cdproto)"
+    category: regression
+    priority: critical
+    platforms: [all]
+    steps:
+      - name: "pkg/nexus/observe/axtree builds clean with web.go added"
+        action: "go build -mod=vendor ./pkg/nexus/observe/axtree/..."
+        expected: "exit 0"
+      - name: "All web axtree tests pass under -race"
+        action: "go test -mod=vendor -count=1 -race -run 'Web|NormalizeWebRole|AxValueString|AxBoolProperty|Chromedp' ./pkg/nexus/observe/axtree/..."
+        expected: "PASS, zero data races"
+      - name: "Cross-platform contract holds across 5 axtree backends"
+        action: "go test -mod=vendor -count=1 -run '_SatisfiesSnapshotterInterface' ./pkg/nexus/observe/axtree/..."
+        expected: "All 5 PASS — Linux + Android + iOS + Darwin + Web"
+      - name: "Phase-2 Step 2.6 (CDP web) closed — go.mod unlock made chromedp/cdproto available"
+        action: "grep -q 'chromedp/cdproto' vendor/modules.txt"
+        expected: "exit 0"
+    tags: [phase2, gocore, axtree, web, cdp, chromedp, cross-platform, regression]
+
+
+  - id: HQA-PHASE2-GOCORE-012
+    name: "OpenClawing4 Phase 2 Go-core — BlockMean + ChangedTiles partial-screen detection"
+    category: regression
+    priority: high
+    platforms: [all]
+    steps:
+      - name: "pkg/vision/hash builds clean with block_mean.go added"
+        action: "go build -mod=vendor ./pkg/vision/hash/..."
+        expected: "exit 0"
+      - name: "All BlockMean tests pass under -race"
+        action: "go test -mod=vendor -count=1 -race -run 'BlockMean|ChangedTiles|MedianOf|ErrWrongBlockSize' ./pkg/vision/hash/..."
+        expected: "PASS, zero data races"
+      - name: "Coverage remains ≥ 97% package-wide"
+        action: "go test -mod=vendor -count=1 -cover ./pkg/vision/hash/..."
+        expected: "coverage ≥ 97.0%"
+      - name: "Phase-2 bank has all BlockMean entries"
+        action: "helixqa list --banks banks/phase2-gocore.yaml"
+        expected: "47 test cases total (prior 44 + 3 BlockMean)"
+      - name: "Hash-triad complete — dHash + pHash + BlockMean all satisfy Hasher"
+        action: "go test -mod=vendor -count=1 -run '_SatisfiesHasherInterface' ./pkg/vision/hash/..."
+        expected: "All 3 PASS — interchangeable via the Hasher interface"
+    tags: [phase2, gocore, vision, hash, block-mean, partial-screen, regression]
+
+  - id: HQA-PHASE2-GOCORE-014
+    name: "OpenClawing4 Phase 2 — pure-Go NCC template matcher"
+    category: regression
+    priority: high
+    platforms: [all]
+    steps:
+      - name: "pkg/vision/template builds clean"
+        action: "go build -mod=vendor ./pkg/vision/template/..."
+        expected: "exit 0"
+      - name: "All template tests pass under -race with 100% coverage"
+        action: "go test -mod=vendor -count=1 -race -cover ./pkg/vision/template/..."
+        expected: "PASS, coverage = 100.0% of statements, zero data races"
+      - name: "Matcher.Match locates exact embedded needles within the bbox"
+        action: "go test -mod=vendor -count=1 -run TestMatch_ExactEmbeddedTemplateFoundAtKnownLocation ./pkg/vision/template/..."
+        expected: "PASS — NCC score ≥ 0.99 for the embedded needle"
+    tags: [phase2, gocore, vision, template, ncc, regression]
+
+  - id: HQA-PHASE2-GOCORE-015
+    name: "OpenClawing4 Phase 2 — pure-Go Lucas-Kanade optical flow"
+    category: regression
+    priority: high
+    platforms: [all]
+    steps:
+      - name: "pkg/vision/flow builds clean"
+        action: "go build -mod=vendor ./pkg/vision/flow/..."
+        expected: "exit 0"
+      - name: "All flow tests pass under -race with 100% coverage"
+        action: "go test -mod=vendor -count=1 -race -cover ./pkg/vision/flow/..."
+        expected: "PASS, coverage = 100.0% of statements, zero data races"
+      - name: "LK direction detection: rightward + downward shift sign-correct"
+        action: "go test -mod=vendor -count=1 -run 'TestSparse_DetectsHorizontalMotionSign|TestSparse_DetectsVerticalMotionSign|TestSparse_IdenticalFramesProduceZeroFlow' ./pkg/vision/flow/..."
+        expected: "All PASS"
+    tags: [phase2, gocore, vision, flow, lucas-kanade, regression]
+
+  - id: HQA-PHASE2-GOCORE-016
+    name: "OpenClawing4 Phase 2 — text-detection sidecar client"
+    category: regression
+    priority: high
+    platforms: [all]
+    steps:
+      - name: "pkg/vision/text builds clean"
+        action: "go build -mod=vendor ./pkg/vision/text/..."
+        expected: "exit 0"
+      - name: "All text client tests pass under -race"
+        action: "go test -mod=vendor -count=1 -race ./pkg/vision/text/..."
+        expected: "PASS, zero data races"
+      - name: "Multipart PNG wire format + smallest-enclosing helpers stay correct"
+        action: "go test -mod=vendor -count=1 -run 'TestDetect_MultipartPNGWireFormat|TestResult_FindContaining' ./pkg/vision/text/..."
+        expected: "All PASS"
+    tags: [phase2, gocore, vision, text, sidecar, regression]
+
+  - id: HQA-PHASE2-GOCORE-017
+    name: "OpenClawing4 Phase 2 — LPIPS tier-3 fallback Comparator"
+    category: regression
+    priority: high
+    platforms: [all]
+    steps:
+      - name: "pkg/vision/perceptual builds clean with lpips.go"
+        action: "go build -mod=vendor ./pkg/vision/perceptual/..."
+        expected: "exit 0"
+      - name: "All LPIPS tests pass under -race"
+        action: "go test -mod=vendor -count=1 -race -run LPIPS ./pkg/vision/perceptual/..."
+        expected: "PASS, zero data races"
+      - name: "Distance → similarity mapping preserves endpoints"
+        action: "go test -mod=vendor -count=1 -run TestDistanceToSimilarity ./pkg/vision/perceptual/..."
+        expected: "All PASS — d=0→1, d=max/2→0, d=max→-1, d>max→-1"
+      - name: "Wire-format tolerance: DISTANCE / distance / SIMILARITY / fallback"
+        action: "go test -mod=vendor -count=1 -run 'TestLPIPS_LowercaseDistanceOutput|TestLPIPS_PreInvertedSimilarityOutput|TestLPIPS_OutputNameFallback' ./pkg/vision/perceptual/..."
+        expected: "All PASS"
+    tags: [phase2, gocore, perceptual, lpips, tier-3, regression]
+
+
+
+
+
+
+
+
+
+  - id: HQA-PHASE2-GOCORE-004
+    name: "OpenClawing4 Phase 2 Go-core — axtree Linux AT-SPI2 client"
+    category: regression
+    priority: critical
+    platforms: [all]
+    steps:
+      - name: "pkg/nexus/observe/axtree builds clean"
+        action: "go build -mod=vendor ./pkg/nexus/observe/axtree/..."
+        expected: "exit 0"
+      - name: "All axtree unit tests pass under -race"
+        action: "go test -mod=vendor -count=1 -race ./pkg/nexus/observe/axtree/..."
+        expected: "PASS, zero data races"
+      - name: "Phase-2 gocore bank entries for axtree loaded"
+        action: "helixqa list --banks banks/phase2-gocore.yaml"
+        expected: "18 test cases total (6 DHASH + 2 BOCPD + 2 STAGNATION + 3 PIXELMATCH + 4 AXTREE + 1 integration)"
+      - name: "Snapshotter + LinuxBus interface contracts honored"
+        action: "go test -mod=vendor -count=1 -run 'TestLinuxSnapshotter_SatisfiesSnapshotterInterface' ./pkg/nexus/observe/axtree/..."
+        expected: "PASS — compile-time guards + runtime interface check"
+      - name: "AT-SPI role mapping covers the 31-role baseline"
+        action: "go test -mod=vendor -count=1 -run 'TestAtspiRoleToARIA_KnownRoles' ./pkg/nexus/observe/axtree/..."
+        expected: "PASS — every case in the switch yields the expected ARIA name"
+    tags: [phase2, gocore, axtree, atspi2, linux, regression]
+
+  - id: HQA-PHASE2-GOCORE-005
+    name: "OpenClawing4 Phase 2 Go-core — axtree Android UIAutomator dump parser"
+    category: regression
+    priority: critical
+    platforms: [all]
+    steps:
+      - name: "pkg/nexus/observe/axtree still builds clean with android.go added"
+        action: "go build -mod=vendor ./pkg/nexus/observe/axtree/..."
+        expected: "exit 0"
+      - name: "All axtree tests (Linux + Android + shared node) pass under -race"
+        action: "go test -mod=vendor -count=1 -race ./pkg/nexus/observe/axtree/..."
+        expected: "PASS, 39 tests, zero data races"
+      - name: "Phase-2 gocore bank entries for axtree-android loaded"
+        action: "helixqa list --banks banks/phase2-gocore.yaml"
+        expected: "22 test cases total (6 DHASH + 2 BOCPD + 2 STAGNATION + 3 PIXELMATCH + 4 AXTREE-LINUX + 3 AXTREE-ANDROID + 2 integration)"
+      - name: "UIAutomator XML attribute conversion is correct"
+        action: "go test -mod=vendor -count=1 -run 'TestParseAndroidBounds|TestBoolAttr|TestAndroidClassToARIA|TestConvertXMLNode' ./pkg/nexus/observe/axtree/..."
+        expected: "All PASS"
+    tags: [phase2, gocore, axtree, android, uiautomator, regression]
+
+  - id: HQA-PHASE2-GOCORE-006
+    name: "OpenClawing4 Phase 2 Go-core — SSIM tier-2 perception primitive"
+    category: regression
+    priority: critical
+    platforms: [all]
+    steps:
+      - name: "pkg/vision/perceptual builds clean"
+        action: "go build -mod=vendor ./pkg/vision/perceptual/..."
+        expected: "exit 0"
+      - name: "All SSIM tests pass under -race"
+        action: "go test -mod=vendor -count=1 -race ./pkg/vision/perceptual/..."
+        expected: "PASS, zero data races (perf test auto-skips under -race)"
+      - name: "Phase-2 gocore bank entries for SSIM loaded"
+        action: "helixqa list --banks banks/phase2-gocore.yaml"
+        expected: "26 test cases total (6 DHASH + 2 BOCPD + 2 STAGNATION + 3 PIXELMATCH + 7 AXTREE + 2 AXTREE-INT + 4 SSIM)"
+      - name: "Article V §8 perf — SSIM < 5 ms / 480p CPU"
+        action: "go test -mod=vendor -count=1 -run TestPerformance_SSIM_Under5msPer480pFrame ./pkg/vision/perceptual/..."
+        expected: "PASS — best-of-20 under 5 ms, typically ~4 ms on commodity CPU"
+    tags: [phase2, gocore, perceptual, ssim, regression]
+
+  - id: HQA-PHASE2-GOCORE-007
+    name: "OpenClawing4 Phase 2 Go-core — DreamSim tier-3 REST client"
+    category: regression
+    priority: critical
+    platforms: [all]
+    steps:
+      - name: "pkg/vision/perceptual still builds clean with dreamsim.go added"
+        action: "go build -mod=vendor ./pkg/vision/perceptual/..."
+        expected: "exit 0"
+      - name: "All DreamSim tests pass under -race (httptest mock covers the full wire path)"
+        action: "go test -mod=vendor -count=1 -race -run DreamSim ./pkg/vision/perceptual/..."
+        expected: "PASS, zero data races"
+      - name: "Phase-2 gocore bank entries for DreamSim loaded"
+        action: "helixqa list --banks banks/phase2-gocore.yaml"
+        expected: "30 test cases total (prior 26 + 3 DreamSim unit + 1 integration)"
+      - name: "Similarity mapping preserves the [-1, 1] canonical range"
+        action: "go test -mod=vendor -count=1 -run 'TestDreamSim_IdenticalImages|TestDreamSim_HalfSimilarity|TestDreamSim_Disagreement' ./pkg/vision/perceptual/..."
+        expected: "All PASS — 1.0 → 1.0, 0.5 → 0.0, 0.0 → -1.0"
+    tags: [phase2, gocore, perceptual, dreamsim, triton, kserve, regression]
+
+  - id: HQA-PHASE2-GOCORE-008
+    name: "OpenClawing4 Phase 2 Go-core — pure-Go PELT offline segmentation"
+    category: regression
+    priority: critical
+    platforms: [all]
+    steps:
+      - name: "pkg/analysis/pelt builds clean"
+        action: "go build -mod=vendor ./pkg/analysis/pelt/..."
+        expected: "exit 0"
+      - name: "All PELT tests pass under -race with 100% coverage"
+        action: "go test -mod=vendor -count=1 -race -cover ./pkg/analysis/pelt/..."
+        expected: "PASS, coverage = 100.0% of statements, zero data races"
+      - name: "Phase-2 gocore bank entries for PELT loaded"
+        action: "helixqa list --banks banks/phase2-gocore.yaml"
+        expected: "34 test cases total (prior 30 + 4 PELT)"
+      - name: "Change-point returns are monotone + within series bounds"
+        action: "go test -mod=vendor -count=1 -run 'TestPELT_ChangePointsAreStrictlyIncreasing|TestPELT_DetectsMultipleChanges' ./pkg/analysis/pelt/..."
+        expected: "Both PASS"
+    tags: [phase2, gocore, analysis, pelt, change-point, regression]
+
+  # ─── OpenClawing4 Phase 3 Go-Core ───
+  - id: HQA-PHASE3-GOCORE-001
+    name: "OpenClawing4 Phase 3 Go-core — agent.Action vocabulary + UI-TARS VLM client"
+    category: regression
+    priority: critical
+    platforms: [all]
+    steps:
+      - name: "Two new packages build clean"
+        action: "go build -mod=vendor ./pkg/agent/action/... ./pkg/agent/uitars/..."
+        expected: "exit 0"
+      - name: "All Phase-3 unit tests pass under -race"
+        action: "go test -mod=vendor -count=1 -race ./pkg/agent/..."
+        expected: "PASS, 36 tests (13 action + 23 uitars), zero data races"
+      - name: "agent.Action coverage is 100%"
+        action: "go test -mod=vendor -count=1 -cover ./pkg/agent/action/..."
+        expected: "coverage = 100.0% of statements"
+      - name: "agent.uitars coverage is ≥ 95% (remainder = defensive I/O error guards)"
+        action: "go test -mod=vendor -count=1 -cover ./pkg/agent/uitars/..."
+        expected: "coverage ≥ 95.0% of statements"
+      - name: "Phase-3 gocore bank loads all 6 PH3-* cases + 1 integration"
+        action: "helixqa list --banks banks/phase3-gocore.yaml"
+        expected: "7 test cases enumerated (PH3-ACTION-001/002 + PH3-UITARS-001/002/003/004 + PH3-UITARS-INT-001)"
+      - name: "OpenAI-compat wire shape stays conformant (request has image_url + text parts, 2 messages default)"
+        action: "go test -mod=vendor -count=1 -run 'TestAct_RequestShapeIsOpenAIChat|TestActChat_PassesHistoryAsAssistantMessages' ./pkg/agent/uitars/..."
+        expected: "Both PASS"
+    tags: [phase3, gocore, agent, action, uitars, vlm, regression]
+
+  - id: HQA-PHASE3-GOCORE-002
+    name: "OpenClawing4 Phase 3 Go-core — OmniParser sidecar REST client"
+    category: regression
+    priority: critical
+    platforms: [all]
+    steps:
+      - name: "pkg/agent/omniparser builds clean"
+        action: "go build -mod=vendor ./pkg/agent/omniparser/..."
+        expected: "exit 0"
+      - name: "All OmniParser tests pass under -race"
+        action: "go test -mod=vendor -count=1 -race ./pkg/agent/omniparser/..."
+        expected: "PASS, zero data races"
+      - name: "Coverage is ≥ 92% (remainder = defensive I/O error guards)"
+        action: "go test -mod=vendor -count=1 -cover ./pkg/agent/omniparser/..."
+        expected: "coverage ≥ 92.0% of statements"
+      - name: "Phase-3 bank entries for OmniParser loaded"
+        action: "helixqa list --banks banks/phase3-gocore.yaml"
+        expected: "11 test cases total (prior 7 + 3 OmniParser unit + 1 OmniParser integration)"
+      - name: "Multipart PNG wire format stays frozen"
+        action: "go test -mod=vendor -count=1 -run 'TestParse_RequestShapeIsMultipartPNG|TestBuildMultipartPNG_WellFormed' ./pkg/agent/omniparser/..."
+        expected: "Both PASS"
+      - name: "Grounding helpers (FindInteractiveContaining, bboxArea, pointIn) stay correct"
+        action: "go test -mod=vendor -count=1 -run 'TestResult_FindInteractive|TestBboxArea|TestPointIn|TestElement_Center' ./pkg/agent/omniparser/..."
+        expected: "All PASS"
+    tags: [phase3, gocore, agent, omniparser, grounding, regression]
+
+  - id: HQA-PHASE3-GOCORE-003
+    name: "OpenClawing4 Phase 3 Go-core — Grounder (VLM + Detector) cross-validation"
+    category: regression
+    priority: critical
+    platforms: [all]
+    steps:
+      - name: "pkg/agent/ground builds clean"
+        action: "go build -mod=vendor ./pkg/agent/ground/..."
+        expected: "exit 0"
+      - name: "All Grounder tests pass under -race with 100% coverage"
+        action: "go test -mod=vendor -count=1 -race -cover ./pkg/agent/ground/..."
+        expected: "PASS, coverage = 100.0% of statements, zero data races"
+      - name: "Phase-3 bank has the grounding entries"
+        action: "helixqa list --banks banks/phase3-gocore.yaml"
+        expected: "16 test cases total (prior 11 + 5 ground)"
+      - name: "Grounder degrades gracefully without the OmniParser sidecar"
+        action: "go test -mod=vendor -count=1 -run 'TestResolve_NilDetectorBypassesGrounding|TestResolve_NonClickActionPassesThrough' ./pkg/agent/ground/..."
+        expected: "Both PASS — nil Detector = pass-through, non-click actions untouched"
+      - name: "Snap-to-center + snap-to-nearest both respect MinConfidence + MaxSnapDist"
+        action: "go test -mod=vendor -count=1 -run 'TestResolve_ClickInsideElement|TestResolve_SnapToNearest' ./pkg/agent/ground/..."
+        expected: "All PASS — grounding is guarded against phantom detections and distant snaps"
+    tags: [phase3, gocore, agent, ground, grounding, vlm, regression]
+
+  - id: HQA-PHASE3-GOCORE-004
+    name: "OpenClawing4 Phase 3 Go-core — stateful agent-loop Runner"
+    category: regression
+    priority: critical
+    platforms: [all]
+    steps:
+      - name: "pkg/agent/graph builds clean"
+        action: "go build -mod=vendor ./pkg/agent/graph/..."
+        expected: "exit 0"
+      - name: "All Runner tests pass under -race with 100% coverage"
+        action: "go test -mod=vendor -count=1 -race -cover ./pkg/agent/graph/..."
+        expected: "PASS, coverage = 100.0% of statements, zero data races"
+      - name: "Phase-3 bank has the runner entries"
+        action: "helixqa list --banks banks/phase3-gocore.yaml"
+        expected: "21 test cases total (prior 16 + 5 graph)"
+      - name: "Four termination conditions all wired correctly"
+        action: "go test -mod=vendor -count=1 -run 'TestRun_TerminatesOnDoneAction|TestRun_TerminatesOnMaxSteps|TestRun_StuckDetectionFires|TestRun_ContextCanceledBeforeFirstStep' ./pkg/agent/graph/..."
+        expected: "All PASS — Done / MaxSteps / Stuck / ctx-cancel"
+      - name: "Done action is recorded but never executed (safety invariant)"
+        action: "go test -mod=vendor -count=1 -run TestRun_TerminatesOnDoneAction ./pkg/agent/graph/..."
+        expected: "PASS — Steps=3, executor saw 2 actions (Done excluded)"
+    tags: [phase3, gocore, agent, graph, runner, regression]
+
+  - id: HQA-PHASE3-GOCORE-005
+    name: "OpenClawing4 Phase 3 Go-core — SGLang-style structured-generation guard"
+    category: regression
+    priority: critical
+    platforms: [all]
+    steps:
+      - name: "pkg/agent/sglang builds clean"
+        action: "go build -mod=vendor ./pkg/agent/sglang/..."
+        expected: "exit 0"
+      - name: "All Guard tests pass under -race with 100% coverage"
+        action: "go test -mod=vendor -count=1 -race -cover ./pkg/agent/sglang/..."
+        expected: "PASS, coverage = 100.0% of statements, zero data races"
+      - name: "Phase-3 bank has all sglang entries"
+        action: "helixqa list --banks banks/phase3-gocore.yaml"
+        expected: "25 test cases total (prior 21 + 4 sglang)"
+      - name: "Schema.Check enforces AllowedKinds / RequireReason / MaxTextLen / ScreenBounds"
+        action: "go test -mod=vendor -count=1 -run 'TestCheck_' ./pkg/agent/sglang/..."
+        expected: "All PASS (13 Check tests)"
+      - name: "Guard retry loop preserves original instruction + appends error on retry"
+        action: "go test -mod=vendor -count=1 -run 'TestGuard_InvalidThenValidRetries|TestGuard_RetriesExhaustedReturnsSentinel' ./pkg/agent/sglang/..."
+        expected: "Both PASS — retry instruction contains 'fill field' + 'Text exceeds MaxTextLen'"
+    tags: [phase3, gocore, agent, sglang, guard, schema, regression]
+
+  # ─── OpenClawing4 Phase 6 Go-Core ───
+  - id: HQA-PHASE6-GOCORE-001
+    name: "OpenClawing4 Phase 6 Go-core — iOS axtree via idb JSON parser"
+    category: regression
+    priority: critical
+    platforms: [all]
+    steps:
+      - name: "pkg/nexus/observe/axtree builds clean with ios.go added"
+        action: "go build -mod=vendor ./pkg/nexus/observe/axtree/..."
+        expected: "exit 0"
+      - name: "All axtree tests (Linux + Android + iOS + shared node) pass under -race"
+        action: "go test -mod=vendor -count=1 -race ./pkg/nexus/observe/axtree/..."
+        expected: "PASS — 59 tests across three platforms, zero data races"
+      - name: "Phase-6 gocore bank entries for iOS loaded"
+        action: "helixqa list --banks banks/phase6-gocore.yaml"
+        expected: "5 test cases total (4 iOS unit + 1 integration)"
+      - name: "Cross-platform contract holds: Linux + Android + iOS all satisfy Snapshotter"
+        action: "go test -mod=vendor -count=1 -run '_SatisfiesSnapshotterInterface' ./pkg/nexus/observe/axtree/..."
+        expected: "All 3 PASS — same Node type emitted by three distinct backends"
+    tags: [phase6, gocore, axtree, ios, idb, cross-platform, regression]
+
+  - id: HQA-PHASE6-GOCORE-002
+    name: "OpenClawing4 Phase 6 Go-core — macOS axtree via Swift sidecar (HTTP+JSON)"
+    category: regression
+    priority: critical
+    platforms: [all]
+    steps:
+      - name: "pkg/nexus/observe/axtree still builds clean with darwin.go added"
+        action: "go build -mod=vendor ./pkg/nexus/observe/axtree/..."
+        expected: "exit 0"
+      - name: "All axtree tests (Linux + Android + iOS + Darwin + shared node) pass under -race"
+        action: "go test -mod=vendor -count=1 -race ./pkg/nexus/observe/axtree/..."
+        expected: "PASS — 83 tests across four platforms, zero data races"
+      - name: "Phase-6 bank has all darwin entries"
+        action: "helixqa list --banks banks/phase6-gocore.yaml"
+        expected: "11 test cases total (prior 5 iOS + 5 darwin unit + 1 darwin integration)"
+      - name: "Cross-platform contract now holds across FOUR backends"
+        action: "go test -mod=vendor -count=1 -run '_SatisfiesSnapshotterInterface' ./pkg/nexus/observe/axtree/..."
+        expected: "All 4 PASS — Linux + Android + iOS + Darwin emit identical Node shape"
+      - name: "End-to-end DarwinHTTPFetcher + parse pipeline works via httptest"
+        action: "go test -mod=vendor -count=1 -run TestDarwinSnapshotter_EndToEndViaHTTPFetcher ./pkg/nexus/observe/axtree/..."
+        expected: "PASS — real HTTP roundtrip"
+    tags: [phase6, gocore, axtree, darwin, macos, swift-sidecar, cross-platform, regression]
+
+  - id: HQA-PHASE6-GOCORE-003
+    name: "OpenClawing4 Phase 6 — Windows axtree via UIA sidecar (6th backend)"
+    category: regression
+    priority: critical
+    platforms: [all]
+    steps:
+      - name: "pkg/nexus/observe/axtree builds clean with windows.go added"
+        action: "go build -mod=vendor ./pkg/nexus/observe/axtree/..."
+        expected: "exit 0"
+      - name: "All windows axtree tests pass under -race"
+        action: "go test -mod=vendor -count=1 -race -run 'Windows|WindowsControl' ./pkg/nexus/observe/axtree/..."
+        expected: "PASS, zero data races"
+      - name: "Cross-platform contract holds across SIX axtree backends"
+        action: "go test -mod=vendor -count=1 -run '_SatisfiesSnapshotterInterface' ./pkg/nexus/observe/axtree/..."
+        expected: "All 6 PASS — Linux + Android + iOS + Darwin + Web + Windows"
+      - name: "UIA ControlType mapping covers 32 symbolic + 19 numeric IDs"
+        action: "go test -mod=vendor -count=1 -run 'TestWindowsControlTypeToARIA_' ./pkg/nexus/observe/axtree/..."
+        expected: "All PASS — full ControlType coverage"
+    tags: [phase6, gocore, axtree, windows, uia, cross-platform, regression]
+
+  - id: HQA-PHASE6-GOCORE-004
+    name: "OpenClawing4 Phase 6 — TUI axtree via ANSI-escape grid parsing"
+    category: regression
+    priority: high
+    platforms: [all]
+    steps:
+      - name: "pkg/nexus/observe/axtree builds clean with tui.go added"
+        action: "go build -mod=vendor ./pkg/nexus/observe/axtree/..."
+        expected: "exit 0"
+      - name: "All TUI tests pass under -race"
+        action: "go test -mod=vendor -count=1 -race -run 'TUI|StripANSI|ParseGrid' ./pkg/nexus/observe/axtree/..."
+        expected: "PASS, zero data races"
+      - name: "Cross-platform contract holds across SEVEN axtree backends"
+        action: "go test -mod=vendor -count=1 -run '_SatisfiesSnapshotterInterface' ./pkg/nexus/observe/axtree/..."
+        expected: "All 7 PASS — Linux + Android + iOS + Darwin + Web + Windows + TUI"
+      - name: "ANSI stripper + grid parser handle real-world escape sequences"
+        action: "go test -mod=vendor -count=1 -run 'TestStripANSI_|TestParseGrid_' ./pkg/nexus/observe/axtree/..."
+        expected: "All PASS — CSI colors, OSC titles, cursor motion, bold/underline, brights"
+    tags: [phase6, gocore, axtree, tui, ansi, cross-platform, regression]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

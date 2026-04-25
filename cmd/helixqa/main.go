@@ -59,6 +59,8 @@ func main() {
 		cmdReport(os.Args[2:])
 	case "autonomous":
 		cmdAutonomous(os.Args[2:])
+	case "replay":
+		os.Exit(runReplay(os.Args[2:]))
 	case "version":
 		fmt.Printf("helixqa v%s\n", version)
 	case "help", "-h", "--help":
@@ -80,6 +82,7 @@ func printUsage() {
 	fmt.Println("Commands:")
 	fmt.Println("  run         Execute QA pipeline across platforms")
 	fmt.Println("  autonomous  Run autonomous LLM-driven QA session")
+	fmt.Println("  replay      Replay a ticket's OCU action chain (dry-run by default)")
 	fmt.Println("  list        List test cases from banks")
 	fmt.Println("  report      Generate report from existing results")
 	fmt.Println("  version     Print version information")
@@ -629,6 +632,18 @@ func cmdAutonomous(args []string) {
 			h = strings.TrimSpace(h)
 			if h != "" {
 				cfg.VisionHosts = append(cfg.VisionHosts, h)
+			}
+		}
+	}
+	// Parse HELIX_COMPETING_APP_PACKAGES (comma-separated) — apps
+	// the caller wants proactively force-stopped before structured
+	// and curiosity phases, so stray Android TV home channel taps
+	// do not silently hand control to a foreign app.
+	if compEnv := os.Getenv("HELIX_COMPETING_APP_PACKAGES"); compEnv != "" {
+		for _, p := range strings.Split(compEnv, ",") {
+			p = strings.TrimSpace(p)
+			if p != "" {
+				cfg.CompetingAppPackages = append(cfg.CompetingAppPackages, p)
 			}
 		}
 	}

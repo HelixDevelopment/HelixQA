@@ -1,3 +1,20 @@
+> ⚠️ **RETRACTION NOTICE — 2026-04-19**
+>
+> **Partial retractions apply. Superseded by `OpenClawing4.md`.**
+>
+> **Retracted items** (do not cite downstream):
+> 1. `browser_use/browser/custom_browser.py` (§4.3.2, ~L189) — path does not exist in `browser-use/browser-use`.
+> 2. `skyvern/agent/prompts.py` (§5.1.2, L241) — Skyvern has no `agent/` directory.
+> 3. `PlanEvaluate` class in browser-use (§10.1.1, §8.1.2) — not a real class.
+> 4. TypeScript port-target framing — HelixQA is Go. Read every "port" as "reimplement in Go under `pkg/…`".
+> 5. Zero GitHub URLs in body despite Brief-1 explicitly demanding them — see OpenClawing4 for a linked catalogue.
+>
+> **Retained as valid**: identification of browser-use, Skyvern, Stagehand, UI-TARS as relevant projects.
+>
+> See `OpenClawing4-Audit.md` §D.2 and `OpenClawing4.md` §11.2 for specifics.
+
+---
+
 This report delivers a forensic-level comparative analysis of real-world autonomous UI/UX control frameworks against the OpenClaw architecture. The primary objective is to identify superior methodologies for autonomous navigation, UI flow execution, and application control to provide actionable engineering recommendations for porting into OpenClaw. The analysis focuses exclusively on verified, open-source codebases, providing exact file paths, class names, and algorithmic breakdowns. The framework of this report is built upon a systematic evaluation of Anthropic's official reference implementation, the leading open-source web automation agents, and specialized desktop control models, culminating in a strategic gap analysis and a concrete roadmap for architectural improvement.
 
 # Comparative Source Code Analysis: Autonomous UI/UX Control Frameworks vs. OpenClaw

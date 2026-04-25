@@ -1,0 +1,31 @@
+# SPDX-FileCopyrightText: 2026 Milos Vasic
+# SPDX-License-Identifier: Apache-2.0
+#
+# HelixQA pre-commit configuration.
+# Phase 0 of OpenClawing4 introduces the no-sudo hook. Other hooks may follow
+# in later phases; keep this file minimal and mirror main-repo conventions.
+#
+# Run manually: `pre-commit run --all-files`
+# Install: `pre-commit install`
+
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.5.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-json
+      - id: check-added-large-files
+        args: ['--maxkb=1000']
+      - id: check-merge-conflict
+      - id: detect-private-key
+
+  - repo: local
+    hooks:
+      - id: no-sudo
+        name: "No sudo in committed content (Constitution: NO SUDO OR ROOT EXECUTION)"
+        entry: scripts/hooks/no-sudo.sh
+        language: system
+        pass_filenames: true
+        types: [text]

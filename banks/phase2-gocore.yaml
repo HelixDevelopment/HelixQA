@@ -1,0 +1,1275 @@
+# SPDX-FileCopyrightText: 2026 Milos Vasic
+# SPDX-License-Identifier: Apache-2.0
+#
+# HelixQA Test Bank: OpenClawing4 Phase 2 Go-Core
+#
+# This bank validates the pure-Go perception / analysis / regression packages
+# that land as Phase 2 progresses. Entries appear as the corresponding
+# implementations ship — empty / commented rows are placeholders tracked in
+# `docs/openclawing/OpenClawing4-Phase2-Kickoff.md` §3.
+#
+# Every test here runs on a clean Linux container — no GPU, no OpenCV, no
+# Python sidecars, no native dependencies. GPU-gated flows live in their own
+# bank once the sidecars are online.
+
+version: "1.0"
+name: "OpenClawing4 Phase 2 — Go core bank"
+description: >
+  Tier-1 / tier-2 perception primitives + analysis + regression, pure-Go
+  subset. Backs the HQA-PHASE2-GOCORE-* challenges in
+  `challenges/config/helixqa-validation.yaml`.
+
+test_cases:
+  # ─── M28 · pkg/vision/hash · DHash-64 / DHash-256 ───
+  - id: PH2-HASH-DHASH-001
+    name: "pkg/vision/hash — DHasher basic invariants"
+    category: unit
+    priority: critical
+    platforms: [linux]
+    steps:
+      - name: "Build + run tests with vendor mode"
+        action: "GOTOOLCHAIN=local go test -mod=vendor ./pkg/vision/hash/..."
+        expected: "PASS, 100% statement coverage"
+      - name: "Verify identical inputs → distance zero"
+        action: "TestDHash64_IdenticalImages_DistanceZero + TestDHash256_IdenticalImages_DistanceZero"
+        expected: "Both PASS"
+      - name: "Verify 1-pixel shift is absorbed"
+        action: "TestDHash64_ShiftedByOnePixel_DistanceSmall"
+        expected: "PASS (distance ≤ 8)"
+      - name: "Verify different inputs → large distance"
+        action: "TestDHash64_CompletelyDifferent_DistanceLarge + TestDHash256_CompletelyDifferent_DistanceLarge"
+        expected: "PASS (distance ≥ 20 for DHash-64, ≥ 80 for DHash-256)"
+    tags: [phase2, vision, hash, unit]
+
+  - id: PH2-HASH-DHASH-002
+    name: "pkg/vision/hash — wrong-kind + nil-input error sentinels"
+    category: unit
+    priority: high
+    platforms: [linux]
+    steps:
+      - name: "Hash on DHash256 hasher returns ErrWrongKind64"
+        action: "TestHasher_WrongKind_Hash64OnDHash256Hasher"
+        expected: "PASS"
+      - name: "Hash256 on DHash64 hasher returns ErrWrongKind256"
+        action: "TestHasher_WrongKind_Hash256OnDHash64Hasher"
+        expected: "PASS"
+      - name: "nil image → ErrNilImage"
+        action: "TestHasher_NilImage_Hash + TestHasher_NilImage_Hash256"
+        expected: "Both PASS"
+      - name: "zero-bounds image → ErrZeroBounds"
+        action: "TestHasher_ZeroBounds"
+        expected: "PASS"
+    tags: [phase2, vision, hash, error-paths]
+
+  - id: PH2-HASH-DHASH-003
+    name: "pkg/vision/hash — image-type coverage (RGBA / NRGBA / Gray / YCbCr / generic)"
+    category: unit
+    priority: high
+    platforms: [linux]
+    steps:
+      - name: "All four concrete fast-paths exercised"
+        action: "TestDHash64_HandlesVariousImageTypes + TestDHash64_YCbCr + TestDHash64_GenericImageInterface"
+        expected: "All PASS"
+    tags: [phase2, vision, hash, coverage]
+
+  - id: PH2-HASH-DHASH-004
+    name: "pkg/vision/hash — Hasher interface conformance"
+    category: unit
+    priority: medium
+    platforms: [linux]
+    steps:
+      - name: "DHasher{Kind: DHash64} satisfies hash.Hasher"
+        action: "TestDHasher_SatisfiesHasherInterface + compile-time `var _ Hasher = DHasher{...}`"
+        expected: "Build + test PASS"
+    tags: [phase2, vision, hash, interface]
+
+  - id: PH2-HASH-DHASH-005
+    name: "pkg/vision/hash — BigHash.Distance symmetry + 64-bit Hamming examples"
+    category: unit
+    priority: medium
+    platforms: [linux]
+    steps:
+      - name: "BigHash.Distance is symmetric"
+        action: "TestBigHash_Distance_Symmetric"
+        expected: "PASS"
+      - name: "DHasher.Distance matches hand-computed Hamming weights"
+        action: "TestDistance64_Examples"
+        expected: "PASS for all table entries (0, 64, 64, 7)"
+    tags: [phase2, vision, hash, math]
+
+  - id: PH2-HASH-DHASH-006
+    name: "pkg/vision/hash — Article V benchmarking: < 5 ms / 1080p frame"
+    category: benchmark
+    priority: critical
+    platforms: [linux]
+    steps:
+      - name: "TestPerformance_DHash64_Under5msPer1080pFrame runs 20× averages"
+        action: "go test -mod=vendor -run TestPerformance_DHash64_Under5msPer1080pFrame ./pkg/vision/hash/..."
+        expected: "Average per-frame latency < 5 ms (target: ~1 µs on commodity CPU)"
+      - name: "BenchmarkDHash64_1080p / BenchmarkDHash256_1080p"
+        action: "go test -mod=vendor -bench=. -run=^$ ./pkg/vision/hash/..."
+        expected: "DHash64 < 5 µs/op, DHash256 < 20 µs/op on AMD64"
+    tags: [phase2, vision, hash, benchmark, article-v-8]
+
+  # ─── M47 · pkg/nexus/observe/axtree/web.go · CDP web AX ───
+  - id: PH2-AXTREE-WEB-001
+    name: "pkg/nexus/observe/axtree — WebSnapshotter happy path"
+    category: unit
+    priority: critical
+    platforms: [linux, web]
+    steps:
+      - name: "CDP AXNode list → Node tree, Platform=PlatformWeb"
+        action: "TestWebSnapshotter_Snapshot_FullTree"
+        expected: "PASS — 5 descendants, RootWebArea→document, RawID from CDP NodeID"
+      - name: "Attributes translate (role, name, value, focused, disabled→Enabled inversion)"
+        action: "TestWebSnapshotter_Snapshot_AttributesTranslated"
+        expected: "PASS — button focused, textbox value=admin + enabled (disabled=false)"
+      - name: "Multi-root trees (iframe boundaries) wrap in synthetic application root"
+        action: "TestWebSnapshotter_Snapshot_MultiRootWrapped"
+        expected: "PASS"
+      - name: "Ignored nodes elided; grandchildren hoisted"
+        action: "TestWebSnapshotter_Snapshot_IgnoredNodesHoistGrandchildren"
+        expected: "PASS — CDP aria-hidden wrappers don't lose their nested content"
+      - name: "Cycle guard prevents infinite recursion on malformed trees"
+        action: "TestWebSnapshotter_Snapshot_CycleGuard"
+        expected: "PASS — finite traversal even with a→b→a cycle"
+      - name: "Snapshotter interface conformance"
+        action: "TestWebSnapshotter_SatisfiesSnapshotterInterface"
+        expected: "PASS"
+    tags: [phase2, axtree, web, cdp, unit]
+
+  - id: PH2-AXTREE-WEB-002
+    name: "pkg/nexus/observe/axtree — CDP value/property decoding"
+    category: unit
+    priority: high
+    platforms: [linux, web]
+    steps:
+      - name: "axValueString handles nil / empty / JSON-quoted / numeric forms"
+        action: "TestAxValueString_Variants"
+        expected: "PASS"
+      - name: "axBoolProperty handles focused/selected/disabled with value unwrap"
+        action: "TestAxBoolProperty"
+        expected: "PASS — disabled=true maps to Enabled=false; missing prop → default; nil value → default"
+      - name: "Role normalization: StaticText→text, RootWebArea/WebView→document, genericContainer→group, ARIA passthrough"
+        action: "TestNormalizeWebRole"
+        expected: "PASS — 7 role transitions verified"
+    tags: [phase2, axtree, web, cdp, value-decoding]
+
+  - id: PH2-AXTREE-WEB-003
+    name: "pkg/nexus/observe/axtree — web error + lifecycle"
+    category: unit
+    priority: high
+    platforms: [linux, web]
+    steps:
+      - name: "Empty node list + no-root tree → ErrNoRoot"
+        action: "TestWebSnapshotter_Snapshot_EmptyTreeError + TestWebSnapshotter_Snapshot_NoRootNodeError"
+        expected: "Both PASS"
+      - name: "Fetcher error propagates"
+        action: "TestWebSnapshotter_Snapshot_FetcherError"
+        expected: "PASS"
+      - name: "Canceled context bails out"
+        action: "TestWebSnapshotter_Snapshot_ContextCanceled"
+        expected: "PASS"
+      - name: "Close is idempotent; Snapshot-after-Close returns ErrSnapshotClosed"
+        action: "TestWebSnapshotter_Close_Idempotent + TestWebSnapshotter_Snapshot_AfterCloseReturnsError"
+        expected: "Both PASS"
+      - name: "ChromedpFetcher guards nil AllocCtx + Close-before-Fetch idempotent"
+        action: "TestChromedpFetcher_NilAllocCtxError + TestChromedpFetcher_CloseIsIdempotent"
+        expected: "Both PASS"
+      - name: "NewWebSnapshotter wires ChromedpFetcher with allocator context"
+        action: "TestNewWebSnapshotter_UsesChromedpFetcher"
+        expected: "PASS"
+    tags: [phase2, axtree, web, cdp, error-paths]
+
+  # Production Chrome integration (blocked on operator-action per
+  # OPEN_POINTS_CLOSURE.md §10.3 — Chrome/Chromium with remote
+  # debugging enabled + a real page loaded).
+  - id: PH2-AXTREE-WEB-INT-001
+    name: "pkg/nexus/observe/axtree — live chromedp smoke test"
+    category: integration
+    priority: high
+    platforms: [linux, web]
+    requires: [chromium-with-remote-debugging]
+    steps:
+      - name: "ChromedpFetcher connects to a running Chromium and fetches AXTree"
+        action: "chromedp.NewExecAllocator + NewWebSnapshotter → Snapshot"
+        expected: "≥ 1 descendant for any loaded page"
+    tags: [phase2, axtree, web, cdp, integration, manual]
+
+  # ─── M45 · pkg/vision/hash · DCT-based pHash ───
+  - id: PH2-PHASH-001
+    name: "pkg/vision/hash — pHash identity + discrimination"
+    category: unit
+    priority: critical
+    platforms: [linux]
+    steps:
+      - name: "Identical images produce Hamming distance 0"
+        action: "TestPHash_IdenticalImagesReturnZeroDistance"
+        expected: "PASS"
+      - name: "Uncorrelated images produce distance ≥ 15"
+        action: "TestPHash_CompletelyDifferentImagesReturnLargeDistance"
+        expected: "PASS — stays well below the 32-bit uncorrelated baseline but above noise"
+      - name: "1-pixel shift on 512×384 source produces distance ≤ 16 (pHash shift-robustness)"
+        action: "TestPHash_ShiftedImagesStillSimilar"
+        expected: "PASS"
+      - name: "Black vs white produce distinct hashes (DCT pipeline correctness)"
+        action: "TestPHash_HammingPackedCorrectly"
+        expected: "PASS"
+      - name: "PHasher satisfies the Hasher interface"
+        action: "TestPHash_SatisfiesHasherInterface"
+        expected: "PASS — same contract as DHasher, swappable in call sites"
+    tags: [phase2, vision, hash, phash, dct, unit]
+
+  - id: PH2-PHASH-002
+    name: "pkg/vision/hash — pHash DCT + error paths"
+    category: unit
+    priority: high
+    platforms: [linux]
+    steps:
+      - name: "DCT of constant image has only DC coefficient, all ACs zero"
+        action: "TestDCT32_ConstantInputHasOnlyDC"
+        expected: "PASS — fundamental DCT property"
+      - name: "DCT panics on wrong-size input (internal invariant guard)"
+        action: "TestDCT32_PanicsOnWrongSize"
+        expected: "PASS"
+      - name: "nil image → ErrNilImage; zero-bounds → ErrZeroBounds"
+        action: "TestPHash_NilImageError + TestPHash_ZeroBoundsError"
+        expected: "Both PASS"
+      - name: "RGBA / NRGBA / Gray all produce stable self-hashes"
+        action: "TestPHash_HandlesConcreteImageTypes"
+        expected: "All 3 PASS"
+    tags: [phase2, vision, hash, phash, dct, error-paths]
+
+  - id: PH2-PHASH-003
+    name: "pkg/vision/hash — pHash performance"
+    category: benchmark
+    priority: high
+    platforms: [linux]
+    steps:
+      - name: "pHash runs < 25 ms / 1080p frame (typically ~175 µs on commodity CPU)"
+        action: "TestPerformance_PHash_Under25msPer1080pFrame"
+        expected: "PASS"
+      - name: "BenchmarkPHash_1080p reports sub-millisecond operation"
+        action: "go test -mod=vendor -bench=BenchmarkPHash_1080p -run=^$ ./pkg/vision/hash/..."
+        expected: "~175 µs / op"
+    tags: [phase2, vision, hash, phash, benchmark]
+
+  # ─── M52 · pkg/vision/perceptual · LPIPS tier-3 fallback ───
+  - id: PH2-LPIPS-001
+    name: "pkg/vision/perceptual — LPIPS distance → similarity mapping"
+    category: unit
+    priority: critical
+    platforms: [linux]
+    steps:
+      - name: "d=0 → similarity=1; d=max/2 → 0; d=max → -1; d > max → -1 (clamp)"
+        action: "TestDistanceToSimilarity_ZeroMapsToOne + TestDistanceToSimilarity_HalfMapsToZero + TestDistanceToSimilarity_MaxMapsToMinusOne + TestDistanceToSimilarity_BeyondMaxClamps"
+        expected: "All PASS"
+      - name: "Negative distance defensively treated as identical (d<0 → 1)"
+        action: "TestDistanceToSimilarity_NegativeDistanceTreatedAsIdentical"
+        expected: "PASS"
+      - name: "Mock sidecar returns DISTANCE 0/0.5/1 → Compare returns 1/0/-1"
+        action: "TestLPIPS_IdenticalImagesReturnOne + TestLPIPS_MidDistanceReturnsZero + TestLPIPS_MaxDistanceReturnsMinusOne"
+        expected: "All PASS"
+      - name: "Custom MaxDistance re-scales the mapping (d=1, max=2 → similarity=0)"
+        action: "TestLPIPS_CustomMaxDistance"
+        expected: "PASS"
+      - name: "Zero MaxDistance defaults to 1"
+        action: "TestLPIPS_ZeroMaxDistanceDefaultsToOne"
+        expected: "PASS"
+    tags: [phase2, perceptual, lpips, distance-mapping, unit]
+
+  - id: PH2-LPIPS-002
+    name: "pkg/vision/perceptual — LPIPS wire format + output-name tolerance"
+    category: unit
+    priority: high
+    platforms: [linux]
+    steps:
+      - name: "Uppercase DISTANCE + lowercase distance output both recognized"
+        action: "TestLPIPS_IdenticalImagesReturnOne + TestLPIPS_LowercaseDistanceOutput"
+        expected: "Both PASS"
+      - name: "Pre-inverted SIMILARITY output decoded back to distance then re-mapped"
+        action: "TestLPIPS_PreInvertedSimilarityOutput"
+        expected: "PASS"
+      - name: "Unknown-named output falls back to first-non-empty value"
+        action: "TestLPIPS_OutputNameFallback"
+        expected: "PASS"
+      - name: "Comparator interface satisfied"
+        action: "TestLPIPS_SatisfiesComparatorInterface"
+        expected: "PASS"
+    tags: [phase2, perceptual, lpips, wire-format]
+
+  - id: PH2-LPIPS-003
+    name: "pkg/vision/perceptual — LPIPS error paths"
+    category: unit
+    priority: high
+    platforms: [linux]
+    steps:
+      - name: "nil / empty endpoint / HTTP 5xx / malformed JSON / missing outputs / empty data / canceled ctx / invalid URL all return correct errors"
+        action: "TestLPIPS_NilImagesError + TestLPIPS_EmptyEndpointError + TestLPIPS_HTTPErrorPropagates + TestLPIPS_MalformedResponseError + TestLPIPS_NoOutputsError + TestLPIPS_EmptyDistanceDataError + TestLPIPS_EmptySimilarityDataError + TestLPIPS_ContextCanceled + TestLPIPS_InvalidEndpointURLError"
+        expected: "All PASS"
+    tags: [phase2, perceptual, lpips, error-paths]
+
+  # ─── M51 · pkg/vision/text · text-detection sidecar client ───
+  - id: PH2-TEXT-001
+    name: "pkg/vision/text — Detect happy path + multipart PNG wire"
+    category: unit
+    priority: critical
+    platforms: [linux]
+    steps:
+      - name: "Sidecar response decodes into Result with region bboxes"
+        action: "TestDetect_HappyPath"
+        expected: "PASS — 2 regions, Sign In confidence 0.94, bbox round-trips"
+      - name: "Request is multipart/form-data with 'image' PNG field"
+        action: "TestDetect_MultipartPNGWireFormat"
+        expected: "PASS"
+      - name: "Custom DetectPath honored"
+        action: "TestDetect_CustomDetectPath"
+        expected: "PASS"
+      - name: "Region.Center + FindContaining smallest-enclosing semantics"
+        action: "TestRegion_Center + TestResult_FindContaining_HitsSmallestEnclosing + TestResult_FindContaining_NoMatch + TestResult_FindContaining_Empty"
+        expected: "All PASS"
+      - name: "bboxArea + pointIn honor Min-inclusive/Max-exclusive rect semantics"
+        action: "TestBboxArea_InvalidReturnsZero + TestPointIn"
+        expected: "Both PASS"
+      - name: "New constructor sets Endpoint; Client satisfies Detector interface"
+        action: "TestNew_SetsEndpoint + TestClient_SatisfiesDetectorInterface"
+        expected: "Both PASS"
+    tags: [phase2, vision, text, sidecar, unit]
+
+  - id: PH2-TEXT-002
+    name: "pkg/vision/text — error paths"
+    category: unit
+    priority: high
+    platforms: [linux]
+    steps:
+      - name: "Empty endpoint / nil image return sentinels"
+        action: "TestDetect_EmptyEndpointError + TestDetect_NilImageError"
+        expected: "Both PASS"
+      - name: "HTTP 5xx / malformed JSON / bad bbox shape surface errors"
+        action: "TestDetect_HTTPErrorPropagates + TestDetect_MalformedJSONError + TestDetect_InvalidBBoxError"
+        expected: "All PASS"
+      - name: "Canceled context bails out of HTTP call"
+        action: "TestDetect_ContextCanceled"
+        expected: "PASS"
+      - name: "Invalid URL fails at request construction"
+        action: "TestDetect_InvalidURLError"
+        expected: "PASS"
+    tags: [phase2, vision, text, sidecar, error-paths]
+
+  # Production Python sidecar integration (blocked on operator-action
+  # — cmd/helixqa-text/ Python build + weights download).
+  - id: PH2-TEXT-INT-001
+    name: "pkg/vision/text — live Python sidecar smoke test"
+    category: integration
+    priority: high
+    platforms: [linux]
+    requires: [helixqa-text-sidecar-running]
+    steps:
+      - name: "Live sidecar returns ≥ 1 region for a busy screenshot"
+        action: "New('http://127.0.0.1:7870').Detect(1080p screenshot)"
+        expected: "len(regions) ≥ 1"
+    tags: [phase2, vision, text, sidecar, integration, manual]
+
+  # ─── M50 · pkg/vision/flow · Lucas-Kanade sparse optical flow ───
+  - id: PH2-FLOW-001
+    name: "pkg/vision/flow — LK detects motion direction + identical-frame zero"
+    category: unit
+    priority: critical
+    platforms: [linux]
+    steps:
+      - name: "1-pixel horizontal shift → median U > 0, |U| > |V|"
+        action: "TestSparse_DetectsHorizontalMotionSign"
+        expected: "PASS — LK picks up the rightward shift direction"
+      - name: "1-pixel vertical shift → median V > 0, |V| > |U|"
+        action: "TestSparse_DetectsVerticalMotionSign"
+        expected: "PASS"
+      - name: "Identical frames produce ≈ zero median flow"
+        action: "TestSparse_IdenticalFramesProduceZeroFlow"
+        expected: "PASS — |median| < 0.01"
+      - name: "Finer grid yields more vectors"
+        action: "TestSparse_FinerGridProducesMoreVectors"
+        expected: "PASS"
+      - name: "Custom WindowSize (3 and 15) both produce vectors"
+        action: "TestSparse_CustomWindowSize"
+        expected: "PASS"
+      - name: "Even WindowSize silently forced to odd"
+        action: "TestSparse_EvenWindowSizeForcedOdd"
+        expected: "PASS"
+    tags: [phase2, vision, flow, lucas-kanade, unit]
+
+  - id: PH2-FLOW-002
+    name: "pkg/vision/flow — error paths + math helpers"
+    category: unit
+    priority: high
+    platforms: [linux]
+    steps:
+      - name: "Sentinel errors: nil / dimension mismatch / too small / invalid grid"
+        action: "TestSparse_NilImageError + TestSparse_DimensionMismatchError + TestSparse_TooSmallError + TestSparse_InvalidGridError"
+        expected: "All PASS — ErrNilImage / ErrDimensionMismatch / ErrTooSmall / ErrInvalidGrid"
+      - name: "Canceled context bails out"
+        action: "TestSparse_ContextCanceled"
+        expected: "PASS"
+      - name: "Uniform gradient window returns (0, 0, false) from solveLK"
+        action: "TestSolveLK_UniformWindowReturnsFalse"
+        expected: "PASS — degenerate A^T A correctly detected"
+      - name: "Median handles empty / odd / even counts + medianOf + insertionSort"
+        action: "TestMedian_EmptyReturnsZero + TestMedian_OddCountUsesMiddleElement + TestMedian_EvenCountAveragesMiddlePair + TestMedianOf_Empty + TestInsertionSort + TestRec709Luma_Black"
+        expected: "All PASS"
+    tags: [phase2, vision, flow, lucas-kanade, error-paths, math]
+
+  # ─── M49 · pkg/vision/template · NCC matcher ───
+  - id: PH2-TEMPLATE-001
+    name: "pkg/vision/template — NCC finds embedded template at known location"
+    category: unit
+    priority: critical
+    platforms: [linux]
+    steps:
+      - name: "Exact embedded needle found with score ≈ 1 at the right coords"
+        action: "TestMatch_ExactEmbeddedTemplateFoundAtKnownLocation"
+        expected: "PASS — BBox.Min=(42, 37), Score ≥ 0.99"
+      - name: "Absent template returns not-found (solid haystack has no signal)"
+        action: "TestMatch_TemplateAbsentReturnsNotFound"
+        expected: "PASS"
+      - name: "Region.Center returns the bbox midpoint"
+        action: "TestMatch_CenterReturnsBBoxMidpoint"
+        expected: "PASS"
+      - name: "Custom MinScore enforces strict vs loose thresholds consistently"
+        action: "TestMatch_CustomMinScoreEnforced"
+        expected: "PASS"
+    tags: [phase2, vision, template, ncc, unit]
+
+  - id: PH2-TEMPLATE-002
+    name: "pkg/vision/template — degeneracies + error paths"
+    category: unit
+    priority: high
+    platforms: [linux]
+    steps:
+      - name: "Uniform needle (zero variance) gracefully returns not-found"
+        action: "TestMatch_UniformNeedleReturnsNotFoundGracefully"
+        expected: "PASS"
+      - name: "Uniform haystack window produces score 0"
+        action: "TestMatch_UniformHaystackWindowHasZeroScore"
+        expected: "PASS"
+      - name: "nil image / zero bounds / oversized needle return sentinels"
+        action: "TestMatch_NilImageError + TestMatch_ZeroBoundsError + TestMatch_NeedleLargerThanHaystack"
+        expected: "All PASS — ErrNilImage / ErrZeroBounds / ErrNeedleTooLarge"
+      - name: "Canceled context bails out of the scan"
+        action: "TestMatch_ContextCanceled"
+        expected: "PASS"
+      - name: "ncc zero-variance branch + rec709Luma black/white sanity"
+        action: "TestNCC_ZeroHaystackVarianceReturnsZero + TestRec709Luma_BlackAndWhite"
+        expected: "Both PASS"
+    tags: [phase2, vision, template, ncc, error-paths]
+
+  # ─── M46 · pkg/vision/hash · BlockMean + ChangedTiles ───
+  - id: PH2-BLOCKMEAN-001
+    name: "pkg/vision/hash — BlockMean identity + discrimination"
+    category: unit
+    priority: critical
+    platforms: [linux]
+    steps:
+      - name: "Identical images → distance 0"
+        action: "TestBlockMean_IdenticalImagesReturnZeroDistance"
+        expected: "PASS"
+      - name: "Half-black / half-white produces exactly 32 set bits (clean median split)"
+        action: "TestBlockMean_HalfSplit_ProducesConsistentHash"
+        expected: "PASS"
+      - name: "Different images produce non-zero distance"
+        action: "TestBlockMean_DifferentImagesReturnNonZeroDistance"
+        expected: "PASS"
+      - name: "1-pixel shift on 256-wide source → ≤ 8 bit flips"
+        action: "TestBlockMean_ShiftedImagesStaySimilar"
+        expected: "PASS"
+      - name: "BlockMeanHasher satisfies Hasher interface"
+        action: "TestBlockMean_SatisfiesHasherInterface"
+        expected: "PASS"
+    tags: [phase2, vision, hash, block-mean, unit]
+
+  - id: PH2-BLOCKMEAN-002
+    name: "pkg/vision/hash — ChangedTiles partial-screen detection"
+    category: unit
+    priority: critical
+    platforms: [linux]
+    steps:
+      - name: "Identical hashes → 0 changed tiles"
+        action: "TestChangedTiles_EmptyXOR"
+        expected: "PASS"
+      - name: "Single-bit flip maps to correct (col, row) — top-left + bottom-right"
+        action: "TestChangedTiles_SingleBitFlip + TestChangedTiles_BottomRightBit"
+        expected: "Both PASS"
+      - name: "All-bits flip produces full 8×8 grid coverage"
+        action: "TestChangedTiles_AllBitsFlipped"
+        expected: "PASS — 64 TileChange records covering every (col, row) in [0, 8)"
+    tags: [phase2, vision, hash, block-mean, changed-tiles, unit]
+
+  - id: PH2-BLOCKMEAN-003
+    name: "pkg/vision/hash — BlockMean config + error paths"
+    category: unit
+    priority: high
+    platforms: [linux]
+    steps:
+      - name: "nil image → ErrNilImage; zero bounds → ErrZeroBounds"
+        action: "TestBlockMean_NilImageError + TestBlockMean_ZeroBoundsError"
+        expected: "Both PASS"
+      - name: "BlockSize != 8 → ErrWrongBlockSize (64-bit Hasher contract)"
+        action: "TestBlockMean_WrongBlockSizeError"
+        expected: "PASS — rejects 4, 16, 32, -1"
+      - name: "Default (0) and explicit 8 both accepted"
+        action: "TestBlockMean_DefaultBlockSizeIsEight + TestBlockMean_ExplicitEightBlockSizeWorks"
+        expected: "Both PASS"
+      - name: "Utility helpers: medianOf (odd / even / no-mutation); blockMeans error; ErrWrongBlockSize.Error()"
+        action: "TestMedianOf_OddLength + TestMedianOf_EvenLength + TestMedianOf_DoesNotMutateInput + TestBlockMeans_ZeroBoundsError + TestErrWrongBlockSize_HasErrorMessage"
+        expected: "All PASS"
+    tags: [phase2, vision, hash, block-mean, error-paths]
+
+  # ─── M29 · pkg/autonomous · BOCPD + stagnation integration ───
+  - id: PH2-BOCPD-001
+    name: "pkg/autonomous — BOCPD Normal-Gamma conjugate prior math"
+    category: unit
+    priority: critical
+    platforms: [linux]
+    steps:
+      - name: "Config validation rejects invalid hazard / run-len / priors"
+        action: "go test -mod=vendor -run 'TestNewBOCPD_InvalidHazard|TestNewBOCPD_InvalidMaxRunLen|TestNewBOCPD_InvalidPriors' ./pkg/autonomous/..."
+        expected: "All PASS"
+      - name: "Default config uses sensible Phase-2 priors"
+        action: "TestNewBOCPD_DefaultConfig"
+        expected: "hazard=1/250, maxRunLen=500, weakly-informative Alpha0/Beta0/Mu0/Kappa0"
+      - name: "Student-t predictive PDF is symmetric, peaks at mu, non-negative"
+        action: "TestStudentTPDF_SymmetricAroundMu + TestStudentTPDF_PeakAtMu + TestStudentTPDF_NonNegative"
+        expected: "All PASS"
+      - name: "Student-t guards invalid scale + NaN/Inf inputs"
+        action: "TestStudentTPDF_InvalidScale + TestStudentTPDF_NaNInfInputsReturnZero"
+        expected: "Both PASS — PDF returns 0, never NaN"
+    tags: [phase2, autonomous, bocpd, math]
+
+  - id: PH2-BOCPD-002
+    name: "pkg/autonomous — BOCPD change-point detection on synthetic streams"
+    category: unit
+    priority: critical
+    platforms: [linux]
+    steps:
+      - name: "Stable stream converges to low P(r ≤ threshold)"
+        action: "TestObserve_StableStreamConvergesToLowChangeProbability"
+        expected: "PASS — after 10-step burn-in, cp stays < 0.3 for 50 stable samples"
+      - name: "Step change triggers cp > 0.5 within 10 samples"
+        action: "TestObserve_StepChangeTriggersChangePoint"
+        expected: "PASS — mean shift 0→15 at scale 1 is detected"
+      - name: "Run length resets after change point"
+        action: "TestObserve_RunLengthResetsAfterChangePoint"
+        expected: "PASS — MAP run length drops from 30+ to ≤ 12 after shift"
+      - name: "Reset clears observation state"
+        action: "TestObserve_ResetReturnsToPrior"
+        expected: "PASS — runProbs length 1, zero observations after Reset"
+      - name: "MaxRunLen truncation keeps per-step cost bounded"
+        action: "TestObserve_MaxRunLenTruncation"
+        expected: "PASS — runProbs len ≤ MaxRunLen after 50 samples"
+      - name: "Underflow recovery reseeds at fresh prior"
+        action: "TestObserve_UnderflowRecoversToFreshPrior"
+        expected: "PASS — extreme x=1e200 triggers degenerate-recovery path, detector continues"
+    tags: [phase2, autonomous, bocpd, change-point, algorithm]
+
+  - id: PH2-STAGNATION-001
+    name: "pkg/autonomous — legacy StagnationDetector byte-hash path"
+    category: unit
+    priority: high
+    platforms: [linux]
+    steps:
+      - name: "Empty / nil / short data handled safely"
+        action: "TestStagnationDetector_EmptyState + TestStagnationDetector_AddScreenshot_EmptyIgnored + TestStagnationDetector_ComputeHash_EmptyAndShortData"
+        expected: "All PASS"
+      - name: "History bounded at maxHistory (30)"
+        action: "TestStagnationDetector_AddScreenshot_BoundedHistory"
+        expected: "PASS — 50 inserts produce 30-entry history"
+      - name: "IsStagnant + GetStagnantDuration report correctly"
+        action: "TestStagnationDetector_StagnantAfterIdenticalBurst + TestStagnationDetector_NotStagnantWhenDataChanges + TestStagnationDetector_NotStagnantBelowMinSnapshots + TestStagnationDetector_NotStagnantWhenRecentWindowTooSmall + TestStagnationDetector_StagnantDuration_AfterHashChange"
+        expected: "All PASS"
+      - name: "Reset clears history and state"
+        action: "TestStagnationDetector_Reset"
+        expected: "PASS — history len 0, GetCurrentScreen returns 'unknown'"
+    tags: [phase2, autonomous, stagnation, legacy]
+
+  - id: PH2-STAGNATION-002
+    name: "pkg/autonomous — dHash + BOCPD frame path (end-to-end)"
+    category: integration
+    priority: critical
+    platforms: [linux]
+    steps:
+      - name: "First AddFrame returns cp=0 (no prior)"
+        action: "TestStagnationDetector_AddFrame_FirstFrameReturnsZero"
+        expected: "PASS"
+      - name: "Identical frame stream never triggers change point"
+        action: "TestStagnationDetector_AddFrame_IdenticalFramesNoChangePoint"
+        expected: "PASS — 30 identical frames → IsChangePoint=false"
+      - name: "Scene change triggers cp > 0.5 within 10 frames"
+        action: "TestStagnationDetector_AddFrame_SceneChangeTriggersChangePoint"
+        expected: "PASS — stable burn-in followed by different image produces change signal"
+      - name: "nil image returns error"
+        action: "TestStagnationDetector_AddFrame_NilImageError"
+        expected: "PASS — propagates hash.ErrNilImage"
+      - name: "BOCPD() exposes underlying detector for diagnostics"
+        action: "TestStagnationDetector_BOCPD_Exposed"
+        expected: "PASS"
+    tags: [phase2, autonomous, stagnation, bocpd, dhash, integration]
+
+  # ─── M30 · pkg/regression · pixelmatch Go port ───
+  - id: PH2-PIXELMATCH-001
+    name: "pkg/regression — PixelMatch.Diff basic invariants"
+    category: unit
+    priority: critical
+    platforms: [linux]
+    steps:
+      - name: "Identical images produce zero DiffCount"
+        action: "TestDiff_IdenticalImagesYieldZeroDiff"
+        expected: "PASS"
+      - name: "Completely different images flag every pixel"
+        action: "TestDiff_CompletelyDifferentImagesFlagEveryPixel"
+        expected: "PASS — 256 pixels flagged on a 16×16 all-black vs all-white diff"
+      - name: "Partial differences are correctly scoped"
+        action: "TestDiff_PartialDifference"
+        expected: "PASS — 4×4 patch produces 4-16 flagged pixels"
+      - name: "Higher threshold ignores small differences"
+        action: "TestDiff_HigherThresholdIgnoresSmallDifferences"
+        expected: "PASS — strict threshold flags more pixels than loose"
+      - name: "Custom DiffColor renders in output"
+        action: "TestDiff_CustomDiffColorRenderedInOutput"
+        expected: "PASS — output pixels match the requested color"
+    tags: [phase2, regression, pixelmatch, unit]
+
+  - id: PH2-PIXELMATCH-002
+    name: "pkg/regression — PixelMatch.Diff error + edge cases"
+    category: unit
+    priority: high
+    platforms: [linux]
+    steps:
+      - name: "nil images return ErrNilImage"
+        action: "TestDiff_NilImageErrors"
+        expected: "PASS — both a=nil and b=nil produce the sentinel"
+      - name: "dimension mismatch returns ErrDimensionMismatch"
+        action: "TestDiff_DimensionMismatchErrors"
+        expected: "PASS"
+      - name: "zero-sized images return empty report"
+        action: "TestDiff_ZeroSizedImagesReturnEmptyReport"
+        expected: "PASS — empty Output, zero counts"
+      - name: "IncludeAA flag rolls AA pixels into DiffCount"
+        action: "TestDiff_IncludeAAFlagCountsAAPixelsAsDifferences"
+        expected: "PASS"
+    tags: [phase2, regression, pixelmatch, error-paths]
+
+  # ─── M43 · pkg/regression · CIEDE2000 color delta ───
+  - id: PH2-DELTAE-001
+    name: "pkg/regression — CIEDE2000 against Sharma 2005 reference table"
+    category: unit
+    priority: critical
+    platforms: [linux]
+    steps:
+      - name: "10 canonical Sharma pairs match within ±0.01 ΔE"
+        action: "TestDeltaE2000_SharmaReferenceValues"
+        expected: "PASS — cases 1..7, 14, 15, 26 all produce reference ΔE"
+      - name: "Identical LAB inputs give ΔE ≈ 0"
+        action: "TestDeltaE2000_IdenticalInputsZero"
+        expected: "PASS"
+      - name: "ΔE is symmetric (a,b) == (b,a)"
+        action: "TestDeltaE2000_Symmetric"
+        expected: "PASS"
+      - name: "ΔE is non-negative"
+        action: "TestDeltaE2000_NonNegative"
+        expected: "PASS"
+    tags: [phase2, regression, deltae, ciede2000, unit]
+
+  - id: PH2-DELTAE-002
+    name: "pkg/regression — sRGB → CIELAB conversion"
+    category: unit
+    priority: high
+    platforms: [linux]
+    steps:
+      - name: "Black → L=A=B=0"
+        action: "TestRGBToLAB_Black"
+        expected: "PASS"
+      - name: "White → L≈100, A≈0, B≈0 (D65)"
+        action: "TestRGBToLAB_White"
+        expected: "PASS"
+      - name: "Primary red / green / blue match published sRGB→LAB reference values"
+        action: "TestRGBToLAB_PrimaryRed + TestRGBToLAB_PrimaryGreen + TestRGBToLAB_PrimaryBlue"
+        expected: "All PASS — within ±0.2 of reference"
+      - name: "ColorToLAB delegates to RGBToLAB for color.RGBA inputs"
+        action: "TestColorToLAB_WrapsRGBToLAB"
+        expected: "PASS"
+      - name: "sRGB gamma (srgbToLinear) low + high branches both covered"
+        action: "TestSRGBToLinear_LowBranch + TestSRGBToLinear_HighBranch"
+        expected: "Both PASS"
+      - name: "CIELAB f() low + high branches both covered"
+        action: "TestLabF_LowBranch + TestLabF_HighBranch"
+        expected: "Both PASS"
+      - name: "hueAngleDeg: (0,0)→0, negative angles wrap to [0, 360)"
+        action: "TestHueAngleDeg_BothZeroIsZero + TestHueAngleDeg_NegativeBranchWraps"
+        expected: "Both PASS"
+      - name: "deg2rad sanity (180° → π)"
+        action: "TestDeg2Rad"
+        expected: "PASS"
+    tags: [phase2, regression, deltae, srgb, cielab, unit]
+
+  # ─── M44 · pkg/regression · HTML reporter ───
+  - id: PH2-REPORT-001
+    name: "pkg/regression — HTML report renders inline with base64 PNGs"
+    category: unit
+    priority: critical
+    platforms: [linux]
+    steps:
+      - name: "Happy path: title + before/after/diff images + stats"
+        action: "TestReport_Render_HappyPath"
+        expected: "PASS — contains doctype, title, session markers, data:image/png;base64 (template.URL bypasses html/template sanitization)"
+      - name: "Match + different sessions tagged with correct CSS class"
+        action: "TestReport_Render_DifferentSessionsMarkedCorrectly"
+        expected: "PASS — 'session match' + 'session different' both present, summary totals Matching=1 / Different=1"
+      - name: "Sessions without Diff render as 'unknown' verdict (no stats table)"
+        action: "TestReport_Render_SessionWithoutDiffIsUnknown"
+        expected: "PASS — class='session unknown', no DiffCount row"
+      - name: "Brand compliance report renders CIEDE2000 panel when BrandReport is set"
+        action: "TestReport_Render_IncludesBrandReport"
+        expected: "PASS — 'Brand Compliance (CIEDE2000)' + Pass Rate + Mean ΔE + Max ΔE"
+    tags: [phase2, regression, report, html, unit]
+
+  - id: PH2-REPORT-002
+    name: "pkg/regression — HTML report defaults + ordering"
+    category: unit
+    priority: high
+    platforms: [linux]
+    steps:
+      - name: "Default Title is 'HelixQA Visual Regression Report' when empty"
+        action: "TestReport_Render_DefaultTitleAndTimestamp"
+        expected: "PASS — default title + current year in GeneratedAt"
+      - name: "Summary table sorts sessions by DiffPercent descending"
+        action: "TestReport_Render_SortsSummaryByDiffPercentDescending"
+        expected: "PASS — higher-diff session listed first in summary"
+    tags: [phase2, regression, report, defaults, sort]
+
+  - id: PH2-REPORT-003
+    name: "pkg/regression — HTML report error paths"
+    category: unit
+    priority: high
+    platforms: [linux]
+    steps:
+      - name: "Empty Sessions returns ErrNoSessions"
+        action: "TestReport_Render_EmptySessionsError"
+        expected: "PASS"
+      - name: "Missing Before or After returns ErrMissingImage"
+        action: "TestReport_Render_MissingBeforeError + TestReport_Render_MissingAfterError"
+        expected: "Both PASS"
+      - name: "Canceled context bails out early"
+        action: "TestReport_Render_ContextCanceled"
+        expected: "PASS"
+      - name: "io.Writer errors propagate"
+        action: "TestReport_Render_WriterError"
+        expected: "PASS"
+    tags: [phase2, regression, report, error-paths]
+
+  - id: PH2-REPORT-004
+    name: "pkg/regression — Report helper functions"
+    category: unit
+    priority: medium
+    platforms: [linux]
+    steps:
+      - name: "encodePNGDataURL produces 'data:image/png;base64,' prefix"
+        action: "TestEncodePNGDataURL_HasCorrectPrefix"
+        expected: "PASS"
+      - name: "verdictForDiff: 0 diffs → match, > 0 → different"
+        action: "TestVerdictForDiff"
+        expected: "PASS"
+      - name: "summarize(nil) returns zero-valued summary"
+        action: "TestSummarize_EmptySessionsHasZeroes"
+        expected: "PASS"
+    tags: [phase2, regression, report, util]
+
+  - id: PH2-DELTAE-003
+    name: "pkg/regression — CheckBrandCompliance integration"
+    category: unit
+    priority: high
+    platforms: [linux]
+    steps:
+      - name: "All-pixels-match solid image yields InRange=Total, ΔE≈0"
+        action: "TestCheckBrandCompliance_AllPixelsInRange"
+        expected: "PASS — PassRate=1.0"
+      - name: "Pure-red image vs pure-green target yields InRange=0"
+        action: "TestCheckBrandCompliance_AllPixelsOutOfRange"
+        expected: "PASS — PassRate=0.0"
+      - name: "Half-and-half image yields PassRate=0.5 + MaxDeltaE>10"
+        action: "TestCheckBrandCompliance_PartialPass"
+        expected: "PASS"
+      - name: "Empty report has PassRate=0 (no divide-by-zero)"
+        action: "TestCheckBrandCompliance_PassRateEmpty"
+        expected: "PASS"
+      - name: "nil image / negative threshold / zero-bounds / canceled ctx all return correct errors"
+        action: "TestCheckBrandCompliance_NilImage + TestCheckBrandCompliance_NegativeThreshold + TestCheckBrandCompliance_ZeroBoundsReturnsEmpty + TestCheckBrandCompliance_ContextCanceled"
+        expected: "All PASS — ErrNilImage / ErrNegativeThreshold / empty report / ctx error"
+    tags: [phase2, regression, deltae, brand-compliance, integration, unit]
+
+  - id: PH2-PIXELMATCH-003
+    name: "pkg/regression — YIQ + anti-aliasing math"
+    category: unit
+    priority: high
+    platforms: [linux]
+    steps:
+      - name: "colorDelta Y-only mode captures luma"
+        action: "TestColorDelta_YOnlyMode"
+        expected: "PASS"
+      - name: "rgb2y/i/q are zero at black"
+        action: "TestRGB2YIQ_BlackIsZero"
+        expected: "PASS"
+      - name: "blendWhite preserves opaque color, returns white at zero alpha"
+        action: "TestBlendWhite_FullOpaquePreservesColor + TestBlendWhite_ZeroAlphaProducesWhite"
+        expected: "Both PASS"
+      - name: "hasManySiblings correctly classifies uniform vs noisy patches"
+        action: "TestHasManySiblings_UniformPatchIsSibling + TestHasManySiblings_NoiseIsSolitary"
+        expected: "Both PASS"
+      - name: "Differ interface conformance"
+        action: "TestPixelMatch_SatisfiesDifferInterface"
+        expected: "PASS"
+    tags: [phase2, regression, pixelmatch, yiq, aa]
+
+  # ─── M31 · pkg/nexus/observe/axtree · AT-SPI2 Linux client ───
+  - id: PH2-AXTREE-LINUX-001
+    name: "pkg/nexus/observe/axtree — LinuxSnapshotter happy path"
+    category: unit
+    priority: critical
+    platforms: [linux]
+    steps:
+      - name: "Snapshot returns full tree with correct hierarchy"
+        action: "TestLinuxSnapshotter_Snapshot_FullTree"
+        expected: "PASS — root.CountDescendants()==5, Platform==PlatformLinux"
+      - name: "All Node properties propagate (Role, Name, Value, Bounds, Enabled, Focused, Selected)"
+        action: "TestLinuxSnapshotter_Snapshot_PropertiesPropagate"
+        expected: "PASS — button bounds, textbox value, dialog disabled/selected all correct"
+      - name: "Snapshotter interface conformance"
+        action: "TestLinuxSnapshotter_SatisfiesSnapshotterInterface"
+        expected: "PASS"
+    tags: [phase2, axtree, atspi2, linux, unit]
+
+  - id: PH2-AXTREE-LINUX-002
+    name: "pkg/nexus/observe/axtree — error + lifecycle paths"
+    category: unit
+    priority: high
+    platforms: [linux]
+    steps:
+      - name: "Close is idempotent — bus.Close only fires once"
+        action: "TestLinuxSnapshotter_Close_Idempotent"
+        expected: "PASS"
+      - name: "Snapshot after Close returns ErrSnapshotClosed"
+        action: "TestLinuxSnapshotter_Snapshot_AfterCloseReturnsError"
+        expected: "PASS"
+      - name: "GetRoot / GetProps / GetChildren errors propagate with wrapped context"
+        action: "TestLinuxSnapshotter_Snapshot_GetRootError + TestLinuxSnapshotter_Snapshot_GetPropsError + TestLinuxSnapshotter_Snapshot_GetChildrenError"
+        expected: "All PASS — error message contains method name"
+      - name: "Empty root path returns ErrNoRoot"
+        action: "TestLinuxSnapshotter_Snapshot_EmptyRoot"
+        expected: "PASS"
+      - name: "Canceled context bails out of walk"
+        action: "TestLinuxSnapshotter_Snapshot_ContextCanceled"
+        expected: "PASS"
+    tags: [phase2, axtree, atspi2, linux, error-paths]
+
+  - id: PH2-AXTREE-LINUX-003
+    name: "pkg/nexus/observe/axtree — Node.Walk / Find / CountDescendants"
+    category: unit
+    priority: high
+    platforms: [linux]
+    steps:
+      - name: "Walk visits every node depth-first pre-order"
+        action: "TestNode_Walk_VisitsEveryNodeDepthFirstPreOrder"
+        expected: "PASS — visited order matches expected traversal"
+      - name: "Walk propagates visitor errors + handles nil receiver"
+        action: "TestNode_Walk_PropagatesError + TestNode_Walk_NilNodeIsNoop"
+        expected: "Both PASS"
+      - name: "Find returns nil on no match + stops at first match"
+        action: "TestNode_Find_ReturnsNilOnNoMatch + TestNode_Find_StopsAtFirstMatch"
+        expected: "Both PASS"
+      - name: "CountDescendants handles nil"
+        action: "TestNode_CountDescendants_Nil"
+        expected: "PASS"
+    tags: [phase2, axtree, node, tree-ops]
+
+  - id: PH2-AXTREE-LINUX-004
+    name: "pkg/nexus/observe/axtree — AT-SPI role → ARIA translation"
+    category: unit
+    priority: medium
+    platforms: [linux]
+    steps:
+      - name: "Every mapped AT-SPI role code translates to the expected ARIA name"
+        action: "TestAtspiRoleToARIA_KnownRoles"
+        expected: "PASS — 31 roles covered (application, button, textbox, slider, ...)"
+      - name: "Unknown role code produces 'role-<N>' fallback"
+        action: "TestAtspiRoleToARIA_UnknownCodeFallback"
+        expected: "PASS"
+      - name: "roleCodeFromName round-trips + is case-insensitive"
+        action: "TestRoleCodeFromName_RoundTrip + TestRoleCodeFromName_CaseInsensitive + TestRoleCodeFromName_Unknown"
+        expected: "All PASS"
+      - name: "stateBit decodes two-uint32 bitmask"
+        action: "TestStateBit_ReadsCorrectBit"
+        expected: "PASS — bit 12 in word 0, bit 40 in word 1, out-of-range → false"
+    tags: [phase2, axtree, atspi2, role-mapping]
+
+  # Production D-Bus integration (blocked on a real AT-SPI2 session —
+  # no GNOME/KDE in CI; runs on the operator's desktop only)
+  - id: PH2-AXTREE-LINUX-INT-001
+    name: "pkg/nexus/observe/axtree — ConnectLinuxBus live smoke test"
+    category: integration
+    priority: high
+    platforms: [linux]
+    requires: [dbus-a11y-bus-running]
+    steps:
+      - name: "ConnectLinuxBus succeeds when the a11y bus is up"
+        action: "go test -mod=vendor -count=1 -tags=integration -run 'TestConnectLinuxBus_Live' ./pkg/nexus/observe/axtree/..."
+        expected: "PASS on an operator desktop with AT-SPI2 running — skipped in CI"
+      - name: "Snapshot of live tree returns ≥ 1 child"
+        action: "Run the above with HELIXQA_AXTREE_SMOKE=1 set"
+        expected: "Tree has ≥ 1 descendant reflecting the currently-focused app"
+    tags: [phase2, axtree, atspi2, linux, integration, manual]
+
+  # ─── M32 · pkg/nexus/observe/axtree · Android UIAutomator dump ───
+  - id: PH2-AXTREE-ANDROID-001
+    name: "pkg/nexus/observe/axtree — AndroidSnapshotter happy path"
+    category: unit
+    priority: critical
+    platforms: [android]
+    steps:
+      - name: "Snapshot with canned UIAutomator dump returns full tree"
+        action: "TestAndroidSnapshotter_Snapshot_FullTree"
+        expected: "PASS — root.Platform = PlatformAndroid, 5 descendants, rotation captured in root.Value"
+      - name: "All attributes translate: bounds, focused, selected, RawID, Name fallback"
+        action: "TestAndroidSnapshotter_Snapshot_AttributesTranslated"
+        expected: "PASS — button and textbox preserve all accessibility state"
+      - name: "Multi-top-level hierarchies wrap in synthetic application root"
+        action: "TestAndroidSnapshotter_Snapshot_MultipleTopLevelWrapped"
+        expected: "PASS — wrapper Role=application, 2 children"
+      - name: "Snapshotter interface conformance"
+        action: "TestAndroidSnapshotter_SatisfiesSnapshotterInterface"
+        expected: "PASS"
+    tags: [phase2, axtree, android, unit]
+
+  - id: PH2-AXTREE-ANDROID-002
+    name: "pkg/nexus/observe/axtree — Android error + lifecycle paths"
+    category: unit
+    priority: high
+    platforms: [android]
+    steps:
+      - name: "Dumper errors propagate with wrapped context"
+        action: "TestAndroidSnapshotter_Snapshot_DumperError"
+        expected: "PASS — 'Dump' appears in the wrapped error"
+      - name: "Malformed XML bubbles up with 'parse' context"
+        action: "TestAndroidSnapshotter_Snapshot_MalformedXML"
+        expected: "PASS"
+      - name: "Empty hierarchy → ErrNoRoot"
+        action: "TestAndroidSnapshotter_Snapshot_EmptyHierarchy"
+        expected: "PASS"
+      - name: "Canceled context bails out of Dump"
+        action: "TestAndroidSnapshotter_Snapshot_ContextCanceled"
+        expected: "PASS"
+      - name: "Close is idempotent; Snapshot-after-Close returns ErrSnapshotClosed"
+        action: "TestAndroidSnapshotter_Close_Idempotent + TestAndroidSnapshotter_Snapshot_AfterCloseReturnsError"
+        expected: "Both PASS"
+      - name: "ADBDumper refuses to run with empty Serial"
+        action: "TestADBDumper_EmptySerialError"
+        expected: "PASS"
+      - name: "NewAndroidSnapshotter builds an ADBDumper bound to the requested serial"
+        action: "TestNewAndroidSnapshotter_UsesADBDumper"
+        expected: "PASS"
+    tags: [phase2, axtree, android, error-paths, lifecycle]
+
+  - id: PH2-AXTREE-ANDROID-003
+    name: "pkg/nexus/observe/axtree — UIAutomator XML attribute conversion"
+    category: unit
+    priority: high
+    platforms: [android]
+    steps:
+      - name: "parseAndroidBounds handles happy / negative / malformed inputs"
+        action: "TestParseAndroidBounds_HappyPath + TestParseAndroidBounds_NegativeCoords + TestParseAndroidBounds_Malformed"
+        expected: "All PASS"
+      - name: "boolAttr strictly matches 'true'"
+        action: "TestBoolAttr"
+        expected: "PASS"
+      - name: "androidClassToARIA covers 17-class baseline + unknown fallback"
+        action: "TestAndroidClassToARIA_KnownClasses + TestAndroidClassToARIA_UnknownClassFallback"
+        expected: "Both PASS"
+      - name: "convertXMLNode uses class:index RawID when resource-id is empty"
+        action: "TestConvertXMLNode_UsesClassIndexWhenResourceIDMissing"
+        expected: "PASS"
+    tags: [phase2, axtree, android, xml, attribute-mapping]
+
+  # Production ADB integration (blocked on a real connected device —
+  # can't be run unattended in CI; requires .devconnect + live device).
+  - id: PH2-AXTREE-ANDROID-INT-001
+    name: "pkg/nexus/observe/axtree — ADBDumper live device smoke test"
+    category: integration
+    priority: high
+    platforms: [android]
+    requires: [adb-device-connected]
+    steps:
+      - name: "ADBDumper produces valid UIAutomator XML"
+        action: "ADBDumper{Serial: first `.devconnect` entry}.Dump(ctx) → len(output) > 0 && strings.Contains(output, '<?xml')"
+        expected: "Raw UIAutomator dump returned"
+      - name: "Snapshot on live device enumerates current-app widgets"
+        action: "Run AndroidSnapshotter.Snapshot against an actually-running device"
+        expected: "≥ 10 descendants, root.Value = 'rotation=<current>' reflecting orientation"
+    tags: [phase2, axtree, android, integration, manual]
+
+  # ─── M33 · pkg/vision/perceptual · pure-Go SSIM ───
+  - id: PH2-SSIM-001
+    name: "pkg/vision/perceptual — SSIM canonical invariants"
+    category: unit
+    priority: critical
+    platforms: [linux]
+    steps:
+      - name: "Identical images return SSIM ≈ 1.0"
+        action: "TestSSIM_IdenticalImagesReturnOne"
+        expected: "PASS — SSIM > 0.999"
+      - name: "Near-duplicate images return high similarity (< 1, > 0.9)"
+        action: "TestSSIM_NearDuplicateImagesReturnHighSimilarity"
+        expected: "PASS"
+      - name: "Structurally different images return < 0.5"
+        action: "TestSSIM_DifferentImagesReturnLowerSimilarity"
+        expected: "PASS — gradient vs noise drops similarity below 0.5"
+      - name: "Solid black vs solid white produces low SSIM in bounded range"
+        action: "TestSSIM_SolidBlackVsSolidWhite"
+        expected: "PASS — value in [-1, 1], below 0.5 due to mean mismatch"
+    tags: [phase2, perceptual, ssim, unit]
+
+  - id: PH2-SSIM-002
+    name: "pkg/vision/perceptual — SSIM config + image-type coverage"
+    category: unit
+    priority: high
+    platforms: [linux]
+    steps:
+      - name: "Custom BlockSize honors self-identity"
+        action: "TestSSIM_CustomBlockSize"
+        expected: "PASS"
+      - name: "Custom K1/K2/L config applied correctly"
+        action: "TestSSIM_CustomK1K2L"
+        expected: "PASS"
+      - name: "Fast-paths cover RGBA / NRGBA / Gray / YCbCr concrete types"
+        action: "TestSSIM_HandlesConcreteImageTypes"
+        expected: "All four PASS"
+      - name: "Generic image.Image fallback works"
+        action: "TestSSIM_GenericImageInterface"
+        expected: "PASS"
+      - name: "luma8 Rec-709 sanity checks"
+        action: "TestLuma8_SanityChecks"
+        expected: "PASS — black/white extremes + green-dominates-red + green-dominates-blue"
+      - name: "Comparator interface conformance"
+        action: "TestSSIM_SatisfiesComparatorInterface"
+        expected: "PASS"
+    tags: [phase2, perceptual, ssim, coverage]
+
+  - id: PH2-SSIM-003
+    name: "pkg/vision/perceptual — SSIM error paths"
+    category: unit
+    priority: high
+    platforms: [linux]
+    steps:
+      - name: "nil images return ErrNilImage"
+        action: "TestSSIM_NilImagesError"
+        expected: "PASS"
+      - name: "dimension mismatch returns ErrDimensionMismatch"
+        action: "TestSSIM_DimensionMismatchError"
+        expected: "PASS"
+      - name: "Image smaller than one block returns ErrTooSmall"
+        action: "TestSSIM_ImageSmallerThanBlockError"
+        expected: "PASS"
+      - name: "Canceled context propagates"
+        action: "TestSSIM_ContextCanceled"
+        expected: "PASS"
+    tags: [phase2, perceptual, ssim, error-paths]
+
+  - id: PH2-SSIM-004
+    name: "pkg/vision/perceptual — Article V §8 benchmark: < 5 ms / 480p"
+    category: benchmark
+    priority: critical
+    platforms: [linux]
+    steps:
+      - name: "TestPerformance_SSIM_Under5msPer480pFrame best-of-20 passes"
+        action: "go test -mod=vendor -count=1 -run TestPerformance_SSIM_Under5msPer480pFrame ./pkg/vision/perceptual/..."
+        expected: "PASS — best-of-20 < 5 ms; skipped under -race instrumentation (5-30× overhead invalidates timing)"
+      - name: "BenchmarkSSIM_480p reports microsecond range"
+        action: "go test -mod=vendor -bench=. -run=^$ ./pkg/vision/perceptual/..."
+        expected: "Sub-5 ms/op on commodity CPU"
+    tags: [phase2, perceptual, ssim, benchmark, article-v-8]
+
+  # ─── M34 · pkg/vision/perceptual · DreamSim REST client ───
+  - id: PH2-DREAMSIM-001
+    name: "pkg/vision/perceptual — DreamSim tier-3 similarity mapping"
+    category: unit
+    priority: critical
+    platforms: [linux]
+    steps:
+      - name: "Raw similarity 1.0 → canonical 1.0"
+        action: "TestDreamSim_IdenticalImagesMapToOne"
+        expected: "PASS"
+      - name: "Raw 0.5 → canonical 0.0"
+        action: "TestDreamSim_HalfSimilarityMapsToZero"
+        expected: "PASS"
+      - name: "Raw 0.0 → canonical -1.0"
+        action: "TestDreamSim_DisagreementMapsToMinusOne"
+        expected: "PASS"
+      - name: "Comparator interface conformance"
+        action: "TestDreamSim_SatisfiesComparatorInterface"
+        expected: "PASS"
+    tags: [phase2, perceptual, dreamsim, unit]
+
+  - id: PH2-DREAMSIM-002
+    name: "pkg/vision/perceptual — DreamSim Triton KServe v2 wire format"
+    category: unit
+    priority: high
+    platforms: [linux]
+    steps:
+      - name: "Request body has 2 BYTES inputs named IMAGE_A / IMAGE_B, PNG-base64"
+        action: "TestDreamSim_RequestShapeIsKServeV2"
+        expected: "PASS"
+      - name: "URL path uses the configured model name"
+        action: "TestDreamSim_URLIncludesModelName"
+        expected: "PASS — /v2/models/{model}/infer"
+      - name: "Output-name resolution handles SIMILARITY / similarity / arbitrary"
+        action: "TestDreamSim_LowercaseSimilarityOutputName + TestDreamSim_OutputNameFallback"
+        expected: "Both PASS"
+      - name: "encodePNGBase64 produces valid PNG magic prefix"
+        action: "TestEncodePNGBase64_NotEmpty"
+        expected: "PASS"
+    tags: [phase2, perceptual, dreamsim, wire-format, kserve]
+
+  - id: PH2-DREAMSIM-003
+    name: "pkg/vision/perceptual — DreamSim error paths"
+    category: unit
+    priority: high
+    platforms: [linux]
+    steps:
+      - name: "nil images → ErrNilImage"
+        action: "TestDreamSim_NilImagesError"
+        expected: "PASS"
+      - name: "empty endpoint → ErrDreamSimEndpoint"
+        action: "TestDreamSim_EmptyEndpointError"
+        expected: "PASS"
+      - name: "HTTP 5xx propagates with status + body in error"
+        action: "TestDreamSim_HTTPErrorPropagates"
+        expected: "PASS"
+      - name: "malformed JSON response fails with decode error"
+        action: "TestDreamSim_MalformedResponseError"
+        expected: "PASS"
+      - name: "no outputs / empty SIMILARITY data → ErrDreamSimResponse"
+        action: "TestDreamSim_NoOutputsReturnsErrDreamSimResponse + TestDreamSim_EmptySimilarityDataReturnsError"
+        expected: "Both PASS"
+      - name: "Canceled context bails out of the HTTP call"
+        action: "TestDreamSim_ContextCanceled"
+        expected: "PASS"
+      - name: "Zero-value Model + HTTPClient defaults apply"
+        action: "TestDreamSim_DefaultsAppliedWhenFieldsZeroed"
+        expected: "PASS — Model defaults to 'dreamsim', HTTPClient to 200 ms timeout"
+      - name: "Invalid endpoint URL fails at request construction"
+        action: "TestDreamSim_InvalidEndpointURLError"
+        expected: "PASS"
+    tags: [phase2, perceptual, dreamsim, error-paths]
+
+  # Production Triton integration (blocked on operator action per
+  # OPEN_POINTS_CLOSURE.md §10.3 — DreamSim ONNX deployment to thinker.local)
+  - id: PH2-DREAMSIM-INT-001
+    name: "pkg/vision/perceptual — DreamSim live Triton smoke test"
+    category: integration
+    priority: high
+    platforms: [linux]
+    requires: [triton-thinker-local-dreamsim-deployed]
+    steps:
+      - name: "Live endpoint returns similarity ≈ 1.0 for identical inputs"
+        action: "DreamSim{Endpoint: 'http://thinker.local:8000'}.Compare(identical, identical)"
+        expected: "similarity > 0.95"
+      - name: "Live endpoint handles 480p inputs within the 200 ms budget"
+        action: "Compare twice against a 854×480 pair"
+        expected: "< 200 ms GPU round-trip per OpenClawing4.md §5.8 tier-3 budget"
+    tags: [phase2, perceptual, dreamsim, integration, manual, triton]
+
+  # ─── M35 · pkg/analysis/pelt · pure-Go PELT ───
+  - id: PH2-PELT-001
+    name: "pkg/analysis/pelt — PELT change-point detection happy path"
+    category: unit
+    priority: critical
+    platforms: [linux]
+    steps:
+      - name: "Step change is detected within ±5 samples of the true split"
+        action: "TestPELT_DetectsStepChange"
+        expected: "PASS"
+      - name: "Three-segment signal yields ≥ 2 change points"
+        action: "TestPELT_DetectsMultipleChanges"
+        expected: "PASS"
+      - name: "Constant signal yields zero change points"
+        action: "TestPELT_ConstantSignalYieldsNoChangePoints"
+        expected: "PASS"
+      - name: "Higher penalty produces ≤ change points (BIC monotonicity)"
+        action: "TestPELT_HigherPenaltyYieldsFewerOrEqualChangePoints"
+        expected: "PASS"
+      - name: "Four-segment signal yields strictly increasing change-point indices within (0, n)"
+        action: "TestPELT_ChangePointsAreStrictlyIncreasing"
+        expected: "PASS"
+    tags: [phase2, analysis, pelt, change-point, algorithm]
+
+  - id: PH2-PELT-002
+    name: "pkg/analysis/pelt — config + pluggable cost functions"
+    category: unit
+    priority: high
+    platforms: [linux]
+    steps:
+      - name: "Custom MinSize is enforced in the output"
+        action: "TestPELT_CustomMinSizePreservedInOutput"
+        expected: "PASS — no change point within MinSize of either end"
+      - name: "Custom CostFunc = 0 produces no change points at positive penalty"
+        action: "TestPELT_CustomCostFunc"
+        expected: "PASS"
+      - name: "VarianceCost detects a pure scale shift that mean-cost would miss"
+        action: "TestPELT_VarianceCostDetectsScaleShift"
+        expected: "PASS"
+      - name: "Segmenter interface conformance"
+        action: "TestPELT_SatisfiesSegmenterInterface"
+        expected: "PASS"
+    tags: [phase2, analysis, pelt, cost-function, interface]
+
+  - id: PH2-PELT-003
+    name: "pkg/analysis/pelt — cost-function unit tests"
+    category: unit
+    priority: high
+    platforms: [linux]
+    steps:
+      - name: "gaussianMeanCost zero for constant segment"
+        action: "TestGaussianMeanCost_ZeroForConstantSegment"
+        expected: "PASS"
+      - name: "gaussianMeanCost positive for varying segment"
+        action: "TestGaussianMeanCost_PositiveForVaryingSegment"
+        expected: "PASS"
+      - name: "gaussianMeanCost zero for empty segment"
+        action: "TestGaussianMeanCost_ZeroForEmptySegment"
+        expected: "PASS"
+      - name: "VarianceCost penalises high variance"
+        action: "TestVarianceCost_PenalizesHighVariance"
+        expected: "PASS"
+      - name: "VarianceCost handles too-short and zero-variance inputs"
+        action: "TestVarianceCost_TooShortReturnsZero + TestVarianceCost_ZeroVarianceFloor"
+        expected: "Both PASS — 1-sample → 0, constant segment → finite (floor prevents -Inf)"
+    tags: [phase2, analysis, pelt, math]
+
+  - id: PH2-PELT-004
+    name: "pkg/analysis/pelt — error paths"
+    category: unit
+    priority: high
+    platforms: [linux]
+    steps:
+      - name: "Empty series returns ErrEmptySeries (nil + len 0)"
+        action: "TestPELT_EmptySeriesError"
+        expected: "PASS"
+      - name: "Negative penalty returns ErrNegativePenalty"
+        action: "TestPELT_NegativePenaltyError"
+        expected: "PASS"
+      - name: "Invalid MinSize returns ErrInvalidMinSize"
+        action: "TestPELT_InvalidMinSizeError"
+        expected: "PASS"
+      - name: "Too-short series (< 2*MinSize) returns empty change points, no error"
+        action: "TestPELT_TooShortReturnsEmpty"
+        expected: "PASS"
+      - name: "Canceled context bails out of the main DP loop"
+        action: "TestPELT_ContextCanceled"
+        expected: "PASS"
+    tags: [phase2, analysis, pelt, error-paths]
+

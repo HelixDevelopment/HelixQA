@@ -1,0 +1,453 @@
+# SPDX-FileCopyrightText: 2026 Milos Vasic
+# SPDX-License-Identifier: Apache-2.0
+#
+# HelixQA Test Bank: OpenClawing4 Phase 6 Go-Core
+#
+# Phase 6 scope per OpenClawing4.md §8 (4–6 weeks):
+#
+#   - macOS (SCKit + Swift sidecar for accessibility + capture)
+#   - Windows (Windows Graphics Capture + IUIAutomation via go-ole)
+#   - iOS (idb + WebDriverAgent)
+#   - TUI (pty + ANSI grid)
+#
+# Toolchain / operator-action dependencies (per
+# docs/OPEN_POINTS_CLOSURE.md §10.3):
+#
+#   - macOS Xcode + ScreenCaptureKit entitlement for unattended QA.
+#   - Windows SDK + Graphics Capture entitlements.
+#   - iOS UDID + idb binary on the macOS host (idb requires macOS).
+#
+# Every test here runs on a clean Linux container with canned
+# fixtures — no macOS, no iOS device, no Windows VM. Live smoke
+# tests are PH6-*-INT-* cases tagged `manual`.
+
+version: "1.0"
+name: "OpenClawing4 Phase 6 — Go core bank"
+description: >
+  Cross-platform capture + accessibility for macOS, Windows, iOS, TUI.
+  Pure Go — platform-specific native code lives in sidecars that this
+  Go core speaks to over JSON-over-stdio or HTTP. Backs the
+  HQA-PHASE6-GOCORE-* challenges.
+
+test_cases:
+  # ─── M41 · pkg/nexus/observe/axtree/ios.go · idb JSON parser ───
+  - id: PH6-AXTREE-IOS-001
+    name: "pkg/nexus/observe/axtree — IOSSnapshotter happy path"
+    category: unit
+    priority: critical
+    platforms: [ios]
+    steps:
+      - name: "Snapshot with canned idb dump returns full tree (Platform=PlatformIOS)"
+        action: "TestIOSSnapshotter_Snapshot_FullTree"
+        expected: "PASS — 4 descendants, root role=application, RawID from identifier"
+      - name: "All attributes translate: bounds, focused/selected, identifier, label > title precedence"
+        action: "TestIOSSnapshotter_Snapshot_AttributesTranslated"
+        expected: "PASS — button label wins over title, textfield value + selected preserved"
+      - name: "Name falls back to title when label is empty"
+        action: "TestIOSSnapshotter_Snapshot_NameFallsBackToTitle"
+        expected: "PASS"
+      - name: "RawID falls back to 'type:title' when identifier is empty"
+        action: "TestIOSSnapshotter_Snapshot_RawIDFallsBackToTypeTitle"
+        expected: "PASS — ensures action resolution always has a handle"
+      - name: "Snapshotter interface conformance"
+        action: "TestIOSSnapshotter_SatisfiesSnapshotterInterface"
+        expected: "PASS"
+    tags: [phase6, axtree, ios, idb, unit]
+
+  - id: PH6-AXTREE-IOS-002
+    name: "pkg/nexus/observe/axtree — iOS top-level JSON tolerance"
+    category: unit
+    priority: high
+    platforms: [ios]
+    steps:
+      - name: "JSON array with multiple windows wraps in synthetic application root"
+        action: "TestIOSSnapshotter_Snapshot_JSONArrayWrapped"
+        expected: "PASS — wrapper role=application, 2 children preserved"
+      - name: "JSON array with a single element unwraps to the element directly"
+        action: "TestIOSSnapshotter_Snapshot_SingleElementArrayUnwrapped"
+        expected: "PASS — no redundant wrapper"
+    tags: [phase6, axtree, ios, json-tolerance]
+
+  - id: PH6-AXTREE-IOS-003
+    name: "pkg/nexus/observe/axtree — AXUIElement type → ARIA mapping"
+    category: unit
+    priority: high
+    platforms: [ios]
+    steps:
+      - name: "All 30 mapped AXUIElement types translate correctly"
+        action: "TestIOSTypeToARIA_KnownTypes"
+        expected: "PASS — Application / Window / Button / TextField / Image / Switch / Slider / Table / Cell / NavigationBar / TabBar / Alert / WebView etc."
+      - name: "Unknown type passes through as-is (not silently dropped)"
+        action: "TestIOSTypeToARIA_UnknownPassesThrough"
+        expected: "PASS — 'CustomThingy' → 'CustomThingy'"
+    tags: [phase6, axtree, ios, role-mapping]
+
+  - id: PH6-AXTREE-IOS-004
+    name: "pkg/nexus/observe/axtree — iOS error + lifecycle paths"
+    category: unit
+    priority: high
+    platforms: [ios]
+    steps:
+      - name: "Empty / whitespace-only / empty-array dumps all return ErrNoRoot"
+        action: "TestIOSSnapshotter_Snapshot_EmptyDumpError + TestIOSSnapshotter_Snapshot_WhitespaceOnlyDumpError + TestIOSSnapshotter_Snapshot_EmptyArrayError"
+        expected: "All PASS"
+      - name: "Malformed JSON (object / array / scalar) returns parse errors"
+        action: "TestIOSSnapshotter_Snapshot_MalformedJSON + TestIOSSnapshotter_Snapshot_MalformedArray + TestIOSSnapshotter_Snapshot_UnexpectedJSONKind"
+        expected: "All PASS"
+      - name: "Dumper error propagates"
+        action: "TestIOSSnapshotter_Snapshot_DumperError"
+        expected: "PASS"
+      - name: "Canceled context bails out"
+        action: "TestIOSSnapshotter_Snapshot_ContextCanceled"
+        expected: "PASS"
+      - name: "Close is idempotent; Snapshot-after-Close returns ErrSnapshotClosed"
+        action: "TestIOSSnapshotter_Close_Idempotent + TestIOSSnapshotter_Snapshot_AfterCloseReturnsError"
+        expected: "Both PASS"
+      - name: "IDBShellDumper guards empty UDID + Close is no-op"
+        action: "TestIDBShellDumper_EmptyUDIDError"
+        expected: "PASS"
+      - name: "NewIOSSnapshotter constructor wires IDBShellDumper with UDID"
+        action: "TestNewIOSSnapshotter_UsesShellDumper"
+        expected: "PASS"
+    tags: [phase6, axtree, ios, error-paths, lifecycle]
+
+  # Production idb integration (blocked on operator-action per
+  # OPEN_POINTS_CLOSURE.md §10.3 — macOS Xcode + idb + iOS UDID).
+  - id: PH6-AXTREE-IOS-INT-001
+    name: "pkg/nexus/observe/axtree — live idb smoke test"
+    category: integration
+    priority: high
+    platforms: [ios]
+    requires: [macos-host-with-idb-and-ios-udid]
+    steps:
+      - name: "IDBShellDumper returns valid JSON for a running app"
+        action: "IDBShellDumper{UDID: <real UDID>}.Dump(ctx) → len(output) > 0, starts with '{' or '['"
+        expected: "Raw idb describe-all output returned"
+      - name: "Snapshot on live device enumerates current-app widgets"
+        action: "Run IOSSnapshotter.Snapshot against an actually-running iOS app"
+        expected: "≥ 5 descendants, at least one Button / TextField / StaticText"
+    tags: [phase6, axtree, ios, integration, manual, idb]
+
+  # ─── M42 · pkg/nexus/observe/axtree/darwin.go · macOS Swift sidecar ───
+  - id: PH6-AXTREE-DARWIN-001
+    name: "pkg/nexus/observe/axtree — DarwinSnapshotter happy path"
+    category: unit
+    priority: critical
+    platforms: [darwin]
+    steps:
+      - name: "Snapshot with canned Swift-sidecar JSON returns full tree (Platform=PlatformDarwin)"
+        action: "TestDarwinSnapshotter_Snapshot_FullTree"
+        expected: "PASS — 4 descendants, root role=application, RawID from identifier"
+      - name: "AXTitle precedence over AXDescription; button + textfield fields translate correctly"
+        action: "TestDarwinSnapshotter_Snapshot_AttributesTranslated"
+        expected: "PASS — button.Name='Sign In' (AXTitle), textbox.Name='Username' (AXDescription fallback)"
+      - name: "RawID falls back to 'AXRole:AXTitle' when identifier is empty"
+        action: "TestDarwinSnapshotter_Snapshot_RawIDFallsBackToRoleTitle"
+        expected: "PASS — ensures action resolution always has a handle"
+      - name: "Snapshotter interface conformance"
+        action: "TestDarwinSnapshotter_SatisfiesSnapshotterInterface"
+        expected: "PASS"
+    tags: [phase6, axtree, darwin, macos, unit]
+
+  - id: PH6-AXTREE-DARWIN-002
+    name: "pkg/nexus/observe/axtree — macOS top-level JSON tolerance"
+    category: unit
+    priority: high
+    platforms: [darwin]
+    steps:
+      - name: "JSON array with multiple windows wraps in synthetic application root"
+        action: "TestDarwinSnapshotter_Snapshot_JSONArrayWrapped"
+        expected: "PASS — role=application, 2 children"
+      - name: "JSON array with single element unwraps directly"
+        action: "TestDarwinSnapshotter_Snapshot_SingleElementArrayUnwrapped"
+        expected: "PASS"
+    tags: [phase6, axtree, darwin, json-tolerance]
+
+  - id: PH6-AXTREE-DARWIN-003
+    name: "pkg/nexus/observe/axtree — macOS AXRole → ARIA mapping"
+    category: unit
+    priority: high
+    platforms: [darwin]
+    steps:
+      - name: "All 44 mapped AXRole strings translate correctly"
+        action: "TestDarwinRoleToARIA_KnownRoles"
+        expected: "PASS — AXApplication / AXWindow / AXSheet / AXPopover / AXButton / AXStaticText / AXTextField / AXImage / AXCheckBox / AXRadioButton / AXSwitch / AXStepper / AXComboBox / AXOutline / AXTable / AXRow / AXCell / AXColumn / AXGroup / AXScrollArea / AXToolbar / AXMenuBar / AXMenu / AXMenuItem / AXTabGroup / AXRadioGroup / AXLink / AXWebArea / AXBrowser / AXSplitGroup / AXSplitter / AXDrawer / AXHelpTag / …"
+      - name: "Unknown AX-prefixed role strips prefix + lowercases (AXFoo → foo)"
+        action: "TestDarwinRoleToARIA_UnknownStripsAXPrefix"
+        expected: "PASS — readable fallback, not silent drop"
+      - name: "Non-AX-prefixed role passes through unchanged"
+        action: "TestDarwinRoleToARIA_NonAXPrefixPassesThrough"
+        expected: "PASS"
+    tags: [phase6, axtree, darwin, role-mapping]
+
+  - id: PH6-AXTREE-DARWIN-004
+    name: "pkg/nexus/observe/axtree — macOS error + lifecycle paths"
+    category: unit
+    priority: high
+    platforms: [darwin]
+    steps:
+      - name: "Empty / empty-array dump returns ErrNoRoot"
+        action: "TestDarwinSnapshotter_Snapshot_EmptyDumpError + TestDarwinSnapshotter_Snapshot_EmptyArrayError"
+        expected: "Both PASS"
+      - name: "Malformed JSON (object / array / scalar) returns parse errors"
+        action: "TestDarwinSnapshotter_Snapshot_MalformedJSON + TestDarwinSnapshotter_Snapshot_MalformedArray + TestDarwinSnapshotter_Snapshot_UnexpectedJSONKind"
+        expected: "All PASS"
+      - name: "Fetcher error propagates"
+        action: "TestDarwinSnapshotter_Snapshot_FetcherError"
+        expected: "PASS"
+      - name: "Canceled context bails out"
+        action: "TestDarwinSnapshotter_Snapshot_ContextCanceled"
+        expected: "PASS"
+      - name: "Close is idempotent; Snapshot-after-Close returns ErrSnapshotClosed"
+        action: "TestDarwinSnapshotter_Close_Idempotent + TestDarwinSnapshotter_Snapshot_AfterCloseReturnsError"
+        expected: "Both PASS"
+    tags: [phase6, axtree, darwin, error-paths, lifecycle]
+
+  - id: PH6-AXTREE-DARWIN-005
+    name: "pkg/nexus/observe/axtree — DarwinHTTPFetcher httptest-backed end-to-end"
+    category: unit
+    priority: high
+    platforms: [darwin]
+    steps:
+      - name: "HTTPFetcher returns the body for a valid 200 OK response"
+        action: "TestDarwinHTTPFetcher_ReturnsBody"
+        expected: "PASS"
+      - name: "HTTP 5xx propagates with status + body in error message"
+        action: "TestDarwinHTTPFetcher_HTTPErrorPropagates"
+        expected: "PASS — 'HTTP 503' appears in the wrapped error"
+      - name: "Empty URL + invalid URL both error at request construction"
+        action: "TestDarwinHTTPFetcher_EmptyURLError + TestDarwinHTTPFetcher_InvalidURLError"
+        expected: "Both PASS"
+      - name: "End-to-end: DarwinSnapshotter + httptest-backed DarwinHTTPFetcher"
+        action: "TestDarwinSnapshotter_EndToEndViaHTTPFetcher"
+        expected: "PASS — real HTTP roundtrip through the full parsing pipeline"
+      - name: "NewDarwinSnapshotter constructor wires HTTPFetcher with URL"
+        action: "TestNewDarwinSnapshotter_UsesHTTPFetcher"
+        expected: "PASS"
+    tags: [phase6, axtree, darwin, http-fetcher, end-to-end]
+
+  # ─── M48 · pkg/nexus/observe/axtree/windows.go · UIA sidecar ───
+  - id: PH6-AXTREE-WINDOWS-001
+    name: "pkg/nexus/observe/axtree — WindowsSnapshotter happy path"
+    category: unit
+    priority: critical
+    platforms: [windows]
+    steps:
+      - name: "Snapshot with canned UIA JSON returns full tree (Platform=PlatformWindows)"
+        action: "TestWindowsSnapshotter_Snapshot_FullTree"
+        expected: "PASS — 4 descendants, role=window, RawID=main-window"
+      - name: "Attributes translate: Name > HelpText > AutomationID precedence, UIA flags"
+        action: "TestWindowsSnapshotter_Snapshot_AttributesTranslated + TestWindowsSnapshotter_Snapshot_NamePrecedence"
+        expected: "Both PASS — button focused + enabled, textbox value=admin + selected, HelpText fills in when Name empty"
+      - name: "RawID falls back to 'ClassName:Name' when AutomationID empty"
+        action: "TestWindowsSnapshotter_Snapshot_RawIDFallsBackToClassName"
+        expected: "PASS"
+      - name: "Snapshotter interface conformance"
+        action: "TestWindowsSnapshotter_SatisfiesSnapshotterInterface"
+        expected: "PASS"
+    tags: [phase6, axtree, windows, uia, unit]
+
+  - id: PH6-AXTREE-WINDOWS-002
+    name: "pkg/nexus/observe/axtree — Windows top-level JSON tolerance"
+    category: unit
+    priority: high
+    platforms: [windows]
+    steps:
+      - name: "JSON array with multiple windows (MDI) wraps in synthetic application root"
+        action: "TestWindowsSnapshotter_Snapshot_JSONArrayWrapped"
+        expected: "PASS"
+      - name: "Single-element array unwraps to the element directly"
+        action: "TestWindowsSnapshotter_Snapshot_SingleElementArrayUnwrapped"
+        expected: "PASS"
+    tags: [phase6, axtree, windows, json-tolerance]
+
+  - id: PH6-AXTREE-WINDOWS-003
+    name: "pkg/nexus/observe/axtree — UIA ControlType → ARIA mapping"
+    category: unit
+    priority: high
+    platforms: [windows]
+    steps:
+      - name: "All 32 symbolic ControlType names map correctly"
+        action: "TestWindowsControlTypeToARIA_SymbolicNames"
+        expected: "PASS — Button / Window / Pane / Edit / Text / Document / CheckBox / ... / Custom"
+      - name: "All 19 numeric ControlType IDs map correctly (UIAutomationCore.h ids)"
+        action: "TestWindowsControlTypeToARIA_NumericIDs"
+        expected: "PASS — 50000 / 50002 / 50004 / ... / 50038"
+      - name: "Unknown ControlType passes through as-is"
+        action: "TestWindowsControlTypeToARIA_UnknownPassesThrough"
+        expected: "PASS — custom controls still reasoned about"
+    tags: [phase6, axtree, windows, role-mapping]
+
+  - id: PH6-AXTREE-WINDOWS-004
+    name: "pkg/nexus/observe/axtree — Windows error + lifecycle"
+    category: unit
+    priority: high
+    platforms: [windows]
+    steps:
+      - name: "Empty / empty-array dump returns ErrNoRoot"
+        action: "TestWindowsSnapshotter_Snapshot_EmptyDumpError + TestWindowsSnapshotter_Snapshot_EmptyArrayError"
+        expected: "Both PASS"
+      - name: "Malformed JSON (object / array / scalar) returns parse errors"
+        action: "TestWindowsSnapshotter_Snapshot_MalformedJSON + TestWindowsSnapshotter_Snapshot_MalformedArray + TestWindowsSnapshotter_Snapshot_ScalarJSONError"
+        expected: "All PASS"
+      - name: "Fetcher error propagates"
+        action: "TestWindowsSnapshotter_Snapshot_FetcherError"
+        expected: "PASS"
+      - name: "Canceled context bails out"
+        action: "TestWindowsSnapshotter_Snapshot_ContextCanceled"
+        expected: "PASS"
+      - name: "Close is idempotent; Snapshot-after-Close returns ErrSnapshotClosed"
+        action: "TestWindowsSnapshotter_Close_Idempotent + TestWindowsSnapshotter_Snapshot_AfterCloseReturnsError"
+        expected: "Both PASS"
+    tags: [phase6, axtree, windows, error-paths]
+
+  - id: PH6-AXTREE-WINDOWS-005
+    name: "pkg/nexus/observe/axtree — WindowsHTTPFetcher httptest end-to-end"
+    category: unit
+    priority: high
+    platforms: [windows]
+    steps:
+      - name: "HTTPFetcher GETs sidecar URL + returns body"
+        action: "TestWindowsHTTPFetcher_ReturnsBody"
+        expected: "PASS"
+      - name: "HTTP 5xx / empty URL / invalid URL all error correctly"
+        action: "TestWindowsHTTPFetcher_HTTPErrorPropagates + TestWindowsHTTPFetcher_EmptyURLError + TestWindowsHTTPFetcher_InvalidURLError"
+        expected: "All PASS"
+      - name: "End-to-end: NewWindowsSnapshotter + httptest Windows sidecar"
+        action: "TestWindowsSnapshotter_EndToEndViaHTTPFetcher"
+        expected: "PASS — real HTTP roundtrip"
+      - name: "NewWindowsSnapshotter wires HTTPFetcher with URL"
+        action: "TestNewWindowsSnapshotter_UsesHTTPFetcher"
+        expected: "PASS"
+    tags: [phase6, axtree, windows, http-fetcher, end-to-end]
+
+  # ─── M57 · pkg/nexus/observe/axtree/tui.go · TUI ANSI grid ───
+  - id: PH6-AXTREE-TUI-001
+    name: "pkg/nexus/observe/axtree — TUISnapshotter happy path + row emission"
+    category: unit
+    priority: critical
+    platforms: [linux, all]
+    steps:
+      - name: "Three-line ANSI dump (with colors) produces 3 row-Node children + PlatformTUI root"
+        action: "TestTUISnapshotter_Snapshot_FullTree"
+        expected: "PASS — Role=text, Enabled=true per row, CSI colors stripped from Name"
+      - name: "Empty / whitespace-only rows are skipped"
+        action: "TestTUISnapshotter_Snapshot_SkipsEmptyRows"
+        expected: "PASS"
+      - name: "Row bounds use character coordinates (col, row)"
+        action: "TestTUISnapshotter_Snapshot_RowBoundsInCharCoords"
+        expected: "PASS"
+      - name: "Custom Cols + Rows override auto-detected dimensions"
+        action: "TestTUISnapshotter_Snapshot_CustomDimensions"
+        expected: "PASS"
+      - name: "Snapshotter interface conformance + constructor wires StdinFetcher"
+        action: "TestTUISnapshotter_SatisfiesSnapshotterInterface + TestNewTUISnapshotter_UsesStdinFetcher"
+        expected: "Both PASS"
+    tags: [phase6, axtree, tui, ansi, unit]
+
+  - id: PH6-AXTREE-TUI-002
+    name: "pkg/nexus/observe/axtree — ANSI escape stripping"
+    category: unit
+    priority: high
+    platforms: [linux, all]
+    steps:
+      - name: "Plain text passes through unchanged"
+        action: "TestStripANSI_PlainTextPassesThrough"
+        expected: "PASS"
+      - name: "CSI color codes stripped"
+        action: "TestStripANSI_CSIColorsStripped"
+        expected: "PASS"
+      - name: "OSC sequences (title + hyperlink with BEL or ST terminator) stripped"
+        action: "TestStripANSI_OSCTitleStripped + TestStripANSI_OSCWithSTTerminator"
+        expected: "Both PASS"
+      - name: "Backspace overtype sequences collapse (man-style bold/underline)"
+        action: "TestStripANSI_BackspaceOvertype"
+        expected: "PASS"
+      - name: "Single-char escape (ESC M) stripped"
+        action: "TestStripANSI_SingleCharEscape"
+        expected: "PASS"
+      - name: "Unterminated CSI / OSC sequences consumed to EOF without panic"
+        action: "TestStripANSI_UnterminatedCSI + TestStripANSI_UnterminatedOSC"
+        expected: "Both PASS"
+    tags: [phase6, axtree, tui, ansi, strip]
+
+  - id: PH6-AXTREE-TUI-003
+    name: "pkg/nexus/observe/axtree — ParseGrid styled cell extraction"
+    category: unit
+    priority: high
+    platforms: [linux, all]
+    steps:
+      - name: "Plain text produces per-character cells"
+        action: "TestParseGrid_SimpleText"
+        expected: "PASS"
+      - name: "SGR colors tracked (30-37 fg, 40-47 bg, 90-97 bright fg, 100-107 bright bg)"
+        action: "TestParseGrid_SGRColors + TestParseGrid_BackgroundColor + TestParseGrid_BrightColors"
+        expected: "All PASS"
+      - name: "Bold (1) + underline (4) toggles; 22 / 24 clears"
+        action: "TestParseGrid_BoldAndUnderline"
+        expected: "PASS"
+      - name: "Cursor motion CSI (CUF/CUB/CHA) respected; grid sized via cursor-aware measure pass"
+        action: "TestParseGrid_CursorForwardBackward + TestParseGrid_CursorHorizontalAbsolute"
+        expected: "Both PASS"
+      - name: "Empty input + out-of-range At() return default space cells"
+        action: "TestParseGrid_EmptyInput + TestParseGrid_AtOutOfRange"
+        expected: "Both PASS"
+    tags: [phase6, axtree, tui, ansi, grid]
+
+  - id: PH6-AXTREE-TUI-004
+    name: "pkg/nexus/observe/axtree — TUI error + lifecycle"
+    category: unit
+    priority: high
+    platforms: [linux, all]
+    steps:
+      - name: "Empty bytes → ErrNoRoot"
+        action: "TestTUISnapshotter_Snapshot_EmptyBytesError"
+        expected: "PASS"
+      - name: "Fetcher error propagates"
+        action: "TestTUISnapshotter_Snapshot_FetcherError"
+        expected: "PASS"
+      - name: "Canceled ctx bails out"
+        action: "TestTUISnapshotter_Snapshot_ContextCanceled"
+        expected: "PASS"
+      - name: "Close is idempotent; Snapshot-after-Close → ErrSnapshotClosed"
+        action: "TestTUISnapshotter_Close_Idempotent + TestTUISnapshotter_Snapshot_AfterCloseReturnsError"
+        expected: "Both PASS"
+      - name: "TUIStdinFetcher: nil reader guard, custom MaxBytes, ctx cancel"
+        action: "TestTUIStdinFetcher_ReadsFromReader + TestTUIStdinFetcher_NilReaderError + TestTUIStdinFetcher_ContextCanceled + TestTUIStdinFetcher_CustomMaxBytes"
+        expected: "All PASS"
+    tags: [phase6, axtree, tui, error-paths]
+
+  # Production UIA sidecar integration (blocked on operator-action —
+  # Windows sidecar build + IUIAutomation permissions).
+  - id: PH6-AXTREE-WINDOWS-INT-001
+    name: "pkg/nexus/observe/axtree — live Windows UIA sidecar smoke test"
+    category: integration
+    priority: high
+    platforms: [windows]
+    requires: [windows-helixqa-axtree-sidecar-running]
+    steps:
+      - name: "WindowsHTTPFetcher returns non-empty JSON from live sidecar"
+        action: "WindowsHTTPFetcher{URL: 'http://127.0.0.1:17421/snapshot'}.Fetch(ctx)"
+        expected: "len(body) > 100, starts with '{' or '['"
+      - name: "Snapshot on live frontmost Windows app enumerates UIA elements"
+        action: "Run WindowsSnapshotter.Snapshot against the frontmost Windows app"
+        expected: "≥ 5 descendants, at least one Button/Edit/Pane"
+    tags: [phase6, axtree, windows, integration, manual, uia]
+
+  # Production Swift sidecar integration (blocked on operator-action
+  # per OPEN_POINTS_CLOSURE.md §10.3 — macOS Xcode build of the
+  # Swift sidecar + ScreenCaptureKit + Accessibility entitlements).
+  - id: PH6-AXTREE-DARWIN-INT-001
+    name: "pkg/nexus/observe/axtree — live Swift sidecar smoke test"
+    category: integration
+    priority: high
+    platforms: [darwin]
+    requires: [darwin-swift-axtree-sidecar-running]
+    steps:
+      - name: "DarwinHTTPFetcher returns non-empty JSON from live sidecar"
+        action: "DarwinHTTPFetcher{URL: 'http://127.0.0.1:17420/snapshot'}.Fetch(ctx)"
+        expected: "len(body) > 100, starts with '{' or '['"
+      - name: "Snapshot on live frontmost app enumerates widgets"
+        action: "Run DarwinSnapshotter.Snapshot against the actual frontmost macOS app"
+        expected: "≥ 5 descendants, at least one AXButton/AXTextField"
+    tags: [phase6, axtree, darwin, integration, manual, swift-sidecar]

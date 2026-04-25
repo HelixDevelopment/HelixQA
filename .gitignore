@@ -19,6 +19,8 @@ docs/**/*.pdf
 *.dylib
 /helixqa
 /helix-qa
+/helixqa-x11grab
+/helixqa-capture-demo
 /bin/helixqa
 /bin/helix-qa
 
@@ -63,3 +65,6 @@ data/memory.db
 data/memory.db-shm
 data/memory.db-wal
 .env.validation
+
+# Local probe binary (OpenClaw Ultimate)
+/ocu-probe

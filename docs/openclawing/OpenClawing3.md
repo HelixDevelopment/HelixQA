@@ -1,3 +1,23 @@
+> ⚠️ **RETRACTION NOTICE — 2026-04-19**
+>
+> **Multiple retractions apply. SUPERSEDED BY `OpenClawing4.md`.**
+> **Do NOT implement from this document without consulting the retraction list first.**
+>
+> **Retracted items:**
+> - **Every file path beginning `src/…`** is fabricated. HelixQA uses `pkg/…`. See `OpenClawing4.md` §7 for real landing points.
+> - **Every `sudo` invocation** violates `CLAUDE.md`'s "NO SUDO OR ROOT EXECUTION" mandate. Replace per `OpenClawing4.md` §6.3.
+> - **Compile-blocking code**: `namespace openclaw{}` inside a `.c` file (§6.2 L1091–1248); undefined `BuilderFlag::kCUDA_GRAPH` (L727); `enqueueV3` used with v2-API `bindings_` array; deprecated `destroy()` calls; `{key:"Down"}.repeat(n)` TS type error (L2561); scrcpy v1.x wire format missing `action_button`/`buttons` uint32 fields.
+> - **"Zero-copy DXGI"** claim (§6.1 L1036–1037) is incorrect — described path is GPU↔GPU copy. Windows zero-copy into Vulkan requires `IDXGIResource1::CreateSharedHandle` + `VK_KHR_external_memory_win32`, not `GetSharedHandle`.
+> - **Benchmarks** ("< 2 ms template match on 1080p", "< 16 ms full pipeline end-to-end") are 3–7× optimistic on RTX 3060.
+> - **Missing mandatory llama.cpp RPC distributed vision stack** — doc proposes TensorRT as primary local inference instead.
+> - **16-week / 47-tech plan** replaced by 24-week / 7-phase plan in `OpenClawing4.md` §8.
+>
+> **Retained as valid**: the 19 cited third-party repos are all real. Use them per `OpenClawing4.md` §5.
+>
+> See `OpenClawing4-Audit.md` §D.3 and `OpenClawing4.md` §11.3 for specifics.
+
+---
+
 # OpenClaw Ultimate Capabilities Extension: Comprehensive Integration Plan
 
 ## Forensic-Level Integration of Game-Changer Technologies for Real-Time Autonomous UI/UX Control

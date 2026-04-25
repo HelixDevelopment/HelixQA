@@ -1,0 +1,780 @@
+# SPDX-FileCopyrightText: 2026 Milos Vasic
+# SPDX-License-Identifier: Apache-2.0
+#
+# HelixQA Test Bank: OpenClawing4 Phase 1 Go-Core (pure-Go portions)
+#
+# This bank validates the pure-Go packages that land before the native
+# sidecars (helixqa-capture-linux, helixqa-kmsgrab, helixqa-input) can be
+# built on their target hosts:
+#
+#   - pkg/capture/frames        (M1) — normalised Frame type
+#   - pkg/bridge/sidecarutil    (M2) — stdio framing + SCM_RIGHTS + --health probe
+#   - pkg/bridge/scrcpy         (M3) — v3 wire-format + .devignore enforcement
+#   - pkg/navigator/linux/uinput (M4) — pure-Go /dev/uinput driver
+#   - pkg/bridge/scrcpy         (M5) — server lifecycle + Session API
+#   - pkg/bridges                (M6) — sidecar registry extended with 13 native probes
+#   - pkg/capture/linux         (M7) — SidecarRunner + envelope wire format
+#   - pkg/capture/linux         (M8) — Backend router + Source interface + factories
+#   - pkg/capture/linux         (M9) — ScreenCast portal client via godbus
+#   - pkg/capture/linux         (M10) — PortalFactory + KMSGrabFactory helpers
+#   - pkg/capture/android       (M12) — scrcpy-direct DirectSource emitting frames.Frame
+#   - pkg/capture/linux         (M13) — production DBusCaller wrapping *dbus.Conn
+#   - pkg/capture/linux         (M14) — X11GrabFactory completing the BackendFactory triad
+#   - cmd/helixqa-x11grab       (M16) — Go sidecar: ffmpeg wrapper + NAL splitter + envelope framer
+#   - pkg/bridge/dbusportal     (M17) — shared D-Bus portal plumbing (Caller + DBusCaller + errors)
+#   - pkg/navigator/linux/libei (M17) — RemoteDesktop portal client for libei
+#   - capture/linux + android + libei (M18) — one-liner service-layer APIs
+#
+# Each entry pairs a concrete `go test` invocation with a coverage / behaviour
+# expectation. No entry here requires adb, an Android device, a desktop
+# session, or GPU — every test runs on a clean Linux container.
+#
+# Cross-references:
+#   - OpenClawing4.md §5.1.3, §5.2.1, §6.1, §7 (landing points + contracts)
+#   - OpenClawing4-Handover.md §3.1 (Phase 1 detailed file list)
+#   - banks/fixes-validation.yaml (FIX-OC3-011: InjectTouchEvent v3 wire fields)
+
+version: "1.0"
+name: "OpenClawing4 Phase 1 Go-Core"
+description: "Pure-Go deliverables that land before native sidecars. Validates normalised Frame type, stdio framing + FD-passing + --health, and the scrcpy v3 wire format + .devignore enforcement."
+metadata:
+  author: "vasic-digital"
+  app: "HelixQA"
+  version: "1.0.0"
+
+test_cases:
+  # ==================== M1: pkg/capture/frames ====================
+
+  - id: P1G-FRAMES-001
+    name: "pkg/capture/frames: unit tests pass, coverage >= 95%"
+    category: unit
+    priority: critical
+    platforms: [all]
+    steps:
+      - name: "Run package tests under race detector"
+        action: "go test -count=1 -race ./pkg/capture/frames/..."
+        expected: "PASS; zero data races; every TestNew_Invalid sub-test PASS"
+      - name: "Coverage threshold"
+        action: "go test -cover -count=1 ./pkg/capture/frames/..."
+        expected: "coverage >= 95% of statements"
+      - name: "Build as part of full repo"
+        action: "go build ./..."
+        expected: "exit 0"
+    tags: [phase1, gocore, frames, unit]
+    estimated_duration: "5s"
+    expected_result: "Normalised Frame type compiles, tests green, coverage budget respected"
+    fix_reference:
+      bug_id: "OPENCLAWING4-PHASE1-M1"
+      description: "Frame{PTS,Width,Height,Format,Source,DataFD,DataLen,Data,AXTree} normalised across every capture backend"
+      fix_file: "pkg/capture/frames/frame.go"
+      fix_commit: "pending"
+
+  - id: P1G-FRAMES-002
+    name: "pkg/capture/frames: Close() idempotency + inline vs FD exclusivity"
+    category: regression
+    priority: high
+    platforms: [all]
+    steps:
+      - name: "TestClose_NilReceiver and TestClose_InlinePayload pass"
+        action: "go test -run 'TestClose_' -count=1 ./pkg/capture/frames/..."
+        expected: "PASS"
+      - name: "TestValidate_BothPayloads rejects inline+FD"
+        action: "go test -run 'TestValidate_BothPayloads' -count=1 ./pkg/capture/frames/..."
+        expected: "PASS"
+    tags: [phase1, gocore, frames, regression]
+    estimated_duration: "3s"
+    expected_result: "Frame.Close is nil-receiver-safe; Frame.Validate rejects both-payload-kinds state"
+    fix_reference:
+      bug_id: "OPENCLAWING4-PHASE1-M1-CLOSE"
+      description: "Frame must release memfd exactly once and never when only inline Data is present"
+      fix_file: "pkg/capture/frames/frame.go"
+      fix_commit: "pending"
+
+  # ==================== M2: pkg/bridge/sidecarutil ====================
+
+  - id: P1G-SIDECARUTIL-001
+    name: "pkg/bridge/sidecarutil: unit tests pass, coverage >= 80%"
+    category: unit
+    priority: critical
+    platforms: [all]
+    steps:
+      - name: "Run tests under race detector"
+        action: "go test -count=1 -race ./pkg/bridge/sidecarutil/..."
+        expected: "PASS; zero data races"
+      - name: "Coverage threshold"
+        action: "go test -cover -count=1 ./pkg/bridge/sidecarutil/..."
+        expected: "coverage >= 80% of statements (remaining is syscall error branches)"
+    tags: [phase1, gocore, sidecarutil, unit]
+    estimated_duration: "5s"
+    expected_result: "Framing + health-probe + FD passing all pass tests"
+    fix_reference:
+      bug_id: "OPENCLAWING4-PHASE1-M2"
+      description: "Stdio framing + SCM_RIGHTS + --health — the sidecar contract"
+      fix_file: "pkg/bridge/sidecarutil/framing.go"
+      fix_commit: "pending"
+
+  - id: P1G-SIDECARUTIL-002
+    name: "pkg/bridge/sidecarutil: SCM_RIGHTS FD roundtrip over socketpair"
+    category: integration
+    priority: critical
+    platforms: [all]
+    steps:
+      - name: "TestPassFD_RecvFD_Roundtrip passes on Linux"
+        action: "go test -run 'TestPassFD_RecvFD_Roundtrip' -count=1 -race ./pkg/bridge/sidecarutil/..."
+        expected: "PASS (test opens a socketpair, sends a pipe's write-end via PassFD, receives it via RecvFD, writes through the received FD, reads on the pipe's read-end)"
+    tags: [phase1, gocore, sidecarutil, integration]
+    estimated_duration: "2s"
+    expected_result: "FD passing actually transfers a usable FD"
+    fix_reference:
+      bug_id: "OPENCLAWING4-PHASE1-M2-FD"
+      description: "FD passing must survive the kernel round-trip and deliver a live descriptor"
+      fix_file: "pkg/bridge/sidecarutil/framing.go"
+      fix_commit: "pending"
+
+  - id: P1G-SIDECARUTIL-003
+    name: "pkg/bridge/sidecarutil: HealthProbe enforces exact 'ok\\n' + exit 0"
+    category: unit
+    priority: high
+    platforms: [all]
+    steps:
+      - name: "TestHealthProbe_OK passes"
+        action: "go test -run 'TestHealthProbe_OK' -count=1 ./pkg/bridge/sidecarutil/..."
+        expected: "PASS"
+      - name: "Wrong stdout is rejected"
+        action: "go test -run 'TestHealthProbe_WrongStdout' -count=1 ./pkg/bridge/sidecarutil/..."
+        expected: "PASS — HealthProbe returns error on any stdout != 'ok\\n'"
+      - name: "Non-zero exit is rejected"
+        action: "go test -run 'TestHealthProbe_NonZeroExit' -count=1 ./pkg/bridge/sidecarutil/..."
+        expected: "PASS"
+    tags: [phase1, gocore, sidecarutil, health]
+    estimated_duration: "3s"
+    expected_result: "Health probe contract is strictly enforced — no fuzzy stdout tolerance"
+    fix_reference:
+      bug_id: "OPENCLAWING4-PHASE1-M2-HEALTH"
+      description: "Sidecar health contract: exit 0 + stdout 'ok\\n' exactly"
+      fix_file: "pkg/bridge/sidecarutil/framing.go"
+      fix_commit: "pending"
+
+  # ==================== M3: pkg/bridge/scrcpy ====================
+
+  - id: P1G-SCRCPY-001
+    name: "pkg/bridge/scrcpy: v3 protocol + server + session tests pass, coverage >= 80%"
+    category: unit
+    priority: critical
+    platforms: [all]
+    steps:
+      - name: "Run tests under race detector"
+        action: "go test -count=1 -race ./pkg/bridge/scrcpy/..."
+        expected: "PASS; zero data races"
+      - name: "Coverage threshold"
+        action: "go test -cover -count=1 ./pkg/bridge/scrcpy/..."
+        expected: "coverage >= 80% of statements (package-wide, including server.go + session.go added in M5)"
+    tags: [phase1, gocore, scrcpy, unit]
+    estimated_duration: "5s"
+    expected_result: "Wire-format encoders + device-message decoders + video/audio packet decoders all green"
+    fix_reference:
+      bug_id: "OPENCLAWING4-PHASE1-M3"
+      description: "Pure-Go scrcpy-server v3 wire protocol (video/audio/control)"
+      fix_file: "pkg/bridge/scrcpy/protocol.go"
+      fix_commit: "pending"
+
+  - id: P1G-SCRCPY-002
+    name: "pkg/bridge/scrcpy: InjectTouchEvent includes v3 action_button + buttons uint32s (regression for FIX-OC3-011)"
+    category: regression
+    priority: critical
+    platforms: [all]
+    steps:
+      - name: "TestInjectTouchEvent_Marshal_v3Fields passes"
+        action: "go test -run 'TestInjectTouchEvent_Marshal_v3Fields' -count=1 -v ./pkg/bridge/scrcpy/..."
+        expected: "PASS — total body size is 31 bytes (OpenClawing3 had 23 bytes missing the v3 additions), action_button and buttons uint32s present at expected offsets"
+    tags: [phase1, gocore, scrcpy, regression, openclawing3, FIX-OC3-011]
+    estimated_duration: "2s"
+    expected_result: "Touch events match scrcpy v3 wire format exactly, not v1.x"
+    fix_reference:
+      bug_id: "FIX-OC3-011"
+      description: "OpenClawing3 §6.5 used v1.x control packet layout missing action_button/buttons uint32 fields"
+      fix_file: "pkg/bridge/scrcpy/protocol.go"
+      fix_commit: "pending"
+
+  - id: P1G-SCRCPY-003
+    name: "pkg/bridge/scrcpy: .devignore enforcement gate blocks listed devices"
+    category: security
+    priority: critical
+    platforms: [all]
+    steps:
+      - name: "TestEnforceDevIgnore_Blocked fires ErrDeviceBlocked on match"
+        action: "go test -run 'TestEnforceDevIgnore_Blocked' -count=1 ./pkg/bridge/scrcpy/..."
+        expected: "PASS — errors.Is(err, ErrDeviceBlocked) is true for ATMOSphere match"
+      - name: "TestEnforceDevIgnore_Safe allows non-listed device"
+        action: "go test -run 'TestEnforceDevIgnore_Safe' -count=1 ./pkg/bridge/scrcpy/..."
+        expected: "PASS"
+      - name: "TestEnforceDevIgnore_NoIgnoreFile tolerates missing file"
+        action: "go test -run 'TestEnforceDevIgnore_NoIgnoreFile' -count=1 ./pkg/bridge/scrcpy/..."
+        expected: "PASS — missing .devignore is allowed (no error)"
+    tags: [phase1, gocore, scrcpy, devguard, security, constitution]
+    estimated_duration: "3s"
+    expected_result: ".devignore is enforced before any control socket is opened, per CLAUDE.md"
+    fix_reference:
+      bug_id: "OPENCLAWING4-PHASE1-M3-DEVGUARD"
+      description: "Every scrcpy entry point MUST pass through EnforceDevIgnore; matches CLAUDE.md .devignore policy"
+      fix_file: "pkg/bridge/scrcpy/devguard.go"
+      fix_commit: "pending"
+
+  # ==================== Full-repo gates ====================
+
+  - id: P1G-FULL-001
+    name: "Full repo builds, vets, and passes the no-sudo hook"
+    category: security
+    priority: critical
+    platforms: [all]
+    steps:
+      - name: "Full build"
+        action: "go build ./..."
+        expected: "exit 0"
+      - name: "go vet clean"
+        action: "go vet ./..."
+        expected: "no diagnostics"
+      - name: "no-sudo hook against every Phase-1 Go-core file"
+        action: "./scripts/hooks/no-sudo.sh pkg/capture/frames/frame.go pkg/bridge/sidecarutil/framing.go pkg/bridge/scrcpy/protocol.go pkg/bridge/scrcpy/devguard.go pkg/bridge/scrcpy/doc.go pkg/bridge/scrcpy/server.go pkg/bridge/scrcpy/session.go pkg/navigator/linux/uinput/doc.go pkg/navigator/linux/uinput/event.go pkg/navigator/linux/uinput/device_linux.go pkg/bridges/registry.go"
+        expected: "exit 0 (no bare 'sudo' in any Phase-1 Go-core file)"
+    tags: [phase1, gocore, build, vet, security]
+    estimated_duration: "30s"
+    expected_result: "Phase 1 Go-core is build-ready and constitutionally clean"
+    fix_reference:
+      bug_id: "OPENCLAWING4-PHASE1-GATE"
+      description: "Nothing ships broken — build + vet + hook must all be green"
+      fix_file: "multiple"
+      fix_commit: "pending"
+
+  # ==================== M4: pkg/navigator/linux/uinput ====================
+
+  - id: P1G-UINPUT-001
+    name: "pkg/navigator/linux/uinput: event encoder byte-exact on 64-bit Linux"
+    category: unit
+    priority: critical
+    platforms: [all]
+    steps:
+      - name: "Byte-exact encoder tests pass"
+        action: "go test -run 'TestEncodeEvent_' -count=1 ./pkg/navigator/linux/uinput/..."
+        expected: "PASS — TestEncodeEvent_ByteExact + _Size (EventSize=24) + _NegativeValue all green"
+      - name: "High-level writers emit expected sequences"
+        action: "go test -run 'TestWrite' -count=1 ./pkg/navigator/linux/uinput/..."
+        expected: "PASS — KeyTap (4 events), ClickAbs (6 events), MoveRel (zero-suppressed), Scroll (zero-suppressed)"
+    tags: [phase1, gocore, uinput, unit]
+    estimated_duration: "3s"
+    expected_result: "input_event wire format byte-exact; high-level writers emit correct event sequences"
+    fix_reference:
+      bug_id: "OPENCLAWING4-PHASE1-M4"
+      description: "Pure-Go /dev/uinput driver — Wayland-fallback input path"
+      fix_file: "pkg/navigator/linux/uinput/event.go"
+      fix_commit: "pending"
+
+  - id: P1G-UINPUT-002
+    name: "pkg/navigator/linux/uinput: Config validation rejects every invalid combo"
+    category: regression
+    priority: high
+    platforms: [all]
+    steps:
+      - name: "validateConfig accepts valid configs"
+        action: "go test -run 'TestValidateConfig_OK' -count=1 ./pkg/navigator/linux/uinput/..."
+        expected: "PASS"
+      - name: "validateConfig rejects all 4 invalid-combo sub-cases"
+        action: "go test -run 'TestValidateConfig_Rejects' -count=1 -v ./pkg/navigator/linux/uinput/..."
+        expected: "PASS — key-bits-without-enable, rel-bits-without-enable, abs-bits-without-enable, abs-inverted-range"
+      - name: "Open rejects empty name and missing device"
+        action: "go test -run 'TestOpen_' -count=1 ./pkg/navigator/linux/uinput/..."
+        expected: "PASS — TestOpen_EmptyName + TestOpen_BadConfig + TestOpen_MissingDevice (skipped when /dev/uinput is writable)"
+    tags: [phase1, gocore, uinput, regression]
+    estimated_duration: "2s"
+    expected_result: "Misconfigured devices never open /dev/uinput; clear error messages"
+    fix_reference:
+      bug_id: "OPENCLAWING4-PHASE1-M4-CONFIG"
+      description: "validateConfig gates every Open path"
+      fix_file: "pkg/navigator/linux/uinput/device_linux.go"
+      fix_commit: "pending"
+
+  # ==================== M5: pkg/bridge/scrcpy server + session ====================
+
+  - id: P1G-SCRCPY-SERVER-001
+    name: "pkg/bridge/scrcpy: StartServer happy path runs full bring-up sequence"
+    category: integration
+    priority: critical
+    platforms: [all]
+    steps:
+      - name: "TestStartServer_HappyPath passes"
+        action: "go test -run 'TestStartServer_HappyPath' -count=1 -race ./pkg/bridge/scrcpy/..."
+        expected: "PASS — devguard + push + reverse + listener + launcher + accept(3) + session-created; Stop issues 'adb reverse --remove'"
+      - name: "TestStartServer_Blocked rejects .devignore match"
+        action: "go test -run 'TestStartServer_Blocked' -count=1 ./pkg/bridge/scrcpy/..."
+        expected: "PASS — errors.Is(err, ErrDeviceBlocked); launcher never invoked"
+      - name: "TestStartServer_InvalidConfig rejects 3 bad config shapes"
+        action: "go test -run 'TestStartServer_InvalidConfig' -count=1 ./pkg/bridge/scrcpy/..."
+        expected: "PASS — nil-runner, empty-jar, empty-version each return ErrServerConfig"
+      - name: "TestStartServer_AcceptTimeout surfaces timeout"
+        action: "go test -run 'TestStartServer_AcceptTimeout' -count=1 ./pkg/bridge/scrcpy/..."
+        expected: "PASS — ErrAcceptTimeout after 200ms when launcher never dials back"
+    tags: [phase1, gocore, scrcpy, server, integration]
+    estimated_duration: "8s"
+    expected_result: "Server lifecycle is bulletproof across success + 3 failure modes"
+    fix_reference:
+      bug_id: "OPENCLAWING4-PHASE1-M5-SERVER"
+      description: "scrcpy-server bring-up via ProcessLauncher; no desktop scrcpy binary required"
+      fix_file: "pkg/bridge/scrcpy/server.go"
+      fix_commit: "pending"
+
+  - id: P1G-SCRCPY-SESSION-001
+    name: "pkg/bridge/scrcpy: Session.Send / Close / StartPumps behave correctly"
+    category: unit
+    priority: critical
+    platforms: [all]
+    steps:
+      - name: "Session.Send returns ErrNoControlSocket when control=nil"
+        action: "go test -run 'TestSession_Send_NilControl' -count=1 ./pkg/bridge/scrcpy/..."
+        expected: "PASS"
+      - name: "Session.Send roundtrip via net.Pipe"
+        action: "go test -run 'TestSession_Send_RoundTrip' -count=1 ./pkg/bridge/scrcpy/..."
+        expected: "PASS — receiver sees CtrlResetVideo byte"
+      - name: "Session.Close idempotency"
+        action: "go test -run 'TestSession_Close_Idempotent' -count=1 ./pkg/bridge/scrcpy/..."
+        expected: "PASS — second Close returns nil"
+      - name: "Session.StartPumps delivers video packet"
+        action: "go test -run 'TestSession_StartPumps_VideoStream' -count=1 -race ./pkg/bridge/scrcpy/..."
+        expected: "PASS — one packet reaches videoCh within 1s; PTS + payload length correct"
+    tags: [phase1, gocore, scrcpy, session, unit]
+    estimated_duration: "4s"
+    expected_result: "Session API honours its contract: single control writer, idempotent Close, buffered pumps"
+    fix_reference:
+      bug_id: "OPENCLAWING4-PHASE1-M5-SESSION"
+      description: "Session wraps 3 sockets + channels + write-deadline"
+      fix_file: "pkg/bridge/scrcpy/session.go"
+      fix_commit: "pending"
+
+  # ==================== M6: pkg/bridges/registry ====================
+
+  - id: P1G-REGISTRY-001
+    name: "pkg/bridges/registry: ToolKind + 13 HelixQA-native sidecar probes"
+    category: regression
+    priority: high
+    platforms: [all]
+    steps:
+      - name: "Probe count split holds"
+        action: "go test -run 'TestToolProbes_Count' -count=1 ./pkg/bridges/..."
+        expected: "PASS — 9 external + 13 helixqa-native = 22 total"
+      - name: "Partition helpers drop the right rows"
+        action: "go test -run 'TestNativeTools_PartitionsByKind' -count=1 ./pkg/bridges/..."
+        expected: "PASS"
+      - name: "ToolKind.String values are stable"
+        action: "go test -run 'TestToolKind_String' -count=1 ./pkg/bridges/..."
+        expected: "PASS — 'external' / 'helixqa-native'"
+      - name: "Package coverage >= 95%"
+        action: "go test -cover -count=1 ./pkg/bridges/"
+        expected: "coverage >= 95.0% of statements (expected 100.0%)"
+    tags: [phase1, gocore, registry, regression]
+    estimated_duration: "3s"
+    expected_result: "DiscoverTools surfaces the 13 HelixQA-native sidecars as unavailable until installed by the operator / release image"
+    fix_reference:
+      bug_id: "OPENCLAWING4-PHASE1-M6"
+      description: "Sidecar registry honouring OpenClawing4 §6.1 roster"
+      fix_file: "pkg/bridges/registry.go"
+      fix_commit: "pending"
+
+  # ==================== M7: pkg/capture/linux SidecarRunner ====================
+
+  - id: P1G-CAP-LIN-SIDECAR-001
+    name: "pkg/capture/linux: envelope encode/decode + SidecarRunner frame pump"
+    category: unit
+    priority: critical
+    platforms: [all]
+    steps:
+      - name: "Envelope tests pass"
+        action: "go test -run 'TestEncodeEnvelope_|TestReadEnvelope_' -count=1 ./pkg/capture/linux/..."
+        expected: "PASS — layout + NoPTS sentinel + roundtrip + short header/body + too-large + clean EOF all pass"
+      - name: "SidecarRunner happy path"
+        action: "go test -run 'TestSidecarRunner_FramePump' -count=1 -race ./pkg/capture/linux/..."
+        expected: "PASS — 3 frames delivered with correct PTS (1s, 2s, NoPTS->0) + correct metadata"
+      - name: "Stop idempotency + DoubleStart rejection + ctx cancel"
+        action: "go test -run 'TestSidecarRunner_(StopIdempotent|DoubleStart|ContextCancel)' -count=1 -race ./pkg/capture/linux/..."
+        expected: "PASS — Kill called once; second Start errors; ctx cancel closes Frames channel within 2s"
+    tags: [phase1, gocore, capture-linux, sidecar]
+    estimated_duration: "4s"
+    expected_result: "Envelope wire format byte-exact; generic frame pump terminates cleanly on every shutdown path"
+    fix_reference:
+      bug_id: "OPENCLAWING4-PHASE1-M7"
+      description: "Generic exec-based capture sidecar runner — foundation for portal/kmsgrab/x11grab backends"
+      fix_file: "pkg/capture/linux/sidecar.go"
+      fix_commit: "pending"
+
+  # ==================== M8: pkg/capture/linux router ====================
+
+  - id: P1G-CAP-LIN-ROUTER-001
+    name: "pkg/capture/linux: Backend enum + ResolveBackend precedence + NewSource dispatch"
+    category: unit
+    priority: high
+    platforms: [all]
+    steps:
+      - name: "Backend String + ParseBackend table-driven"
+        action: "go test -run 'TestBackend_String|TestParseBackend' -count=1 ./pkg/capture/linux/..."
+        expected: "PASS"
+      - name: "ResolveBackend precedence (8 cases)"
+        action: "go test -run 'TestResolveBackend_' -count=1 ./pkg/capture/linux/..."
+        expected: "PASS — override over env over session-type over default; aliases honoured"
+      - name: "NewSource dispatches to the chosen factory"
+        action: "go test -run 'TestNewSource_|TestWrapSidecarAsSource' -count=1 -race ./pkg/capture/linux/..."
+        expected: "PASS — factory invoked exactly once; ErrUnsupportedBackend on unwired; ErrInvalidConfig on bad dims"
+    tags: [phase1, gocore, capture-linux, router]
+    estimated_duration: "3s"
+    expected_result: "Env-var dispatch is deterministic across all precedence cases; factory injection is clean"
+    fix_reference:
+      bug_id: "OPENCLAWING4-PHASE1-M8"
+      description: "Backend enum + Source interface + BackendFactory dispatch"
+      fix_file: "pkg/capture/linux/router.go"
+      fix_commit: "pending"
+
+  # ==================== M9: pkg/capture/linux portal ====================
+
+  - id: P1G-CAP-LIN-PORTAL-001
+    name: "pkg/capture/linux: ScreenCast portal client CreateSession/SelectSources/Start/OpenPipeWireRemote"
+    category: unit
+    priority: critical
+    platforms: [all]
+    steps:
+      - name: "CreateSession builds correct options + unique tokens per call"
+        action: "go test -run 'TestPortal_CreateSession_' -count=1 ./pkg/capture/linux/..."
+        expected: "PASS — Success + TokensAreUnique + StatusNonZero + MissingHandle + CallerError"
+      - name: "SelectSources argument shape + defaults"
+        action: "go test -run 'TestPortal_SelectSources_' -count=1 ./pkg/capture/linux/..."
+        expected: "PASS — argument shape includes types+multiple+cursor_mode+persist_mode+restore_token; defaults to Monitor+Hidden; conditional omission of persist/restore"
+      - name: "Start decodes streams + parent window pass-through"
+        action: "go test -run 'TestPortal_Start_' -count=1 ./pkg/capture/linux/..."
+        expected: "PASS — stream tuple (u, a{sv}) decoded to Stream{NodeID, Metadata}; NoStreams rejection; parentWindow reaches call args"
+      - name: "OpenPipeWireRemote extracts dbus.UnixFD"
+        action: "go test -run 'TestPortal_OpenPipeWireRemote_' -count=1 ./pkg/capture/linux/..."
+        expected: "PASS — real os.Pipe FD roundtrips via dbus.UnixFD -> *os.File; wrong body type + empty body + empty sessionPath all error"
+      - name: "IsUserCancelled identifies status=1"
+        action: "go test -run 'TestPortal_CreateSession_StatusNonZero' -count=1 -v ./pkg/capture/linux/..."
+        expected: "PASS — status=1 -> IsUserCancelled=true; status=2 -> false"
+    tags: [phase1, gocore, capture-linux, portal, godbus]
+    estimated_duration: "4s"
+    expected_result: "Portal client drives the full xdg-desktop-portal ScreenCast handshake correctly; testable without a real D-Bus"
+    fix_reference:
+      bug_id: "OPENCLAWING4-PHASE1-M9"
+      description: "godbus ScreenCast client with Caller abstraction + fake-backed tests"
+      fix_file: "pkg/capture/linux/portal.go"
+      fix_commit: "pending"
+
+  # ==================== M10: pipewire + kmsgrab factories ====================
+
+  - id: P1G-CAP-LIN-FACTORIES-001
+    name: "pkg/capture/linux: PortalFactory + KMSGrabFactory end-to-end with fakes"
+    category: integration
+    priority: critical
+    platforms: [all]
+    steps:
+      - name: "PortalFactory happy path chains Portal + SidecarRunner"
+        action: "go test -run 'TestNewPortalFactory_EndToEnd' -count=1 -race ./pkg/capture/linux/..."
+        expected: "PASS — scripted fakeCaller handshake + stubStdoutRunner + 2 envelope frames reach Source.Frames; runner saw --node 7 + 1 ExtraFile"
+      - name: "Portal failure paths roll back cleanly"
+        action: "go test -run 'TestNewPortalFactory_(CreateSessionFails|UserCancelled|CallerFactoryError|InvalidConfig)' -count=1 ./pkg/capture/linux/..."
+        expected: "PASS — caller Closed on failure; IsUserCancelled true on status=1; CallerFactory error propagates; ErrPortalConfig / ErrInvalidConfig for bad input"
+      - name: "portalSource Frames() before Start is pre-closed"
+        action: "go test -run 'TestPortalSource_FramesBeforeStart' -count=1 ./pkg/capture/linux/..."
+        expected: "PASS — non-nil pre-closed channel; no block"
+      - name: "KMSGrabFactory happy path + defaults + dimensions"
+        action: "go test -run 'TestNewKMSGrabFactory_' -count=1 -race ./pkg/capture/linux/..."
+        expected: "PASS — SidecarRunner launched with helixqa-kmsgrab + --connector HDMI-A-1; Source='kmsgrab'; default binary applied; bad dims rejected"
+    tags: [phase1, gocore, capture-linux, factories]
+    estimated_duration: "5s"
+    expected_result: "Concrete BackendFactory helpers deliver a functional Source end-to-end via fakes; every error branch guarded"
+    fix_reference:
+      bug_id: "OPENCLAWING4-PHASE1-M10"
+      description: "PortalFactory + KMSGrabFactory — concrete BackendFactory helpers"
+      fix_file: "pkg/capture/linux/pipewire.go"
+      fix_commit: "pending"
+
+  # ==================== M12: scrcpy-direct android source ====================
+
+  - id: P1G-CAP-AND-DIRECT-001
+    name: "pkg/capture/android: DirectSource wraps scrcpy.Session + emits frames.Frame"
+    category: integration
+    priority: critical
+    platforms: [all]
+    steps:
+      - name: "Validation rejects nil Server + zero dimensions"
+        action: "go test -run 'TestNewDirectSource_ValidationRejects' -count=1 ./pkg/capture/android/..."
+        expected: "PASS — 3 sub-cases (nil-server, zero-width, zero-height) each return ErrDirectConfig"
+      - name: "Pump forwards keyframes; config packets skipped by default"
+        action: "go test -run 'TestDirectSource_(PumpsFrames|SkipsConfigByDefault|IncludesConfigWhenRequested)' -count=1 -race ./pkg/capture/android/..."
+        expected: "PASS — 2 real v3 video packets -> 2 frames with Source='scrcpy-direct', correct PTS, correct payload bytes; config packet dropped unless IncludeConfig=true"
+      - name: "Lifecycle: double Start rejected; Stop idempotent; StartedAt honours Clock"
+        action: "go test -run 'TestDirectSource_(DoubleStart|StopIdempotent|StartedAt)' -count=1 -race ./pkg/capture/android/..."
+        expected: "PASS — Server.Stop invoked once even on double Stop; StartedAt == fixed clock"
+      - name: "HELIX_SCRCPY_DIRECT env gating"
+        action: "go test -run 'TestIsDirectEnabled' -count=1 ./pkg/capture/android/..."
+        expected: "PASS — '1' -> true; '0', unset, empty -> false; nil lookup -> false"
+    tags: [phase1, gocore, capture-android, scrcpy-direct]
+    estimated_duration: "4s"
+    expected_result: "Android scrcpy-direct path ready to be opt-in'd without touching the legacy pkg/capture.AndroidCapture flow"
+    fix_reference:
+      bug_id: "OPENCLAWING4-PHASE1-M12"
+      description: "scrcpy-direct delegation via pkg/capture/android/direct.go"
+      fix_file: "pkg/capture/android/direct.go"
+      fix_commit: "pending"
+
+  # ==================== M13: portal_dbus production Caller ====================
+
+  - id: P1G-CAP-LIN-PORTAL-DBUS-001
+    name: "pkg/capture/linux: DBusCaller production Caller — constructors + nil-safety + integration smoke"
+    category: integration
+    priority: critical
+    platforms: [all]
+    steps:
+      - name: "NewDBusCaller returns ErrNoSessionBus when bus is unreachable"
+        action: "go test -run 'TestNewDBusCaller_RequiresBus' -count=1 ./pkg/capture/linux/..."
+        expected: "PASS — bogus DBUS_SESSION_BUS_ADDRESS wraps ErrNoSessionBus"
+      - name: "NewDBusCallerWithConn(nil) + nil-receiver are safe"
+        action: "go test -run 'TestNewDBusCallerWithConn_NilConn|TestDBusCaller_NilReceiver' -count=1 ./pkg/capture/linux/..."
+        expected: "PASS — CallPortal/CallImmediate return clear 'nil conn' errors; Close is safe"
+      - name: "DBusCallerFactory satisfies CallerFactory at compile time"
+        action: "go test -run 'TestDBusCallerFactory_MatchesInterface' -count=1 ./pkg/capture/linux/..."
+        expected: "PASS — compile-time interface check holds"
+      - name: "Integration smoke (skips when no session bus): bogus portal destination returns a godbus error"
+        action: "go test -run 'TestDBusCaller_CallPortal_BadDestinationReturnsError' -count=1 ./pkg/capture/linux/..."
+        expected: "PASS or SKIP — when DBUS_SESSION_BUS_ADDRESS is set, the call returns a godbus error within 2s and does not hang; when unset, the test SKIPs cleanly"
+    tags: [phase1, gocore, capture-linux, portal, godbus, production]
+    estimated_duration: "3s"
+    expected_result: "Production DBusCaller is ready to drop in as PortalConfig.CallerFactory — no further Go-side work needed on the portal path"
+    fix_reference:
+      bug_id: "OPENCLAWING4-PHASE1-M13"
+      description: "Production DBusCaller wrapping *dbus.Conn with Request/Response signal handshake"
+      fix_file: "pkg/capture/linux/portal_dbus.go"
+      fix_commit: "pending"
+
+  # ==================== M14: x11grab factory ====================
+
+  - id: P1G-CAP-LIN-X11GRAB-001
+    name: "pkg/capture/linux: X11GrabFactory completes the BackendFactory triad"
+    category: integration
+    priority: high
+    platforms: [all]
+    steps:
+      - name: "ArgShape full config roundtrip"
+        action: "go test -run 'TestNewX11GrabFactory_ArgShape' -count=1 -race ./pkg/capture/linux/..."
+        expected: "PASS — [--display :99 --fps 60 --region 0,0,1920,1080] argv order; Source='x11grab'; envelope frame delivered"
+      - name: "Defaults (display :0, no --fps when FPS==0, default binary)"
+        action: "go test -run 'TestNewX11GrabFactory_DefaultsDisplay' -count=1 ./pkg/capture/linux/..."
+        expected: "PASS — argv only [--display :0]; binary == DefaultX11GrabSidecarBinary"
+      - name: "Bad dimensions + missing-binary path"
+        action: "go test -run 'TestNewX11GrabFactory_(BadDimensions|MissingBinary_PropagatesRunnerError)' -count=1 ./pkg/capture/linux/..."
+        expected: "PASS — ErrInvalidConfig for zero dims; underlying exec error propagates when helixqa-x11grab absent"
+    tags: [phase1, gocore, capture-linux, x11grab]
+    estimated_duration: "3s"
+    expected_result: "Every Config.{Portal,KMSGrab,X11Grab}Factory slot has a concrete helper — NewSource resolves on every backend"
+    fix_reference:
+      bug_id: "OPENCLAWING4-PHASE1-M14"
+      description: "X11GrabFactory mirroring KMSGrabFactory pattern"
+      fix_file: "pkg/capture/linux/x11grab.go"
+      fix_commit: "pending"
+
+  # ==================== M16: cmd/helixqa-x11grab sidecar ====================
+
+  - id: P1G-CMD-X11GRAB-001
+    name: "cmd/helixqa-x11grab: NAL splitter byte-exact across all start-code variants"
+    category: unit
+    priority: critical
+    platforms: [all]
+    steps:
+      - name: "3-byte + 4-byte + mixed start codes"
+        action: "go test -run 'TestSplitNALs_(ThreeByte|FourByte|Mixed)' -count=1 ./cmd/helixqa-x11grab/..."
+        expected: "PASS — each variant emits the correct NAL payloads in order"
+      - name: "Leading garbage dropped; no-start-code emits nothing"
+        action: "go test -run 'TestSplitNALs_(LeadingGarbageDropped|NoStartCode_EmitsNothing)' -count=1 ./cmd/helixqa-x11grab/..."
+        expected: "PASS"
+      - name: "Zero-runs + emulation escape + clean EOF + handler error"
+        action: "go test -run 'TestSplitNALs_(RunsOfZerosDontFalseTrigger|CleanEOF|HandlerError|FinalNALFlushedOnEOF)' -count=1 ./cmd/helixqa-x11grab/..."
+        expected: "PASS — emulation bytes passthrough; EOF flushes last NAL; handler errors propagate; io.EOF returned on clean termination"
+      - name: "Round-trip: encode + split recovers byte-exact payloads"
+        action: "go test -run 'TestSplitNALs_Roundtrip' -count=1 ./cmd/helixqa-x11grab/..."
+        expected: "PASS — 4 NALs with mixed 3/4-byte start codes round-trip"
+    tags: [phase1, gocore, x11grab, nal-splitter, unit]
+    estimated_duration: "3s"
+    expected_result: "NAL splitter is byte-exact across every Annex-B variant the H.264 spec permits"
+    fix_reference:
+      bug_id: "OPENCLAWING4-PHASE1-M16-NAL"
+      description: "H.264 Annex-B NAL splitter for x11grab sidecar"
+      fix_file: "cmd/helixqa-x11grab/nal.go"
+      fix_commit: "pending"
+
+  - id: P1G-CMD-X11GRAB-002
+    name: "cmd/helixqa-x11grab: argv parsing + ffmpeg argv shape + run() end-to-end with fake ffmpeg"
+    category: integration
+    priority: critical
+    platforms: [all]
+    steps:
+      - name: "parseArgv coverage"
+        action: "go test -run 'TestParseArgv_' -count=1 ./cmd/helixqa-x11grab/..."
+        expected: "PASS — --health; required flags with defaults; DISPLAY env fallback; explicit flags win over env; --extra whitespace split; unknown flag rejected"
+      - name: "ffmpegArgs shape byte-exact"
+        action: "go test -run 'TestFfmpegArgs_' -count=1 ./cmd/helixqa-x11grab/..."
+        expected: "PASS — full config argv matches the documented order; minimal config omits extras"
+      - name: "validateConfig 1 pass + 5 reject paths"
+        action: "go test -run 'TestValidateConfig' -count=1 ./cmd/helixqa-x11grab/..."
+        expected: "PASS"
+      - name: "run() end-to-end with fakeChild"
+        action: "go test -run 'TestRun_(WrapsNALsInEnvelopes|BadConfigRejected|StartErrorPropagates)' -count=1 -race ./cmd/helixqa-x11grab/..."
+        expected: "PASS — 3 NALs -> 3 envelopes with monotonic PTS + byte-exact bodies; bad config rejected before spawn; Start error verbatim"
+      - name: "Envelope interop with pkg/capture/linux"
+        action: "go test -run 'TestEnvelopeInterop' -count=1 ./cmd/helixqa-x11grab/..."
+        expected: "PASS — EncodeEnvelope + ReadEnvelope round-trip"
+      - name: "Health contract string is stable"
+        action: "go test -run 'TestHealth_PrintsOK' -count=1 ./cmd/helixqa-x11grab/..."
+        expected: "PASS — exitHealthOK == 'ok\\n'"
+    tags: [phase1, gocore, x11grab, integration]
+    estimated_duration: "6s"
+    expected_result: "Sidecar wraps fake ffmpeg output into valid envelopes; all argv + validation branches covered"
+    fix_reference:
+      bug_id: "OPENCLAWING4-PHASE1-M16-RUN"
+      description: "helixqa-x11grab runtime — argv, validation, run loop"
+      fix_file: "cmd/helixqa-x11grab/main.go"
+      fix_commit: "pending"
+
+  # ==================== M17: dbusportal extraction + libei portal ====================
+
+  - id: P1G-DBUSPORTAL-001
+    name: "pkg/bridge/dbusportal: shared D-Bus portal plumbing"
+    category: integration
+    priority: critical
+    platforms: [all]
+    steps:
+      - name: "ErrPortalStatus + IsUserCancelled + DecodeVariantMap"
+        action: "go test -run 'TestErrPortalStatus_Error|TestIsUserCancelled|TestDecodeVariantMap' -count=1 ./pkg/bridge/dbusportal/..."
+        expected: "PASS — error message shape, user-cancelled detection across 5 cases, decode variants + plain map + wrong-type"
+      - name: "DBusCaller constructors + nil-safety + session-bus integration smoke"
+        action: "go test -run 'TestNewDBusCaller|TestDBusCaller_|TestNewDBusCallerOwningConn' -count=1 ./pkg/bridge/dbusportal/..."
+        expected: "PASS — ErrNoSessionBus on bogus addr; nil conn safe; ownership flag tracked; live-bus smoke test (skips when DBUS_SESSION_BUS_ADDRESS unset)"
+      - name: "Interface compile-time satisfaction"
+        action: "go test -run 'TestDBusCallerFactory_SatisfiesInterface' -count=1 ./pkg/bridge/dbusportal/..."
+        expected: "PASS — DBusCallerFactory satisfies CallerFactory at compile time"
+    tags: [phase1, gocore, dbusportal, refactor]
+    estimated_duration: "3s"
+    expected_result: "Shared portal plumbing is reusable across ScreenCast (capture) and RemoteDesktop (libei) clients"
+    fix_reference:
+      bug_id: "OPENCLAWING4-PHASE1-M17-DBUSPORTAL"
+      description: "Extract dbusportal from pkg/capture/linux to pkg/bridge/dbusportal"
+      fix_file: "pkg/bridge/dbusportal/caller.go"
+      fix_commit: "pending"
+
+  - id: P1G-LIBEI-PORTAL-001
+    name: "pkg/navigator/linux/libei: RemoteDesktop portal handshake"
+    category: integration
+    priority: critical
+    platforms: [all]
+    steps:
+      - name: "CreateSession: success + unique tokens + status=1 + missing session_handle + caller error"
+        action: "go test -run 'TestPortal_CreateSession_' -count=1 ./pkg/navigator/linux/libei/..."
+        expected: "PASS — 5 sub-tests all green"
+      - name: "SelectDevices: argument shape + defaults + empty sessionPath"
+        action: "go test -run 'TestPortal_SelectDevices_' -count=1 ./pkg/navigator/linux/libei/..."
+        expected: "PASS — types bitmask + persist_mode + restore_token; default keyboard|pointer; empty session rejected"
+      - name: "Start: success + no-devices rejection + status non-zero + parent-window pass-through"
+        action: "go test -run 'TestPortal_Start_' -count=1 ./pkg/navigator/linux/libei/..."
+        expected: "PASS — devices decoded from uint32; zero-devices rejected; ErrPortalStatus surfaces; parentWindow reaches call"
+      - name: "ConnectToEIS: real os.Pipe FD -> *os.File round-trip + error branches"
+        action: "go test -run 'TestPortal_ConnectToEIS_' -count=1 ./pkg/navigator/linux/libei/..."
+        expected: "PASS — UnixFD -> *os.File; wrong body type + empty body + empty sessionPath all error"
+      - name: "Close + nil receiver safe"
+        action: "go test -run 'TestPortal_Close_' -count=1 ./pkg/navigator/linux/libei/..."
+        expected: "PASS — Close forwards to caller; nil receiver returns nil"
+      - name: "Package coverage >= 90%"
+        action: "go test -cover -count=1 ./pkg/navigator/linux/libei/..."
+        expected: "coverage >= 90% of statements"
+    tags: [phase1, gocore, libei, portal, godbus]
+    estimated_duration: "4s"
+    expected_result: "RemoteDesktop portal handshake is end-to-end testable and delivers a connected FD ready for an EI wire-protocol client"
+    fix_reference:
+      bug_id: "OPENCLAWING4-PHASE1-M17-LIBEI"
+      description: "RemoteDesktop portal client for libei input emulation"
+      fix_file: "pkg/navigator/linux/libei/portal.go"
+      fix_commit: "pending"
+
+  # ==================== M18: service-layer one-liner APIs ====================
+
+  - id: P1G-SERVICE-LINUX-001
+    name: "pkg/capture/linux: NewDefaultSource + NewDefaultSourceWithCallerFactory + CollectFrames"
+    category: integration
+    priority: critical
+    platforms: [all]
+    steps:
+      - name: "NewDefaultSource validates + wires all three factories"
+        action: "go test -run 'TestNewDefaultSource_' -count=1 ./pkg/capture/linux/..."
+        expected: "PASS — bad dimensions rejected; production defaults wired (Portal/KMSGrab/X11Grab); Backend=portal returned when BackendOverride=BackendPortal; Frames() non-nil before Start"
+      - name: "NewDefaultSourceWithCallerFactory + X11Grab tuning propagation"
+        action: "go test -run 'TestNewDefaultSourceWithCallerFactory_|TestServiceConfig_ToConfigPropagatesX11GrabTuning' -count=1 ./pkg/capture/linux/..."
+        expected: "PASS — HappyPath runs end-to-end via fakeCaller + stubStdoutRunner; NilFactory + BadDims rejected; --display :7 --fps 15 argv verified"
+      - name: "CollectFrames respects max + ctx"
+        action: "go test -run 'TestCollectFrames_RespectsMaxAndCtx' -count=1 -race ./pkg/capture/linux/..."
+        expected: "PASS — CollectFrames(max=3) returns exactly 3 frames when source emits 5"
+    tags: [phase1, gocore, capture-linux, service]
+    estimated_duration: "3s"
+    expected_result: "Production one-liner Linux capture entry point is fully wired"
+    fix_reference:
+      bug_id: "OPENCLAWING4-PHASE1-M18-LINUX"
+      description: "NewDefaultSource wiring every BackendFactory + DBusCallerFactory"
+      fix_file: "pkg/capture/linux/service.go"
+      fix_commit: "pending"
+
+  - id: P1G-SERVICE-ANDROID-001
+    name: "pkg/capture/android: NewDirectFromServerConfig + MustBeEnabled"
+    category: integration
+    priority: critical
+    platforms: [all]
+    steps:
+      - name: "Happy path chains scrcpy.StartServer + DirectSource"
+        action: "go test -run 'TestNewDirectFromServerConfig_HappyPath' -count=1 -race ./pkg/capture/android/..."
+        expected: "PASS — dial #1 (video) delivers one keyframe packet -> 1 frame with Source='scrcpy-direct', Width=1920"
+      - name: "Bad dimensions + StartServer error rollback"
+        action: "go test -run 'TestNewDirectFromServerConfig_(BadDimensions|StartServerError)' -count=1 ./pkg/capture/android/..."
+        expected: "PASS — ErrDirectConfig for zero dims; StartServer error bubble-through"
+      - name: "EnableControl forced true so input injection always works"
+        action: "go test -run 'TestNewDirectFromServerConfig_ForcesEnableControl' -count=1 ./pkg/capture/android/..."
+        expected: "PASS — launcher argv contains control=true even when ServerConfig.EnableControl=false"
+      - name: "MustBeEnabled env gating"
+        action: "go test -run 'TestMustBeEnabled' -count=1 ./pkg/capture/android/..."
+        expected: "PASS — unset env errors; HELIX_SCRCPY_DIRECT=1 passes"
+    tags: [phase1, gocore, capture-android, service]
+    estimated_duration: "3s"
+    expected_result: "Production Android scrcpy-direct one-liner is fully wired"
+    fix_reference:
+      bug_id: "OPENCLAWING4-PHASE1-M18-ANDROID"
+      description: "NewDirectFromServerConfig chains scrcpy Server + DirectSource"
+      fix_file: "pkg/capture/android/service.go"
+      fix_commit: "pending"
+
+  - id: P1G-SERVICE-LIBEI-001
+    name: "pkg/navigator/linux/libei: NewDefaultService + NewServiceWithFactory + NewServiceWithPortal"
+    category: integration
+    priority: critical
+    platforms: [all]
+    steps:
+      - name: "NewServiceWithFactory HappyPath: full RemoteDesktop handshake"
+        action: "go test -run 'TestNewServiceWithFactory_HappyPath' -count=1 -race ./pkg/navigator/linux/libei/..."
+        expected: "PASS — 3 portal calls (CreateSession+SelectDevices+Start) + 1 immediate call (ConnectToEIS); EISFile non-nil; GrantedDevices=Keyboard|Pointer; RestoreToken='tok-42'"
+      - name: "NilFactory + FactoryError"
+        action: "go test -run 'TestNewServiceWithFactory_(NilFactory|FactoryError)' -count=1 ./pkg/navigator/linux/libei/..."
+        expected: "PASS"
+      - name: "CreateSession failure closes caller + UserCancelled surfaces"
+        action: "go test -run 'TestNewServiceWithFactory_(CreateSessionFails|UserCancelled)' -count=1 ./pkg/navigator/linux/libei/..."
+        expected: "PASS — caller.Close invoked on failure; dbusportal.IsUserCancelled returns true for status=1"
+      - name: "NewServiceWithPortal NilPortal + nil-receiver accessors + Close idempotency"
+        action: "go test -run 'TestNewServiceWithPortal_NilPortal|TestService_NilReceiverAccessors|TestService_CloseIdempotent' -count=1 -race ./pkg/navigator/linux/libei/..."
+        expected: "PASS"
+      - name: "NewDefaultService uses production DBusCallerFactory (skips when bus absent)"
+        action: "go test -run 'TestNewDefaultService_UsesProductionFactory' -count=1 ./pkg/navigator/linux/libei/..."
+        expected: "PASS or SKIP — returns ErrNoSessionBus when DBUS_SESSION_BUS_ADDRESS unset; returns a portal error when set (no RemoteDesktop portal registered on test host)"
+    tags: [phase1, gocore, libei, service]
+    estimated_duration: "3s"
+    expected_result: "Production RemoteDesktop handshake one-liner is wired; EI wire-protocol client consumes EISFile()"
+    fix_reference:
+      bug_id: "OPENCLAWING4-PHASE1-M18-LIBEI"
+      description: "NewDefaultService + full handshake orchestrator"
+      fix_file: "pkg/navigator/linux/libei/service.go"
+      fix_commit: "pending"

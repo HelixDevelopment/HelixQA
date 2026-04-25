@@ -1,0 +1,157 @@
+# SPDX-FileCopyrightText: 2026 Milos Vasic
+# SPDX-License-Identifier: Apache-2.0
+#
+# HelixQA Test Bank: Linux Capture — feature-level integration (OpenClawing4 Phase 1)
+#
+# Exercises pkg/capture/linux end-to-end against real desktops. Every test
+# case SKIPs cleanly when its preconditions aren't met (no portal, no
+# sidecar binary on PATH, etc.) — passing this bank means either the install
+# is fully functional OR the test correctly identified a missing component.
+#
+# Cross-references:
+#   - OpenClawing4.md §5.1.1 (Linux capture architecture)
+#   - OpenClawing4-Handover.md §3.1 (per-backend status)
+#   - pkg/capture/linux/README.md (operator guide)
+#   - cmd/helixqa-capture-demo (smoke test)
+
+version: "1.0"
+name: "Linux Capture Feature Bank"
+description: "Integration-level tests for pkg/capture/linux — portal + kmsgrab + x11grab backends. Each case verifies the full chain from NewDefaultSource through SidecarRunner to frames.Frame."
+metadata:
+  author: "vasic-digital"
+  app: "HelixQA"
+  version: "1.0.0"
+
+test_cases:
+  # ==================== Portal (Wayland default) ====================
+
+  - id: CAP-LIN-PORTAL-001
+    name: "PortalFactory end-to-end: handshake + sidecar + frame delivery"
+    category: integration
+    priority: critical
+    platforms: [desktop]
+    steps:
+      - name: "Prerequisite: Wayland session + xdg-desktop-portal + helixqa-capture-linux"
+        action: "Operator: confirm $XDG_SESSION_TYPE=wayland, xdg-desktop-portal running (systemctl --user status xdg-desktop-portal), helixqa-capture-linux on PATH"
+        expected: "All three present; skip if any absent"
+      - name: "Run the one-liner smoke test"
+        action: "helixqa-capture-demo --platform linux --backend portal --width 1920 --height 1080 --duration 3s"
+        expected: "Portal consent dialog appears on first run; stdout lists 'frame N pts=... source=pipewire ...' lines; summary 'frames=~90 elapsed=3s fps=~30'"
+      - name: "Verify consent token persists across sessions"
+        action: "Run the same command a second time with --persist"
+        expected: "Second run starts immediately, no dialog (requires PersistForever + RestoreToken wiring in higher-level caller)"
+    tags: [integration, portal, pipewire, wayland, phase1]
+    estimated_duration: "30s"
+    expected_result: "Portal-backed capture produces ~90 frames at 30fps for 3s on a 1080p monitor"
+    fix_reference:
+      bug_id: "OPENCLAWING4-PHASE1-CAP-LIN-PORTAL"
+      description: "PortalFactory end-to-end"
+      fix_file: "pkg/capture/linux/pipewire.go"
+      fix_commit: "pending"
+
+  - id: CAP-LIN-PORTAL-002
+    name: "User cancels consent dialog — Source reports ErrPortalStatus status=1"
+    category: security
+    priority: high
+    platforms: [desktop]
+    steps:
+      - name: "Launch capture expecting to cancel"
+        action: "helixqa-capture-demo --platform linux --backend portal --width 1920 --height 1080 --duration 10s"
+        expected: "Consent dialog appears"
+      - name: "Click Cancel on the portal dialog"
+        action: "Operator: click Cancel"
+        expected: "Demo exits with 'user cancelled' surfaced via dbusportal.IsUserCancelled"
+    tags: [integration, portal, security, user-consent]
+    estimated_duration: "15s"
+    expected_result: "User cancellation bubbles up cleanly; no silent fallback"
+    fix_reference:
+      bug_id: "OPENCLAWING4-PHASE1-CAP-LIN-PORTAL-CANCEL"
+      description: "User-cancelled consent must surface as ErrPortalStatus status=1, not a technical failure"
+      fix_file: "pkg/bridge/dbusportal/caller.go"
+      fix_commit: "pending"
+
+  # ==================== KMSGrab (capability-granted fast path) ====================
+
+  - id: CAP-LIN-KMSGRAB-001
+    name: "KMSGrab zero-copy DRM capture"
+    category: integration
+    priority: high
+    platforms: [desktop]
+    steps:
+      - name: "Prerequisite: helixqa-kmsgrab installed with setcap cap_sys_admin+ep"
+        action: "Operator: getcap /usr/local/bin/helixqa-kmsgrab"
+        expected: "Shows 'cap_sys_admin=ep'; skip if missing or setcap not applied"
+      - name: "Run capture forced to kmsgrab backend"
+        action: "helixqa-capture-demo --platform linux --backend kmsgrab --width 1920 --height 1080 --duration 3s"
+        expected: "Frames delivered at >=30fps; no \"sudo\" prompt at any point (operator granted cap at install time)"
+    tags: [integration, kmsgrab, drm, phase1]
+    estimated_duration: "30s"
+    expected_result: "DRM capture path produces frames without runtime privilege escalation"
+    fix_reference:
+      bug_id: "OPENCLAWING4-PHASE1-CAP-LIN-KMSGRAB"
+      description: "KMSGrab requires operator to setcap the sidecar; HelixQA never sudo's"
+      fix_file: "pkg/capture/linux/kmsgrab.go"
+      fix_commit: "pending"
+
+  # ==================== X11Grab (legacy fallback) ====================
+
+  - id: CAP-LIN-X11GRAB-001
+    name: "X11Grab end-to-end via helixqa-x11grab sidecar"
+    category: integration
+    priority: high
+    platforms: [desktop]
+    steps:
+      - name: "Prerequisite: X11 session (or XWayland), ffmpeg, helixqa-x11grab on PATH"
+        action: "Operator: confirm $XDG_SESSION_TYPE=x11, which ffmpeg, which helixqa-x11grab"
+        expected: "All three present"
+      - name: "Run capture forced to x11grab backend"
+        action: "helixqa-capture-demo --platform linux --backend x11grab --display :0 --fps 30 --width 1920 --height 1080 --duration 3s"
+        expected: "Frames delivered; source=x11grab; PTS monotonic; no gaps"
+    tags: [integration, x11grab, ffmpeg, phase1]
+    estimated_duration: "30s"
+    expected_result: "Legacy X11 path produces frames via helixqa-x11grab + ffmpeg"
+    fix_reference:
+      bug_id: "OPENCLAWING4-PHASE1-CAP-LIN-X11GRAB"
+      description: "X11Grab + helixqa-x11grab integration"
+      fix_file: "pkg/capture/linux/x11grab.go"
+      fix_commit: "pending"
+
+  # ==================== Auto-detect + env override ====================
+
+  - id: CAP-LIN-AUTO-001
+    name: "ResolveBackend precedence: override > env > session-type > default"
+    category: unit
+    priority: critical
+    platforms: [all]
+    steps:
+      - name: "Unit tests lock the precedence rules"
+        action: "go test -run 'TestResolveBackend_' -count=1 ./pkg/capture/linux/..."
+        expected: "All 8 sub-cases PASS (override / env / x11 / tty / wayland / no-env / unknown-helix / unknown-session)"
+    tags: [unit, router, phase1]
+    estimated_duration: "2s"
+    expected_result: "Backend selection is deterministic + documented"
+    fix_reference:
+      bug_id: "OPENCLAWING4-PHASE1-CAP-LIN-AUTO"
+      description: "ResolveBackend precedence ordering"
+      fix_file: "pkg/capture/linux/router.go"
+      fix_commit: "pending"
+
+  # ==================== Regression gate ====================
+
+  - id: CAP-LIN-REGRESSION-001
+    name: "All pkg/capture/linux tests pass under -race"
+    category: regression
+    priority: critical
+    platforms: [all]
+    steps:
+      - name: "Race-detector sweep"
+        action: "go test -count=1 -race ./pkg/capture/linux/..."
+        expected: "PASS; zero races; coverage >= 80%"
+    tags: [regression, race, phase1]
+    estimated_duration: "5s"
+    expected_result: "Subsystem maintains the coverage floor with no concurrency regressions"
+    fix_reference:
+      bug_id: "OPENCLAWING4-PHASE1-CAP-LIN-REGR"
+      description: "Race-detector + coverage gate"
+      fix_file: "pkg/capture/linux/*.go"
+      fix_commit: "pending"

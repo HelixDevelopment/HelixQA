@@ -7,6 +7,7 @@ require (
 	digital.vasic.containers v0.0.0-00010101000000-000000000000
 	digital.vasic.docprocessor v0.0.0-00010101000000-000000000000
 	digital.vasic.llmorchestrator v0.0.0-00010101000000-000000000000
+	digital.vasic.security v0.0.0-00010101000000-000000000000
 	digital.vasic.visionengine v0.0.0-00010101000000-000000000000
 	github.com/mattn/go-sqlite3 v1.14.37
 	github.com/stretchr/testify v1.11.1
@@ -127,6 +128,7 @@ replace (
 	digital.vasic.docprocessor => ../DocProcessor
 	digital.vasic.llmorchestrator => ../LLMOrchestrator
 	digital.vasic.llmprovider => ../LLMProvider
+	digital.vasic.security => ../Security
 	digital.vasic.visionengine => ../VisionEngine
 )
 
@@ -158,9 +160,8 @@ require (
 	google.golang.org/protobuf v1.36.11
 )
 
-// digital.vasic.llmsverifier is the module name inside
-// LLMsVerifier/llm-verifier/go.mod. The outer LLMsVerifier/ go.mod is a
-// wrapper module named "llmsverifier" that re-replaces to ./llm-verifier,
-// so pointing this replace at ../LLMsVerifier breaks the module-path
-// match. Point directly at the real module location.
-replace digital.vasic.llmsverifier => ../LLMsVerifier/llm-verifier
+// digital.vasic.llmsverifier — the LLMsVerifier submodule has a flat
+// layout with go.mod at the root (module path
+// digital.vasic.llmsverifier). The earlier llm-verifier/ wrapper is
+// historical; the correct replace target is the repo root.
+replace digital.vasic.llmsverifier => ../LLMsVerifier

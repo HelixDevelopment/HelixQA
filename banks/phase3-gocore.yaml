@@ -1,0 +1,564 @@
+# SPDX-FileCopyrightText: 2026 Milos Vasic
+# SPDX-License-Identifier: Apache-2.0
+#
+# HelixQA Test Bank: OpenClawing4 Phase 3 Go-Core
+#
+# This bank validates the pure-Go agent-brain primitives that land as
+# Phase 3 progresses. Phase 3 scope per OpenClawing4.md §8:
+#
+#   - UI-TARS-1.5-7B VLM client (pkg/agent/uitars)
+#   - OmniParser v2 client (pkg/agent/omniparser — pending)
+#   - Shared agent action vocabulary (pkg/agent/action)
+#   - LangGraph-style agent orchestration (pkg/agent/graph — pending)
+#   - SGLang-style structured generation (pkg/agent/sglang — pending)
+#
+# Toolchain / operator-action dependencies (tracked in
+# docs/OPEN_POINTS_CLOSURE.md §10.3):
+#
+#   - UI-TARS-1.5-7B GGUF deployed on thinker.local with llama-server
+#     + --mmproj (needed to turn unit tests into live smoke tests).
+#   - OmniParser v2 Python sidecar built in cmd/helixqa-omniparser/
+#     container (needed for OmniParser client integration).
+#
+# Every test here runs on a clean Linux container — no GPU, no external
+# model server, no Python. Live smoke tests are in PH3-*-INT-* cases
+# tagged `manual`.
+
+version: "1.0"
+name: "OpenClawing4 Phase 3 — Go core bank"
+description: >
+  Agent brain, VLM clients, and action vocabulary. Pure Go — no CGO, no
+  Python sidecars in the Go host. Backs the HQA-PHASE3-GOCORE-*
+  challenges in challenges/config/helixqa-validation.yaml.
+
+test_cases:
+  # ─── M36 · pkg/agent/action · shared action vocabulary ───
+  - id: PH3-ACTION-001
+    name: "pkg/agent/action — Action.Validate per Kind"
+    category: unit
+    priority: critical
+    platforms: [linux]
+    steps:
+      - name: "click / type / scroll / wait / done / key / swipe / open_app happy paths"
+        action: "TestValidate_Click + TestValidate_Type + TestValidate_Scroll + TestValidate_Wait + TestValidate_Done_RequiresNothing + TestValidate_Key + TestValidate_Swipe + TestValidate_OpenApp"
+        expected: "All PASS — every Kind validates with its required fields"
+      - name: "Unknown Kind returns ErrUnknownKind with the kind name in the message"
+        action: "TestValidate_UnknownKind"
+        expected: "PASS"
+    tags: [phase3, agent, action, vocabulary, unit]
+
+  - id: PH3-ACTION-002
+    name: "pkg/agent/action — Summary + JSON round-trip"
+    category: unit
+    priority: high
+    platforms: [linux]
+    steps:
+      - name: "Summary produces human-readable line for every Kind"
+        action: "TestSummary_EveryKind + TestSummary_UnknownKind"
+        expected: "Both PASS"
+      - name: "ParseJSON happy path + malformed + invalid-action detection"
+        action: "TestParseJSON_HappyPath + TestParseJSON_MalformedJSON + TestParseJSON_InvalidAction"
+        expected: "All PASS"
+      - name: "Action round-trips through encoding/json without loss"
+        action: "TestAction_JSONRoundTrip"
+        expected: "PASS"
+      - name: "omitempty keeps the wire envelope compact"
+        action: "TestAction_OmitEmptyKeepsWireCompact"
+        expected: "PASS — bare Done marshals to {\"kind\":\"done\"}"
+    tags: [phase3, agent, action, json, serialization]
+
+  # ─── M36 · pkg/agent/uitars · UI-TARS VLM client ───
+  - id: PH3-UITARS-001
+    name: "pkg/agent/uitars — Act returns parsed Action per Kind"
+    category: unit
+    priority: critical
+    platforms: [linux]
+    steps:
+      - name: "Click action parsed end-to-end"
+        action: "TestAct_ClickAction"
+        expected: "PASS — coords + reason round-trip"
+      - name: "Type action parsed end-to-end"
+        action: "TestAct_TypeAction"
+        expected: "PASS"
+      - name: "Done action parsed when model emits Thought-then-Action prose"
+        action: "TestAct_DoneAction"
+        expected: "PASS"
+      - name: "Surrounding prose tolerated — JSON extracted from freeform text"
+        action: "TestAct_SurroundingProseTolerated"
+        expected: "PASS"
+    tags: [phase3, agent, uitars, vlm, unit]
+
+  - id: PH3-UITARS-002
+    name: "pkg/agent/uitars — OpenAI /v1/chat/completions wire format"
+    category: unit
+    priority: critical
+    platforms: [linux]
+    steps:
+      - name: "Request body matches OpenAI chat shape (system + user, image_url + text parts, default model / tokens / temperature)"
+        action: "TestAct_RequestShapeIsOpenAIChat"
+        expected: "PASS — model=ui-tars-1.5-7b, max_tokens=256, temperature=0, stream=false, base64 PNG data URL"
+      - name: "ActChat threads history as assistant messages between system and user"
+        action: "TestActChat_PassesHistoryAsAssistantMessages"
+        expected: "PASS — 4 messages (system + 2 history + user)"
+      - name: "Custom Model / MaxTokens / Temperature honored"
+        action: "TestAct_CustomModel"
+        expected: "PASS"
+      - name: "Custom SystemPrompt propagates to request"
+        action: "TestAct_CustomSystemPrompt"
+        expected: "PASS"
+    tags: [phase3, agent, uitars, openai-compat, wire-format]
+
+  - id: PH3-UITARS-003
+    name: "pkg/agent/uitars — error paths"
+    category: unit
+    priority: high
+    platforms: [linux]
+    steps:
+      - name: "Empty endpoint → ErrEmptyEndpoint"
+        action: "TestAct_EmptyEndpointError"
+        expected: "PASS"
+      - name: "Whitespace-only instruction → ErrEmptyInstruction"
+        action: "TestAct_EmptyInstructionError"
+        expected: "PASS"
+      - name: "nil screenshot → ErrNilImage"
+        action: "TestAct_NilScreenshotError"
+        expected: "PASS"
+      - name: "HTTP 5xx propagates with status + body in error"
+        action: "TestAct_HTTPErrorPropagates"
+        expected: "PASS"
+      - name: "Malformed JSON response fails with decode error"
+        action: "TestAct_MalformedResponseError"
+        expected: "PASS"
+      - name: "Empty choices array returns ErrNoChoices"
+        action: "TestAct_NoChoicesError"
+        expected: "PASS"
+      - name: "Canceled context bails out of the HTTP call"
+        action: "TestAct_ContextCanceled"
+        expected: "PASS"
+      - name: "Invalid endpoint URL fails at request construction"
+        action: "TestAct_InvalidEndpointURLError"
+        expected: "PASS"
+    tags: [phase3, agent, uitars, error-paths]
+
+  - id: PH3-UITARS-004
+    name: "pkg/agent/uitars — ExtractAction parser + utility"
+    category: unit
+    priority: high
+    platforms: [linux]
+    steps:
+      - name: "No brace / unbalanced brace / invalid inner JSON all surface ErrNoActionJSON or parse errors"
+        action: "TestExtractAction_NoBraceError + TestExtractAction_UnbalancedBraceError + TestExtractAction_InvalidInnerJSON"
+        expected: "All PASS"
+      - name: "Nested braces are tolerated for simple action objects"
+        action: "TestExtractAction_NestedBraces"
+        expected: "PASS"
+      - name: "New constructor + truncate helper + pngDataURL sanity"
+        action: "TestNew_SetsEndpoint + TestTruncate + TestPngDataURL_HasCorrectPrefix"
+        expected: "All PASS"
+    tags: [phase3, agent, uitars, parser, util]
+
+  # Production llama-server integration (blocked on operator action per
+  # OPEN_POINTS_CLOSURE.md §10.3 — UI-TARS-1.5-7B GGUF deploy to thinker.local).
+  - id: PH3-UITARS-INT-001
+    name: "pkg/agent/uitars — live llama-server smoke test"
+    category: integration
+    priority: high
+    platforms: [linux]
+    requires: [llama-server-uitars-thinker-local]
+    steps:
+      - name: "Client connects to thinker.local:18100 and receives a parseable Action"
+        action: "Client{Endpoint: 'http://thinker.local:18100'}.Act(screenshot, 'tap Sign In')"
+        expected: "Returned Action passes Validate(), Kind ∈ {click, type, key, scroll, done}"
+      - name: "End-to-end latency is within the Phase-3 budget"
+        action: "Time 3 consecutive Acts on 1080p screenshots"
+        expected: "< 5s per call on a 7B model + GPU; < 30s on CPU fallback"
+    tags: [phase3, agent, uitars, integration, manual, llama-server]
+
+  # ─── M37 · pkg/agent/omniparser · OmniParser REST client ───
+  - id: PH3-OMNIPARSER-001
+    name: "pkg/agent/omniparser — Parse happy path + multipart PNG wire format"
+    category: unit
+    priority: critical
+    platforms: [linux]
+    steps:
+      - name: "Parse decodes wireResult into Result with width/height/element fields"
+        action: "TestParse_HappyPath"
+        expected: "PASS — 2 elements round-trip, button bbox + interactive + confidence preserved"
+      - name: "Request uses multipart/form-data with single 'image' field carrying PNG"
+        action: "TestParse_RequestShapeIsMultipartPNG"
+        expected: "PASS — field name 'image', PNG payload > 50 bytes"
+      - name: "Custom ParsePath honored"
+        action: "TestParse_CustomParsePath"
+        expected: "PASS"
+      - name: "buildMultipartPNG produces valid multipart body with PNG magic"
+        action: "TestBuildMultipartPNG_WellFormed"
+        expected: "PASS — mime/multipart parser round-trips the form"
+    tags: [phase3, agent, omniparser, wire-format, unit]
+
+  - id: PH3-OMNIPARSER-002
+    name: "pkg/agent/omniparser — Element + Result grounding helpers"
+    category: unit
+    priority: high
+    platforms: [linux]
+    steps:
+      - name: "Element.Center computes bbox center"
+        action: "TestElement_Center"
+        expected: "PASS"
+      - name: "FindInteractiveContaining returns smallest enclosing interactive element"
+        action: "TestResult_FindInteractiveContaining_HitsSmallestEnclosing"
+        expected: "PASS — inner 100x100 button wins over outer 1000x1000 group"
+      - name: "FindInteractiveContaining returns (_, false) for no match"
+        action: "TestResult_FindInteractiveContaining_NoMatch + TestResult_FindInteractiveContaining_EmptyResult"
+        expected: "Both PASS"
+      - name: "FindInteractiveContaining skips non-interactive elements"
+        action: "TestResult_FindInteractiveContaining_IgnoresNonInteractive"
+        expected: "PASS"
+      - name: "bboxArea returns 0 for inverted / zero-sized rects, correct otherwise"
+        action: "TestBboxArea_InvalidReturnsZero"
+        expected: "PASS"
+      - name: "pointIn honors Min-inclusive / Max-exclusive semantics"
+        action: "TestPointIn"
+        expected: "PASS"
+    tags: [phase3, agent, omniparser, grounding, geometry]
+
+  - id: PH3-OMNIPARSER-003
+    name: "pkg/agent/omniparser — error paths"
+    category: unit
+    priority: high
+    platforms: [linux]
+    steps:
+      - name: "Empty endpoint → ErrEmptyEndpoint"
+        action: "TestParse_EmptyEndpointError"
+        expected: "PASS"
+      - name: "nil screenshot → ErrNilImage"
+        action: "TestParse_NilScreenshotError"
+        expected: "PASS"
+      - name: "HTTP 5xx propagates with status + body in error"
+        action: "TestParse_HTTPErrorPropagates"
+        expected: "PASS"
+      - name: "Malformed JSON response surfaces decode error"
+        action: "TestParse_MalformedJSONError"
+        expected: "PASS"
+      - name: "bbox with != 4 values → ErrInvalidBBox"
+        action: "TestParse_InvalidBBoxShapeError"
+        expected: "PASS"
+      - name: "Canceled context bails out of the HTTP call"
+        action: "TestParse_ContextCanceled"
+        expected: "PASS"
+      - name: "Invalid endpoint URL fails at request construction"
+        action: "TestParse_InvalidEndpointURLError"
+        expected: "PASS"
+      - name: "New constructor sets Endpoint correctly"
+        action: "TestNew_SetsEndpoint"
+        expected: "PASS"
+    tags: [phase3, agent, omniparser, error-paths]
+
+  # Production sidecar integration (blocked on operator action per
+  # OPEN_POINTS_CLOSURE.md §10.3 — OmniParser v2 weights + Python
+  # sidecar container).
+  - id: PH3-OMNIPARSER-INT-001
+    name: "pkg/agent/omniparser — live Python sidecar smoke test"
+    category: integration
+    priority: high
+    platforms: [linux]
+    requires: [omniparser-sidecar-running]
+    steps:
+      - name: "Live sidecar returns ≥ 3 elements for a busy screenshot"
+        action: "Client{Endpoint: 'http://thinker.local:7860'}.Parse(1080p screenshot)"
+        expected: "len(Result.Elements) ≥ 3, at least one Interactive=true"
+      - name: "FindInteractiveContaining resolves a click target to the right element"
+        action: "Cross-check a UI-TARS-proposed click coordinate against the live element grid"
+        expected: "Returns (Element, true) with matching Type + Text"
+    tags: [phase3, agent, omniparser, integration, manual, sidecar]
+
+  # ─── M38 · pkg/agent/ground · VLM + detector grounding layer ───
+  - id: PH3-GROUND-001
+    name: "pkg/agent/ground — Resolve bypass + pass-through semantics"
+    category: unit
+    priority: critical
+    platforms: [linux]
+    steps:
+      - name: "Non-click actions (type, key, wait, etc.) pass through unchanged"
+        action: "TestResolve_NonClickActionPassesThrough"
+        expected: "PASS — Grounder never rewrites non-click actions"
+      - name: "nil Detector bypasses grounding — Actor output flows through verbatim"
+        action: "TestResolve_NilDetectorBypassesGrounding"
+        expected: "PASS — operator can deploy without OmniParser and still get UI-TARS actions"
+    tags: [phase3, agent, ground, bypass, unit]
+
+  - id: PH3-GROUND-002
+    name: "pkg/agent/ground — click-inside-element snap to center"
+    category: unit
+    priority: critical
+    platforms: [linux]
+    steps:
+      - name: "Click inside a button snaps to the button center"
+        action: "TestResolve_ClickInsideElement_SnapsToCenterAndAnnotates"
+        expected: "PASS — coords move to bbox center, Reason annotated with [button: Sign in]"
+      - name: "Nested elements: smallest-enclosing wins over outer group"
+        action: "TestResolve_ClickInsideElement_PrefersSmallestEnclosing"
+        expected: "PASS — inner 100x100 button preferred over 1000x1000 group"
+      - name: "Low-confidence phantoms filtered below MinConfidence floor (0.5 default)"
+        action: "TestResolve_ClickInsideElement_FiltersLowConfidence"
+        expected: "PASS — 0.1-conf noise ignored, 0.95-conf button wins"
+      - name: "Output action always passes Action.Validate()"
+        action: "TestResolve_OutputPassesValidate"
+        expected: "PASS — grounding never produces an invalid action"
+    tags: [phase3, agent, ground, snap, unit]
+
+  - id: PH3-GROUND-003
+    name: "pkg/agent/ground — SnapToNearest behaviour"
+    category: unit
+    priority: high
+    platforms: [linux]
+    steps:
+      - name: "SnapToNearest=true snaps click to nearest element within MaxSnapDist"
+        action: "TestResolve_SnapToNearest_SnapsWhenClose"
+        expected: "PASS — 50px-off click snaps to button, Reason contains 'snapped'"
+      - name: "SnapToNearest=false passes the raw click through"
+        action: "TestResolve_SnapToNearest_DisabledPassesThrough"
+        expected: "PASS"
+      - name: "Click beyond default MaxSnapDist=64 is not snapped"
+        action: "TestResolve_SnapToNearest_RespectsMaxSnapDist"
+        expected: "PASS — 1800px-off click passes through"
+      - name: "Custom MaxSnapDist extends the snap range"
+        action: "TestResolve_SnapToNearest_CustomMaxSnapDist"
+        expected: "PASS — MaxSnapDist=200 enables a 100px snap the default wouldn't do"
+      - name: "Empty element grid passes the click through"
+        action: "TestResolve_SnapToNearest_NoElementsAvailable"
+        expected: "PASS"
+    tags: [phase3, agent, ground, snap-to-nearest, unit]
+
+  - id: PH3-GROUND-004
+    name: "pkg/agent/ground — error paths"
+    category: unit
+    priority: high
+    platforms: [linux]
+    steps:
+      - name: "nil Actor returns ErrNoActor"
+        action: "TestResolve_NilActorError"
+        expected: "PASS"
+      - name: "Actor error wraps with 'Actor.Act' in the chain"
+        action: "TestResolve_ActorErrorPropagates"
+        expected: "PASS"
+      - name: "Detector error wraps with 'Detector.Parse' in the chain"
+        action: "TestResolve_DetectorErrorPropagates"
+        expected: "PASS"
+      - name: "Canceled context bails out via the fake Actor"
+        action: "TestResolve_ContextCanceled"
+        expected: "PASS"
+    tags: [phase3, agent, ground, error-paths, unit]
+
+  - id: PH3-GROUND-005
+    name: "pkg/agent/ground — distToRect / findContaining / findNearest math"
+    category: unit
+    priority: high
+    platforms: [linux]
+    steps:
+      - name: "distToRect = 0 inside, correct for left/right/above/diagonal"
+        action: "TestDistToRect_PointInside + TestDistToRect_PointLeft + TestDistToRect_PointRight + TestDistToRect_PointAbove + TestDistToRect_PointDiagonal"
+        expected: "All PASS — Euclidean distance to nearest rect point"
+      - name: "findContaining ignores non-interactive elements"
+        action: "TestFindContaining_IgnoresNonInteractive"
+        expected: "PASS"
+      - name: "findNearest returns (_, _, false) on empty or all-low-conf input"
+        action: "TestFindNearest_Empty + TestFindNearest_FiltersConfidence"
+        expected: "Both PASS"
+      - name: "mergeReason + truncate + pointIn + bboxArea utilities"
+        action: "TestMergeReason_EmptyVLM + TestMergeReason_Both + TestTruncate + TestPointIn_Boundaries + TestBboxArea"
+        expected: "All PASS"
+      - name: "Actor + Detector interfaces satisfied by fakes (compile-time guard)"
+        action: "TestActorAndDetectorInterfaces_SatisfiedByFakes"
+        expected: "PASS"
+    tags: [phase3, agent, ground, geometry, util, unit]
+
+  # ─── M39 · pkg/agent/graph · stateful agent runner ───
+  - id: PH3-GRAPH-001
+    name: "pkg/agent/graph — Run terminates on Done action"
+    category: unit
+    priority: critical
+    platforms: [linux]
+    steps:
+      - name: "Scripted click → type → done runs to Done, Done is recorded but NOT executed"
+        action: "TestRun_TerminatesOnDoneAction"
+        expected: "PASS — Steps=3, executor saw 2 (Done excluded)"
+      - name: "OnStep hook fires once per step"
+        action: "TestRun_OnStepHookFiresPerStep"
+        expected: "PASS"
+      - name: "ResolverFunc adapter dispatches the wrapped function"
+        action: "TestResolverFunc_Adapter"
+        expected: "PASS"
+    tags: [phase3, agent, graph, runner, unit]
+
+  - id: PH3-GRAPH-002
+    name: "pkg/agent/graph — MaxSteps bound"
+    category: unit
+    priority: critical
+    platforms: [linux]
+    steps:
+      - name: "Run terminates at MaxSteps without Done flag"
+        action: "TestRun_TerminatesOnMaxSteps"
+        expected: "PASS — 5 steps executed, Done=false Stuck=false"
+      - name: "Default MaxSteps is 50 when zero-valued"
+        action: "TestRun_DefaultMaxStepsIs50"
+        expected: "PASS"
+      - name: "MaxSteps=-1 disables the bound — agent can run unbounded until Done"
+        action: "TestRun_MaxStepsNegativeAllowsUnboundedLoopUntilDone"
+        expected: "PASS — reaches Done at step 100"
+    tags: [phase3, agent, graph, bounds, unit]
+
+  - id: PH3-GRAPH-003
+    name: "pkg/agent/graph — Stuck detection"
+    category: unit
+    priority: critical
+    platforms: [linux]
+    steps:
+      - name: "StuckDetect=3 fires after 3 identical actions (Reason field ignored)"
+        action: "TestRun_StuckDetectionFires"
+        expected: "PASS — Stuck=true, Done=false"
+      - name: "StuckDetect=0 disables the check"
+        action: "TestRun_StuckDetectionIgnoredWhenZero"
+        expected: "PASS"
+      - name: "StuckDetect=1 is a no-op (nonsensical)"
+        action: "TestRun_StuckDetectionOneMeansNeverFires"
+        expected: "PASS"
+      - name: "Distinct actions never trigger Stuck"
+        action: "TestRun_StuckNotFiredWhenActionsDiffer"
+        expected: "PASS"
+      - name: "sameCore ignores Reason, honors Kind/coords"
+        action: "TestSameCore_IgnoresReason + TestSameCore_DistinguishesCoords"
+        expected: "Both PASS"
+      - name: "isStuck handles empty / too-small-n / short-history edge cases"
+        action: "TestIsStuck_EmptyHistory + TestIsStuck_NTooSmall + TestIsStuck_HistoryShorterThanN"
+        expected: "All PASS"
+    tags: [phase3, agent, graph, stuck-detection, unit]
+
+  - id: PH3-GRAPH-004
+    name: "pkg/agent/graph — error paths + dependency validation"
+    category: unit
+    priority: high
+    platforms: [linux]
+    steps:
+      - name: "nil Screenshotter / Resolver / Executor / empty goal all return sentinels"
+        action: "TestRun_NilScreenshotterError + TestRun_NilResolverError + TestRun_NilExecutorError + TestRun_EmptyGoalError"
+        expected: "All PASS — ErrNoScreenshotter / ErrNoResolver / ErrNoExecutor / ErrEmptyGoal"
+      - name: "Screenshot / Resolve / Execute errors wrap with step number + operation"
+        action: "TestRun_ScreenshotErrorWrapsWithStep + TestRun_ResolveErrorWrapsWithStep + TestRun_ExecuteErrorWrapsWithStep"
+        expected: "All PASS — 'step N: <op>:' prefix for auditability"
+      - name: "Pre-canceled context returns before any step runs"
+        action: "TestRun_ContextCanceledBeforeFirstStep"
+        expected: "PASS"
+      - name: "StepTimeout cancels a slow Screenshot in < 100ms"
+        action: "TestRun_StepTimeoutCancelsSlowSteps"
+        expected: "PASS"
+    tags: [phase3, agent, graph, error-paths, timeout, unit]
+
+  - id: PH3-GRAPH-005
+    name: "pkg/agent/graph — UnwrapMaxStepsOrStuck result helper"
+    category: unit
+    priority: medium
+    platforms: [linux]
+    steps:
+      - name: "Done result → nil"
+        action: "TestUnwrapMaxStepsOrStuck_Done"
+        expected: "PASS"
+      - name: "Stuck result → ErrStuck"
+        action: "TestUnwrapMaxStepsOrStuck_Stuck"
+        expected: "PASS"
+      - name: "MaxSteps result → ErrMaxStepsReached"
+        action: "TestUnwrapMaxStepsOrStuck_MaxSteps"
+        expected: "PASS"
+    tags: [phase3, agent, graph, result, unit]
+
+  # ─── M40 · pkg/agent/sglang · structured-generation guardrails ───
+  - id: PH3-SGLANG-001
+    name: "pkg/agent/sglang — Schema.Check invariants"
+    category: unit
+    priority: critical
+    platforms: [linux]
+    steps:
+      - name: "Baseline action.Validate() failure wraps ErrBaseValidate"
+        action: "TestCheck_BaselineValidateFails"
+        expected: "PASS"
+      - name: "Empty Schema accepts any valid action"
+        action: "TestCheck_EmptySchemaAcceptsValidAction"
+        expected: "PASS"
+      - name: "AllowedKinds whitelist filters correctly"
+        action: "TestCheck_AllowedKindsFilter + TestCheck_EmptyAllowedKindsMeansAll"
+        expected: "Both PASS"
+      - name: "RequireReason rejects empty + whitespace-only"
+        action: "TestCheck_RequireReasonAccepts + TestCheck_RequireReasonRejectsEmpty + TestCheck_RequireReasonRejectsWhitespaceOnly"
+        expected: "All PASS"
+    tags: [phase3, agent, sglang, schema, unit]
+
+  - id: PH3-SGLANG-002
+    name: "pkg/agent/sglang — MaxTextLen (runes, not bytes) + ScreenBounds"
+    category: unit
+    priority: critical
+    platforms: [linux]
+    steps:
+      - name: "MaxTextLen rejects overflow, accepts boundary, 0 means uncapped"
+        action: "TestCheck_MaxTextLenRejectsOverflow + TestCheck_MaxTextLenAcceptsBoundary + TestCheck_MaxTextLenZeroMeansUncapped"
+        expected: "All PASS"
+      - name: "MaxTextLen counts runes (Cyrillic 3-char text fits in MaxTextLen=3)"
+        action: "TestCheck_MaxTextLenCountsRunesNotBytes"
+        expected: "PASS"
+      - name: "ScreenBounds accepts inside click, rejects outside click"
+        action: "TestCheck_ScreenBoundsAcceptsInsideClick + TestCheck_ScreenBoundsRejectsOutsideClick"
+        expected: "Both PASS"
+      - name: "ScreenBounds checks both swipe endpoints"
+        action: "TestCheck_ScreenBoundsChecksBothSwipeEndpoints"
+        expected: "PASS"
+      - name: "ScreenBounds ignored for non-coord Kinds + zero rect means uncapped"
+        action: "TestCheck_ScreenBoundsIgnoredForNonCoordKinds + TestCheck_ScreenBoundsZeroMeansUncapped"
+        expected: "Both PASS"
+    tags: [phase3, agent, sglang, schema, bounds, unit]
+
+  - id: PH3-SGLANG-003
+    name: "pkg/agent/sglang — Guard retry behaviour"
+    category: unit
+    priority: critical
+    platforms: [linux]
+    steps:
+      - name: "First-attempt valid passes through (no retry, no extra actor call)"
+        action: "TestGuard_FirstAttemptValidPassesThrough"
+        expected: "PASS"
+      - name: "Invalid then valid → retries once, returns the valid action"
+        action: "TestGuard_InvalidThenValidRetries"
+        expected: "PASS — retry instruction preserves original + injects error"
+      - name: "OnRetry hook fires per retry attempt"
+        action: "TestGuard_OnRetryHookFiresPerRetry"
+        expected: "PASS"
+      - name: "Retries exhausted returns ErrRetriesExhausted"
+        action: "TestGuard_RetriesExhaustedReturnsSentinel"
+        expected: "PASS — actor called MaxRetries+1 times"
+      - name: "MaxRetries=0 defaults to 2"
+        action: "TestGuard_ZeroMaxRetriesUsesDefaultOfTwo"
+        expected: "PASS — actor called 3 times (2 retries + 1 initial)"
+      - name: "Custom RetryHeader honored"
+        action: "TestGuard_CustomRetryHeader"
+        expected: "PASS"
+    tags: [phase3, agent, sglang, guard, retry, unit]
+
+  - id: PH3-SGLANG-004
+    name: "pkg/agent/sglang — error paths + utility"
+    category: unit
+    priority: high
+    platforms: [linux]
+    steps:
+      - name: "Actor error wraps with attempt number"
+        action: "TestGuard_ActorErrorPropagatesWithAttempt"
+        expected: "PASS"
+      - name: "nil Actor returns ErrNoActor"
+        action: "TestGuard_NilActorReturnsErrNoActor"
+        expected: "PASS"
+      - name: "Canceled context bails out"
+        action: "TestGuard_ContextCanceled"
+        expected: "PASS"
+      - name: "ActorFunc adapter dispatches"
+        action: "TestActorFunc_Dispatches"
+        expected: "PASS"
+      - name: "pointIn honors Min-inclusive / Max-exclusive rect semantics"
+        action: "TestPointIn_MinInclusiveMaxExclusive"
+        expected: "PASS"
+    tags: [phase3, agent, sglang, error-paths, util, unit]
