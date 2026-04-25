@@ -177,7 +177,7 @@ func skipIfNoNATS(t *testing.T) {
 	config := DefaultConfig()
 	_, err := NewStateManager(config)
 	if err != nil {
-		t.Skip("NATS not available, skipping integration test")
+		t.Skip("NATS not available, skipping integration test")  // SKIP-OK: #integration-mode-only
 	}
 }
 

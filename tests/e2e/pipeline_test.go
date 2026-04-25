@@ -279,7 +279,7 @@ func (s *E2ETestSuite) processWithVision(img image.Image) *vision.FrameResult {
 // Run the test suite
 func TestE2E(t *testing.T) {
 	if testing.Short() {
-		t.Skip("Skipping E2E tests in short mode")
+		t.Skip("Skipping E2E tests in short mode")  // SKIP-OK: #short-mode
 	}
 	
 	suite.Run(t, new(E2ETestSuite))

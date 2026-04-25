@@ -191,7 +191,7 @@ func TestPaddleOCR_ParseResultInvalid(t *testing.T) {
 
 func TestPaddleOCRService(t *testing.T) {
 	// Skip in CI environment
-	t.Skip("Requires PaddleOCR installation")
+	t.Skip("Requires PaddleOCR installation")  // SKIP-OK: #legacy-untriaged
 }
 
 func TestPaddleOCRService_IsRunning(t *testing.T) {

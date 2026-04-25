@@ -140,7 +140,7 @@ func TestKeyCodes(t *testing.T) {
 func TestListDevices_Integration(t *testing.T) {
 	// Skip if no ADB available
 	if _, err := exec.LookPath("adb"); err != nil {
-		t.Skip("adb not found in PATH")
+		t.Skip("adb not found in PATH")  // SKIP-OK: #legacy-untriaged
 	}
 
 	devices, err := ListDevices()
@@ -159,13 +159,13 @@ func TestListDevices_Integration(t *testing.T) {
 func TestGetDeviceResolution_Integration(t *testing.T) {
 	// Skip if no ADB available
 	if _, err := exec.LookPath("adb"); err != nil {
-		t.Skip("adb not found in PATH")
+		t.Skip("adb not found in PATH")  // SKIP-OK: #legacy-untriaged
 	}
 
 	// Get first available device
 	devices, err := ListDevices()
 	if err != nil || len(devices) == 0 {
-		t.Skip("no Android devices connected")
+		t.Skip("no Android devices connected")  // SKIP-OK: #legacy-untriaged
 	}
 
 	deviceID := devices[0]
@@ -183,13 +183,13 @@ func TestGetDeviceResolution_Integration(t *testing.T) {
 func TestGetDeviceInfo_Integration(t *testing.T) {
 	// Skip if no ADB available
 	if _, err := exec.LookPath("adb"); err != nil {
-		t.Skip("adb not found in PATH")
+		t.Skip("adb not found in PATH")  // SKIP-OK: #legacy-untriaged
 	}
 
 	// Get first available device
 	devices, err := ListDevices()
 	if err != nil || len(devices) == 0 {
-		t.Skip("no Android devices connected")
+		t.Skip("no Android devices connected")  // SKIP-OK: #legacy-untriaged
 	}
 
 	deviceID := devices[0]
@@ -210,13 +210,13 @@ func TestGetDeviceInfo_Integration(t *testing.T) {
 func TestIsAppInForeground_Integration(t *testing.T) {
 	// Skip if no ADB available
 	if _, err := exec.LookPath("adb"); err != nil {
-		t.Skip("adb not found in PATH")
+		t.Skip("adb not found in PATH")  // SKIP-OK: #legacy-untriaged
 	}
 
 	// Get first available device
 	devices, err := ListDevices()
 	if err != nil || len(devices) == 0 {
-		t.Skip("no Android devices connected")
+		t.Skip("no Android devices connected")  // SKIP-OK: #legacy-untriaged
 	}
 
 	deviceID := devices[0]
@@ -234,18 +234,18 @@ func TestIsAppInForeground_Integration(t *testing.T) {
 func TestAndroidCapture_StartStop_Integration(t *testing.T) {
 	// Skip if no scrcpy available
 	if _, err := exec.LookPath("scrcpy"); err != nil {
-		t.Skip("scrcpy not found in PATH")
+		t.Skip("scrcpy not found in PATH")  // SKIP-OK: #legacy-untriaged
 	}
 
 	// Skip if no ADB available
 	if _, err := exec.LookPath("adb"); err != nil {
-		t.Skip("adb not found in PATH")
+		t.Skip("adb not found in PATH")  // SKIP-OK: #legacy-untriaged
 	}
 
 	// Get first available device
 	devices, err := ListDevices()
 	if err != nil || len(devices) == 0 {
-		t.Skip("no Android devices connected")
+		t.Skip("no Android devices connected")  // SKIP-OK: #legacy-untriaged
 	}
 
 	deviceID := devices[0]
@@ -279,18 +279,18 @@ func TestAndroidCapture_StartStop_Integration(t *testing.T) {
 func TestAndroidCapture_GetFrameChan_Integration(t *testing.T) {
 	// Skip if no scrcpy available
 	if _, err := exec.LookPath("scrcpy"); err != nil {
-		t.Skip("scrcpy not found in PATH")
+		t.Skip("scrcpy not found in PATH")  // SKIP-OK: #legacy-untriaged
 	}
 
 	// Skip if no ADB available
 	if _, err := exec.LookPath("adb"); err != nil {
-		t.Skip("adb not found in PATH")
+		t.Skip("adb not found in PATH")  // SKIP-OK: #legacy-untriaged
 	}
 
 	// Get first available device
 	devices, err := ListDevices()
 	if err != nil || len(devices) == 0 {
-		t.Skip("no Android devices connected")
+		t.Skip("no Android devices connected")  // SKIP-OK: #legacy-untriaged
 	}
 
 	deviceID := devices[0]

@@ -30,7 +30,7 @@ func TestCheckTesseractAvailable(t *testing.T) {
 
 func TestTesseractVersionInfo(t *testing.T) {
 	if !CheckTesseractAvailable() {
-		t.Skip("Tesseract not installed")
+		t.Skip("Tesseract not installed")  // SKIP-OK: #legacy-untriaged
 	}
 
 	info, err := GetDetailedVersion()
@@ -103,7 +103,7 @@ invalid
 
 func TestNewTesseractOCR(t *testing.T) {
 	if !CheckTesseractAvailable() {
-		t.Skip("Tesseract not installed")
+		t.Skip("Tesseract not installed")  // SKIP-OK: #legacy-untriaged
 	}
 
 	config := DefaultTesseractConfig()
@@ -116,7 +116,7 @@ func TestNewTesseractOCR(t *testing.T) {
 
 func TestNewTesseractOCR_NilConfig(t *testing.T) {
 	if !CheckTesseractAvailable() {
-		t.Skip("Tesseract not installed")
+		t.Skip("Tesseract not installed")  // SKIP-OK: #legacy-untriaged
 	}
 
 	ocr, err := NewTesseractOCR(nil)
@@ -128,7 +128,7 @@ func TestNewTesseractOCR_NilConfig(t *testing.T) {
 
 func TestTesseractOCR_GetAvailableLanguages(t *testing.T) {
 	if !CheckTesseractAvailable() {
-		t.Skip("Tesseract not installed")
+		t.Skip("Tesseract not installed")  // SKIP-OK: #legacy-untriaged
 	}
 
 	config := DefaultTesseractConfig()
@@ -146,7 +146,7 @@ func TestTesseractOCR_GetAvailableLanguages(t *testing.T) {
 
 func TestTesseractOCR_GetVersion(t *testing.T) {
 	if !CheckTesseractAvailable() {
-		t.Skip("Tesseract not installed")
+		t.Skip("Tesseract not installed")  // SKIP-OK: #legacy-untriaged
 	}
 
 	config := DefaultTesseractConfig()
@@ -186,7 +186,7 @@ func TestTesseractStats(t *testing.T) {
 
 func TestTesseractProcessor(t *testing.T) {
 	if !CheckTesseractAvailable() {
-		t.Skip("Tesseract not installed")
+		t.Skip("Tesseract not installed")  // SKIP-OK: #legacy-untriaged
 	}
 
 	config := DefaultTesseractConfig()
@@ -200,7 +200,7 @@ func TestTesseractProcessor(t *testing.T) {
 
 func TestTesseractProcessor_GetStats(t *testing.T) {
 	if !CheckTesseractAvailable() {
-		t.Skip("Tesseract not installed")
+		t.Skip("Tesseract not installed")  // SKIP-OK: #legacy-untriaged
 	}
 
 	config := DefaultTesseractConfig()

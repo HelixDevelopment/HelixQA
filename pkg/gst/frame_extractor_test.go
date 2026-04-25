@@ -344,14 +344,14 @@ func TestPixelFormat(t *testing.T) {
 func TestCheckGStreamer(t *testing.T) {
 	err := CheckGStreamer()
 	if err != nil {
-		t.Skip("GStreamer not installed:", err)
+		t.Skip("GStreamer not installed:", err)  // SKIP-OK: #legacy-untriaged
 	}
 }
 
 func TestGetGStreamerVersion(t *testing.T) {
 	version, err := GetGStreamerVersion()
 	if err != nil {
-		t.Skip("GStreamer not installed:", err)
+		t.Skip("GStreamer not installed:", err)  // SKIP-OK: #legacy-untriaged
 	}
 
 	assert.NotEmpty(t, version)
@@ -377,7 +377,7 @@ func TestCheckElement(t *testing.T) {
 func TestFrameExtractor_StartStop(t *testing.T) {
 	// Skip if GStreamer not available
 	if err := CheckGStreamer(); err != nil {
-		t.Skip("GStreamer not installed")
+		t.Skip("GStreamer not installed")  // SKIP-OK: #legacy-untriaged
 	}
 
 	config := DefaultExtractorConfig("test")
