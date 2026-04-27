@@ -31,6 +31,8 @@ EXCLUDE_DIRS=(
   ".cache" ".gradle" ".idea" ".vscode" ".venv" "venv" "__pycache__"
   "build" "dist" "target" "out" "bin" "obj"
   "releases"
+  "Example_Projects"
+  "submodules"
 )
 
 # File-path substrings allowlisted (the canonical artifacts and
@@ -50,6 +52,22 @@ EXCLUDE_PATHS=(
   "/CHANGELOG.md"
   "/docs/superpowers/plans/"
   "anthropic-quickstarts/"
+  # Test fixtures listing forbidden commands as block-list inputs (not invocations):
+  "/tests/security/"
+  "/test/security/"
+  "/internal/workflow/autonomy/autonomy_test.go"
+  "/internal/workflow/executor_test.go"
+  "/internal/security/tools_security_test.go"
+  # User notes / knowledge-base markdown documenting legacy NAS commands:
+  "/Knowledge Base/Tech/NAS/"
+  "/Knowledge Base/Tech/Linux/"
+  # Documentation-only references in third-party security models:
+  "/COMMAND_SECURITY_MODEL.md"
+  # Third-party AI agent configs that DENY suspend-related commands:
+  "vtcode.toml"
+  "vtcode.toml.example"
+  "/zed-extension/vtcode.toml"
+  "/vtcode-config/src/core/commands.rs"
 )
 
 # Forbidden grep -E patterns. Real, tight regexes — not bare words.
