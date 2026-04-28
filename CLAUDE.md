@@ -903,3 +903,36 @@ gate `CM-COVENANT-PROPAGATION`)**.
 
 Non-compliance is a release blocker regardless of context.
 
+
+## MANDATORY §12 HOST-SESSION SAFETY — INCIDENT #2 ANCHOR (2026-04-28)
+
+**Second forensic incident:** on 2026-04-28 18:36:35 MSK the user's
+`user@1000.service` was again SIGKILLed (`status=9/KILL`), this time
+WITHOUT a kernel OOM kill (systemd-oomd inactive, `MemoryMax=infinity`)
+— a different vector than Incident #1. Cascade killed `claude`,
+`tmux`, the in-flight ATMOSphere build, and 20+ npm MCP server
+processes. Likely cumulative cgroup pressure + external watchdog.
+
+**Mandatory safeguards effective 2026-04-28** (full text in parent
+[`docs/guides/ATMOSPHERE_CONSTITUTION.md`](../../../../docs/guides/ATMOSPHERE_CONSTITUTION.md)
+§12 Incident #2):
+
+1. `scripts/build.sh` MUST source `lib/host_session_safety.sh` and
+   call `host_check_safety` BEFORE any heavy step.
+2. `host_check_safety` has 7 distress detectors including conmon
+   cgroup-events warnings (#6) and current-boot session-kill events
+   (#7).
+3. Containers MUST be clean-slate destroyed + rebuilt after any
+   suspected §12 incident. `mem_limit` is per-container, not
+   per-user-slice — operator MUST cap Σ `mem_limit` ≤ physical RAM
+   − user-session overhead.
+4. 20+ npm-spawned MCP server processes are a known memory multiplier;
+   stop non-essential MCPs before heavy ATMOSphere work.
+5. **Investigation: Docker/Podman as session-loss vector.** Per-container
+   cgroups don't prevent cumulative user-slice pressure; conmon
+   `Failed to open cgroups file: /sys/fs/cgroup/memory.events`
+   warnings preceded the 18:36:35 SIGKILL by 6 min — likely correlated.
+
+This directive applies to every owned ATMOSphere repo and every
+HelixQA dependency. Non-compliance is a Constitution §12 violation.
+
