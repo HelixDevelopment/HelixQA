@@ -472,3 +472,39 @@ Both MUST be wired into the project's CI / `run_all_challenges.sh`.
 
 <!-- END host-power-management addendum (CONST-033) -->
 
+
+## MANDATORY ANTI-BLUFF COVENANT — END-USER QUALITY GUARANTEE (User mandate, 2026-04-28)
+
+**Forensic anchor — direct user mandate (verbatim):**
+
+> "We had been in position that all tests do execute with success and all Challenges as well, but in reality the most of the features does not work and can't be used! This MUST NOT be the case and execution of tests and Challenges MUST guarantee the quality, the completion and full usability by end users of the product!"
+
+This is the historical origin of the project's anti-bluff covenant.
+Every test, every Challenge, every gate, every mutation pair exists
+to make the failure mode (PASS on broken-for-end-user feature)
+mechanically impossible.
+
+**Operative rule:** the bar for shipping is **not** "tests pass"
+but **"users can use the feature."** Every PASS in this codebase
+MUST carry positive evidence captured during execution that the
+feature works for the end user. Metadata-only PASS, configuration-
+only PASS, "absence-of-error" PASS, and grep-based PASS without
+runtime evidence are all critical defects regardless of how green
+the summary line looks.
+
+**Tests AND Challenges (HelixQA) are bound equally** — a Challenge
+that scores PASS on a non-functional feature is the same class of
+defect as a unit test that does. Both must produce positive end-
+user evidence; both are subject to the §8.1 five-constraint rule
+and §11 captured-evidence requirement.
+
+**Canonical authority:** parent
+[`docs/guides/ATMOSPHERE_CONSTITUTION.md`](../../docs/guides/ATMOSPHERE_CONSTITUTION.md)
+§8.1 (positive-evidence-only validation) + §11 (bleeding-edge
+ultra-perfection quality bar) + §11.3 (the "no bluff" CLAUDE.md /
+AGENTS.md mandate) + **§11.4 (this end-user-quality-guarantee
+forensic anchor — propagation requirement enforced by pre-build
+gate `CM-COVENANT-PROPAGATION`)**.
+
+Non-compliance is a release blocker regardless of context.
+
