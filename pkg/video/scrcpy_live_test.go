@@ -33,10 +33,10 @@ import (
 func TestScrcpyRecorder_LiveSegmentLoop_MIBOX4(t *testing.T) {
 	const device = "192.168.0.214:5555"
 	if out, err := exec.Command("adb", "-s", device, "shell", "echo", "alive").CombinedOutput(); err != nil {
-		t.Skipf("device %s unreachable: %v (out: %s)", device, err, strings.TrimSpace(string(out)))
+		t.Skipf("device %s unreachable: %v (out: %s)", device, err, strings.TrimSpace(string(out)))  // SKIP-OK: #legacy-skip-untriaged-2026-04-29
 	}
 	if _, err := exec.LookPath("ffmpeg"); err != nil {
-		t.Skipf("ffmpeg not on PATH: %v", err)
+		t.Skipf("ffmpeg not on PATH: %v", err)  // SKIP-OK: #legacy-skip-untriaged-2026-04-29
 	}
 
 	tmpFile, err := os.CreateTemp("", "helixqa-live-*.mp4")

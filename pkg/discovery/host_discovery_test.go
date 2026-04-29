@@ -330,7 +330,7 @@ func TestParseSubnet(t *testing.T) {
 
 	// May fail in some test environments
 	if err != nil {
-		t.Skipf("ParseSubnet failed (may be expected in CI): %v", err)
+		t.Skipf("ParseSubnet failed (may be expected in CI): %v", err)  // SKIP-OK: #legacy-skip-untriaged-2026-04-29
 	}
 
 	// Should find at least one subnet

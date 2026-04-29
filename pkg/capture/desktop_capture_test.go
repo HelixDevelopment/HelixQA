@@ -26,7 +26,7 @@ func TestNewDesktopCapture(t *testing.T) {
 	capture, err := NewDesktopCapture(config)
 
 	if err != nil {
-		t.Skipf("failed to create capture: %v", err)
+		t.Skipf("failed to create capture: %v", err)  // SKIP-OK: #legacy-skip-untriaged-2026-04-29
 	}
 
 	assert.NotNil(t, capture)
@@ -96,7 +96,7 @@ func TestDesktopCapture_GetSource(t *testing.T) {
 
 	capture, err := NewDesktopCapture(config)
 	if err != nil {
-		t.Skipf("failed to create capture: %v", err)
+		t.Skipf("failed to create capture: %v", err)  // SKIP-OK: #legacy-skip-untriaged-2026-04-29
 	}
 
 	assert.Equal(t, "window", capture.GetSource())
@@ -191,7 +191,7 @@ func TestCaptureScreenshot(t *testing.T) {
 	err := CaptureScreenshot(outputPath)
 
 	if err != nil {
-		t.Skipf("Screenshot capture failed: %v", err)
+		t.Skipf("Screenshot capture failed: %v", err)  // SKIP-OK: #legacy-skip-untriaged-2026-04-29
 	}
 
 	t.Logf("Screenshot saved to: %s", outputPath)
@@ -329,13 +329,13 @@ func TestDesktopCapture_StartStop(t *testing.T) {
 
 	capture, err := NewDesktopCapture(config)
 	if err != nil {
-		t.Skipf("failed to create capture: %v", err)
+		t.Skipf("failed to create capture: %v", err)  // SKIP-OK: #legacy-skip-untriaged-2026-04-29
 	}
 
 	// Start capture
 	err = capture.Start()
 	if err != nil {
-		t.Skipf("failed to start capture: %v (may require display)", err)
+		t.Skipf("failed to start capture: %v (may require display)", err)  // SKIP-OK: #legacy-skip-untriaged-2026-04-29
 	}
 
 	assert.True(t, capture.IsRunning())
@@ -357,7 +357,7 @@ func TestDesktopCapture_GetFrameChan(t *testing.T) {
 	config := DefaultDesktopConfig()
 	capture, err := NewDesktopCapture(config)
 	if err != nil {
-		t.Skipf("failed to create capture: %v", err)
+		t.Skipf("failed to create capture: %v", err)  // SKIP-OK: #legacy-skip-untriaged-2026-04-29
 	}
 
 	// Should return channel even if not running
