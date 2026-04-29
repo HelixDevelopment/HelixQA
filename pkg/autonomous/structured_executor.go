@@ -178,6 +178,21 @@ func (ste *StructuredTestExecutor) executeTestCase(
 		tc.ID, tc.Name, tc.Priority, len(tc.Steps),
 	)
 
+	// Article XI §11.5: env-dependent tests SKIP-OK when their
+	// declared `requires_env` variables aren't set. Better to
+	// honestly skip than fail-or-bluff-pass on unsupported hardware.
+	for _, envVar := range tc.RequiresEnv {
+		if os.Getenv(envVar) == "" {
+			fmt.Printf(
+				"  [structured] [%s] ⊘ SKIPPED — SKIP-OK: #%s — env %q not set (lab hardware unavailable)\n",
+				tc.ID, envVar, envVar,
+			)
+			result.TestCasesSkipped++
+			result.StepsExecuted += len(tc.Steps)
+			return nil
+		}
+	}
+
 	testPassed := true
 	executedSteps := 0
 	skippedSteps := 0

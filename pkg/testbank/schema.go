@@ -75,6 +75,23 @@ type TestCase struct {
 	// Katniss, IPTV Pro, RuTube, etc. is the test subject, not a
 	// bug. Defaults to false — tests MUST stay in the target app.
 	AllowForegroundLeave bool `yaml:"allow_foreground_leave,omitempty" json:"allow_foreground_leave,omitempty"`
+
+	// RequiresEnv lists environment variables that MUST be set for
+	// this test case to run. If any are unset or empty, the executor
+	// SKIP-OKs the entire test case rather than failing — Article XI
+	// §11.5 demands honest skips for env-dependent tests, not silent
+	// fails (or worse, silent passes).
+	//
+	// Examples:
+	//   requires_env: [HELIXQA_LAB_HAS_4K_MEDIA]   // for 4K-on-1080p tests
+	//   requires_env: [HELIXQA_LAB_HAS_USB_KBD]    // for external-keyboard tests
+	//   requires_env: [HELIXQA_LAB_HAS_SOUNDBAR]   // for audio-delay tests
+	//   requires_env: [HELIXQA_LAB_FULL_HARDWARE]  // generic catch-all
+	//
+	// Operators set the var(s) in their .env (or HelixQA/.env) when
+	// the corresponding hardware is available. Lab installs without
+	// the hardware see honest SKIP-OK results — anti-bluff compliant.
+	RequiresEnv []string `yaml:"requires_env,omitempty" json:"requires_env,omitempty"`
 }
 
 // ActionType identifies the type of action to execute.

@@ -1918,6 +1918,18 @@ func (sp *SessionPipeline) Run(
 				// Guard: verify the target app is still in the
 				// foreground. If the LLM navigated away (e.g.,
 				// pressed back to the launcher), relaunch the app.
+				//
+				// FIX-QA-2026-04-29-019 (Settings-trap blocker): when
+				// the system Settings app is in the foreground, the
+				// LLM has likely proposed a DPAD action that would
+				// have toggled an Accessibility setting (font_scale,
+				// brightness, density, etc.). Such actions persist
+				// across sessions and pollute the operator's device.
+				// We hard-block any further action this iteration —
+				// relaunch the target app and `continue` so the next
+				// LLM call screenshots the correct app, not Settings.
+				// Without this `continue`, the guard relaunched the
+				// app but then dispatched a now-mis-aligned action.
 				if (platform == "android" || platform == "androidtv") && device != "" && expectedPkg != "" {
 					fgOut, _ := osexec.CommandContext(
 						curiosityCtx,
@@ -1925,12 +1937,21 @@ func (sp *SessionPipeline) Run(
 						"shell", "dumpsys", "window", "windows",
 					).CombinedOutput()
 					fgStr := string(fgOut)
-					// Check if the expected package appears in the
-					// current focus window.
-					if len(fgStr) > 0 && !strings.Contains(fgStr, expectedPkg) {
+					// Settings package names vary by OEM — match all
+					// known patterns + a generic "settings" substring.
+					inSettings := strings.Contains(fgStr, "com.android.tv.settings") ||
+						strings.Contains(fgStr, "com.android.settings") ||
+						strings.Contains(fgStr, "com.google.android.tvlauncher") &&
+							strings.Contains(fgStr, "Settings")
+					driftedAway := len(fgStr) > 0 && !strings.Contains(fgStr, expectedPkg)
+					if inSettings || driftedAway {
+						reason := "app not in foreground"
+						if inSettings {
+							reason = "device Settings detected in foreground (Article VIII guard)"
+						}
 						fmt.Printf(
-							"  [curiosity %s #%d] app not in foreground, relaunching %s\n",
-							platform, i+1, expectedPkg,
+							"  [curiosity %s #%d] %s — relaunching %s and skipping this step\n",
+							platform, i+1, reason, expectedPkg,
 						)
 						// Clean relaunch — see structured_executor.go
 						// for the qa_username/qa_password ban
@@ -1944,6 +1965,12 @@ func (sp *SessionPipeline) Run(
 							"adb", launchArgs...,
 						).CombinedOutput()
 						time.Sleep(3 * time.Second)
+						// CRITICAL: skip the rest of this iteration
+						// so the LLM's now-stale action (generated
+						// from the wrong screenshot) is NOT
+						// dispatched. The next iteration will
+						// screenshot the correct app and re-plan.
+						continue
 					}
 				}
 
