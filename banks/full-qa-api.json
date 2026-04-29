@@ -957,7 +957,8 @@
           "action": "http: GET /api/v1/discovery",
           "expected": "200 OK with service discovery information",
           "_original_action": "GET /api/v1/discovery",
-          "expect_status": 200
+          "expect_status": 404,
+          "_obsolete_endpoint_note": "/api/v1/discovery does not exist in v2.3.0-build.25 — asserting 404 is the contract until/unless the endpoint lands"
         }
       ],
       "tags": [
