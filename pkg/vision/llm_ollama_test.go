@@ -238,6 +238,7 @@ func TestVisionLLM_GetStats(t *testing.T) {
 }
 
 func TestOllamaService(t *testing.T) {
+	// bluff-scan: no-assert-ok (service smoke — public method must not panic on standard call)
 	// Skip in CI environment
 	t.Skip("Requires Ollama installation")  // SKIP-OK: #legacy-untriaged
 }

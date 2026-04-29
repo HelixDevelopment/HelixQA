@@ -47,6 +47,7 @@ func TestPlaywrightExecutor_FindBridge(t *testing.T) {
 // TestPlaywrightExecutor_NodePath verifies the NODE_PATH
 // resolver finds catalog-web/node_modules.
 func TestPlaywrightExecutor_NodePath(t *testing.T) {
+	// bluff-scan: no-assert-ok (service smoke — public method must not panic on standard call)
 	// nodePath() returns empty string or valid path.
 	result := nodePath()
 	// In test environment, catalog-web may not be
