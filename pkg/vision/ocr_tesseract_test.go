@@ -21,6 +21,7 @@ func TestDefaultTesseractConfig(t *testing.T) {
 }
 
 func TestCheckTesseractAvailable(t *testing.T) {
+	// bluff-scan: no-assert-ok (environment-probe smoke — must not panic; result depends on host)
 	// This test depends on whether tesseract is installed
 	available := CheckTesseractAvailable()
 

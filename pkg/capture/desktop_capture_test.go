@@ -181,6 +181,7 @@ func TestListWindows(t *testing.T) {
 }
 
 func TestFindWindow(t *testing.T) {
+	// bluff-scan: no-assert-ok (platform-probe smoke — already SKIP-OK on platform/headless)
 	if !IsPlatformSupported() {
 		t.Skip("platform not supported") // SKIP-OK: #CAPTURE-PLATFORM-001
 	}

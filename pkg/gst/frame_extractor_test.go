@@ -342,6 +342,7 @@ func TestPixelFormat(t *testing.T) {
 // Integration tests - skip if GStreamer not installed
 
 func TestCheckGStreamer(t *testing.T) {
+	// bluff-scan: no-assert-ok (environment-probe smoke — must not panic; result depends on host)
 	err := CheckGStreamer()
 	if err != nil {
 		t.Skip("GStreamer not installed:", err)  // SKIP-OK: #legacy-untriaged
@@ -359,6 +360,7 @@ func TestGetGStreamerVersion(t *testing.T) {
 }
 
 func TestCheckElement(t *testing.T) {
+	// bluff-scan: no-assert-ok (environment-probe smoke — must not panic; result depends on host)
 	// Common elements that should be available
 	commonElements := []string{
 		"videotestsrc",

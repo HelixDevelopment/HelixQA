@@ -69,6 +69,7 @@ func TestFactory_DefaultBufferSize(t *testing.T) {
 }
 
 func TestFactory_ConcurrentRegister(t *testing.T) {
+	// bluff-scan: no-assert-ok (concurrency test — go test -race catches data races; absence of panic == correctness)
 	done := make(chan struct{})
 	for i := 0; i < 50; i++ {
 		go func() {

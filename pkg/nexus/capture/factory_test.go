@@ -59,6 +59,7 @@ func TestFactory_Kinds(t *testing.T) {
 }
 
 func TestFactory_ConcurrentRegister(t *testing.T) {
+	// bluff-scan: no-assert-ok (concurrency test — go test -race catches data races; absence of panic == correctness)
 	// Sanity: Register + Open from multiple goroutines don't race under -race.
 	done := make(chan struct{})
 	for i := 0; i < 50; i++ {

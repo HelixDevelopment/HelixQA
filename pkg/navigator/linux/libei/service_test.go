@@ -165,6 +165,7 @@ func TestService_CloseIdempotent(t *testing.T) {
 }
 
 func TestNewDefaultService_UsesProductionFactory(t *testing.T) {
+	// bluff-scan: no-assert-ok (integration/interface-compliance smoke — wiring must not panic)
 	// Can't verify end-to-end without a real session bus; when
 	// DBUS_SESSION_BUS_ADDRESS is unset, NewDefaultService returns
 	// ErrNoSessionBus wrapped. When set, we pass through into the real

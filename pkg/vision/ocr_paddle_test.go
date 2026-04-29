@@ -39,6 +39,7 @@ func TestNewPaddleOCR_NilConfig(t *testing.T) {
 }
 
 func TestCheckPaddleOCRAvailable(t *testing.T) {
+	// bluff-scan: no-assert-ok (environment-probe smoke — must not panic; result depends on host)
 	// This will likely be false in test environment
 	available := CheckPaddleOCRAvailable("")
 	t.Logf("PaddleOCR available: %v", available)
