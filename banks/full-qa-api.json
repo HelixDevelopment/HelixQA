@@ -963,7 +963,7 @@
           "expected": "200 OK with service discovery information",
           "_original_action": "GET /api/v1/discovery",
           "expect_status": 404,
-          "_obsolete_endpoint_note": "/api/v1/discovery does not exist in v2.3.0-build.25 — asserting 404 is the contract until/unless the endpoint lands"
+          "_obsolete_endpoint_note": "/api/v1/discovery does not exist in v2.3.0-build.25 \u2014 asserting 404 is the contract until/unless the endpoint lands"
         }
       ],
       "tags": [
@@ -2625,7 +2625,7 @@
         {
           "name": "Search with Cyrillic",
           "action": "http: GET /api/v1/search?q=",
-          "expected": "200 OK with results matching Cyrillic directory name 'Филмови'",
+          "expected": "200 OK with results matching Cyrillic directory name '\u0424\u0438\u043b\u043c\u043e\u0432\u0438'",
           "_original_action": "GET /api/v1/search?q=%D0%A4%D0%B8%D0%BB%D0%BC%D0%BE%D0%B2%D0%B8 with auth token",
           "expect_status": 200,
           "auth": "admin"
@@ -2677,7 +2677,7 @@
       "steps": [
         {
           "name": "Search with 1000+ character query",
-          "action": "http: GET /api/v1/search?q=AAAA...x1000",
+          "action": "http: GET /api/v1/search?q=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
           "expected": "400 Bad Request or 200 OK with empty results (no crash)",
           "_original_action": "GET /api/v1/search?q=AAAA...x1000 with auth token",
           "expect_status": 400,
@@ -3193,7 +3193,7 @@
         {
           "name": "Search for music directory",
           "action": "http: GET /api/v1/search?q=",
-          "expected": "200 OK with results matching 'Музика'",
+          "expected": "200 OK with results matching '\u041c\u0443\u0437\u0438\u043a\u0430'",
           "_original_action": "GET /api/v1/search?q=%D0%9C%D1%83%D0%B7%D0%B8%D0%BA%D0%B0 with auth token",
           "expect_status": 200,
           "auth": "admin"
@@ -3206,7 +3206,7 @@
         "internationalization"
       ],
       "estimated_duration": "10s",
-      "expected_result": "Cyrillic term 'Музика' returns matching results"
+      "expected_result": "Cyrillic term '\u041c\u0443\u0437\u0438\u043a\u0430' returns matching results"
     },
     {
       "id": "FQA-API-103",
@@ -3220,7 +3220,7 @@
         {
           "name": "Search for series directory",
           "action": "http: GET /api/v1/search?q=",
-          "expected": "200 OK with results matching 'Серије'",
+          "expected": "200 OK with results matching '\u0421\u0435\u0440\u0438\u0458\u0435'",
           "_original_action": "GET /api/v1/search?q=%D0%A1%D0%B5%D1%80%D0%B8%D1%98%D0%B5 with auth token",
           "expect_status": 200,
           "auth": "admin"
@@ -3233,7 +3233,7 @@
         "internationalization"
       ],
       "estimated_duration": "10s",
-      "expected_result": "Cyrillic term 'Серије' returns matching results"
+      "expected_result": "Cyrillic term '\u0421\u0435\u0440\u0438\u0458\u0435' returns matching results"
     },
     {
       "id": "FQA-API-104",
@@ -3405,7 +3405,7 @@
         {
           "name": "Search for installations",
           "action": "http: GET /api/v1/search?q=",
-          "expected": "200 OK with results matching 'Инсталације'",
+          "expected": "200 OK with results matching '\u0418\u043d\u0441\u0442\u0430\u043b\u0430\u0446\u0438\u0458\u0435'",
           "_original_action": "GET /api/v1/search?q=%D0%98%D0%BD%D1%81%D1%82%D0%B0%D0%BB%D0%B0%D1%86%D0%B8%D1%98%D0%B5 with auth token",
           "expect_status": 200,
           "auth": "admin"
@@ -3418,7 +3418,7 @@
         "internationalization"
       ],
       "estimated_duration": "10s",
-      "expected_result": "Cyrillic term 'Инсталације' returns matching results"
+      "expected_result": "Cyrillic term '\u0418\u043d\u0441\u0442\u0430\u043b\u0430\u0446\u0438\u0458\u0435' returns matching results"
     },
     {
       "id": "FQA-API-111",
@@ -4523,7 +4523,7 @@
     },
     {
       "id": "FQA-API-150",
-      "name": "Entity search with Cyrillic - Стрипови (comics)",
+      "name": "Entity search with Cyrillic - \u0421\u0442\u0440\u0438\u043f\u043e\u0432\u0438 (comics)",
       "category": "functional",
       "priority": "medium",
       "platforms": [
@@ -4533,7 +4533,7 @@
         {
           "name": "Search Cyrillic comics",
           "action": "http: GET /api/v1/entities?search=",
-          "expected": "200 OK with results matching 'Стрипови'",
+          "expected": "200 OK with results matching '\u0421\u0442\u0440\u0438\u043f\u043e\u0432\u0438'",
           "_original_action": "GET /api/v1/entities?search=%D0%A1%D1%82%D1%80%D0%B8%D0%BF%D0%BE%D0%B2%D0%B8 with auth token",
           "expect_status": 200,
           "auth": "admin"
@@ -5143,7 +5143,7 @@
           "action": "http: POST /api/v1/collections",
           "expected": "400 Bad Request with length validation or 201 Created (if no limit)",
           "body": {
-            "name": "A...x500"
+            "name": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
           },
           "_original_action": "POST /api/v1/collections with body {\"name\":\"A...x500\"}",
           "expect_status": 400,
@@ -5173,10 +5173,10 @@
           "action": "http: POST /api/v1/collections",
           "expected": "201 Created with Cyrillic name preserved",
           "body": {
-            "name": "Омиљени филмови",
-            "description": "Колекција најбољих филмова"
+            "name": "\u041e\u043c\u0438\u0459\u0435\u043d\u0438 \u0444\u0438\u043b\u043c\u043e\u0432\u0438",
+            "description": "\u041a\u043e\u043b\u0435\u043a\u0446\u0438\u0458\u0430 \u043d\u0430\u0458\u0431\u043e\u0459\u0438\u0445 \u0444\u0438\u043b\u043c\u043e\u0432\u0430"
           },
-          "_original_action": "POST /api/v1/collections with body {\"name\":\"Омиљени филмови\",\"description\":\"Колекција најбољих филмова\"}",
+          "_original_action": "POST /api/v1/collections with body {\"name\":\"\u041e\u043c\u0438\u0459\u0435\u043d\u0438 \u0444\u0438\u043b\u043c\u043e\u0432\u0438\",\"description\":\"\u041a\u043e\u043b\u0435\u043a\u0446\u0438\u0458\u0430 \u043d\u0430\u0458\u0431\u043e\u0459\u0438\u0445 \u0444\u0438\u043b\u043c\u043e\u0432\u0430\"}",
           "expect_status": 201,
           "auth": "admin"
         }
@@ -6106,9 +6106,9 @@
           "action": "http: POST /api/v1/playlists",
           "expected": "201 Created with Cyrillic name preserved",
           "body": {
-            "name": "Омиљене песме"
+            "name": "\u041e\u043c\u0438\u0459\u0435\u043d\u0435 \u043f\u0435\u0441\u043c\u0435"
           },
-          "_original_action": "POST /api/v1/playlists with body {\"name\":\"Омиљене песме\"}",
+          "_original_action": "POST /api/v1/playlists with body {\"name\":\"\u041e\u043c\u0438\u0459\u0435\u043d\u0435 \u043f\u0435\u0441\u043c\u0435\"}",
           "expect_status": 201,
           "auth": "admin"
         }
@@ -7973,7 +7973,7 @@
       "steps": [
         {
           "name": "Send request with very long URL",
-          "action": "http: GET /api/v1/entities?search=AAAA...x2000",
+          "action": "http: GET /api/v1/entities?search=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
           "expected": "400 Bad Request or 414 URI Too Long (no server crash)",
           "_original_action": "GET /api/v1/entities?search=AAAA...x2000 (URL over 8000 chars) with auth token",
           "expect_status": 400,
