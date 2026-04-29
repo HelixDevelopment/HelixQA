@@ -44,6 +44,14 @@ type StructuredTestExecutor struct {
 	// PipelineConfig.HTTPBaseURL (or env HELIXQA_HTTP_BASE_URL as
 	// a fallback). Nil until needed.
 	http *HTTPExecutor
+
+	// playwright is the executor for ActionTypePlaywright steps.
+	// Lazy-built the first time a Playwright step appears, using
+	// PipelineConfig.PlaywrightCDPURL (or env
+	// HELIXQA_PLAYWRIGHT_CDP_URL). Nil until configured AND
+	// needed; absent config means Playwright steps SKIP rather
+	// than execute.
+	playwright *PlaywrightExecutor
 }
 
 // NewStructuredTestExecutor creates a new structured test executor.
@@ -526,18 +534,28 @@ func (ste *StructuredTestExecutor) performAction(
 		return runAssertion(ste.http, actionValue)
 
 	case testbank.ActionTypePlaywright:
-		// Web browser action via Playwright. Currently the
-		// runtime backend is pending — banks have been converted
-		// ahead of the executor so this step type is recognized
-		// as structurally valid (NOT a bluff per Article XI: it
-		// has a real prefix, real grammar, real selector) but
-		// SKIPs honestly until the Playwright runtime lands.
-		// Tracked as PLAYWRIGHT-RUNTIME-PENDING in the audit log.
-		fmt.Printf("      [SKIP] playwright: %s — runtime pending (PLAYWRIGHT-RUNTIME-PENDING)\n", actionValue)
-		return ActionResult{
-			Skipped: true,
-			Message: fmt.Sprintf("SKIP-OK: #PLAYWRIGHT-RUNTIME-PENDING — playwright step recognized (%s) but runtime not yet wired", actionValue),
+		// Web browser action via the Playwright CLI adapter
+		// (Challenges/pkg/userflow.PlaywrightCLIAdapter). Lazy-
+		// builds the per-session executor on first use. When no
+		// CDP URL is configured (PipelineConfig.PlaywrightCDPURL
+		// nor HELIXQA_PLAYWRIGHT_CDP_URL env), the step SKIPs
+		// with PLAYWRIGHT-RUNTIME-PENDING — Article XI §11.2.2
+		// (no silent PASS when the real system is unreachable).
+		fmt.Printf("      [action] playwright: %s\n", actionValue)
+		if ste.playwright == nil {
+			cdpURL := ste.config.PlaywrightCDPURL
+			if cdpURL == "" {
+				cdpURL = os.Getenv("HELIXQA_PLAYWRIGHT_CDP_URL")
+			}
+			if cdpURL == "" {
+				return ActionResult{
+					Skipped: true,
+					Message: fmt.Sprintf("SKIP-OK: #PLAYWRIGHT-RUNTIME-PENDING — set PipelineConfig.PlaywrightCDPURL or HELIXQA_PLAYWRIGHT_CDP_URL to ws://host:port to run %q", actionValue),
+				}
+			}
+			ste.playwright = NewPlaywrightExecutor(cdpURL)
 		}
+		return ste.playwright.Execute(ctx, actionValue)
 
 	case testbank.ActionTypeDescription:
 		// Legacy text-only action. If the author marked it as an
