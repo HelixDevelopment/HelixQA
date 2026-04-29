@@ -207,7 +207,8 @@
           "action": "http: GET /api/v1/entities",
           "expected": "200 OK (new token is valid)",
           "_original_action": "GET /api/v1/entities with new access token",
-          "expect_status": 200
+          "expect_status": 200,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -248,7 +249,8 @@
           "action": "http: GET /api/v1/entities",
           "expected": "401 Unauthorized (token blacklisted)",
           "_original_action": "GET /api/v1/entities with the logged-out token",
-          "expect_status": 401
+          "expect_status": 401,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -273,7 +275,8 @@
           "action": "http: GET /api/v1/entities",
           "expected": "401 Unauthorized",
           "_original_action": "GET /api/v1/entities",
-          "expect_status": 401
+          "expect_status": 401,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -304,7 +307,8 @@
           "action": "http: GET /api/v1/entities",
           "expected": "401 Unauthorized with token expired message",
           "_original_action": "GET /api/v1/entities with Authorization: Bearer <expired_token>",
-          "expect_status": 401
+          "expect_status": 401,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -337,7 +341,8 @@
           "action": "http: GET /api/v1/admin/system-info",
           "expected": "403 Forbidden",
           "_original_action": "GET /api/v1/admin/system-info with user token",
-          "expect_status": 403
+          "expect_status": 403,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -415,7 +420,8 @@
           "action": "http: POST /api/v1/auth/change-password",
           "expected": "200 OK",
           "_original_action": "POST /api/v1/auth/change-password with token and body {\"current_password\":\"admin123\",\"new_password\":\"NewAdmin456!\"}",
-          "expect_status": 200
+          "expect_status": 200,
+          "auth": "admin"
         },
         {
           "name": "Login with new password",
@@ -437,7 +443,8 @@
             "new_password": "admin123"
           },
           "_original_action": "POST /api/v1/auth/change-password with body {\"current_password\":\"NewAdmin456!\",\"new_password\":\"admin123\"}",
-          "expect_status": 200
+          "expect_status": 200,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -502,7 +509,8 @@
           "action": "http: GET /api/v1/auth/me",
           "expected": "200 OK with username 'admin' and role 'admin'",
           "_original_action": "GET /api/v1/auth/me with token",
-          "expect_status": 200
+          "expect_status": 200,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -528,7 +536,8 @@
           "action": "http: GET /api/v1/auth/status",
           "expected": "200 OK with authentication status info",
           "_original_action": "GET /api/v1/auth/status",
-          "expect_status": 200
+          "expect_status": 200,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -644,7 +653,8 @@
           "action": "http: GET /api/v1/auth/init-status",
           "expected": "200 OK with initialization status (whether setup wizard is needed)",
           "_original_action": "GET /api/v1/auth/init-status",
-          "expect_status": 200
+          "expect_status": 200,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -675,7 +685,8 @@
           "action": "http: GET /api/v1/entities",
           "expected": "401 Unauthorized",
           "_original_action": "GET /api/v1/entities with forged token",
-          "expect_status": 401
+          "expect_status": 401,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -804,13 +815,15 @@
           "name": "Request with Accept-Encoding: br",
           "action": "http: GET /api/v1/entities",
           "expected": "Response contains Content-Encoding: br header",
-          "_original_action": "GET /api/v1/entities with Accept-Encoding: br and valid auth token"
+          "_original_action": "GET /api/v1/entities with Accept-Encoding: br and valid auth token",
+          "auth": "admin"
         },
         {
           "name": "Request with Accept-Encoding: gzip",
           "action": "http: GET /api/v1/entities",
           "expected": "Response contains Content-Encoding: gzip header (fallback)",
-          "_original_action": "GET /api/v1/entities with Accept-Encoding: gzip and valid auth token"
+          "_original_action": "GET /api/v1/entities with Accept-Encoding: gzip and valid auth token",
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -909,7 +922,8 @@
           "action": "http: GET /api/v1/image-proxy?url=https://image.tmdb.org/t/p/w500/test.jpg",
           "expected": "200 OK with proxied image content or appropriate error if URL invalid",
           "_original_action": "GET /api/v1/image-proxy?url=https://image.tmdb.org/t/p/w500/test.jpg",
-          "expect_status": 200
+          "expect_status": 200,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -981,7 +995,8 @@
             "path": "/"
           },
           "_original_action": "POST /api/v1/storage/roots with body {\"name\":\"Synology NAS\",\"protocol\":\"smb\",\"host\":\"synology.local\",\"share\":\"media\",\"path\":\"/\"}",
-          "expect_status": 201
+          "expect_status": 201,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -1021,7 +1036,8 @@
             "path": "/tmp/test-media"
           },
           "_original_action": "POST /api/v1/storage/roots with body {\"name\":\"Local Media\",\"protocol\":\"local\",\"path\":\"/tmp/test-media\"}",
-          "expect_status": 201
+          "expect_status": 201,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -1056,7 +1072,8 @@
           "action": "http: GET /api/v1/storage/roots",
           "expected": "200 OK with JSON array of storage root objects",
           "_original_action": "GET /api/v1/storage/roots with token",
-          "expect_status": 200
+          "expect_status": 200,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -1082,7 +1099,8 @@
           "action": "http: GET /api/v1/storage-roots",
           "expected": "200 OK with same data as /storage/roots",
           "_original_action": "GET /api/v1/storage-roots with valid auth token",
-          "expect_status": 200
+          "expect_status": 200,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -1108,14 +1126,16 @@
           "action": "http: GET /api/v1/storage-roots",
           "expected": "200 OK with at least one root",
           "_original_action": "GET /api/v1/storage-roots with auth token",
-          "expect_status": 200
+          "expect_status": 200,
+          "auth": "admin"
         },
         {
           "name": "Get status by ID",
           "action": "http: GET /api/v1/storage-roots/{id}/status",
           "expected": "200 OK with storage root status including connectivity info",
           "_original_action": "GET /api/v1/storage-roots/{id}/status",
-          "expect_status": 200
+          "expect_status": 200,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -1147,7 +1167,8 @@
           },
           "_original_action": "POST /api/v1/storage/roots with body {\"name\":\"Bad Root\",\"protocol\":\"gopher\",\"path\":\"/test\"}",
           "expect_status": 400,
-          "expect_body_contains": "error"
+          "expect_body_contains": "error",
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -1176,7 +1197,8 @@
           "body": {},
           "_original_action": "POST /api/v1/storage/roots with body {}",
           "expect_status": 400,
-          "expect_body_contains": "error"
+          "expect_body_contains": "error",
+          "auth": "admin"
         },
         {
           "name": "Attempt with only name",
@@ -1186,7 +1208,8 @@
             "name": "Incomplete Root"
           },
           "_original_action": "POST /api/v1/storage/roots with body {\"name\":\"Incomplete Root\"}",
-          "expect_status": 400
+          "expect_status": 400,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -1219,7 +1242,8 @@
             "path": "/tmp/dup1"
           },
           "_original_action": "POST /api/v1/storage/roots with body {\"name\":\"Duplicate Test\",\"protocol\":\"local\",\"path\":\"/tmp/dup1\"}",
-          "expect_status": 201
+          "expect_status": 201,
+          "auth": "admin"
         },
         {
           "name": "Create second root with same name",
@@ -1232,7 +1256,8 @@
           },
           "_original_action": "POST /api/v1/storage/roots with body {\"name\":\"Duplicate Test\",\"protocol\":\"local\",\"path\":\"/tmp/dup2\"}",
           "expect_status": 409,
-          "expect_body_contains": "error"
+          "expect_body_contains": "error",
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -1265,7 +1290,8 @@
             "password": "test"
           },
           "_original_action": "POST /api/v1/smb/test with body {\"host\":\"synology.local\",\"share\":\"media\",\"username\":\"test\",\"password\":\"test\"}",
-          "expect_status": 200
+          "expect_status": 200,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -1293,7 +1319,8 @@
             "host": "synology.local"
           },
           "_original_action": "POST /api/v1/smb/discover with body {\"host\":\"synology.local\"}",
-          "expect_status": 200
+          "expect_status": 200,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -1324,7 +1351,8 @@
             "path": "/"
           },
           "_original_action": "POST /api/v1/smb/browse with body {\"host\":\"synology.local\",\"share\":\"media\",\"path\":\"/\"}",
-          "expect_status": 200
+          "expect_status": 200,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -1350,7 +1378,8 @@
           "action": "http: GET /api/v1/storage/list/",
           "expected": "200 OK with directory listing of root level",
           "_original_action": "GET /api/v1/storage/list/ with auth token",
-          "expect_status": 200
+          "expect_status": 200,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -1410,7 +1439,8 @@
             "path": "/"
           },
           "_original_action": "POST /api/v1/storage/roots with body {\"name\":\"FTP Server\",\"protocol\":\"ftp\",\"host\":\"ftp.example.com\",\"port\":21,\"path\":\"/\"}",
-          "expect_status": 201
+          "expect_status": 201,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -1442,7 +1472,8 @@
             "path": "/export/media"
           },
           "_original_action": "POST /api/v1/storage/roots with body {\"name\":\"NFS Export\",\"protocol\":\"nfs\",\"host\":\"nas.local\",\"path\":\"/export/media\"}",
-          "expect_status": 201
+          "expect_status": 201,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -1474,7 +1505,8 @@
             "path": "/dav/media"
           },
           "_original_action": "POST /api/v1/storage/roots with body {\"name\":\"WebDAV Server\",\"protocol\":\"webdav\",\"host\":\"webdav.example.com\",\"path\":\"/dav/media\"}",
-          "expect_status": 201
+          "expect_status": 201,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -1527,7 +1559,8 @@
           "action": "http: GET /api/v1/smb/test?host=synology.local&share=media",
           "expected": "200 OK with connection test result",
           "_original_action": "GET /api/v1/smb/test?host=synology.local&share=media",
-          "expect_status": 200
+          "expect_status": 200,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -1553,7 +1586,8 @@
           "action": "http: GET /api/v1/smb/discover?host=synology.local",
           "expected": "200 OK with discovered shares",
           "_original_action": "GET /api/v1/smb/discover?host=synology.local",
-          "expect_status": 200
+          "expect_status": 200,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -1584,7 +1618,8 @@
             "path": "/../../../etc"
           },
           "_original_action": "POST /api/v1/storage/roots with body {\"name\":\"Evil Root\",\"protocol\":\"local\",\"path\":\"/../../../etc\"}",
-          "expect_status": 400
+          "expect_status": 400,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -1618,7 +1653,8 @@
           "action": "http: POST /api/v1/scans",
           "expected": "200 OK or 202 Accepted with scan job ID",
           "_original_action": "POST /api/v1/scans with body containing storage root ID",
-          "expect_status": 200
+          "expect_status": 200,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -1642,14 +1678,16 @@
           "name": "Queue a scan and get job ID",
           "action": "http: POST /api/v1/scans",
           "expected": "Job ID returned",
-          "_original_action": "POST /api/v1/scans"
+          "_original_action": "POST /api/v1/scans",
+          "auth": "admin"
         },
         {
           "name": "Check scan status",
           "action": "http: GET /api/v1/scans/{job_id}",
           "expected": "200 OK with scan status (pending, running, completed, or failed)",
           "_original_action": "GET /api/v1/scans/{job_id}",
-          "expect_status": 200
+          "expect_status": 200,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -1675,7 +1713,8 @@
           "action": "http: GET /api/v1/scans",
           "expected": "200 OK with JSON array of scan job objects",
           "_original_action": "GET /api/v1/scans with auth token",
-          "expect_status": 200
+          "expect_status": 200,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -1704,7 +1743,8 @@
           },
           "_original_action": "POST /api/v1/scans with body {\"storage_root_id\": 99999}",
           "expect_status": 404,
-          "expect_body_contains": "error"
+          "expect_body_contains": "error",
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -1729,13 +1769,15 @@
           "name": "Queue scan",
           "action": "http: POST /api/v1/scans",
           "expected": "Job started",
-          "_original_action": "POST /api/v1/scans"
+          "_original_action": "POST /api/v1/scans",
+          "auth": "admin"
         },
         {
           "name": "Poll scan status 3 times",
           "action": "http: GET /api/v1/scans/{job_id}",
           "expected": "Each response includes progress percentage or file count",
-          "_original_action": "GET /api/v1/scans/{job_id} every 5 seconds"
+          "_original_action": "GET /api/v1/scans/{job_id} every 5 seconds",
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -1761,7 +1803,8 @@
           "action": "http: GET /api/v1/stats/scans",
           "expected": "200 OK with scan history entries",
           "_original_action": "GET /api/v1/stats/scans with auth token",
-          "expect_status": 200
+          "expect_status": 200,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -1791,13 +1834,15 @@
             "path": "/tmp/empty-test-dir"
           },
           "_original_action": "POST /api/v1/storage/roots with body {\"name\":\"Empty Root\",\"protocol\":\"local\",\"path\":\"/tmp/empty-test-dir\"}",
-          "expect_status": 201
+          "expect_status": 201,
+          "auth": "admin"
         },
         {
           "name": "Queue scan for empty root",
           "action": "http: POST /api/v1/scans",
           "expected": "Scan completes quickly with 0 files found",
-          "_original_action": "POST /api/v1/scans with the new root ID"
+          "_original_action": "POST /api/v1/scans with the new root ID",
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -1822,7 +1867,8 @@
           "action": "http: GET /api/v1/stats/overall",
           "expected": "200 OK with statistics including total files, storage used, last scan time",
           "_original_action": "GET /api/v1/stats/overall with auth token",
-          "expect_status": 200
+          "expect_status": 200,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -1847,7 +1893,8 @@
           "action": "http: GET /api/v1/stats/filetypes",
           "expected": "200 OK with breakdown of file types and counts",
           "_original_action": "GET /api/v1/stats/filetypes with auth token",
-          "expect_status": 200
+          "expect_status": 200,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -1873,7 +1920,8 @@
           "action": "http: GET /api/v1/stats/sizes",
           "expected": "200 OK with size distribution buckets",
           "_original_action": "GET /api/v1/stats/sizes with auth token",
-          "expect_status": 200
+          "expect_status": 200,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -1899,7 +1947,8 @@
           "action": "http: GET /api/v1/stats/duplicates",
           "expected": "200 OK with duplicate file statistics",
           "_original_action": "GET /api/v1/stats/duplicates with auth token",
-          "expect_status": 200
+          "expect_status": 200,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -1924,7 +1973,8 @@
           "action": "http: GET /api/v1/stats/duplicates/groups",
           "expected": "200 OK with top groups of duplicate files",
           "_original_action": "GET /api/v1/stats/duplicates/groups with auth token",
-          "expect_status": 200
+          "expect_status": 200,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -1950,7 +2000,8 @@
           "action": "http: GET /api/v1/stats/access",
           "expected": "200 OK with access pattern data",
           "_original_action": "GET /api/v1/stats/access with auth token",
-          "expect_status": 200
+          "expect_status": 200,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -1975,7 +2026,8 @@
           "action": "http: GET /api/v1/stats/growth",
           "expected": "200 OK with storage growth trend data",
           "_original_action": "GET /api/v1/stats/growth with auth token",
-          "expect_status": 200
+          "expect_status": 200,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -2000,7 +2052,8 @@
           "action": "http: GET /api/v1/stats/directories/by-size",
           "expected": "200 OK with directories ordered by total size",
           "_original_action": "GET /api/v1/stats/directories/by-size with auth token",
-          "expect_status": 200
+          "expect_status": 200,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -2026,7 +2079,8 @@
           "action": "http: GET /api/v1/stats/duplicates/count",
           "expected": "200 OK with total duplicate file count",
           "_original_action": "GET /api/v1/stats/duplicates/count with auth token",
-          "expect_status": 200
+          "expect_status": 200,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -2051,7 +2105,8 @@
           "action": "http: GET /api/v1/stats/smb/{smb_root}",
           "expected": "200 OK with stats specific to the SMB root",
           "_original_action": "GET /api/v1/stats/smb/{smb_root} with auth token",
-          "expect_status": 200
+          "expect_status": 200,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -2077,7 +2132,8 @@
           "expected": "400 Bad Request with validation error",
           "_original_action": "POST /api/v1/scans with empty JSON body {}",
           "expect_status": 400,
-          "expect_body_contains": "error"
+          "expect_body_contains": "error",
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -2103,7 +2159,8 @@
           "action": "http: POST /api/v1/scans",
           "expected": "401 Unauthorized",
           "_original_action": "POST /api/v1/scans with no Authorization header",
-          "expect_status": 401
+          "expect_status": 401,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -2128,13 +2185,15 @@
           "name": "Queue first scan",
           "action": "http: POST /api/v1/scans",
           "expected": "Scan started",
-          "_original_action": "POST /api/v1/scans"
+          "_original_action": "POST /api/v1/scans",
+          "auth": "admin"
         },
         {
           "name": "Queue second scan immediately",
           "action": "http: POST /api/v1/scans",
           "expected": "Second scan queued or rejected (semaphore limits parallel scans)",
-          "_original_action": "POST /api/v1/scans"
+          "_original_action": "POST /api/v1/scans",
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -2159,7 +2218,8 @@
           "action": "http: GET /api/v1/catalog",
           "expected": "200 OK with top-level directory listing of the catalog",
           "_original_action": "GET /api/v1/catalog with auth token",
-          "expect_status": 200
+          "expect_status": 200,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -2185,7 +2245,8 @@
           "action": "http: GET /api/v1/catalog/media",
           "expected": "200 OK with files and subdirectories in the path",
           "_original_action": "GET /api/v1/catalog/media with auth token",
-          "expect_status": 200
+          "expect_status": 200,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -2211,7 +2272,8 @@
           "action": "http: GET /api/v1/catalog-info/path/to/file.mkv",
           "expected": "200 OK with file metadata (name, size, modified date, type)",
           "_original_action": "GET /api/v1/catalog-info/path/to/file.mkv with auth token",
-          "expect_status": 200
+          "expect_status": 200,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -2237,7 +2299,8 @@
           "action": "http: GET /api/v1/browse/roots",
           "expected": "200 OK with list of storage roots available for browsing",
           "_original_action": "GET /api/v1/browse/roots with auth token",
-          "expect_status": 200
+          "expect_status": 200,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -2262,7 +2325,8 @@
           "action": "http: GET /api/v1/browse/directory/",
           "expected": "200 OK with directory contents",
           "_original_action": "GET /api/v1/browse/directory/ with auth token",
-          "expect_status": 200
+          "expect_status": 200,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -2287,7 +2351,8 @@
           "action": "http: GET /api/v1/browse/file-info/path/to/file",
           "expected": "200 OK with detailed file information",
           "_original_action": "GET /api/v1/browse/file-info/path/to/file with auth token",
-          "expect_status": 200
+          "expect_status": 200,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -2312,7 +2377,8 @@
           "action": "http: GET /api/v1/browse/directory-sizes/",
           "expected": "200 OK with sizes of subdirectories",
           "_original_action": "GET /api/v1/browse/directory-sizes/ with auth token",
-          "expect_status": 200
+          "expect_status": 200,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -2337,7 +2403,8 @@
           "action": "http: GET /api/v1/browse/duplicates/",
           "expected": "200 OK with list of duplicate files in directory",
           "_original_action": "GET /api/v1/browse/duplicates/ with auth token",
-          "expect_status": 200
+          "expect_status": 200,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -2362,7 +2429,8 @@
           "action": "http: GET /api/v1/search?q=Matrix",
           "expected": "200 OK with search results matching 'Matrix'",
           "_original_action": "GET /api/v1/search?q=Matrix with auth token",
-          "expect_status": 200
+          "expect_status": 200,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -2388,7 +2456,8 @@
           "action": "http: GET /api/v1/search/files?q=Inception",
           "expected": "200 OK with file search results for 'Inception'",
           "_original_action": "GET /api/v1/search/files?q=Inception with auth token",
-          "expect_status": 200
+          "expect_status": 200,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -2413,7 +2482,8 @@
           "action": "http: GET /api/v1/search?q=",
           "expected": "200 OK with results matching Cyrillic directory name 'Филмови'",
           "_original_action": "GET /api/v1/search?q=%D0%A4%D0%B8%D0%BB%D0%BC%D0%BE%D0%B2%D0%B8 with auth token",
-          "expect_status": 200
+          "expect_status": 200,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -2439,7 +2509,8 @@
           "action": "http: GET /api/v1/search?q=",
           "expected": "200 OK with empty results or 400 Bad Request",
           "_original_action": "GET /api/v1/search?q= with auth token",
-          "expect_status": 200
+          "expect_status": 200,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -2464,7 +2535,8 @@
           "action": "http: GET /api/v1/search?q=AAAA...x1000",
           "expected": "400 Bad Request or 200 OK with empty results (no crash)",
           "_original_action": "GET /api/v1/search?q=AAAA...x1000 with auth token",
-          "expect_status": 400
+          "expect_status": 400,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -2490,7 +2562,8 @@
           "action": "http: GET /api/v1/search?q=",
           "expected": "200 OK with empty results, no script execution in response",
           "_original_action": "GET /api/v1/search?q=<script>alert('xss')</script> with auth token",
-          "expect_status": 200
+          "expect_status": 200,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -2516,7 +2589,8 @@
           "action": "http: GET /api/v1/search/duplicates",
           "expected": "200 OK with groups of duplicate files",
           "_original_action": "GET /api/v1/search/duplicates with auth token",
-          "expect_status": 200
+          "expect_status": 200,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -2541,7 +2615,8 @@
           "action": "http: GET /api/v1/search/files/duplicates",
           "expected": "200 OK with duplicate file search results",
           "_original_action": "GET /api/v1/search/files/duplicates with auth token",
-          "expect_status": 200
+          "expect_status": 200,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -2571,7 +2646,8 @@
             "min_size": 1000000
           },
           "_original_action": "POST /api/v1/search/advanced with body {\"query\":\"Matrix\",\"type\":\"movie\",\"min_size\":1000000}",
-          "expect_status": 200
+          "expect_status": 200,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -2596,7 +2672,8 @@
           "action": "http: GET /api/v1/media/search?q=Metallica",
           "expected": "200 OK with media search results for 'Metallica'",
           "_original_action": "GET /api/v1/media/search?q=Metallica with auth token",
-          "expect_status": 200
+          "expect_status": 200,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -2622,7 +2699,8 @@
           "action": "http: GET /api/v1/media/stats",
           "expected": "200 OK with media statistics (counts by type, total items)",
           "_original_action": "GET /api/v1/media/stats with auth token",
-          "expect_status": 200
+          "expect_status": 200,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -2647,7 +2725,8 @@
           "action": "http: GET /api/v1/media/recent",
           "expected": "200 OK with recently added/accessed media items",
           "_original_action": "GET /api/v1/media/recent with auth token",
-          "expect_status": 200
+          "expect_status": 200,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -2672,7 +2751,8 @@
           "action": "http: GET /api/v1/media/popular",
           "expected": "200 OK with most accessed or highly rated media items",
           "_original_action": "GET /api/v1/media/popular with auth token",
-          "expect_status": 200
+          "expect_status": 200,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -2697,7 +2777,8 @@
           "action": "http: GET /api/v1/media/by-path?path=/media/movies/The.Matrix.mkv",
           "expected": "200 OK with media entity matching the file path",
           "_original_action": "GET /api/v1/media/by-path?path=/media/movies/The.Matrix.mkv with auth token",
-          "expect_status": 200
+          "expect_status": 200,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -2722,7 +2803,8 @@
           "action": "http: GET /api/v1/media/1",
           "expected": "200 OK with media item details",
           "_original_action": "GET /api/v1/media/1 with auth token",
-          "expect_status": 200
+          "expect_status": 200,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -2751,7 +2833,8 @@
             "position": 3600
           },
           "_original_action": "PUT /api/v1/media/1/progress with body {\"progress\":0.5,\"position\":3600}",
-          "expect_status": 200
+          "expect_status": 200,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -2780,7 +2863,8 @@
             "favorite": true
           },
           "_original_action": "PUT /api/v1/media/1/favorite with body {\"favorite\":true}",
-          "expect_status": 200
+          "expect_status": 200,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -2805,7 +2889,8 @@
           "action": "http: POST /api/v1/media/1/refresh",
           "expected": "200 OK with refreshed metadata from external providers",
           "_original_action": "POST /api/v1/media/1/refresh with auth token",
-          "expect_status": 200
+          "expect_status": 200,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -2831,7 +2916,8 @@
           "action": "http: GET /api/v1/media/1/quality",
           "expected": "200 OK with quality details (resolution, codec, bitrate)",
           "_original_action": "GET /api/v1/media/1/quality with auth token",
-          "expect_status": 200
+          "expect_status": 200,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -2860,7 +2946,8 @@
             "path": "/media/movies/Inception.mkv"
           },
           "_original_action": "POST /api/v1/media/analyze with body {\"path\":\"/media/movies/Inception.mkv\"}",
-          "expect_status": 200
+          "expect_status": 200,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -2886,7 +2973,8 @@
           "action": "http: GET /api/v1/recommendations/similar/1",
           "expected": "200 OK with list of similar media items",
           "_original_action": "GET /api/v1/recommendations/similar/1 with auth token",
-          "expect_status": 200
+          "expect_status": 200,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -2911,7 +2999,8 @@
           "action": "http: GET /api/v1/recommendations/trending",
           "expected": "200 OK with trending media items",
           "_original_action": "GET /api/v1/recommendations/trending with auth token",
-          "expect_status": 200
+          "expect_status": 200,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -2935,7 +3024,8 @@
           "action": "http: GET /api/v1/recommendations/personalized/1",
           "expected": "200 OK with personalized recommendations for user 1",
           "_original_action": "GET /api/v1/recommendations/personalized/1 with auth token",
-          "expect_status": 200
+          "expect_status": 200,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -2960,7 +3050,8 @@
           "action": "http: GET /api/v1/search?q=",
           "expected": "200 OK with results matching 'Музика'",
           "_original_action": "GET /api/v1/search?q=%D0%9C%D1%83%D0%B7%D0%B8%D0%BA%D0%B0 with auth token",
-          "expect_status": 200
+          "expect_status": 200,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -2986,7 +3077,8 @@
           "action": "http: GET /api/v1/search?q=",
           "expected": "200 OK with results matching 'Серије'",
           "_original_action": "GET /api/v1/search?q=%D0%A1%D0%B5%D1%80%D0%B8%D1%98%D0%B5 with auth token",
-          "expect_status": 200
+          "expect_status": 200,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -3012,7 +3104,8 @@
           "action": "http: GET /api/v1/search?q=Tom",
           "expected": "200 OK with results (may be empty, but no server error)",
           "_original_action": "GET /api/v1/search?q=Tom%20%26%20Jerry%20(2021) with auth token",
-          "expect_status": 200
+          "expect_status": 200,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -3037,7 +3130,8 @@
           "action": "http: GET /api/v1/assets/by-entity/movie/1",
           "expected": "200 OK with image data or 404 if no cover available",
           "_original_action": "GET /api/v1/assets/by-entity/movie/1 with auth token",
-          "expect_status": 200
+          "expect_status": 200,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -3063,7 +3157,8 @@
           "action": "http: GET /api/v1/cover/placeholder/movie",
           "expected": "200 OK with placeholder image for movie type",
           "_original_action": "GET /api/v1/cover/placeholder/movie",
-          "expect_status": 200
+          "expect_status": 200,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -3089,7 +3184,8 @@
           "action": "http: GET /api/v1/cover/url/1",
           "expected": "200 OK with URL pointing to cover image",
           "_original_action": "GET /api/v1/cover/url/1",
-          "expect_status": 200
+          "expect_status": 200,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -3114,7 +3210,8 @@
           "action": "http: GET /api/v1/cover/1",
           "expected": "200 OK with image/jpeg or image/png content",
           "_original_action": "GET /api/v1/cover/1",
-          "expect_status": 200
+          "expect_status": 200,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -3139,7 +3236,8 @@
           "action": "http: GET /api/v1/search?q=",
           "expected": "200 OK with empty results or safe response (no data dump)",
           "_original_action": "GET /api/v1/search?q=' OR '1'='1 with auth token",
-          "expect_status": 200
+          "expect_status": 200,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -3164,7 +3262,8 @@
           "action": "http: GET /api/v1/search?q=",
           "expected": "200 OK with results matching 'Инсталације'",
           "_original_action": "GET /api/v1/search?q=%D0%98%D0%BD%D1%81%D1%82%D0%B0%D0%BB%D0%B0%D1%86%D0%B8%D1%98%D0%B5 with auth token",
-          "expect_status": 200
+          "expect_status": 200,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -3190,7 +3289,8 @@
           "action": "http: GET /api/v1/entities",
           "expected": "200 OK with JSON array of media entities",
           "_original_action": "GET /api/v1/entities with auth token",
-          "expect_status": 200
+          "expect_status": 200,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -3216,7 +3316,8 @@
           "action": "http: GET /api/v1/entities/1",
           "expected": "200 OK with entity details including title, type, year",
           "_original_action": "GET /api/v1/entities/1 with auth token",
-          "expect_status": 200
+          "expect_status": 200,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -3242,7 +3343,8 @@
           "action": "http: GET /api/v1/entities/types",
           "expected": "200 OK with all 11 media types: movie, tv_show, tv_season, tv_episode, music_artist, music_album, song, game, software, book, comic",
           "_original_action": "GET /api/v1/entities/types with auth token",
-          "expect_status": 200
+          "expect_status": 200,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -3267,7 +3369,8 @@
           "action": "http: GET /api/v1/entities/stats",
           "expected": "200 OK with counts per entity type",
           "_original_action": "GET /api/v1/entities/stats with auth token",
-          "expect_status": 200
+          "expect_status": 200,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -3292,7 +3395,8 @@
           "action": "http: GET /api/v1/entities/duplicates",
           "expected": "200 OK with groups of entities detected as duplicates",
           "_original_action": "GET /api/v1/entities/duplicates with auth token",
-          "expect_status": 200
+          "expect_status": 200,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -3317,7 +3421,8 @@
           "action": "http: GET /api/v1/entities/browse/movie",
           "expected": "200 OK with list of movie entities",
           "_original_action": "GET /api/v1/entities/browse/movie with auth token",
-          "expect_status": 200
+          "expect_status": 200,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -3343,7 +3448,8 @@
           "action": "http: GET /api/v1/entities/browse/tv_show",
           "expected": "200 OK with list of TV show entities",
           "_original_action": "GET /api/v1/entities/browse/tv_show with auth token",
-          "expect_status": 200
+          "expect_status": 200,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -3369,7 +3475,8 @@
           "action": "http: GET /api/v1/entities/browse/music_album",
           "expected": "200 OK with list of music album entities",
           "_original_action": "GET /api/v1/entities/browse/music_album with auth token",
-          "expect_status": 200
+          "expect_status": 200,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -3395,7 +3502,8 @@
           "action": "http: GET /api/v1/entities/browse/game",
           "expected": "200 OK with list of game entities",
           "_original_action": "GET /api/v1/entities/browse/game with auth token",
-          "expect_status": 200
+          "expect_status": 200,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -3421,7 +3529,8 @@
           "action": "http: GET /api/v1/entities/browse/book",
           "expected": "200 OK with list of book entities",
           "_original_action": "GET /api/v1/entities/browse/book with auth token",
-          "expect_status": 200
+          "expect_status": 200,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -3447,7 +3556,8 @@
           "action": "http: GET /api/v1/entities/browse/comic",
           "expected": "200 OK with list of comic entities",
           "_original_action": "GET /api/v1/entities/browse/comic with auth token",
-          "expect_status": 200
+          "expect_status": 200,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -3473,7 +3583,8 @@
           "action": "http: GET /api/v1/entities/browse/software",
           "expected": "200 OK with list of software entities",
           "_original_action": "GET /api/v1/entities/browse/software with auth token",
-          "expect_status": 200
+          "expect_status": 200,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -3499,7 +3610,8 @@
           "action": "http: GET /api/v1/entities/browse/music_artist",
           "expected": "200 OK with list of music artist entities",
           "_original_action": "GET /api/v1/entities/browse/music_artist with auth token",
-          "expect_status": 200
+          "expect_status": 200,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -3525,7 +3637,8 @@
           "action": "http: GET /api/v1/entities/browse/song",
           "expected": "200 OK with list of song entities",
           "_original_action": "GET /api/v1/entities/browse/song with auth token",
-          "expect_status": 200
+          "expect_status": 200,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -3551,7 +3664,8 @@
           "action": "http: GET /api/v1/entities/browse/tv_season",
           "expected": "200 OK with list of TV season entities",
           "_original_action": "GET /api/v1/entities/browse/tv_season with auth token",
-          "expect_status": 200
+          "expect_status": 200,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -3577,7 +3691,8 @@
           "action": "http: GET /api/v1/entities/browse/tv_episode",
           "expected": "200 OK with list of TV episode entities",
           "_original_action": "GET /api/v1/entities/browse/tv_episode with auth token",
-          "expect_status": 200
+          "expect_status": 200,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -3603,7 +3718,8 @@
           "action": "http: GET /api/v1/entities/{tv_show_id}/children",
           "expected": "200 OK with child entities (seasons)",
           "_original_action": "GET /api/v1/entities/{tv_show_id}/children with auth token",
-          "expect_status": 200
+          "expect_status": 200,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -3629,7 +3745,8 @@
           "action": "http: GET /api/v1/entities/{id}/files",
           "expected": "200 OK with list of files associated with the entity",
           "_original_action": "GET /api/v1/entities/{id}/files with auth token",
-          "expect_status": 200
+          "expect_status": 200,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -3655,7 +3772,8 @@
           "action": "http: GET /api/v1/entities/{id}/metadata",
           "expected": "200 OK with external metadata from TMDB/OMDB/MusicBrainz/OpenLibrary",
           "_original_action": "GET /api/v1/entities/{id}/metadata with auth token",
-          "expect_status": 200
+          "expect_status": 200,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -3681,7 +3799,8 @@
           "action": "http: GET /api/v1/entities/{id}/duplicates",
           "expected": "200 OK with entities detected as duplicates of this one",
           "_original_action": "GET /api/v1/entities/{id}/duplicates with auth token",
-          "expect_status": 200
+          "expect_status": 200,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -3706,7 +3825,8 @@
           "action": "http: GET /api/v1/entities/{id}/stream",
           "expected": "200 OK with media stream or redirect to stream URL",
           "_original_action": "GET /api/v1/entities/{id}/stream with auth token",
-          "expect_status": 200
+          "expect_status": 200,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -3731,7 +3851,8 @@
           "action": "http: GET /api/v1/entities/{id}/download",
           "expected": "200 OK with file download (Content-Disposition: attachment header)",
           "_original_action": "GET /api/v1/entities/{id}/download with auth token",
-          "expect_status": 200
+          "expect_status": 200,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -3756,7 +3877,8 @@
           "action": "http: GET /api/v1/entities/{software_id}/install-info",
           "expected": "200 OK with installation instructions or metadata",
           "_original_action": "GET /api/v1/entities/{software_id}/install-info with auth token",
-          "expect_status": 200
+          "expect_status": 200,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -3781,7 +3903,8 @@
           "action": "http: POST /api/v1/entities/{id}/metadata/refresh",
           "expected": "200 OK with refreshed metadata",
           "_original_action": "POST /api/v1/entities/{id}/metadata/refresh with auth token",
-          "expect_status": 200
+          "expect_status": 200,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -3810,7 +3933,8 @@
             "notes": "Great movie"
           },
           "_original_action": "PUT /api/v1/entities/{id}/user-metadata with body {\"rating\":8,\"notes\":\"Great movie\"}",
-          "expect_status": 200
+          "expect_status": 200,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -3836,7 +3960,8 @@
           "action": "http: POST /api/v1/entities/enrich",
           "expected": "200 OK or 202 Accepted with enrichment process started",
           "_original_action": "POST /api/v1/entities/enrich with auth token",
-          "expect_status": 200
+          "expect_status": 200,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -3862,14 +3987,16 @@
           "action": "http: GET /api/v1/entities?page=1&per_page=10",
           "expected": "200 OK with 10 or fewer entities",
           "_original_action": "GET /api/v1/entities?page=1&per_page=10 with auth token",
-          "expect_status": 200
+          "expect_status": 200,
+          "auth": "admin"
         },
         {
           "name": "Second page",
           "action": "http: GET /api/v1/entities?page=2&per_page=10",
           "expected": "200 OK with next 10 entities (different from page 1)",
           "_original_action": "GET /api/v1/entities?page=2&per_page=10 with auth token",
-          "expect_status": 200
+          "expect_status": 200,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -3895,7 +4022,8 @@
           "action": "http: GET /api/v1/entities?page=1&per_page=1",
           "expected": "200 OK with exactly 1 entity",
           "_original_action": "GET /api/v1/entities?page=1&per_page=1 with auth token",
-          "expect_status": 200
+          "expect_status": 200,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -3921,7 +4049,8 @@
           "action": "http: GET /api/v1/entities?page=1&per_page=10000",
           "expected": "200 OK with capped number of entities (server limits max per_page)",
           "_original_action": "GET /api/v1/entities?page=1&per_page=10000 with auth token",
-          "expect_status": 200
+          "expect_status": 200,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -3948,7 +4077,8 @@
           "action": "http: GET /api/v1/entities?page=1&per_page=0",
           "expected": "200 OK with default page size or 400 Bad Request",
           "_original_action": "GET /api/v1/entities?page=1&per_page=0 with auth token",
-          "expect_status": 200
+          "expect_status": 200,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -3975,7 +4105,8 @@
           "action": "http: GET /api/v1/entities?search=Matrix",
           "expected": "200 OK with entities matching 'Matrix' in title",
           "_original_action": "GET /api/v1/entities?search=Matrix with auth token",
-          "expect_status": 200
+          "expect_status": 200,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -4001,7 +4132,8 @@
           "action": "http: GET /api/v1/entities?type=movie",
           "expected": "200 OK with only movie entities",
           "_original_action": "GET /api/v1/entities?type=movie with auth token",
-          "expect_status": 200
+          "expect_status": 200,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -4026,7 +4158,8 @@
           "action": "http: GET /api/v1/entities/999999",
           "expected": "404 Not Found",
           "_original_action": "GET /api/v1/entities/999999 with auth token",
-          "expect_status": 404
+          "expect_status": 404,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -4052,7 +4185,8 @@
           "action": "http: GET /api/v1/entities/browse/invalid_type",
           "expected": "400 Bad Request or 200 OK with empty results",
           "_original_action": "GET /api/v1/entities/browse/invalid_type with auth token",
-          "expect_status": 400
+          "expect_status": 400,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -4078,21 +4212,24 @@
           "action": "http: GET /api/v1/entities/browse/tv_show",
           "expected": "200 OK with TV show entities",
           "_original_action": "GET /api/v1/entities/browse/tv_show with auth token",
-          "expect_status": 200
+          "expect_status": 200,
+          "auth": "admin"
         },
         {
           "name": "Get seasons (children)",
           "action": "http: GET /api/v1/entities/{show_id}/children",
           "expected": "200 OK with season entities (type tv_season)",
           "_original_action": "GET /api/v1/entities/{show_id}/children with auth token",
-          "expect_status": 200
+          "expect_status": 200,
+          "auth": "admin"
         },
         {
           "name": "Get episodes (grandchildren)",
           "action": "http: GET /api/v1/entities/{season_id}/children",
           "expected": "200 OK with episode entities (type tv_episode)",
           "_original_action": "GET /api/v1/entities/{season_id}/children with auth token",
-          "expect_status": 200
+          "expect_status": 200,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -4119,21 +4256,24 @@
           "action": "http: GET /api/v1/entities/browse/music_artist",
           "expected": "200 OK with music artist entities",
           "_original_action": "GET /api/v1/entities/browse/music_artist with auth token",
-          "expect_status": 200
+          "expect_status": 200,
+          "auth": "admin"
         },
         {
           "name": "Get albums (children)",
           "action": "http: GET /api/v1/entities/{artist_id}/children",
           "expected": "200 OK with music album entities",
           "_original_action": "GET /api/v1/entities/{artist_id}/children with auth token",
-          "expect_status": 200
+          "expect_status": 200,
+          "auth": "admin"
         },
         {
           "name": "Get songs (grandchildren)",
           "action": "http: GET /api/v1/entities/{album_id}/children",
           "expected": "200 OK with song entities",
           "_original_action": "GET /api/v1/entities/{album_id}/children with auth token",
-          "expect_status": 200
+          "expect_status": 200,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -4160,7 +4300,8 @@
           "action": "http: GET /api/v1/entities/{episode_id}/children",
           "expected": "200 OK with empty array (leaf has no children)",
           "_original_action": "GET /api/v1/entities/{episode_id}/children with auth token",
-          "expect_status": 200
+          "expect_status": 200,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -4186,7 +4327,8 @@
           "action": "http: GET /api/v1/entities/abc",
           "expected": "400 Bad Request or 404 Not Found",
           "_original_action": "GET /api/v1/entities/abc with auth token",
-          "expect_status": 400
+          "expect_status": 400,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -4213,14 +4355,16 @@
           "action": "http: GET /api/v1/entities?sort=title&order=asc",
           "expected": "200 OK with entities sorted alphabetically by title",
           "_original_action": "GET /api/v1/entities?sort=title&order=asc with auth token",
-          "expect_status": 200
+          "expect_status": 200,
+          "auth": "admin"
         },
         {
           "name": "Sort by title descending",
           "action": "http: GET /api/v1/entities?sort=title&order=desc",
           "expected": "200 OK with entities sorted reverse-alphabetically",
           "_original_action": "GET /api/v1/entities?sort=title&order=desc with auth token",
-          "expect_status": 200
+          "expect_status": 200,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -4246,7 +4390,8 @@
           "action": "http: GET /api/v1/entities?search=",
           "expected": "200 OK with results matching 'Стрипови'",
           "_original_action": "GET /api/v1/entities?search=%D0%A1%D1%82%D1%80%D0%B8%D0%BF%D0%BE%D0%B2%D0%B8 with auth token",
-          "expect_status": 200
+          "expect_status": 200,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -4279,7 +4424,8 @@
             "watched": true
           },
           "_original_action": "POST /api/v1/entities/{id}/user-metadata with body {\"tags\":[\"classic\",\"sci-fi\"],\"watched\":true}",
-          "expect_status": 200
+          "expect_status": 200,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -4305,7 +4451,8 @@
           "action": "http: GET /api/v1/entities?page=-1",
           "expected": "400 Bad Request or 200 OK with first page (defaults to page 1)",
           "_original_action": "GET /api/v1/entities?page=-1 with auth token",
-          "expect_status": 400
+          "expect_status": 400,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -4332,7 +4479,8 @@
           "action": "http: GET /api/v1/entities/{movie_id}/metadata",
           "expected": "200 OK with metadata including poster_url, overview, genres from TMDB",
           "_original_action": "GET /api/v1/entities/{movie_id}/metadata with auth token",
-          "expect_status": 200
+          "expect_status": 200,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -4358,7 +4506,8 @@
           "action": "http: GET /api/v1/entities/{album_id}/metadata",
           "expected": "200 OK with metadata from MusicBrainz (if available)",
           "_original_action": "GET /api/v1/entities/{album_id}/metadata with auth token",
-          "expect_status": 200
+          "expect_status": 200,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -4384,7 +4533,8 @@
           "action": "http: GET /api/v1/entities/{book_id}/metadata",
           "expected": "200 OK with metadata from OpenLibrary (if available)",
           "_original_action": "GET /api/v1/entities/{book_id}/metadata with auth token",
-          "expect_status": 200
+          "expect_status": 200,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -4410,7 +4560,8 @@
           "action": "http: GET /api/v1/entities/{movie_id}/files",
           "expected": "200 OK with at least one file entry (path, size, type)",
           "_original_action": "GET /api/v1/entities/{movie_id}/files with auth token",
-          "expect_status": 200
+          "expect_status": 200,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -4436,7 +4587,8 @@
           "action": "http: GET /api/v1/entities?search=The",
           "expected": "200 OK with entities matching 'The Matrix'",
           "_original_action": "GET /api/v1/entities?search=The+Matrix with auth token",
-          "expect_status": 200
+          "expect_status": 200,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -4462,7 +4614,8 @@
           "action": "http: GET /api/v1/entities?search=Inception",
           "expected": "200 OK with entities matching 'Inception'",
           "_original_action": "GET /api/v1/entities?search=Inception with auth token",
-          "expect_status": 200
+          "expect_status": 200,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -4488,7 +4641,8 @@
           "action": "http: GET /api/v1/entities?search=Metallica",
           "expected": "200 OK with music entities matching 'Metallica'",
           "_original_action": "GET /api/v1/entities?search=Metallica with auth token",
-          "expect_status": 200
+          "expect_status": 200,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -4514,7 +4668,8 @@
           "action": "http: GET /api/v1/entities?parent_id={show_id}",
           "expected": "200 OK with only entities that are children of the specified parent",
           "_original_action": "GET /api/v1/entities?parent_id={show_id} with auth token",
-          "expect_status": 200
+          "expect_status": 200,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -4544,7 +4699,8 @@
             "description": "Best science fiction movies"
           },
           "_original_action": "POST /api/v1/collections with body {\"name\":\"Sci-Fi Favorites\",\"description\":\"Best science fiction movies\"}",
-          "expect_status": 201
+          "expect_status": 201,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -4569,7 +4725,8 @@
           "action": "http: GET /api/v1/collections",
           "expected": "200 OK with JSON array of collections",
           "_original_action": "GET /api/v1/collections with auth token",
-          "expect_status": 200
+          "expect_status": 200,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -4594,7 +4751,8 @@
           "action": "http: GET /api/v1/collections/{id}",
           "expected": "200 OK with collection name, description, and items",
           "_original_action": "GET /api/v1/collections/{id} with auth token",
-          "expect_status": 200
+          "expect_status": 200,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -4623,7 +4781,8 @@
             "name": "Updated Sci-Fi Collection"
           },
           "_original_action": "PUT /api/v1/collections/{id} with body {\"name\":\"Updated Sci-Fi Collection\"}",
-          "expect_status": 200
+          "expect_status": 200,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -4651,21 +4810,24 @@
             "name": "To Delete"
           },
           "_original_action": "POST /api/v1/collections with body {\"name\":\"To Delete\"}",
-          "expect_status": 201
+          "expect_status": 201,
+          "auth": "admin"
         },
         {
           "name": "Delete collection",
           "action": "http: DELETE /api/v1/collections/{id}",
           "expected": "200 OK or 204 No Content",
           "_original_action": "DELETE /api/v1/collections/{id} with auth token",
-          "expect_status": 200
+          "expect_status": 200,
+          "auth": "admin"
         },
         {
           "name": "Verify deleted",
           "action": "http: GET /api/v1/collections/{id}",
           "expected": "404 Not Found",
           "_original_action": "GET /api/v1/collections/{id}",
-          "expect_status": 404
+          "expect_status": 404,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -4694,7 +4856,8 @@
           },
           "_original_action": "POST /api/v1/collections with body {\"name\":\"\"}",
           "expect_status": 400,
-          "expect_body_contains": "error"
+          "expect_body_contains": "error",
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -4721,7 +4884,8 @@
           "action": "http: GET /api/v1/collections/999999",
           "expected": "404 Not Found",
           "_original_action": "GET /api/v1/collections/999999 with auth token",
-          "expect_status": 404
+          "expect_status": 404,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -4747,7 +4911,8 @@
           "action": "http: DELETE /api/v1/collections/999999",
           "expected": "404 Not Found",
           "_original_action": "DELETE /api/v1/collections/999999 with auth token",
-          "expect_status": 404
+          "expect_status": 404,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -4776,7 +4941,8 @@
             "name": "Unauthorized"
           },
           "_original_action": "POST /api/v1/collections with body {\"name\":\"Unauthorized\"} and no auth",
-          "expect_status": 401
+          "expect_status": 401,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -4805,7 +4971,8 @@
             "name": "Ghost"
           },
           "_original_action": "PUT /api/v1/collections/999999 with body {\"name\":\"Ghost\"}",
-          "expect_status": 404
+          "expect_status": 404,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -4834,7 +5001,8 @@
             "name": "A...x500"
           },
           "_original_action": "POST /api/v1/collections with body {\"name\":\"A...x500\"}",
-          "expect_status": 400
+          "expect_status": 400,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -4864,7 +5032,8 @@
             "description": "Колекција најбољих филмова"
           },
           "_original_action": "POST /api/v1/collections with body {\"name\":\"Омиљени филмови\",\"description\":\"Колекција најбољих филмова\"}",
-          "expect_status": 201
+          "expect_status": 201,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -4893,7 +5062,8 @@
             "name": "Action & Adventure (2020s)"
           },
           "_original_action": "POST /api/v1/collections with body {\"name\":\"Action & Adventure (2020s)\"}",
-          "expect_status": 201
+          "expect_status": 201,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -4921,7 +5091,8 @@
             "name": "<script>alert('xss')</script>"
           },
           "_original_action": "POST /api/v1/collections with body {\"name\":\"<script>alert('xss')</script>\"}",
-          "expect_status": 201
+          "expect_status": 201,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -4950,7 +5121,8 @@
             "name": "Horror Movies"
           },
           "_original_action": "POST /api/v1/collections with body {\"name\":\"Horror Movies\"}",
-          "expect_status": 201
+          "expect_status": 201,
+          "auth": "admin"
         },
         {
           "name": "Create second collection",
@@ -4960,13 +5132,15 @@
             "name": "Classic Rock Albums"
           },
           "_original_action": "POST /api/v1/collections with body {\"name\":\"Classic Rock Albums\"}",
-          "expect_status": 201
+          "expect_status": 201,
+          "auth": "admin"
         },
         {
           "name": "Verify both exist",
           "action": "http: GET /api/v1/collections",
           "expected": "Both collections in list",
-          "_original_action": "GET /api/v1/collections with auth token"
+          "_original_action": "GET /api/v1/collections with auth token",
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -4994,7 +5168,8 @@
             "description": "Updated description for this collection"
           },
           "_original_action": "PUT /api/v1/collections/{id} with body {\"description\":\"Updated description for this collection\"}",
-          "expect_status": 200
+          "expect_status": 200,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -5021,7 +5196,8 @@
           "body": {},
           "_original_action": "POST /api/v1/collections with body {}",
           "expect_status": 400,
-          "expect_body_contains": "error"
+          "expect_body_contains": "error",
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -5050,7 +5226,8 @@
             "name": "Duplicate Collection"
           },
           "_original_action": "POST /api/v1/collections with body {\"name\":\"Duplicate Collection\"}",
-          "expect_status": 201
+          "expect_status": 201,
+          "auth": "admin"
         },
         {
           "name": "Create duplicate",
@@ -5060,7 +5237,8 @@
             "name": "Duplicate Collection"
           },
           "_original_action": "POST /api/v1/collections with body {\"name\":\"Duplicate Collection\"}",
-          "expect_status": 409
+          "expect_status": 409,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -5089,14 +5267,16 @@
             "name": "Lifecycle Test"
           },
           "_original_action": "POST /api/v1/collections with body {\"name\":\"Lifecycle Test\"}",
-          "expect_status": 201
+          "expect_status": 201,
+          "auth": "admin"
         },
         {
           "name": "Read",
           "action": "http: GET /api/v1/collections/{id}",
           "expected": "200 OK with correct data",
           "_original_action": "GET /api/v1/collections/{id}",
-          "expect_status": 200
+          "expect_status": 200,
+          "auth": "admin"
         },
         {
           "name": "Update",
@@ -5106,14 +5286,16 @@
             "name": "Updated Lifecycle"
           },
           "_original_action": "PUT /api/v1/collections/{id} with body {\"name\":\"Updated Lifecycle\"}",
-          "expect_status": 200
+          "expect_status": 200,
+          "auth": "admin"
         },
         {
           "name": "Delete",
           "action": "http: DELETE /api/v1/collections/{id}",
           "expected": "200 OK or 204",
           "_original_action": "DELETE /api/v1/collections/{id}",
-          "expect_status": 200
+          "expect_status": 200,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -5141,14 +5323,16 @@
             "name": "'; DROP TABLE media_collections; --"
           },
           "_original_action": "POST /api/v1/collections with body {\"name\":\"'; DROP TABLE media_collections; --\"}",
-          "expect_status": 201
+          "expect_status": 201,
+          "auth": "admin"
         },
         {
           "name": "Verify table intact",
           "action": "http: GET /api/v1/collections",
           "expected": "200 OK (table not dropped)",
           "_original_action": "GET /api/v1/collections",
-          "expect_status": 200
+          "expect_status": 200,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -5173,7 +5357,8 @@
           "action": "http: GET /api/v1/collections",
           "expected": "401 Unauthorized",
           "_original_action": "GET /api/v1/collections with no auth header",
-          "expect_status": 401
+          "expect_status": 401,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -5199,7 +5384,8 @@
           "action": "http: POST /api/v1/collections",
           "expected": "400 Bad Request",
           "_original_action": "POST /api/v1/collections with body 'not json'",
-          "expect_status": 400
+          "expect_status": 400,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -5225,7 +5411,8 @@
           "action": "http: PUT /api/v1/collections/{id}",
           "expected": "400 Bad Request or 415 Unsupported Media Type",
           "_original_action": "PUT /api/v1/collections/{id} with Content-Type: text/plain and JSON body",
-          "expect_status": 400
+          "expect_status": 400,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -5254,7 +5441,8 @@
             "name": "Best Movies 2024"
           },
           "_original_action": "POST /api/v1/collections with body {\"name\":\"Best Movies 2024\"}",
-          "expect_status": 201
+          "expect_status": 201,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -5284,7 +5472,8 @@
           },
           "_original_action": "PUT /api/v1/collections/{id} with body {\"name\":\"\"}",
           "expect_status": 400,
-          "expect_body_contains": "error"
+          "expect_body_contains": "error",
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -5314,7 +5503,8 @@
           },
           "_original_action": "POST /api/v1/collections with body {\"name\":null}",
           "expect_status": 400,
-          "expect_body_contains": "error"
+          "expect_body_contains": "error",
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -5339,7 +5529,8 @@
           "action": "http: DELETE /api/v1/collections/abc",
           "expected": "400 Bad Request or 404 Not Found",
           "_original_action": "DELETE /api/v1/collections/abc with auth token",
-          "expect_status": 400
+          "expect_status": 400,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -5365,7 +5556,8 @@
           "action": "http: GET /api/v1/collections/-1",
           "expected": "400 Bad Request or 404 Not Found",
           "_original_action": "GET /api/v1/collections/-1 with auth token",
-          "expect_status": 400
+          "expect_status": 400,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -5396,7 +5588,8 @@
             "secret": "hack"
           },
           "_original_action": "PUT /api/v1/collections/{id} with body {\"name\":\"Test\",\"admin\":true,\"secret\":\"hack\"}",
-          "expect_status": 200
+          "expect_status": 200,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -5452,7 +5645,8 @@
             "description": "Songs for driving"
           },
           "_original_action": "POST /api/v1/playlists with body {\"name\":\"Road Trip Mix\",\"description\":\"Songs for driving\"}",
-          "expect_status": 201
+          "expect_status": 201,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -5477,7 +5671,8 @@
           "action": "http: GET /api/v1/playlists",
           "expected": "200 OK with JSON array of user playlists",
           "_original_action": "GET /api/v1/playlists with auth token",
-          "expect_status": 200
+          "expect_status": 200,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -5502,7 +5697,8 @@
           "action": "http: GET /api/v1/playlists/{id}",
           "expected": "200 OK with playlist name, description, and items",
           "_original_action": "GET /api/v1/playlists/{id} with auth token",
-          "expect_status": 200
+          "expect_status": 200,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -5531,7 +5727,8 @@
             "name": "Updated Road Trip"
           },
           "_original_action": "PUT /api/v1/playlists/{id} with body {\"name\":\"Updated Road Trip\"}",
-          "expect_status": 200
+          "expect_status": 200,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -5559,21 +5756,24 @@
             "name": "To Delete"
           },
           "_original_action": "POST /api/v1/playlists with body {\"name\":\"To Delete\"}",
-          "expect_status": 201
+          "expect_status": 201,
+          "auth": "admin"
         },
         {
           "name": "Delete playlist",
           "action": "http: DELETE /api/v1/playlists/{id}",
           "expected": "200 OK or 204 No Content",
           "_original_action": "DELETE /api/v1/playlists/{id} with auth token",
-          "expect_status": 200
+          "expect_status": 200,
+          "auth": "admin"
         },
         {
           "name": "Verify deleted",
           "action": "http: GET /api/v1/playlists/{id}",
           "expected": "404 Not Found",
           "_original_action": "GET /api/v1/playlists/{id}",
-          "expect_status": 404
+          "expect_status": 404,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -5601,7 +5801,8 @@
             "name": "Test Playlist"
           },
           "_original_action": "POST /api/v1/playlists with body {\"name\":\"Test Playlist\"}",
-          "expect_status": 201
+          "expect_status": 201,
+          "auth": "admin"
         },
         {
           "name": "Add media item",
@@ -5611,7 +5812,8 @@
             "entity_id": 1
           },
           "_original_action": "POST /api/v1/playlists/{id}/items with body {\"entity_id\":1}",
-          "expect_status": 200
+          "expect_status": 200,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -5636,7 +5838,8 @@
           "action": "http: DELETE /api/v1/playlists/{id}/items/{item_id}",
           "expected": "200 OK or 204 No Content",
           "_original_action": "DELETE /api/v1/playlists/{id}/items/{item_id} with auth token",
-          "expect_status": 200
+          "expect_status": 200,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -5660,7 +5863,8 @@
           "action": "http: GET /api/v1/playlists/999999",
           "expected": "404 Not Found",
           "_original_action": "GET /api/v1/playlists/999999 with auth token",
-          "expect_status": 404
+          "expect_status": 404,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -5689,7 +5893,8 @@
             "name": ""
           },
           "_original_action": "POST /api/v1/playlists with body {\"name\":\"\"}",
-          "expect_status": 400
+          "expect_status": 400,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -5715,7 +5920,8 @@
           "action": "http: GET /api/v1/playlists",
           "expected": "401 Unauthorized",
           "_original_action": "GET /api/v1/playlists without Authorization header",
-          "expect_status": 401
+          "expect_status": 401,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -5744,7 +5950,8 @@
             "name": "Омиљене песме"
           },
           "_original_action": "POST /api/v1/playlists with body {\"name\":\"Омиљене песме\"}",
-          "expect_status": 201
+          "expect_status": 201,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -5773,7 +5980,8 @@
             "name": "Lifecycle"
           },
           "_original_action": "POST /api/v1/playlists with body {\"name\":\"Lifecycle\"}",
-          "expect_status": 201
+          "expect_status": 201,
+          "auth": "admin"
         },
         {
           "name": "Add item",
@@ -5783,14 +5991,16 @@
             "entity_id": 1
           },
           "_original_action": "POST /api/v1/playlists/{id}/items with body {\"entity_id\":1}",
-          "expect_status": 200
+          "expect_status": 200,
+          "auth": "admin"
         },
         {
           "name": "Read",
           "action": "http: GET /api/v1/playlists/{id}",
           "expected": "200 OK with 1 item",
           "_original_action": "GET /api/v1/playlists/{id}",
-          "expect_status": 200
+          "expect_status": 200,
+          "auth": "admin"
         },
         {
           "name": "Update",
@@ -5800,21 +6010,24 @@
             "name": "Updated"
           },
           "_original_action": "PUT /api/v1/playlists/{id} with body {\"name\":\"Updated\"}",
-          "expect_status": 200
+          "expect_status": 200,
+          "auth": "admin"
         },
         {
           "name": "Remove item",
           "action": "http: DELETE /api/v1/playlists/{id}/items/{item_id}",
           "expected": "200 OK",
           "_original_action": "DELETE /api/v1/playlists/{id}/items/{item_id}",
-          "expect_status": 200
+          "expect_status": 200,
+          "auth": "admin"
         },
         {
           "name": "Delete",
           "action": "http: DELETE /api/v1/playlists/{id}",
           "expected": "200 OK",
           "_original_action": "DELETE /api/v1/playlists/{id}",
-          "expect_status": 200
+          "expect_status": 200,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -5843,7 +6056,8 @@
             "entity_id": 999999
           },
           "_original_action": "POST /api/v1/playlists/{id}/items with body {\"entity_id\":999999}",
-          "expect_status": 404
+          "expect_status": 404,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -5869,7 +6083,8 @@
           "action": "http: DELETE /api/v1/playlists/{id}/items/999999",
           "expected": "404 Not Found",
           "_original_action": "DELETE /api/v1/playlists/{id}/items/999999",
-          "expect_status": 404
+          "expect_status": 404,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -5898,7 +6113,8 @@
             "name": "Ghost"
           },
           "_original_action": "PUT /api/v1/playlists/999999 with body {\"name\":\"Ghost\"}",
-          "expect_status": 404
+          "expect_status": 404,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -5927,7 +6143,8 @@
             "name": "'); DROP TABLE playlists; --"
           },
           "_original_action": "POST /api/v1/playlists with body {\"name\":\"'); DROP TABLE playlists; --\"}",
-          "expect_status": 201
+          "expect_status": 201,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -5956,7 +6173,8 @@
             "entity_id": 1
           },
           "_original_action": "POST /api/v1/playlists/{id}/items with body {\"entity_id\":1}",
-          "expect_status": 200
+          "expect_status": 200,
+          "auth": "admin"
         },
         {
           "name": "Add same item again",
@@ -5966,7 +6184,8 @@
             "entity_id": 1
           },
           "_original_action": "POST /api/v1/playlists/{id}/items with body {\"entity_id\":1}",
-          "expect_status": 409
+          "expect_status": 409,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -5994,7 +6213,8 @@
             "name": "Workout"
           },
           "_original_action": "POST /api/v1/playlists with body {\"name\":\"Workout\"}",
-          "expect_status": 201
+          "expect_status": 201,
+          "auth": "admin"
         },
         {
           "name": "Create second playlist",
@@ -6004,13 +6224,15 @@
             "name": "Relaxation"
           },
           "_original_action": "POST /api/v1/playlists with body {\"name\":\"Relaxation\"}",
-          "expect_status": 201
+          "expect_status": 201,
+          "auth": "admin"
         },
         {
           "name": "Verify both in list",
           "action": "http: GET /api/v1/playlists",
           "expected": "Both playlists returned",
-          "_original_action": "GET /api/v1/playlists"
+          "_original_action": "GET /api/v1/playlists",
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -6034,14 +6256,16 @@
           "name": "Create playlist with items",
           "action": "http: POST /api/v1/playlists",
           "expected": "Playlist with items created",
-          "_original_action": "POST /api/v1/playlists and add 2 items"
+          "_original_action": "POST /api/v1/playlists and add 2 items",
+          "auth": "admin"
         },
         {
           "name": "Delete playlist",
           "action": "http: DELETE /api/v1/playlists/{id}",
           "expected": "200 OK (cascade deletes items)",
           "_original_action": "DELETE /api/v1/playlists/{id}",
-          "expect_status": 200
+          "expect_status": 200,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -6067,7 +6291,8 @@
           "action": "http: POST /api/v1/playlists",
           "expected": "400 Bad Request",
           "_original_action": "POST /api/v1/playlists with body '{broken json'",
-          "expect_status": 400
+          "expect_status": 400,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -6097,7 +6322,8 @@
             "entity_id": 1
           },
           "_original_action": "POST /api/v1/favorites with body {\"entity_type\":\"movie\",\"entity_id\":1}",
-          "expect_status": 200
+          "expect_status": 200,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -6122,7 +6348,8 @@
           "action": "http: GET /api/v1/favorites",
           "expected": "200 OK with list of favorited entities",
           "_original_action": "GET /api/v1/favorites with auth token",
-          "expect_status": 200
+          "expect_status": 200,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -6147,7 +6374,8 @@
           "action": "http: DELETE /api/v1/favorites/movie/1",
           "expected": "200 OK or 204 No Content",
           "_original_action": "DELETE /api/v1/favorites/movie/1 with auth token",
-          "expect_status": 200
+          "expect_status": 200,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -6172,7 +6400,8 @@
           "action": "http: GET /api/v1/favorites/check/movie/1",
           "expected": "200 OK with boolean indicating favorite status",
           "_original_action": "GET /api/v1/favorites/check/movie/1 with auth token",
-          "expect_status": 200
+          "expect_status": 200,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -6197,7 +6426,8 @@
           "action": "http: GET /api/v1/favorites/check/movie/1",
           "expected": "200 OK with favorite=false",
           "_original_action": "GET /api/v1/favorites/check/movie/1",
-          "expect_status": 200
+          "expect_status": 200,
+          "auth": "admin"
         },
         {
           "name": "Add to favorites",
@@ -6208,21 +6438,24 @@
             "entity_id": 1
           },
           "_original_action": "POST /api/v1/favorites with body {\"entity_type\":\"movie\",\"entity_id\":1}",
-          "expect_status": 200
+          "expect_status": 200,
+          "auth": "admin"
         },
         {
           "name": "Check is favorited",
           "action": "http: GET /api/v1/favorites/check/movie/1",
           "expected": "200 OK with favorite=true",
           "_original_action": "GET /api/v1/favorites/check/movie/1",
-          "expect_status": 200
+          "expect_status": 200,
+          "auth": "admin"
         },
         {
           "name": "Remove from favorites",
           "action": "http: DELETE /api/v1/favorites/movie/1",
           "expected": "200 OK",
           "_original_action": "DELETE /api/v1/favorites/movie/1",
-          "expect_status": 200
+          "expect_status": 200,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -6249,7 +6482,8 @@
           "action": "http: GET /api/v1/favorites",
           "expected": "401 Unauthorized",
           "_original_action": "GET /api/v1/favorites without auth",
-          "expect_status": 401
+          "expect_status": 401,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -6279,7 +6513,8 @@
             "entity_id": 1
           },
           "_original_action": "POST /api/v1/favorites with body {\"entity_type\":\"movie\",\"entity_id\":1}",
-          "expect_status": 200
+          "expect_status": 200,
+          "auth": "admin"
         },
         {
           "name": "Add second time",
@@ -6290,7 +6525,8 @@
             "entity_id": 1
           },
           "_original_action": "POST /api/v1/favorites with body {\"entity_type\":\"movie\",\"entity_id\":1}",
-          "expect_status": 200
+          "expect_status": 200,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -6316,7 +6552,8 @@
           "action": "http: DELETE /api/v1/favorites/movie/999999",
           "expected": "404 Not Found or 200 OK (idempotent)",
           "_original_action": "DELETE /api/v1/favorites/movie/999999 with auth token",
-          "expect_status": 404
+          "expect_status": 404,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -6346,7 +6583,8 @@
           },
           "_original_action": "POST /api/v1/favorites with body {\"entity_type\":\"invalid_type\",\"entity_id\":1}",
           "expect_status": 400,
-          "expect_body_contains": "error"
+          "expect_body_contains": "error",
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -6372,7 +6610,8 @@
           "action": "http: GET /api/v1/favorites/check/invalid_type/1",
           "expected": "400 Bad Request or 200 OK with favorite=false",
           "_original_action": "GET /api/v1/favorites/check/invalid_type/1 with auth token",
-          "expect_status": 400
+          "expect_status": 400,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -6397,7 +6636,8 @@
           "action": "http: GET /api/v1/stream/1",
           "expected": "200 OK or 206 Partial Content with media data stream",
           "_original_action": "GET /api/v1/stream/1 with auth token",
-          "expect_status": 200
+          "expect_status": 200,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -6423,7 +6663,8 @@
           "action": "http: GET /api/v1/stream/1",
           "expected": "206 Partial Content with Content-Range header and 1024 bytes of data",
           "_original_action": "GET /api/v1/stream/1 with Range: bytes=0-1023 header and auth token",
-          "expect_status": 206
+          "expect_status": 206,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -6449,7 +6690,8 @@
           "action": "http: GET /api/v1/stream/999999",
           "expected": "404 Not Found",
           "_original_action": "GET /api/v1/stream/999999 with auth token",
-          "expect_status": 404
+          "expect_status": 404,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -6474,7 +6716,8 @@
           "action": "http: GET /api/v1/stream/1",
           "expected": "401 Unauthorized",
           "_original_action": "GET /api/v1/stream/1 without auth",
-          "expect_status": 401
+          "expect_status": 401,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -6499,7 +6742,8 @@
           "action": "http: GET /api/v1/download/file/1",
           "expected": "200 OK with Content-Disposition: attachment header",
           "_original_action": "GET /api/v1/download/file/1 with auth token",
-          "expect_status": 200
+          "expect_status": 200,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -6524,7 +6768,8 @@
           "action": "http: POST /api/v1/download/archive",
           "expected": "200 OK with zip/tar archive data",
           "_original_action": "POST /api/v1/download/archive with body containing directory path",
-          "expect_status": 200
+          "expect_status": 200,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -6549,7 +6794,8 @@
           "action": "http: GET /api/v1/subtitles/search?query=Matrix",
           "expected": "200 OK with subtitle search results",
           "_original_action": "GET /api/v1/subtitles/search?query=Matrix with auth token",
-          "expect_status": 200
+          "expect_status": 200,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -6574,7 +6820,8 @@
           "action": "http: GET /api/v1/subtitles/media/1",
           "expected": "200 OK with available subtitles for the media",
           "_original_action": "GET /api/v1/subtitles/media/1 with auth token",
-          "expect_status": 200
+          "expect_status": 200,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -6599,7 +6846,8 @@
           "action": "http: GET /api/v1/subtitles/languages",
           "expected": "200 OK with list of supported languages",
           "_original_action": "GET /api/v1/subtitles/languages with auth token",
-          "expect_status": 200
+          "expect_status": 200,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -6624,7 +6872,8 @@
           "action": "http: GET /api/v1/subtitles/providers",
           "expected": "200 OK with list of subtitle providers",
           "_original_action": "GET /api/v1/subtitles/providers with auth token",
-          "expect_status": 200
+          "expect_status": 200,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -6649,7 +6898,8 @@
           "action": "http: GET /ws",
           "expected": "101 Switching Protocols, WebSocket connection established",
           "_original_action": "GET /ws with Upgrade: websocket header and auth token in query param",
-          "expect_status": 101
+          "expect_status": 101,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -6674,7 +6924,8 @@
           "action": "http: GET /ws",
           "expected": "401 Unauthorized or connection rejected",
           "_original_action": "GET /ws with Upgrade: websocket but no auth token",
-          "expect_status": 401
+          "expect_status": 401,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -6705,7 +6956,8 @@
           "name": "Queue a scan",
           "action": "http: POST /api/v1/scans",
           "expected": "Scan started",
-          "_original_action": "POST /api/v1/scans via HTTP"
+          "_original_action": "POST /api/v1/scans via HTTP",
+          "auth": "admin"
         },
         {
           "name": "Listen for progress events",
@@ -7027,7 +7279,8 @@
             "role": "admin"
           },
           "_original_action": "PUT /api/v1/admin/users/{id} with body {\"role\":\"admin\"}",
-          "expect_status": 200
+          "expect_status": 200,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -7058,7 +7311,8 @@
             "role": "user"
           },
           "_original_action": "POST /api/v1/users with body {\"username\":\"admin_created_user\",\"password\":\"SecurePass456!\",\"role\":\"user\"}",
-          "expect_status": 201
+          "expect_status": 201,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -7083,7 +7337,8 @@
           "action": "http: GET /api/v1/users",
           "expected": "200 OK with list of users",
           "_original_action": "GET /api/v1/users with auth token",
-          "expect_status": 200
+          "expect_status": 200,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -7107,7 +7362,8 @@
           "action": "http: GET /api/v1/users/{id}",
           "expected": "200 OK with user details",
           "_original_action": "GET /api/v1/users/{id} with auth token",
-          "expect_status": 200
+          "expect_status": 200,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -7135,7 +7391,8 @@
             "role": "admin"
           },
           "_original_action": "PUT /api/v1/users/{id} with body {\"role\":\"admin\"}",
-          "expect_status": 200
+          "expect_status": 200,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -7163,14 +7420,16 @@
             "password": "Pass123!"
           },
           "_original_action": "POST /api/v1/users with body {\"username\":\"todelete\",\"password\":\"Pass123!\"}",
-          "expect_status": 201
+          "expect_status": 201,
+          "auth": "admin"
         },
         {
           "name": "Delete user",
           "action": "http: DELETE /api/v1/users/{id}",
           "expected": "200 OK or 204 No Content",
           "_original_action": "DELETE /api/v1/users/{id} with auth token",
-          "expect_status": 200
+          "expect_status": 200,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -7197,7 +7456,8 @@
             "new_password": "NewPass789!"
           },
           "_original_action": "POST /api/v1/users/{id}/reset-password with body {\"new_password\":\"NewPass789!\"}",
-          "expect_status": 200
+          "expect_status": 200,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -7222,7 +7482,8 @@
           "action": "http: POST /api/v1/users/{id}/lock",
           "expected": "200 OK",
           "_original_action": "POST /api/v1/users/{id}/lock with auth token",
-          "expect_status": 200
+          "expect_status": 200,
+          "auth": "admin"
         },
         {
           "name": "Verify locked user cannot login",
@@ -7236,7 +7497,8 @@
           "action": "http: POST /api/v1/users/{id}/unlock",
           "expected": "200 OK",
           "_original_action": "POST /api/v1/users/{id}/unlock with auth token",
-          "expect_status": 200
+          "expect_status": 200,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -7340,7 +7602,8 @@
           "action": "http: GET /api/v1/roles",
           "expected": "200 OK with list of roles",
           "_original_action": "GET /api/v1/roles with auth token",
-          "expect_status": 200
+          "expect_status": 200,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -7364,7 +7627,8 @@
           "action": "http: GET /api/v1/roles/permissions",
           "expected": "200 OK with list of all permissions",
           "_original_action": "GET /api/v1/roles/permissions with auth token",
-          "expect_status": 200
+          "expect_status": 200,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -7388,7 +7652,8 @@
           "action": "http: GET /api/v1/configuration",
           "expected": "200 OK with current system configuration",
           "_original_action": "GET /api/v1/configuration with auth token",
-          "expect_status": 200
+          "expect_status": 200,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -7413,7 +7678,8 @@
           "action": "http: GET /api/v1/configuration/status",
           "expected": "200 OK with system status info",
           "_original_action": "GET /api/v1/configuration/status with auth token",
-          "expect_status": 200
+          "expect_status": 200,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -7438,7 +7704,8 @@
           "action": "http: POST /api/v1/logs/collect",
           "expected": "200 OK or 201 Created with log collection ID",
           "_original_action": "POST /api/v1/logs/collect with auth token",
-          "expect_status": 200
+          "expect_status": 200,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -7463,7 +7730,8 @@
           "action": "http: GET /api/v1/logs/collections",
           "expected": "200 OK with list of log collections",
           "_original_action": "GET /api/v1/logs/collections with auth token",
-          "expect_status": 200
+          "expect_status": 200,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -7488,7 +7756,8 @@
           "action": "http: GET /api/v1/logs/statistics",
           "expected": "200 OK with log statistics (counts by level, time distribution)",
           "_original_action": "GET /api/v1/logs/statistics with auth token",
-          "expect_status": 200
+          "expect_status": 200,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -7513,7 +7782,8 @@
           "action": "http: GET /api/v1/entities?search=AAAA...x2000",
           "expected": "400 Bad Request or 414 URI Too Long (no server crash)",
           "_original_action": "GET /api/v1/entities?search=AAAA...x2000 (URL over 8000 chars) with auth token",
-          "expect_status": 400
+          "expect_status": 400,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -7539,7 +7809,8 @@
           "expected": "400 Bad Request with JSON parse error",
           "_original_action": "POST /api/v1/collections with body '{\"name: broken}' and auth token",
           "expect_status": 400,
-          "expect_body_contains": "error"
+          "expect_body_contains": "error",
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -7564,7 +7835,8 @@
           "action": "http: POST /api/v1/collections",
           "expected": "400 Bad Request or 415 Unsupported Media Type",
           "_original_action": "POST /api/v1/collections with Content-Type: application/xml and JSON body",
-          "expect_status": 400
+          "expect_status": 400,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -7590,7 +7862,8 @@
           "expected": "404 Not Found with generic error message (no stack trace)",
           "_original_action": "GET /api/v1/this/does/not/exist with auth token",
           "expect_status": 404,
-          "expect_body_contains": "error"
+          "expect_body_contains": "error",
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -7640,7 +7913,8 @@
           "action": "http: GET /api/v1/entities?page=-5",
           "expected": "400 Bad Request or 200 OK with first page",
           "_original_action": "GET /api/v1/entities?page=-5 with auth token",
-          "expect_status": 400
+          "expect_status": 400,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -7666,14 +7940,16 @@
           "action": "http: GET /api/v1/entities/not-a-number",
           "expected": "400 Bad Request or 404 Not Found",
           "_original_action": "GET /api/v1/entities/not-a-number with auth token",
-          "expect_status": 400
+          "expect_status": 400,
+          "auth": "admin"
         },
         {
           "name": "String ID for collection",
           "action": "http: GET /api/v1/collections/xyz",
           "expected": "400 Bad Request or 404 Not Found",
           "_original_action": "GET /api/v1/collections/xyz with auth token",
-          "expect_status": 400
+          "expect_status": 400,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -7698,7 +7974,8 @@
           "action": "http: PUT /api/v1/entities/1/user-metadata",
           "expected": "400 Bad Request",
           "_original_action": "PUT /api/v1/entities/1/user-metadata with empty body and auth token",
-          "expect_status": 400
+          "expect_status": 400,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -7723,7 +8000,8 @@
           "action": "http: POST /api/v1/collections",
           "expected": "413 Request Entity Too Large or connection reset",
           "_original_action": "POST /api/v1/collections with 50MB JSON body and auth token",
-          "expect_status": 413
+          "expect_status": 413,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -7748,7 +8026,8 @@
           "action": "http: PATCH /api/v1/entities/1",
           "expected": "405 Method Not Allowed or 404 Not Found",
           "_original_action": "PATCH /api/v1/entities/1 with auth token",
-          "expect_status": 405
+          "expect_status": 405,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -7777,7 +8056,8 @@
             "stack_trace": "test"
           },
           "_original_action": "POST /api/v1/errors/report with body {\"message\":\"Test error\",\"stack_trace\":\"test\"}",
-          "expect_status": 200
+          "expect_status": 200,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -7802,7 +8082,8 @@
           "action": "http: GET /api/v1/errors/reports",
           "expected": "200 OK with list of error reports",
           "_original_action": "GET /api/v1/errors/reports with auth token",
-          "expect_status": 200
+          "expect_status": 200,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -7831,7 +8112,8 @@
             "crash_log": "fatal exception"
           },
           "_original_action": "POST /api/v1/errors/crash with body {\"app\":\"androidtv\",\"crash_log\":\"fatal exception\"}",
-          "expect_status": 200
+          "expect_status": 200,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -7856,7 +8138,8 @@
           "action": "http: GET /api/v1/errors/statistics",
           "expected": "200 OK with error count statistics",
           "_original_action": "GET /api/v1/errors/statistics with auth token",
-          "expect_status": 200
+          "expect_status": 200,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -7884,7 +8167,8 @@
             "action": "play"
           },
           "_original_action": "POST /api/v1/analytics/access with body {\"media_id\":1,\"action\":\"play\"}",
-          "expect_status": 200
+          "expect_status": 200,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -7909,7 +8193,8 @@
           "action": "http: GET /api/v1/analytics/system",
           "expected": "200 OK with system-wide analytics",
           "_original_action": "GET /api/v1/analytics/system with auth token",
-          "expect_status": 200
+          "expect_status": 200,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -7933,7 +8218,8 @@
           "action": "http: GET /api/v1/reports/usage",
           "expected": "200 OK with usage report data",
           "_original_action": "GET /api/v1/reports/usage with auth token",
-          "expect_status": 200
+          "expect_status": 200,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -7957,7 +8243,8 @@
           "action": "http: GET /api/v1/reports/performance",
           "expected": "200 OK with performance metrics",
           "_original_action": "GET /api/v1/reports/performance with auth token",
-          "expect_status": 200
+          "expect_status": 200,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -7981,7 +8268,8 @@
           "action": "http: GET /api/v1/conversion/formats",
           "expected": "200 OK with list of supported conversion formats",
           "_original_action": "GET /api/v1/conversion/formats with auth token",
-          "expect_status": 200
+          "expect_status": 200,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -8012,7 +8300,8 @@
           "action": "http: GET /api/v1/entities",
           "expected": "200 OK within 1 second (well under 60s timeout)",
           "_original_action": "GET /api/v1/entities with auth token",
-          "expect_status": 200
+          "expect_status": 200,
+          "auth": "admin"
         }
       ],
       "tags": [

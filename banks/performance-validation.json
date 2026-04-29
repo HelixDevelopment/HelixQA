@@ -127,7 +127,8 @@
           "action": "http: GET /api/v1/files?path=/large-dir&page=1&per_page=50",
           "expected": "200 OK",
           "_original_action": "GET /api/v1/files?path=/large-dir&page=1&per_page=50",
-          "expect_status": 200
+          "expect_status": 200,
+          "auth": "admin"
         },
         {
           "name": "Measure response time",
@@ -471,7 +472,8 @@
           "name": "Request large page",
           "action": "http: GET /api/v1/entities?per_page=1000",
           "expected": "Response received with 1000 entities",
-          "_original_action": "GET /api/v1/entities?per_page=1000"
+          "_original_action": "GET /api/v1/entities?per_page=1000",
+          "auth": "admin"
         },
         {
           "name": "Measure response time",
@@ -518,7 +520,8 @@
           "action": "http: GET /api/v1/entities/{show_id}/children?recursive=true",
           "expected": "All 200+ entities returned",
           "_original_action": "GET /api/v1/entities/{show_id}/children?recursive=true",
-          "expect_status": 200
+          "expect_status": 200,
+          "auth": "admin"
         },
         {
           "name": "Measure response time",
@@ -728,13 +731,15 @@
           "name": "Request JS bundle",
           "action": "http: GET /assets/vendor.js",
           "expected": "Cache-Control header with max-age >= 86400",
-          "_original_action": "GET /assets/vendor.js (or hashed variant)"
+          "_original_action": "GET /assets/vendor.js (or hashed variant)",
+          "auth": "admin"
         },
         {
           "name": "Request CSS",
           "action": "http: GET /assets/index.css",
           "expected": "Cache-Control header with max-age >= 86400",
-          "_original_action": "GET /assets/index.css"
+          "_original_action": "GET /assets/index.css",
+          "auth": "admin"
         },
         {
           "name": "Check ETag",
@@ -766,14 +771,16 @@
           "action": "http: GET /assets/vendor.js",
           "expected": "200 OK with ETag header",
           "_original_action": "GET /assets/vendor.js and note ETag value",
-          "expect_status": 200
+          "expect_status": 200,
+          "auth": "admin"
         },
         {
           "name": "Conditional request",
           "action": "http: GET /assets/vendor.js",
           "expected": "304 Not Modified (no body transferred)",
           "_original_action": "GET /assets/vendor.js with If-None-Match: <etag>",
-          "expect_status": 304
+          "expect_status": 304,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -798,13 +805,15 @@
           "name": "First request",
           "action": "http: GET /api/v1/entities?type=movie",
           "expected": "Response returned",
-          "_original_action": "GET /api/v1/entities?type=movie and measure time"
+          "_original_action": "GET /api/v1/entities?type=movie and measure time",
+          "auth": "admin"
         },
         {
           "name": "Second identical request",
           "action": "http: GET /api/v1/entities?type=movie",
           "expected": "Response time significantly faster (cache hit)",
-          "_original_action": "GET /api/v1/entities?type=movie immediately after"
+          "_original_action": "GET /api/v1/entities?type=movie immediately after",
+          "auth": "admin"
         },
         {
           "name": "Verify cache hit",
@@ -836,13 +845,15 @@
           "name": "Request without compression",
           "action": "http: GET /api/v1/entities",
           "expected": "Uncompressed response, note size",
-          "_original_action": "GET /api/v1/entities with Accept-Encoding: identity"
+          "_original_action": "GET /api/v1/entities with Accept-Encoding: identity",
+          "auth": "admin"
         },
         {
           "name": "Request with Brotli",
           "action": "http: GET /api/v1/entities",
           "expected": "Content-Encoding: br, smaller response",
-          "_original_action": "GET /api/v1/entities with Accept-Encoding: br"
+          "_original_action": "GET /api/v1/entities with Accept-Encoding: br",
+          "auth": "admin"
         },
         {
           "name": "Compare sizes",
@@ -874,7 +885,8 @@
           "name": "Request with gzip only",
           "action": "http: GET /api/v1/entities",
           "expected": "Content-Encoding: gzip",
-          "_original_action": "GET /api/v1/entities with Accept-Encoding: gzip"
+          "_original_action": "GET /api/v1/entities with Accept-Encoding: gzip",
+          "auth": "admin"
         },
         {
           "name": "Verify valid gzip",
@@ -1078,13 +1090,15 @@
           "name": "Search by indexed field",
           "action": "http: GET /api/v1/entities?type=movie",
           "expected": "Response within 500ms",
-          "_original_action": "GET /api/v1/entities?type=movie (indexed)"
+          "_original_action": "GET /api/v1/entities?type=movie (indexed)",
+          "auth": "admin"
         },
         {
           "name": "Search by title",
           "action": "http: GET /api/v1/entities?search=Test",
           "expected": "Response within 500ms",
-          "_original_action": "GET /api/v1/entities?search=Test"
+          "_original_action": "GET /api/v1/entities?search=Test",
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -1209,7 +1223,8 @@
           "name": "Trigger scan",
           "action": "http: POST /api/v1/admin/scan",
           "expected": "Scan starts",
-          "_original_action": "POST /api/v1/admin/scan on directory with 1000 files"
+          "_original_action": "POST /api/v1/admin/scan on directory with 1000 files",
+          "auth": "admin"
         },
         {
           "name": "Monitor progress",
@@ -1248,7 +1263,8 @@
           "name": "Start scan",
           "action": "http: POST /api/v1/admin/scan",
           "expected": "Scan in progress",
-          "_original_action": "POST /api/v1/admin/scan on large directory"
+          "_original_action": "POST /api/v1/admin/scan on large directory",
+          "auth": "admin"
         },
         {
           "name": "Measure API response during scan",
@@ -1298,7 +1314,8 @@
           "name": "Verify all entities created",
           "action": "http: GET /api/v1/entities",
           "expected": "Entities created for all recognized media files",
-          "_original_action": "GET /api/v1/entities and count"
+          "_original_action": "GET /api/v1/entities and count",
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -1850,19 +1867,22 @@
           "name": "Clear cache",
           "action": "http: POST /api/v1/admin/cache/clear",
           "expected": "Cache cleared",
-          "_original_action": "POST /api/v1/admin/cache/clear"
+          "_original_action": "POST /api/v1/admin/cache/clear",
+          "auth": "admin"
         },
         {
           "name": "Measure cold cache query",
           "action": "http: GET /api/v1/entities?per_page=50",
           "expected": "Response within 1 second (cold cache)",
-          "_original_action": "GET /api/v1/entities?per_page=50 immediately after cache clear"
+          "_original_action": "GET /api/v1/entities?per_page=50 immediately after cache clear",
+          "auth": "admin"
         },
         {
           "name": "Measure warm cache query",
           "action": "http: GET /api/v1/entities?per_page=50",
           "expected": "Response faster than cold cache query",
-          "_original_action": "GET /api/v1/entities?per_page=50 again"
+          "_original_action": "GET /api/v1/entities?per_page=50 again",
+          "auth": "admin"
         }
       ],
       "tags": [
