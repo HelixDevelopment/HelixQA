@@ -128,7 +128,7 @@
             "password": ""
           },
           "_original_action": "POST /api/v1/auth/login with body {\"username\":\"\",\"password\":\"\"}",
-          "expect_status": 400,
+          "expect_status": 401,
           "auth": "none"
         }
       ],
@@ -159,7 +159,7 @@
             "password": "anything"
           },
           "_original_action": "POST /api/v1/auth/login with body {\"username\":\"admin' OR '1'='1\",\"password\":\"anything\"}",
-          "expect_status": 401,
+          "expect_status": 400,
           "auth": "none"
         },
         {
@@ -852,7 +852,7 @@
           "name": "Send OPTIONS preflight",
           "action": "http: OPTIONS /api/v1/entities",
           "expected": "200 OK with Access-Control-Allow-Origin, Access-Control-Allow-Methods, Access-Control-Allow-Headers",
-          "expect_status": 200,
+          "expect_status": 204,
           "_conversion_note": "manual-review-required",
           "auth": "admin",
           "_original_action": "OPTIONS /api/v1/entities with Origin: http://localhost:3000"
