@@ -21,9 +21,10 @@
       "steps": [
         {
           "name": "Verify secondary display connected",
-          "action": "Check that HDMI-A-1 (TV) is connected via dumpsys display",
+          "action": "adb_shell: dumpsys display",
           "expected": "Secondary display detected with valid display ID",
-          "_conversion_note": "manual-review-required"
+          "_conversion_note": "manual-review-required",
+          "_original_action": "Check that HDMI-A-1 (TV) is connected via dumpsys display"
         },
         {
           "name": "Launch VLC and play video",
@@ -712,9 +713,10 @@
         },
         {
           "name": "Trigger stall condition",
-          "action": "Force-stop the video app while video is playing (adb shell am force-stop)",
+          "action": "adb_shell: am force-stop the",
           "expected": "Video stops but frame may remain on secondary display",
-          "_conversion_note": "manual-review-required"
+          "_conversion_note": "manual-review-required",
+          "_original_action": "Force-stop the video app while video is playing (adb shell am force-stop)"
         },
         {
           "name": "Wait for detection",
@@ -788,9 +790,10 @@
       "steps": [
         {
           "name": "Trigger frozen frame and wait for cleanup",
-          "action": "Force-stop video app, wait for watchdog cleanup",
+          "action": "adb_shell: am force-stop video",
           "expected": "Frozen frame cleaned up",
-          "_conversion_note": "manual-review-required"
+          "_conversion_note": "manual-review-required",
+          "_original_action": "Force-stop video app, wait for watchdog cleanup"
         },
         {
           "name": "Verify secondary display",
@@ -827,9 +830,10 @@
       "steps": [
         {
           "name": "Trigger and complete frozen frame cleanup",
-          "action": "Force-stop video app, wait for watchdog cleanup to complete",
+          "action": "adb_shell: am force-stop video",
           "expected": "Frozen frame resolved, secondary display black",
-          "_conversion_note": "manual-review-required"
+          "_conversion_note": "manual-review-required",
+          "_original_action": "Force-stop video app, wait for watchdog cleanup to complete"
         },
         {
           "name": "Play new video",
@@ -871,9 +875,10 @@
         },
         {
           "name": "Trigger C2BqBuffer stall",
-          "action": "Force-stop video app during playback",
+          "action": "adb_shell: am force-stop video",
           "expected": "C2BqBuffer stall occurs",
-          "_conversion_note": "manual-review-required"
+          "_conversion_note": "manual-review-required",
+          "_original_action": "Force-stop video app during playback"
         },
         {
           "name": "Check cast manager detection",
@@ -902,9 +907,10 @@
       "steps": [
         {
           "name": "Trigger frozen frame",
-          "action": "Force-stop video app while playing on secondary",
+          "action": "adb_shell: am force-stop video",
           "expected": "Frozen frame visible on secondary display",
-          "_conversion_note": "manual-review-required"
+          "_conversion_note": "manual-review-required",
+          "_original_action": "Force-stop video app while playing on secondary"
         },
         {
           "name": "Check notification",
@@ -997,9 +1003,10 @@
       "steps": [
         {
           "name": "Trigger frozen frame",
-          "action": "Force-stop video app during playback on secondary",
+          "action": "adb_shell: am force-stop video",
           "expected": "Frozen frame on secondary",
-          "_conversion_note": "manual-review-required"
+          "_conversion_note": "manual-review-required",
+          "_original_action": "Force-stop video app during playback on secondary"
         },
         {
           "name": "Measure detection time",
@@ -2716,9 +2723,10 @@
       "steps": [
         {
           "name": "Boot device",
-          "action": "Reboot device and wait for home screen",
+          "action": "adb_shell: reboot",
           "expected": "Home screen appears",
-          "_conversion_note": "manual-review-required"
+          "_conversion_note": "manual-review-required",
+          "_original_action": "Reboot device and wait for home screen"
         },
         {
           "name": "Verify Lawnchair",
@@ -2760,9 +2768,10 @@
       "steps": [
         {
           "name": "Boot device",
-          "action": "Reboot device and wait 60 seconds for boot completion",
+          "action": "adb_shell: reboot",
           "expected": "Device fully booted",
-          "_conversion_note": "manual-review-required"
+          "_conversion_note": "manual-review-required",
+          "_original_action": "Reboot device and wait 60 seconds for boot completion"
         },
         {
           "name": "Check Presenter service",
@@ -2804,9 +2813,10 @@
       "steps": [
         {
           "name": "Boot device",
-          "action": "Reboot device and wait for full boot",
+          "action": "adb_shell: reboot",
           "expected": "Device booted",
-          "_conversion_note": "manual-review-required"
+          "_conversion_note": "manual-review-required",
+          "_original_action": "Reboot device and wait for full boot"
         },
         {
           "name": "Check completion property",
@@ -3627,9 +3637,10 @@
       "steps": [
         {
           "name": "Open Settings",
-          "action": "Launch Settings app",
+          "action": "adb_shell: monkey -p Settings -c android.intent.category.LAUNCHER 1",
           "expected": "Settings open",
-          "_conversion_note": "manual-review-required"
+          "_conversion_note": "manual-review-required",
+          "_original_action": "Launch Settings app"
         },
         {
           "name": "Navigate to About",
@@ -4157,9 +4168,10 @@
         },
         {
           "name": "Stop video",
-          "action": "Force-stop the video app via adb shell am force-stop",
+          "action": "adb_shell: am force-stop the",
           "expected": "Video app killed",
-          "_conversion_note": "manual-review-required"
+          "_conversion_note": "manual-review-required",
+          "_original_action": "Force-stop the video app via adb shell am force-stop"
         },
         {
           "name": "Wait for cleanup",
@@ -4208,9 +4220,10 @@
         },
         {
           "name": "Stop video A",
-          "action": "Force-stop app A, wait for cleanup to complete",
+          "action": "adb_shell: am force-stop app",
           "expected": "Secondary display clears to black",
-          "_conversion_note": "manual-review-required"
+          "_conversion_note": "manual-review-required",
+          "_original_action": "Force-stop app A, wait for cleanup to complete"
         },
         {
           "name": "Play video B",
@@ -4763,9 +4776,10 @@
         },
         {
           "name": "Verify setting persists across reboot",
-          "action": "Reboot device and re-check settings get global private_dns_mode",
+          "action": "adb_shell: reboot",
           "expected": "Setting remains 'hostname' after reboot",
-          "_conversion_note": "manual-review-required"
+          "_conversion_note": "manual-review-required",
+          "_original_action": "Reboot device and re-check settings get global private_dns_mode"
         }
       ],
       "tags": [
@@ -4936,9 +4950,10 @@
       "steps": [
         {
           "name": "Verify secondary display connected",
-          "action": "Check that HDMI-A-1 (TV) is connected via dumpsys display",
+          "action": "adb_shell: dumpsys display",
           "expected": "Secondary display detected with valid display ID",
-          "_conversion_note": "manual-review-required"
+          "_conversion_note": "manual-review-required",
+          "_original_action": "Check that HDMI-A-1 (TV) is connected via dumpsys display"
         },
         {
           "name": "Launch VLC and start video",

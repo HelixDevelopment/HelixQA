@@ -523,9 +523,10 @@
         },
         {
           "name": "Kill and relaunch app",
-          "action": "Force-stop the app and relaunch from launcher",
+          "action": "adb_shell: am force-stop the",
           "expected": "App opens directly to home screen (session token persisted via DataStore)",
-          "_conversion_note": "manual-review-required"
+          "_conversion_note": "manual-review-required",
+          "_original_action": "Force-stop the app and relaunch from launcher"
         }
       ],
       "tags": [
@@ -554,9 +555,10 @@
         },
         {
           "name": "Kill and relaunch app",
-          "action": "Force-stop and relaunch",
+          "action": "adb_shell: am force-stop and",
           "expected": "Server URL restored from DataStore, connection status shows saved URL",
-          "_conversion_note": "manual-review-required"
+          "_conversion_note": "manual-review-required",
+          "_original_action": "Force-stop and relaunch"
         }
       ],
       "tags": [
@@ -3372,9 +3374,10 @@
         },
         {
           "name": "Minimize app",
-          "action": "Press home button",
+          "action": "keypress: KEYCODE_HOME",
           "expected": "Audio continues playing in the background",
-          "_conversion_note": "manual-review-required"
+          "_conversion_note": "manual-review-required",
+          "_original_action": "Press home button"
         },
         {
           "name": "Check notification",
@@ -4027,9 +4030,10 @@
         },
         {
           "name": "Restart app",
-          "action": "Force-stop and relaunch",
+          "action": "adb_shell: am force-stop and",
           "expected": "Favorited item still shows as favorited (persisted in Room DB)",
-          "_conversion_note": "manual-review-required"
+          "_conversion_note": "manual-review-required",
+          "_original_action": "Force-stop and relaunch"
         }
       ],
       "tags": [
@@ -4960,9 +4964,10 @@
         },
         {
           "name": "Background app",
-          "action": "Press home button",
+          "action": "keypress: KEYCODE_HOME",
           "expected": "App moves to background",
-          "_conversion_note": "manual-review-required"
+          "_conversion_note": "manual-review-required",
+          "_original_action": "Press home button"
         },
         {
           "name": "Resume app",

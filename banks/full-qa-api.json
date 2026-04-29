@@ -845,10 +845,12 @@
       "steps": [
         {
           "name": "Send OPTIONS preflight",
-          "action": "OPTIONS /api/v1/entities with Origin: http://localhost:3000",
+          "action": "http: OPTIONS /api/v1/entities",
           "expected": "200 OK with Access-Control-Allow-Origin, Access-Control-Allow-Methods, Access-Control-Allow-Headers",
           "expect_status": 200,
-          "_conversion_note": "manual-review-required"
+          "_conversion_note": "manual-review-required",
+          "auth": "admin",
+          "_original_action": "OPTIONS /api/v1/entities with Origin: http://localhost:3000"
         }
       ],
       "tags": [
