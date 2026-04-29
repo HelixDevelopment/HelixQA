@@ -217,38 +217,6 @@ type PipelineResult struct {
 	Error          string           `json:"error,omitempty"`
 }
 
-// qaUsername returns the admin username from QA credentials.
-func (c *PipelineConfig) qaUsername() string {
-	if c.QACredentials == nil {
-		return ""
-	}
-	for _, key := range []string{
-		"ADMIN_USERNAME", "ADMIN_USER", "USERNAME",
-		"DEFAULT_USER", "TEST_USERNAME",
-	} {
-		if v := c.QACredentials[key]; v != "" {
-			return v
-		}
-	}
-	return ""
-}
-
-// qaPassword returns the admin password from QA credentials.
-func (c *PipelineConfig) qaPassword() string {
-	if c.QACredentials == nil {
-		return ""
-	}
-	for _, key := range []string{
-		"ADMIN_PASSWORD", "ADMIN_PASS", "PASSWORD",
-		"DEFAULT_PASSWORD", "TEST_PASSWORD",
-	} {
-		if v := c.QACredentials[key]; v != "" {
-			return v
-		}
-	}
-	return ""
-}
-
 // SessionPipeline orchestrates the four-phase autonomous QA
 // pipeline: learn, plan, execute, analyze.
 type SessionPipeline struct {
@@ -987,27 +955,21 @@ func (sp *SessionPipeline) Run(
 			launchCtx, lc := context.WithTimeout(
 				ctx, 10*time.Second,
 			)
-			// Launch with QA credentials via intent extras
-			// so the app auto-logs in (bypasses keyboard).
+			// Launch with a clean intent — see structured_executor.go
+			// for the full justification of why qa_username/
+			// qa_password extras are forbidden (HelixQA's
+			// "Fully Autonomous LLM-Driven QA" + the consuming
+			// project's "Universal Solution Principle").
 			args := []string{
 				"-s", device, "shell", "am", "start",
 				"-n", sp.config.AndroidPackage +
 					"/.ui.MainActivity",
 			}
-			// Inject credentials from KB if available.
-			user := sp.config.qaUsername()
-			pass := sp.config.qaPassword()
-			if user != "" && pass != "" {
-				args = append(args,
-					"--es", "qa_username", user,
-					"--es", "qa_password", pass,
-				)
-				fmt.Printf(
-					"[pipeline] launching %s on %s "+
-						"with QA auto-login\n",
-					sp.config.AndroidPackage, device,
-				)
-			}
+			fmt.Printf(
+				"[pipeline] launching %s on %s "+
+					"(LLM-driven login, no bypass extras)\n",
+				sp.config.AndroidPackage, device,
+			)
 			_, _ = osexec.CommandContext(
 				launchCtx, "adb", args...,
 			).CombinedOutput()
@@ -1789,18 +1751,15 @@ func (sp *SessionPipeline) Run(
 				launchCtx, lc := context.WithTimeout(
 					ctx, 10*time.Second,
 				)
+				// Clean launch — qa_username/qa_password
+				// extras are forbidden (see structured_executor.go
+				// for the full justification: HelixQA's
+				// LLM-driven constitution + the app-side
+				// Universal Solution Principle).
 				args := []string{
 					"-s", ct.device, "shell", "am", "start",
 					"-n", sp.config.AndroidPackage +
 						"/.ui.MainActivity",
-				}
-				user := sp.config.qaUsername()
-				pass := sp.config.qaPassword()
-				if user != "" && pass != "" {
-					args = append(args,
-						"--es", "qa_username", user,
-						"--es", "qa_password", pass,
-					)
 				}
 				_, _ = osexec.CommandContext(
 					launchCtx, "adb", args...,
@@ -1943,17 +1902,12 @@ func (sp *SessionPipeline) Run(
 							"  [curiosity %s #%d] app not in foreground, relaunching %s\n",
 							platform, i+1, expectedPkg,
 						)
+						// Clean relaunch — see structured_executor.go
+						// for the qa_username/qa_password ban
+						// rationale.
 						launchArgs := []string{
 							"-s", device, "shell", "am", "start",
 							"-n", expectedPkg + "/.ui.MainActivity",
-						}
-						user := sp.config.qaUsername()
-						pass := sp.config.qaPassword()
-						if user != "" && pass != "" {
-							launchArgs = append(launchArgs,
-								"--es", "qa_username", user,
-								"--es", "qa_password", pass,
-							)
 						}
 						_, _ = osexec.CommandContext(
 							curiosityCtx,

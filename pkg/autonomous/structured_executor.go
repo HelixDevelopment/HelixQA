@@ -875,17 +875,29 @@ func (ste *StructuredTestExecutor) ensureAppForeground(
 		})
 	}
 
+	// IMPORTANT: do NOT append `--es qa_username/qa_password`
+	// extras to the launch intent.
+	//
+	// HelixQA's "Fully Autonomous LLM-Driven QA" constitution
+	// (HelixQA/CLAUDE.md) forbids scripted navigation flows /
+	// hardcoded keystroke sequences that bypass the LLM. The
+	// consuming-project side (Catalogizer's "Universal Solution
+	// Principle" in CLAUDE.md) forbids QA-only receivers /
+	// test-only Activity extras / app-side bypasses — the rule
+	// is: fix detection in HelixQA, never in the app under test.
+	//
+	// Together those rules mean any `qa_username` extra HelixQA
+	// emits is dead instrumentation: no app on the supported
+	// platforms will read it, and emitting it lets a reviewer
+	// believe a working bypass exists when it does not. That is
+	// the exact bluff Article XI bans. The ADBExecutor.Type()
+	// path now opens Compose-TV's IME via DPAD_CENTER before
+	// typing (see pkg/navigator/executor.go), which is the real
+	// fix for the form-fill failure mode that motivated the
+	// extras in the first place.
 	launchArgs := []string{
 		"-s", device, "shell", "am", "start",
 		"-n", expectedPkg + "/.ui.MainActivity",
-	}
-	user := ste.config.qaUsername()
-	pass := ste.config.qaPassword()
-	if user != "" && pass != "" {
-		launchArgs = append(launchArgs,
-			"--es", "qa_username", user,
-			"--es", "qa_password", pass,
-		)
 	}
 	_, _ = osexec.CommandContext(ctx, "adb", launchArgs...).CombinedOutput()
 	time.Sleep(3 * time.Second)

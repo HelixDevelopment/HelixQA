@@ -19,7 +19,7 @@
       "steps": [
         {
           "name": "Login to app",
-          "action": "adb_shell: am start -n com.catalogizer.androidtv/.ui.MainActivity --es qa_username admin --es qa_password admin123",
+          "action": "adb_shell: am start -n com.catalogizer.androidtv/.ui.MainActivity",
           "expected": "Catalogizer app runs, channels synced"
         },
         {

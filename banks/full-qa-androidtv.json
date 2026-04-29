@@ -21,7 +21,7 @@
       "steps": [
         {
           "name": "Navigate to Catalogizer on TV home",
-          "action": "adb_shell: am start -n com.catalogizer.androidtv/.ui.MainActivity --es qa_username admin --es qa_password admin123",
+          "action": "adb_shell: am start -n com.catalogizer.androidtv/.ui.MainActivity",
           "expected": "App icon is visible and focusable on the home screen"
         },
         {
@@ -49,7 +49,7 @@
       "steps": [
         {
           "name": "Launch app",
-          "action": "adb_shell: am start -n com.catalogizer.androidtv/.ui.MainActivity --es qa_username admin --es qa_password admin123",
+          "action": "adb_shell: am start -n com.catalogizer.androidtv/.ui.MainActivity",
           "expected": "Splash screen or loading indicator is displayed"
         },
         {
@@ -77,7 +77,7 @@
       "steps": [
         {
           "name": "Fresh install launch",
-          "action": "adb_shell: am start -n com.catalogizer.androidtv/.ui.MainActivity --es qa_username admin --es qa_password admin123",
+          "action": "adb_shell: am start -n com.catalogizer.androidtv/.ui.MainActivity",
           "expected": "Login screen displays with SERVER CONNECTION section visible"
         },
         {
@@ -201,7 +201,7 @@
       "steps": [
         {
           "name": "Launch with auto-discovery enabled and no saved URL",
-          "action": "adb_shell: pm clear com.catalogizer.androidtv && am start -n com.catalogizer.androidtv/.ui.MainActivity --es qa_username admin --es qa_password admin123",
+          "action": "adb_shell: pm clear com.catalogizer.androidtv && am start -n com.catalogizer.androidtv/.ui.MainActivity",
           "expected": "Auto-discovery runs on launch"
         },
         {
@@ -234,7 +234,7 @@
         },
         {
           "name": "Kill and restart app",
-          "action": "adb_shell: am force-stop com.catalogizer.androidtv && sleep 1 && am start -n com.catalogizer.androidtv/.ui.MainActivity --es qa_username admin --es qa_password admin123",
+          "action": "adb_shell: am force-stop com.catalogizer.androidtv && sleep 1 && am start -n com.catalogizer.androidtv/.ui.MainActivity",
           "expected": "App launches with previously saved server URL pre-filled"
         }
       ],
@@ -257,7 +257,7 @@
       "steps": [
         {
           "name": "Launch app",
-          "action": "adb_shell: am start -n com.catalogizer.androidtv/.ui.MainActivity --es qa_username admin --es qa_password admin123",
+          "action": "adb_shell: am start -n com.catalogizer.androidtv/.ui.MainActivity",
           "expected": "Login screen is the initial screen for unauthenticated users"
         },
         {
@@ -290,7 +290,7 @@
       "steps": [
         {
           "name": "Launch app to login screen",
-          "action": "adb_shell: am start -n com.catalogizer.androidtv/.ui.MainActivity --es qa_username admin --es qa_password admin123",
+          "action": "adb_shell: am start -n com.catalogizer.androidtv/.ui.MainActivity",
           "expected": "Login screen displayed"
         },
         {
@@ -546,7 +546,7 @@
       "steps": [
         {
           "name": "Perform valid login",
-          "action": "adb_shell: am start -n com.catalogizer.androidtv/.ui.MainActivity --es qa_username admin --es qa_password admin123",
+          "action": "adb_shell: am start -n com.catalogizer.androidtv/.ui.MainActivity",
           "expected": "Authentication succeeds"
         },
         {
@@ -755,7 +755,7 @@
       "steps": [
         {
           "name": "Login successfully",
-          "action": "adb_shell: am start -n com.catalogizer.androidtv/.ui.MainActivity --es qa_username admin --es qa_password admin123",
+          "action": "adb_shell: am start -n com.catalogizer.androidtv/.ui.MainActivity",
           "expected": "Navigated to home screen, username saved to DataStore"
         },
         {
@@ -827,7 +827,7 @@
       "steps": [
         {
           "name": "Login successfully",
-          "action": "adb_shell: am start -n com.catalogizer.androidtv/.ui.MainActivity --es qa_username admin --es qa_password admin123",
+          "action": "adb_shell: am start -n com.catalogizer.androidtv/.ui.MainActivity",
           "expected": "Home screen displayed"
         },
         {
@@ -855,7 +855,7 @@
       "steps": [
         {
           "name": "Navigate to home screen",
-          "action": "adb_shell: am start -n com.catalogizer.androidtv/.ui.MainActivity --es qa_username admin --es qa_password admin123",
+          "action": "adb_shell: am start -n com.catalogizer.androidtv/.ui.MainActivity",
           "expected": "Home screen content loading"
         },
         {
@@ -883,7 +883,7 @@
       "steps": [
         {
           "name": "With partially watched content",
-          "action": "adb_shell: am start -n com.catalogizer.androidtv/.ui.MainActivity --es qa_username admin --es qa_password admin123",
+          "action": "adb_shell: am start -n com.catalogizer.androidtv/.ui.MainActivity",
           "expected": "Home screen loads"
         },
         {
@@ -911,7 +911,7 @@
       "steps": [
         {
           "name": "Home screen loaded",
-          "action": "adb_shell: am start -n com.catalogizer.androidtv/.ui.MainActivity --es qa_username admin --es qa_password admin123",
+          "action": "adb_shell: am start -n com.catalogizer.androidtv/.ui.MainActivity",
           "expected": "Home screen displayed"
         },
         {
@@ -939,7 +939,7 @@
       "steps": [
         {
           "name": "Home screen loaded",
-          "action": "adb_shell: am start -n com.catalogizer.androidtv/.ui.MainActivity --es qa_username admin --es qa_password admin123",
+          "action": "adb_shell: am start -n com.catalogizer.androidtv/.ui.MainActivity",
           "expected": "Home screen displayed"
         },
         {
@@ -967,7 +967,7 @@
       "steps": [
         {
           "name": "Home screen loaded",
-          "action": "adb_shell: am start -n com.catalogizer.androidtv/.ui.MainActivity --es qa_username admin --es qa_password admin123",
+          "action": "adb_shell: am start -n com.catalogizer.androidtv/.ui.MainActivity",
           "expected": "Home screen displayed"
         },
         {
@@ -1092,7 +1092,7 @@
       "steps": [
         {
           "name": "Home screen with content",
-          "action": "adb_shell: am start -n com.catalogizer.androidtv/.ui.MainActivity --es qa_username admin --es qa_password admin123",
+          "action": "adb_shell: am start -n com.catalogizer.androidtv/.ui.MainActivity",
           "expected": "Content rails visible"
         },
         {
@@ -1150,7 +1150,7 @@
       "steps": [
         {
           "name": "View home screen",
-          "action": "adb_shell: am start -n com.catalogizer.androidtv/.ui.MainActivity --es qa_username admin --es qa_password admin123",
+          "action": "adb_shell: am start -n com.catalogizer.androidtv/.ui.MainActivity",
           "expected": "Multiple rails visible"
         },
         {
@@ -1179,7 +1179,7 @@
       "steps": [
         {
           "name": "View home screen with entities",
-          "action": "adb_shell: am start -n com.catalogizer.androidtv/.ui.MainActivity --es qa_username admin --es qa_password admin123",
+          "action": "adb_shell: am start -n com.catalogizer.androidtv/.ui.MainActivity",
           "expected": "Stats header at top of TvLazyColumn"
         },
         {
@@ -1292,7 +1292,7 @@
       "steps": [
         {
           "name": "Home screen with games",
-          "action": "adb_shell: am start -n com.catalogizer.androidtv/.ui.MainActivity --es qa_username admin --es qa_password admin123",
+          "action": "adb_shell: am start -n com.catalogizer.androidtv/.ui.MainActivity",
           "expected": "Home screen displayed"
         },
         {
@@ -1320,7 +1320,7 @@
       "steps": [
         {
           "name": "Home screen with books",
-          "action": "adb_shell: am start -n com.catalogizer.androidtv/.ui.MainActivity --es qa_username admin --es qa_password admin123",
+          "action": "adb_shell: am start -n com.catalogizer.androidtv/.ui.MainActivity",
           "expected": "Home screen displayed"
         },
         {
@@ -1348,7 +1348,7 @@
       "steps": [
         {
           "name": "Home screen with comics",
-          "action": "adb_shell: am start -n com.catalogizer.androidtv/.ui.MainActivity --es qa_username admin --es qa_password admin123",
+          "action": "adb_shell: am start -n com.catalogizer.androidtv/.ui.MainActivity",
           "expected": "Home screen displayed"
         },
         {
@@ -1376,7 +1376,7 @@
       "steps": [
         {
           "name": "Home screen with software",
-          "action": "adb_shell: am start -n com.catalogizer.androidtv/.ui.MainActivity --es qa_username admin --es qa_password admin123",
+          "action": "adb_shell: am start -n com.catalogizer.androidtv/.ui.MainActivity",
           "expected": "Home screen displayed"
         },
         {
@@ -1462,7 +1462,7 @@
       "steps": [
         {
           "name": "Navigate to home screen",
-          "action": "adb_shell: am start -n com.catalogizer.androidtv/.ui.MainActivity --es qa_username admin --es qa_password admin123",
+          "action": "adb_shell: am start -n com.catalogizer.androidtv/.ui.MainActivity",
           "expected": "CircularProgressIndicator displayed"
         },
         {
@@ -1491,7 +1491,7 @@
       "steps": [
         {
           "name": "Trigger error state",
-          "action": "adb_shell: am start -n com.catalogizer.androidtv/.ui.MainActivity --es qa_username admin --es qa_password admin123",
+          "action": "adb_shell: am start -n com.catalogizer.androidtv/.ui.MainActivity",
           "expected": "Error state displayed"
         },
         {
@@ -1525,7 +1525,7 @@
       "steps": [
         {
           "name": "Navigate to home with empty catalog",
-          "action": "adb_shell: am start -n com.catalogizer.androidtv/.ui.MainActivity --es qa_username admin --es qa_password admin123",
+          "action": "adb_shell: am start -n com.catalogizer.androidtv/.ui.MainActivity",
           "expected": "Empty state displayed"
         },
         {
@@ -2016,7 +2016,7 @@
       "steps": [
         {
           "name": "Load home screen",
-          "action": "adb_shell: am start -n com.catalogizer.androidtv/.ui.MainActivity --es qa_username admin --es qa_password admin123",
+          "action": "adb_shell: am start -n com.catalogizer.androidtv/.ui.MainActivity",
           "expected": "Home screen displayed"
         },
         {
@@ -2664,7 +2664,7 @@
       "steps": [
         {
           "name": "View home screen stats",
-          "action": "adb_shell: am start -n com.catalogizer.androidtv/.ui.MainActivity --es qa_username admin --es qa_password admin123",
+          "action": "adb_shell: am start -n com.catalogizer.androidtv/.ui.MainActivity",
           "expected": "CatalogStatsHeader visible"
         },
         {
@@ -4253,7 +4253,7 @@
       "steps": [
         {
           "name": "Login to app",
-          "action": "adb_shell: am start -n com.catalogizer.androidtv/.ui.MainActivity --es qa_username admin --es qa_password admin123",
+          "action": "adb_shell: am start -n com.catalogizer.androidtv/.ui.MainActivity",
           "expected": "Catalogizer app runs, channels synced"
         },
         {
@@ -4883,7 +4883,7 @@
         },
         {
           "name": "Login again",
-          "action": "adb_shell: am start -n com.catalogizer.androidtv/.ui.MainActivity --es qa_username admin --es qa_password admin123",
+          "action": "adb_shell: am start -n com.catalogizer.androidtv/.ui.MainActivity",
           "expected": "Home screen displayed"
         },
         {
@@ -5095,7 +5095,7 @@
       "steps": [
         {
           "name": "Launch app after being closed",
-          "action": "adb_shell: am start -n com.catalogizer.androidtv/.ui.MainActivity --es qa_username admin --es qa_password admin123",
+          "action": "adb_shell: am start -n com.catalogizer.androidtv/.ui.MainActivity",
           "expected": "App starts"
         },
         {
@@ -6272,7 +6272,7 @@
         },
         {
           "name": "Restart app",
-          "action": "adb_shell: am force-stop com.catalogizer.androidtv && sleep 1 && am start -n com.catalogizer.androidtv/.ui.MainActivity --es qa_username admin --es qa_password admin123",
+          "action": "adb_shell: am force-stop com.catalogizer.androidtv && sleep 1 && am start -n com.catalogizer.androidtv/.ui.MainActivity",
           "expected": "App restarts"
         },
         {
@@ -7174,7 +7174,7 @@
         },
         {
           "name": "Navigate to a screen",
-          "action": "adb_shell: am start -n com.catalogizer.androidtv/.ui.MainActivity --es qa_username admin --es qa_password admin123",
+          "action": "adb_shell: am start -n com.catalogizer.androidtv/.ui.MainActivity",
           "expected": "Error state displayed gracefully, no crash"
         }
       ],
@@ -7285,7 +7285,7 @@
       "steps": [
         {
           "name": "Login and navigate",
-          "action": "adb_shell: am start -n com.catalogizer.androidtv/.ui.MainActivity --es qa_username admin --es qa_password admin123",
+          "action": "adb_shell: am start -n com.catalogizer.androidtv/.ui.MainActivity",
           "expected": "Detail screen visible"
         },
         {
@@ -7295,7 +7295,7 @@
         },
         {
           "name": "Re-launch",
-          "action": "adb_shell: am start -n com.catalogizer.androidtv/.ui.MainActivity --es qa_username admin --es qa_password admin123",
+          "action": "adb_shell: am start -n com.catalogizer.androidtv/.ui.MainActivity",
           "expected": "App resumes from where it was (detail screen), auth state preserved"
         }
       ],
@@ -7377,7 +7377,7 @@
       "steps": [
         {
           "name": "Fill login form",
-          "action": "adb_shell: am start -n com.catalogizer.androidtv/.ui.MainActivity --es qa_username admin --es qa_password admin123",
+          "action": "adb_shell: am start -n com.catalogizer.androidtv/.ui.MainActivity",
           "expected": "Form filled"
         },
         {
@@ -7526,7 +7526,7 @@
       "steps": [
         {
           "name": "Launch with QA extras",
-          "action": "adb_shell: am start -n com.catalogizer.androidtv/.ui.MainActivity --es qa_username admin --es qa_password admin123",
+          "action": "adb_shell: am start -n com.catalogizer.androidtv/.ui.MainActivity",
           "expected": "App launches"
         },
         {
