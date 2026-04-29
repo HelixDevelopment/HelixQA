@@ -5,7 +5,9 @@
   "metadata": {
     "author": "vasic-digital",
     "app": "Yole",
-    "version": "1.0.0"
+    "version": "1.0.0",
+    "bluff_audit_status": "converted-by-bank-prose-to-http.py",
+    "bluff_audit_date": "2026-04-29"
   },
   "test_cases": [
     {
@@ -22,17 +24,20 @@
         {
           "name": "Open new document",
           "action": "Create a new .txt file",
-          "expected": "Empty editor ready for input"
+          "expected": "Empty editor ready for input",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Type text",
           "action": "Type 'Hello, Yole! This is a test note.'",
-          "expected": "Text appears in editor as typed"
+          "expected": "Text appears in editor as typed",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify cursor position",
           "action": "Check cursor is at end of typed text",
-          "expected": "Cursor positioned after last character"
+          "expected": "Cursor positioned after last character",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -65,17 +70,20 @@
         {
           "name": "Open new document",
           "action": "Create a new .md file",
-          "expected": "Empty editor"
+          "expected": "Empty editor",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Type multi-line content",
           "action": "Type '# Title', press Enter, type 'Paragraph one.', press Enter twice, type 'Paragraph two.'",
-          "expected": "Three lines of text visible with correct line breaks"
+          "expected": "Three lines of text visible with correct line breaks",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify line count",
           "action": "Check line numbers (if enabled)",
-          "expected": "4 lines shown (heading, paragraph, blank, paragraph)"
+          "expected": "4 lines shown (heading, paragraph, blank, paragraph)",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -101,17 +109,20 @@
         {
           "name": "Open new document",
           "action": "Create a new .txt file",
-          "expected": "Empty editor"
+          "expected": "Empty editor",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Type Unicode content",
-          "action": "Type '\u041f\u0440\u0438\u0432\u0435\u0442 \u043c\u0438\u0440 \u65e5\u672c\u8a9e \u0627\u0644\u0639\u0631\u0628\u064a\u0629 \ud83c\udf89'",
-          "expected": "All Unicode characters and emoji displayed correctly"
+          "action": "Type 'Привет мир 日本語 العربية 🎉'",
+          "expected": "All Unicode characters and emoji displayed correctly",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Save and reopen",
           "action": "Save file, close, reopen",
-          "expected": "Unicode content preserved exactly"
+          "expected": "Unicode content preserved exactly",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -137,18 +148,21 @@
       "steps": [
         {
           "name": "Open document and type text",
-          "action": "Type 'original text' in editor",
-          "expected": "Text visible"
+          "action": "playwright: fill input[name=editor] original text",
+          "expected": "Text visible",
+          "_original_action": "Type 'original text' in editor"
         },
         {
           "name": "Type additional text",
           "action": "Type ' added'",
-          "expected": "Editor shows 'original text added'"
+          "expected": "Editor shows 'original text added'",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Undo",
           "action": "Press Ctrl+Z (desktop) or tap Undo button",
-          "expected": "' added' removed, editor shows 'original text'"
+          "expected": "' added' removed, editor shows 'original text'",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -173,22 +187,26 @@
         {
           "name": "Type three distinct words",
           "action": "Type 'one', pause, type ' two', pause, type ' three'",
-          "expected": "Editor shows 'one two three'"
+          "expected": "Editor shows 'one two three'",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Undo once",
           "action": "Press Ctrl+Z or Undo",
-          "expected": "Editor shows 'one two'"
+          "expected": "Editor shows 'one two'",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Undo twice",
           "action": "Press Ctrl+Z again",
-          "expected": "Editor shows 'one'"
+          "expected": "Editor shows 'one'",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Undo to empty",
           "action": "Press Ctrl+Z again",
-          "expected": "Editor is empty (or at initial state)"
+          "expected": "Editor is empty (or at initial state)",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -214,17 +232,20 @@
         {
           "name": "Type text",
           "action": "Type 'hello world'",
-          "expected": "Text visible"
+          "expected": "Text visible",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Undo",
           "action": "Undo last edit",
-          "expected": "Text partially removed"
+          "expected": "Text partially removed",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Redo",
           "action": "Press Ctrl+Y or Ctrl+Shift+Z (desktop) or Redo button",
-          "expected": "Undone text restored"
+          "expected": "Undone text restored",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -250,17 +271,20 @@
         {
           "name": "Type and select text",
           "action": "Type 'copy me', then select all the text",
-          "expected": "Text selected (highlighted)"
+          "expected": "Text selected (highlighted)",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Copy",
           "action": "Press Ctrl+C or tap Copy",
-          "expected": "Text copied to clipboard"
+          "expected": "Text copied to clipboard",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Move cursor to end and paste",
           "action": "Tap at end of text, press Ctrl+V or tap Paste",
-          "expected": "Text pasted: 'copy mecopy me'"
+          "expected": "Text pasted: 'copy mecopy me'",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -286,12 +310,14 @@
         {
           "name": "Copy text from external source",
           "action": "Copy text 'external content' from browser or notes app",
-          "expected": "Text in system clipboard"
+          "expected": "Text in system clipboard",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Paste into Yole editor",
           "action": "Focus Yole editor and press Ctrl+V or tap Paste",
-          "expected": "'external content' appears in editor"
+          "expected": "'external content' appears in editor",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -317,17 +343,20 @@
         {
           "name": "Type and select a word",
           "action": "Type 'cut this word', select 'cut'",
-          "expected": "'cut' highlighted"
+          "expected": "'cut' highlighted",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Cut",
           "action": "Press Ctrl+X or tap Cut",
-          "expected": "'cut' removed; editor shows ' this word'"
+          "expected": "'cut' removed; editor shows ' this word'",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Paste cut text elsewhere",
           "action": "Move cursor to end and paste",
-          "expected": "Editor shows ' this wordcut'"
+          "expected": "Editor shows ' this wordcut'",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -353,22 +382,26 @@
         {
           "name": "Open document with known content",
           "action": "Open a file containing the word 'example' multiple times",
-          "expected": "File open in editor"
+          "expected": "File open in editor",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Open find bar",
           "action": "Press Ctrl+F (desktop) or tap Find icon",
-          "expected": "Find toolbar appears at top or bottom of editor"
+          "expected": "Find toolbar appears at top or bottom of editor",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Search for word",
-          "action": "Type 'example' in find field",
-          "expected": "All occurrences highlighted, first match selected"
+          "action": "playwright: fill input[name=find] example",
+          "expected": "All occurrences highlighted, first match selected",
+          "_original_action": "Type 'example' in find field"
         },
         {
           "name": "Navigate matches",
           "action": "Press Enter or Next to go to next match",
-          "expected": "Next occurrence selected"
+          "expected": "Next occurrence selected",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -393,22 +426,26 @@
         {
           "name": "Open find and replace",
           "action": "Press Ctrl+H (desktop) or tap Replace icon",
-          "expected": "Find and Replace toolbar with two fields"
+          "expected": "Find and Replace toolbar with two fields",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Enter search and replacement",
           "action": "Find: 'old text', Replace: 'new text'",
-          "expected": "Fields populated"
+          "expected": "Fields populated",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Replace all",
           "action": "Tap/click 'Replace All'",
-          "expected": "All instances of 'old text' replaced with 'new text'"
+          "expected": "All instances of 'old text' replaced with 'new text'",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify replacement count",
           "action": "Check status message",
-          "expected": "Confirmation: 'Replaced N occurrences'"
+          "expected": "Confirmation: 'Replaced N occurrences'",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -434,17 +471,20 @@
         {
           "name": "Open a multi-line document",
           "action": "Open a file with 20+ lines",
-          "expected": "Editor visible"
+          "expected": "Editor visible",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Enable line numbers",
           "action": "Go to Settings > Editor > Show Line Numbers, enable",
-          "expected": "Line numbers appear in left gutter"
+          "expected": "Line numbers appear in left gutter",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Disable line numbers",
           "action": "Toggle off Show Line Numbers",
-          "expected": "Line numbers gutter disappears"
+          "expected": "Line numbers gutter disappears",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -470,17 +510,20 @@
         {
           "name": "Open file and make changes",
           "action": "Open a file, type new content",
-          "expected": "Unsaved indicator shown (tab asterisk or dot)"
+          "expected": "Unsaved indicator shown (tab asterisk or dot)",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Wait for auto-save",
           "action": "Stop typing and wait for auto-save interval (default: 3-5s)",
-          "expected": "Unsaved indicator disappears; file saved silently"
+          "expected": "Unsaved indicator disappears; file saved silently",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify on disk",
           "action": "Reopen file in external editor or re-navigate to it",
-          "expected": "Changes present in saved file"
+          "expected": "Changes present in saved file",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -504,12 +547,14 @@
         {
           "name": "Open file and make changes",
           "action": "Type new content in editor",
-          "expected": "Unsaved changes visible"
+          "expected": "Unsaved changes visible",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Press Ctrl+S",
           "action": "Press Ctrl+S keyboard shortcut",
-          "expected": "File saved immediately, unsaved indicator clears"
+          "expected": "File saved immediately, unsaved indicator clears",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -535,17 +580,20 @@
         {
           "name": "Open large document",
           "action": "Open a .txt file with 10,000+ lines",
-          "expected": "File opens within 5 seconds"
+          "expected": "File opens within 5 seconds",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Scroll to middle",
           "action": "Scroll to line 5000",
-          "expected": "Smooth scrolling, content renders correctly"
+          "expected": "Smooth scrolling, content renders correctly",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Scroll to end",
           "action": "Jump to last line (Ctrl+End or equivalent)",
-          "expected": "Last line visible, no crash or freeze"
+          "expected": "Last line visible, no crash or freeze",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -571,17 +619,20 @@
         {
           "name": "Open large document",
           "action": "Open a 10K-line .md file",
-          "expected": "Document open"
+          "expected": "Document open",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Type at line 5000",
           "action": "Navigate to middle, insert text",
-          "expected": "Text inserted without noticeable lag (<200ms)"
+          "expected": "Text inserted without noticeable lag (<200ms)",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Undo the insertion",
           "action": "Press Ctrl+Z",
-          "expected": "Undo completes quickly"
+          "expected": "Undo completes quickly",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -607,17 +658,20 @@
         {
           "name": "Open todo.txt file",
           "action": "Open a file with tasks like '(A) Buy groceries'",
-          "expected": "Todo.txt editor mode with task list"
+          "expected": "Todo.txt editor mode with task list",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Toggle task complete",
           "action": "Tap/click checkbox or task completion action",
-          "expected": "Task marked as done: 'x 2026-03-26 Buy groceries'"
+          "expected": "Task marked as done: 'x 2026-03-26 Buy groceries'",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Toggle back to incomplete",
           "action": "Tap completed task to uncheck",
-          "expected": "Task restored to incomplete state"
+          "expected": "Task restored to incomplete state",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -643,17 +697,20 @@
         {
           "name": "Open markdown file in split or preview mode",
           "action": "Open .md file with side-by-side or preview tab",
-          "expected": "Editor and preview both visible"
+          "expected": "Editor and preview both visible",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Type in editor",
           "action": "Add '## New Section' to the markdown",
-          "expected": "Preview updates to show the new heading"
+          "expected": "Preview updates to show the new heading",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Delete content",
           "action": "Remove the newly added line",
-          "expected": "Preview removes the heading immediately"
+          "expected": "Preview removes the heading immediately",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -678,12 +735,14 @@
         {
           "name": "Open document with content",
           "action": "Open a file with multiple paragraphs",
-          "expected": "Content visible in editor"
+          "expected": "Content visible in editor",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Press Ctrl+A",
           "action": "Press Ctrl+A",
-          "expected": "All text in the document selected (highlighted)"
+          "expected": "All text in the document selected (highlighted)",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -706,18 +765,21 @@
       "steps": [
         {
           "name": "Place cursor in middle of a line",
-          "action": "Click in middle of a long text line",
-          "expected": "Cursor positioned in middle of line"
+          "action": "playwright: click text=in middle of a long text line",
+          "expected": "Cursor positioned in middle of line",
+          "_original_action": "Click in middle of a long text line"
         },
         {
           "name": "Press End key",
-          "action": "Press End",
-          "expected": "Cursor jumps to end of current line"
+          "action": "keypress: KEYCODE_END",
+          "expected": "Cursor jumps to end of current line",
+          "_original_action": "Press End"
         },
         {
           "name": "Press Home key",
-          "action": "Press Home",
-          "expected": "Cursor jumps to start of current line"
+          "action": "keypress: KEYCODE_HOME",
+          "expected": "Cursor jumps to start of current line",
+          "_original_action": "Press Home"
         }
       ],
       "tags": [
@@ -743,12 +805,14 @@
         {
           "name": "Open a zero-byte file",
           "action": "Open a file with no content",
-          "expected": "Empty editor opens without error"
+          "expected": "Empty editor opens without error",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Type content in empty file",
           "action": "Type 'new content'",
-          "expected": "Content appears and can be saved"
+          "expected": "Content appears and can be saved",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -773,12 +837,14 @@
         {
           "name": "Open whitespace-only file",
           "action": "Open a .txt file containing only spaces and newlines",
-          "expected": "Editor opens showing whitespace (cursor visible)"
+          "expected": "Editor opens showing whitespace (cursor visible)",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify no crash",
           "action": "Interact with editor",
-          "expected": "Editor stable, undo/redo work"
+          "expected": "Editor stable, undo/redo work",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -803,12 +869,14 @@
         {
           "name": "Attempt to open binary file",
           "action": "Open a .exe or .png file from file browser",
-          "expected": "Error or warning: 'Cannot open binary file'"
+          "expected": "Error or warning: 'Cannot open binary file'",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify no crash",
           "action": "Check app state after rejection",
-          "expected": "App remains stable, returns to browser"
+          "expected": "App remains stable, returns to browser",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -833,17 +901,20 @@
         {
           "name": "Open same file in two tabs",
           "action": "Open file.md in tab 1 and tab 2",
-          "expected": "Both tabs show same content"
+          "expected": "Both tabs show same content",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Edit in tab 1",
           "action": "Add text in tab 1 and save",
-          "expected": "Tab 1 saved"
+          "expected": "Tab 1 saved",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Switch to tab 2",
-          "action": "Click tab 2",
-          "expected": "Tab 2 shows reload prompt or updated content"
+          "action": "playwright: click text=tab 2",
+          "expected": "Tab 2 shows reload prompt or updated content",
+          "_original_action": "Click tab 2"
         }
       ],
       "tags": [

@@ -5,7 +5,9 @@
   "metadata": {
     "author": "vasic-digital",
     "app": "Yole",
-    "version": "1.0.0"
+    "version": "1.0.0",
+    "bluff_audit_status": "converted-by-bank-prose-to-http.py",
+    "bluff_audit_date": "2026-04-29"
   },
   "test_cases": [
     {
@@ -22,22 +24,26 @@
         {
           "name": "Open first 10 files",
           "action": "Open 10 different text files in separate tabs",
-          "expected": "All 10 tabs visible in tab bar (may scroll)"
+          "expected": "All 10 tabs visible in tab bar (may scroll)",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Open next 10 files",
           "action": "Open 10 more files",
-          "expected": "20 tabs total; tab bar scrollable or overflow menu present"
+          "expected": "20 tabs total; tab bar scrollable or overflow menu present",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Switch between tabs",
           "action": "Click/tap tabs 1, 10, 20 in sequence",
-          "expected": "Each tab content loads within 500ms, no OOM crash"
+          "expected": "Each tab content loads within 500ms, no OOM crash",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Check memory",
           "action": "Monitor memory usage",
-          "expected": "App memory stays within reasonable bounds (no OOM kill)"
+          "expected": "App memory stays within reasonable bounds (no OOM kill)",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -70,17 +76,20 @@
         {
           "name": "Open 10 tabs",
           "action": "Open 10 files",
-          "expected": "10 tabs present"
+          "expected": "10 tabs present",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Close all tabs one by one",
           "action": "Close each tab in sequence",
-          "expected": "Each close responds quickly; tab count decrements"
+          "expected": "Each close responds quickly; tab count decrements",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify empty state",
           "action": "Check app after last tab closed",
-          "expected": "Empty state shown (welcome screen or file browser)"
+          "expected": "Empty state shown (welcome screen or file browser)",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -106,17 +115,20 @@
         {
           "name": "Open a text file",
           "action": "Open a .txt file in editor",
-          "expected": "Plain text editor mode"
+          "expected": "Plain text editor mode",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Rapidly switch formats",
           "action": "Change format to Markdown, then Org, then CSV, then LaTeX, cycling through all 17 formats within 30s",
-          "expected": "Each format switch applies correct syntax highlighting"
+          "expected": "Each format switch applies correct syntax highlighting",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify no freeze",
           "action": "Check UI responsiveness throughout",
-          "expected": "App remains responsive; no ANR or freeze"
+          "expected": "App remains responsive; no ANR or freeze",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -142,22 +154,26 @@
         {
           "name": "Open a 5MB plain text file",
           "action": "Load a 5MB .txt file from local storage",
-          "expected": "File begins loading; progress indicator shown"
+          "expected": "File begins loading; progress indicator shown",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Wait for load completion",
           "action": "Wait up to 10 seconds",
-          "expected": "File opens in editor within 10 seconds"
+          "expected": "File opens in editor within 10 seconds",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Scroll to end",
           "action": "Jump to end of document",
-          "expected": "End of file reached; final lines visible"
+          "expected": "End of file reached; final lines visible",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Type at end",
           "action": "Insert a character at end",
-          "expected": "Input accepted within 200ms"
+          "expected": "Input accepted within 200ms",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -183,22 +199,26 @@
         {
           "name": "Open 100K-line file",
           "action": "Load a text file containing exactly 100,000 lines",
-          "expected": "File opens; first lines visible"
+          "expected": "File opens; first lines visible",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Jump to line 50000",
           "action": "Use Go To Line to jump to line 50000",
-          "expected": "Jumps to correct line within 1 second"
+          "expected": "Jumps to correct line within 1 second",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Edit at line 50000",
           "action": "Insert text at line 50000",
-          "expected": "Edit accepted without UI freeze"
+          "expected": "Edit accepted without UI freeze",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Undo the edit",
           "action": "Press Ctrl+Z or Undo",
-          "expected": "Undo completes quickly"
+          "expected": "Undo completes quickly",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -224,17 +244,20 @@
         {
           "name": "Open a small text file",
           "action": "Open a 1KB .md file",
-          "expected": "File in editor"
+          "expected": "File in editor",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Perform 50 save/edit cycles",
           "action": "For each of 50 iterations: type one character, save, wait 100ms",
-          "expected": "Each save completes within 500ms"
+          "expected": "Each save completes within 500ms",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify final content",
           "action": "Check file content after 50 cycles",
-          "expected": "All 50 characters present; no data corruption"
+          "expected": "All 50 characters present; no data corruption",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -260,22 +283,26 @@
         {
           "name": "Open 15 medium-sized files",
           "action": "Open 15 files each around 100KB",
-          "expected": "Files open; tabs accumulate"
+          "expected": "Files open; tabs accumulate",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Monitor memory",
           "action": "Check memory consumption",
-          "expected": "Memory does not exceed 512MB heap (or platform limit)"
+          "expected": "Memory does not exceed 512MB heap (or platform limit)",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Switch rapidly between all tabs",
           "action": "Cycle through all 15 tabs",
-          "expected": "Each tab renders without reloading from disk if recently viewed"
+          "expected": "Each tab renders without reloading from disk if recently viewed",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Close half the tabs",
           "action": "Close 7 tabs",
-          "expected": "Memory released; no lingering references"
+          "expected": "Memory released; no lingering references",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -300,17 +327,20 @@
         {
           "name": "Begin listing a cloud directory",
           "action": "Open a large cloud directory (50+ files)",
-          "expected": "Listing starts loading"
+          "expected": "Listing starts loading",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Cut network mid-listing",
           "action": "Disable network while listing is in progress",
-          "expected": "Error notification: 'Connection lost'"
+          "expected": "Error notification: 'Connection lost'",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Restore network",
           "action": "Re-enable network",
-          "expected": "Refresh button or auto-retry restores the listing"
+          "expected": "Refresh button or auto-retry restores the listing",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -336,17 +366,20 @@
         {
           "name": "Enable/disable network 10 times rapidly",
           "action": "Toggle airplane mode on and off 10 times within 20 seconds",
-          "expected": "App handles each transition"
+          "expected": "App handles each transition",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify app stability",
           "action": "Check app is not crashed or frozen",
-          "expected": "App responsive; no ANR; offline/online status correct"
+          "expected": "App responsive; no ANR; offline/online status correct",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Perform a cloud operation",
           "action": "List files from cloud after flapping stops",
-          "expected": "Cloud operation succeeds normally"
+          "expected": "Cloud operation succeeds normally",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -370,17 +403,20 @@
         {
           "name": "Open file and start editing",
           "action": "Open a cloud-backed file, make significant changes",
-          "expected": "Unsaved changes present"
+          "expected": "Unsaved changes present",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Trigger save then immediately background",
           "action": "Tap Save, then immediately press Home button",
-          "expected": "App goes to background"
+          "expected": "App goes to background",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Return to app",
           "action": "Switch back to Yole",
-          "expected": "Save completed; no unsaved indicator; content intact"
+          "expected": "Save completed; no unsaved indicator; content intact",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -404,17 +440,20 @@
         {
           "name": "Open file, edit, wait for auto-save",
           "action": "Make changes and allow auto-save to trigger",
-          "expected": "Auto-save completes"
+          "expected": "Auto-save completes",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Background and let system kill app",
           "action": "Open many apps to trigger low memory kill of Yole",
-          "expected": "Yole process terminated by OS"
+          "expected": "Yole process terminated by OS",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Relaunch Yole",
           "action": "Tap Yole icon",
-          "expected": "Last auto-saved content restored"
+          "expected": "Last auto-saved content restored",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -440,17 +479,20 @@
         {
           "name": "Fill device storage to near-full",
           "action": "Reduce available storage to under 1MB",
-          "expected": "Device storage near full"
+          "expected": "Device storage near full",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Attempt to save a large file",
           "action": "Try to save a 500KB file",
-          "expected": "Save fails with clear error: 'Not enough storage space'"
+          "expected": "Save fails with clear error: 'Not enough storage space'",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify original file intact",
           "action": "Check that previous version of file not corrupted",
-          "expected": "Original file unchanged; no partial write"
+          "expected": "Original file unchanged; no partial write",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -475,22 +517,26 @@
         {
           "name": "Enable TalkBack (Android) or screen reader",
           "action": "Enable accessibility screen reader in OS settings",
-          "expected": "Screen reader active"
+          "expected": "Screen reader active",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Navigate to Files tab",
           "action": "Swipe to Files tab and double-tap to activate",
-          "expected": "TalkBack announces 'Files tab' or equivalent"
+          "expected": "TalkBack announces 'Files tab' or equivalent",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Navigate file list",
           "action": "Swipe through file list items",
-          "expected": "Each file name announced by screen reader"
+          "expected": "Each file name announced by screen reader",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Open a file",
           "action": "Double-tap a file",
-          "expected": "File opens; screen reader announces editor opened"
+          "expected": "File opens; screen reader announces editor opened",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -516,22 +562,26 @@
         {
           "name": "Set system font size to largest",
           "action": "Set OS font size to 200% or maximum accessibility size",
-          "expected": "System font enlarged"
+          "expected": "System font enlarged",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Launch Yole",
           "action": "Open Yole application",
-          "expected": "App launches without crash"
+          "expected": "App launches without crash",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Check main screens",
           "action": "Navigate through Files, Todo, QuickNote, Settings",
-          "expected": "All text readable; no text clipped or overflowing beyond screen"
+          "expected": "All text readable; no text clipped or overflowing beyond screen",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Open editor",
           "action": "Open a file in editor with large font",
-          "expected": "Editor text readable; buttons and tabs not obscured"
+          "expected": "Editor text readable; buttons and tabs not obscured",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -557,17 +607,20 @@
         {
           "name": "Enable high contrast or forced dark mode",
           "action": "Enable OS high contrast accessibility setting",
-          "expected": "High contrast mode active"
+          "expected": "High contrast mode active",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Check app contrast ratios",
           "action": "Navigate through main screens and editor",
-          "expected": "All text meets WCAG AA contrast ratio (4.5:1 minimum)"
+          "expected": "All text meets WCAG AA contrast ratio (4.5:1 minimum)",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Check interactive elements",
           "action": "Inspect buttons, tabs, and input fields",
-          "expected": "All interactive elements clearly distinguishable"
+          "expected": "All interactive elements clearly distinguishable",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -592,22 +645,26 @@
         {
           "name": "Disable mouse/trackpad",
           "action": "Use keyboard only (Tab, Enter, arrow keys)",
-          "expected": "Focus indicator visible on first interactive element"
+          "expected": "Focus indicator visible on first interactive element",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Tab through main navigation",
           "action": "Press Tab to cycle through navigation items",
-          "expected": "Focus moves to each nav item in logical order"
+          "expected": "Focus moves to each nav item in logical order",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Open a file via keyboard",
           "action": "Navigate to a file and press Enter to open",
-          "expected": "File opens in editor"
+          "expected": "File opens in editor",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Edit and save via keyboard",
           "action": "Type content, press Ctrl+S",
-          "expected": "Content saved; all actions keyboard-accessible"
+          "expected": "Content saved; all actions keyboard-accessible",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -632,22 +689,26 @@
         {
           "name": "Open file and type content",
           "action": "Open a .md file, type 'rotation test content', scroll to line 50",
-          "expected": "Content and scroll position set"
+          "expected": "Content and scroll position set",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Rotate to landscape mid-typing",
           "action": "Rotate device while typing",
-          "expected": "Rotation completes; typed text present; cursor near last position"
+          "expected": "Rotation completes; typed text present; cursor near last position",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Continue typing",
           "action": "Type more text in landscape",
-          "expected": "Text accepted"
+          "expected": "Text accepted",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Rotate back",
           "action": "Rotate back to portrait",
-          "expected": "All content intact; scroll position reasonable"
+          "expected": "All content intact; scroll position reasonable",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -672,17 +733,20 @@
         {
           "name": "Start a cloud file upload",
           "action": "Begin uploading a file to WebDAV",
-          "expected": "Upload in progress"
+          "expected": "Upload in progress",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Rotate device mid-upload",
           "action": "Rotate while upload is at ~30%",
-          "expected": "Activity recreates; upload continues in background"
+          "expected": "Activity recreates; upload continues in background",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify upload completes",
-          "action": "Wait for upload to finish post-rotation",
-          "expected": "Upload completes; file appears in cloud listing"
+          "action": "playwright: waitFor text=upload to finish post-rotation",
+          "expected": "Upload completes; file appears in cloud listing",
+          "_original_action": "Wait for upload to finish post-rotation"
         }
       ],
       "tags": [
@@ -707,17 +771,20 @@
         {
           "name": "Enter split-screen with Yole",
           "action": "Put Yole in split-screen alongside Files app",
-          "expected": "Yole occupies half the screen"
+          "expected": "Yole occupies half the screen",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Navigate and open a file",
           "action": "Open a file from file browser in split-screen",
-          "expected": "Editor opens in constrained space; content readable"
+          "expected": "Editor opens in constrained space; content readable",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Type in editor",
           "action": "Enter text in the narrow editor",
-          "expected": "Typing works; keyboard does not cover editor fully"
+          "expected": "Typing works; keyboard does not cover editor fully",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -741,12 +808,14 @@
         {
           "name": "Open Yole and Files in split-screen",
           "action": "Launch both apps in split-screen",
-          "expected": "Both apps visible simultaneously"
+          "expected": "Both apps visible simultaneously",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Drag a text file from Files into Yole",
           "action": "Long-press file in Files app and drag to Yole panel",
-          "expected": "Yole opens the dragged file or shows a drop target"
+          "expected": "Yole opens the dragged file or shows a drop target",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -772,12 +841,14 @@
         {
           "name": "Cold launch the app",
           "action": "Force-close Yole, then launch from home screen/dock",
-          "expected": "App begins rendering"
+          "expected": "App begins rendering",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Measure time to interactive",
           "action": "Record time from tap to fully interactive main screen",
-          "expected": "Time to interactive under 3s on mid-range device"
+          "expected": "Time to interactive under 3s on mid-range device",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -802,17 +873,20 @@
         {
           "name": "Record baseline memory",
           "action": "Note app memory after fresh launch",
-          "expected": "Baseline memory recorded"
+          "expected": "Baseline memory recorded",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Perform 30 open/close file cycles",
-          "action": "Open a file, read it, close it \u2014 repeat 30 times",
-          "expected": "Each cycle completes normally"
+          "action": "Open a file, read it, close it — repeat 30 times",
+          "expected": "Each cycle completes normally",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Check memory after cycles",
           "action": "Record memory after 30 cycles",
-          "expected": "Memory within 20% of baseline (no significant leak)"
+          "expected": "Memory within 20% of baseline (no significant leak)",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -836,22 +910,26 @@
         {
           "name": "Open several files with edits",
           "action": "Open 3 files, make edits in each, do not save manually",
-          "expected": "3 tabs with unsaved changes"
+          "expected": "3 tabs with unsaved changes",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Simulate process death",
           "action": "Use 'adb shell am kill' or low memory trigger to kill Yole",
-          "expected": "Process terminated"
+          "expected": "Process terminated",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Relaunch Yole",
           "action": "Tap Yole icon",
-          "expected": "App restores session state: same 3 tabs present"
+          "expected": "App restores session state: same 3 tabs present",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify content",
           "action": "Check each tab content",
-          "expected": "At minimum auto-saved content restored; no blank editors"
+          "expected": "At minimum auto-saved content restored; no blank editors",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -876,17 +954,20 @@
         {
           "name": "Open a cloud-backed file",
           "action": "Open a file stored on WebDAV",
-          "expected": "File open in editor"
+          "expected": "File open in editor",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Trigger background sync while editing",
           "action": "Type rapidly while a background sync is in progress",
-          "expected": "Typing continues uninterrupted"
+          "expected": "Typing continues uninterrupted",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify final state",
           "action": "After sync and typing complete, save and check content",
-          "expected": "No data loss or duplication; last-write-wins or merge applied"
+          "expected": "No data loss or duplication; last-write-wins or merge applied",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [

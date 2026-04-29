@@ -5,7 +5,9 @@
   "metadata": {
     "author": "vasic-digital",
     "app": "Yole",
-    "version": "1.0.0"
+    "version": "1.0.0",
+    "bluff_audit_status": "converted-by-bank-prose-to-http.py",
+    "bluff_audit_date": "2026-04-29"
   },
   "test_cases": [
     {
@@ -22,22 +24,26 @@
         {
           "name": "Launch app",
           "action": "Open Yole application",
-          "expected": "Main screen visible"
+          "expected": "Main screen visible",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Create new document",
           "action": "Create new .md file",
-          "expected": "Empty editor with markdown mode"
+          "expected": "Empty editor with markdown mode",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Type content",
           "action": "Type '# Title\n**bold** *italic*\n- list item'",
-          "expected": "Content appears in editor"
+          "expected": "Content appears in editor",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify format detection",
           "action": "Check status bar",
-          "expected": "Format shows 'Markdown'"
+          "expected": "Format shows 'Markdown'",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -69,17 +75,20 @@
         {
           "name": "Open markdown file",
           "action": "Load test.md with markdown content",
-          "expected": "Editor shows markdown source"
+          "expected": "Editor shows markdown source",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Switch to preview",
           "action": "Tap/click preview tab",
-          "expected": "Rendered HTML preview visible"
+          "expected": "Rendered HTML preview visible",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify rendering",
           "action": "Check heading, bold, lists rendered",
-          "expected": "HTML elements rendered correctly"
+          "expected": "HTML elements rendered correctly",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -102,17 +111,20 @@
         {
           "name": "Open existing markdown",
           "action": "Load file with content",
-          "expected": "Content visible in editor"
+          "expected": "Content visible in editor",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Append text",
           "action": "Add '## New Section' at end",
-          "expected": "New text appears"
+          "expected": "New text appears",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Save document",
           "action": "Trigger save",
-          "expected": "Document saved without errors"
+          "expected": "Document saved without errors",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -136,12 +148,14 @@
         {
           "name": "Create new .txt file",
           "action": "Create plain text document",
-          "expected": "Empty editor in plain text mode"
+          "expected": "Empty editor in plain text mode",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Type content",
           "action": "Type plain text paragraphs",
-          "expected": "Content appears"
+          "expected": "Content appears",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -164,7 +178,8 @@
         {
           "name": "Switch to preview",
           "action": "Open preview for .txt",
-          "expected": "Plain text displayed as-is"
+          "expected": "Plain text displayed as-is",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -187,12 +202,14 @@
         {
           "name": "Create todo.txt file",
           "action": "Create new todo.txt",
-          "expected": "Editor with todo.txt mode"
+          "expected": "Editor with todo.txt mode",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Add tasks",
           "action": "Type '(A) Task 1 +project @context'",
-          "expected": "Todo syntax highlighted"
+          "expected": "Todo syntax highlighted",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -215,12 +232,14 @@
         {
           "name": "Create .csv file",
           "action": "Create new CSV document",
-          "expected": "CSV editor mode"
+          "expected": "CSV editor mode",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Enter tabular data",
           "action": "Type 'Name,Age,City\nAlice,30,NYC'",
-          "expected": "CSV content visible"
+          "expected": "CSV content visible",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -243,12 +262,14 @@
         {
           "name": "Create .tex file",
           "action": "Create LaTeX document",
-          "expected": "LaTeX editor mode"
+          "expected": "LaTeX editor mode",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Type LaTeX",
           "action": "Type '\\documentclass{article}\\begin{document}Hello\\end{document}'",
-          "expected": "LaTeX commands visible"
+          "expected": "LaTeX commands visible",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -271,12 +292,14 @@
         {
           "name": "Create .org file",
           "action": "Create Org Mode document",
-          "expected": "Org editor mode"
+          "expected": "Org editor mode",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Type org content",
           "action": "Type '* Heading\n** Subheading\n- item'",
-          "expected": "Org syntax visible"
+          "expected": "Org syntax visible",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -299,7 +322,8 @@
         {
           "name": "Create .adoc file",
           "action": "Create AsciiDoc document",
-          "expected": "AsciiDoc editor mode"
+          "expected": "AsciiDoc editor mode",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -322,7 +346,8 @@
         {
           "name": "Create .wiki file",
           "action": "Create WikiText document",
-          "expected": "WikiText editor mode"
+          "expected": "WikiText editor mode",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -345,7 +370,8 @@
         {
           "name": "Create .rst file",
           "action": "Create RST document",
-          "expected": "RST editor mode"
+          "expected": "RST editor mode",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -368,7 +394,8 @@
         {
           "name": "Create .Rmd file",
           "action": "Create RMarkdown document",
-          "expected": "RMarkdown editor mode"
+          "expected": "RMarkdown editor mode",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -391,7 +418,8 @@
         {
           "name": "Create .taskpaper file",
           "action": "Create TaskPaper document",
-          "expected": "TaskPaper editor mode"
+          "expected": "TaskPaper editor mode",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -414,7 +442,8 @@
         {
           "name": "Create .textile file",
           "action": "Create Textile document",
-          "expected": "Textile editor mode"
+          "expected": "Textile editor mode",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -437,7 +466,8 @@
         {
           "name": "Create .creole file",
           "action": "Create Creole document",
-          "expected": "Creole editor mode"
+          "expected": "Creole editor mode",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -460,7 +490,8 @@
         {
           "name": "Create .tid file",
           "action": "Create TiddlyWiki document",
-          "expected": "TiddlyWiki editor mode"
+          "expected": "TiddlyWiki editor mode",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -483,7 +514,8 @@
         {
           "name": "Create .ipynb file",
           "action": "Create Jupyter document",
-          "expected": "Jupyter editor mode"
+          "expected": "Jupyter editor mode",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -506,7 +538,8 @@
         {
           "name": "Create .properties file",
           "action": "Create Key-Value document",
-          "expected": "Key-Value editor mode"
+          "expected": "Key-Value editor mode",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -529,7 +562,8 @@
         {
           "name": "Create .bin file",
           "action": "Create binary document",
-          "expected": "Binary/hex editor mode"
+          "expected": "Binary/hex editor mode",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -552,22 +586,26 @@
         {
           "name": "Navigate to Files",
           "action": "Tap/click Files tab",
-          "expected": "File list visible"
+          "expected": "File list visible",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Navigate to Edit",
           "action": "Tap/click Edit tab",
-          "expected": "Editor visible"
+          "expected": "Editor visible",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Navigate to Preview",
           "action": "Tap/click Preview tab",
-          "expected": "Preview visible"
+          "expected": "Preview visible",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Navigate to Settings",
           "action": "Tap/click Settings tab",
-          "expected": "Settings visible"
+          "expected": "Settings visible",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -590,17 +628,20 @@
         {
           "name": "Open settings",
           "action": "Navigate to settings",
-          "expected": "Settings screen visible"
+          "expected": "Settings screen visible",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Switch to dark theme",
           "action": "Toggle dark theme",
-          "expected": "Dark theme applied"
+          "expected": "Dark theme applied",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Switch to light theme",
           "action": "Toggle light theme",
-          "expected": "Light theme applied"
+          "expected": "Light theme applied",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -623,7 +664,8 @@
         {
           "name": "Cycle through all formats",
           "action": "Open and close each of 17 formats",
-          "expected": "No crashes or ANRs"
+          "expected": "No crashes or ANRs",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [

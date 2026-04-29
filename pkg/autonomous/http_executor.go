@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -438,6 +439,26 @@ func (h *HTTPExecutor) invalidateCachedToken(mode string) {
 }
 
 func (h *HTTPExecutor) login(ctx context.Context, creds Credentials) (string, error) {
+	return h.loginWithRetry(ctx, creds, 0)
+}
+
+// loginWithRetry performs a login, honoring catalog-api's
+// rate-limiter Retry-After header on 429 responses.
+//
+// Article XI §11.5: Without this, sequential bank verification
+// runs hit the login rate limit, the cached admin token gets
+// invalidated mid-suite (e.g. by a logout step), the auto-refresh
+// path issues a fresh login that gets 429'd, and ALL subsequent
+// admin: tests cascade-fail. The 60-second wait is bounded by
+// MaxRetryAfter so a misbehaving rate-limiter can't stall a test
+// run indefinitely.
+//
+// Retry depth caps at 1 — a single retry is enough to wait out
+// a typical 60-second window. Anything more is a sign the test
+// is firing logins faster than the rate limit allows, which is a
+// bank-design issue.
+func (h *HTTPExecutor) loginWithRetry(ctx context.Context, creds Credentials, depth int) (string, error) {
+	const maxRetryAfter = 65 * time.Second
 	body, err := json.Marshal(map[string]string{
 		"username": creds.Username,
 		"password": creds.Password,
@@ -455,13 +476,27 @@ func (h *HTTPExecutor) login(ctx context.Context, creds Credentials) (string, er
 	if err != nil {
 		return "", err
 	}
-	defer resp.Body.Close()
+	body2, _ := io.ReadAll(resp.Body)
+	resp.Body.Close()
+
+	if resp.StatusCode == http.StatusTooManyRequests && depth == 0 {
+		retryAfter := parseRetryAfter(resp, body2)
+		if retryAfter > maxRetryAfter {
+			retryAfter = maxRetryAfter
+		}
+		select {
+		case <-ctx.Done():
+			return "", ctx.Err()
+		case <-time.After(retryAfter):
+		}
+		return h.loginWithRetry(ctx, creds, depth+1)
+	}
+
 	if resp.StatusCode != http.StatusOK {
-		respBody, _ := io.ReadAll(resp.Body)
-		return "", fmt.Errorf("login failed status=%d body=%s", resp.StatusCode, truncateOutput(respBody, 200))
+		return "", fmt.Errorf("login failed status=%d body=%s", resp.StatusCode, truncateOutput(body2, 200))
 	}
 	var decoded map[string]any
-	if err := json.NewDecoder(resp.Body).Decode(&decoded); err != nil {
+	if err := json.Unmarshal(body2, &decoded); err != nil {
 		return "", fmt.Errorf("login response decode: %w", err)
 	}
 	tok, _ := decoded[h.TokenField].(string)
@@ -469,6 +504,34 @@ func (h *HTTPExecutor) login(ctx context.Context, creds Credentials) (string, er
 		return "", fmt.Errorf("login response missing field %q", h.TokenField)
 	}
 	return tok, nil
+}
+
+// parseRetryAfter extracts the wait duration from a 429
+// response. Honors RFC7231: Retry-After header (seconds), and
+// falls back to a JSON `retry_after` field in the body, then to
+// a 60-second default.
+func parseRetryAfter(resp *http.Response, body []byte) time.Duration {
+	if v := resp.Header.Get("Retry-After"); v != "" {
+		if secs, err := strconv.Atoi(strings.TrimSpace(v)); err == nil && secs > 0 {
+			return time.Duration(secs) * time.Second
+		}
+	}
+	var decoded map[string]any
+	if err := json.Unmarshal(body, &decoded); err == nil {
+		if v, ok := decoded["retry_after"]; ok {
+			switch t := v.(type) {
+			case float64:
+				if t > 0 {
+					return time.Duration(t) * time.Second
+				}
+			case string:
+				if secs, err := strconv.Atoi(t); err == nil && secs > 0 {
+					return time.Duration(secs) * time.Second
+				}
+			}
+		}
+	}
+	return 60 * time.Second
 }
 
 // jsonPathExists evaluates a tiny subset of JSON-path expressions

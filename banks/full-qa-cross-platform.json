@@ -5,7 +5,9 @@
   "metadata": {
     "author": "vasic-digital",
     "app": "Catalogizer",
-    "version": "2.3.0"
+    "version": "2.3.0",
+    "bluff_audit_status": "converted-by-bank-prose-to-http.py",
+    "bluff_audit_date": "2026-04-29"
   },
   "test_cases": [
     {
@@ -22,23 +24,29 @@
       "steps": [
         {
           "name": "Login via API",
-          "action": "POST /api/v1/auth/login with admin/admin123",
-          "expected": "200 OK with session token"
+          "action": "http: POST /api/v1/auth/login",
+          "expected": "200 OK with session token",
+          "auth": "admin",
+          "_original_action": "POST /api/v1/auth/login with admin/admin123",
+          "expect_status": 200
         },
         {
           "name": "Login via Web",
           "action": "Navigate to login page, enter admin/admin123, click Login",
-          "expected": "Redirects to dashboard"
+          "expected": "Redirects to dashboard",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Login via Android TV",
           "action": "Launch app, configure server, enter admin/admin123",
-          "expected": "Navigates to home screen"
+          "expected": "Navigates to home screen",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Login via Android Phone",
           "action": "Launch app, configure server, enter admin/admin123",
-          "expected": "Navigates to home screen"
+          "expected": "Navigates to home screen",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -63,18 +71,22 @@
       "steps": [
         {
           "name": "Get media count from API",
-          "action": "GET /api/v1/entities?count=true",
-          "expected": "Returns total entity count"
+          "action": "http: GET /api/v1/entities?count=true",
+          "expected": "Returns total entity count",
+          "auth": "admin",
+          "_original_action": "GET /api/v1/entities?count=true"
         },
         {
           "name": "Check Web dashboard count",
           "action": "Navigate to dashboard, read media statistics",
-          "expected": "Count matches API response"
+          "expected": "Count matches API response",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Check Android TV home",
           "action": "Navigate to home screen, check category counts",
-          "expected": "Total items matches API count"
+          "expected": "Total items matches API count",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -99,18 +111,22 @@
       "steps": [
         {
           "name": "Search 'Matrix' via API",
-          "action": "GET /api/v1/entities/search?q=Matrix",
-          "expected": "Returns matching entities"
+          "action": "http: GET /api/v1/entities/search?q=Matrix",
+          "expected": "Returns matching entities",
+          "auth": "admin",
+          "_original_action": "GET /api/v1/entities/search?q=Matrix"
         },
         {
           "name": "Search 'Matrix' on Web",
           "action": "Use search bar, type 'Matrix'",
-          "expected": "Same results as API"
+          "expected": "Same results as API",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Search 'Matrix' on Android TV",
           "action": "Open search, type 'Matrix' via DPAD",
-          "expected": "Same results as API"
+          "expected": "Same results as API",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -136,17 +152,21 @@
         {
           "name": "Add favorite via Web",
           "action": "Navigate to a movie, click favorite star",
-          "expected": "Movie added to favorites"
+          "expected": "Movie added to favorites",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify via API",
-          "action": "GET /api/v1/favorites",
-          "expected": "Movie appears in favorites list"
+          "action": "http: GET /api/v1/favorites",
+          "expected": "Movie appears in favorites list",
+          "auth": "admin",
+          "_original_action": "GET /api/v1/favorites"
         },
         {
           "name": "Verify on Android TV",
           "action": "Navigate to Favorites screen",
-          "expected": "Same movie appears in favorites"
+          "expected": "Same movie appears in favorites",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -171,18 +191,22 @@
       "steps": [
         {
           "name": "Create collection via API",
-          "action": "POST /api/v1/collections with name 'Cross-Platform Test'",
-          "expected": "Collection created"
+          "action": "http: POST /api/v1/collections",
+          "expected": "Collection created",
+          "auth": "admin",
+          "_original_action": "POST /api/v1/collections with name 'Cross-Platform Test'"
         },
         {
           "name": "Verify on Web",
           "action": "Navigate to Collections page",
-          "expected": "Collection 'Cross-Platform Test' visible"
+          "expected": "Collection 'Cross-Platform Test' visible",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify on Android TV",
           "action": "Navigate to Collections",
-          "expected": "Same collection visible"
+          "expected": "Same collection visible",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -207,18 +231,22 @@
       "steps": [
         {
           "name": "List media types via API",
-          "action": "GET /api/v1/media-types",
-          "expected": "Returns 11 types: movie, tv_show, tv_season, tv_episode, music_artist, music_album, song, game, software, book, comic"
+          "action": "http: GET /api/v1/media-types",
+          "expected": "Returns 11 types: movie, tv_show, tv_season, tv_episode, music_artist, music_album, song, game, software, book, comic",
+          "auth": "admin",
+          "_original_action": "GET /api/v1/media-types"
         },
         {
           "name": "Verify Web shows all types",
           "action": "Check media type filter dropdown",
-          "expected": "All 11 types listed"
+          "expected": "All 11 types listed",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify Android TV shows categories",
           "action": "Check home screen category rows",
-          "expected": "Categories for available content types present"
+          "expected": "Categories for available content types present",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -243,17 +271,20 @@
         {
           "name": "Play video on Web",
           "action": "Navigate to a movie, click Play",
-          "expected": "Video player opens and plays"
+          "expected": "Video player opens and plays",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Play video on Android TV",
           "action": "Navigate to same movie, press Play",
-          "expected": "Video player opens and plays"
+          "expected": "Video player opens and plays",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Play audio on Web",
           "action": "Navigate to a song, click Play",
-          "expected": "Audio player plays track"
+          "expected": "Audio player plays track",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -278,18 +309,22 @@
       "steps": [
         {
           "name": "Get movie entity via API",
-          "action": "GET /api/v1/entities/{id} for a known movie",
-          "expected": "Returns title, year, type, metadata"
+          "action": "http: GET /api/v1/entities/{id}",
+          "expected": "Returns title, year, type, metadata",
+          "auth": "admin",
+          "_original_action": "GET /api/v1/entities/{id} for a known movie"
         },
         {
           "name": "Check Web entity detail",
           "action": "Navigate to same entity detail page",
-          "expected": "Title, year, type match API"
+          "expected": "Title, year, type match API",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Check Android TV detail",
           "action": "Navigate to same entity on TV",
-          "expected": "Same metadata displayed"
+          "expected": "Same metadata displayed",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -313,18 +348,22 @@
       "steps": [
         {
           "name": "Browse Cyrillic path via API",
-          "action": "GET /api/v1/browse with path containing Cyrillic (\u041c\u0443\u0437\u0438\u043a\u0430, \u0424\u0438\u043b\u043c\u043e\u0432\u0438)",
-          "expected": "Cyrillic characters in response are correct UTF-8"
+          "action": "http: GET /api/v1/browse",
+          "expected": "Cyrillic characters in response are correct UTF-8",
+          "auth": "admin",
+          "_original_action": "GET /api/v1/browse with path containing Cyrillic (Музика, Филмови)"
         },
         {
           "name": "Browse on Web",
           "action": "Navigate to storage root, browse Cyrillic directories",
-          "expected": "Cyrillic names render correctly without mojibake"
+          "expected": "Cyrillic names render correctly without mojibake",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Browse on Android TV",
           "action": "Browse media browser for Cyrillic category",
-          "expected": "Cyrillic names display correctly"
+          "expected": "Cyrillic names display correctly",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -348,14 +387,17 @@
       ],
       "steps": [
         {
-          "name": "Search '\u041c\u0443\u0437\u0438\u043a\u0430' via API",
-          "action": "GET /api/v1/entities/search?q=\u041c\u0443\u0437\u0438\u043a\u0430",
-          "expected": "Returns Cyrillic-matching results"
+          "name": "Search 'Музика' via API",
+          "action": "http: GET /api/v1/entities/search?q=Музика",
+          "expected": "Returns Cyrillic-matching results",
+          "auth": "admin",
+          "_original_action": "GET /api/v1/entities/search?q=Музика"
         },
         {
-          "name": "Search '\u041c\u0443\u0437\u0438\u043a\u0430' on Web",
+          "name": "Search 'Музика' on Web",
           "action": "Type Cyrillic search term in web search",
-          "expected": "Results match API response"
+          "expected": "Results match API response",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -380,18 +422,23 @@
       "steps": [
         {
           "name": "Invalid login via API",
-          "action": "POST /api/v1/auth/login with wrong password",
-          "expected": "401 Unauthorized with error message"
+          "action": "http: POST /api/v1/auth/login",
+          "expected": "401 Unauthorized with error message",
+          "_original_action": "POST /api/v1/auth/login with wrong password",
+          "expect_status": 401,
+          "expect_body_contains": "error"
         },
         {
           "name": "Invalid login on Web",
           "action": "Enter wrong password, click Login",
-          "expected": "Error message displayed, not a crash"
+          "expected": "Error message displayed, not a crash",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Invalid login on Android TV",
           "action": "Enter wrong password via DPAD",
-          "expected": "Error message displayed, stays on login screen"
+          "expected": "Error message displayed, stays on login screen",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -415,13 +462,17 @@
       "steps": [
         {
           "name": "Request entity ID 999999 via API",
-          "action": "GET /api/v1/entities/999999",
-          "expected": "404 Not Found"
+          "action": "http: GET /api/v1/entities/999999",
+          "expected": "404 Not Found",
+          "auth": "admin",
+          "_original_action": "GET /api/v1/entities/999999",
+          "expect_status": 404
         },
         {
           "name": "Navigate to entity/999999 on Web",
           "action": "Open URL /entity/999999",
-          "expected": "Not found message displayed"
+          "expected": "Not found message displayed",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -443,13 +494,16 @@
       "steps": [
         {
           "name": "List entities via API",
-          "action": "GET /api/v1/entities?type=movie&limit=10",
-          "expected": "Returns list of movies"
+          "action": "http: GET /api/v1/entities?type=movie&limit=10",
+          "expected": "Returns list of movies",
+          "auth": "admin",
+          "_original_action": "GET /api/v1/entities?type=movie&limit=10"
         },
         {
           "name": "Check Catalogizer Picks channel",
           "action": "Navigate to Android TV home, find Catalogizer Picks channel",
-          "expected": "Channel programs match API movie list"
+          "expected": "Channel programs match API movie list",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -472,17 +526,20 @@
         {
           "name": "Identify a channel program",
           "action": "Note the title of a program in Catalogizer channel on TV home",
-          "expected": "Program title identified"
+          "expected": "Program title identified",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Click program",
           "action": "DPAD_CENTER on the program",
-          "expected": "App opens to correct media detail screen"
+          "expected": "App opens to correct media detail screen",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify content matches",
           "action": "Compare detail screen title with channel program title",
-          "expected": "Titles match exactly"
+          "expected": "Titles match exactly",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -506,12 +563,15 @@
         {
           "name": "Create playlist on Web",
           "action": "Navigate to Playlists, create 'Test Playlist'",
-          "expected": "Playlist created"
+          "expected": "Playlist created",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify via API",
-          "action": "GET /api/v1/playlists",
-          "expected": "Playlist 'Test Playlist' in response"
+          "action": "http: GET /api/v1/playlists",
+          "expected": "Playlist 'Test Playlist' in response",
+          "auth": "admin",
+          "_original_action": "GET /api/v1/playlists"
         }
       ],
       "tags": [
@@ -536,17 +596,20 @@
         {
           "name": "Login on Web and Android TV",
           "action": "Authenticate on both platforms",
-          "expected": "Both authenticated"
+          "expected": "Both authenticated",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Logout on Web",
-          "action": "Click logout on Web",
-          "expected": "Web session ended"
+          "action": "playwright: click text=logout on Web",
+          "expected": "Web session ended",
+          "_original_action": "Click logout on Web"
         },
         {
           "name": "Check Android TV",
           "action": "Navigate on Android TV",
-          "expected": "Android TV session still active (independent tokens)"
+          "expected": "Android TV session still active (independent tokens)",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -569,13 +632,16 @@
       "steps": [
         {
           "name": "Send 6 rapid login attempts via API",
-          "action": "POST /api/v1/auth/login 6 times in 1 second",
-          "expected": "Rate limit triggered (429)"
+          "action": "http: POST /api/v1/auth/login",
+          "expected": "Rate limit triggered (429)",
+          "_original_action": "POST /api/v1/auth/login 6 times in 1 second",
+          "expect_status": 429
         },
         {
           "name": "Check web login is also rate-limited",
           "action": "Rapidly click login on web",
-          "expected": "Rate limit message displayed"
+          "expected": "Rate limit message displayed",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -599,17 +665,21 @@
         {
           "name": "Connect Web to WebSocket",
           "action": "Open Web app (WebSocket connects automatically)",
-          "expected": "WebSocket connected"
+          "expected": "WebSocket connected",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Trigger scan via API",
-          "action": "POST /api/v1/scans",
-          "expected": "Scan starts"
+          "action": "http: POST /api/v1/scans",
+          "expected": "Scan starts",
+          "auth": "admin",
+          "_original_action": "POST /api/v1/scans"
         },
         {
           "name": "Check Web receives events",
           "action": "Watch Web UI for scan progress updates",
-          "expected": "Progress indicators update in real-time"
+          "expected": "Progress indicators update in real-time",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -633,18 +703,21 @@
       "steps": [
         {
           "name": "Check API version",
-          "action": "GET /health",
-          "expected": "version=2.3.0, build_number=18"
+          "action": "http: GET /health",
+          "expected": "version=2.3.0, build_number=18",
+          "_original_action": "GET /health"
         },
         {
           "name": "Check Web about/footer",
-          "action": "Look for version in Web UI",
-          "expected": "Shows v2.3.0"
+          "action": "playwright: assertVisible text=version in Web UI",
+          "expected": "Shows v2.3.0",
+          "_original_action": "Look for version in Web UI"
         },
         {
           "name": "Check Android TV about",
           "action": "Navigate to Settings > About",
-          "expected": "Shows v2.3.0"
+          "expected": "Shows v2.3.0",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -669,17 +742,21 @@
         {
           "name": "Login on all platforms simultaneously",
           "action": "Open Web, Android TV, and send API request at same time",
-          "expected": "All authenticate successfully"
+          "expected": "All authenticate successfully",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Add different favorites from each",
           "action": "Favorite different items from Web and Android TV",
-          "expected": "Both favorites saved"
+          "expected": "Both favorites saved",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify all favorites from API",
-          "action": "GET /api/v1/favorites",
-          "expected": "Both favorites present, no corruption"
+          "action": "http: GET /api/v1/favorites",
+          "expected": "Both favorites present, no corruption",
+          "auth": "admin",
+          "_original_action": "GET /api/v1/favorites"
         }
       ],
       "tags": [

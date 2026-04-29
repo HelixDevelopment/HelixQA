@@ -1224,7 +1224,9 @@
           "action": "http: POST /api/v1/admin/scan",
           "expected": "Scan starts",
           "_original_action": "POST /api/v1/admin/scan on directory with 1000 files",
-          "auth": "admin"
+          "auth": "admin",
+          "_skip": true,
+          "_skip_reason": "endpoint POST /api/v1/admin/scan does not exist on catalog-api; bank assumes a different API surface (#BLUFF-HELIXQA-BANKS-WRONG-PATHS-001)"
         },
         {
           "name": "Monitor progress",
@@ -1264,7 +1266,9 @@
           "action": "http: POST /api/v1/admin/scan",
           "expected": "Scan in progress",
           "_original_action": "POST /api/v1/admin/scan on large directory",
-          "auth": "admin"
+          "auth": "admin",
+          "_skip": true,
+          "_skip_reason": "endpoint POST /api/v1/admin/scan does not exist on catalog-api; bank assumes a different API surface (#BLUFF-HELIXQA-BANKS-WRONG-PATHS-001)"
         },
         {
           "name": "Measure API response during scan",

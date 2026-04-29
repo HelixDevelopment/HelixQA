@@ -481,6 +481,69 @@ func TestHTTPExecutor_CSRFCachedAcrossCalls(t *testing.T) {
 		"preflight must run exactly once for the lifetime of the executor")
 }
 
+// TestHTTPExecutor_LoginHonorsRetryAfter asserts that when the
+// catalog-api login endpoint responds 429 with a retry_after JSON
+// field, the executor sleeps that duration (clamped to a sane
+// upper bound) and retries.
+//
+// Article XI §11.5 anchor: without this, sequential bank
+// verification runs cascade-fail across every admin: test as
+// soon as the rate limit fires. The bluff would be reading 50+
+// "401 Unauthorized" tickets that are actually all just 429s
+// the executor never recovered from.
+//
+// To keep the test fast, we use a fixture that returns 429 with
+// retry_after=1 (second) on the first hit, then 200 with a token.
+func TestHTTPExecutor_LoginHonorsRetryAfter(t *testing.T) {
+	var calls int
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		calls++
+		if calls == 1 {
+			w.Header().Set("Retry-After", "1")
+			w.WriteHeader(http.StatusTooManyRequests)
+			_, _ = fmt.Fprint(w, `{"error":"Rate limit exceeded","retry_after":1}`)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = fmt.Fprint(w, `{"session_token":"tok-after-retry"}`)
+	}))
+	defer srv.Close()
+
+	h := NewHTTPExecutor(srv.URL)
+	start := time.Now()
+	tok, err := h.login(context.Background(), Credentials{Username: "admin", Password: "admin123"})
+	elapsed := time.Since(start)
+
+	require.NoError(t, err, "login MUST succeed after honoring Retry-After")
+	assert.Equal(t, "tok-after-retry", tok)
+	assert.GreaterOrEqual(t, elapsed, 900*time.Millisecond,
+		"login should have slept at least ~1s before retrying")
+	assert.Equal(t, 2, calls, "exactly 2 calls: 1 initial 429 + 1 retry")
+}
+
+// TestHTTPExecutor_LoginRetryAfterClampedToMax asserts that an
+// abusive Retry-After value is clamped to MaxRetryAfter (65s)
+// and never strands the test forever. The fixture returns
+// retry_after=99999, but we never wait that long because we
+// cancel the context after a brief moment.
+func TestHTTPExecutor_LoginRetryAfterClampedToMax(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Retry-After", "99999")
+		w.WriteHeader(http.StatusTooManyRequests)
+		_, _ = fmt.Fprint(w, `{"retry_after":99999}`)
+	}))
+	defer srv.Close()
+
+	h := NewHTTPExecutor(srv.URL)
+	ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
+	defer cancel()
+
+	_, err := h.login(ctx, Credentials{Username: "admin", Password: "admin123"})
+	require.Error(t, err, "context cancellation must surface as an error")
+	assert.Contains(t, err.Error(), "context",
+		"expected context-cancel to bubble up; got %s", err.Error())
+}
+
 // TestHTTPExecutor_AutoRefreshOnInvalidatedToken asserts that the
 // executor handles the post-/auth/logout case gracefully: when a
 // cached bearer token has been invalidated server-side, the next

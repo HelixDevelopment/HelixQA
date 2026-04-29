@@ -5,7 +5,9 @@
   "metadata": {
     "author": "vasic-digital",
     "app": "Yole",
-    "version": "1.0.0"
+    "version": "1.0.0",
+    "bluff_audit_status": "converted-by-bank-prose-to-http.py",
+    "bluff_audit_date": "2026-04-29"
   },
   "test_cases": [
     {
@@ -22,17 +24,20 @@
         {
           "name": "Open file browser",
           "action": "Tap/click file browser icon or Files tab",
-          "expected": "File browser opens showing root or last-used directory"
+          "expected": "File browser opens showing root or last-used directory",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Navigate to Documents",
           "action": "Tap/click 'Documents' directory entry",
-          "expected": "Documents directory contents listed"
+          "expected": "Documents directory contents listed",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify listing",
-          "action": "Observe file list",
-          "expected": "Files and subdirectories shown with name, size, date"
+          "action": "playwright: assertVisible text=file list",
+          "expected": "Files and subdirectories shown with name, size, date",
+          "_original_action": "Observe file list"
         }
       ],
       "tags": [
@@ -63,12 +68,14 @@
         {
           "name": "Open file browser",
           "action": "Open Files tab in Yole",
-          "expected": "File browser visible"
+          "expected": "File browser visible",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Navigate to Downloads",
           "action": "Tap/click 'Downloads' shortcut or navigate manually",
-          "expected": "Downloads directory contents shown"
+          "expected": "Downloads directory contents shown",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -91,17 +98,20 @@
         {
           "name": "Open file browser",
           "action": "Open Files tab",
-          "expected": "File browser visible"
+          "expected": "File browser visible",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Select Internal Storage",
           "action": "Tap 'Internal Storage' in sidebar or breadcrumb",
-          "expected": "Root of internal storage shown"
+          "expected": "Root of internal storage shown",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify top-level directories",
           "action": "Check listed directories",
-          "expected": "DCIM, Documents, Downloads, Music, Pictures visible"
+          "expected": "DCIM, Documents, Downloads, Music, Pictures visible",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -125,17 +135,20 @@
         {
           "name": "Trigger SAF picker",
           "action": "Tap 'Open Folder' using Storage Access Framework",
-          "expected": "System file picker opens"
+          "expected": "System file picker opens",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Grant permission",
           "action": "Select a folder and tap 'Use this folder'",
-          "expected": "Permission granted, folder added to Yole"
+          "expected": "Permission granted, folder added to Yole",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify access",
           "action": "Check file browser shows SAF-granted folder",
-          "expected": "Folder contents visible in Yole file browser"
+          "expected": "Folder contents visible in Yole file browser",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -161,17 +174,20 @@
         {
           "name": "Open a directory",
           "action": "Navigate to a directory containing subdirectories",
-          "expected": "Directory contents shown"
+          "expected": "Directory contents shown",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Enter subdirectory",
           "action": "Tap/click on a subdirectory",
-          "expected": "Subdirectory contents displayed, breadcrumb updated"
+          "expected": "Subdirectory contents displayed, breadcrumb updated",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Enter nested subdirectory",
           "action": "Tap/click another subdirectory level",
-          "expected": "Nested contents shown, breadcrumb shows full path"
+          "expected": "Nested contents shown, breadcrumb shows full path",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -196,17 +212,20 @@
         {
           "name": "Navigate into a subdirectory",
           "action": "Enter a nested directory",
-          "expected": "Subdirectory contents shown"
+          "expected": "Subdirectory contents shown",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Navigate up",
           "action": "Tap/click '..' entry or back arrow or breadcrumb parent",
-          "expected": "Parent directory contents displayed"
+          "expected": "Parent directory contents displayed",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Navigate up again",
           "action": "Repeat up navigation",
-          "expected": "Grandparent directory shown, breadcrumb shortened"
+          "expected": "Grandparent directory shown, breadcrumb shortened",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -232,17 +251,20 @@
         {
           "name": "Browse to directory containing .md file",
           "action": "Navigate to directory with markdown files",
-          "expected": "Directory listing shows .md files"
+          "expected": "Directory listing shows .md files",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Open .md file",
           "action": "Tap/click the .md file",
-          "expected": "Editor opens with markdown mode, content displayed"
+          "expected": "Editor opens with markdown mode, content displayed",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify format detection",
           "action": "Check status bar or mode indicator",
-          "expected": "Format shows 'Markdown'"
+          "expected": "Format shows 'Markdown'",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -267,22 +289,26 @@
         {
           "name": "Open .txt file",
           "action": "Tap .txt file in browser",
-          "expected": "Plain text editor opens"
+          "expected": "Plain text editor opens",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Return to browser",
           "action": "Navigate back to file browser",
-          "expected": "File browser shown"
+          "expected": "File browser shown",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Open .csv file",
           "action": "Tap .csv file",
-          "expected": "CSV editor mode opens"
+          "expected": "CSV editor mode opens",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Open .org file",
           "action": "Tap .org file",
-          "expected": "Org Mode editor opens"
+          "expected": "Org Mode editor opens",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -307,17 +333,20 @@
         {
           "name": "Open UTF-8 encoded file",
           "action": "Open a .txt file with UTF-8 BOM",
-          "expected": "File opens, encoding detected as UTF-8"
+          "expected": "File opens, encoding detected as UTF-8",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Open Latin-1 encoded file",
           "action": "Open a .txt file with Latin-1 characters",
-          "expected": "File opens with correct character display"
+          "expected": "File opens with correct character display",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Open UTF-16 file",
           "action": "Open a .txt file encoded in UTF-16",
-          "expected": "File opens without garbled characters"
+          "expected": "File opens without garbled characters",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -343,12 +372,14 @@
         {
           "name": "Navigate to empty directory",
           "action": "Open a directory that contains no files or subdirectories",
-          "expected": "Empty state: 'No files here' message or empty list"
+          "expected": "Empty state: 'No files here' message or empty list",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify UI stability",
           "action": "Scroll, wait, interact with empty state",
-          "expected": "No crash, no spinner stuck, back navigation works"
+          "expected": "No crash, no spinner stuck, back navigation works",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -372,12 +403,14 @@
         {
           "name": "Attempt to open restricted directory",
           "action": "Navigate to a system directory without read permission",
-          "expected": "Permission error shown: 'Access denied' or equivalent"
+          "expected": "Permission error shown: 'Access denied' or equivalent",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify no crash",
           "action": "Check app state after error",
-          "expected": "App remains stable, user can navigate elsewhere"
+          "expected": "App remains stable, user can navigate elsewhere",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -402,17 +435,20 @@
         {
           "name": "Navigate to directory with 100+ files",
           "action": "Open a directory containing at least 100 files",
-          "expected": "Directory listing begins loading"
+          "expected": "Directory listing begins loading",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Measure load time",
-          "action": "Wait for full listing to appear",
-          "expected": "All files listed within 3 seconds"
+          "action": "playwright: waitFor text=full listing",
+          "expected": "All files listed within 3 seconds",
+          "_original_action": "Wait for full listing to appear"
         },
         {
           "name": "Scroll through list",
           "action": "Scroll from top to bottom of file list",
-          "expected": "Smooth scrolling, no dropped frames, no OOM"
+          "expected": "Smooth scrolling, no dropped frames, no OOM",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -437,13 +473,15 @@
       "steps": [
         {
           "name": "Browse directory with special filename chars",
-          "action": "Open directory containing files named 'file (1).txt', 'note &amp; tasks.md', 'r\u00e9sum\u00e9.txt'",
-          "expected": "All filenames displayed correctly"
+          "action": "Open directory containing files named 'file (1).txt', 'note &amp; tasks.md', 'résumé.txt'",
+          "expected": "All filenames displayed correctly",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Open special-character file",
-          "action": "Tap/click 'r\u00e9sum\u00e9.txt'",
-          "expected": "File opens normally, filename in title bar correct"
+          "action": "Tap/click 'résumé.txt'",
+          "expected": "File opens normally, filename in title bar correct",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -468,17 +506,20 @@
         {
           "name": "Navigate to deeply nested directory",
           "action": "Navigate 10 levels deep into subdirectories",
-          "expected": "Each level opens correctly"
+          "expected": "Each level opens correctly",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify breadcrumb truncation",
           "action": "Check breadcrumb bar display",
-          "expected": "Breadcrumb truncates gracefully (e.g., '... > parent > current')"
+          "expected": "Breadcrumb truncates gracefully (e.g., '... > parent > current')",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Open file at deep path",
           "action": "Open a file at the deepest level",
-          "expected": "File opens, full path accessible"
+          "expected": "File opens, full path accessible",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -503,17 +544,20 @@
         {
           "name": "Check default hidden file visibility",
           "action": "Navigate to directory with .hidden files",
-          "expected": "Hidden files not shown by default"
+          "expected": "Hidden files not shown by default",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Enable show hidden files",
           "action": "Toggle 'Show hidden files' in browser options",
-          "expected": "Hidden files (starting with '.') now visible"
+          "expected": "Hidden files (starting with '.') now visible",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Disable show hidden files",
           "action": "Toggle off 'Show hidden files'",
-          "expected": "Hidden files disappear from listing"
+          "expected": "Hidden files disappear from listing",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -538,17 +582,20 @@
         {
           "name": "Open directory with mixed files",
           "action": "Navigate to a directory with several files",
-          "expected": "Files listed"
+          "expected": "Files listed",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Sort by name ascending",
           "action": "Select 'Sort by Name A-Z'",
-          "expected": "Files sorted alphabetically A to Z"
+          "expected": "Files sorted alphabetically A to Z",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Sort by name descending",
           "action": "Select 'Sort by Name Z-A'",
-          "expected": "Files sorted alphabetically Z to A"
+          "expected": "Files sorted alphabetically Z to A",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -573,12 +620,14 @@
         {
           "name": "Sort by date newest first",
           "action": "Select 'Sort by Date Modified (Newest)'",
-          "expected": "Most recently modified file at top"
+          "expected": "Most recently modified file at top",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Sort by date oldest first",
           "action": "Select 'Sort by Date Modified (Oldest)'",
-          "expected": "Oldest file at top"
+          "expected": "Oldest file at top",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -602,12 +651,14 @@
         {
           "name": "Sort by size largest first",
           "action": "Select 'Sort by Size (Largest)'",
-          "expected": "Largest file listed first"
+          "expected": "Largest file listed first",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify sort order",
           "action": "Compare sizes of top two files",
-          "expected": "First file is larger than or equal to second"
+          "expected": "First file is larger than or equal to second",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -632,17 +683,20 @@
         {
           "name": "Open search/filter in browser",
           "action": "Tap/click search icon in file browser toolbar",
-          "expected": "Search input field appears"
+          "expected": "Search input field appears",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Type search term",
           "action": "Type 'readme'",
-          "expected": "File list filters to show only files with 'readme' in name"
+          "expected": "File list filters to show only files with 'readme' in name",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Clear search",
           "action": "Clear the search field",
-          "expected": "Full directory listing restored"
+          "expected": "Full directory listing restored",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -666,17 +720,20 @@
         {
           "name": "Enable extension filter",
           "action": "Select 'Show only: .md files' from filter options",
-          "expected": "Only .md files shown in listing"
+          "expected": "Only .md files shown in listing",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Change filter to .txt",
           "action": "Switch filter to .txt",
-          "expected": "Only .txt files shown"
+          "expected": "Only .txt files shown",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Clear filter",
           "action": "Remove extension filter",
-          "expected": "All files shown again"
+          "expected": "All files shown again",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -701,22 +758,26 @@
         {
           "name": "Open browser in target directory",
           "action": "Navigate to Documents directory",
-          "expected": "Directory listing visible"
+          "expected": "Directory listing visible",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Create new file",
           "action": "Tap/click '+' or 'New File' button",
-          "expected": "Dialog to enter filename appears"
+          "expected": "Dialog to enter filename appears",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Enter filename",
           "action": "Type 'new-note.md' and confirm",
-          "expected": "New .md file created in current directory"
+          "expected": "New .md file created in current directory",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify file appears",
           "action": "Check directory listing",
-          "expected": "new-note.md visible in list"
+          "expected": "new-note.md visible in list",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -741,22 +802,26 @@
         {
           "name": "Select file to delete",
           "action": "Long-press or right-click a non-important test file",
-          "expected": "Context menu or selection indicator appears"
+          "expected": "Context menu or selection indicator appears",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Choose delete",
           "action": "Tap/click 'Delete'",
-          "expected": "Confirmation dialog appears"
+          "expected": "Confirmation dialog appears",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Confirm deletion",
           "action": "Confirm the deletion",
-          "expected": "File removed from listing"
+          "expected": "File removed from listing",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify removal",
           "action": "Check directory listing",
-          "expected": "Deleted file no longer present"
+          "expected": "Deleted file no longer present",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [

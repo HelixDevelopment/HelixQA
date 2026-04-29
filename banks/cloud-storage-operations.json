@@ -5,7 +5,9 @@
   "metadata": {
     "author": "vasic-digital",
     "app": "Yole",
-    "version": "1.0.0"
+    "version": "1.0.0",
+    "bluff_audit_status": "converted-by-bank-prose-to-http.py",
+    "bluff_audit_date": "2026-04-29"
   },
   "test_cases": [
     {
@@ -21,17 +23,20 @@
         {
           "name": "Select configured WebDAV storage",
           "action": "Open storage selector, choose WebDAV server",
-          "expected": "Connection established, root directory listed"
+          "expected": "Connection established, root directory listed",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify file listing",
           "action": "Check file list contents",
-          "expected": "Files and folders shown with names, sizes, and dates"
+          "expected": "Files and folders shown with names, sizes, and dates",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Navigate into subfolder",
           "action": "Tap/click a subfolder",
-          "expected": "Subfolder contents loaded from WebDAV"
+          "expected": "Subfolder contents loaded from WebDAV",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -63,32 +68,38 @@
         {
           "name": "List FTP files",
           "action": "Switch to FTP storage and list root",
-          "expected": "FTP directory listing shown"
+          "expected": "FTP directory listing shown",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "List SFTP files",
           "action": "Switch to SFTP storage and list root",
-          "expected": "SFTP directory listing shown"
+          "expected": "SFTP directory listing shown",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "List SMB files",
           "action": "Switch to SMB storage and list share root",
-          "expected": "SMB share contents shown"
+          "expected": "SMB share contents shown",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "List Dropbox files",
           "action": "Switch to Dropbox storage",
-          "expected": "Dropbox root files listed"
+          "expected": "Dropbox root files listed",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "List Google Drive files",
           "action": "Switch to Google Drive storage",
-          "expected": "Drive root files listed"
+          "expected": "Drive root files listed",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "List OneDrive files",
           "action": "Switch to OneDrive storage",
-          "expected": "OneDrive root files listed"
+          "expected": "OneDrive root files listed",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -113,22 +124,26 @@
         {
           "name": "Open WebDAV storage browser",
           "action": "Navigate to WebDAV storage",
-          "expected": "WebDAV file listing visible"
+          "expected": "WebDAV file listing visible",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Initiate upload",
           "action": "Tap/click 'Upload' or drag a local file",
-          "expected": "File picker or drag target active"
+          "expected": "File picker or drag target active",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Select local file",
           "action": "Choose a local .md file to upload",
-          "expected": "Upload progress indicator shown"
+          "expected": "Upload progress indicator shown",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify upload complete",
-          "action": "Wait for upload to finish",
-          "expected": "Uploaded file appears in WebDAV listing"
+          "action": "playwright: waitFor text=upload to finish",
+          "expected": "Uploaded file appears in WebDAV listing",
+          "_original_action": "Wait for upload to finish"
         }
       ],
       "tags": [
@@ -153,17 +168,20 @@
         {
           "name": "Navigate to Dropbox storage",
           "action": "Open Dropbox in storage browser",
-          "expected": "Dropbox file listing"
+          "expected": "Dropbox file listing",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Upload a file",
           "action": "Select a local .txt file for upload",
-          "expected": "Progress shown"
+          "expected": "Progress shown",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Confirm appearance",
           "action": "Check Dropbox listing after upload",
-          "expected": "Uploaded file visible with correct name and size"
+          "expected": "Uploaded file visible with correct name and size",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -188,17 +206,21 @@
         {
           "name": "Select a large file (1MB+)",
           "action": "Choose a 1MB+ text file for upload to any protocol",
-          "expected": "Upload begins"
+          "expected": "Upload begins",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Monitor progress bar",
-          "action": "Observe progress indicator during upload",
-          "expected": "Progress bar advances incrementally (0% to 100%)"
+          "action": "playwright: assertVisible text=progress indicator during upload",
+          "expected": "Progress bar advances incrementally (0% to 100%)",
+          "_original_action": "Observe progress indicator during upload",
+          "expect_status": 100
         },
         {
           "name": "Verify completion",
-          "action": "Wait for upload to finish",
-          "expected": "Success message; file appears in remote listing"
+          "action": "playwright: waitFor text=upload to finish",
+          "expected": "Success message; file appears in remote listing",
+          "_original_action": "Wait for upload to finish"
         }
       ],
       "tags": [
@@ -223,17 +245,20 @@
         {
           "name": "Browse SFTP storage",
           "action": "Open SFTP storage, navigate to a file",
-          "expected": "File visible in SFTP listing"
+          "expected": "File visible in SFTP listing",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Open/download file",
           "action": "Tap/click the file to open in Yole editor",
-          "expected": "File downloaded and opened in editor"
+          "expected": "File downloaded and opened in editor",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify content",
           "action": "Check editor content matches expected",
-          "expected": "File content correct"
+          "expected": "File content correct",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -259,12 +284,14 @@
         {
           "name": "Browse Google Drive",
           "action": "Open Google Drive storage listing",
-          "expected": "Drive files shown"
+          "expected": "Drive files shown",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Open a document",
           "action": "Tap a .md file in Drive",
-          "expected": "File downloaded and opened in Yole editor"
+          "expected": "File downloaded and opened in Yole editor",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -289,22 +316,26 @@
         {
           "name": "Browse FTP storage",
           "action": "Navigate to a test file on FTP",
-          "expected": "File visible in listing"
+          "expected": "File visible in listing",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Initiate delete",
           "action": "Long-press or right-click file, select 'Delete'",
-          "expected": "Confirmation dialog shown"
+          "expected": "Confirmation dialog shown",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Confirm delete",
           "action": "Tap/click 'Delete' in dialog",
-          "expected": "File removed from FTP listing"
+          "expected": "File removed from FTP listing",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify gone",
           "action": "Refresh FTP listing",
-          "expected": "Deleted file no longer present"
+          "expected": "Deleted file no longer present",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -330,12 +361,14 @@
         {
           "name": "Initiate delete on a file",
           "action": "Select delete for a cloud file",
-          "expected": "Confirmation dialog shown"
+          "expected": "Confirmation dialog shown",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Cancel",
           "action": "Tap 'Cancel' in confirmation dialog",
-          "expected": "Dialog dismissed, file remains in listing"
+          "expected": "Dialog dismissed, file remains in listing",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -360,17 +393,20 @@
         {
           "name": "Select file on OneDrive",
           "action": "Open OneDrive storage, long-press a file",
-          "expected": "Context menu with Rename option"
+          "expected": "Context menu with Rename option",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Rename file",
           "action": "Enter new name 'renamed-note.md' and confirm",
-          "expected": "File renamed in OneDrive listing"
+          "expected": "File renamed in OneDrive listing",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify new name",
           "action": "Check listing",
-          "expected": "File shows new name 'renamed-note.md'"
+          "expected": "File shows new name 'renamed-note.md'",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -395,12 +431,14 @@
         {
           "name": "Browse SMB share",
           "action": "Open SMB storage",
-          "expected": "SMB share contents shown"
+          "expected": "SMB share contents shown",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Create new folder",
           "action": "Tap 'New Folder', enter name 'test-folder'",
-          "expected": "Folder created and appears in listing"
+          "expected": "Folder created and appears in listing",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -425,17 +463,20 @@
         {
           "name": "Open a cloud-backed file",
           "action": "Open a file from WebDAV storage in editor",
-          "expected": "File opens; sync status shows 'Synced'"
+          "expected": "File opens; sync status shows 'Synced'",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Make changes",
           "action": "Edit the file content",
-          "expected": "Sync status changes to 'Unsaved' or 'Modified'"
+          "expected": "Sync status changes to 'Unsaved' or 'Modified'",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Save to cloud",
           "action": "Trigger save",
-          "expected": "Upload progress shown, then status returns to 'Synced'"
+          "expected": "Upload progress shown, then status returns to 'Synced'",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -460,22 +501,26 @@
         {
           "name": "Open a cloud file while online",
           "action": "Open a WebDAV file to populate cache",
-          "expected": "File opens normally"
+          "expected": "File opens normally",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Disable network",
           "action": "Turn off WiFi or enable airplane mode",
-          "expected": "Network unavailable"
+          "expected": "Network unavailable",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Reopen the same file",
           "action": "Close and reopen the cloud file",
-          "expected": "File opens from cache with 'Offline' indicator"
+          "expected": "File opens from cache with 'Offline' indicator",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Edit while offline",
           "action": "Make changes to the cached file",
-          "expected": "Edits accepted; pending sync indicator shown"
+          "expected": "Edits accepted; pending sync indicator shown",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -500,17 +545,20 @@
         {
           "name": "Make offline edits",
           "action": "Edit a cloud file while offline",
-          "expected": "Changes saved locally with pending sync flag"
+          "expected": "Changes saved locally with pending sync flag",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Restore network",
           "action": "Re-enable WiFi or disable airplane mode",
-          "expected": "App detects network availability"
+          "expected": "App detects network availability",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify sync",
-          "action": "Wait for automatic sync",
-          "expected": "Pending changes uploaded; sync indicator clears"
+          "action": "playwright: waitFor text=automatic sync",
+          "expected": "Pending changes uploaded; sync indicator clears",
+          "_original_action": "Wait for automatic sync"
         }
       ],
       "tags": [
@@ -535,22 +583,26 @@
         {
           "name": "Start uploading a large file",
           "action": "Begin uploading a 500KB file to any cloud protocol",
-          "expected": "Upload progress started"
+          "expected": "Upload progress started",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Interrupt connection mid-upload",
           "action": "Disable network at ~50% progress",
-          "expected": "Upload fails with error notification"
+          "expected": "Upload fails with error notification",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify no corrupt file",
           "action": "Check cloud storage listing",
-          "expected": "Partial upload not listed or marked as incomplete"
+          "expected": "Partial upload not listed or marked as incomplete",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Re-enable network and retry",
           "action": "Restore network, retry upload",
-          "expected": "Upload completes successfully on retry"
+          "expected": "Upload completes successfully on retry",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -576,17 +628,20 @@
         {
           "name": "Begin downloading a cloud file",
           "action": "Open a large file from cloud storage",
-          "expected": "Download starts"
+          "expected": "Download starts",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Drop connection",
           "action": "Disable network during download",
-          "expected": "Download fails with network error toast or dialog"
+          "expected": "Download fails with network error toast or dialog",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Retry",
           "action": "Tap 'Retry' or reopen file after restoring network",
-          "expected": "File downloads and opens correctly"
+          "expected": "File downloads and opens correctly",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -612,17 +667,20 @@
         {
           "name": "Upload multiple files simultaneously",
           "action": "Select 3 files and upload all at once to WebDAV",
-          "expected": "All 3 uploads start concurrently"
+          "expected": "All 3 uploads start concurrently",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Monitor progress",
           "action": "Check that progress is shown for each file",
-          "expected": "Individual progress indicators for each upload"
+          "expected": "Individual progress indicators for each upload",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify completion",
-          "action": "Wait for all uploads",
-          "expected": "All 3 files appear in cloud listing"
+          "action": "playwright: waitFor text=all uploads",
+          "expected": "All 3 files appear in cloud listing",
+          "_original_action": "Wait for all uploads"
         }
       ],
       "tags": [
@@ -648,17 +706,20 @@
         {
           "name": "Trigger rapid API calls",
           "action": "Rapidly refresh Dropbox listing 20 times in quick succession",
-          "expected": "Initial requests succeed normally"
+          "expected": "Initial requests succeed normally",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Observe throttling",
           "action": "Continue rapid requests",
-          "expected": "Rate limit indicator shown; requests queued or delayed"
+          "expected": "Rate limit indicator shown; requests queued or delayed",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Wait for recovery",
           "action": "Stop triggering requests and wait 10 seconds",
-          "expected": "Normal operation resumes without errors"
+          "expected": "Normal operation resumes without errors",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -683,22 +744,26 @@
         {
           "name": "Cause repeated connection failures",
           "action": "Configure WebDAV with unreachable server, attempt 5 operations",
-          "expected": "First few attempts show connection errors"
+          "expected": "First few attempts show connection errors",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify circuit breaker opens",
           "action": "Attempt another operation",
-          "expected": "Circuit breaker open message: 'Service temporarily unavailable'"
+          "expected": "Circuit breaker open message: 'Service temporarily unavailable'",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Wait for half-open state",
-          "action": "Wait 30 seconds",
-          "expected": "Circuit breaker allows one probe request"
+          "action": "sleep: 30000",
+          "expected": "Circuit breaker allows one probe request",
+          "_original_action": "Wait 30 seconds"
         },
         {
           "name": "Restore server and probe",
           "action": "Fix server config, attempt operation",
-          "expected": "Circuit breaker closes; normal operation resumes"
+          "expected": "Circuit breaker closes; normal operation resumes",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -723,22 +788,26 @@
         {
           "name": "Open file from Git-backed storage",
           "action": "Open a file from configured Git repository",
-          "expected": "File opens in editor"
+          "expected": "File opens in editor",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Edit and save",
           "action": "Make changes and save",
-          "expected": "File saved locally"
+          "expected": "File saved locally",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Commit and push",
           "action": "Tap 'Commit & Push' or trigger sync",
-          "expected": "Commit dialog with message field"
+          "expected": "Commit dialog with message field",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Enter commit message and confirm",
           "action": "Enter 'Update note via Yole' and confirm",
-          "expected": "Changes committed and pushed to remote"
+          "expected": "Changes committed and pushed to remote",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -764,17 +833,20 @@
         {
           "name": "Open Git storage with remote changes available",
           "action": "Ensure remote has commits not yet pulled",
-          "expected": "Sync indicator shows 'behind remote'"
+          "expected": "Sync indicator shows 'behind remote'",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Pull changes",
           "action": "Tap/click 'Pull' or sync button",
-          "expected": "Remote changes fetched and merged"
+          "expected": "Remote changes fetched and merged",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify updated content",
           "action": "Open a file that was changed remotely",
-          "expected": "File shows latest remote content"
+          "expected": "File shows latest remote content",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [

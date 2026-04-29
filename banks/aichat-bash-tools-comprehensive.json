@@ -15,7 +15,9 @@
         "cline",
         "helixagent"
       ]
-    }
+    },
+    "bluff_audit_status": "converted-by-bank-prose-to-http.py",
+    "bluff_audit_date": "2026-04-29"
   },
   "test_cases": [
     {
@@ -27,17 +29,20 @@
         {
           "name": "Generate AIChat config",
           "action": "./bin/helixagent --generate-agent-config=aichat",
-          "expected": "Config file created at cli_agents_configs/aichat.yaml"
+          "expected": "Config file created at cli_agents_configs/aichat.yaml",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Validate config structure",
           "action": "Check config contains helixagent endpoint, ensemble model, MCP settings",
-          "expected": "All required sections present"
+          "expected": "All required sections present",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify 22+ provider configurations",
           "action": "Count clients in config",
-          "expected": "22+ providers configured"
+          "expected": "22+ providers configured",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -57,17 +62,20 @@
         {
           "name": "Start HelixAgent",
           "action": "Ensure HelixAgent running on :7061",
-          "expected": "Healthy"
+          "expected": "Healthy",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Configure AIChat",
           "action": "Set AICHAT_CONFIG_DIR and use generated config",
-          "expected": "Config loaded"
+          "expected": "Config loaded",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Send test message",
           "action": "aichat --model helixagent/ensemble 'Hello'",
-          "expected": "Response received via ensemble"
+          "expected": "Response received via ensemble",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -87,17 +95,20 @@
         {
           "name": "Start REPL",
           "action": "echo 'Hello' | aichat --model helixagent/ensemble",
-          "expected": "REPL responds"
+          "expected": "REPL responds",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Test session persistence",
           "action": "Use .session command",
-          "expected": "Session saved"
+          "expected": "Session saved",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Test .file command",
           "action": ".file README.md",
-          "expected": "File loaded into context"
+          "expected": "File loaded into context",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -117,17 +128,20 @@
         {
           "name": "Start AIChat server",
           "action": "aichat --serve --port 8001 &",
-          "expected": "Server starts on :8001"
+          "expected": "Server starts on :8001",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Test OpenAI-compatible API",
           "action": "curl http://localhost:8001/v1/chat/completions",
-          "expected": "Valid response"
+          "expected": "Valid response",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Test via HelixAgent",
           "action": "Configure as provider, send request",
-          "expected": "Request proxied through HelixAgent"
+          "expected": "Request proxied through HelixAgent",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -148,17 +162,20 @@
         {
           "name": "Configure RAG",
           "action": "Enable use_helixagent_rag in config",
-          "expected": "RAG configured"
+          "expected": "RAG configured",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Add documents",
           "action": "aichat --rebuild-rag with documents",
-          "expected": "Documents indexed"
+          "expected": "Documents indexed",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Query RAG",
           "action": "Ask question about documents",
-          "expected": "Contextual response using RAG"
+          "expected": "Contextual response using RAG",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -178,17 +195,21 @@
         {
           "name": "Create test file",
           "action": "echo 'test content' > /tmp/test.txt",
-          "expected": "File created"
+          "expected": "File created",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Call fs_cat",
           "action": "./internal/tools/bash_providers/fs_cat.sh --path /tmp/test.txt",
-          "expected": "Output: test content"
+          "expected": "Output: test content",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify via MCP",
-          "action": "POST /v1/mcp/tools/call with fs_cat",
-          "expected": "Same result via API"
+          "action": "http: POST /v1/mcp/tools/call",
+          "expected": "Same result via API",
+          "auth": "admin",
+          "_original_action": "POST /v1/mcp/tools/call with fs_cat"
         }
       ],
       "tags": [
@@ -208,12 +229,14 @@
         {
           "name": "List directory",
           "action": "./internal/tools/bash_providers/fs_ls.sh --path /tmp",
-          "expected": "Directory contents listed"
+          "expected": "Directory contents listed",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify format",
           "action": "Check output format",
-          "expected": "Proper listing format"
+          "expected": "Proper listing format",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -233,12 +256,14 @@
         {
           "name": "Write file",
           "action": "fs_write --path /tmp/write_test.txt --content 'Hello World'",
-          "expected": "File written"
+          "expected": "File written",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify content",
           "action": "cat /tmp/write_test.txt",
-          "expected": "Hello World"
+          "expected": "Hello World",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -258,17 +283,20 @@
         {
           "name": "Create original file",
           "action": "echo 'old content' > /tmp/patch_test.txt",
-          "expected": "File created"
+          "expected": "File created",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Apply patch",
           "action": "fs_patch with diff",
-          "expected": "Patch applied"
+          "expected": "Patch applied",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify result",
           "action": "cat /tmp/patch_test.txt",
-          "expected": "Content patched"
+          "expected": "Content patched",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -288,12 +316,14 @@
         {
           "name": "Create directory",
           "action": "fs_mkdir --path /tmp/test_dir",
-          "expected": "Directory created"
+          "expected": "Directory created",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify",
           "action": "ls -la /tmp/test_dir",
-          "expected": "Directory exists"
+          "expected": "Directory exists",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -313,17 +343,20 @@
         {
           "name": "Execute simple command",
           "action": "exec_command --command 'echo hello'",
-          "expected": "Output: hello"
+          "expected": "Output: hello",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Execute with pipes",
           "action": "exec_command --command 'echo test | wc -l'",
-          "expected": "Output: 1"
+          "expected": "Output: 1",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify security blocks",
           "action": "Try rm -rf / (should be blocked)",
-          "expected": "Operation blocked"
+          "expected": "Operation blocked",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -344,12 +377,14 @@
         {
           "name": "Execute Python",
           "action": "exec_py --code 'print(2+2)'",
-          "expected": "Output: 4"
+          "expected": "Output: 4",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Use libraries",
           "action": "exec_py --code 'import json; print(json.dumps({\"key\": \"value\"}))'",
-          "expected": "JSON output"
+          "expected": "JSON output",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -369,7 +404,8 @@
         {
           "name": "Execute JS",
           "action": "exec_js --code 'console.log(1+1)'",
-          "expected": "Output: 2"
+          "expected": "Output: 2",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -389,12 +425,14 @@
         {
           "name": "Fetch URL",
           "action": "web_fetch_curl --url https://httpbin.org/get",
-          "expected": "JSON response received"
+          "expected": "JSON response received",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify content",
           "action": "Check response contains 'url' field",
-          "expected": "Valid JSON"
+          "expected": "Valid JSON",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -417,12 +455,14 @@
         {
           "name": "Search",
           "action": "web_search_perplexity --query 'Go programming language'",
-          "expected": "Search results"
+          "expected": "Search results",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify content",
           "action": "Check results contain relevant info",
-          "expected": "Accurate results"
+          "expected": "Accurate results",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -446,7 +486,8 @@
         {
           "name": "Search",
           "action": "web_search_tavily --query 'latest AI news'",
-          "expected": "Search results"
+          "expected": "Search results",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -467,12 +508,14 @@
         {
           "name": "Search arXiv",
           "action": "info_arxiv --query 'transformer architecture'",
-          "expected": "Paper listings"
+          "expected": "Paper listings",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify format",
           "action": "Check for title, authors, abstract",
-          "expected": "Complete paper info"
+          "expected": "Complete paper info",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -492,12 +535,14 @@
         {
           "name": "Search Wikipedia",
           "action": "info_wikipedia --query 'Go programming language'",
-          "expected": "Article content"
+          "expected": "Article content",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify",
           "action": "Check content relevance",
-          "expected": "Accurate article"
+          "expected": "Accurate article",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -517,7 +562,8 @@
         {
           "name": "Get weather",
           "action": "info_weather --location 'New York'",
-          "expected": "Weather data"
+          "expected": "Weather data",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -537,12 +583,14 @@
         {
           "name": "Call hx_health",
           "action": "./internal/tools/bash_providers/hx_health.sh",
-          "expected": "Health status JSON"
+          "expected": "Health status JSON",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify status",
           "action": "Check 'status' field",
-          "expected": "healthy"
+          "expected": "healthy",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -562,12 +610,14 @@
         {
           "name": "Call hx_providers",
           "action": "./internal/tools/bash_providers/hx_providers.sh",
-          "expected": "Provider list"
+          "expected": "Provider list",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify count",
           "action": "Count lines",
-          "expected": "22+ providers"
+          "expected": "22+ providers",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -587,12 +637,14 @@
         {
           "name": "Call ensemble",
           "action": "hx_ensemble --message 'Explain Go interfaces' --temperature 0.5",
-          "expected": "Ensemble response"
+          "expected": "Ensemble response",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify quality",
           "action": "Check response quality",
-          "expected": "Accurate explanation"
+          "expected": "Accurate explanation",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -613,7 +665,8 @@
         {
           "name": "Call git_status",
           "action": "./internal/tools/bash_providers/git_status.sh",
-          "expected": "Git status output"
+          "expected": "Git status output",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -633,12 +686,14 @@
         {
           "name": "Make a change",
           "action": "Modify test file",
-          "expected": "Change made"
+          "expected": "Change made",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Call git_diff",
           "action": "git_diff",
-          "expected": "Diff output"
+          "expected": "Diff output",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -658,17 +713,20 @@
         {
           "name": "Read file",
           "action": "fs_cat README.md",
-          "expected": "Content retrieved"
+          "expected": "Content retrieved",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Analyze via ensemble",
           "action": "Pass content to hx_ensemble for summary",
-          "expected": "Summary generated"
+          "expected": "Summary generated",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Write result",
           "action": "fs_write summary.txt",
-          "expected": "Result saved"
+          "expected": "Result saved",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -687,13 +745,16 @@
       "steps": [
         {
           "name": "List MCP tools",
-          "action": "GET /v1/mcp/tools/list",
-          "expected": "50+ tools registered"
+          "action": "http: GET /v1/mcp/tools/list",
+          "expected": "50+ tools registered",
+          "auth": "admin",
+          "_original_action": "GET /v1/mcp/tools/list"
         },
         {
           "name": "Call each category",
           "action": "Test one tool from each category",
-          "expected": "All categories work"
+          "expected": "All categories work",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -713,17 +774,20 @@
         {
           "name": "Configure AIChat MCP",
           "action": "Set MCP server to HelixAgent",
-          "expected": "Connected"
+          "expected": "Connected",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Use tool",
           "action": "Ask AIChat to use fs_cat",
-          "expected": "Tool invoked via HelixAgent"
+          "expected": "Tool invoked via HelixAgent",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify",
           "action": "Check tool was called",
-          "expected": "Tool execution logged"
+          "expected": "Tool execution logged",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -744,17 +808,20 @@
         {
           "name": "Measure fs_cat",
           "action": "Time 100 fs_cat executions",
-          "expected": "< 10s total"
+          "expected": "< 10s total",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Measure exec_command",
           "action": "Time 100 exec_command",
-          "expected": "< 15s total"
+          "expected": "< 15s total",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Measure MCP overhead",
           "action": "Compare direct vs MCP",
-          "expected": "< 50ms overhead"
+          "expected": "< 50ms overhead",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -773,12 +840,14 @@
         {
           "name": "Run 10 tools concurrently",
           "action": "Parallel execution",
-          "expected": "All complete successfully"
+          "expected": "All complete successfully",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Check resource usage",
           "action": "Monitor CPU/memory",
-          "expected": "Within limits"
+          "expected": "Within limits",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -797,17 +866,20 @@
         {
           "name": "Try rm -rf /",
           "action": "exec_command --command 'rm -rf /'",
-          "expected": "Blocked by guard_operation"
+          "expected": "Blocked by guard_operation",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Try mkfs",
           "action": "exec_command --command 'mkfs.ext4 /dev/sda'",
-          "expected": "Blocked"
+          "expected": "Blocked",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify log",
           "action": "Check security log",
-          "expected": "Block logged"
+          "expected": "Block logged",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -827,12 +899,14 @@
         {
           "name": "Check API keys not logged",
           "action": "Run tool with API key, check logs",
-          "expected": "Key redacted in logs"
+          "expected": "Key redacted in logs",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify .env loading",
           "action": "Test .env file loading",
-          "expected": "Loaded securely"
+          "expected": "Loaded securely",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -852,12 +926,14 @@
         {
           "name": "Execute all tools",
           "action": "Run all 50+ tools simultaneously",
-          "expected": "All complete without error"
+          "expected": "All complete without error",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify results",
           "action": "Check all outputs",
-          "expected": "All successful"
+          "expected": "All successful",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -877,12 +953,14 @@
         {
           "name": "Restart HelixAgent 10 times",
           "action": "Restart and discover tools",
-          "expected": "Consistent registration"
+          "expected": "Consistent registration",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Check for leaks",
           "action": "Monitor memory",
-          "expected": "No leaks"
+          "expected": "No leaks",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
