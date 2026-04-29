@@ -57,11 +57,41 @@ type HTTPExecutor struct {
 	// contains the bearer token, default "session_token".
 	TokenField string
 
-	mu          sync.Mutex
-	tokenCache  map[string]string // creds-key → bearer token
-	lastResponse []byte           // for ActionTypeAssert follow-ups
+	// CSRFPreflightPath, when non-empty, is a safe GET endpoint that
+	// the executor calls before any mutating request (POST/PUT/PATCH/
+	// DELETE) targeting CSRFGuardedPaths. The catalog-api convention
+	// (root_middleware/csrf): GET/HEAD/OPTIONS mints a fresh token
+	// returned in the X-CSRF-Token header AND a `csrf` cookie; POST/
+	// PUT/DELETE then require both to match. Default
+	// "/api/v1/admin/system-info" — picks any /admin/* GET because
+	// the same guard runs there.
+	CSRFPreflightPath string
+	// CSRFGuardedPathPrefixes lists request-path prefixes that are
+	// behind the CSRF guard. Default {"/api/v1/admin/"}.
+	CSRFGuardedPathPrefixes []string
+	// CSRFCookieNames is the ordered list of cookie names the guard
+	// might use. The first match wins. catalog-api uses
+	// `__Host-csrf` (with the __Host- prefix) over HTTPS and the
+	// httptest fixtures use bare "csrf" over HTTP, so the default
+	// list contains both.
+	CSRFCookieNames []string
+	// CSRFHeaderName is the request header name expected by the
+	// guard. Default "X-CSRF-Token".
+	CSRFHeaderName string
+
+	mu           sync.Mutex
+	tokenCache   map[string]string // creds-key → bearer token
+	lastResponse []byte            // for ActionTypeAssert follow-ups
 	lastStatus   int
 	lastHeaders  http.Header
+	// csrfToken / csrfCookieName / csrfCookieValue carry the most
+	// recent CSRF pair from a preflight GET, reused across mutating
+	// calls. csrfCookieName preserves whichever of CSRFCookieNames
+	// was actually present in the preflight response, so the
+	// replay sets exactly the same cookie name the server expects.
+	csrfToken       string
+	csrfCookieName  string
+	csrfCookieValue string
 }
 
 // Credentials is a username + password pair.
@@ -75,11 +105,23 @@ type Credentials struct {
 // if zero.
 func NewHTTPExecutor(baseURL string) *HTTPExecutor {
 	return &HTTPExecutor{
-		BaseURL:    strings.TrimRight(baseURL, "/"),
-		HTTPClient: &http.Client{Timeout: 30 * time.Second},
-		LoginPath:  "/api/v1/auth/login",
-		TokenField: "session_token",
-		tokenCache: map[string]string{},
+		BaseURL:                 strings.TrimRight(baseURL, "/"),
+		HTTPClient:              &http.Client{Timeout: 30 * time.Second},
+		LoginPath:               "/api/v1/auth/login",
+		TokenField:              "session_token",
+		tokenCache:              map[string]string{},
+		CSRFPreflightPath:       "/api/v1/admin/system-info",
+		CSRFGuardedPathPrefixes: []string{"/api/v1/admin/"},
+		// catalog-api's CSRF guard (root_middleware/csrf.go) sets a
+		// `__Host-csrf` cookie (the __Host- prefix requires Secure +
+		// no Domain attribute, so the browser binds the cookie to
+		// the exact origin). The test fixture in
+		// http_executor_test.go uses the bare "csrf" name because
+		// httptest.NewServer is HTTP — `__Host-` cookies are
+		// rejected over HTTP. Both must be matched, so try the
+		// fully-prefixed name first and fall back to "csrf".
+		CSRFCookieNames: []string{"__Host-csrf", "csrf"},
+		CSRFHeaderName:  "X-CSRF-Token",
 	}
 }
 
@@ -146,6 +188,28 @@ func (h *HTTPExecutor) Execute(
 	// Auth
 	if err := h.applyAuth(ctx, req, step.AuthMode); err != nil {
 		return ActionResult{Success: false, Message: fmt.Sprintf("http: auth failed: %v", err)}
+	}
+
+	// Article XI §11.5: catalog-api's admin group sits behind a
+	// double-submit-cookie CSRF guard (root_middleware/csrf.go). For
+	// any mutating method targeting a CSRF-guarded prefix, do a
+	// preflight GET to mint a token, capture cookie + header, and
+	// replay both on the real call. Without this, every admin POST/
+	// PUT/DELETE in the bank fails with 403 "missing csrf cookie".
+	// Caught by FQA-API-047, FQA-API-243, FQA-API-252, FQA-API-253.
+	if h.needsCSRF(method, path) {
+		if err := h.ensureCSRF(ctx, step.AuthMode); err != nil {
+			return ActionResult{Success: false, Message: fmt.Sprintf("http: csrf preflight failed: %v", err)}
+		}
+		h.mu.Lock()
+		tok, ckName, ckVal := h.csrfToken, h.csrfCookieName, h.csrfCookieValue
+		h.mu.Unlock()
+		if tok != "" {
+			req.Header.Set(h.CSRFHeaderName, tok)
+		}
+		if ckName != "" && ckVal != "" {
+			req.AddCookie(&http.Cookie{Name: ckName, Value: ckVal})
+		}
 	}
 
 	// Execute
@@ -367,4 +431,89 @@ func parseHTTPAction(value string) (method, path string) {
 		return "GET", parts[0]
 	}
 	return "", ""
+}
+
+// needsCSRF reports whether the given (method, path) is behind the
+// CSRF guard and therefore requires a token+cookie pair on the
+// request.
+func (h *HTTPExecutor) needsCSRF(method, path string) bool {
+	if h.CSRFPreflightPath == "" {
+		return false
+	}
+	switch method {
+	case http.MethodPost, http.MethodPut, http.MethodPatch, http.MethodDelete:
+	default:
+		return false
+	}
+	for _, prefix := range h.CSRFGuardedPathPrefixes {
+		if strings.HasPrefix(path, prefix) {
+			return true
+		}
+	}
+	return false
+}
+
+// ensureCSRF performs a preflight GET to CSRFPreflightPath and
+// captures the X-CSRF-Token header + csrf cookie. Cached for the
+// lifetime of the executor — most CSRF guards mint long-lived
+// tokens, and a session of bank tests is short enough that we
+// don't need refresh logic. Idempotent: returns early if a token
+// is already cached.
+func (h *HTTPExecutor) ensureCSRF(ctx context.Context, authMode string) error {
+	h.mu.Lock()
+	have := h.csrfToken != "" && h.csrfCookieValue != ""
+	h.mu.Unlock()
+	if have {
+		return nil
+	}
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, h.BaseURL+h.CSRFPreflightPath, nil)
+	if err != nil {
+		return fmt.Errorf("build preflight: %w", err)
+	}
+	req.Header.Set("Accept", "application/json")
+	if err := h.applyAuth(ctx, req, authMode); err != nil {
+		return fmt.Errorf("preflight auth: %w", err)
+	}
+	resp, err := h.HTTPClient.Do(req)
+	if err != nil {
+		return fmt.Errorf("preflight fetch: %w", err)
+	}
+	defer resp.Body.Close()
+	io.Copy(io.Discard, resp.Body)
+
+	tok := resp.Header.Get(h.CSRFHeaderName)
+	var (
+		cookieName  string
+		cookieValue string
+	)
+	// Walk the configured candidate names in order — first match
+	// wins. This handles deployments where the guard uses the
+	// __Host- prefix (HTTPS) versus a bare cookie name (HTTP test
+	// fixture).
+	for _, name := range h.CSRFCookieNames {
+		for _, c := range resp.Cookies() {
+			if c.Name == name {
+				cookieName = c.Name
+				cookieValue = c.Value
+				break
+			}
+		}
+		if cookieName != "" {
+			break
+		}
+	}
+	if tok == "" && cookieValue == "" {
+		// Guard not active for this deployment (e.g. NewCSRF
+		// returned an err and main.go disabled the guard with a
+		// warning). Treat as success — the actual call will go
+		// through unguarded.
+		return nil
+	}
+	h.mu.Lock()
+	h.csrfToken = tok
+	h.csrfCookieName = cookieName
+	h.csrfCookieValue = cookieValue
+	h.mu.Unlock()
+	return nil
 }

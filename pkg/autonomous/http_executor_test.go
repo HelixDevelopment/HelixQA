@@ -391,3 +391,118 @@ func TestHTTPExecutor_AntiBluffMarker(t *testing.T) {
 	require.False(t, res.Success)
 	require.True(t, strings.Contains(res.Message, "status 500"))
 }
+
+// TestHTTPExecutor_CSRFAutoPreflight asserts that mutating
+// requests against CSRF-guarded prefixes:
+//  1. trigger a preflight GET to CSRFPreflightPath
+//  2. capture the X-CSRF-Token header + csrf cookie
+//  3. replay both on the actual request
+//
+// Article XI §11.2.5 anti-bluff anchor: comment out the
+// `h.needsCSRF` block in Execute and this test FAILS — the
+// mutating call goes out without csrf header/cookie and the
+// fake server's strict check rejects it with 403.
+func TestHTTPExecutor_CSRFAutoPreflight(t *testing.T) {
+	var preflightCalls, mutatingCalls int
+	var seenToken, seenCookie string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch {
+		case r.Method == http.MethodGet && r.URL.Path == "/api/v1/admin/system-info":
+			preflightCalls++
+			w.Header().Set("X-CSRF-Token", "tok-fixture")
+			http.SetCookie(w, &http.Cookie{Name: "csrf", Value: "ck-fixture", Path: "/"})
+			w.WriteHeader(http.StatusOK)
+			_, _ = fmt.Fprint(w, `{"ok":true}`)
+		case r.Method == http.MethodPost && r.URL.Path == "/api/v1/admin/storage/scan":
+			mutatingCalls++
+			seenToken = r.Header.Get("X-CSRF-Token")
+			if c, err := r.Cookie("csrf"); err == nil {
+				seenCookie = c.Value
+			}
+			if seenToken != "tok-fixture" || seenCookie != "ck-fixture" {
+				w.WriteHeader(http.StatusForbidden)
+				_, _ = fmt.Fprint(w, `{"error":"missing csrf cookie"}`)
+				return
+			}
+			w.WriteHeader(http.StatusOK)
+			_, _ = fmt.Fprint(w, `{"started":true}`)
+		default:
+			w.WriteHeader(http.StatusNotFound)
+		}
+	}))
+	defer srv.Close()
+
+	h := NewHTTPExecutor(srv.URL)
+	res := h.Execute(context.Background(), "POST",
+		"/api/v1/admin/storage/scan",
+		testbank.TestStep{ExpectStatus: 200, AuthMode: "none"})
+
+	require.True(t, res.Success,
+		"mutating call MUST succeed once CSRF token+cookie auto-fetched; got: %s",
+		res.Message)
+	assert.Equal(t, 1, preflightCalls,
+		"preflight GET must fire exactly once per executor session")
+	assert.Equal(t, 1, mutatingCalls)
+	assert.Equal(t, "tok-fixture", seenToken,
+		"X-CSRF-Token header must be replayed verbatim from preflight")
+	assert.Equal(t, "ck-fixture", seenCookie,
+		"csrf cookie must be replayed verbatim from preflight")
+}
+
+// TestHTTPExecutor_CSRFCachedAcrossCalls asserts the preflight is
+// cached — three mutating calls in a row trigger only one
+// preflight, NOT three.
+func TestHTTPExecutor_CSRFCachedAcrossCalls(t *testing.T) {
+	var preflightCalls int
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodGet && r.URL.Path == "/api/v1/admin/system-info" {
+			preflightCalls++
+			w.Header().Set("X-CSRF-Token", "tok")
+			http.SetCookie(w, &http.Cookie{Name: "csrf", Value: "ck", Path: "/"})
+			w.WriteHeader(http.StatusOK)
+			return
+		}
+		if r.Header.Get("X-CSRF-Token") == "" {
+			w.WriteHeader(http.StatusForbidden)
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer srv.Close()
+
+	h := NewHTTPExecutor(srv.URL)
+	for i := 0; i < 3; i++ {
+		res := h.Execute(context.Background(), "POST",
+			fmt.Sprintf("/api/v1/admin/x%d", i),
+			testbank.TestStep{ExpectStatus: 200, AuthMode: "none"})
+		require.True(t, res.Success, "call %d failed: %s", i, res.Message)
+	}
+	assert.Equal(t, 1, preflightCalls,
+		"preflight must run exactly once for the lifetime of the executor")
+}
+
+// TestHTTPExecutor_CSRFGetUnaffected asserts that GET requests
+// against CSRF-guarded paths do NOT trigger preflights — only
+// mutating methods do.
+func TestHTTPExecutor_CSRFGetUnaffected(t *testing.T) {
+	var preflightCalls int
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/api/v1/admin/system-info" {
+			preflightCalls++
+			w.WriteHeader(http.StatusOK)
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer srv.Close()
+
+	h := NewHTTPExecutor(srv.URL)
+	res := h.Execute(context.Background(), "GET",
+		"/api/v1/admin/users",
+		testbank.TestStep{ExpectStatus: 200, AuthMode: "none"})
+
+	require.True(t, res.Success)
+	assert.Equal(t, 0, preflightCalls,
+		"GET requests on /admin/* must NOT trigger CSRF preflight — "+
+			"only POST/PUT/PATCH/DELETE do")
+}
