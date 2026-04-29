@@ -585,3 +585,62 @@ project.
 `run_all_challenges.sh`.
 
 <!-- END no-session-termination addendum (CONST-036) -->
+
+<!-- BEGIN const035-strengthening-2026-04-29 -->
+
+## CONST-035 — End-User Usability Mandate (2026-04-29 strengthening)
+
+A test or Challenge that PASSES is a CLAIM that the tested behavior
+**works for the end user of the product**. The HelixAgent project
+has repeatedly hit the failure mode where every test ran green AND
+every Challenge reported PASS, yet most product features did not
+actually work — buggy challenge wrappers masked failed assertions,
+scripts checked file existence without executing the file,
+"reachability" tests tolerated timeouts, contracts were honest in
+advertising but broken in dispatch. **This MUST NOT recur.**
+
+Every PASS result MUST guarantee:
+
+a. **Quality** — the feature behaves correctly under inputs an end
+   user will send, including malformed input, edge cases, and
+   concurrency that real workloads produce.
+b. **Completion** — the feature is wired end-to-end from public
+   API surface down to backing infrastructure, with no stub /
+   placeholder / "wired lazily later" gaps that silently 503.
+c. **Full usability** — a CLI agent / SDK consumer / direct curl
+   client following the documented model IDs, request shapes, and
+   endpoints SUCCEEDS without having to know which of N internal
+   aliases the dispatcher actually accepts.
+
+A passing test that doesn't certify all three is a **bluff** and
+MUST be tightened, or marked `t.Skip("...SKIP-OK: #<ticket>")`
+so absence of coverage is loud rather than silent.
+
+### Bluff taxonomy (each pattern observed in HelixAgent and now forbidden)
+
+- **Wrapper bluff** — assertions PASS but the wrapper's exit-code
+  logic is buggy, marking the run FAILED (or the inverse: assertions
+  FAIL but the wrapper swallows them). Every aggregating wrapper MUST
+  use a robust counter (`! grep -qs "|FAILED|" "$LOG"` style) —
+  never inline arithmetic on a command that prints AND exits
+  non-zero.
+- **Contract bluff** — the system advertises a capability but
+  rejects it in dispatch. Every advertised capability MUST be
+  exercised by a test or Challenge that actually invokes it.
+- **Structural bluff** — `check_file_exists "foo_test.go"` passes
+  if the file is present but doesn't run the test or assert anything
+  about its content. File-existence checks MUST be paired with at
+  least one functional assertion.
+- **Comment bluff** — a code comment promises a behavior the code
+  doesn't actually have. Documentation written before / about code
+  MUST be re-verified against the code on every change touching the
+  documented function.
+- **Skip bluff** — `t.Skip("not running yet")` without a
+  `SKIP-OK: #<ticket>` marker silently passes. Every skip needs the
+  marker; CI fails on bare skips.
+
+The taxonomy is illustrative, not exhaustive. Every Challenge or
+test added going forward MUST pass an honest self-review against
+this taxonomy before being committed.
+
+<!-- END const035-strengthening-2026-04-29 -->
