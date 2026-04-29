@@ -13,8 +13,10 @@ import (
 	"net/http"
 	"os"
 	osexec "os/exec"
+	"os/signal"
 	"path/filepath"
 	"strings"
+	"syscall"
 	"time"
 
 	"digital.vasic.helixqa/pkg/analysis"
@@ -916,6 +918,15 @@ func (sp *SessionPipeline) Run(
 	// wandered into Settings → Accessibility). This is defence in
 	// depth — the LLM still shouldn't navigate into device settings,
 	// but if it does, the device never stays polluted.
+	//
+	// FIX-QA-2026-04-29-018 (signal-safe restore): defer alone
+	// doesn't fire on SIGKILL or unrecovered panics. Register a
+	// signal handler that restores on SIGINT/SIGTERM/SIGHUP too, so
+	// operator Ctrl-C / `pkill -TERM helixqa` still leaves the
+	// device clean. Fixes a 2026-04-29 user-reported repeat of the
+	// same font_scale=2.0 pollution when an in-progress session was
+	// stopped via SIGTERM.
+	var snapshots []*devicePreservedSettings
 	for _, device := range allDevices {
 		snap, err := captureDeviceSettings(ctx, device)
 		if err != nil {
@@ -925,7 +936,26 @@ func (sp *SessionPipeline) Run(
 			)
 			continue
 		}
+		snapshots = append(snapshots, snap)
 		defer snap.restore(context.Background())
+	}
+	if len(snapshots) > 0 {
+		sigCh := make(chan os.Signal, 1)
+		signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP)
+		go func() {
+			s, ok := <-sigCh
+			if !ok {
+				return
+			}
+			fmt.Printf("[pipeline] caught %s — running device-preserve restore before exit\n", s)
+			for _, snap := range snapshots {
+				snap.restore(context.Background())
+			}
+			// Re-raise the signal with the default disposition so
+			// the parent shell still sees the expected exit status.
+			signal.Reset(s)
+			_ = syscall.Kill(syscall.Getpid(), s.(syscall.Signal))
+		}()
 	}
 
 	for _, device := range allDevices {
