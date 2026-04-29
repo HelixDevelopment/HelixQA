@@ -200,7 +200,13 @@
           "action": "http: POST /api/v1/auth/refresh",
           "expected": "200 OK with a new access token",
           "_original_action": "POST /api/v1/auth/refresh with the refresh token from login",
-          "expect_status": 200
+          "expect_status": 200,
+          "body": {
+            "refresh_token": "placeholder-set-by-bank-patch"
+          },
+          "_patched_by": [
+            "bank-patch-default-bodies"
+          ]
         },
         {
           "name": "Use new token on protected endpoint",
@@ -235,14 +241,25 @@
           "expected": "200 OK with token",
           "auth": "admin",
           "_original_action": "POST /api/v1/auth/login with admin credentials",
-          "expect_status": 200
+          "expect_status": 200,
+          "body": {
+            "username": "admin",
+            "password": "admin123"
+          },
+          "_patched_by": [
+            "bank-patch-default-bodies"
+          ]
         },
         {
           "name": "Logout",
           "action": "http: POST /api/v1/auth/logout",
           "expected": "200 OK",
           "_original_action": "POST /api/v1/auth/logout with the obtained token in Authorization header",
-          "expect_status": 200
+          "expect_status": 200,
+          "body": {},
+          "_patched_by": [
+            "bank-patch-default-bodies"
+          ]
         },
         {
           "name": "Use logged-out token",
@@ -334,7 +351,14 @@
           "action": "http: POST /api/v1/auth/login",
           "expected": "200 OK with user-role JWT",
           "_original_action": "POST /api/v1/auth/login with regular user credentials",
-          "expect_status": 200
+          "expect_status": 200,
+          "body": {
+            "username": "admin",
+            "password": "admin123"
+          },
+          "_patched_by": [
+            "bank-patch-default-bodies"
+          ]
         },
         {
           "name": "Access admin system-info",
@@ -421,7 +445,14 @@
           "expected": "200 OK",
           "_original_action": "POST /api/v1/auth/change-password with token and body {\"current_password\":\"admin123\",\"new_password\":\"NewAdmin456!\"}",
           "expect_status": 200,
-          "auth": "admin"
+          "auth": "admin",
+          "body": {
+            "old_password": "admin123",
+            "new_password": "NewAdmin!23"
+          },
+          "_patched_by": [
+            "bank-patch-default-bodies"
+          ]
         },
         {
           "name": "Login with new password",
@@ -469,7 +500,14 @@
           "action": "http: POST /api/v1/auth/login",
           "expected": "After threshold, response becomes 429 Too Many Requests",
           "_original_action": "POST /api/v1/auth/login with wrong password 6 times in under 10 seconds",
-          "expect_status": 429
+          "expect_status": 429,
+          "body": {
+            "username": "admin",
+            "password": "admin123"
+          },
+          "_patched_by": [
+            "bank-patch-default-bodies"
+          ]
         },
         {
           "name": "Check rate limit headers",
@@ -502,7 +540,14 @@
           "expected": "200 OK with token",
           "auth": "admin",
           "_original_action": "POST /api/v1/auth/login with admin credentials",
-          "expect_status": 200
+          "expect_status": 200,
+          "body": {
+            "username": "admin",
+            "password": "admin123"
+          },
+          "_patched_by": [
+            "bank-patch-default-bodies"
+          ]
         },
         {
           "name": "Get current user",
@@ -563,7 +608,14 @@
           "expected": "200 OK with token",
           "auth": "admin",
           "_original_action": "POST /api/v1/auth/login with admin credentials",
-          "expect_status": 200
+          "expect_status": 200,
+          "body": {
+            "username": "admin",
+            "password": "admin123"
+          },
+          "_patched_by": [
+            "bank-patch-default-bodies"
+          ]
         },
         {
           "name": "Get permissions",
@@ -596,7 +648,14 @@
           "action": "http: POST /api/v1/auth/login",
           "expected": "400 Bad Request",
           "_original_action": "POST /api/v1/auth/login with body 'not valid json{'",
-          "expect_status": 400
+          "expect_status": 400,
+          "body": {
+            "username": "admin",
+            "password": "admin123"
+          },
+          "_patched_by": [
+            "bank-patch-default-bodies"
+          ]
         }
       ],
       "tags": [
@@ -981,7 +1040,14 @@
           "expected": "200 OK with token",
           "auth": "admin",
           "_original_action": "POST /api/v1/auth/login with admin credentials",
-          "expect_status": 200
+          "expect_status": 200,
+          "body": {
+            "username": "admin",
+            "password": "admin123"
+          },
+          "_patched_by": [
+            "bank-patch-default-bodies"
+          ]
         },
         {
           "name": "Create SMB storage root",
@@ -1024,7 +1090,14 @@
           "expected": "200 OK with token",
           "auth": "admin",
           "_original_action": "POST /api/v1/auth/login with admin credentials",
-          "expect_status": 200
+          "expect_status": 200,
+          "body": {
+            "username": "admin",
+            "password": "admin123"
+          },
+          "_patched_by": [
+            "bank-patch-default-bodies"
+          ]
         },
         {
           "name": "Create local storage root",
@@ -1065,7 +1138,14 @@
           "expected": "200 OK with token",
           "auth": "admin",
           "_original_action": "POST /api/v1/auth/login with admin credentials",
-          "expect_status": 200
+          "expect_status": 200,
+          "body": {
+            "username": "admin",
+            "password": "admin123"
+          },
+          "_patched_by": [
+            "bank-patch-default-bodies"
+          ]
         },
         {
           "name": "List storage roots",
@@ -1533,7 +1613,11 @@
           "expected": "200 OK or 202 Accepted with scan confirmation",
           "auth": "admin",
           "_original_action": "POST /api/v1/admin/storage/scan with admin token and storage root path",
-          "expect_status": 200
+          "expect_status": 200,
+          "body": {},
+          "_patched_by": [
+            "bank-patch-default-bodies"
+          ]
         }
       ],
       "tags": [
@@ -1646,7 +1730,14 @@
           "expected": "200 OK with token",
           "auth": "admin",
           "_original_action": "POST /api/v1/auth/login with admin credentials",
-          "expect_status": 200
+          "expect_status": 200,
+          "body": {
+            "username": "admin",
+            "password": "admin123"
+          },
+          "_patched_by": [
+            "bank-patch-default-bodies"
+          ]
         },
         {
           "name": "Queue a scan",
@@ -1654,7 +1745,13 @@
           "expected": "200 OK or 202 Accepted with scan job ID",
           "_original_action": "POST /api/v1/scans with body containing storage root ID",
           "expect_status": 200,
-          "auth": "admin"
+          "auth": "admin",
+          "body": {
+            "path": "/"
+          },
+          "_patched_by": [
+            "bank-patch-default-bodies"
+          ]
         }
       ],
       "tags": [
@@ -1679,7 +1776,13 @@
           "action": "http: POST /api/v1/scans",
           "expected": "Job ID returned",
           "_original_action": "POST /api/v1/scans",
-          "auth": "admin"
+          "auth": "admin",
+          "body": {
+            "path": "/"
+          },
+          "_patched_by": [
+            "bank-patch-default-bodies"
+          ]
         },
         {
           "name": "Check scan status",
@@ -1770,7 +1873,13 @@
           "action": "http: POST /api/v1/scans",
           "expected": "Job started",
           "_original_action": "POST /api/v1/scans",
-          "auth": "admin"
+          "auth": "admin",
+          "body": {
+            "path": "/"
+          },
+          "_patched_by": [
+            "bank-patch-default-bodies"
+          ]
         },
         {
           "name": "Poll scan status 3 times",
@@ -1842,7 +1951,13 @@
           "action": "http: POST /api/v1/scans",
           "expected": "Scan completes quickly with 0 files found",
           "_original_action": "POST /api/v1/scans with the new root ID",
-          "auth": "admin"
+          "auth": "admin",
+          "body": {
+            "path": "/"
+          },
+          "_patched_by": [
+            "bank-patch-default-bodies"
+          ]
         }
       ],
       "tags": [
@@ -2133,7 +2248,13 @@
           "_original_action": "POST /api/v1/scans with empty JSON body {}",
           "expect_status": 400,
           "expect_body_contains": "error",
-          "auth": "admin"
+          "auth": "admin",
+          "body": {
+            "path": "/"
+          },
+          "_patched_by": [
+            "bank-patch-default-bodies"
+          ]
         }
       ],
       "tags": [
@@ -2160,7 +2281,13 @@
           "expected": "401 Unauthorized",
           "_original_action": "POST /api/v1/scans with no Authorization header",
           "expect_status": 401,
-          "auth": "admin"
+          "auth": "admin",
+          "body": {
+            "path": "/"
+          },
+          "_patched_by": [
+            "bank-patch-default-bodies"
+          ]
         }
       ],
       "tags": [
@@ -2186,14 +2313,26 @@
           "action": "http: POST /api/v1/scans",
           "expected": "Scan started",
           "_original_action": "POST /api/v1/scans",
-          "auth": "admin"
+          "auth": "admin",
+          "body": {
+            "path": "/"
+          },
+          "_patched_by": [
+            "bank-patch-default-bodies"
+          ]
         },
         {
           "name": "Queue second scan immediately",
           "action": "http: POST /api/v1/scans",
           "expected": "Second scan queued or rejected (semaphore limits parallel scans)",
           "_original_action": "POST /api/v1/scans",
-          "auth": "admin"
+          "auth": "admin",
+          "body": {
+            "path": "/"
+          },
+          "_patched_by": [
+            "bank-patch-default-bodies"
+          ]
         }
       ],
       "tags": [
@@ -5385,7 +5524,14 @@
           "expected": "400 Bad Request",
           "_original_action": "POST /api/v1/collections with body 'not json'",
           "expect_status": 400,
-          "auth": "admin"
+          "auth": "admin",
+          "body": {
+            "name": "Default Collection",
+            "description": "Auto-generated by bank-patch-default-bodies"
+          },
+          "_patched_by": [
+            "bank-patch-default-bodies"
+          ]
         }
       ],
       "tags": [
@@ -5412,7 +5558,14 @@
           "expected": "400 Bad Request or 415 Unsupported Media Type",
           "_original_action": "PUT /api/v1/collections/{id} with Content-Type: text/plain and JSON body",
           "expect_status": 400,
-          "auth": "admin"
+          "auth": "admin",
+          "body": {
+            "name": "Default Collection",
+            "description": "Auto-generated by bank-patch-default-bodies"
+          },
+          "_patched_by": [
+            "bank-patch-default-bodies"
+          ]
         }
       ],
       "tags": [
@@ -6257,7 +6410,14 @@
           "action": "http: POST /api/v1/playlists",
           "expected": "Playlist with items created",
           "_original_action": "POST /api/v1/playlists and add 2 items",
-          "auth": "admin"
+          "auth": "admin",
+          "body": {
+            "name": "Default Playlist",
+            "description": "Auto-generated"
+          },
+          "_patched_by": [
+            "bank-patch-default-bodies"
+          ]
         },
         {
           "name": "Delete playlist",
@@ -6292,7 +6452,14 @@
           "expected": "400 Bad Request",
           "_original_action": "POST /api/v1/playlists with body '{broken json'",
           "expect_status": 400,
-          "auth": "admin"
+          "auth": "admin",
+          "body": {
+            "name": "Default Playlist",
+            "description": "Auto-generated"
+          },
+          "_patched_by": [
+            "bank-patch-default-bodies"
+          ]
         }
       ],
       "tags": [
@@ -6957,7 +7124,13 @@
           "action": "http: POST /api/v1/scans",
           "expected": "Scan started",
           "_original_action": "POST /api/v1/scans via HTTP",
-          "auth": "admin"
+          "auth": "admin",
+          "body": {
+            "path": "/"
+          },
+          "_patched_by": [
+            "bank-patch-default-bodies"
+          ]
         },
         {
           "name": "Listen for progress events",
@@ -7216,7 +7389,14 @@
           "expected": "200 OK with token",
           "auth": "admin",
           "_original_action": "POST /api/v1/auth/login with admin credentials",
-          "expect_status": 200
+          "expect_status": 200,
+          "body": {
+            "username": "admin",
+            "password": "admin123"
+          },
+          "_patched_by": [
+            "bank-patch-default-bodies"
+          ]
         },
         {
           "name": "Get system info",
@@ -7490,7 +7670,14 @@
           "action": "http: POST /api/v1/auth/login",
           "expected": "403 Forbidden or 401 Unauthorized with account locked message",
           "_original_action": "POST /api/v1/auth/login with locked user credentials",
-          "expect_status": 403
+          "expect_status": 403,
+          "body": {
+            "username": "admin",
+            "password": "admin123"
+          },
+          "_patched_by": [
+            "bank-patch-default-bodies"
+          ]
         },
         {
           "name": "Unlock account",
@@ -7810,7 +7997,14 @@
           "_original_action": "POST /api/v1/collections with body '{\"name: broken}' and auth token",
           "expect_status": 400,
           "expect_body_contains": "error",
-          "auth": "admin"
+          "auth": "admin",
+          "body": {
+            "name": "Default Collection",
+            "description": "Auto-generated by bank-patch-default-bodies"
+          },
+          "_patched_by": [
+            "bank-patch-default-bodies"
+          ]
         }
       ],
       "tags": [
@@ -7836,7 +8030,14 @@
           "expected": "400 Bad Request or 415 Unsupported Media Type",
           "_original_action": "POST /api/v1/collections with Content-Type: application/xml and JSON body",
           "expect_status": 400,
-          "auth": "admin"
+          "auth": "admin",
+          "body": {
+            "name": "Default Collection",
+            "description": "Auto-generated by bank-patch-default-bodies"
+          },
+          "_patched_by": [
+            "bank-patch-default-bodies"
+          ]
         }
       ],
       "tags": [
@@ -8001,7 +8202,14 @@
           "expected": "413 Request Entity Too Large or connection reset",
           "_original_action": "POST /api/v1/collections with 50MB JSON body and auth token",
           "expect_status": 413,
-          "auth": "admin"
+          "auth": "admin",
+          "body": {
+            "name": "Default Collection",
+            "description": "Auto-generated by bank-patch-default-bodies"
+          },
+          "_patched_by": [
+            "bank-patch-default-bodies"
+          ]
         }
       ],
       "tags": [
