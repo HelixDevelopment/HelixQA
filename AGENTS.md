@@ -473,71 +473,115 @@ Both MUST be wired into the project's CI / `run_all_challenges.sh`.
 <!-- END host-power-management addendum (CONST-033) -->
 
 
-## MANDATORY ANTI-BLUFF COVENANT — END-USER QUALITY GUARANTEE (User mandate, 2026-04-28)
 
-**Forensic anchor — direct user mandate (verbatim):**
+<!-- CONST-035 anti-bluff addendum (cascaded) -->
 
-> "We had been in position that all tests do execute with success and all Challenges as well, but in reality the most of the features does not work and can't be used! This MUST NOT be the case and execution of tests and Challenges MUST guarantee the quality, the completion and full usability by end users of the product!"
+## CONST-035 — Anti-Bluff Tests & Challenges (mandatory; inherits from root)
 
-This is the historical origin of the project's anti-bluff covenant.
-Every test, every Challenge, every gate, every mutation pair exists
-to make the failure mode (PASS on broken-for-end-user feature)
-mechanically impossible.
+Tests and Challenges in this submodule MUST verify the product, not
+the LLM's mental model of the product. A test that passes when the
+feature is broken is worse than a missing test — it gives false
+confidence and lets defects ship to users. Functional probes at the
+protocol layer are mandatory:
 
-**Operative rule:** the bar for shipping is **not** "tests pass"
-but **"users can use the feature."** Every PASS in this codebase
-MUST carry positive evidence captured during execution that the
-feature works for the end user. Metadata-only PASS, configuration-
-only PASS, "absence-of-error" PASS, and grep-based PASS without
-runtime evidence are all critical defects regardless of how green
-the summary line looks.
+- TCP-open is the FLOOR, not the ceiling. Postgres → execute
+  `SELECT 1`. Redis → `PING` returns `PONG`. ChromaDB → `GET
+  /api/v1/heartbeat` returns 200. MCP server → TCP connect + valid
+  JSON-RPC handshake. HTTP gateway → real request, real response,
+  non-empty body.
+- Container `Up` is NOT application healthy. A `docker/podman ps`
+  `Up` status only means PID 1 is running; the application may be
+  crash-looping internally.
+- No mocks/fakes outside unit tests (already CONST-030; CONST-035
+  raises the cost of a mock-driven false pass to the same severity
+  as a regression).
+- Re-verify after every change. Don't assume a previously-passing
+  test still verifies the same scope after a refactor.
+- Verification of CONST-035 itself: deliberately break the feature
+  (e.g. `kill <service>`, swap a password). The test MUST fail. If
+  it still passes, the test is non-conformant and MUST be tightened.
 
-**Tests AND Challenges (HelixQA) are bound equally** — a Challenge
-that scores PASS on a non-functional feature is the same class of
-defect as a unit test that does. Both must produce positive end-
-user evidence; both are subject to the §8.1 five-constraint rule
-and §11 captured-evidence requirement.
+## CONST-033 clarification — distinguishing host events from sluggishness
 
-**Canonical authority:** parent
-[`docs/guides/ATMOSPHERE_CONSTITUTION.md`](../../docs/guides/ATMOSPHERE_CONSTITUTION.md)
-§8.1 (positive-evidence-only validation) + §11 (bleeding-edge
-ultra-perfection quality bar) + §11.3 (the "no bluff" CLAUDE.md /
-AGENTS.md mandate) + **§11.4 (this end-user-quality-guarantee
-forensic anchor — propagation requirement enforced by pre-build
-gate `CM-COVENANT-PROPAGATION`)**.
+Heavy container builds (BuildKit pulling many GB of layers, parallel
+podman/docker compose-up across many services) can make the host
+**appear** unresponsive — high load average, slow SSH, watchers
+timing out. **This is NOT a CONST-033 violation.** Suspend / hibernate
+/ logout are categorically different events. Distinguish via:
 
-Non-compliance is a release blocker regardless of context.
+- `uptime` — recent boot? if so, the host actually rebooted.
+- `loginctl list-sessions` — session(s) still active? if yes, no logout.
+- `journalctl ... | grep -i 'will suspend\|hibernate'` — zero broadcasts
+  since the CONST-033 fix means no suspend ever happened.
+- `dmesg | grep -i 'killed process\|out of memory'` — OOM kills are
+  also NOT host-power events; they're memory-pressure-induced and
+  require their own separate fix (lower per-container memory limits,
+  reduce parallelism).
 
+A sluggish host under build pressure recovers when the build finishes;
+a suspended host requires explicit unsuspend (and CONST-033 should
+make that impossible by hardening `IdleAction=ignore` +
+`HandleSuspendKey=ignore` + masked `sleep.target`,
+`suspend.target`, `hibernate.target`, `hybrid-sleep.target`).
 
-## MANDATORY §12 HOST-SESSION SAFETY — INCIDENT #2 ANCHOR (2026-04-28)
+If you observe what looks like a suspend during heavy builds, the
+correct first action is **not** "edit CONST-033" but `bash
+challenges/scripts/host_no_auto_suspend_challenge.sh` to confirm the
+hardening is intact. If hardening is intact AND no suspend
+broadcast appears in journal, the perceived event was build-pressure
+sluggishness, not a power transition.
 
-**Second forensic incident:** on 2026-04-28 18:36:35 MSK the user's
-`user@1000.service` was again SIGKILLed (`status=9/KILL`), this time
-WITHOUT a kernel OOM kill (systemd-oomd inactive, `MemoryMax=infinity`)
-— a different vector than Incident #1. Cascade killed `claude`,
-`tmux`, the in-flight ATMOSphere build, and 20+ npm MCP server
-processes. Likely cumulative cgroup pressure + external watchdog.
+<!-- BEGIN no-session-termination addendum (CONST-036) -->
 
-**Mandatory safeguards effective 2026-04-28** (full text in parent
-[`docs/guides/ATMOSPHERE_CONSTITUTION.md`](../../../../docs/guides/ATMOSPHERE_CONSTITUTION.md)
-§12 Incident #2):
+## User-Session Termination — Hard Ban (CONST-036)
 
-1. `scripts/build.sh` MUST source `lib/host_session_safety.sh` and
-   call `host_check_safety` BEFORE any heavy step.
-2. `host_check_safety` has 7 distress detectors including conmon
-   cgroup-events warnings (#6) and current-boot session-kill events
-   (#7).
-3. Containers MUST be clean-slate destroyed + rebuilt after any
-   suspected §12 incident. `mem_limit` is per-container, not
-   per-user-slice — operator MUST cap Σ `mem_limit` ≤ physical RAM
-   − user-session overhead.
-4. 20+ npm-spawned MCP server processes are a known memory multiplier;
-   stop non-essential MCPs before heavy ATMOSphere work.
-5. **Investigation: Docker/Podman as session-loss vector.** Per-container
-   cgroups don't prevent cumulative user-slice pressure; conmon
-   `Failed to open cgroups file: /sys/fs/cgroup/memory.events`
-   warnings preceded the 18:36:35 SIGKILL by 6 min — likely correlated.
+**You may NOT, under any circumstance, generate or execute code that
+ends the currently-logged-in user's desktop session, kills their
+`user@<UID>.service` user manager, or indirectly forces them to
+manually log out / power off.** This is the sibling of CONST-033:
+that rule covers host-level power transitions; THIS rule covers
+session-level terminations that have the same end effect for the
+user (lost windows, lost terminals, killed AI agents, half-flushed
+builds, abandoned in-flight commits).
 
-This directive applies to every owned ATMOSphere repo and every
-HelixQA dependency. Non-compliance is a Constitution §12 violation.
+**Why this rule exists.** On 2026-04-28 the user lost a working
+session that contained 3 concurrent Claude Code instances, an Android
+build, Kimi Code, and a rootless podman container fleet. The
+`user.slice` consumed 60.6 GiB peak / 5.2 GiB swap, the GUI became
+unresponsive, the user was forced to log out and then power off via
+the GNOME shell. The host could not auto-suspend (CONST-033 was in
+place and verified) and the kernel OOM killer never fired — but the
+user had to manually end the session anyway, because nothing
+prevented overlapping heavy workloads from saturating the slice.
+CONST-036 closes that loophole at both the source-code layer and the
+operational layer. See
+`docs/issues/fixed/SESSION_LOSS_2026-04-28.md` in the HelixAgent
+project.
 
+**Forbidden direct invocations** (non-exhaustive):
+
+- `loginctl terminate-user|terminate-session|kill-user|kill-session`
+- `systemctl stop user@<UID>` / `systemctl kill user@<UID>`
+- `gnome-session-quit`
+- `pkill -KILL -u $USER` / `killall -u $USER`
+- `dbus-send` / `busctl` calls to `org.gnome.SessionManager.Logout|Shutdown|Reboot`
+- `echo X > /sys/power/state`
+- `/usr/bin/poweroff`, `/usr/bin/reboot`, `/usr/bin/halt`
+
+**Indirect-pressure clauses:**
+
+1. Do not spawn parallel heavy workloads casually; check `free -h`
+   first; keep `user.slice` under 70% of physical RAM.
+2. Long-lived background subagents go in `system.slice`. Rootless
+   podman containers die with the user manager.
+3. Document AI-agent concurrency caps in CLAUDE.md.
+4. Never script "log out and back in" recovery flows.
+
+**Defence:** every project ships
+`scripts/host-power-management/check-no-session-termination-calls.sh`
+(static scanner) and
+`challenges/scripts/no_session_termination_calls_challenge.sh`
+(challenge wrapper). Both MUST be wired into the project's CI /
+`run_all_challenges.sh`.
+
+<!-- END no-session-termination addendum (CONST-036) -->
