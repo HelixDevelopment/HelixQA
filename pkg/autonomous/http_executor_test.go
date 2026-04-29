@@ -481,6 +481,53 @@ func TestHTTPExecutor_CSRFCachedAcrossCalls(t *testing.T) {
 		"preflight must run exactly once for the lifetime of the executor")
 }
 
+// TestHTTPExecutor_ExplicitSkipHonored asserts that a step with
+// _skip: true is SKIPPED before any HTTP traffic, with the
+// _skip_reason surfaced in the result message.
+//
+// Article XI §11.5 anchor: removing this gate causes destructive
+// or fixture-required steps to actually run on shared
+// infrastructure (e.g. changing the admin password). The check
+// IS load-bearing.
+func TestHTTPExecutor_ExplicitSkipHonored(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		t.Errorf("server MUST NOT be reached for a _skip step; got %s %s", r.Method, r.URL.Path)
+	}))
+	defer srv.Close()
+
+	h := NewHTTPExecutor(srv.URL)
+	res := h.Execute(context.Background(), "POST",
+		"/api/v1/auth/change-password",
+		testbank.TestStep{
+			Skip:       true,
+			SkipReason: "destructive on shared catalog-api",
+		})
+
+	require.True(t, res.Skipped, "explicit _skip must yield Skipped=true; got %#v", res)
+	require.False(t, res.Success, "skipped result must not also be Success")
+	assert.Contains(t, res.Message, "SKIP-OK:",
+		"skip message must carry the SKIP-OK marker")
+	assert.Contains(t, res.Message, "destructive on shared catalog-api",
+		"skip message must include the SkipReason verbatim")
+}
+
+// TestHTTPExecutor_ExplicitSkipWithoutReason still skips, but
+// surfaces a clear "untriaged" marker so the bluff scanner can
+// flag bank entries that are skipped without justification.
+func TestHTTPExecutor_ExplicitSkipWithoutReason(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		t.Errorf("server MUST NOT be reached for a _skip step")
+	}))
+	defer srv.Close()
+
+	h := NewHTTPExecutor(srv.URL)
+	res := h.Execute(context.Background(), "GET", "/x",
+		testbank.TestStep{Skip: true})
+	require.True(t, res.Skipped)
+	assert.Contains(t, res.Message, "UNTRIAGED",
+		"missing reason must surface a fail-loud UNTRIAGED token so reviewers notice")
+}
+
 // TestHTTPExecutor_UnresolvedPlaceholderSkips asserts that a
 // request whose path contains an unresolved {var} placeholder is
 // SKIPPED with a SKIP-OK marker, NOT failed. Article XI §11.5: a

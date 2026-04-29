@@ -142,6 +142,22 @@ func (h *HTTPExecutor) Execute(
 	if h.BaseURL == "" {
 		return ActionResult{Success: false, Message: "http: BaseURL not configured (set HELIXQA_HTTP_BASE_URL)"}
 	}
+	// Article XI §11.5: explicit step-level skip honored first.
+	// A bank entry can declare _skip: true with _skip_reason to
+	// document a deliberate non-execution (destructive operation
+	// on shared infrastructure, missing fixture, converter
+	// limitation, etc.). This is strictly more honest than letting
+	// the request go out and producing a confusing PASS/FAIL.
+	if step.Skip {
+		reason := step.SkipReason
+		if reason == "" {
+			reason = "step marked _skip without reason — treat as SKIP-OK: #UNTRIAGED"
+		}
+		return ActionResult{
+			Skipped: true,
+			Message: fmt.Sprintf("http: step skipped — SKIP-OK: %s", reason),
+		}
+	}
 	// Article XI §11.5: detect unresolved `{var}` placeholders left
 	// over from the bank converter. The bank entry's prose describes
 	// "GET /scans/{job_id}" expecting the converter to substitute

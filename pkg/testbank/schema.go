@@ -243,6 +243,19 @@ type TestStep struct {
 	// HTTP response body (case-sensitive). Empty means
 	// "do not check".
 	ExpectBodyContains string `yaml:"expect_body_contains,omitempty" json:"expect_body_contains,omitempty"`
+
+	// Skip, when true, causes the runner to mark this step
+	// SKIPPED with the reason in SkipReason instead of executing
+	// it. Article XI §11.5: an explicit, reasoned skip is
+	// strictly more honest than a test that runs and reports a
+	// confusing PASS or FAIL because of bank-side limitations
+	// (missing fixture data, converter limitations, destructive
+	// side-effects on a shared environment).
+	Skip bool `yaml:"_skip,omitempty" json:"_skip,omitempty"`
+
+	// SkipReason carries the human-readable explanation for the
+	// skip. Required when Skip is true.
+	SkipReason string `yaml:"_skip_reason,omitempty" json:"_skip_reason,omitempty"`
 }
 
 // ParseAction parses the action string and returns the type and value.
