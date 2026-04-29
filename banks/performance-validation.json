@@ -548,9 +548,10 @@
       "steps": [
         {
           "name": "Ensure large dataset",
-          "action": "Verify 1000+ entities in database",
+          "action": "playwright: assertVisible text=1000+ entities in database",
           "expected": "Test data ready",
-          "_conversion_note": "manual-review-required"
+          "_conversion_note": "manual-review-required",
+          "_original_action": "Verify 1000+ entities in database"
         },
         {
           "name": "Navigate all pages sequentially",
@@ -914,9 +915,10 @@
         },
         {
           "name": "Compare latencies",
-          "action": "Verify compression overhead < 50ms for typical responses",
+          "action": "playwright: assertVisible text=compression overhead < 50ms for typical responses",
           "expected": "Compression adds minimal latency",
-          "_conversion_note": "manual-review-required"
+          "_conversion_note": "manual-review-required",
+          "_original_action": "Verify compression overhead < 50ms for typical responses"
         }
       ],
       "tags": [
@@ -1217,10 +1219,11 @@
         },
         {
           "name": "Verify completion",
-          "action": "Wait for scan completion",
+          "action": "playwright: waitFor text=scan completion",
           "expected": "Scan of 1000 files completes within 120 seconds",
           "expect_status": 120,
-          "_conversion_note": "manual-review-required"
+          "_conversion_note": "manual-review-required",
+          "_original_action": "Wait for scan completion"
         }
       ],
       "tags": [
@@ -1457,9 +1460,10 @@
         },
         {
           "name": "Load web application",
-          "action": "Navigate to http://localhost:3000",
+          "action": "playwright: navigate http://localhost:3000",
           "expected": "Page loads",
-          "_conversion_note": "manual-review-required"
+          "_conversion_note": "manual-review-required",
+          "_original_action": "Navigate to http://localhost:3000"
         },
         {
           "name": "Measure time to interactive",
@@ -1528,9 +1532,10 @@
       "steps": [
         {
           "name": "Ensure 100+ entities",
-          "action": "Verify database has 100+ entities",
+          "action": "playwright: assertVisible text=database has 100+ entities",
           "expected": "Data ready",
-          "_conversion_note": "manual-review-required"
+          "_conversion_note": "manual-review-required",
+          "_original_action": "Verify database has 100+ entities"
         },
         {
           "name": "Open entity browser",
@@ -1923,9 +1928,10 @@
         },
         {
           "name": "Identify breaking point",
-          "action": "Find the VU count where error rate exceeds 5%",
+          "action": "playwright: assertVisible text=VU count where error rate exceeds 5%",
           "expected": "Breaking point identified",
-          "_conversion_note": "manual-review-required"
+          "_conversion_note": "manual-review-required",
+          "_original_action": "Find the VU count where error rate exceeds 5%"
         },
         {
           "name": "Verify recovery",

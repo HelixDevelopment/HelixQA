@@ -97,9 +97,10 @@
         },
         {
           "name": "Wait for discovery results",
-          "action": "Wait for network scan to complete (up to 30s)",
+          "action": "playwright: waitFor text=network scan to complete (up to 30s)",
           "expected": "Either discovered server URLs appear as selectable buttons below, or 'No servers found on the network' error shown",
-          "_conversion_note": "manual-review-required"
+          "_conversion_note": "manual-review-required",
+          "_original_action": "Wait for network scan to complete (up to 30s)"
         },
         {
           "name": "Select discovered server",
@@ -171,15 +172,17 @@
       "steps": [
         {
           "name": "Enter wrong username",
-          "action": "Type 'wronguser' in username field",
+          "action": "playwright: fill input[name=username] wronguser",
           "expected": "Text entered",
-          "_conversion_note": "manual-review-required"
+          "_conversion_note": "manual-review-required",
+          "_original_action": "Type 'wronguser' in username field"
         },
         {
           "name": "Enter wrong password",
-          "action": "Type 'wrongpassword' in password field",
+          "action": "playwright: fill input[name=password] wrongpassword",
           "expected": "Password masked",
-          "_conversion_note": "manual-review-required"
+          "_conversion_note": "manual-review-required",
+          "_original_action": "Type 'wrongpassword' in password field"
         },
         {
           "name": "Tap Sign In",
@@ -245,9 +248,10 @@
       "steps": [
         {
           "name": "Enter username",
-          "action": "Type 'admin' in username field",
+          "action": "playwright: fill input[name=username] admin",
           "expected": "Username entered",
-          "_conversion_note": "manual-review-required"
+          "_conversion_note": "manual-review-required",
+          "_original_action": "Type 'admin' in username field"
         },
         {
           "name": "Leave password empty",
@@ -282,9 +286,10 @@
       "steps": [
         {
           "name": "Enter password",
-          "action": "Type 'testpassword' in password field",
+          "action": "playwright: fill input[name=password] testpassword",
           "expected": "Password shown as dots (masked)",
-          "_conversion_note": "manual-review-required"
+          "_conversion_note": "manual-review-required",
+          "_original_action": "Type 'testpassword' in password field"
         },
         {
           "name": "Tap visibility icon",
@@ -418,9 +423,10 @@
       "steps": [
         {
           "name": "Check biometric support",
-          "action": "Verify device has biometric hardware (fingerprint sensor)",
+          "action": "playwright: assertVisible text=device has biometric hardware (fingerprint sensor)",
           "expected": "BiometricHelper.isAvailable() returns true on supported devices",
-          "_conversion_note": "manual-review-required"
+          "_conversion_note": "manual-review-required",
+          "_original_action": "Verify device has biometric hardware (fingerprint sensor)"
         },
         {
           "name": "Trigger biometric prompt",
@@ -672,9 +678,10 @@
       "steps": [
         {
           "name": "Enter invalid URL",
-          "action": "Type 'not-a-url' in server URL field",
+          "action": "playwright: fill input[name=server] not-a-url",
           "expected": "Text entered",
-          "_conversion_note": "manual-review-required"
+          "_conversion_note": "manual-review-required",
+          "_original_action": "Type 'not-a-url' in server URL field"
         },
         {
           "name": "Tap Connect",
@@ -795,9 +802,10 @@
         },
         {
           "name": "Wait for load",
-          "action": "Wait for data to arrive",
+          "action": "playwright: waitFor text=data to arrive",
           "expected": "Loading indicator disappears, content sections appear",
-          "_conversion_note": "manual-review-required"
+          "_conversion_note": "manual-review-required",
+          "_original_action": "Wait for data to arrive"
         }
       ],
       "tags": [
@@ -1066,9 +1074,10 @@
       "steps": [
         {
           "name": "Inspect carousel layout",
-          "action": "Observe horizontal spacing between media cards",
+          "action": "playwright: assertVisible text=horizontal spacing between media cards",
           "expected": "Cards have 12dp horizontal spacing, 16dp padding from screen edges",
-          "_conversion_note": "manual-review-required"
+          "_conversion_note": "manual-review-required",
+          "_original_action": "Observe horizontal spacing between media cards"
         }
       ],
       "tags": [
@@ -1228,9 +1237,10 @@
       "steps": [
         {
           "name": "Verify color scheme",
-          "action": "Observe home screen color usage",
+          "action": "playwright: assertVisible text=home screen color usage",
           "expected": "Material 3 color scheme applied: primary color for ratings, surfaceVariant for card placeholders, errorContainer for error cards",
-          "_conversion_note": "manual-review-required"
+          "_conversion_note": "manual-review-required",
+          "_original_action": "Observe home screen color usage"
         }
       ],
       "tags": [
@@ -1278,9 +1288,10 @@
       "steps": [
         {
           "name": "Type search query",
-          "action": "Type 'Matrix' in the search field",
+          "action": "playwright: fill input[name=search] Matrix",
           "expected": "Debounced search triggers after typing",
-          "_conversion_note": "manual-review-required"
+          "_conversion_note": "manual-review-required",
+          "_original_action": "Type 'Matrix' in the search field"
         },
         {
           "name": "Verify results",
@@ -1310,9 +1321,10 @@
       "steps": [
         {
           "name": "Type search query",
-          "action": "Type 'Metallica' in the search field",
+          "action": "playwright: fill input[name=search] Metallica",
           "expected": "Search triggers",
-          "_conversion_note": "manual-review-required"
+          "_conversion_note": "manual-review-required",
+          "_original_action": "Type 'Metallica' in the search field"
         },
         {
           "name": "Verify results",
@@ -1378,9 +1390,10 @@
       "steps": [
         {
           "name": "Search for a common term",
-          "action": "Type 'the' in search field",
+          "action": "playwright: fill input[name=search] the",
           "expected": "Multiple results appear",
-          "_conversion_note": "manual-review-required"
+          "_conversion_note": "manual-review-required",
+          "_original_action": "Type 'the' in search field"
         },
         {
           "name": "Verify result card layout",
@@ -1410,9 +1423,10 @@
       "steps": [
         {
           "name": "Type nonsense query",
-          "action": "Type 'xyzzy12345nonexistent' in search field",
+          "action": "playwright: fill input[name=search] xyzzy12345nonexistent",
           "expected": "Search completes with no matches",
-          "_conversion_note": "manual-review-required"
+          "_conversion_note": "manual-review-required",
+          "_original_action": "Type 'xyzzy12345nonexistent' in search field"
         },
         {
           "name": "Verify empty results",
@@ -1447,9 +1461,10 @@
         },
         {
           "name": "Wait for results",
-          "action": "Wait for API response",
+          "action": "playwright: waitFor text=API response",
           "expected": "Spinner replaced by results list",
-          "_conversion_note": "manual-review-required"
+          "_conversion_note": "manual-review-required",
+          "_original_action": "Wait for API response"
         }
       ],
       "tags": [
@@ -1472,9 +1487,10 @@
       "steps": [
         {
           "name": "Enter query",
-          "action": "Type 'Matrix' in search field",
+          "action": "playwright: fill input[name=search] Matrix",
           "expected": "Clear (X) icon appears as trailing icon",
-          "_conversion_note": "manual-review-required"
+          "_conversion_note": "manual-review-required",
+          "_original_action": "Type 'Matrix' in search field"
         },
         {
           "name": "Tap clear",
@@ -2077,9 +2093,10 @@
       "steps": [
         {
           "name": "Search with query and filter",
-          "action": "Type 'action' in search and filter by media_type='movie'",
+          "action": "playwright: fill input[name=search] action",
           "expected": "Only movies matching 'action' query returned",
-          "_conversion_note": "manual-review-required"
+          "_conversion_note": "manual-review-required",
+          "_original_action": "Type 'action' in search and filter by media_type='movie'"
         }
       ],
       "tags": [
@@ -2102,15 +2119,17 @@
       "steps": [
         {
           "name": "Type special characters",
-          "action": "Type '!@#$%^&*()' in search field",
+          "action": "playwright: fill input[name=search] !@#$%^&*()",
           "expected": "Search handles gracefully, no crash",
-          "_conversion_note": "manual-review-required"
+          "_conversion_note": "manual-review-required",
+          "_original_action": "Type '!@#$%^&*()' in search field"
         },
         {
           "name": "Check results",
-          "action": "Verify app state",
+          "action": "playwright: assertVisible text=app state",
           "expected": "Empty results or matching results, no error crash",
-          "_conversion_note": "manual-review-required"
+          "_conversion_note": "manual-review-required",
+          "_original_action": "Verify app state"
         }
       ],
       "tags": [
@@ -2158,9 +2177,10 @@
       "steps": [
         {
           "name": "Type single character",
-          "action": "Type 'a' in search field",
+          "action": "playwright: fill input[name=search] a",
           "expected": "Search executes, returns items starting with or containing 'a'",
-          "_conversion_note": "manual-review-required"
+          "_conversion_note": "manual-review-required",
+          "_original_action": "Type 'a' in search field"
         }
       ],
       "tags": [
@@ -2213,9 +2233,10 @@
       "steps": [
         {
           "name": "Search for TV show",
-          "action": "Type 'Breaking Bad' in search field",
+          "action": "playwright: fill input[name=search] Breaking Bad",
           "expected": "Results include Breaking Bad with tv_show media type",
-          "_conversion_note": "manual-review-required"
+          "_conversion_note": "manual-review-required",
+          "_original_action": "Type 'Breaking Bad' in search field"
         }
       ],
       "tags": [
@@ -4532,15 +4553,17 @@
       "steps": [
         {
           "name": "Check theme on Android 12+",
-          "action": "Verify Material 3 dynamic colors applied from wallpaper",
+          "action": "playwright: assertVisible text=Material 3 dynamic colors applied from wallpaper",
           "expected": "App colors derived from system wallpaper (dynamic theming on API 31+)",
-          "_conversion_note": "manual-review-required"
+          "_conversion_note": "manual-review-required",
+          "_original_action": "Verify Material 3 dynamic colors applied from wallpaper"
         },
         {
           "name": "Check theme on older Android",
-          "action": "Verify fallback Material 3 theme",
+          "action": "playwright: assertVisible text=fallback Material 3 theme",
           "expected": "Default Material 3 color scheme applied",
-          "_conversion_note": "manual-review-required"
+          "_conversion_note": "manual-review-required",
+          "_original_action": "Verify fallback Material 3 theme"
         }
       ],
       "tags": [
@@ -5193,9 +5216,10 @@
       "steps": [
         {
           "name": "Check sync worker",
-          "action": "Verify SyncWorker is enqueued with WorkManager",
+          "action": "playwright: assertVisible text=SyncWorker is enqueued with WorkManager",
           "expected": "Periodic sync work request scheduled",
-          "_conversion_note": "manual-review-required"
+          "_conversion_note": "manual-review-required",
+          "_original_action": "Verify SyncWorker is enqueued with WorkManager"
         },
         {
           "name": "Verify sync execution",

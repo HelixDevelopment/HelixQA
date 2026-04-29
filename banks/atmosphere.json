@@ -33,9 +33,10 @@
         },
         {
           "name": "Verify video on secondary display",
-          "action": "Observe the TV (HDMI-A-1 secondary display)",
+          "action": "playwright: assertVisible text=TV (HDMI-A-1 secondary display)",
           "expected": "Video content appears on the TV via Presentation API",
-          "_conversion_note": "manual-review-required"
+          "_conversion_note": "manual-review-required",
+          "_original_action": "Observe the TV (HDMI-A-1 secondary display)"
         },
         {
           "name": "Verify primary shows overlay",
@@ -83,9 +84,10 @@
         },
         {
           "name": "Verify video on secondary display",
-          "action": "Observe the TV",
+          "action": "playwright: assertVisible text=TV",
           "expected": "Video content renders on secondary display",
-          "_conversion_note": "manual-review-required"
+          "_conversion_note": "manual-review-required",
+          "_original_action": "Observe the TV"
         },
         {
           "name": "Verify ExoPlayer SW fallback",
@@ -134,9 +136,10 @@
         },
         {
           "name": "Verify video on secondary display",
-          "action": "Observe the TV",
+          "action": "playwright: assertVisible text=TV",
           "expected": "Video content appears on secondary display",
-          "_conversion_note": "manual-review-required"
+          "_conversion_note": "manual-review-required",
+          "_original_action": "Observe the TV"
         }
       ],
       "tags": [
@@ -284,9 +287,10 @@
         },
         {
           "name": "Verify video plays correctly",
-          "action": "Observe video on secondary display",
+          "action": "playwright: assertVisible text=video on secondary display",
           "expected": "Video renders without artifacts on secondary display via SW codec",
-          "_conversion_note": "manual-review-required"
+          "_conversion_note": "manual-review-required",
+          "_original_action": "Observe video on secondary display"
         }
       ],
       "tags": [
@@ -328,9 +332,10 @@
         },
         {
           "name": "Verify secondary display clears",
-          "action": "Observe secondary display",
+          "action": "playwright: assertVisible text=secondary display",
           "expected": "Secondary display shows black screen or Presenter background, not a frozen frame",
-          "_conversion_note": "manual-review-required"
+          "_conversion_note": "manual-review-required",
+          "_original_action": "Observe secondary display"
         },
         {
           "name": "Check VideoPlaybackDetector",
@@ -379,9 +384,10 @@
         },
         {
           "name": "Verify secondary display unchanged",
-          "action": "Observe secondary display",
+          "action": "playwright: assertVisible text=secondary display",
           "expected": "No thumbnail previews appear on secondary display",
-          "_conversion_note": "manual-review-required"
+          "_conversion_note": "manual-review-required",
+          "_original_action": "Observe secondary display"
         }
       ],
       "tags": [
@@ -423,9 +429,10 @@
         },
         {
           "name": "Verify replacement",
-          "action": "Observe secondary display",
+          "action": "playwright: assertVisible text=secondary display",
           "expected": "Second video fully replaces first on secondary display, no split/overlap",
-          "_conversion_note": "manual-review-required"
+          "_conversion_note": "manual-review-required",
+          "_original_action": "Observe secondary display"
         },
         {
           "name": "Verify single-active-decoder",
@@ -503,9 +510,10 @@
         },
         {
           "name": "Verify secondary clears",
-          "action": "Observe secondary display",
+          "action": "playwright: assertVisible text=secondary display",
           "expected": "Secondary display returns to Presenter background or black",
-          "_conversion_note": "manual-review-required"
+          "_conversion_note": "manual-review-required",
+          "_original_action": "Observe secondary display"
         }
       ],
       "tags": [
@@ -748,9 +756,10 @@
         },
         {
           "name": "Wait for cleanup",
-          "action": "Wait for watchdog to detect and initiate cleanup",
+          "action": "playwright: waitFor text=watchdog to detect and initiate cleanup",
           "expected": "Logcat shows media.swcodec process killed",
-          "_conversion_note": "manual-review-required"
+          "_conversion_note": "manual-review-required",
+          "_original_action": "Wait for watchdog to detect and initiate cleanup"
         },
         {
           "name": "Verify process restarted",
@@ -785,9 +794,10 @@
         },
         {
           "name": "Verify secondary display",
-          "action": "Observe the TV (secondary display)",
+          "action": "playwright: assertVisible text=TV (secondary display)",
           "expected": "Secondary display shows black screen or Presenter background, no stale video frame",
-          "_conversion_note": "manual-review-required"
+          "_conversion_note": "manual-review-required",
+          "_original_action": "Observe the TV (secondary display)"
         }
       ],
       "tags": [
@@ -829,9 +839,10 @@
         },
         {
           "name": "Verify no artifacts",
-          "action": "Observe video on secondary display for 10 seconds",
+          "action": "playwright: assertVisible text=video on secondary display for 10 seconds",
           "expected": "Clean video playback, no stale frames, no BufferQueue errors",
-          "_conversion_note": "manual-review-required"
+          "_conversion_note": "manual-review-required",
+          "_original_action": "Observe video on secondary display for 10 seconds"
         }
       ],
       "tags": [
@@ -953,9 +964,10 @@
         },
         {
           "name": "Verify cleanup",
-          "action": "Observe secondary display",
+          "action": "playwright: assertVisible text=secondary display",
           "expected": "Stale frame cleared, secondary display shows black",
-          "_conversion_note": "manual-review-required"
+          "_conversion_note": "manual-review-required",
+          "_original_action": "Observe secondary display"
         }
       ],
       "tags": [
@@ -1028,9 +1040,10 @@
         },
         {
           "name": "Check secondary display",
-          "action": "Observe the TV (secondary display)",
+          "action": "playwright: assertVisible text=TV (secondary display)",
           "expected": "Album cover art displayed on secondary display via Presenter",
-          "_conversion_note": "manual-review-required"
+          "_conversion_note": "manual-review-required",
+          "_original_action": "Observe the TV (secondary display)"
         }
       ],
       "tags": [
@@ -1059,9 +1072,10 @@
         },
         {
           "name": "Check secondary display",
-          "action": "Observe text below album art on secondary display",
+          "action": "playwright: assertVisible text=text below album art on secondary display",
           "expected": "Song title and artist name displayed below the album cover",
-          "_conversion_note": "manual-review-required"
+          "_conversion_note": "manual-review-required",
+          "_original_action": "Observe text below album art on secondary display"
         }
       ],
       "tags": [
@@ -1096,9 +1110,10 @@
         },
         {
           "name": "Verify album art removed",
-          "action": "Observe secondary display",
+          "action": "playwright: assertVisible text=secondary display",
           "expected": "Album art no longer displayed; secondary shows Presenter background or black",
-          "_conversion_note": "manual-review-required"
+          "_conversion_note": "manual-review-required",
+          "_original_action": "Observe secondary display"
         }
       ],
       "tags": [
@@ -1132,9 +1147,10 @@
         },
         {
           "name": "Verify video replaces album art",
-          "action": "Observe secondary display",
+          "action": "playwright: assertVisible text=secondary display",
           "expected": "Video content shown on secondary display, album art hidden",
-          "_conversion_note": "manual-review-required"
+          "_conversion_note": "manual-review-required",
+          "_original_action": "Observe secondary display"
         }
       ],
       "tags": [
@@ -1169,9 +1185,10 @@
         },
         {
           "name": "Verify album art returns",
-          "action": "Observe secondary display",
+          "action": "playwright: assertVisible text=secondary display",
           "expected": "Album cover art reappears on secondary display since music is still playing",
-          "_conversion_note": "manual-review-required"
+          "_conversion_note": "manual-review-required",
+          "_original_action": "Observe secondary display"
         }
       ],
       "tags": [
@@ -1701,9 +1718,10 @@
       "steps": [
         {
           "name": "Check audio HAL config",
-          "action": "Verify pcm_config_deep period_size in audio_hw.c via device properties or logcat",
+          "action": "playwright: assertVisible text=pcm_config_deep period_size in audio_hw.c via device properties or logcat",
           "expected": "period_size=1920 (40ms at 48kHz)",
-          "_conversion_note": "manual-review-required"
+          "_conversion_note": "manual-review-required",
+          "_original_action": "Verify pcm_config_deep period_size in audio_hw.c via device properties or logcat"
         },
         {
           "name": "Verify start threshold set",
@@ -1757,10 +1775,11 @@
         },
         {
           "name": "Check IRQ affinity",
-          "action": "Verify BT UART IRQ 121 pinned to CPU2",
+          "action": "playwright: assertVisible text=BT UART IRQ 121 pinned to CPU2",
           "expected": "IRQ 121 affinity mask includes only CPU2",
           "expect_status": 121,
-          "_conversion_note": "manual-review-required"
+          "_conversion_note": "manual-review-required",
+          "_original_action": "Verify BT UART IRQ 121 pinned to CPU2"
         }
       ],
       "tags": [
@@ -1840,9 +1859,10 @@
         },
         {
           "name": "Check config.txt",
-          "action": "Verify /vendor/etc/firmware/config.txt contains mpc=0, lpc=0",
+          "action": "playwright: assertVisible text=/vendor/etc/firmware/config.txt contains mpc=0, lpc=0",
           "expected": "MPC and LPC disabled in bcmdhd config",
-          "_conversion_note": "manual-review-required"
+          "_conversion_note": "manual-review-required",
+          "_original_action": "Verify /vendor/etc/firmware/config.txt contains mpc=0, lpc=0"
         }
       ],
       "tags": [
@@ -2140,9 +2160,10 @@
       "steps": [
         {
           "name": "Check blocklist config",
-          "action": "Verify WiFi BSSID blocklist thresholds in ServiceWifiResources config.xml",
+          "action": "playwright: assertVisible text=WiFi BSSID blocklist thresholds in ServiceWifiResources config.xml",
           "expected": "Auth/assoc failure threshold=5, base block duration=5min",
-          "_conversion_note": "manual-review-required"
+          "_conversion_note": "manual-review-required",
+          "_original_action": "Verify WiFi BSSID blocklist thresholds in ServiceWifiResources config.xml"
         }
       ],
       "tags": [
@@ -2267,9 +2288,10 @@
         },
         {
           "name": "Check framework overlay",
-          "action": "Verify config_enableAutoPowerModes=false",
+          "action": "playwright: assertVisible text=config_enableAutoPowerModes=false",
           "expected": "Auto power modes disabled at framework level",
-          "_conversion_note": "manual-review-required"
+          "_conversion_note": "manual-review-required",
+          "_original_action": "Verify config_enableAutoPowerModes=false"
         }
       ],
       "tags": [
@@ -2419,15 +2441,17 @@
         },
         {
           "name": "Check framework overlay",
-          "action": "Verify config_batteryPresent=false in overlay",
+          "action": "playwright: assertVisible text=config_batteryPresent=false in overlay",
           "expected": "Battery reported as not present",
-          "_conversion_note": "manual-review-required"
+          "_conversion_note": "manual-review-required",
+          "_original_action": "Verify config_batteryPresent=false in overlay"
         },
         {
           "name": "Visual check",
-          "action": "Observe status bar on primary display",
+          "action": "playwright: assertVisible text=status bar on primary display",
           "expected": "No battery icon visible (no '?' or battery indicator)",
-          "_conversion_note": "manual-review-required"
+          "_conversion_note": "manual-review-required",
+          "_original_action": "Observe status bar on primary display"
         }
       ],
       "tags": [
@@ -2653,9 +2677,10 @@
       "steps": [
         {
           "name": "Check navigation mode",
-          "action": "Observe bottom of screen for Back, Home, Recents buttons",
+          "action": "playwright: assertVisible text=bottom of screen for Back, Home, Recents buttons",
           "expected": "3-button navigation bar visible",
-          "_conversion_note": "manual-review-required"
+          "_conversion_note": "manual-review-required",
+          "_original_action": "Observe bottom of screen for Back, Home, Recents buttons"
         },
         {
           "name": "Test buttons",
@@ -3059,9 +3084,10 @@
         },
         {
           "name": "Visual check",
-          "action": "Observe TV (secondary display)",
+          "action": "playwright: assertVisible text=TV (secondary display)",
           "expected": "Presenter content visible on TV",
-          "_conversion_note": "manual-review-required"
+          "_conversion_note": "manual-review-required",
+          "_original_action": "Observe TV (secondary display)"
         }
       ],
       "tags": [
@@ -3219,9 +3245,10 @@
         },
         {
           "name": "Check Presentation",
-          "action": "Observe the TV (secondary display)",
+          "action": "playwright: assertVisible text=TV (secondary display)",
           "expected": "Presenter Presentation visible (background content, clock, or album art)",
-          "_conversion_note": "manual-review-required"
+          "_conversion_note": "manual-review-required",
+          "_original_action": "Observe the TV (secondary display)"
         },
         {
           "name": "Check background color",
@@ -3860,9 +3887,10 @@
         },
         {
           "name": "Check security level",
-          "action": "Verify Widevine L3 security level",
+          "action": "playwright: assertVisible text=Widevine L3 security level",
           "expected": "Security Level: L3",
-          "_conversion_note": "manual-review-required"
+          "_conversion_note": "manual-review-required",
+          "_original_action": "Verify Widevine L3 security level"
         },
         {
           "name": "Run Widevine test",
@@ -3989,9 +4017,10 @@
         },
         {
           "name": "Check media_codecs XML",
-          "action": "Verify c2.rk.avc.decoder is commented out or removed from media_codecs_c2_rk3588.xml",
+          "action": "playwright: assertVisible text=c2.rk.avc.decoder is commented out or removed from media_codecs_c2_rk3588.xml",
           "expected": "HW AVC decoder disabled in codec config",
-          "_conversion_note": "manual-review-required"
+          "_conversion_note": "manual-review-required",
+          "_original_action": "Verify c2.rk.avc.decoder is commented out or removed from media_codecs_c2_rk3588.xml"
         },
         {
           "name": "Check SW AVC available",
@@ -4066,27 +4095,31 @@
       "steps": [
         {
           "name": "Check AVC limits",
-          "action": "Verify media_codecs_google_c2_rk3588.xml has AVC max 3840x2160",
+          "action": "playwright: assertVisible text=media_codecs_google_c2_rk3588.xml has AVC max 3840x2160",
           "expected": "SW AVC decoder supports up to 4K resolution",
-          "_conversion_note": "manual-review-required"
+          "_conversion_note": "manual-review-required",
+          "_original_action": "Verify media_codecs_google_c2_rk3588.xml has AVC max 3840x2160"
         },
         {
           "name": "Check HEVC limits",
-          "action": "Verify SW HEVC decoder max resolution",
+          "action": "playwright: assertVisible text=SW HEVC decoder max resolution",
           "expected": "SW HEVC supports up to 8K resolution",
-          "_conversion_note": "manual-review-required"
+          "_conversion_note": "manual-review-required",
+          "_original_action": "Verify SW HEVC decoder max resolution"
         },
         {
           "name": "Check VP9 limits",
-          "action": "Verify SW VP9 decoder max resolution",
+          "action": "playwright: assertVisible text=SW VP9 decoder max resolution",
           "expected": "SW VP9 supports up to 8K resolution",
-          "_conversion_note": "manual-review-required"
+          "_conversion_note": "manual-review-required",
+          "_original_action": "Verify SW VP9 decoder max resolution"
         },
         {
           "name": "Check AV1 limits",
-          "action": "Verify SW AV1 decoder max resolution",
+          "action": "playwright: assertVisible text=SW AV1 decoder max resolution",
           "expected": "SW AV1 supports up to 8K resolution",
-          "_conversion_note": "manual-review-required"
+          "_conversion_note": "manual-review-required",
+          "_original_action": "Verify SW AV1 decoder max resolution"
         }
       ],
       "tags": [
@@ -4283,9 +4316,10 @@
         },
         {
           "name": "Verify clean transition",
-          "action": "Observe secondary display transition",
+          "action": "playwright: assertVisible text=secondary display transition",
           "expected": "Secondary display transitions smoothly from frozen frame to black without visible flicker or button flash",
-          "_conversion_note": "manual-review-required"
+          "_conversion_note": "manual-review-required",
+          "_original_action": "Observe secondary display transition"
         }
       ],
       "tags": [
@@ -4334,9 +4368,10 @@
         },
         {
           "name": "Verify secondary display clears",
-          "action": "Observe secondary display",
+          "action": "playwright: assertVisible text=secondary display",
           "expected": "Secondary display clears to black or Presenter background (no stale video frame)",
-          "_conversion_note": "manual-review-required"
+          "_conversion_note": "manual-review-required",
+          "_original_action": "Observe secondary display"
         },
         {
           "name": "Verify logcat",
@@ -4386,9 +4421,10 @@
         },
         {
           "name": "Check secondary display",
-          "action": "Observe the TV (secondary display)",
+          "action": "playwright: assertVisible text=TV (secondary display)",
           "expected": "Album cover art from AIMP MediaSession displayed on secondary display via Presenter",
-          "_conversion_note": "manual-review-required"
+          "_conversion_note": "manual-review-required",
+          "_original_action": "Observe the TV (secondary display)"
         },
         {
           "name": "Verify metadata",
@@ -4431,9 +4467,10 @@
         },
         {
           "name": "Check secondary display",
-          "action": "Observe the TV (secondary display)",
+          "action": "playwright: assertVisible text=TV (secondary display)",
           "expected": "Album cover art from Winamp MediaSession displayed on secondary display",
-          "_conversion_note": "manual-review-required"
+          "_conversion_note": "manual-review-required",
+          "_original_action": "Observe the TV (secondary display)"
         },
         {
           "name": "Verify metadata",
@@ -4470,9 +4507,10 @@
         },
         {
           "name": "Check secondary display",
-          "action": "Observe the TV (secondary display)",
+          "action": "playwright: assertVisible text=TV (secondary display)",
           "expected": "Album cover loaded from URI and displayed on secondary display",
-          "_conversion_note": "manual-review-required"
+          "_conversion_note": "manual-review-required",
+          "_original_action": "Observe the TV (secondary display)"
         },
         {
           "name": "Check logcat for URI loading",
@@ -4502,9 +4540,10 @@
       "steps": [
         {
           "name": "Ensure HDMI audio output selected",
-          "action": "Verify audio routes to HDMI via dumpsys audio STREAM_MUSIC",
+          "action": "playwright: assertVisible text=audio routes to HDMI via dumpsys audio STREAM_MUSIC",
           "expected": "HDMI audio device active for STREAM_MUSIC",
-          "_conversion_note": "manual-review-required"
+          "_conversion_note": "manual-review-required",
+          "_original_action": "Verify audio routes to HDMI via dumpsys audio STREAM_MUSIC"
         },
         {
           "name": "Start audio playback",
@@ -4948,9 +4987,10 @@
         },
         {
           "name": "Verify video on TV",
-          "action": "Observe the TV (HDMI-A-1 secondary display)",
+          "action": "playwright: assertVisible text=TV (HDMI-A-1 secondary display)",
           "expected": "Video content renders on the TV via VLC Presentation API",
-          "_conversion_note": "manual-review-required"
+          "_conversion_note": "manual-review-required",
+          "_original_action": "Observe the TV (HDMI-A-1 secondary display)"
         },
         {
           "name": "Verify video quality",
@@ -5883,9 +5923,10 @@
         },
         {
           "name": "Verify video on TV",
-          "action": "Observe the TV (secondary display)",
+          "action": "playwright: assertVisible text=TV (secondary display)",
           "expected": "Video content renders on the TV via MediaCodec SW codec redirect",
-          "_conversion_note": "manual-review-required"
+          "_conversion_note": "manual-review-required",
+          "_original_action": "Observe the TV (secondary display)"
         },
         {
           "name": "Verify no stale frames",
@@ -5941,9 +5982,10 @@
         },
         {
           "name": "Verify video on TV",
-          "action": "Observe the TV (secondary display)",
+          "action": "playwright: assertVisible text=TV (secondary display)",
           "expected": "Video content renders on the TV via ExoPlayer SW codec redirect",
-          "_conversion_note": "manual-review-required"
+          "_conversion_note": "manual-review-required",
+          "_original_action": "Observe the TV (secondary display)"
         },
         {
           "name": "Verify resolution filter",

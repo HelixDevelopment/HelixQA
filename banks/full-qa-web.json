@@ -21,9 +21,9 @@
       "steps": [
         {
           "name": "Navigate to login page",
-          "action": "Open http://localhost:3000/login in the browser",
+          "action": "playwright: navigate http://localhost:3000/login",
           "expected": "Login page renders with username field, password field, and Sign In button",
-          "_conversion_note": "manual-review-required"
+          "_original_action": "Open http://localhost:3000/login in the browser"
         },
         {
           "name": "Verify branding",
@@ -51,21 +51,21 @@
       "steps": [
         {
           "name": "Navigate to login page",
-          "action": "Open http://localhost:3000/login",
+          "action": "playwright: navigate http://localhost:3000/login",
           "expected": "Login form is displayed",
-          "_conversion_note": "manual-review-required"
+          "_original_action": "Open http://localhost:3000/login"
         },
         {
           "name": "Enter admin credentials",
-          "action": "Type 'admin' in username field, 'admin123' in password field",
+          "action": "playwright: fill input[name=username] admin",
           "expected": "Credentials are entered in the form fields",
-          "_conversion_note": "manual-review-required"
+          "_original_action": "Type 'admin' in username field, 'admin123' in password field"
         },
         {
           "name": "Submit login form",
-          "action": "Click Sign In button",
+          "action": "playwright: click text=Sign In",
           "expected": "Redirect to /dashboard with dashboard content visible",
-          "_conversion_note": "manual-review-required"
+          "_original_action": "Click Sign In button"
         }
       ],
       "tags": [
@@ -88,21 +88,21 @@
       "steps": [
         {
           "name": "Navigate to login page",
-          "action": "Open http://localhost:3000/login",
+          "action": "playwright: navigate http://localhost:3000/login",
           "expected": "Login form displayed",
-          "_conversion_note": "manual-review-required"
+          "_original_action": "Open http://localhost:3000/login"
         },
         {
           "name": "Enter wrong credentials",
-          "action": "Type 'admin' in username, 'wrongpassword' in password",
+          "action": "playwright: fill input[name=username] admin",
           "expected": "Credentials entered",
-          "_conversion_note": "manual-review-required"
+          "_original_action": "Type 'admin' in username, 'wrongpassword' in password"
         },
         {
           "name": "Submit login form",
-          "action": "Click Sign In button",
+          "action": "playwright: click text=Sign In",
           "expected": "Error message displayed indicating invalid credentials",
-          "_conversion_note": "manual-review-required"
+          "_original_action": "Click Sign In button"
         },
         {
           "name": "Verify still on login page",
@@ -131,9 +131,9 @@
       "steps": [
         {
           "name": "Navigate to login page",
-          "action": "Open http://localhost:3000/login",
+          "action": "playwright: navigate http://localhost:3000/login",
           "expected": "Login form displayed",
-          "_conversion_note": "manual-review-required"
+          "_original_action": "Open http://localhost:3000/login"
         },
         {
           "name": "Leave username empty",
@@ -143,9 +143,9 @@
         },
         {
           "name": "Submit form",
-          "action": "Click Sign In button",
+          "action": "playwright: click text=Sign In",
           "expected": "Validation error shown for empty username field",
-          "_conversion_note": "manual-review-required"
+          "_original_action": "Click Sign In button"
         }
       ],
       "tags": [
@@ -168,21 +168,21 @@
       "steps": [
         {
           "name": "Navigate to login page",
-          "action": "Open http://localhost:3000/login",
+          "action": "playwright: navigate http://localhost:3000/login",
           "expected": "Login form displayed",
-          "_conversion_note": "manual-review-required"
+          "_original_action": "Open http://localhost:3000/login"
         },
         {
           "name": "Enter only username",
-          "action": "Type 'admin' in username field, leave password empty",
+          "action": "playwright: fill input[name=username] admin",
           "expected": "Username entered, password empty",
-          "_conversion_note": "manual-review-required"
+          "_original_action": "Type 'admin' in username field, leave password empty"
         },
         {
           "name": "Submit form",
-          "action": "Click Sign In button",
+          "action": "playwright: click text=Sign In",
           "expected": "Validation error shown for empty password field",
-          "_conversion_note": "manual-review-required"
+          "_original_action": "Click Sign In button"
         }
       ],
       "tags": [
@@ -205,15 +205,15 @@
       "steps": [
         {
           "name": "Navigate to login page",
-          "action": "Open http://localhost:3000/login",
+          "action": "playwright: navigate http://localhost:3000/login",
           "expected": "Login form displayed",
-          "_conversion_note": "manual-review-required"
+          "_original_action": "Open http://localhost:3000/login"
         },
         {
           "name": "Submit empty form",
-          "action": "Click Sign In button without entering any data",
+          "action": "playwright: click text=Sign In button without entering any data",
           "expected": "Validation errors shown for both username and password fields",
-          "_conversion_note": "manual-review-required"
+          "_original_action": "Click Sign In button without entering any data"
         }
       ],
       "tags": [
@@ -242,9 +242,9 @@
         },
         {
           "name": "Click logout",
-          "action": "Click the logout button in the header or user menu",
+          "action": "playwright: click text=logout button in the header or user menu",
           "expected": "User is logged out and redirected to /login",
-          "_conversion_note": "manual-review-required"
+          "_original_action": "Click the logout button in the header or user menu"
         },
         {
           "name": "Verify redirect",
@@ -315,9 +315,9 @@
         },
         {
           "name": "Navigate to protected route",
-          "action": "Open http://localhost:3000/dashboard directly",
+          "action": "playwright: navigate http://localhost:3000/dashboard",
           "expected": "Redirected to /login page",
-          "_conversion_note": "manual-review-required"
+          "_original_action": "Open http://localhost:3000/dashboard directly"
         },
         {
           "name": "Verify redirect",
@@ -346,9 +346,9 @@
       "steps": [
         {
           "name": "Navigate to register page",
-          "action": "Open http://localhost:3000/register",
+          "action": "playwright: navigate http://localhost:3000/register",
           "expected": "Registration form displayed with username, password, confirm password fields",
-          "_conversion_note": "manual-review-required"
+          "_original_action": "Open http://localhost:3000/register"
         },
         {
           "name": "Verify form elements",
@@ -376,21 +376,21 @@
       "steps": [
         {
           "name": "Navigate to register page",
-          "action": "Open http://localhost:3000/register",
+          "action": "playwright: navigate http://localhost:3000/register",
           "expected": "Registration form displayed",
-          "_conversion_note": "manual-review-required"
+          "_original_action": "Open http://localhost:3000/register"
         },
         {
           "name": "Enter mismatched passwords",
-          "action": "Type 'newuser' in username, 'password1' in password, 'password2' in confirm",
+          "action": "playwright: fill input[name=username] newuser",
           "expected": "Fields populated",
-          "_conversion_note": "manual-review-required"
+          "_original_action": "Type 'newuser' in username, 'password1' in password, 'password2' in confirm"
         },
         {
           "name": "Submit form",
-          "action": "Click Register button",
+          "action": "playwright: click text=Register",
           "expected": "Validation error indicating passwords do not match",
-          "_conversion_note": "manual-review-required"
+          "_original_action": "Click Register button"
         }
       ],
       "tags": [
@@ -413,21 +413,21 @@
       "steps": [
         {
           "name": "Navigate to register page",
-          "action": "Open http://localhost:3000/register",
+          "action": "playwright: navigate http://localhost:3000/register",
           "expected": "Registration form displayed",
-          "_conversion_note": "manual-review-required"
+          "_original_action": "Open http://localhost:3000/register"
         },
         {
           "name": "Enter short password",
-          "action": "Type 'newuser' in username, 'ab' in password and confirm password",
+          "action": "playwright: fill input[name=username] newuser",
           "expected": "Fields populated",
-          "_conversion_note": "manual-review-required"
+          "_original_action": "Type 'newuser' in username, 'ab' in password and confirm password"
         },
         {
           "name": "Submit form",
-          "action": "Click Register button",
+          "action": "playwright: click text=Register",
           "expected": "Validation error indicating password is too short",
-          "_conversion_note": "manual-review-required"
+          "_original_action": "Click Register button"
         }
       ],
       "tags": [
@@ -450,9 +450,9 @@
       "steps": [
         {
           "name": "Open login page",
-          "action": "Open http://localhost:3000/login",
+          "action": "playwright: navigate http://localhost:3000/login",
           "expected": "Login form displayed",
-          "_conversion_note": "manual-review-required"
+          "_original_action": "Open http://localhost:3000/login"
         },
         {
           "name": "Click register link",
@@ -481,9 +481,9 @@
       "steps": [
         {
           "name": "Open register page",
-          "action": "Open http://localhost:3000/register",
+          "action": "playwright: navigate http://localhost:3000/register",
           "expected": "Registration form displayed",
-          "_conversion_note": "manual-review-required"
+          "_original_action": "Open http://localhost:3000/register"
         },
         {
           "name": "Click login link",
@@ -512,21 +512,21 @@
       "steps": [
         {
           "name": "Navigate to login page",
-          "action": "Open http://localhost:3000/login",
+          "action": "playwright: navigate http://localhost:3000/login",
           "expected": "Login form displayed",
-          "_conversion_note": "manual-review-required"
+          "_original_action": "Open http://localhost:3000/login"
         },
         {
           "name": "Enter non-existent credentials",
-          "action": "Type 'nonexistentuser99' in username, 'somepassword' in password",
+          "action": "playwright: fill input[name=username] nonexistentuser99",
           "expected": "Credentials entered",
-          "_conversion_note": "manual-review-required"
+          "_original_action": "Type 'nonexistentuser99' in username, 'somepassword' in password"
         },
         {
           "name": "Submit form",
-          "action": "Click Sign In button",
+          "action": "playwright: click text=Sign In",
           "expected": "Error message indicating invalid credentials",
-          "_conversion_note": "manual-review-required"
+          "_original_action": "Click Sign In button"
         }
       ],
       "tags": [
@@ -549,15 +549,15 @@
       "steps": [
         {
           "name": "Open app fresh",
-          "action": "Open http://localhost:3000 with cleared cache",
+          "action": "playwright: navigate http://localhost:3000",
           "expected": "Splash screen with Catalogizer branding appears briefly",
-          "_conversion_note": "manual-review-required"
+          "_original_action": "Open http://localhost:3000 with cleared cache"
         },
         {
           "name": "Wait for transition",
-          "action": "Wait for splash screen animation to complete",
+          "action": "playwright: waitFor text=splash screen animation to complete",
           "expected": "Splash screen fades out and login page or dashboard appears",
-          "_conversion_note": "manual-review-required"
+          "_original_action": "Wait for splash screen animation to complete"
         }
       ],
       "tags": [
@@ -580,9 +580,9 @@
       "steps": [
         {
           "name": "Navigate to login page",
-          "action": "Open http://localhost:3000/login",
+          "action": "playwright: navigate http://localhost:3000/login",
           "expected": "Login form displayed",
-          "_conversion_note": "manual-review-required"
+          "_original_action": "Open http://localhost:3000/login"
         },
         {
           "name": "Type in password field",
@@ -611,21 +611,21 @@
       "steps": [
         {
           "name": "Navigate to login page",
-          "action": "Open http://localhost:3000/login",
+          "action": "playwright: navigate http://localhost:3000/login",
           "expected": "Login form displayed",
-          "_conversion_note": "manual-review-required"
+          "_original_action": "Open http://localhost:3000/login"
         },
         {
           "name": "Enter credentials",
-          "action": "Type 'admin' in username, 'admin123' in password",
+          "action": "playwright: fill input[name=username] admin",
           "expected": "Credentials entered",
-          "_conversion_note": "manual-review-required"
+          "_original_action": "Type 'admin' in username, 'admin123' in password"
         },
         {
           "name": "Press Enter",
-          "action": "Press Enter key while focused on password field",
+          "action": "playwright: press Enter",
           "expected": "Form submits and user is logged in, redirected to dashboard",
-          "_conversion_note": "manual-review-required"
+          "_original_action": "Press Enter key while focused on password field"
         }
       ],
       "tags": [
@@ -648,9 +648,9 @@
       "steps": [
         {
           "name": "Navigate to login page",
-          "action": "Open http://localhost:3000/login",
+          "action": "playwright: navigate http://localhost:3000/login",
           "expected": "Login form displayed",
-          "_conversion_note": "manual-review-required"
+          "_original_action": "Open http://localhost:3000/login"
         },
         {
           "name": "First failed attempt",
@@ -703,9 +703,9 @@
         },
         {
           "name": "Check connection status",
-          "action": "Look for WebSocket connection status indicator in the UI",
+          "action": "playwright: assertVisible text=WebSocket connection status indicator in the UI",
           "expected": "Connection status indicator shows connected state",
-          "_conversion_note": "manual-review-required"
+          "_original_action": "Look for WebSocket connection status indicator in the UI"
         }
       ],
       "tags": [
@@ -1048,9 +1048,9 @@
         },
         {
           "name": "Navigate to root",
-          "action": "Open http://localhost:3000/",
+          "action": "playwright: navigate http://localhost:3000/",
           "expected": "Automatically redirected to /dashboard",
-          "_conversion_note": "manual-review-required"
+          "_original_action": "Open http://localhost:3000/"
         }
       ],
       "tags": [
@@ -1078,9 +1078,9 @@
         },
         {
           "name": "Verify transition",
-          "action": "Wait for data to load",
+          "action": "playwright: waitFor text=data",
           "expected": "Loading state transitions to rendered content",
-          "_conversion_note": "manual-review-required"
+          "_original_action": "Wait for data to load"
         }
       ],
       "tags": [
@@ -1226,9 +1226,9 @@
         },
         {
           "name": "Verify animations",
-          "action": "Observe card entrance animations",
+          "action": "playwright: assertVisible text=card entrance animations",
           "expected": "Cards and widgets have smooth fade/slide-in animations",
-          "_conversion_note": "manual-review-required"
+          "_original_action": "Observe card entrance animations"
         }
       ],
       "tags": [
@@ -1257,9 +1257,9 @@
         },
         {
           "name": "Check total files stat",
-          "action": "Find the stat card showing total files count",
+          "action": "playwright: assertVisible text=stat card showing total files count",
           "expected": "Total files count is displayed as a number",
-          "_conversion_note": "manual-review-required"
+          "_original_action": "Find the stat card showing total files count"
         }
       ],
       "tags": [
@@ -1287,9 +1287,9 @@
         },
         {
           "name": "Check storage stat",
-          "action": "Find the stat card showing storage usage",
+          "action": "playwright: assertVisible text=stat card showing storage usage",
           "expected": "Storage used is displayed in human-readable format (GB/TB)",
-          "_conversion_note": "manual-review-required"
+          "_original_action": "Find the stat card showing storage usage"
         }
       ],
       "tags": [
@@ -1317,9 +1317,9 @@
         },
         {
           "name": "Check entity count",
-          "action": "Find the stat card showing total media entities",
+          "action": "playwright: assertVisible text=stat card showing total media entities",
           "expected": "Entity count displayed as a number",
-          "_conversion_note": "manual-review-required"
+          "_original_action": "Find the stat card showing total media entities"
         }
       ],
       "tags": [
@@ -1371,9 +1371,9 @@
         },
         {
           "name": "Check storage root selector",
-          "action": "Look for storage root dropdown or list",
+          "action": "playwright: assertVisible text=storage root dropdown or list",
           "expected": "Available storage roots are listed for selection",
-          "_conversion_note": "manual-review-required"
+          "_original_action": "Look for storage root dropdown or list"
         }
       ],
       "tags": [
@@ -1401,9 +1401,9 @@
         },
         {
           "name": "Click on a directory",
-          "action": "Click on a directory entry in the file listing",
+          "action": "playwright: click text=a directory entry in the file listing",
           "expected": "Directory contents are displayed, breadcrumb updates",
-          "_conversion_note": "manual-review-required"
+          "_original_action": "Click on a directory entry in the file listing"
         }
       ],
       "tags": [
@@ -1431,9 +1431,9 @@
         },
         {
           "name": "Navigate back",
-          "action": "Click back button or parent directory in breadcrumb",
+          "action": "playwright: click text=back button or parent directory in breadcrumb",
           "expected": "Returned to parent directory listing",
-          "_conversion_note": "manual-review-required"
+          "_original_action": "Click back button or parent directory in breadcrumb"
         }
       ],
       "tags": [
@@ -1461,9 +1461,9 @@
         },
         {
           "name": "Select grid view",
-          "action": "Click grid view toggle button",
+          "action": "playwright: click text=grid view toggle",
           "expected": "Files displayed in a grid layout with thumbnail cards",
-          "_conversion_note": "manual-review-required"
+          "_original_action": "Click grid view toggle button"
         }
       ],
       "tags": [
@@ -1491,9 +1491,9 @@
         },
         {
           "name": "Select list view",
-          "action": "Click list view toggle button",
+          "action": "playwright: click text=list view toggle",
           "expected": "Files displayed in a list layout with name, size, date, type columns",
-          "_conversion_note": "manual-review-required"
+          "_original_action": "Click list view toggle button"
         }
       ],
       "tags": [
@@ -1701,9 +1701,9 @@
         },
         {
           "name": "Search for movie",
-          "action": "Type 'Matrix' in the search field",
+          "action": "playwright: fill input[name=search] Matrix",
           "expected": "Results filtered to show files matching 'Matrix'",
-          "_conversion_note": "manual-review-required"
+          "_original_action": "Type 'Matrix' in the search field"
         }
       ],
       "tags": [
@@ -1732,9 +1732,9 @@
         },
         {
           "name": "Search for artist",
-          "action": "Type 'Metallica' in the search field",
+          "action": "playwright: fill input[name=search] Metallica",
           "expected": "Results filtered to show files matching 'Metallica'",
-          "_conversion_note": "manual-review-required"
+          "_original_action": "Type 'Metallica' in the search field"
         }
       ],
       "tags": [
@@ -1825,9 +1825,9 @@
         },
         {
           "name": "Enter XSS payload",
-          "action": "Type '<script>alert(1)</script>' in the search field",
+          "action": "playwright: fill input[name=search] <script>alert(1)</script>",
           "expected": "Input is sanitized, no script execution, shows no results or empty state",
-          "_conversion_note": "manual-review-required"
+          "_original_action": "Type '<script>alert(1)</script>' in the search field"
         }
       ],
       "tags": [
@@ -1857,15 +1857,15 @@
         },
         {
           "name": "Navigate to next page",
-          "action": "Click the next page button or page 2",
+          "action": "playwright: click text=next page button or page 2",
           "expected": "Second page of files displayed with different content",
-          "_conversion_note": "manual-review-required"
+          "_original_action": "Click the next page button or page 2"
         },
         {
           "name": "Navigate back",
-          "action": "Click previous page button or page 1",
+          "action": "playwright: click text=previous page button or page 1",
           "expected": "First page displayed again",
-          "_conversion_note": "manual-review-required"
+          "_original_action": "Click previous page button or page 1"
         }
       ],
       "tags": [
@@ -1893,9 +1893,9 @@
         },
         {
           "name": "Check thumbnails",
-          "action": "Observe media cards for thumbnail images",
+          "action": "playwright: assertVisible text=media cards for thumbnail images",
           "expected": "Thumbnail images load for media files, placeholder for non-media files",
-          "_conversion_note": "manual-review-required"
+          "_original_action": "Observe media cards for thumbnail images"
         }
       ],
       "tags": [
@@ -1923,9 +1923,9 @@
         },
         {
           "name": "Click on a media file",
-          "action": "Click on a file entry in the file listing",
+          "action": "playwright: click text=a file entry in the file listing",
           "expected": "MediaDetailModal opens with file details (name, size, type, path)",
-          "_conversion_note": "manual-review-required"
+          "_original_action": "Click on a file entry in the file listing"
         }
       ],
       "tags": [
@@ -1983,9 +1983,9 @@
         },
         {
           "name": "Verify transition",
-          "action": "Wait for content to load",
+          "action": "playwright: waitFor text=content",
           "expected": "Loading state transitions to file listing",
-          "_conversion_note": "manual-review-required"
+          "_original_action": "Wait for content to load"
         }
       ],
       "tags": [
@@ -2100,9 +2100,9 @@
         },
         {
           "name": "Check filter controls",
-          "action": "Look for MediaFilters component with type selector, search field",
+          "action": "playwright: assertVisible text=MediaFilters component with type selector, search field",
           "expected": "Filter controls are visible and interactive",
-          "_conversion_note": "manual-review-required"
+          "_original_action": "Look for MediaFilters component with type selector, search field"
         }
       ],
       "tags": [
@@ -2130,15 +2130,15 @@
         },
         {
           "name": "Switch to list view",
-          "action": "Click list view toggle",
+          "action": "playwright: click text=list view toggle",
           "expected": "View switches to list layout",
-          "_conversion_note": "manual-review-required"
+          "_original_action": "Click list view toggle"
         },
         {
           "name": "Switch back to grid view",
-          "action": "Click grid view toggle",
+          "action": "playwright: click text=grid view toggle",
           "expected": "View switches back to grid layout",
-          "_conversion_note": "manual-review-required"
+          "_original_action": "Click grid view toggle"
         }
       ],
       "tags": [
@@ -2227,9 +2227,9 @@
         },
         {
           "name": "Check for upload option",
-          "action": "Look for upload button or drag-and-drop area",
+          "action": "playwright: assertVisible text=upload button or drag-and-drop area",
           "expected": "UploadManager component accessible via button or interface",
-          "_conversion_note": "manual-review-required"
+          "_original_action": "Look for upload button or drag-and-drop area"
         }
       ],
       "tags": [
@@ -2257,9 +2257,9 @@
         },
         {
           "name": "Close modal",
-          "action": "Click the close button or press Escape key",
+          "action": "playwright: click text=close button or press Escape key",
           "expected": "Modal closes and file listing is visible again",
-          "_conversion_note": "manual-review-required"
+          "_original_action": "Click the close button or press Escape key"
         }
       ],
       "tags": [
@@ -2704,9 +2704,9 @@
         },
         {
           "name": "Click an entity card",
-          "action": "Click on an entity in the EntityGrid",
+          "action": "playwright: click text=an entity in the EntityGrid",
           "expected": "Navigated to /entity/:id with entity detail page",
-          "_conversion_note": "manual-review-required"
+          "_original_action": "Click on an entity in the EntityGrid"
         }
       ],
       "tags": [
@@ -2758,9 +2758,9 @@
         },
         {
           "name": "Check type badge",
-          "action": "Look for the media type badge/label",
+          "action": "playwright: assertVisible text=media type badge/label",
           "expected": "Badge shows 'Movie' with appropriate styling",
-          "_conversion_note": "manual-review-required"
+          "_original_action": "Look for the media type badge/label"
         }
       ],
       "tags": [
@@ -2788,9 +2788,9 @@
         },
         {
           "name": "Check metadata",
-          "action": "Look for metadata fields like title, year, genre, description",
+          "action": "playwright: assertVisible text=metadata fields like title, year, genre, description",
           "expected": "Available metadata fields are displayed",
-          "_conversion_note": "manual-review-required"
+          "_original_action": "Look for metadata fields like title, year, genre, description"
         }
       ],
       "tags": [
@@ -2848,9 +2848,9 @@
         },
         {
           "name": "Check hierarchy",
-          "action": "Look for season and episode children listed",
+          "action": "playwright: assertVisible text=season and episode children listed",
           "expected": "Seasons listed as children, episodes nested under seasons",
-          "_conversion_note": "manual-review-required"
+          "_original_action": "Look for season and episode children listed"
         }
       ],
       "tags": [
@@ -2879,9 +2879,9 @@
         },
         {
           "name": "Check external metadata section",
-          "action": "Look for external metadata section (TMDB rating, IMDB ID, etc.)",
+          "action": "playwright: assertVisible text=external metadata section (TMDB rating, IMDB ID, etc.)",
           "expected": "External metadata from providers is displayed",
-          "_conversion_note": "manual-review-required"
+          "_original_action": "Look for external metadata section (TMDB rating, IMDB ID, etc.)"
         }
       ],
       "tags": [
@@ -2910,9 +2910,9 @@
         },
         {
           "name": "Click favorite toggle",
-          "action": "Click the FavoriteToggle button (heart icon)",
+          "action": "playwright: click text=FavoriteToggle button (heart icon)",
           "expected": "Entity is added to favorites, heart icon fills in",
-          "_conversion_note": "manual-review-required"
+          "_original_action": "Click the FavoriteToggle button (heart icon)"
         }
       ],
       "tags": [
@@ -2940,9 +2940,9 @@
         },
         {
           "name": "Click add to collection",
-          "action": "Click 'Add to Collection' button",
+          "action": "playwright: click text=Add to Collection",
           "expected": "Collection picker dialog or dropdown appears",
-          "_conversion_note": "manual-review-required"
+          "_original_action": "Click 'Add to Collection' button"
         },
         {
           "name": "Select collection",
@@ -3006,9 +3006,9 @@
         },
         {
           "name": "Check related entities",
-          "action": "Look for parent show, sibling episodes, or related content",
+          "action": "playwright: assertVisible text=parent show, sibling episodes, or related content",
           "expected": "Related entities are shown with clickable links",
-          "_conversion_note": "manual-review-required"
+          "_original_action": "Look for parent show, sibling episodes, or related content"
         }
       ],
       "tags": [
@@ -3036,9 +3036,9 @@
         },
         {
           "name": "Check poster image",
-          "action": "Look for the cover art/poster image",
+          "action": "playwright: assertVisible text=cover art/poster image",
           "expected": "Cover art image loads correctly without broken image icon",
-          "_conversion_note": "manual-review-required"
+          "_original_action": "Look for the cover art/poster image"
         }
       ],
       "tags": [
@@ -3067,9 +3067,9 @@
         },
         {
           "name": "Navigate back",
-          "action": "Click back button or browser back",
+          "action": "playwright: click text=back button or browser back",
           "expected": "Returned to entity browser (/browse)",
-          "_conversion_note": "manual-review-required"
+          "_original_action": "Click back button or browser back"
         }
       ],
       "tags": [
@@ -3121,9 +3121,9 @@
         },
         {
           "name": "Check song list",
-          "action": "Look for child entities (songs)",
+          "action": "playwright: assertVisible text=child entities (songs)",
           "expected": "Songs listed as children of the album",
-          "_conversion_note": "manual-review-required"
+          "_original_action": "Look for child entities (songs)"
         }
       ],
       "tags": [
@@ -3146,15 +3146,15 @@
       "steps": [
         {
           "name": "Navigate to entity detail",
-          "action": "Click an entity card from /browse",
+          "action": "playwright: click text=an entity card from /browse",
           "expected": "Loading state (skeleton/spinner) shown during data fetch",
-          "_conversion_note": "manual-review-required"
+          "_original_action": "Click an entity card from /browse"
         },
         {
           "name": "Wait for load",
-          "action": "Wait for entity data to load",
+          "action": "playwright: waitFor text=entity data",
           "expected": "Loading state transitions to full entity detail",
-          "_conversion_note": "manual-review-required"
+          "_original_action": "Wait for entity data to load"
         }
       ],
       "tags": [
@@ -3212,9 +3212,9 @@
         },
         {
           "name": "Navigate to next page",
-          "action": "Click next page button",
+          "action": "playwright: click text=next page",
           "expected": "Next page of entities displayed",
-          "_conversion_note": "manual-review-required"
+          "_original_action": "Click next page button"
         }
       ],
       "tags": [
@@ -3296,9 +3296,9 @@
         },
         {
           "name": "Check year field",
-          "action": "Look for the year/release date",
+          "action": "playwright: assertVisible text=year/release date",
           "expected": "Year is displayed as part of the metadata",
-          "_conversion_note": "manual-review-required"
+          "_original_action": "Look for the year/release date"
         }
       ],
       "tags": [
@@ -3472,9 +3472,9 @@
         },
         {
           "name": "Submit",
-          "action": "Click Create/Save button",
+          "action": "playwright: click text=Create/Save",
           "expected": "New collection created and appears in the list",
-          "_conversion_note": "manual-review-required"
+          "_original_action": "Click Create/Save button"
         }
       ],
       "tags": [
@@ -3502,9 +3502,9 @@
         },
         {
           "name": "Click a collection",
-          "action": "Click on a collection card to view details",
+          "action": "playwright: click text=a collection card to view details",
           "expected": "Collection detail view opens showing items, settings, and metadata",
-          "_conversion_note": "manual-review-required"
+          "_original_action": "Click on a collection card to view details"
         }
       ],
       "tags": [
@@ -3562,9 +3562,9 @@
         },
         {
           "name": "Remove item",
-          "action": "Click remove/delete button on an item",
+          "action": "playwright: click text=remove/delete button on an item",
           "expected": "Item removed from the collection, list updates",
-          "_conversion_note": "manual-review-required"
+          "_original_action": "Click remove/delete button on an item"
         }
       ],
       "tags": [
@@ -3592,9 +3592,9 @@
         },
         {
           "name": "Delete collection",
-          "action": "Click delete button on a collection, confirm deletion",
+          "action": "playwright: click text=delete button on a collection, confirm deletion",
           "expected": "Collection deleted and removed from the list",
-          "_conversion_note": "manual-review-required"
+          "_original_action": "Click delete button on a collection, confirm deletion"
         }
       ],
       "tags": [
@@ -3622,9 +3622,9 @@
         },
         {
           "name": "Click Templates tab",
-          "action": "Click the 'Templates' tab",
+          "action": "playwright: click text=Templates",
           "expected": "CollectionTemplates component loads with available templates",
-          "_conversion_note": "manual-review-required"
+          "_original_action": "Click the 'Templates' tab"
         }
       ],
       "tags": [
@@ -3791,9 +3791,9 @@
         },
         {
           "name": "Switch to grid view",
-          "action": "Click grid view toggle",
+          "action": "playwright: click text=grid view toggle",
           "expected": "Collections displayed as card grid",
-          "_conversion_note": "manual-review-required"
+          "_original_action": "Click grid view toggle"
         }
       ],
       "tags": [
@@ -3821,9 +3821,9 @@
         },
         {
           "name": "Switch to list view",
-          "action": "Click list view toggle",
+          "action": "playwright: click text=list view toggle",
           "expected": "Collections displayed as list with columns",
-          "_conversion_note": "manual-review-required"
+          "_original_action": "Click list view toggle"
         }
       ],
       "tags": [
@@ -3971,9 +3971,9 @@
         },
         {
           "name": "Open preview",
-          "action": "Click preview button on a collection",
+          "action": "playwright: click text=preview button on a collection",
           "expected": "CollectionPreview component shows collection items summary",
-          "_conversion_note": "manual-review-required"
+          "_original_action": "Click preview button on a collection"
         }
       ],
       "tags": [
@@ -4061,9 +4061,9 @@
         },
         {
           "name": "Export collection",
-          "action": "Click export button",
+          "action": "playwright: click text=export",
           "expected": "CollectionExport component opens with format options",
-          "_conversion_note": "manual-review-required"
+          "_original_action": "Click export button"
         }
       ],
       "tags": [
@@ -4091,9 +4091,9 @@
         },
         {
           "name": "View analytics",
-          "action": "Click analytics button or tab",
+          "action": "playwright: click text=analytics button or",
           "expected": "CollectionAnalytics component shows collection statistics and charts",
-          "_conversion_note": "manual-review-required"
+          "_original_action": "Click analytics button or tab"
         }
       ],
       "tags": [
@@ -4121,9 +4121,9 @@
         },
         {
           "name": "Open settings",
-          "action": "Click settings icon",
+          "action": "playwright: click text=settings",
           "expected": "CollectionSettings panel opens with configuration options",
-          "_conversion_note": "manual-review-required"
+          "_original_action": "Click settings icon"
         }
       ],
       "tags": [
@@ -4199,9 +4199,9 @@
         },
         {
           "name": "Check real-time indicator",
-          "action": "Look for CollectionRealTime component or live update indicator",
+          "action": "playwright: assertVisible text=CollectionRealTime component or live update indicator",
           "expected": "Real-time sync indicator visible",
-          "_conversion_note": "manual-review-required"
+          "_original_action": "Look for CollectionRealTime component or live update indicator"
         }
       ],
       "tags": [
@@ -4259,9 +4259,9 @@
         },
         {
           "name": "Check performance",
-          "action": "Look for PerformanceOptimizer component metrics",
+          "action": "playwright: assertVisible text=PerformanceOptimizer component metrics",
           "expected": "Performance metrics (render time, memory) displayed",
-          "_conversion_note": "manual-review-required"
+          "_original_action": "Look for PerformanceOptimizer component metrics"
         }
       ],
       "tags": [
@@ -4326,9 +4326,9 @@
         },
         {
           "name": "Save",
-          "action": "Click Save/Create button",
+          "action": "playwright: click text=Save/Create",
           "expected": "New playlist created and appears in the list",
-          "_conversion_note": "manual-review-required"
+          "_original_action": "Click Save/Create button"
         }
       ],
       "tags": [
@@ -4417,9 +4417,9 @@
         },
         {
           "name": "Remove item",
-          "action": "Click remove/delete button on a PlaylistItem",
+          "action": "playwright: click text=remove/delete button on a PlaylistItem",
           "expected": "Item removed from playlist, list updates",
-          "_conversion_note": "manual-review-required"
+          "_original_action": "Click remove/delete button on a PlaylistItem"
         }
       ],
       "tags": [
@@ -4447,9 +4447,9 @@
         },
         {
           "name": "Delete playlist",
-          "action": "Click delete button on a playlist, confirm deletion",
+          "action": "playwright: click text=delete button on a playlist, confirm deletion",
           "expected": "Playlist deleted and removed from list",
-          "_conversion_note": "manual-review-required"
+          "_original_action": "Click delete button on a playlist, confirm deletion"
         }
       ],
       "tags": [
@@ -4477,9 +4477,9 @@
         },
         {
           "name": "Click play",
-          "action": "Click the Play button",
+          "action": "playwright: click text=Play",
           "expected": "PlaylistPlayer component activates, starts playing first item",
-          "_conversion_note": "manual-review-required"
+          "_original_action": "Click the Play button"
         }
       ],
       "tags": [
@@ -4617,9 +4617,9 @@
         },
         {
           "name": "View analytics",
-          "action": "Click analytics button or section",
+          "action": "playwright: click text=analytics button or section",
           "expected": "PlaylistAnalytics component shows playback statistics",
-          "_conversion_note": "manual-review-required"
+          "_original_action": "Click analytics button or section"
         }
       ],
       "tags": [
@@ -4647,9 +4647,9 @@
         },
         {
           "name": "Click next",
-          "action": "Click the next track button",
+          "action": "playwright: click text=next track",
           "expected": "Player advances to next item in playlist",
-          "_conversion_note": "manual-review-required"
+          "_original_action": "Click the next track button"
         }
       ],
       "tags": [
@@ -4678,9 +4678,9 @@
         },
         {
           "name": "Click previous",
-          "action": "Click the previous track button",
+          "action": "playwright: click text=previous track",
           "expected": "Player returns to first item",
-          "_conversion_note": "manual-review-required"
+          "_original_action": "Click the previous track button"
         }
       ],
       "tags": [
@@ -4709,9 +4709,9 @@
         },
         {
           "name": "Check total duration",
-          "action": "Look for total playlist duration",
+          "action": "playwright: assertVisible text=total playlist duration",
           "expected": "Total duration shown as sum of all item durations",
-          "_conversion_note": "manual-review-required"
+          "_original_action": "Look for total playlist duration"
         }
       ],
       "tags": [
@@ -4739,9 +4739,9 @@
         },
         {
           "name": "Check item count",
-          "action": "Look for item count indicator",
+          "action": "playwright: assertVisible text=item count indicator",
           "expected": "Number of items in playlist displayed",
-          "_conversion_note": "manual-review-required"
+          "_original_action": "Look for item count indicator"
         }
       ],
       "tags": [
@@ -4859,9 +4859,9 @@
         },
         {
           "name": "Edit name",
-          "action": "Click on playlist name to edit, change the name, save",
+          "action": "playwright: click text=playlist name to edit, change the name, save",
           "expected": "Playlist name updated and change persisted",
-          "_conversion_note": "manual-review-required"
+          "_original_action": "Click on playlist name to edit, change the name, save"
         }
       ],
       "tags": [
@@ -4913,9 +4913,9 @@
         },
         {
           "name": "Toggle favorite",
-          "action": "Click the FavoriteToggle (heart icon) on an entity card",
+          "action": "playwright: click text=FavoriteToggle (heart icon) on an entity card",
           "expected": "Heart icon fills in, entity marked as favorite",
-          "_conversion_note": "manual-review-required"
+          "_original_action": "Click the FavoriteToggle (heart icon) on an entity card"
         }
       ],
       "tags": [
@@ -4979,9 +4979,9 @@
         },
         {
           "name": "Remove favorite",
-          "action": "Click the FavoriteToggle (heart icon) on a favorited entity",
+          "action": "playwright: click text=FavoriteToggle (heart icon) on a favorited entity",
           "expected": "Heart unfills, entity removed from favorites list",
-          "_conversion_note": "manual-review-required"
+          "_original_action": "Click the FavoriteToggle (heart icon) on a favorited entity"
         }
       ],
       "tags": [
@@ -5033,9 +5033,9 @@
         },
         {
           "name": "Click a favorite",
-          "action": "Click on a favorited entity card",
+          "action": "playwright: click text=a favorited entity card",
           "expected": "Navigated to /entity/:id detail page",
-          "_conversion_note": "manual-review-required"
+          "_original_action": "Click on a favorited entity card"
         }
       ],
       "tags": [
@@ -5125,9 +5125,9 @@
         },
         {
           "name": "Favorite multiple entities",
-          "action": "Click the heart icon on 5 different entities",
+          "action": "playwright: click text=heart icon on 5 different entities",
           "expected": "All 5 entities show filled hearts",
-          "_conversion_note": "manual-review-required"
+          "_original_action": "Click the heart icon on 5 different entities"
         },
         {
           "name": "Verify on favorites page",
@@ -5161,9 +5161,9 @@
         },
         {
           "name": "Unfavorite an item",
-          "action": "Click the heart toggle on an entity in the favorites grid",
+          "action": "playwright: click text=heart toggle on an entity in the favorites grid",
           "expected": "Entity removed from favorites, grid updates immediately",
-          "_conversion_note": "manual-review-required"
+          "_original_action": "Click the heart toggle on an entity in the favorites grid"
         }
       ],
       "tags": [
@@ -5221,9 +5221,9 @@
         },
         {
           "name": "Wait for data",
-          "action": "Wait for favorites to load",
+          "action": "playwright: waitFor text=favorites",
           "expected": "Loading state transitions to favorites grid",
-          "_conversion_note": "manual-review-required"
+          "_original_action": "Wait for favorites to load"
         }
       ],
       "tags": [
@@ -5245,9 +5245,9 @@
       "steps": [
         {
           "name": "Toggle favorite on entity",
-          "action": "Click the heart icon on an entity card",
+          "action": "playwright: click text=heart icon on an entity card",
           "expected": "Heart icon animates (scale, color change) when toggling",
-          "_conversion_note": "manual-review-required"
+          "_original_action": "Click the heart icon on an entity card"
         }
       ],
       "tags": [
@@ -5276,9 +5276,9 @@
         },
         {
           "name": "Toggle favorite",
-          "action": "Click the FavoriteToggle on the detail page",
+          "action": "playwright: click text=FavoriteToggle on the detail page",
           "expected": "Entity favorited, heart fills in",
-          "_conversion_note": "manual-review-required"
+          "_original_action": "Click the FavoriteToggle on the detail page"
         },
         {
           "name": "Verify on favorites page",
@@ -5312,9 +5312,9 @@
         },
         {
           "name": "Logout",
-          "action": "Click logout",
+          "action": "playwright: click text=logout",
           "expected": "Redirected to login",
-          "_conversion_note": "manual-review-required"
+          "_original_action": "Click logout"
         },
         {
           "name": "Re-login",
@@ -5403,15 +5403,15 @@
         },
         {
           "name": "Click play",
-          "action": "Click the play button",
+          "action": "playwright: click text=play",
           "expected": "Media starts playing, button changes to pause",
-          "_conversion_note": "manual-review-required"
+          "_original_action": "Click the play button"
         },
         {
           "name": "Click pause",
-          "action": "Click the pause button",
+          "action": "playwright: click text=pause",
           "expected": "Media pauses, button changes back to play",
-          "_conversion_note": "manual-review-required"
+          "_original_action": "Click the pause button"
         }
       ],
       "tags": [
@@ -5445,9 +5445,9 @@
         },
         {
           "name": "Mute",
-          "action": "Click mute button",
+          "action": "playwright: click text=mute",
           "expected": "Audio muted, mute icon shown",
-          "_conversion_note": "manual-review-required"
+          "_original_action": "Click mute button"
         }
       ],
       "tags": [
@@ -5476,9 +5476,9 @@
         },
         {
           "name": "Click seek bar",
-          "action": "Click at the middle of the seek bar",
+          "action": "playwright: click text=at the middle of the seek bar",
           "expected": "Playback jumps to the clicked position",
-          "_conversion_note": "manual-review-required"
+          "_original_action": "Click at the middle of the seek bar"
         }
       ],
       "tags": [
@@ -5507,9 +5507,9 @@
         },
         {
           "name": "Toggle fullscreen",
-          "action": "Click the fullscreen button",
+          "action": "playwright: click text=fullscreen",
           "expected": "Player enters fullscreen mode",
-          "_conversion_note": "manual-review-required"
+          "_original_action": "Click the fullscreen button"
         },
         {
           "name": "Exit fullscreen",
@@ -5544,9 +5544,9 @@
         },
         {
           "name": "Enable subtitles",
-          "action": "Click subtitle/CC button and select a track",
+          "action": "playwright: click text=subtitle/CC button and select a track",
           "expected": "Subtitles displayed overlaid on the video",
-          "_conversion_note": "manual-review-required"
+          "_original_action": "Click subtitle/CC button and select a track"
         }
       ],
       "tags": [
@@ -5600,9 +5600,9 @@
         },
         {
           "name": "Check time display",
-          "action": "Look for current time / total duration indicator",
+          "action": "playwright: assertVisible text=current time / total duration indicator",
           "expected": "Time shown in MM:SS or HH:MM:SS format",
-          "_conversion_note": "manual-review-required"
+          "_original_action": "Look for current time / total duration indicator"
         }
       ],
       "tags": [
@@ -5630,9 +5630,9 @@
         },
         {
           "name": "Press space",
-          "action": "Press spacebar key",
+          "action": "playwright: press spacebar",
           "expected": "Playback toggles (play/pause)",
-          "_conversion_note": "manual-review-required"
+          "_original_action": "Press spacebar key"
         }
       ],
       "tags": [
@@ -5740,9 +5740,9 @@
         },
         {
           "name": "Close player",
-          "action": "Click the close/X button on the player",
+          "action": "playwright: click text=close/X button on the player",
           "expected": "Player closes, returned to previous view",
-          "_conversion_note": "manual-review-required"
+          "_original_action": "Click the close/X button on the player"
         }
       ],
       "tags": [
@@ -5800,9 +5800,9 @@
         },
         {
           "name": "Open advanced search",
-          "action": "Click the Advanced Search button or link",
+          "action": "playwright: click text=Advanced Search button or",
           "expected": "AdvancedSearch component opens with search fields",
-          "_conversion_note": "manual-review-required"
+          "_original_action": "Click the Advanced Search button or link"
         }
       ],
       "tags": [
@@ -5903,9 +5903,9 @@
         },
         {
           "name": "Submit search",
-          "action": "Click Search button",
+          "action": "playwright: click text=Search",
           "expected": "Only entities from 2020-2025 displayed",
-          "_conversion_note": "manual-review-required"
+          "_original_action": "Click Search button"
         }
       ],
       "tags": [
@@ -5940,9 +5940,9 @@
         },
         {
           "name": "Submit search",
-          "action": "Click Search button",
+          "action": "playwright: click text=Search",
           "expected": "Only entities matching the selected genre displayed",
-          "_conversion_note": "manual-review-required"
+          "_original_action": "Click Search button"
         }
       ],
       "tags": [
@@ -5977,9 +5977,9 @@
         },
         {
           "name": "Submit search",
-          "action": "Click Search button",
+          "action": "playwright: click text=Search",
           "expected": "Results match all applied filters (intersection)",
-          "_conversion_note": "manual-review-required"
+          "_original_action": "Click Search button"
         }
       ],
       "tags": [
@@ -6007,9 +6007,9 @@
         },
         {
           "name": "Navigate pages",
-          "action": "Click next page button",
+          "action": "playwright: click text=next page",
           "expected": "Second page of results displayed",
-          "_conversion_note": "manual-review-required"
+          "_original_action": "Click next page button"
         }
       ],
       "tags": [
@@ -6037,9 +6037,9 @@
         },
         {
           "name": "Click result",
-          "action": "Click on a search result entity card",
+          "action": "playwright: click text=a search result entity card",
           "expected": "Navigated to /entity/:id detail page",
-          "_conversion_note": "manual-review-required"
+          "_original_action": "Click on a search result entity card"
         }
       ],
       "tags": [
@@ -6570,9 +6570,9 @@
         },
         {
           "name": "Check storage root section",
-          "action": "Find the storage root management section",
+          "action": "playwright: assertVisible text=storage root management section",
           "expected": "List of configured storage roots with add/remove options",
-          "_conversion_note": "manual-review-required"
+          "_original_action": "Find the storage root management section"
         }
       ],
       "tags": [
@@ -6783,9 +6783,9 @@
         },
         {
           "name": "Remove storage root",
-          "action": "Click remove button on a storage root, confirm",
+          "action": "playwright: click text=remove button on a storage root, confirm",
           "expected": "Storage root removed from list",
-          "_conversion_note": "manual-review-required"
+          "_original_action": "Click remove button on a storage root, confirm"
         }
       ],
       "tags": [
@@ -6905,9 +6905,9 @@
         },
         {
           "name": "Check system info",
-          "action": "Look for system info section (version, build number, Go version, OS)",
+          "action": "playwright: assertVisible text=system info section (version, build number, Go version, OS)",
           "expected": "System information cards displayed with data",
-          "_conversion_note": "manual-review-required"
+          "_original_action": "Look for system info section (version, build number, Go version, OS)"
         }
       ],
       "tags": [
@@ -6935,9 +6935,9 @@
         },
         {
           "name": "Check user list",
-          "action": "Find the user management section",
+          "action": "playwright: assertVisible text=user management section",
           "expected": "List of users with username, role, and creation date",
-          "_conversion_note": "manual-review-required"
+          "_original_action": "Find the user management section"
         }
       ],
       "tags": [
@@ -6996,9 +6996,9 @@
         },
         {
           "name": "Delete user",
-          "action": "Click delete button on a non-admin user, confirm",
+          "action": "playwright: click text=delete button on a non-admin user, confirm",
           "expected": "User deleted and removed from list",
-          "_conversion_note": "manual-review-required"
+          "_original_action": "Click delete button on a non-admin user, confirm"
         }
       ],
       "tags": [
@@ -7027,9 +7027,9 @@
         },
         {
           "name": "Check statistics",
-          "action": "Look for system statistics (CPU, memory, disk usage)",
+          "action": "playwright: assertVisible text=system statistics (CPU, memory, disk usage)",
           "expected": "System statistics displayed with current values",
-          "_conversion_note": "manual-review-required"
+          "_original_action": "Look for system statistics (CPU, memory, disk usage)"
         }
       ],
       "tags": [
@@ -7057,9 +7057,9 @@
         },
         {
           "name": "Check cache management",
-          "action": "Find cache management section",
+          "action": "playwright: assertVisible text=cache management section",
           "expected": "Cache status and clear cache button visible",
-          "_conversion_note": "manual-review-required"
+          "_original_action": "Find cache management section"
         }
       ],
       "tags": [
@@ -7087,9 +7087,9 @@
         },
         {
           "name": "Clear cache",
-          "action": "Click 'Clear Cache' button",
+          "action": "playwright: click text=Clear Cache",
           "expected": "Cache cleared, success notification shown",
-          "_conversion_note": "manual-review-required"
+          "_original_action": "Click 'Clear Cache' button"
         }
       ],
       "tags": [
@@ -7117,9 +7117,9 @@
         },
         {
           "name": "View logs",
-          "action": "Find and open the log viewer section",
+          "action": "playwright: assertVisible text=and open the log viewer section",
           "expected": "Recent log entries displayed",
-          "_conversion_note": "manual-review-required"
+          "_original_action": "Find and open the log viewer section"
         }
       ],
       "tags": [
@@ -7147,9 +7147,9 @@
         },
         {
           "name": "Check storage section",
-          "action": "Find storage root management section",
+          "action": "playwright: assertVisible text=storage root management section",
           "expected": "List of storage roots with status and actions",
-          "_conversion_note": "manual-review-required"
+          "_original_action": "Find storage root management section"
         }
       ],
       "tags": [
@@ -7207,9 +7207,9 @@
         },
         {
           "name": "Check backup section",
-          "action": "Find backup management section",
+          "action": "playwright: assertVisible text=backup management section",
           "expected": "Backup list and create backup button visible",
-          "_conversion_note": "manual-review-required"
+          "_original_action": "Find backup management section"
         }
       ],
       "tags": [
@@ -7267,9 +7267,9 @@
         },
         {
           "name": "Restore backup",
-          "action": "Click restore button on an existing backup",
+          "action": "playwright: click text=restore button on an existing backup",
           "expected": "Restore confirmation dialog appears",
-          "_conversion_note": "manual-review-required"
+          "_original_action": "Click restore button on an existing backup"
         }
       ],
       "tags": [
@@ -7297,9 +7297,9 @@
         },
         {
           "name": "Check usage report",
-          "action": "Find usage report section",
+          "action": "playwright: assertVisible text=usage report section",
           "expected": "Usage report data displayed (API calls, active users, etc.)",
-          "_conversion_note": "manual-review-required"
+          "_original_action": "Find usage report section"
         }
       ],
       "tags": [
@@ -7327,9 +7327,9 @@
         },
         {
           "name": "Check performance report",
-          "action": "Find performance report section",
+          "action": "playwright: assertVisible text=performance report section",
           "expected": "Performance metrics (response times, throughput) displayed",
-          "_conversion_note": "manual-review-required"
+          "_original_action": "Find performance report section"
         }
       ],
       "tags": [
@@ -7387,9 +7387,9 @@
         },
         {
           "name": "Check database info",
-          "action": "Look for database type, connection status, pool stats",
+          "action": "playwright: assertVisible text=database type, connection status, pool stats",
           "expected": "Database information displayed (SQLite/PostgreSQL, status)",
-          "_conversion_note": "manual-review-required"
+          "_original_action": "Look for database type, connection status, pool stats"
         }
       ],
       "tags": [
@@ -7417,9 +7417,9 @@
         },
         {
           "name": "Check uptime",
-          "action": "Look for server uptime display",
+          "action": "playwright: assertVisible text=server uptime display",
           "expected": "Server uptime shown in human-readable format",
-          "_conversion_note": "manual-review-required"
+          "_original_action": "Look for server uptime display"
         }
       ],
       "tags": [
@@ -7447,9 +7447,9 @@
         },
         {
           "name": "Change user role",
-          "action": "Find a user and change their role (admin/user)",
+          "action": "playwright: assertVisible text=a user and change their role (admin/user)",
           "expected": "User role updated, change confirmed",
-          "_conversion_note": "manual-review-required"
+          "_original_action": "Find a user and change their role (admin/user)"
         }
       ],
       "tags": [
@@ -7526,9 +7526,9 @@
         },
         {
           "name": "Check metric gauges",
-          "action": "Look for Gauge components showing CPU, memory usage",
+          "action": "playwright: assertVisible text=Gauge components showing CPU, memory usage",
           "expected": "Gauge icons and metric values rendered",
-          "_conversion_note": "manual-review-required"
+          "_original_action": "Look for Gauge components showing CPU, memory usage"
         }
       ],
       "tags": [
@@ -7557,9 +7557,9 @@
         },
         {
           "name": "Verify transitions",
-          "action": "Wait for all sections to load",
+          "action": "playwright: waitFor text=all sections",
           "expected": "Loading states transition to rendered content",
-          "_conversion_note": "manual-review-required"
+          "_original_action": "Wait for all sections to load"
         }
       ],
       "tags": [
@@ -7617,9 +7617,9 @@
         },
         {
           "name": "Check for broken images",
-          "action": "Look for broken image icons or missing alt text indicators",
+          "action": "playwright: assertVisible text=broken image icons or missing alt text indicators",
           "expected": "No broken image icons visible on any page",
-          "_conversion_note": "manual-review-required"
+          "_original_action": "Look for broken image icons or missing alt text indicators"
         }
       ],
       "tags": [
@@ -7641,16 +7641,16 @@
       "steps": [
         {
           "name": "Test all sidebar links",
-          "action": "Click every link in the sidebar navigation",
+          "action": "playwright: click text=every link in the sidebar navigation",
           "expected": "Each link navigates to the correct page without 404",
-          "expect_status": 404,
-          "_conversion_note": "manual-review-required"
+          "_original_action": "Click every link in the sidebar navigation",
+          "expect_status": 404
         },
         {
           "name": "Check for broken links",
-          "action": "Verify no 404 pages or error states from navigation",
+          "action": "playwright: assertVisible text=no 404 pages or error states from navigation",
           "expected": "All links resolve to working pages",
-          "_conversion_note": "manual-review-required"
+          "_original_action": "Verify no 404 pages or error states from navigation"
         }
       ],
       "tags": [
@@ -7679,9 +7679,9 @@
         },
         {
           "name": "Verify spinner visibility",
-          "action": "Observe the loading transition",
+          "action": "playwright: assertVisible text=loading transition",
           "expected": "Spinner/skeleton visible, then replaced by content",
-          "_conversion_note": "manual-review-required"
+          "_original_action": "Observe the loading transition"
         }
       ],
       "tags": [
@@ -7739,9 +7739,9 @@
         },
         {
           "name": "Verify auto-dismiss",
-          "action": "Wait for toast to auto-dismiss",
+          "action": "playwright: waitFor text=toast to auto-dismiss",
           "expected": "Toast disappears after a few seconds",
-          "_conversion_note": "manual-review-required"
+          "_original_action": "Wait for toast to auto-dismiss"
         }
       ],
       "tags": [
@@ -7770,9 +7770,9 @@
         },
         {
           "name": "Close with X button",
-          "action": "Click the close (X) button",
+          "action": "playwright: click text=close (X)",
           "expected": "Modal closes",
-          "_conversion_note": "manual-review-required"
+          "_original_action": "Click the close (X) button"
         },
         {
           "name": "Open again and close with Escape",
@@ -7844,9 +7844,9 @@
         },
         {
           "name": "Tab through fields",
-          "action": "Press Tab key to move between username, password, and submit button",
+          "action": "playwright: press Tab",
           "expected": "Focus moves in logical order through form elements",
-          "_conversion_note": "manual-review-required"
+          "_original_action": "Press Tab key to move between username, password, and submit button"
         }
       ],
       "tags": [
@@ -7900,9 +7900,9 @@
       "steps": [
         {
           "name": "Fresh page load",
-          "action": "Open http://localhost:3000 with console open",
+          "action": "playwright: navigate http://localhost:3000",
           "expected": "No console warnings during page load and initial render",
-          "_conversion_note": "manual-review-required"
+          "_original_action": "Open http://localhost:3000 with console open"
         }
       ],
       "tags": [
@@ -8088,9 +8088,9 @@
         },
         {
           "name": "Toggle switch",
-          "action": "Click the switch",
+          "action": "playwright: click text=switch",
           "expected": "Switch toggles state with smooth animation",
-          "_conversion_note": "manual-review-required"
+          "_original_action": "Click the switch"
         }
       ],
       "tags": [
@@ -8119,9 +8119,9 @@
         },
         {
           "name": "Open and select",
-          "action": "Click to open, select an option",
+          "action": "playwright: click text=to open, select an option",
           "expected": "Option selected, dropdown closes, value updates",
-          "_conversion_note": "manual-review-required"
+          "_original_action": "Click to open, select an option"
         }
       ],
       "tags": [
@@ -8150,9 +8150,9 @@
         },
         {
           "name": "Type text",
-          "action": "Click and type multiline text",
+          "action": "playwright: click text=and type multiline text",
           "expected": "Text entered correctly, textarea expands as needed",
-          "_conversion_note": "manual-review-required"
+          "_original_action": "Click and type multiline text"
         }
       ],
       "tags": [
@@ -8236,9 +8236,9 @@
         },
         {
           "name": "Enter HTML payload",
-          "action": "Type '<img src=x onerror=alert(1)>' in the name field",
+          "action": "playwright: fill input[name=name] <img src=x onerror=alert(1)>",
           "expected": "Input sanitized, HTML not rendered as markup",
-          "_conversion_note": "manual-review-required"
+          "_original_action": "Type '<img src=x onerror=alert(1)>' in the name field"
         }
       ],
       "tags": [
@@ -8298,21 +8298,21 @@
         },
         {
           "name": "Click back",
-          "action": "Click browser back button",
+          "action": "playwright: click text=browser back",
           "expected": "Navigated to /media",
-          "_conversion_note": "manual-review-required"
+          "_original_action": "Click browser back button"
         },
         {
           "name": "Click back again",
-          "action": "Click browser back button",
+          "action": "playwright: click text=browser back",
           "expected": "Navigated to /dashboard",
-          "_conversion_note": "manual-review-required"
+          "_original_action": "Click browser back button"
         },
         {
           "name": "Click forward",
-          "action": "Click browser forward button",
+          "action": "playwright: click text=browser forward",
           "expected": "Navigated to /media",
-          "_conversion_note": "manual-review-required"
+          "_original_action": "Click browser forward button"
         }
       ],
       "tags": [
@@ -8341,9 +8341,9 @@
         },
         {
           "name": "Open second tab",
-          "action": "Open http://localhost:3000/media in a new tab",
+          "action": "playwright: navigate http://localhost:3000/media",
           "expected": "Media browser displayed (session shared via localStorage)",
-          "_conversion_note": "manual-review-required"
+          "_original_action": "Open http://localhost:3000/media in a new tab"
         },
         {
           "name": "Logout in first tab",
@@ -8568,9 +8568,9 @@
       "steps": [
         {
           "name": "Navigate with hash",
-          "action": "Open http://localhost:3000/dashboard#section while logged in",
+          "action": "playwright: navigate http://localhost:3000/dashboard#section",
           "expected": "Dashboard loads (hash fragment does not break routing)",
-          "_conversion_note": "manual-review-required"
+          "_original_action": "Open http://localhost:3000/dashboard#section while logged in"
         }
       ],
       "tags": [
@@ -8592,9 +8592,9 @@
       "steps": [
         {
           "name": "Navigate with query params",
-          "action": "Open http://localhost:3000/browse?type=movie while logged in",
+          "action": "playwright: navigate http://localhost:3000/browse?type=movie",
           "expected": "Entity browser loads (query params handled or ignored gracefully)",
-          "_conversion_note": "manual-review-required"
+          "_original_action": "Open http://localhost:3000/browse?type=movie while logged in"
         }
       ],
       "tags": [

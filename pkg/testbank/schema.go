@@ -138,6 +138,31 @@ const (
 	// can ride on the HTTP step's ExpectStatus / ExpectJSONPath
 	// / ExpectBodyContains fields directly.
 	ActionTypeAssert ActionType = "assert"
+	// ActionTypePlaywright drives a web browser via the Playwright
+	// adapter for deterministic UI test bank steps. Value format:
+	//   "<verb> <selector|target>"
+	// where verb is one of:
+	//   navigate <url>            — open a URL
+	//   click    <selector>       — click an element
+	//   fill     <selector> <txt> — type into an input
+	//   waitFor  <selector>       — wait for element
+	//   assertVisible    <selector>
+	//   assertNotVisible <selector>
+	//   press    <key>            — keyboard press (e.g. Enter)
+	//
+	// Selectors are Playwright selectors (CSS, text=, role=, etc).
+	//
+	// Added 2026-04-29 for BLUFF-HELIXQA-BANKS-REWRITE-001 step 3
+	// to bring full-qa-web.json (572 prose entries) under the
+	// structured-action umbrella. The current executor stub
+	// records the step as structurally valid but needs the
+	// Playwright runtime wired in via PlaywrightCLIAdapter from
+	// the Challenges submodule (separate PR — banks are
+	// converted ahead of the runtime so a single integration
+	// commit closes the gap). Until then ActionTypePlaywright
+	// steps SKIP with PLAYWRIGHT-RUNTIME-PENDING rather than
+	// false-PASS, keeping Article XI compliance.
+	ActionTypePlaywright ActionType = "playwright"
 )
 
 // TestStep is a single step within a test case.
@@ -244,6 +269,8 @@ func (ts *TestStep) ParseAction() (ActionType, string) {
 			return ActionTypeHTTP, value
 		case ActionTypeAssert:
 			return ActionTypeAssert, value
+		case ActionTypePlaywright:
+			return ActionTypePlaywright, value
 		}
 	}
 

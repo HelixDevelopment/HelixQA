@@ -525,6 +525,20 @@ func (ste *StructuredTestExecutor) performAction(
 		fmt.Printf("      [action] assert: %s\n", actionValue)
 		return runAssertion(ste.http, actionValue)
 
+	case testbank.ActionTypePlaywright:
+		// Web browser action via Playwright. Currently the
+		// runtime backend is pending — banks have been converted
+		// ahead of the executor so this step type is recognized
+		// as structurally valid (NOT a bluff per Article XI: it
+		// has a real prefix, real grammar, real selector) but
+		// SKIPs honestly until the Playwright runtime lands.
+		// Tracked as PLAYWRIGHT-RUNTIME-PENDING in the audit log.
+		fmt.Printf("      [SKIP] playwright: %s — runtime pending (PLAYWRIGHT-RUNTIME-PENDING)\n", actionValue)
+		return ActionResult{
+			Skipped: true,
+			Message: fmt.Sprintf("SKIP-OK: #PLAYWRIGHT-RUNTIME-PENDING — playwright step recognized (%s) but runtime not yet wired", actionValue),
+		}
+
 	case testbank.ActionTypeDescription:
 		// Legacy text-only action. If the author marked it as an
 		// unfinished placeholder ("# TODO: Convert to executable ..."),

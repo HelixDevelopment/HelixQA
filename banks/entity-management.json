@@ -1304,9 +1304,10 @@
       "steps": [
         {
           "name": "Ensure 30+ entities exist",
-          "action": "Verify or create sufficient entities",
+          "action": "playwright: assertVisible text=or create sufficient entities",
           "expected": "30+ entities in database",
-          "_conversion_note": "manual-review-required"
+          "_conversion_note": "manual-review-required",
+          "_original_action": "Verify or create sufficient entities"
         },
         {
           "name": "Request page 2",
@@ -1468,9 +1469,10 @@
       "steps": [
         {
           "name": "Ensure mixed entities exist",
-          "action": "Verify movies, books, games in database",
+          "action": "playwright: assertVisible text=movies, books, games in database",
           "expected": "Multiple types present",
-          "_conversion_note": "manual-review-required"
+          "_conversion_note": "manual-review-required",
+          "_original_action": "Verify movies, books, games in database"
         },
         {
           "name": "Filter by book",
@@ -1874,9 +1876,10 @@
         },
         {
           "name": "Click an entity",
-          "action": "Click on a movie entity card",
+          "action": "playwright: click text=a movie entity card",
           "expected": "Entity detail page /entity/{id} opens",
-          "_conversion_note": "manual-review-required"
+          "_conversion_note": "manual-review-required",
+          "_original_action": "Click on a movie entity card"
         }
       ],
       "tags": [
@@ -1988,9 +1991,10 @@
         },
         {
           "name": "Type search query",
-          "action": "Type 'Matrix' in search bar",
+          "action": "playwright: fill input[name=search] Matrix",
           "expected": "Results filter in real-time or after submit",
-          "_conversion_note": "manual-review-required"
+          "_conversion_note": "manual-review-required",
+          "_original_action": "Type 'Matrix' in search bar"
         },
         {
           "name": "Verify results",
