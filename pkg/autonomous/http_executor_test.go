@@ -481,6 +481,61 @@ func TestHTTPExecutor_CSRFCachedAcrossCalls(t *testing.T) {
 		"preflight must run exactly once for the lifetime of the executor")
 }
 
+// TestHTTPExecutor_UnresolvedPlaceholderSkips asserts that a
+// request whose path contains an unresolved {var} placeholder is
+// SKIPPED with a SKIP-OK marker, NOT failed. Article XI §11.5: a
+// FAIL on this path would be a bluff because the catalog-api isn't
+// broken — the bank converter just left a template variable in.
+//
+// Anti-bluff anchor: comment out the unresolvedPlaceholder check
+// in Execute and this test FAILS — the request goes out with a
+// literal `{id}` in the URL, the catalog-api returns 400 ("Invalid
+// ID"), and the test sees a Failure instead of Skipped.
+func TestHTTPExecutor_UnresolvedPlaceholderSkips(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		t.Errorf("server MUST NOT be reached when path has unresolved placeholder; got %s", r.URL.Path)
+	}))
+	defer srv.Close()
+
+	h := NewHTTPExecutor(srv.URL)
+	res := h.Execute(context.Background(), "GET",
+		"/api/v1/scans/{job_id}",
+		testbank.TestStep{ExpectStatus: 200, AuthMode: "none"})
+
+	require.True(t, res.Skipped, "must SKIP, not run; got %#v", res)
+	require.False(t, res.Success, "skipped result must not also be Success")
+	assert.Contains(t, res.Message, "{job_id}",
+		"skip message must name the unresolved placeholder")
+	assert.Contains(t, res.Message, "SKIP-OK:",
+		"skip message must carry the SKIP-OK marker so the bluff scanner doesn't flag it")
+	assert.Contains(t, res.Message, "BLUFF-HELIXQA-BANKS-VAR-SUBST-001",
+		"skip message must reference the tracking ticket")
+}
+
+// TestHTTPExecutor_PlaceholderDetectionConservative asserts that
+// path patterns that LOOK like braces but aren't placeholders
+// (uppercase chars, mixed-case, real path segments containing
+// braces) are NOT treated as placeholders.
+func TestHTTPExecutor_PlaceholderDetectionConservative(t *testing.T) {
+	tests := []struct {
+		path     string
+		expected string
+	}{
+		{"/api/v1/foo", ""},
+		{"/api/v1/foo/{id}", "{id}"},
+		{"/api/v1/foo/{job_id}/status", "{job_id}"},
+		{"/api/v1/users/{Id}", ""}, // uppercase — likely a real path segment
+		{"/api/v1/x/{User}/y", ""},
+		{"/api/v1/x/123/y", ""},
+		{"/api/v1/scans/{}", ""}, // empty braces
+		{"/api/v1/scans/{abc-def}", ""}, // hyphen — not a var name
+	}
+	for _, tt := range tests {
+		got := unresolvedPlaceholder(tt.path)
+		assert.Equal(t, tt.expected, got, "path=%q", tt.path)
+	}
+}
+
 // TestHTTPExecutor_CSRFGetUnaffected asserts that GET requests
 // against CSRF-guarded paths do NOT trigger preflights — only
 // mutating methods do.

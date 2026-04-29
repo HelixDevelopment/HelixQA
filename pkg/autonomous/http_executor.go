@@ -142,6 +142,21 @@ func (h *HTTPExecutor) Execute(
 	if h.BaseURL == "" {
 		return ActionResult{Success: false, Message: "http: BaseURL not configured (set HELIXQA_HTTP_BASE_URL)"}
 	}
+	// Article XI §11.5: detect unresolved `{var}` placeholders left
+	// over from the bank converter. The bank entry's prose describes
+	// "GET /scans/{job_id}" expecting the converter to substitute
+	// {job_id} from a prior step's response, but the runtime doesn't
+	// yet support response capture / template expansion. Marking
+	// these SKIPPED (with explicit reason) is honest — the test
+	// can't run yet and a FAIL would be a bluff because the
+	// catalog-api isn't actually broken; the harness just lacks the
+	// feature.
+	if placeholder := unresolvedPlaceholder(path); placeholder != "" {
+		return ActionResult{
+			Skipped: true,
+			Message: fmt.Sprintf("http: unresolved placeholder %s in path — SKIP-OK: #BLUFF-HELIXQA-BANKS-VAR-SUBST-001 (executor lacks response capture / variable expansion; bank converter must hardcode an ID or runtime must implement extract:/template support)", placeholder),
+		}
+	}
 	method = strings.ToUpper(strings.TrimSpace(method))
 	if method == "" {
 		return ActionResult{Success: false, Message: "http: method missing (use 'http: POST /path' format)"}
@@ -431,6 +446,44 @@ func parseHTTPAction(value string) (method, path string) {
 		return "GET", parts[0]
 	}
 	return "", ""
+}
+
+// unresolvedPlaceholder returns the first `{var}`-style template
+// placeholder in s that LOOKS unresolved (i.e. the var name
+// matches a known capture-style identifier, not a real path
+// segment). Returns "" if no placeholder is found. The check is
+// deliberately conservative — a real path segment like
+// `{"key":"v"}` in a query string is NOT a placeholder, only
+// `/{job_id}` / `/{id}/` / `={smb_root}` patterns count.
+//
+// We accept the simple heuristic: anything matching `{[a-z_]+}`
+// that the bank converter likely emitted as a placeholder.
+// Substring tokens like `{` inside JSON query bodies don't reach
+// this function — `path` is the URL path component only.
+func unresolvedPlaceholder(path string) string {
+	open := strings.IndexByte(path, '{')
+	if open < 0 {
+		return ""
+	}
+	close := strings.IndexByte(path[open:], '}')
+	if close < 0 {
+		return ""
+	}
+	frag := path[open : open+close+1]
+	// Empty braces "{}" or single char are not placeholders.
+	inner := frag[1 : len(frag)-1]
+	if len(inner) == 0 {
+		return ""
+	}
+	// Only treat lowercase + underscore + digits ID-ish names as
+	// placeholders. Uppercase, hyphens, dots, etc. are real path
+	// segments, not converter placeholders.
+	for _, r := range inner {
+		if !(r == '_' || (r >= 'a' && r <= 'z') || (r >= '0' && r <= '9')) {
+			return ""
+		}
+	}
+	return frag
 }
 
 // needsCSRF reports whether the given (method, path) is behind the
