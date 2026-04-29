@@ -455,6 +455,7 @@ func TestSameCore_DistinguishesCoords(t *testing.T) {
 }
 
 func TestResolverFunc_Adapter(t *testing.T) {
+	// bluff-scan: nil-only-ok (function-to-Resolver adapter — must compile and execute without error)
 	var called bool
 	rf := ResolverFunc(func(ctx context.Context, img image.Image, goal string) (action.Action, error) {
 		called = true

@@ -102,6 +102,7 @@ func TestOTelTracer_DoubleEndIdempotent(t *testing.T) {
 }
 
 func TestNewDefaultTracerProvider_WithoutEndpoint(t *testing.T) {
+	// bluff-scan: nil-only-ok (constructor smoke — no endpoint config must still produce a usable provider)
 	provider, err := NewDefaultTracerProvider(context.Background(), "", "nexus")
 	if err != nil {
 		t.Fatal(err)

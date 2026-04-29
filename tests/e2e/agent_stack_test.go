@@ -46,6 +46,27 @@ import (
 //   - The Executor receives exactly the expected 2 actions
 //     (click + type; Done is recorded but not dispatched).
 func TestAgentStack_GoalLoopEndToEnd(t *testing.T) {
+	// Article XI §11.5 classification: this test wires Helix's
+	// agent-stack glue (Runner → Resolver → Grounder → Actor →
+	// SGLang → UI-TARS) against scripted EXTERNAL services
+	// (UI-TARS VLM + OmniParser). UI-TARS and OmniParser are
+	// HelixQA's external dependencies — a "real" version requires
+	// running their containers with GPU + a model file, neither
+	// of which fits CI.
+	//
+	// SKIP-OK: #BLUFF-HELIXQA-AGENT-STACK-001 — httptest mocks
+	// stand in for two external services (UI-TARS VLM,
+	// OmniParser). The mocks ARE the test's chosen integration
+	// boundary — they're scripted to specific responses and the
+	// assertions verify Helix's glue handles them correctly.
+	// Reclassification path: move to tests/integration/ (more
+	// honest naming) AND add a parallel real-container variant
+	// gated by HELIXQA_REAL_AGENT_STACK_E2E env var. Production
+	// validation today happens via HelixQA's autonomous pipeline
+	// hitting the real Mi Box 4 (qa-results/session-*/) where
+	// these components are exercised end-to-end with real
+	// hardware. This test's value is type/glue contract, not
+	// production parity.
 	// ----- Mock UI-TARS server -----
 	// Returns a 3-step sequence: click → type → done. The per-call
 	// counter ensures we track which step of the conversation the

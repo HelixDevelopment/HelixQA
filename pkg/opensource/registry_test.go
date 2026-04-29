@@ -126,6 +126,7 @@ func TestLocateLicenceFile_OpenClawing2Set(t *testing.T) {
 // so the quarterly refresh queue can track them, without failing
 // Phase 1 on unrelated submodules.
 func TestLocateLicenceFile_PreExistingInfo(t *testing.T) {
+	// bluff-scan: nil-only-ok (registry helper — pre-existing info file must be located without error)
 	repoRoot := findRepoRoot(t)
 	openSourceDir := filepath.Join(repoRoot, "tools", "opensource")
 	if _, err := os.Stat(openSourceDir); os.IsNotExist(err) {

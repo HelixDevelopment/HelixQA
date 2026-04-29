@@ -2,6 +2,7 @@ package capture
 
 import (
 	"runtime"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -117,37 +118,58 @@ func TestVerifyPlatformSupport(t *testing.T) {
 
 func TestListDisplays(t *testing.T) {
 	if !IsPlatformSupported() {
-		t.Skip("platform not supported")  // SKIP-OK: #legacy-untriaged
+		t.Skip("platform not supported") // SKIP-OK: #CAPTURE-PLATFORM-001
 	}
 
 	displays, err := ListDisplays()
 
-	// Should not error on supported platforms
-	// May return empty list if no display available
+	// On a supported platform that lacks a working display
+	// backend (typical in headless CI containers without Xvfb),
+	// ListDisplays returns a recognised "no backend" error. That
+	// is a SKIP, not a PASS — we have not actually verified the
+	// behaviour. Anything else is a real failure.
 	if err != nil {
-		t.Logf("ListDisplays error: %v", err)
-		return
+		if strings.Contains(err.Error(), "no display") ||
+			strings.Contains(err.Error(), "DISPLAY") ||
+			strings.Contains(err.Error(), "x11") ||
+			strings.Contains(err.Error(), "wayland") {
+			t.Skipf("SKIP-OK: #CAPTURE-NO-DISPLAY — headless environment: %v", err)
+		}
+		t.Fatalf("ListDisplays on supported platform must succeed; got: %v", err)
 	}
 
+	if displays == nil {
+		t.Fatal("ListDisplays returned nil slice on supported platform with no error")
+	}
 	t.Logf("Found %d displays", len(displays))
 	for i, d := range displays {
+		if d.Width <= 0 || d.Height <= 0 {
+			t.Errorf("display %d: invalid dimensions %dx%d", i, d.Width, d.Height)
+		}
 		t.Logf("  Display %d: %s (%dx%d)", i, d.Name, d.Width, d.Height)
 	}
 }
 
 func TestListWindows(t *testing.T) {
 	if !IsPlatformSupported() {
-		t.Skip("platform not supported")  // SKIP-OK: #legacy-untriaged
+		t.Skip("platform not supported") // SKIP-OK: #CAPTURE-PLATFORM-001
 	}
 
 	windows, err := ListWindows()
-
-	// May error if tools not installed
 	if err != nil {
-		t.Logf("ListWindows error: %v", err)
-		return
+		// Headless / no window-listing tool installed → SKIP, not PASS.
+		if strings.Contains(err.Error(), "wmctrl") ||
+			strings.Contains(err.Error(), "xdotool") ||
+			strings.Contains(err.Error(), "DISPLAY") ||
+			strings.Contains(err.Error(), "no display") {
+			t.Skipf("SKIP-OK: #CAPTURE-NO-WMCTRL — headless or missing tool: %v", err)
+		}
+		t.Fatalf("ListWindows on supported platform must succeed; got: %v", err)
 	}
 
+	if windows == nil {
+		t.Fatal("ListWindows returned nil slice on supported platform with no error")
+	}
 	t.Logf("Found %d windows", len(windows))
 	for i, w := range windows {
 		t.Logf("  Window %d: %s", i, w.String())
@@ -160,21 +182,42 @@ func TestListWindows(t *testing.T) {
 
 func TestFindWindow(t *testing.T) {
 	if !IsPlatformSupported() {
-		t.Skip("platform not supported")  // SKIP-OK: #legacy-untriaged
+		t.Skip("platform not supported") // SKIP-OK: #CAPTURE-PLATFORM-001
 	}
 
-	// Try to find a window with common keywords
+	// FindWindow returns the first matching window, or an error if
+	// no candidate matches. On a real desktop with at least one
+	// open window, at least one keyword should match. In a headless
+	// CI, none will match — that's a SKIP, not a PASS.
 	keywords := []string{"terminal", "browser", "code", "editor"}
+	var foundAny bool
+	var lastErr error
 
 	for _, keyword := range keywords {
 		window, err := FindWindow(keyword)
 		if err == nil {
+			foundAny = true
 			t.Logf("Found window with keyword '%s': %s", keyword, window.String())
-			return
+			break
 		}
+		lastErr = err
 	}
 
-	t.Log("No windows found with common keywords")
+	if !foundAny {
+		// If lastErr suggests headless/missing-tool, SKIP. Otherwise
+		// we'd at least expect ONE common-name window on a real
+		// desktop.
+		if lastErr != nil &&
+			(strings.Contains(lastErr.Error(), "DISPLAY") ||
+				strings.Contains(lastErr.Error(), "no display") ||
+				strings.Contains(lastErr.Error(), "wmctrl") ||
+				strings.Contains(lastErr.Error(), "xdotool")) {
+			t.Skipf("SKIP-OK: #CAPTURE-NO-WMCTRL — headless or missing tool: %v", lastErr)
+		}
+		// Headless desktop with no common windows open is also a
+		// legitimate SKIP — we cannot prove FindWindow positively.
+		t.Skipf("SKIP-OK: #CAPTURE-NO-COMMON-WIN — no common-name window present (headless test runner?)")
+	}
 }
 
 func TestCaptureScreenshot(t *testing.T) {
@@ -232,8 +275,14 @@ Window 12345678
 	var window Window
 	parseXdotoolGeometry(output, &window)
 
-	// The parsing logic may not extract all values depending on format
-	// Just verify it doesn't crash
+	// Parser is best-effort across xdotool versions — produce
+	// concrete assertions on the values that DO survive the
+	// parser, instead of a content-less log line. If a future
+	// regression makes the parser ignore Position/Geometry
+	// entirely, this test now FAILs.
+	if window.X == 0 && window.Y == 0 && window.Width == 0 && window.Height == 0 {
+		t.Fatal("parseXdotoolGeometry produced an entirely-zero Window — parser regression")
+	}
 	t.Logf("Parsed window: X=%d, Y=%d, Width=%d, Height=%d", window.X, window.Y, window.Width, window.Height)
 }
 
@@ -280,34 +329,36 @@ func TestParseWmctrlOutput(t *testing.T) {
 }
 
 func TestIsWayland(t *testing.T) {
-	// Just test that function exists and returns bool
+	// bluff-scan: no-assert-ok (smoke test — IsWayland must not panic;
+	// returns a bool, value depends on runtime env)
 	_ = IsWayland()
 }
 
 func TestGetDesktopEnvironment(t *testing.T) {
+	// bluff-scan: no-assert-ok (smoke test — GetDesktopEnvironment must
+	// not panic; returns a string, value depends on $XDG_CURRENT_DESKTOP)
 	de := GetDesktopEnvironment()
 	t.Logf("Desktop Environment: %s", de)
-	// Should return something or empty string
 }
 
 // macOS-specific tests
 
 func TestIsScreenCaptureKitAvailable(t *testing.T) {
 	if runtime.GOOS != "darwin" {
-		t.Skip("macOS only test")  // SKIP-OK: #legacy-untriaged
+		t.Skip("macOS only test") // SKIP-OK: #CAPTURE-MACOS-ONLY
 	}
-
+	// bluff-scan: no-assert-ok (Darwin smoke — must not panic; bool
+	// result varies with macOS version)
 	available := IsScreenCaptureKitAvailable()
 	t.Logf("ScreenCaptureKit available: %v", available)
 }
 
 func TestCheckScreenRecordingPermission(t *testing.T) {
 	if runtime.GOOS != "darwin" {
-		t.Skip("macOS only test")  // SKIP-OK: #legacy-untriaged
+		t.Skip("macOS only test") // SKIP-OK: #CAPTURE-MACOS-ONLY
 	}
-
-	// This will likely fail in test environment
-	// Just make sure it doesn't panic
+	// bluff-scan: no-assert-ok (Darwin smoke — CheckScreenRecordingPermission
+	// must not panic; result depends on user TCC grants)
 	_ = CheckScreenRecordingPermission()
 }
 

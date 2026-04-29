@@ -87,6 +87,7 @@ steps:
 }
 
 func TestValidateYAML_Happy(t *testing.T) {
+	// bluff-scan: nil-only-ok (happy path — valid YAML must validate without error)
 	err := validateYAML(`id: NX-GEN-demo
 name: demo
 steps:
