@@ -61,6 +61,17 @@ type PipelineConfig struct {
 	// reconciliation.
 	BanksDir string
 
+	// HTTPBaseURL is the root URL the structured executor
+	// uses for ActionTypeHTTP steps (e.g.
+	// "http://thinker.local:8092"). When empty, the executor
+	// falls back to the HELIXQA_HTTP_BASE_URL env var. When
+	// both are empty, ActionTypeHTTP steps fail with a clear
+	// configuration error rather than silently no-op.
+	//
+	// Added 2026-04-29 for BLUFF-HELIXQA-BANKS-REWRITE-001 —
+	// see HelixQA/pkg/autonomous/http_executor.go.
+	HTTPBaseURL string
+
 	// Timeout is the maximum duration for the entire
 	// pipeline run.
 	Timeout time.Duration
