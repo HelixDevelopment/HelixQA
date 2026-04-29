@@ -1872,7 +1872,9 @@
           "action": "http: POST /api/v1/admin/cache/clear",
           "expected": "Cache cleared",
           "_original_action": "POST /api/v1/admin/cache/clear",
-          "auth": "admin"
+          "auth": "admin",
+          "_skip": true,
+          "_skip_reason": "endpoint POST /api/v1/admin/cache/clear does not exist on catalog-api (entities are aggregated post-scan, not user-created; cache endpoints are not exposed) (#BLUFF-HELIXQA-BANKS-WRONG-PATHS-001)"
         },
         {
           "name": "Measure cold cache query",

@@ -28,7 +28,11 @@
           "expected": "200 OK with session token",
           "auth": "admin",
           "_original_action": "POST /api/v1/auth/login with admin/admin123",
-          "expect_status": 200
+          "expect_status": 200,
+          "body": {
+            "username": "admin",
+            "password": "admin123"
+          }
         },
         {
           "name": "Login via Web",
@@ -351,7 +355,7 @@
           "action": "http: GET /api/v1/browse",
           "expected": "Cyrillic characters in response are correct UTF-8",
           "auth": "admin",
-          "_original_action": "GET /api/v1/browse with path containing Cyrillic (Музика, Филмови)"
+          "_original_action": "GET /api/v1/browse with path containing Cyrillic (\u041c\u0443\u0437\u0438\u043a\u0430, \u0424\u0438\u043b\u043c\u043e\u0432\u0438)"
         },
         {
           "name": "Browse on Web",
@@ -387,14 +391,14 @@
       ],
       "steps": [
         {
-          "name": "Search 'Музика' via API",
-          "action": "http: GET /api/v1/entities/search?q=Музика",
+          "name": "Search '\u041c\u0443\u0437\u0438\u043a\u0430' via API",
+          "action": "http: GET /api/v1/entities/search?q=\u041c\u0443\u0437\u0438\u043a\u0430",
           "expected": "Returns Cyrillic-matching results",
           "auth": "admin",
-          "_original_action": "GET /api/v1/entities/search?q=Музика"
+          "_original_action": "GET /api/v1/entities/search?q=\u041c\u0443\u0437\u0438\u043a\u0430"
         },
         {
-          "name": "Search 'Музика' on Web",
+          "name": "Search '\u041c\u0443\u0437\u0438\u043a\u0430' on Web",
           "action": "Type Cyrillic search term in web search",
           "expected": "Results match API response",
           "_conversion_note": "manual-review-required"
@@ -426,19 +430,33 @@
           "expected": "401 Unauthorized with error message",
           "_original_action": "POST /api/v1/auth/login with wrong password",
           "expect_status": 401,
-          "expect_body_contains": "error"
+          "expect_body_contains": "error",
+          "body": {
+            "username": "admin",
+            "password": "WrongPassword!!"
+          }
         },
         {
           "name": "Invalid login on Web",
           "action": "Enter wrong password, click Login",
           "expected": "Error message displayed, not a crash",
-          "_conversion_note": "manual-review-required"
+          "_conversion_note": "manual-review-required",
+          "body": {
+            "username": "admin",
+            "password": "WrongPassword!!"
+          },
+          "expect_status": 401
         },
         {
           "name": "Invalid login on Android TV",
           "action": "Enter wrong password via DPAD",
           "expected": "Error message displayed, stays on login screen",
-          "_conversion_note": "manual-review-required"
+          "_conversion_note": "manual-review-required",
+          "body": {
+            "username": "admin",
+            "password": "WrongPassword!!"
+          },
+          "expect_status": 401
         }
       ],
       "tags": [
@@ -635,7 +653,13 @@
           "action": "http: POST /api/v1/auth/login",
           "expected": "Rate limit triggered (429)",
           "_original_action": "POST /api/v1/auth/login 6 times in 1 second",
-          "expect_status": 429
+          "expect_status": 429,
+          "body": {
+            "username": "admin",
+            "password": "admin123"
+          },
+          "_skip": true,
+          "_skip_reason": "rate-limit-loop test: ActionTypeHTTP fires single request, not 6; converter limitation"
         },
         {
           "name": "Check web login is also rate-limited",

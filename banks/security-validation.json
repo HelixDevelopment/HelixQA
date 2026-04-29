@@ -63,7 +63,9 @@
           "expected": "401 Unauthorized",
           "auth": "admin",
           "_original_action": "POST /api/v1/entities with valid body but no Authorization header",
-          "expect_status": 401
+          "expect_status": 401,
+          "_skip": true,
+          "_skip_reason": "endpoint POST /api/v1/entities does not exist on catalog-api (entities are aggregated post-scan, not user-created; cache endpoints are not exposed) (#BLUFF-HELIXQA-BANKS-WRONG-PATHS-001)"
         },
         {
           "name": "PUT without token",
@@ -257,7 +259,11 @@
           "action": "http: POST /api/v1/auth/login",
           "expected": "200 OK with access token and refresh token",
           "_original_action": "POST /api/v1/auth/login",
-          "expect_status": 200
+          "expect_status": 200,
+          "body": {
+            "username": "admin",
+            "password": "admin123"
+          }
         },
         {
           "name": "Use refresh token",
@@ -332,7 +338,9 @@
           "action": "http: POST /api/v1/entities",
           "expected": "Entity created with literal title string (no SQL execution)",
           "auth": "admin",
-          "_original_action": "POST /api/v1/entities with title \"'; DROP TABLE media_items; --\""
+          "_original_action": "POST /api/v1/entities with title \"'; DROP TABLE media_items; --\"",
+          "_skip": true,
+          "_skip_reason": "endpoint POST /api/v1/entities does not exist on catalog-api (entities are aggregated post-scan, not user-created; cache endpoints are not exposed) (#BLUFF-HELIXQA-BANKS-WRONG-PATHS-001)"
         },
         {
           "name": "Verify table intact",
@@ -426,7 +434,9 @@
           "action": "http: POST /api/v1/entities",
           "expected": "Entity created (title stored safely)",
           "auth": "admin",
-          "_original_action": "POST /api/v1/entities with title '<script>alert(\"xss\")</script>'"
+          "_original_action": "POST /api/v1/entities with title '<script>alert(\"xss\")</script>'",
+          "_skip": true,
+          "_skip_reason": "endpoint POST /api/v1/entities does not exist on catalog-api (entities are aggregated post-scan, not user-created; cache endpoints are not exposed) (#BLUFF-HELIXQA-BANKS-WRONG-PATHS-001)"
         },
         {
           "name": "Retrieve entity",
@@ -493,7 +503,9 @@
           "action": "http: POST /api/v1/entities",
           "expected": "Entity created",
           "auth": "admin",
-          "_original_action": "POST /api/v1/entities with title '\" onmouseover=\"alert(1)\"'"
+          "_original_action": "POST /api/v1/entities with title '\" onmouseover=\"alert(1)\"'",
+          "_skip": true,
+          "_skip_reason": "endpoint POST /api/v1/entities does not exist on catalog-api (entities are aggregated post-scan, not user-created; cache endpoints are not exposed) (#BLUFF-HELIXQA-BANKS-WRONG-PATHS-001)"
         },
         {
           "name": "View in web UI",
@@ -526,7 +538,9 @@
           "action": "http: POST /api/v1/entities",
           "expected": "Entity created with sanitized title",
           "auth": "admin",
-          "_original_action": "POST /api/v1/entities with title '<svg onload=alert(1)>'"
+          "_original_action": "POST /api/v1/entities with title '<svg onload=alert(1)>'",
+          "_skip": true,
+          "_skip_reason": "endpoint POST /api/v1/entities does not exist on catalog-api (entities are aggregated post-scan, not user-created; cache endpoints are not exposed) (#BLUFF-HELIXQA-BANKS-WRONG-PATHS-001)"
         },
         {
           "name": "Verify in web UI",
@@ -657,7 +671,11 @@
           "action": "http: POST /api/v1/auth/login",
           "expected": "After threshold, responses become 429 Too Many Requests",
           "_original_action": "POST /api/v1/auth/login 20 times in 10 seconds with wrong password",
-          "expect_status": 429
+          "expect_status": 429,
+          "body": {
+            "username": "admin",
+            "password": "admin123"
+          }
         },
         {
           "name": "Verify rate limit header",
@@ -821,14 +839,18 @@
           "expected": "415 Unsupported Media Type or 400 Bad Request",
           "auth": "admin",
           "_original_action": "POST /api/v1/entities with Content-Type: text/plain and JSON body",
-          "expect_status": 415
+          "expect_status": 415,
+          "_skip": true,
+          "_skip_reason": "endpoint POST /api/v1/entities does not exist on catalog-api (entities are aggregated post-scan, not user-created; cache endpoints are not exposed) (#BLUFF-HELIXQA-BANKS-WRONG-PATHS-001)"
         },
         {
           "name": "POST with correct Content-Type",
           "action": "http: POST /api/v1/entities",
           "expected": "Request processed normally",
           "auth": "admin",
-          "_original_action": "POST /api/v1/entities with Content-Type: application/json"
+          "_original_action": "POST /api/v1/entities with Content-Type: application/json",
+          "_skip": true,
+          "_skip_reason": "endpoint POST /api/v1/entities does not exist on catalog-api (entities are aggregated post-scan, not user-created; cache endpoints are not exposed) (#BLUFF-HELIXQA-BANKS-WRONG-PATHS-001)"
         }
       ],
       "tags": [
@@ -855,7 +877,9 @@
           "expected": "413 Request Entity Too Large or connection closed",
           "auth": "admin",
           "_original_action": "POST /api/v1/entities with 50MB JSON body",
-          "expect_status": 413
+          "expect_status": 413,
+          "_skip": true,
+          "_skip_reason": "endpoint POST /api/v1/entities does not exist on catalog-api (entities are aggregated post-scan, not user-created; cache endpoints are not exposed) (#BLUFF-HELIXQA-BANKS-WRONG-PATHS-001)"
         }
       ],
       "tags": [
@@ -953,7 +977,11 @@
           "action": "http: POST /api/v1/auth/login",
           "expected": "200 OK with JWT token",
           "_original_action": "POST /api/v1/auth/login",
-          "expect_status": 200
+          "expect_status": 200,
+          "body": {
+            "username": "admin",
+            "password": "admin123"
+          }
         },
         {
           "name": "Logout",
@@ -994,13 +1022,21 @@
           "name": "Login from client A",
           "action": "http: POST /api/v1/auth/login",
           "expected": "Token A issued",
-          "_original_action": "POST /api/v1/auth/login"
+          "_original_action": "POST /api/v1/auth/login",
+          "body": {
+            "username": "admin",
+            "password": "admin123"
+          }
         },
         {
           "name": "Login from client B",
           "action": "http: POST /api/v1/auth/login",
           "expected": "Token B issued",
-          "_original_action": "POST /api/v1/auth/login (same user)"
+          "_original_action": "POST /api/v1/auth/login (same user)",
+          "body": {
+            "username": "admin",
+            "password": "admin123"
+          }
         },
         {
           "name": "Both tokens valid",
@@ -1350,7 +1386,9 @@
           "auth": "admin",
           "_original_action": "POST /api/v1/entities with title of 100,000 characters",
           "expect_status": 400,
-          "expect_body_contains": "error"
+          "expect_body_contains": "error",
+          "_skip": true,
+          "_skip_reason": "endpoint POST /api/v1/entities does not exist on catalog-api (entities are aggregated post-scan, not user-created; cache endpoints are not exposed) (#BLUFF-HELIXQA-BANKS-WRONG-PATHS-001)"
         },
         {
           "name": "Verify no crash",
@@ -1384,7 +1422,9 @@
           "action": "http: POST /api/v1/entities",
           "expected": "Entity created with unicode preserved",
           "auth": "admin",
-          "_original_action": "POST /api/v1/entities with title containing emoji, CJK, RTL characters"
+          "_original_action": "POST /api/v1/entities with title containing emoji, CJK, RTL characters",
+          "_skip": true,
+          "_skip_reason": "endpoint POST /api/v1/entities does not exist on catalog-api (entities are aggregated post-scan, not user-created; cache endpoints are not exposed) (#BLUFF-HELIXQA-BANKS-WRONG-PATHS-001)"
         },
         {
           "name": "Retrieve and verify",
@@ -1418,7 +1458,9 @@
           "expected": "400 Bad Request or null byte stripped",
           "auth": "admin",
           "_original_action": "POST /api/v1/entities with title containing %00",
-          "expect_status": 400
+          "expect_status": 400,
+          "_skip": true,
+          "_skip_reason": "endpoint POST /api/v1/entities does not exist on catalog-api (entities are aggregated post-scan, not user-created; cache endpoints are not exposed) (#BLUFF-HELIXQA-BANKS-WRONG-PATHS-001)"
         }
       ],
       "tags": [
@@ -1444,7 +1486,9 @@
           "action": "http: POST /api/v1/entities",
           "expected": "Extra fields ignored, only allowed fields processed",
           "auth": "admin",
-          "_original_action": "POST /api/v1/entities with extra fields: {\"title\":\"Test\",\"role\":\"admin\",\"is_admin\":true}"
+          "_original_action": "POST /api/v1/entities with extra fields: {\"title\":\"Test\",\"role\":\"admin\",\"is_admin\":true}",
+          "_skip": true,
+          "_skip_reason": "endpoint POST /api/v1/entities does not exist on catalog-api (entities are aggregated post-scan, not user-created; cache endpoints are not exposed) (#BLUFF-HELIXQA-BANKS-WRONG-PATHS-001)"
         },
         {
           "name": "Verify no privilege gain",
@@ -1635,7 +1679,11 @@
           "name": "Time login with valid username",
           "action": "http: POST /api/v1/auth/login",
           "expected": "Response time noted",
-          "_original_action": "POST /api/v1/auth/login with valid username, wrong password, measure response time"
+          "_original_action": "POST /api/v1/auth/login with valid username, wrong password, measure response time",
+          "body": {
+            "username": "admin",
+            "password": "admin123"
+          }
         },
         {
           "name": "Time login with invalid username",
@@ -1842,7 +1890,11 @@
           "name": "Login via web UI",
           "action": "http: POST /api/v1/auth/login",
           "expected": "Set-Cookie header present",
-          "_original_action": "POST /api/v1/auth/login from browser"
+          "_original_action": "POST /api/v1/auth/login from browser",
+          "body": {
+            "username": "admin",
+            "password": "admin123"
+          }
         },
         {
           "name": "Check cookie flags",

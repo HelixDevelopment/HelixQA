@@ -27,7 +27,9 @@
           "expected": "201 Created with entity ID in response body",
           "_original_action": "POST /api/v1/entities with type 'movie', title 'Test Movie', year 2025",
           "expect_status": 201,
-          "auth": "admin"
+          "auth": "admin",
+          "_skip": true,
+          "_skip_reason": "endpoint POST /api/v1/entities does not exist on catalog-api (entities are aggregated post-scan, not user-created; cache endpoints are not exposed) (#BLUFF-HELIXQA-BANKS-WRONG-PATHS-001)"
         },
         {
           "name": "Verify entity exists",
@@ -63,7 +65,9 @@
           "expected": "201 Created with entity ID",
           "_original_action": "POST /api/v1/entities with type 'tv_show', title 'Test TV Show'",
           "expect_status": 201,
-          "auth": "admin"
+          "auth": "admin",
+          "_skip": true,
+          "_skip_reason": "endpoint POST /api/v1/entities does not exist on catalog-api (entities are aggregated post-scan, not user-created; cache endpoints are not exposed) (#BLUFF-HELIXQA-BANKS-WRONG-PATHS-001)"
         },
         {
           "name": "Verify entity type",
@@ -99,7 +103,9 @@
           "expected": "201 Created with entity ID",
           "_original_action": "POST /api/v1/entities with type 'music_album', title 'Test Album', artist 'Test Artist'",
           "expect_status": 201,
-          "auth": "admin"
+          "auth": "admin",
+          "_skip": true,
+          "_skip_reason": "endpoint POST /api/v1/entities does not exist on catalog-api (entities are aggregated post-scan, not user-created; cache endpoints are not exposed) (#BLUFF-HELIXQA-BANKS-WRONG-PATHS-001)"
         },
         {
           "name": "Verify entity metadata",
@@ -135,7 +141,9 @@
           "expected": "201 Created with entity ID",
           "_original_action": "POST /api/v1/entities with type 'game', title 'Test Game'",
           "expect_status": 201,
-          "auth": "admin"
+          "auth": "admin",
+          "_skip": true,
+          "_skip_reason": "endpoint POST /api/v1/entities does not exist on catalog-api (entities are aggregated post-scan, not user-created; cache endpoints are not exposed) (#BLUFF-HELIXQA-BANKS-WRONG-PATHS-001)"
         },
         {
           "name": "Verify entity",
@@ -171,7 +179,9 @@
           "expected": "201 Created with entity ID",
           "_original_action": "POST /api/v1/entities with type 'software', title 'Test Software v2.0'",
           "expect_status": 201,
-          "auth": "admin"
+          "auth": "admin",
+          "_skip": true,
+          "_skip_reason": "endpoint POST /api/v1/entities does not exist on catalog-api (entities are aggregated post-scan, not user-created; cache endpoints are not exposed) (#BLUFF-HELIXQA-BANKS-WRONG-PATHS-001)"
         },
         {
           "name": "Verify entity",
@@ -207,7 +217,9 @@
           "expected": "201 Created with entity ID",
           "_original_action": "POST /api/v1/entities with type 'book', title 'Test Book', year 2024",
           "expect_status": 201,
-          "auth": "admin"
+          "auth": "admin",
+          "_skip": true,
+          "_skip_reason": "endpoint POST /api/v1/entities does not exist on catalog-api (entities are aggregated post-scan, not user-created; cache endpoints are not exposed) (#BLUFF-HELIXQA-BANKS-WRONG-PATHS-001)"
         },
         {
           "name": "Verify entity",
@@ -243,7 +255,9 @@
           "expected": "201 Created with entity ID",
           "_original_action": "POST /api/v1/entities with type 'comic', title 'Test Comic Issue 1'",
           "expect_status": 201,
-          "auth": "admin"
+          "auth": "admin",
+          "_skip": true,
+          "_skip_reason": "endpoint POST /api/v1/entities does not exist on catalog-api (entities are aggregated post-scan, not user-created; cache endpoints are not exposed) (#BLUFF-HELIXQA-BANKS-WRONG-PATHS-001)"
         },
         {
           "name": "Verify entity",
@@ -279,7 +293,9 @@
           "expected": "201 Created with entity ID",
           "_original_action": "POST /api/v1/entities with type 'music_artist', title 'Test Artist'",
           "expect_status": 201,
-          "auth": "admin"
+          "auth": "admin",
+          "_skip": true,
+          "_skip_reason": "endpoint POST /api/v1/entities does not exist on catalog-api (entities are aggregated post-scan, not user-created; cache endpoints are not exposed) (#BLUFF-HELIXQA-BANKS-WRONG-PATHS-001)"
         },
         {
           "name": "Verify entity",
@@ -315,7 +331,9 @@
           "expected": "201 Created with entity ID",
           "_original_action": "POST /api/v1/entities with type 'song', title 'Test Song'",
           "expect_status": 201,
-          "auth": "admin"
+          "auth": "admin",
+          "_skip": true,
+          "_skip_reason": "endpoint POST /api/v1/entities does not exist on catalog-api (entities are aggregated post-scan, not user-created; cache endpoints are not exposed) (#BLUFF-HELIXQA-BANKS-WRONG-PATHS-001)"
         },
         {
           "name": "Verify entity",
@@ -351,7 +369,9 @@
           "expected": "201 Created with parent entity ID",
           "_original_action": "POST /api/v1/entities with type 'tv_show', title 'Parent Show'",
           "expect_status": 201,
-          "auth": "admin"
+          "auth": "admin",
+          "_skip": true,
+          "_skip_reason": "endpoint POST /api/v1/entities does not exist on catalog-api (entities are aggregated post-scan, not user-created; cache endpoints are not exposed) (#BLUFF-HELIXQA-BANKS-WRONG-PATHS-001)"
         },
         {
           "name": "Create TV season",
@@ -359,7 +379,9 @@
           "expected": "201 Created with season entity ID",
           "_original_action": "POST /api/v1/entities with type 'tv_season', title 'Season 1', parent_id set to TV show ID",
           "expect_status": 201,
-          "auth": "admin"
+          "auth": "admin",
+          "_skip": true,
+          "_skip_reason": "endpoint POST /api/v1/entities does not exist on catalog-api (entities are aggregated post-scan, not user-created; cache endpoints are not exposed) (#BLUFF-HELIXQA-BANKS-WRONG-PATHS-001)"
         },
         {
           "name": "Verify parent link",
@@ -396,7 +418,9 @@
           "expected": "201 Created with season ID",
           "_original_action": "POST /api/v1/entities with type 'tv_season', title 'Season 1'",
           "expect_status": 201,
-          "auth": "admin"
+          "auth": "admin",
+          "_skip": true,
+          "_skip_reason": "endpoint POST /api/v1/entities does not exist on catalog-api (entities are aggregated post-scan, not user-created; cache endpoints are not exposed) (#BLUFF-HELIXQA-BANKS-WRONG-PATHS-001)"
         },
         {
           "name": "Create TV episode",
@@ -404,7 +428,9 @@
           "expected": "201 Created with episode entity ID",
           "_original_action": "POST /api/v1/entities with type 'tv_episode', title 'Pilot', parent_id set to season ID",
           "expect_status": 201,
-          "auth": "admin"
+          "auth": "admin",
+          "_skip": true,
+          "_skip_reason": "endpoint POST /api/v1/entities does not exist on catalog-api (entities are aggregated post-scan, not user-created; cache endpoints are not exposed) (#BLUFF-HELIXQA-BANKS-WRONG-PATHS-001)"
         },
         {
           "name": "Verify parent link",
@@ -441,7 +467,9 @@
           "_original_action": "POST /api/v1/entities with type 'podcast', title 'Test'",
           "expect_status": 400,
           "expect_body_contains": "error",
-          "auth": "admin"
+          "auth": "admin",
+          "_skip": true,
+          "_skip_reason": "endpoint POST /api/v1/entities does not exist on catalog-api (entities are aggregated post-scan, not user-created; cache endpoints are not exposed) (#BLUFF-HELIXQA-BANKS-WRONG-PATHS-001)"
         },
         {
           "name": "Verify no entity created",
@@ -477,7 +505,9 @@
           "_original_action": "POST /api/v1/entities with type 'movie', title omitted",
           "expect_status": 400,
           "expect_body_contains": "error",
-          "auth": "admin"
+          "auth": "admin",
+          "_skip": true,
+          "_skip_reason": "endpoint POST /api/v1/entities does not exist on catalog-api (entities are aggregated post-scan, not user-created; cache endpoints are not exposed) (#BLUFF-HELIXQA-BANKS-WRONG-PATHS-001)"
         }
       ],
       "tags": [
@@ -507,7 +537,9 @@
           "expected": "201 Created",
           "_original_action": "POST /api/v1/entities with type 'tv_show', title 'Breaking Bad'",
           "expect_status": 201,
-          "auth": "admin"
+          "auth": "admin",
+          "_skip": true,
+          "_skip_reason": "endpoint POST /api/v1/entities does not exist on catalog-api (entities are aggregated post-scan, not user-created; cache endpoints are not exposed) (#BLUFF-HELIXQA-BANKS-WRONG-PATHS-001)"
         },
         {
           "name": "Create Season 1",
@@ -515,7 +547,9 @@
           "expected": "201 Created",
           "_original_action": "POST /api/v1/entities with type 'tv_season', title 'Season 1', parent_id = show ID",
           "expect_status": 201,
-          "auth": "admin"
+          "auth": "admin",
+          "_skip": true,
+          "_skip_reason": "endpoint POST /api/v1/entities does not exist on catalog-api (entities are aggregated post-scan, not user-created; cache endpoints are not exposed) (#BLUFF-HELIXQA-BANKS-WRONG-PATHS-001)"
         },
         {
           "name": "Create Episode 1",
@@ -523,7 +557,9 @@
           "expected": "201 Created",
           "_original_action": "POST /api/v1/entities with type 'tv_episode', title 'Pilot', parent_id = season ID",
           "expect_status": 201,
-          "auth": "admin"
+          "auth": "admin",
+          "_skip": true,
+          "_skip_reason": "endpoint POST /api/v1/entities does not exist on catalog-api (entities are aggregated post-scan, not user-created; cache endpoints are not exposed) (#BLUFF-HELIXQA-BANKS-WRONG-PATHS-001)"
         },
         {
           "name": "Query hierarchy",
@@ -567,7 +603,9 @@
           "expected": "201 Created",
           "_original_action": "POST /api/v1/entities with type 'music_artist', title 'The Beatles'",
           "expect_status": 201,
-          "auth": "admin"
+          "auth": "admin",
+          "_skip": true,
+          "_skip_reason": "endpoint POST /api/v1/entities does not exist on catalog-api (entities are aggregated post-scan, not user-created; cache endpoints are not exposed) (#BLUFF-HELIXQA-BANKS-WRONG-PATHS-001)"
         },
         {
           "name": "Create album",
@@ -575,7 +613,9 @@
           "expected": "201 Created",
           "_original_action": "POST /api/v1/entities with type 'music_album', title 'Abbey Road', parent_id = artist ID",
           "expect_status": 201,
-          "auth": "admin"
+          "auth": "admin",
+          "_skip": true,
+          "_skip_reason": "endpoint POST /api/v1/entities does not exist on catalog-api (entities are aggregated post-scan, not user-created; cache endpoints are not exposed) (#BLUFF-HELIXQA-BANKS-WRONG-PATHS-001)"
         },
         {
           "name": "Create song",
@@ -583,7 +623,9 @@
           "expected": "201 Created",
           "_original_action": "POST /api/v1/entities with type 'song', title 'Come Together', parent_id = album ID",
           "expect_status": 201,
-          "auth": "admin"
+          "auth": "admin",
+          "_skip": true,
+          "_skip_reason": "endpoint POST /api/v1/entities does not exist on catalog-api (entities are aggregated post-scan, not user-created; cache endpoints are not exposed) (#BLUFF-HELIXQA-BANKS-WRONG-PATHS-001)"
         },
         {
           "name": "Traverse hierarchy",
@@ -620,7 +662,9 @@
           "expected": "201 Created",
           "_original_action": "POST /api/v1/entities with type 'movie', title 'Standalone Film'",
           "expect_status": 201,
-          "auth": "admin"
+          "auth": "admin",
+          "_skip": true,
+          "_skip_reason": "endpoint POST /api/v1/entities does not exist on catalog-api (entities are aggregated post-scan, not user-created; cache endpoints are not exposed) (#BLUFF-HELIXQA-BANKS-WRONG-PATHS-001)"
         },
         {
           "name": "Query children",
@@ -656,7 +700,9 @@
           "expected": "201 Created",
           "_original_action": "POST /api/v1/entities with type 'tv_show', title 'Multi-Season Show'",
           "expect_status": 201,
-          "auth": "admin"
+          "auth": "admin",
+          "_skip": true,
+          "_skip_reason": "endpoint POST /api/v1/entities does not exist on catalog-api (entities are aggregated post-scan, not user-created; cache endpoints are not exposed) (#BLUFF-HELIXQA-BANKS-WRONG-PATHS-001)"
         },
         {
           "name": "Create Season 1",
@@ -664,7 +710,9 @@
           "expected": "201 Created",
           "_original_action": "POST /api/v1/entities with type 'tv_season', title 'Season 1', parent_id = show ID",
           "expect_status": 201,
-          "auth": "admin"
+          "auth": "admin",
+          "_skip": true,
+          "_skip_reason": "endpoint POST /api/v1/entities does not exist on catalog-api (entities are aggregated post-scan, not user-created; cache endpoints are not exposed) (#BLUFF-HELIXQA-BANKS-WRONG-PATHS-001)"
         },
         {
           "name": "Create Season 2",
@@ -672,7 +720,9 @@
           "expected": "201 Created",
           "_original_action": "POST /api/v1/entities with type 'tv_season', title 'Season 2', parent_id = show ID",
           "expect_status": 201,
-          "auth": "admin"
+          "auth": "admin",
+          "_skip": true,
+          "_skip_reason": "endpoint POST /api/v1/entities does not exist on catalog-api (entities are aggregated post-scan, not user-created; cache endpoints are not exposed) (#BLUFF-HELIXQA-BANKS-WRONG-PATHS-001)"
         },
         {
           "name": "Create Season 3",
@@ -680,7 +730,9 @@
           "expected": "201 Created",
           "_original_action": "POST /api/v1/entities with type 'tv_season', title 'Season 3', parent_id = show ID",
           "expect_status": 201,
-          "auth": "admin"
+          "auth": "admin",
+          "_skip": true,
+          "_skip_reason": "endpoint POST /api/v1/entities does not exist on catalog-api (entities are aggregated post-scan, not user-created; cache endpoints are not exposed) (#BLUFF-HELIXQA-BANKS-WRONG-PATHS-001)"
         },
         {
           "name": "Query show children",
@@ -961,7 +1013,9 @@
           "expected": "201 Created",
           "_original_action": "POST /api/v1/entities with type 'movie', title 'Dune', year 2021",
           "expect_status": 201,
-          "auth": "admin"
+          "auth": "admin",
+          "_skip": true,
+          "_skip_reason": "endpoint POST /api/v1/entities does not exist on catalog-api (entities are aggregated post-scan, not user-created; cache endpoints are not exposed) (#BLUFF-HELIXQA-BANKS-WRONG-PATHS-001)"
         },
         {
           "name": "Create duplicate",
@@ -969,7 +1023,9 @@
           "expected": "409 Conflict or warning indicating duplicate detected",
           "_original_action": "POST /api/v1/entities with type 'movie', title 'Dune', year 2021",
           "expect_status": 409,
-          "auth": "admin"
+          "auth": "admin",
+          "_skip": true,
+          "_skip_reason": "endpoint POST /api/v1/entities does not exist on catalog-api (entities are aggregated post-scan, not user-created; cache endpoints are not exposed) (#BLUFF-HELIXQA-BANKS-WRONG-PATHS-001)"
         }
       ],
       "tags": [
@@ -997,7 +1053,9 @@
           "expected": "201 Created",
           "_original_action": "POST /api/v1/entities with type 'movie', title 'Dune'",
           "expect_status": 201,
-          "auth": "admin"
+          "auth": "admin",
+          "_skip": true,
+          "_skip_reason": "endpoint POST /api/v1/entities does not exist on catalog-api (entities are aggregated post-scan, not user-created; cache endpoints are not exposed) (#BLUFF-HELIXQA-BANKS-WRONG-PATHS-001)"
         },
         {
           "name": "Create book with same title",
@@ -1005,7 +1063,9 @@
           "expected": "201 Created (not a duplicate since different type)",
           "_original_action": "POST /api/v1/entities with type 'book', title 'Dune'",
           "expect_status": 201,
-          "auth": "admin"
+          "auth": "admin",
+          "_skip": true,
+          "_skip_reason": "endpoint POST /api/v1/entities does not exist on catalog-api (entities are aggregated post-scan, not user-created; cache endpoints are not exposed) (#BLUFF-HELIXQA-BANKS-WRONG-PATHS-001)"
         }
       ],
       "tags": [
@@ -1033,7 +1093,9 @@
           "expected": "201 Created",
           "_original_action": "POST /api/v1/entities with type 'movie', title 'Dune', year 1984",
           "expect_status": 201,
-          "auth": "admin"
+          "auth": "admin",
+          "_skip": true,
+          "_skip_reason": "endpoint POST /api/v1/entities does not exist on catalog-api (entities are aggregated post-scan, not user-created; cache endpoints are not exposed) (#BLUFF-HELIXQA-BANKS-WRONG-PATHS-001)"
         },
         {
           "name": "Create movie 2021",
@@ -1041,7 +1103,9 @@
           "expected": "201 Created (different year, not a duplicate)",
           "_original_action": "POST /api/v1/entities with type 'movie', title 'Dune', year 2021",
           "expect_status": 201,
-          "auth": "admin"
+          "auth": "admin",
+          "_skip": true,
+          "_skip_reason": "endpoint POST /api/v1/entities does not exist on catalog-api (entities are aggregated post-scan, not user-created; cache endpoints are not exposed) (#BLUFF-HELIXQA-BANKS-WRONG-PATHS-001)"
         }
       ],
       "tags": [
@@ -1070,7 +1134,9 @@
           "expected": "201 Created",
           "_original_action": "POST /api/v1/entities with type 'movie', title 'Old Title'",
           "expect_status": 201,
-          "auth": "admin"
+          "auth": "admin",
+          "_skip": true,
+          "_skip_reason": "endpoint POST /api/v1/entities does not exist on catalog-api (entities are aggregated post-scan, not user-created; cache endpoints are not exposed) (#BLUFF-HELIXQA-BANKS-WRONG-PATHS-001)"
         },
         {
           "name": "Update title",
@@ -1114,7 +1180,9 @@
           "expected": "201 Created",
           "_original_action": "POST /api/v1/entities with type 'movie', title 'Metadata Test'",
           "expect_status": 201,
-          "auth": "admin"
+          "auth": "admin",
+          "_skip": true,
+          "_skip_reason": "endpoint POST /api/v1/entities does not exist on catalog-api (entities are aggregated post-scan, not user-created; cache endpoints are not exposed) (#BLUFF-HELIXQA-BANKS-WRONG-PATHS-001)"
         },
         {
           "name": "Add metadata",
@@ -1157,7 +1225,9 @@
           "expected": "201 Created",
           "_original_action": "POST /api/v1/entities with type 'movie', title 'Year Test', year 2020",
           "expect_status": 201,
-          "auth": "admin"
+          "auth": "admin",
+          "_skip": true,
+          "_skip_reason": "endpoint POST /api/v1/entities does not exist on catalog-api (entities are aggregated post-scan, not user-created; cache endpoints are not exposed) (#BLUFF-HELIXQA-BANKS-WRONG-PATHS-001)"
         },
         {
           "name": "Update year",
@@ -1229,7 +1299,9 @@
           "expected": "201 Created",
           "_original_action": "POST /api/v1/entities with type 'game', title 'Delete Me'",
           "expect_status": 201,
-          "auth": "admin"
+          "auth": "admin",
+          "_skip": true,
+          "_skip_reason": "endpoint POST /api/v1/entities does not exist on catalog-api (entities are aggregated post-scan, not user-created; cache endpoints are not exposed) (#BLUFF-HELIXQA-BANKS-WRONG-PATHS-001)"
         },
         {
           "name": "Delete entity",
@@ -1758,7 +1830,9 @@
           "expected": "201 Created",
           "_original_action": "POST /api/v1/entities with type 'movie', title 'File Association Test'",
           "expect_status": 201,
-          "auth": "admin"
+          "auth": "admin",
+          "_skip": true,
+          "_skip_reason": "endpoint POST /api/v1/entities does not exist on catalog-api (entities are aggregated post-scan, not user-created; cache endpoints are not exposed) (#BLUFF-HELIXQA-BANKS-WRONG-PATHS-001)"
         },
         {
           "name": "Link file to entity",
@@ -1801,7 +1875,9 @@
           "expected": "201 Created",
           "_original_action": "POST /api/v1/entities with type 'movie', title 'Multi-File Movie'",
           "expect_status": 201,
-          "auth": "admin"
+          "auth": "admin",
+          "_skip": true,
+          "_skip_reason": "endpoint POST /api/v1/entities does not exist on catalog-api (entities are aggregated post-scan, not user-created; cache endpoints are not exposed) (#BLUFF-HELIXQA-BANKS-WRONG-PATHS-001)"
         },
         {
           "name": "Link 3 files",
