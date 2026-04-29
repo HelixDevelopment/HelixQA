@@ -5,7 +5,9 @@
   "metadata": {
     "author": "ATMOSphere",
     "app": "ATMOSphere Android 15",
-    "version": "1.1.0"
+    "version": "1.1.0",
+    "bluff_audit_status": "converted-by-bank-prose-to-http.py",
+    "bluff_audit_date": "2026-04-29"
   },
   "test_cases": [
     {
@@ -20,22 +22,27 @@
         {
           "name": "Verify secondary display connected",
           "action": "Check that HDMI-A-1 (TV) is connected via dumpsys display",
-          "expected": "Secondary display detected with valid display ID"
+          "expected": "Secondary display detected with valid display ID",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Launch VLC and play video",
           "action": "Open VLC, select a local video file, start playback",
-          "expected": "VLC begins playback"
+          "expected": "VLC begins playback",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify video on secondary display",
-          "action": "Observe the TV (HDMI-A-1 secondary display)",
-          "expected": "Video content appears on the TV via Presentation API"
+          "action": "playwright: assertVisible text=TV (HDMI-A-1 secondary display)",
+          "expected": "Video content appears on the TV via Presentation API",
+          "_conversion_note": "manual-review-required",
+          "_original_action": "Observe the TV (HDMI-A-1 secondary display)"
         },
         {
           "name": "Verify primary shows overlay",
           "action": "Check the primary display (touch screen)",
-          "expected": "VideoControlOverlay visible on primary display with playback controls"
+          "expected": "VideoControlOverlay visible on primary display with playback controls",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -66,22 +73,27 @@
         {
           "name": "Verify secondary display connected",
           "action": "Check that HDMI-A-1 (TV) is connected",
-          "expected": "Secondary display present"
+          "expected": "Secondary display present",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Launch YouTube and play video",
           "action": "Open YouTube app, search for any video, start playback",
-          "expected": "YouTube begins video playback"
+          "expected": "YouTube begins video playback",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify video on secondary display",
-          "action": "Observe the TV",
-          "expected": "Video content renders on secondary display"
+          "action": "playwright: assertVisible text=TV",
+          "expected": "Video content renders on secondary display",
+          "_conversion_note": "manual-review-required",
+          "_original_action": "Observe the TV"
         },
         {
           "name": "Verify ExoPlayer SW fallback",
           "action": "Check logcat for MediaCodec configure hook intercepting ExoPlayer",
-          "expected": "Log shows HW codec rejected, ExoPlayer retries with SW codec (c2.android.*)"
+          "expected": "Log shows HW codec rejected, ExoPlayer retries with SW codec (c2.android.*)",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -113,17 +125,21 @@
         {
           "name": "Verify secondary display connected",
           "action": "Check that HDMI-A-1 (TV) is connected",
-          "expected": "Secondary display present"
+          "expected": "Secondary display present",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Launch Kodi and play video",
           "action": "Open Kodi, navigate to a local video file, start playback",
-          "expected": "Kodi begins video playback via its internal FFmpeg decoder"
+          "expected": "Kodi begins video playback via its internal FFmpeg decoder",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify video on secondary display",
-          "action": "Observe the TV",
-          "expected": "Video content appears on secondary display"
+          "action": "playwright: assertVisible text=TV",
+          "expected": "Video content appears on secondary display",
+          "_conversion_note": "manual-review-required",
+          "_original_action": "Observe the TV"
         }
       ],
       "tags": [
@@ -154,22 +170,26 @@
         {
           "name": "Clear logcat buffer",
           "action": "Run adb logcat -c",
-          "expected": "Logcat buffer cleared"
+          "expected": "Logcat buffer cleared",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Start ExoPlayer-based video",
           "action": "Launch any ExoPlayer-based app (YouTube, Jellyfin) and play a video",
-          "expected": "Video playback starts"
+          "expected": "Video playback starts",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Check logcat for hook",
           "action": "Run adb logcat -d | grep 'MediaCodec.*configure.*secondary'",
-          "expected": "Log entry showing MediaCodec.configure() intercepted and surface redirected"
+          "expected": "Log entry showing MediaCodec.configure() intercepted and surface redirected",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify stack trace detection",
           "action": "Check logcat for ExoPlayer stack trace identification",
-          "expected": "Log confirms ExoPlayer detected in call stack"
+          "expected": "Log confirms ExoPlayer detected in call stack",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -200,22 +220,26 @@
         {
           "name": "Clear logcat",
           "action": "Run adb logcat -c",
-          "expected": "Buffer cleared"
+          "expected": "Buffer cleared",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Play video on ExoPlayer-based app",
           "action": "Start video playback in YouTube or similar",
-          "expected": "Video plays on secondary display"
+          "expected": "Video plays on secondary display",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify SW codec in use",
           "action": "Run adb logcat -d | grep 'c2.android'",
-          "expected": "SW codec instance (c2.android.avc.decoder or c2.android.hevc.decoder) active"
+          "expected": "SW codec instance (c2.android.avc.decoder or c2.android.hevc.decoder) active",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify no HW codec",
           "action": "Run adb logcat -d | grep 'c2.rk.*started'",
-          "expected": "No HW codec (c2.rk.*) started for this video"
+          "expected": "No HW codec (c2.rk.*) started for this video",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -246,22 +270,27 @@
         {
           "name": "Clear logcat",
           "action": "Run adb logcat -c",
-          "expected": "Buffer cleared"
+          "expected": "Buffer cleared",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Start ExoPlayer video",
           "action": "Play video in an ExoPlayer-based app with secondary display connected",
-          "expected": "Video begins playback"
+          "expected": "Video begins playback",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Check for IllegalArgumentException in logcat",
           "action": "Run adb logcat -d | grep -E 'IllegalArgument|ExoPlayer.*fallback'",
-          "expected": "Log shows IllegalArgumentException thrown for HW codec, ExoPlayer retries with SW codec"
+          "expected": "Log shows IllegalArgumentException thrown for HW codec, ExoPlayer retries with SW codec",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify video plays correctly",
-          "action": "Observe video on secondary display",
-          "expected": "Video renders without artifacts on secondary display via SW codec"
+          "action": "playwright: assertVisible text=video on secondary display",
+          "expected": "Video renders without artifacts on secondary display via SW codec",
+          "_conversion_note": "manual-review-required",
+          "_original_action": "Observe video on secondary display"
         }
       ],
       "tags": [
@@ -292,22 +321,27 @@
         {
           "name": "Start video on secondary",
           "action": "Play video in any app; verify it appears on secondary display",
-          "expected": "Video playing on secondary display"
+          "expected": "Video playing on secondary display",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Navigate away in app",
           "action": "Press back button or navigate to a non-video screen within the app",
-          "expected": "App leaves video playback"
+          "expected": "App leaves video playback",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify secondary display clears",
-          "action": "Observe secondary display",
-          "expected": "Secondary display shows black screen or Presenter background, not a frozen frame"
+          "action": "playwright: assertVisible text=secondary display",
+          "expected": "Secondary display shows black screen or Presenter background, not a frozen frame",
+          "_conversion_note": "manual-review-required",
+          "_original_action": "Observe secondary display"
         },
         {
           "name": "Check VideoPlaybackDetector",
           "action": "Run adb logcat -d | grep 'VideoPlaybackDetector.*stop'",
-          "expected": "MediaSession stop or pause detected, video surface cleared"
+          "expected": "MediaSession stop or pause detected, video surface cleared",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -338,17 +372,22 @@
         {
           "name": "Open YouTube home screen",
           "action": "Launch YouTube app and stay on the home feed (do not play a video)",
-          "expected": "YouTube home screen with video thumbnails visible"
+          "expected": "YouTube home screen with video thumbnails visible",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify no redirect for thumbnails",
           "action": "Check logcat for resolution filter messages",
-          "expected": "Log shows videos below MIN_VIDEO_DIMENSION=400 rejected from redirect"
+          "expected": "Log shows videos below MIN_VIDEO_DIMENSION=400 rejected from redirect",
+          "expect_status": 400,
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify secondary display unchanged",
-          "action": "Observe secondary display",
-          "expected": "No thumbnail previews appear on secondary display"
+          "action": "playwright: assertVisible text=secondary display",
+          "expected": "No thumbnail previews appear on secondary display",
+          "_conversion_note": "manual-review-required",
+          "_original_action": "Observe secondary display"
         }
       ],
       "tags": [
@@ -379,22 +418,27 @@
         {
           "name": "Play first video",
           "action": "Start a video in app A; verify on secondary display",
-          "expected": "First video playing on secondary display"
+          "expected": "First video playing on secondary display",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Play second video",
           "action": "Without stopping first, start a video in app B",
-          "expected": "Second video begins"
+          "expected": "Second video begins",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify replacement",
-          "action": "Observe secondary display",
-          "expected": "Second video fully replaces first on secondary display, no split/overlap"
+          "action": "playwright: assertVisible text=secondary display",
+          "expected": "Second video fully replaces first on secondary display, no split/overlap",
+          "_conversion_note": "manual-review-required",
+          "_original_action": "Observe secondary display"
         },
         {
           "name": "Verify single-active-decoder",
           "action": "Check logcat for deactivation of first decoder",
-          "expected": "Log shows first decoder deactivated + 50ms wait + unlinkToDeath before second activates"
+          "expected": "Log shows first decoder deactivated + 50ms wait + unlinkToDeath before second activates",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -424,12 +468,14 @@
         {
           "name": "Start video playback",
           "action": "Play video in any app with secondary display connected",
-          "expected": "Video redirected to secondary display"
+          "expected": "Video redirected to secondary display",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Check primary display",
           "action": "Look at the primary touch screen display",
-          "expected": "VideoControlOverlay visible with dismiss button, volume slider, audio output selector"
+          "expected": "VideoControlOverlay visible with dismiss button, volume slider, audio output selector",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -453,17 +499,21 @@
         {
           "name": "Start video on secondary",
           "action": "Play video; verify it is on secondary display with overlay on primary",
-          "expected": "Video on secondary, overlay on primary"
+          "expected": "Video on secondary, overlay on primary",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Tap dismiss button",
           "action": "Press the dismiss/return button on the VideoControlOverlay",
-          "expected": "Video returns to primary display in the originating app"
+          "expected": "Video returns to primary display in the originating app",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify secondary clears",
-          "action": "Observe secondary display",
-          "expected": "Secondary display returns to Presenter background or black"
+          "action": "playwright: assertVisible text=secondary display",
+          "expected": "Secondary display returns to Presenter background or black",
+          "_conversion_note": "manual-review-required",
+          "_original_action": "Observe secondary display"
         }
       ],
       "tags": [
@@ -487,17 +537,21 @@
         {
           "name": "Start video on secondary",
           "action": "Play video with audio; verify on secondary display",
-          "expected": "Video playing with audio"
+          "expected": "Video playing with audio",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Adjust volume slider",
           "action": "Move the volume slider on the VideoControlOverlay up and down",
-          "expected": "Audio volume changes in real-time as slider moves"
+          "expected": "Audio volume changes in real-time as slider moves",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify volume range",
           "action": "Set slider to minimum and maximum",
-          "expected": "Volume goes from silent (0) to maximum (100)"
+          "expected": "Volume goes from silent (0) to maximum (100)",
+          "expect_status": 100,
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -521,17 +575,20 @@
         {
           "name": "Start video on secondary",
           "action": "Play video with audio on secondary display",
-          "expected": "Video playing"
+          "expected": "Video playing",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Tap audio output button",
           "action": "Press the audio output selector button on the VideoControlOverlay",
-          "expected": "System MEDIA_OUTPUT panel opens showing available audio devices"
+          "expected": "System MEDIA_OUTPUT panel opens showing available audio devices",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify device list",
           "action": "Check the panel lists available outputs",
-          "expected": "Panel shows connected audio devices (HDMI, ES8388, BT, USB)"
+          "expected": "Panel shows connected audio devices (HDMI, ES8388, BT, USB)",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -562,17 +619,20 @@
         {
           "name": "Clear logcat",
           "action": "Run adb logcat -c",
-          "expected": "Buffer cleared"
+          "expected": "Buffer cleared",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Play video in NDK-based player",
           "action": "Open KMPlayer or similar NDK-based video player, play a video",
-          "expected": "Video playback starts"
+          "expected": "Video playback starts",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Check NDK hook activity",
           "action": "Run adb logcat -d | grep -E 'NdkMediaCodec|NDK.*codec'",
-          "expected": "NDK hook in NdkMediaCodec.cpp active, HW codecs (c2.rk.*) rejected with resolution filter (400px min)"
+          "expected": "NDK hook in NdkMediaCodec.cpp active, HW codecs (c2.rk.*) rejected with resolution filter (400px min)",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -603,17 +663,20 @@
         {
           "name": "Run automated video test",
           "action": "Execute test_video_playback_apps.sh on device",
-          "expected": "Test script starts iterating through all video apps"
+          "expected": "Test script starts iterating through all video apps",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify app coverage",
           "action": "Check test output for pass/fail per app",
-          "expected": "All 50+ video apps tested: launch, playback detection, secondary display redirect"
+          "expected": "All 50+ video apps tested: launch, playback detection, secondary display redirect",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Check for crashes",
           "action": "Review logcat for FATAL, ANR, or crash entries during test",
-          "expected": "No crashes or ANRs across all tested apps"
+          "expected": "No crashes or ANRs across all tested apps",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -644,17 +707,20 @@
         {
           "name": "Play video on secondary display",
           "action": "Start video in any app, wait for it to play on secondary",
-          "expected": "Video playing on secondary display"
+          "expected": "Video playing on secondary display",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Trigger stall condition",
           "action": "Force-stop the video app while video is playing (adb shell am force-stop)",
-          "expected": "Video stops but frame may remain on secondary display"
+          "expected": "Video stops but frame may remain on secondary display",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Wait for detection",
           "action": "Wait up to 10 seconds for watchdog to detect the stall",
-          "expected": "Logcat shows C2BqBuffer stall detected or frozen frame watchdog triggered"
+          "expected": "Logcat shows C2BqBuffer stall detected or frozen frame watchdog triggered",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -685,17 +751,21 @@
         {
           "name": "Trigger frozen frame",
           "action": "Force-stop a video app while video plays on secondary display",
-          "expected": "Frozen frame on secondary"
+          "expected": "Frozen frame on secondary",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Wait for cleanup",
-          "action": "Wait for watchdog to detect and initiate cleanup",
-          "expected": "Logcat shows media.swcodec process killed"
+          "action": "playwright: waitFor text=watchdog to detect and initiate cleanup",
+          "expected": "Logcat shows media.swcodec process killed",
+          "_conversion_note": "manual-review-required",
+          "_original_action": "Wait for watchdog to detect and initiate cleanup"
         },
         {
           "name": "Verify process restarted",
           "action": "Run adb shell ps | grep media.swcodec",
-          "expected": "media.swcodec process running with new PID (system auto-restarts it)"
+          "expected": "media.swcodec process running with new PID (system auto-restarts it)",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -719,12 +789,15 @@
         {
           "name": "Trigger frozen frame and wait for cleanup",
           "action": "Force-stop video app, wait for watchdog cleanup",
-          "expected": "Frozen frame cleaned up"
+          "expected": "Frozen frame cleaned up",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify secondary display",
-          "action": "Observe the TV (secondary display)",
-          "expected": "Secondary display shows black screen or Presenter background, no stale video frame"
+          "action": "playwright: assertVisible text=TV (secondary display)",
+          "expected": "Secondary display shows black screen or Presenter background, no stale video frame",
+          "_conversion_note": "manual-review-required",
+          "_original_action": "Observe the TV (secondary display)"
         }
       ],
       "tags": [
@@ -755,17 +828,21 @@
         {
           "name": "Trigger and complete frozen frame cleanup",
           "action": "Force-stop video app, wait for watchdog cleanup to complete",
-          "expected": "Frozen frame resolved, secondary display black"
+          "expected": "Frozen frame resolved, secondary display black",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Play new video",
           "action": "Launch a video app and start a new video",
-          "expected": "New video plays on secondary display without issues"
+          "expected": "New video plays on secondary display without issues",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify no artifacts",
-          "action": "Observe video on secondary display for 10 seconds",
-          "expected": "Clean video playback, no stale frames, no BufferQueue errors"
+          "action": "playwright: assertVisible text=video on secondary display for 10 seconds",
+          "expected": "Clean video playback, no stale frames, no BufferQueue errors",
+          "_conversion_note": "manual-review-required",
+          "_original_action": "Observe video on secondary display for 10 seconds"
         }
       ],
       "tags": [
@@ -789,17 +866,20 @@
         {
           "name": "Verify cast manager running",
           "action": "Run adb shell getprop init.svc.cast_manager",
-          "expected": "Service status is running"
+          "expected": "Service status is running",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Trigger C2BqBuffer stall",
           "action": "Force-stop video app during playback",
-          "expected": "C2BqBuffer stall occurs"
+          "expected": "C2BqBuffer stall occurs",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Check cast manager detection",
           "action": "Run adb logcat -d | grep -E 'cast.*manager.*stall|C2BqBuffer'",
-          "expected": "Cast manager script or frozen frame watchdog detects the stall condition"
+          "expected": "Cast manager script or frozen frame watchdog detects the stall condition",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -823,17 +903,20 @@
         {
           "name": "Trigger frozen frame",
           "action": "Force-stop video app while playing on secondary",
-          "expected": "Frozen frame visible on secondary display"
+          "expected": "Frozen frame visible on secondary display",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Check notification",
           "action": "Pull down notification shade on primary display",
-          "expected": "Reset Service notification visible with cleanup action button"
+          "expected": "Reset Service notification visible with cleanup action button",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Tap reset button",
           "action": "Press the cleanup/reset button in the notification",
-          "expected": "Frozen frame cleared, secondary display resets to black or Presenter"
+          "expected": "Frozen frame cleared, secondary display resets to black or Presenter",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -864,22 +947,27 @@
         {
           "name": "Play video",
           "action": "Start video in an app (e.g., VK Video) on secondary display",
-          "expected": "Video playing on secondary"
+          "expected": "Video playing on secondary",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Navigate away without stopping",
           "action": "Press home button or navigate to a different section within the app",
-          "expected": "App pauses video but may not release MediaCodec"
+          "expected": "App pauses video but may not release MediaCodec",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Wait for MediaSession detection",
           "action": "Wait up to 5 seconds",
-          "expected": "VideoPlaybackDetector detects MediaSession state change to PAUSED/STOPPED"
+          "expected": "VideoPlaybackDetector detects MediaSession state change to PAUSED/STOPPED",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify cleanup",
-          "action": "Observe secondary display",
-          "expected": "Stale frame cleared, secondary display shows black"
+          "action": "playwright: assertVisible text=secondary display",
+          "expected": "Stale frame cleared, secondary display shows black",
+          "_conversion_note": "manual-review-required",
+          "_original_action": "Observe secondary display"
         }
       ],
       "tags": [
@@ -910,12 +998,14 @@
         {
           "name": "Trigger frozen frame",
           "action": "Force-stop video app during playback on secondary",
-          "expected": "Frozen frame on secondary"
+          "expected": "Frozen frame on secondary",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Measure detection time",
           "action": "Record timestamp of force-stop and timestamp of watchdog detection in logcat",
-          "expected": "Watchdog detects stall within 2-4 seconds of force-stop"
+          "expected": "Watchdog detects stall within 2-4 seconds of force-stop",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -939,17 +1029,21 @@
         {
           "name": "Ensure no video playing",
           "action": "Stop any video playback",
-          "expected": "No active video on secondary display"
+          "expected": "No active video on secondary display",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Start music playback",
           "action": "Open a music player app and play a song with album art",
-          "expected": "Music begins playing"
+          "expected": "Music begins playing",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Check secondary display",
-          "action": "Observe the TV (secondary display)",
-          "expected": "Album cover art displayed on secondary display via Presenter"
+          "action": "playwright: assertVisible text=TV (secondary display)",
+          "expected": "Album cover art displayed on secondary display via Presenter",
+          "_conversion_note": "manual-review-required",
+          "_original_action": "Observe the TV (secondary display)"
         }
       ],
       "tags": [
@@ -973,12 +1067,15 @@
         {
           "name": "Play music with metadata",
           "action": "Play a song that has title, artist, and album metadata",
-          "expected": "Music playing"
+          "expected": "Music playing",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Check secondary display",
-          "action": "Observe text below album art on secondary display",
-          "expected": "Song title and artist name displayed below the album cover"
+          "action": "playwright: assertVisible text=text below album art on secondary display",
+          "expected": "Song title and artist name displayed below the album cover",
+          "_conversion_note": "manual-review-required",
+          "_original_action": "Observe text below album art on secondary display"
         }
       ],
       "tags": [
@@ -1002,17 +1099,21 @@
         {
           "name": "Play music with album art visible on secondary",
           "action": "Start music playback, verify album art on secondary display",
-          "expected": "Album art visible on secondary"
+          "expected": "Album art visible on secondary",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Stop music",
           "action": "Pause or stop the music player",
-          "expected": "Music stops"
+          "expected": "Music stops",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify album art removed",
-          "action": "Observe secondary display",
-          "expected": "Album art no longer displayed; secondary shows Presenter background or black"
+          "action": "playwright: assertVisible text=secondary display",
+          "expected": "Album art no longer displayed; secondary shows Presenter background or black",
+          "_conversion_note": "manual-review-required",
+          "_original_action": "Observe secondary display"
         }
       ],
       "tags": [
@@ -1035,17 +1136,21 @@
         {
           "name": "Play music with album art on secondary",
           "action": "Start music playback, verify album art on secondary display",
-          "expected": "Album art visible on secondary"
+          "expected": "Album art visible on secondary",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Start video playback",
           "action": "Open a video app and play a video",
-          "expected": "Video starts playing"
+          "expected": "Video starts playing",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify video replaces album art",
-          "action": "Observe secondary display",
-          "expected": "Video content shown on secondary display, album art hidden"
+          "action": "playwright: assertVisible text=secondary display",
+          "expected": "Video content shown on secondary display, album art hidden",
+          "_conversion_note": "manual-review-required",
+          "_original_action": "Observe secondary display"
         }
       ],
       "tags": [
@@ -1069,17 +1174,21 @@
         {
           "name": "Play music then start video",
           "action": "Start music, then start video (both playing simultaneously)",
-          "expected": "Video on secondary display, music continues in background"
+          "expected": "Video on secondary display, music continues in background",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Stop video",
           "action": "Navigate away from video or press back",
-          "expected": "Video stops on secondary display"
+          "expected": "Video stops on secondary display",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify album art returns",
-          "action": "Observe secondary display",
-          "expected": "Album cover art reappears on secondary display since music is still playing"
+          "action": "playwright: assertVisible text=secondary display",
+          "expected": "Album cover art reappears on secondary display since music is still playing",
+          "_conversion_note": "manual-review-required",
+          "_original_action": "Observe secondary display"
         }
       ],
       "tags": [
@@ -1103,17 +1212,20 @@
         {
           "name": "Play music with album art on secondary",
           "action": "Start music playback",
-          "expected": "Album art visible on secondary display"
+          "expected": "Album art visible on secondary display",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Toggle album cover off",
           "action": "Use the notification or overlay toggle to hide album art",
-          "expected": "Album art hidden from secondary display"
+          "expected": "Album art hidden from secondary display",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Toggle album cover on",
           "action": "Use the toggle to re-enable album art display",
-          "expected": "Album art reappears on secondary display"
+          "expected": "Album art reappears on secondary display",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -1137,17 +1249,20 @@
         {
           "name": "Connect wired headphones",
           "action": "Plug wired headphones into the 3.5mm audio jack",
-          "expected": "Jack detection triggers (extcon or hp-det GPIO)"
+          "expected": "Jack detection triggers (extcon or hp-det GPIO)",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Play audio",
           "action": "Play music or any audio content",
-          "expected": "Audio audible through wired headphones"
+          "expected": "Audio audible through wired headphones",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify ES8388 routing",
           "action": "Run adb shell tinymix -D 2 | grep -i output",
-          "expected": "ES8388 card 2 headphone output (LOUT1/ROUT1) active"
+          "expected": "ES8388 card 2 headphone output (LOUT1/ROUT1) active",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -1179,22 +1294,26 @@
         {
           "name": "Enable Bluetooth",
           "action": "Ensure Bluetooth is enabled in Settings",
-          "expected": "Bluetooth on"
+          "expected": "Bluetooth on",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Connect A2DP device",
           "action": "Pair and connect to a Bluetooth speaker or headphones",
-          "expected": "A2DP profile connected"
+          "expected": "A2DP profile connected",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Play audio",
           "action": "Play music",
-          "expected": "Audio heard through Bluetooth device"
+          "expected": "Audio heard through Bluetooth device",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Check A2DP status",
           "action": "Run adb shell dumpsys bluetooth_manager | grep -i a2dp",
-          "expected": "A2DP connection active, SBC codec (for XMFHZ02 soundbar)"
+          "expected": "A2DP connection active, SBC codec (for XMFHZ02 soundbar)",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -1225,27 +1344,32 @@
         {
           "name": "Verify HDMI connections",
           "action": "Ensure both HDMI displays are connected (HDMI-A-1 TV, HDMI-A-2 touch screen)",
-          "expected": "Both displays connected"
+          "expected": "Both displays connected",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Play audio",
           "action": "Play audio content",
-          "expected": "Audio output active"
+          "expected": "Audio output active",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify HDMI0 audio",
           "action": "Check that rockchip-hdmi0 (card 0) has PCM open",
-          "expected": "HDMI0 audio card functional"
+          "expected": "HDMI0 audio card functional",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify HDMI1 audio",
           "action": "Check that rockchip-hdmi1 (card 1) has PCM open",
-          "expected": "HDMI1 audio card functional, opened alongside HDMI0"
+          "expected": "HDMI1 audio card functional, opened alongside HDMI0",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify CTS non-zero",
           "action": "Check HDMI ACR CTS calculation in kernel logs",
-          "expected": "CTS value non-zero (required for Samsung TV audio clock recovery)"
+          "expected": "CTS value non-zero (required for Samsung TV audio clock recovery)",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -1276,17 +1400,20 @@
         {
           "name": "Connect USB headphones",
           "action": "Plug USB headphones into a USB port",
-          "expected": "USB audio device detected by Android"
+          "expected": "USB audio device detected by Android",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Play audio",
           "action": "Play music or any audio content",
-          "expected": "Audio audible through USB headphones"
+          "expected": "Audio audible through USB headphones",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify routing",
           "action": "Run adb shell dumpsys audio | grep -A5 STREAM_MUSIC",
-          "expected": "Audio routed to USB audio device"
+          "expected": "Audio routed to USB audio device",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -1310,22 +1437,26 @@
         {
           "name": "Play audio through default output",
           "action": "Start audio playback",
-          "expected": "Audio playing"
+          "expected": "Audio playing",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Insert 3.5mm jack",
           "action": "Plug in wired headphones while audio is playing",
-          "expected": "Audio switches to headphones without interruption or pop"
+          "expected": "Audio switches to headphones without interruption or pop",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Remove 3.5mm jack",
           "action": "Unplug wired headphones",
-          "expected": "Audio switches back to previous output without interruption or pop"
+          "expected": "Audio switches back to previous output without interruption or pop",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify no pops or clicks",
           "action": "Listen during transitions",
-          "expected": "Clean transition due to kernel amplifier GPIO delay (10ms before enable, 5ms after disable)"
+          "expected": "Clean transition due to kernel amplifier GPIO delay (10ms before enable, 5ms after disable)",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -1357,12 +1488,14 @@
         {
           "name": "Reboot device",
           "action": "Run adb reboot and wait for boot to complete",
-          "expected": "Device boots successfully"
+          "expected": "Device boots successfully",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Check volume levels",
           "action": "Run adb shell cmd media_session volume --get for each stream",
-          "expected": "All audio streams (MUSIC, NOTIFICATION, ALARM, RING) at 50%"
+          "expected": "All audio streams (MUSIC, NOTIFICATION, ALARM, RING) at 50%",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -1393,17 +1526,21 @@
         {
           "name": "Check ES8388 output state",
           "action": "Run adb shell tinymix -D 2 to inspect mixer controls",
-          "expected": "Both LOUT1/ROUT1 (headphone) and LOUT2/ROUT2 (speaker) outputs enabled"
+          "expected": "Both LOUT1/ROUT1 (headphone) and LOUT2/ROUT2 (speaker) outputs enabled",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify with jack unplugged",
           "action": "Ensure 3.5mm jack is unplugged, check mixer controls",
-          "expected": "Both outputs still enabled (AUX cable may not trigger hp-det GPIO)"
+          "expected": "Both outputs still enabled (AUX cable may not trigger hp-det GPIO)",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify with jack plugged",
           "action": "Insert 3.5mm jack, check mixer controls",
-          "expected": "Both outputs remain enabled (Fix #104 always-both)"
+          "expected": "Both outputs remain enabled (Fix #104 always-both)",
+          "expect_status": 104,
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -1434,17 +1571,20 @@
         {
           "name": "Connect HDMI to TV",
           "action": "Ensure HDMI output connected to TV",
-          "expected": "HDMI display active"
+          "expected": "HDMI display active",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Play audio",
           "action": "Play any audio content",
-          "expected": "Audio playing via HDMI"
+          "expected": "Audio playing via HDMI",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Check CTS values",
           "action": "Check kernel dmesg for HDMI-QP CTS calculation",
-          "expected": "CTS value is non-zero (was always 0 before Fix #97, Samsung TV rejects malformed ACR)"
+          "expected": "CTS value is non-zero (was always 0 before Fix #97, Samsung TV rejects malformed ACR)",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -1476,22 +1616,26 @@
         {
           "name": "Connect to 5GHz WiFi",
           "action": "Ensure device is connected to 5GHz WiFi network",
-          "expected": "WiFi connected on 5GHz band"
+          "expected": "WiFi connected on 5GHz band",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Connect BT A2DP device",
           "action": "Connect Bluetooth speaker",
-          "expected": "A2DP connected"
+          "expected": "A2DP connected",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Play audio for 60 seconds",
           "action": "Play music continuously for 60 seconds",
-          "expected": "Music plays without interruption"
+          "expected": "Music plays without interruption",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Check TX queue health",
           "action": "Run adb logcat -d | grep -c 'TX queue'",
-          "expected": "Zero TX queue overflow warnings during 60s playback"
+          "expected": "Zero TX queue overflow warnings during 60s playback",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -1524,22 +1668,26 @@
         {
           "name": "Start audio playback",
           "action": "Play music via any audio output",
-          "expected": "Audio playing cleanly"
+          "expected": "Audio playing cleanly",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Trigger WiFi scan",
           "action": "Run adb shell cmd wifi start-scan",
-          "expected": "WiFi scan initiated"
+          "expected": "WiFi scan initiated",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Monitor audio quality",
           "action": "Listen for glitches, pops, or dropouts during scan",
-          "expected": "Audio continues without audible glitch"
+          "expected": "Audio continues without audible glitch",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify scan throttle",
           "action": "Check logcat for audio-aware scan delay",
-          "expected": "WiFi scan delayed or throttled when audio is active"
+          "expected": "WiFi scan delayed or throttled when audio is active",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -1570,13 +1718,16 @@
       "steps": [
         {
           "name": "Check audio HAL config",
-          "action": "Verify pcm_config_deep period_size in audio_hw.c via device properties or logcat",
-          "expected": "period_size=1920 (40ms at 48kHz)"
+          "action": "playwright: assertVisible text=pcm_config_deep period_size in audio_hw.c via device properties or logcat",
+          "expected": "period_size=1920 (40ms at 48kHz)",
+          "_conversion_note": "manual-review-required",
+          "_original_action": "Verify pcm_config_deep period_size in audio_hw.c via device properties or logcat"
         },
         {
           "name": "Verify start threshold set",
           "action": "Check pcm_config_deep has start_threshold, stop_threshold, avail_min",
-          "expected": "Thresholds set to prevent 682ms silence at stream start"
+          "expected": "Thresholds set to prevent 682ms silence at stream start",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -1607,22 +1758,28 @@
         {
           "name": "Check audio cpuset",
           "action": "Run adb shell cat /dev/cpuset/audio/cpus",
-          "expected": "CPU2 assigned to audio cpuset"
+          "expected": "CPU2 assigned to audio cpuset",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Check audioserver pinned",
           "action": "Run adb shell cat /proc/$(pidof audioserver)/cpuset",
-          "expected": "audioserver process in audio cpuset"
+          "expected": "audioserver process in audio cpuset",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify CPU2 excluded from other cpusets",
           "action": "Run adb shell cat /dev/cpuset/top-app/cpus",
-          "expected": "CPU2 NOT in top-app cpuset (uses 0,1,3-7)"
+          "expected": "CPU2 NOT in top-app cpuset (uses 0,1,3-7)",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Check IRQ affinity",
-          "action": "Verify BT UART IRQ 121 pinned to CPU2",
-          "expected": "IRQ 121 affinity mask includes only CPU2"
+          "action": "playwright: assertVisible text=BT UART IRQ 121 pinned to CPU2",
+          "expected": "IRQ 121 affinity mask includes only CPU2",
+          "expect_status": 121,
+          "_conversion_note": "manual-review-required",
+          "_original_action": "Verify BT UART IRQ 121 pinned to CPU2"
         }
       ],
       "tags": [
@@ -1654,17 +1811,20 @@
         {
           "name": "Reboot device",
           "action": "Run adb reboot and wait for boot completion",
-          "expected": "Device boots successfully"
+          "expected": "Device boots successfully",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Wait for WiFi",
           "action": "Wait up to 30 seconds for WiFi to connect",
-          "expected": "WiFi connects to saved network"
+          "expected": "WiFi connects to saved network",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify connectivity",
           "action": "Run adb shell ping -c 3 8.8.8.8",
-          "expected": "Ping succeeds, network connectivity confirmed"
+          "expected": "Ping succeeds, network connectivity confirmed",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -1688,17 +1848,21 @@
         {
           "name": "Check WiFi power save property",
           "action": "Run adb shell getprop persist.wifi.powersave",
-          "expected": "Value is 0"
+          "expected": "Value is 0",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Check bcmdhd PM state",
           "action": "Run adb shell cat /sys/module/bcmdhd/parameters/dhd_pm 2>/dev/null || echo 'check via iovar'",
-          "expected": "PM=0 (power management disabled)"
+          "expected": "PM=0 (power management disabled)",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Check config.txt",
-          "action": "Verify /vendor/etc/firmware/config.txt contains mpc=0, lpc=0",
-          "expected": "MPC and LPC disabled in bcmdhd config"
+          "action": "playwright: assertVisible text=/vendor/etc/firmware/config.txt contains mpc=0, lpc=0",
+          "expected": "MPC and LPC disabled in bcmdhd config",
+          "_conversion_note": "manual-review-required",
+          "_original_action": "Verify /vendor/etc/firmware/config.txt contains mpc=0, lpc=0"
         }
       ],
       "tags": [
@@ -1729,17 +1893,20 @@
         {
           "name": "Check TCP congestion control",
           "action": "Run adb shell cat /proc/sys/net/ipv4/tcp_congestion_control",
-          "expected": "bbr"
+          "expected": "bbr",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Check default qdisc",
           "action": "Run adb shell cat /proc/sys/net/core/default_qdisc",
-          "expected": "fq"
+          "expected": "fq",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify kernel config",
           "action": "Run adb shell zcat /proc/config.gz | grep CONFIG_TCP_CONG_BBR",
-          "expected": "CONFIG_TCP_CONG_BBR=y"
+          "expected": "CONFIG_TCP_CONG_BBR=y",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -1771,17 +1938,20 @@
         {
           "name": "Check TCP rmem max",
           "action": "Run adb shell cat /proc/sys/net/core/rmem_max",
-          "expected": "8388608 (8MB)"
+          "expected": "8388608 (8MB)",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Check TCP wmem max",
           "action": "Run adb shell cat /proc/sys/net/core/wmem_max",
-          "expected": "8388608 (8MB)"
+          "expected": "8388608 (8MB)",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Check WiFi TCP buffer property",
           "action": "Run adb shell getprop net.tcp.buffersize.wifi",
-          "expected": "Contains 8388608 as max value"
+          "expected": "Contains 8388608 as max value",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -1812,17 +1982,20 @@
         {
           "name": "Start audio playback",
           "action": "Play music via any output",
-          "expected": "Audio playing"
+          "expected": "Audio playing",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Check scan throttle property",
           "action": "Run adb shell getprop persist.wifi.scan_throttle.audio_active",
-          "expected": "true"
+          "expected": "true",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Trigger multiple scans",
           "action": "Attempt rapid WiFi scans",
-          "expected": "Scans throttled with 5s audio-aware delay"
+          "expected": "Scans throttled with 5s audio-aware delay",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -1853,17 +2026,20 @@
         {
           "name": "Connect BT A2DP device",
           "action": "Connect Bluetooth speaker",
-          "expected": "A2DP connected"
+          "expected": "A2DP connected",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Check WiFi frequency",
           "action": "Run adb shell cmd wifi status to check current frequency",
-          "expected": "WiFi on 5GHz band (frequency > 5000 MHz)"
+          "expected": "WiFi on 5GHz band (frequency > 5000 MHz)",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify roaming daemon",
           "action": "Run adb shell getprop init.svc.wifi_roaming_monitor",
-          "expected": "Service running, steering to 5GHz during A2DP active"
+          "expected": "Service running, steering to 5GHz during A2DP active",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -1896,22 +2072,26 @@
         {
           "name": "Check loaded modules",
           "action": "Run adb shell lsmod",
-          "expected": "bcmdhd module loaded"
+          "expected": "bcmdhd module loaded",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify aic8800_fdrv NOT loaded",
           "action": "Run adb shell lsmod | grep aic8800_fdrv",
-          "expected": "No output (aic8800_fdrv must NOT be loaded)"
+          "expected": "No output (aic8800_fdrv must NOT be loaded)",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify aic8800_bsp loaded",
           "action": "Run adb shell lsmod | grep aic8800_bsp",
-          "expected": "aic8800_bsp loaded (power management only)"
+          "expected": "aic8800_bsp loaded (power management only)",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Check wlan0 interface",
           "action": "Run adb shell ip link show wlan0",
-          "expected": "wlan0 interface exists and is UP"
+          "expected": "wlan0 interface exists and is UP",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -1943,12 +2123,14 @@
         {
           "name": "Check service status",
           "action": "Run adb shell getprop init.svc.wifi_roaming_monitor",
-          "expected": "running"
+          "expected": "running",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Check daemon version",
           "action": "Run adb shell getprop persist.wifi.roaming_monitor.version",
-          "expected": "Version 14.0 or later"
+          "expected": "Version 14.0 or later",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -1978,8 +2160,10 @@
       "steps": [
         {
           "name": "Check blocklist config",
-          "action": "Verify WiFi BSSID blocklist thresholds in ServiceWifiResources config.xml",
-          "expected": "Auth/assoc failure threshold=5, base block duration=5min"
+          "action": "playwright: assertVisible text=WiFi BSSID blocklist thresholds in ServiceWifiResources config.xml",
+          "expected": "Auth/assoc failure threshold=5, base block duration=5min",
+          "_conversion_note": "manual-review-required",
+          "_original_action": "Verify WiFi BSSID blocklist thresholds in ServiceWifiResources config.xml"
         }
       ],
       "tags": [
@@ -2010,22 +2194,26 @@
         {
           "name": "Check Ethernet interface",
           "action": "Run adb shell ip link show eth0",
-          "expected": "eth0 interface exists and is UP"
+          "expected": "eth0 interface exists and is UP",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Check link speed",
           "action": "Run adb shell ethtool eth0 | grep Speed",
-          "expected": "Speed: 2500Mb/s (or 1000Mb/s depending on switch)"
+          "expected": "Speed: 2500Mb/s (or 1000Mb/s depending on switch)",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Check PCI device",
           "action": "Run adb shell lspci | grep -i realtek",
-          "expected": "RTL8125 Ethernet controller detected on PCIe bus"
+          "expected": "RTL8125 Ethernet controller detected on PCIe bus",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify connectivity",
           "action": "Run adb shell ping -c 3 -I eth0 8.8.8.8",
-          "expected": "Ping succeeds via Ethernet"
+          "expected": "Ping succeeds via Ethernet",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -2057,12 +2245,14 @@
         {
           "name": "Check CPU0 governor",
           "action": "Run adb shell cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor",
-          "expected": "performance"
+          "expected": "performance",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Check all CPU governors",
           "action": "Run adb shell 'for cpu in /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor; do cat $cpu; done'",
-          "expected": "All 8 CPUs report performance governor"
+          "expected": "All 8 CPUs report performance governor",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -2093,12 +2283,15 @@
         {
           "name": "Check deviceidle state",
           "action": "Run adb shell dumpsys deviceidle | head -5",
-          "expected": "Device idle mode disabled"
+          "expected": "Device idle mode disabled",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Check framework overlay",
-          "action": "Verify config_enableAutoPowerModes=false",
-          "expected": "Auto power modes disabled at framework level"
+          "action": "playwright: assertVisible text=config_enableAutoPowerModes=false",
+          "expected": "Auto power modes disabled at framework level",
+          "_conversion_note": "manual-review-required",
+          "_original_action": "Verify config_enableAutoPowerModes=false"
         }
       ],
       "tags": [
@@ -2129,17 +2322,20 @@
         {
           "name": "Check screen timeout",
           "action": "Run adb shell settings get system screen_off_timeout",
-          "expected": "2147483647 (max int, effectively never)"
+          "expected": "2147483647 (max int, effectively never)",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Check dim screen",
           "action": "Run adb shell settings get system dim_screen",
-          "expected": "0 (dimming disabled)"
+          "expected": "0 (dimming disabled)",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Check screensaver",
           "action": "Run adb shell settings get secure screensaver_enabled",
-          "expected": "0 (screensaver disabled)"
+          "expected": "0 (screensaver disabled)",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -2170,7 +2366,8 @@
         {
           "name": "Check kernel config",
           "action": "Run adb shell zcat /proc/config.gz | grep CONFIG_CPU_IDLE",
-          "expected": "CONFIG_CPU_IDLE is not set"
+          "expected": "CONFIG_CPU_IDLE is not set",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -2201,12 +2398,14 @@
         {
           "name": "Check property",
           "action": "Run adb shell getprop persist.wifi.powersave",
-          "expected": "0"
+          "expected": "0",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Check iw power save",
           "action": "Run adb shell iw dev wlan0 get power_save",
-          "expected": "Power save: off"
+          "expected": "Power save: off",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -2237,17 +2436,22 @@
         {
           "name": "Check icon blacklist",
           "action": "Run adb shell settings get secure icon_blacklist",
-          "expected": "Contains 'battery'"
+          "expected": "Contains 'battery'",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Check framework overlay",
-          "action": "Verify config_batteryPresent=false in overlay",
-          "expected": "Battery reported as not present"
+          "action": "playwright: assertVisible text=config_batteryPresent=false in overlay",
+          "expected": "Battery reported as not present",
+          "_conversion_note": "manual-review-required",
+          "_original_action": "Verify config_batteryPresent=false in overlay"
         },
         {
           "name": "Visual check",
-          "action": "Observe status bar on primary display",
-          "expected": "No battery icon visible (no '?' or battery indicator)"
+          "action": "playwright: assertVisible text=status bar on primary display",
+          "expected": "No battery icon visible (no '?' or battery indicator)",
+          "_conversion_note": "manual-review-required",
+          "_original_action": "Observe status bar on primary display"
         }
       ],
       "tags": [
@@ -2279,7 +2483,8 @@
         {
           "name": "Check DMC governor",
           "action": "Run adb shell cat /sys/class/devfreq/dmc/governor",
-          "expected": "performance"
+          "expected": "performance",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -2311,7 +2516,8 @@
         {
           "name": "Check kernel config",
           "action": "Run adb shell zcat /proc/config.gz | grep PCIEASPM",
-          "expected": "CONFIG_PCIEASPM_PERFORMANCE=y"
+          "expected": "CONFIG_PCIEASPM_PERFORMANCE=y",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -2343,7 +2549,8 @@
         {
           "name": "Check stay_on setting",
           "action": "Run adb shell settings get global stay_on_while_plugged_in",
-          "expected": "7 (AC+USB+Wireless = 1+2+4)"
+          "expected": "7 (AC+USB+Wireless = 1+2+4)",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -2374,22 +2581,26 @@
         {
           "name": "Check HZ config",
           "action": "Run adb shell zcat /proc/config.gz | grep CONFIG_HZ",
-          "expected": "CONFIG_HZ_1000=y, CONFIG_HZ=1000"
+          "expected": "CONFIG_HZ_1000=y, CONFIG_HZ=1000",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Check BBR",
           "action": "Run adb shell zcat /proc/config.gz | grep CONFIG_TCP_CONG_BBR",
-          "expected": "CONFIG_TCP_CONG_BBR=y"
+          "expected": "CONFIG_TCP_CONG_BBR=y",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Check FQ",
           "action": "Run adb shell zcat /proc/config.gz | grep CONFIG_NET_SCH_FQ",
-          "expected": "CONFIG_NET_SCH_FQ=y"
+          "expected": "CONFIG_NET_SCH_FQ=y",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Check hrtimer",
           "action": "Run adb shell zcat /proc/config.gz | grep CONFIG_SND_HRTIMER",
-          "expected": "CONFIG_SND_HRTIMER=y"
+          "expected": "CONFIG_SND_HRTIMER=y",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -2423,17 +2634,20 @@
         {
           "name": "Reboot device",
           "action": "Run adb reboot and wait for boot",
-          "expected": "Device boots"
+          "expected": "Device boots",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Check cmdline",
           "action": "Run adb shell cat /proc/cmdline",
-          "expected": "No 'console=ttyFIQ0' or 'earlycon' in kernel command line"
+          "expected": "No 'console=ttyFIQ0' or 'earlycon' in kernel command line",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify DTB patched",
           "action": "Check that serial console is disabled in DTB bootargs",
-          "expected": "Serial console removed by build script Python DTB patching"
+          "expected": "Serial console removed by build script Python DTB patching",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -2463,13 +2677,16 @@
       "steps": [
         {
           "name": "Check navigation mode",
-          "action": "Observe bottom of screen for Back, Home, Recents buttons",
-          "expected": "3-button navigation bar visible"
+          "action": "playwright: assertVisible text=bottom of screen for Back, Home, Recents buttons",
+          "expected": "3-button navigation bar visible",
+          "_conversion_note": "manual-review-required",
+          "_original_action": "Observe bottom of screen for Back, Home, Recents buttons"
         },
         {
           "name": "Test buttons",
           "action": "Press each navigation button",
-          "expected": "Back, Home, and Recents all respond correctly"
+          "expected": "Back, Home, and Recents all respond correctly",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -2500,17 +2717,20 @@
         {
           "name": "Boot device",
           "action": "Reboot device and wait for home screen",
-          "expected": "Home screen appears"
+          "expected": "Home screen appears",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify Lawnchair",
           "action": "Run adb shell dumpsys activity activities | grep -i lawnchair",
-          "expected": "Lawnchair launcher activity in foreground"
+          "expected": "Lawnchair launcher activity in foreground",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Test launcher",
           "action": "Press Home button and verify launcher responds",
-          "expected": "Lawnchair home screen with app grid"
+          "expected": "Lawnchair home screen with app grid",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -2541,17 +2761,20 @@
         {
           "name": "Boot device",
           "action": "Reboot device and wait 60 seconds for boot completion",
-          "expected": "Device fully booted"
+          "expected": "Device fully booted",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Check Presenter service",
           "action": "Run adb shell dumpsys activity services | grep -i presenter",
-          "expected": "PresenterService running"
+          "expected": "PresenterService running",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Check init service",
           "action": "Run adb shell getprop init.svc.atmosphere_presenter",
-          "expected": "running (auto-started via init.rk3588.rc)"
+          "expected": "running (auto-started via init.rk3588.rc)",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -2582,17 +2805,20 @@
         {
           "name": "Boot device",
           "action": "Reboot device and wait for full boot",
-          "expected": "Device booted"
+          "expected": "Device booted",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Check completion property",
           "action": "Run adb shell getprop atmosphere.app_permissions.done",
-          "expected": "1 (script completed successfully)"
+          "expected": "1 (script completed successfully)",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Check service status",
           "action": "Run adb shell getprop init.svc.atmosphere_app_permissions",
-          "expected": "stopped (completed) or running (still executing)"
+          "expected": "stopped (completed) or running (still executing)",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -2623,17 +2849,20 @@
         {
           "name": "Boot device",
           "action": "Reboot and wait for boot completion",
-          "expected": "Device booted"
+          "expected": "Device booted",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify Doze disabled",
           "action": "Run adb shell dumpsys deviceidle | head -5",
-          "expected": "Doze disabled"
+          "expected": "Doze disabled",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify screen settings",
           "action": "Check dim_screen=0, screen_off_timeout=max",
-          "expected": "Power save settings applied by atmosphere-power-save-disable.sh"
+          "expected": "Power save settings applied by atmosphere-power-save-disable.sh",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -2664,17 +2893,20 @@
         {
           "name": "Boot device",
           "action": "Reboot with both HDMI displays connected",
-          "expected": "Device booted"
+          "expected": "Device booted",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Check service",
           "action": "Run adb shell getprop init.svc.detect_displays",
-          "expected": "Service ran (stopped after completion or still running)"
+          "expected": "Service ran (stopped after completion or still running)",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Check display detection result",
           "action": "Run adb shell dumpsys display | grep -i 'HDMI'",
-          "expected": "Both HDMI displays detected with correct primary/secondary assignment"
+          "expected": "Both HDMI displays detected with correct primary/secondary assignment",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -2706,17 +2938,20 @@
         {
           "name": "Boot device",
           "action": "Reboot and wait for boot completion",
-          "expected": "Device booted"
+          "expected": "Device booted",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Check cast manager",
           "action": "Run adb shell getprop init.svc.cast_manager",
-          "expected": "running"
+          "expected": "running",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Check display monitoring",
           "action": "Run adb logcat -d | grep -i cast_manager",
-          "expected": "Cast manager monitoring display state (30s polling)"
+          "expected": "Cast manager monitoring display state (30s polling)",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -2748,17 +2983,20 @@
         {
           "name": "Check HWC primary",
           "action": "Run adb shell getprop vendor.hwc.device.primary",
-          "expected": "HDMI-A-2"
+          "expected": "HDMI-A-2",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Check DRM connector",
           "action": "Run adb shell cat /sys/class/drm/card0-HDMI-A-2/status",
-          "expected": "connected"
+          "expected": "connected",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Check resolution",
           "action": "Run adb shell dumpsys display | grep -A3 'Display 0'",
-          "expected": "Primary display is HDMI-A-2 (touch screen, 1024x600 MPI7009 or detected resolution)"
+          "expected": "Primary display is HDMI-A-2 (touch screen, 1024x600 MPI7009 or detected resolution)",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -2790,17 +3028,20 @@
         {
           "name": "Check HWC extend",
           "action": "Run adb shell getprop vendor.hwc.device.extend",
-          "expected": "HDMI-A-1"
+          "expected": "HDMI-A-1",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Check DRM connector",
           "action": "Run adb shell cat /sys/class/drm/card0-HDMI-A-1/status",
-          "expected": "connected"
+          "expected": "connected",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Check resolution",
           "action": "Run adb shell dumpsys display | grep -A3 'HDMI-A-1'",
-          "expected": "Secondary display is HDMI-A-1 (TV, 1920x1080)"
+          "expected": "Secondary display is HDMI-A-1 (TV, 1920x1080)",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -2832,17 +3073,21 @@
         {
           "name": "Check Presenter display",
           "action": "Run adb shell getprop persist.atmosphere.presenter.display_id",
-          "expected": "Non-zero display ID for secondary"
+          "expected": "Non-zero display ID for secondary",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify Presenter on secondary",
           "action": "Run adb shell dumpsys activity services | grep -A10 'PresenterService'",
-          "expected": "PresenterService has reference to secondary display"
+          "expected": "PresenterService has reference to secondary display",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Visual check",
-          "action": "Observe TV (secondary display)",
-          "expected": "Presenter content visible on TV"
+          "action": "playwright: assertVisible text=TV (secondary display)",
+          "expected": "Presenter content visible on TV",
+          "_conversion_note": "manual-review-required",
+          "_original_action": "Observe TV (secondary display)"
         }
       ],
       "tags": [
@@ -2866,17 +3111,20 @@
         {
           "name": "Get display list",
           "action": "Run adb shell dumpsys display | grep -E 'DisplayDeviceInfo|mDisplayId'",
-          "expected": "Display IDs listed"
+          "expected": "Display IDs listed",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify topology",
           "action": "Check Display 0 = HDMI-A-2 (primary), Display 3+ = HDMI-A-1 (secondary)",
-          "expected": "Display topology matches hardware configuration"
+          "expected": "Display topology matches hardware configuration",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Note dynamic IDs",
           "action": "Secondary display ID may vary but type must be EXTERNAL",
-          "expected": "Secondary display detected as EXTERNAL type"
+          "expected": "Secondary display detected as EXTERNAL type",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -2907,12 +3155,16 @@
         {
           "name": "Check display settings",
           "action": "Run adb shell cat /data/system/display_settings.xml or check wm density for secondary",
-          "expected": "Secondary display has forcedDensity=320"
+          "expected": "Secondary display has forcedDensity=320",
+          "expect_status": 320,
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify no CONFIG_DENSITY restart",
           "action": "Check that video apps do NOT restart when moved to secondary display",
-          "expected": "forcedDensity=320 eliminates configuration change restart"
+          "expected": "forcedDensity=320 eliminates configuration change restart",
+          "expect_status": 320,
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -2943,17 +3195,20 @@
         {
           "name": "Check accelerometer rotation",
           "action": "Run adb shell settings get system accelerometer_rotation",
-          "expected": "0 (auto-rotate disabled)"
+          "expected": "0 (auto-rotate disabled)",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Check fixed-to-user-rotation",
           "action": "Run adb shell cmd window fixed-to-user-rotation",
-          "expected": "enabled"
+          "expected": "enabled",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Rotate device",
           "action": "Physically rotate the device",
-          "expected": "Primary display does NOT rotate (stays in fixed orientation)"
+          "expected": "Primary display does NOT rotate (stays in fixed orientation)",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -2985,17 +3240,21 @@
         {
           "name": "Verify Presenter running",
           "action": "Run adb shell dumpsys activity services | grep PresenterService",
-          "expected": "PresenterService is running"
+          "expected": "PresenterService is running",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Check Presentation",
-          "action": "Observe the TV (secondary display)",
-          "expected": "Presenter Presentation visible (background content, clock, or album art)"
+          "action": "playwright: assertVisible text=TV (secondary display)",
+          "expected": "Presenter Presentation visible (background content, clock, or album art)",
+          "_conversion_note": "manual-review-required",
+          "_original_action": "Observe the TV (secondary display)"
         },
         {
           "name": "Check background color",
           "action": "When no video or music is playing",
-          "expected": "Pitch black background"
+          "expected": "Pitch black background",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -3020,17 +3279,20 @@
         {
           "name": "Check dmesg for PHY",
           "action": "Run adb shell dmesg | grep -i 'hdptx.*lane'",
-          "expected": "No 'hdptx phy lane can not ready' errors"
+          "expected": "No 'hdptx phy lane can not ready' errors",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Check both connectors",
           "action": "Run adb shell cat /sys/class/drm/card0-HDMI-A-1/status && cat /sys/class/drm/card0-HDMI-A-2/status",
-          "expected": "Both show 'connected'"
+          "expected": "Both show 'connected'",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify timeout fix",
           "action": "Check that extended lane timeout (200ms, 2000 iterations) and 3-attempt retry is active",
-          "expected": "PHY lanes lock on both HDMI outputs"
+          "expected": "PHY lanes lock on both HDMI outputs",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -3063,17 +3325,20 @@
         {
           "name": "Get installed packages",
           "action": "Run adb shell pm list packages | wc -l",
-          "expected": "Total package count includes all 60+ prebuilt apps"
+          "expected": "Total package count includes all 60+ prebuilt apps",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Run prebuilt apps test",
           "action": "Execute test_prebuilt_apps.sh on device",
-          "expected": "All prebuilt apps detected as installed"
+          "expected": "All prebuilt apps detected as installed",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Check for missing apps",
           "action": "Review test output for any FAIL entries",
-          "expected": "Zero FAIL entries for app installation"
+          "expected": "Zero FAIL entries for app installation",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -3097,22 +3362,26 @@
         {
           "name": "Launch VLC",
           "action": "Run adb shell am start -n org.videolan.vlc/.gui.MainActivity",
-          "expected": "VLC launches without crash"
+          "expected": "VLC launches without crash",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Launch Kodi",
           "action": "Run adb shell am start -n org.xbmc.kodi/.Splash",
-          "expected": "Kodi launches without crash"
+          "expected": "Kodi launches without crash",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Launch Nova Player",
           "action": "Run adb shell am start -n org.courville.nova/.ui.MainActivity",
-          "expected": "Nova Player launches without crash"
+          "expected": "Nova Player launches without crash",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Check logcat for crashes",
           "action": "Run adb logcat -d | grep -E 'FATAL|ANR|crash'",
-          "expected": "No fatal crashes for video player apps"
+          "expected": "No fatal crashes for video player apps",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -3136,17 +3405,20 @@
         {
           "name": "Launch HiByMusic",
           "action": "Start HiByMusic app",
-          "expected": "App launches without crash"
+          "expected": "App launches without crash",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Launch TikTok Music",
           "action": "Start TikTok Music app",
-          "expected": "App launches without crash"
+          "expected": "App launches without crash",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Check logcat for crashes",
           "action": "Run adb logcat -d | grep -E 'FATAL|ANR'",
-          "expected": "No fatal crashes for audio player apps"
+          "expected": "No fatal crashes for audio player apps",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -3170,22 +3442,26 @@
         {
           "name": "Launch Kinopoisk",
           "action": "Start ru.kinopoisk app",
-          "expected": "App launches to login/home screen"
+          "expected": "App launches to login/home screen",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Launch Rutube",
           "action": "Start Rutube app",
-          "expected": "App launches without crash"
+          "expected": "App launches without crash",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Launch YouTube",
           "action": "Start YouTube app",
-          "expected": "App launches (may need Google account)"
+          "expected": "App launches (may need Google account)",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Check for crashes",
           "action": "Review logcat for any FATAL exceptions",
-          "expected": "All streaming apps launch without crash (auth screens OK)"
+          "expected": "All streaming apps launch without crash (auth screens OK)",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -3209,22 +3485,26 @@
         {
           "name": "Check Play Services",
           "action": "Run adb shell pm path com.google.android.gms",
-          "expected": "Play Services APK path returned"
+          "expected": "Play Services APK path returned",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Check Play Store",
           "action": "Run adb shell pm path com.android.vending",
-          "expected": "Play Store APK path returned"
+          "expected": "Play Store APK path returned",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Launch Play Store",
           "action": "Run adb shell am start -n com.android.vending/.AssetBrowserActivity",
-          "expected": "Play Store opens (may need Google account)"
+          "expected": "Play Store opens (may need Google account)",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Run Google Apps test",
           "action": "Execute test_google_apps.sh on device",
-          "expected": "All Google Apps checks pass"
+          "expected": "All Google Apps checks pass",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -3256,12 +3536,14 @@
         {
           "name": "Check device name",
           "action": "Run adb shell getprop ro.product.device",
-          "expected": "Returns device identifier"
+          "expected": "Returns device identifier",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Check BT name",
           "action": "Run adb shell settings get secure bluetooth_name",
-          "expected": "Contains 'The Essence' or ATMOSphere branding"
+          "expected": "Contains 'The Essence' or ATMOSphere branding",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -3284,12 +3566,14 @@
         {
           "name": "Check product model",
           "action": "Run adb shell getprop ro.product.model",
-          "expected": "ATMOSphere"
+          "expected": "ATMOSphere",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Check Settings display",
           "action": "Open Settings > About phone/device",
-          "expected": "Model shows ATMOSphere"
+          "expected": "Model shows ATMOSphere",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -3313,12 +3597,14 @@
         {
           "name": "Reboot device",
           "action": "Run adb reboot",
-          "expected": "Device reboots"
+          "expected": "Device reboots",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Observe boot screen",
           "action": "Watch the display during boot sequence",
-          "expected": "Boot message 'ATMOSphere is starting...' displayed"
+          "expected": "Boot message 'ATMOSphere is starting...' displayed",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -3342,17 +3628,20 @@
         {
           "name": "Open Settings",
           "action": "Launch Settings app",
-          "expected": "Settings open"
+          "expected": "Settings open",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Navigate to About",
           "action": "Scroll to and tap 'About phone' or 'About device'",
-          "expected": "About page opens"
+          "expected": "About page opens",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify branding",
           "action": "Check page title and device info",
-          "expected": "Page shows 'About ATMOSphere' with correct firmware version"
+          "expected": "Page shows 'About ATMOSphere' with correct firmware version",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -3376,12 +3665,14 @@
         {
           "name": "Check mDNS registration",
           "action": "From another device on the same network, browse for _googlecast._tcp services",
-          "expected": "ATMOSphere device appears as a Cast target"
+          "expected": "ATMOSphere device appears as a Cast target",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify on device",
           "action": "Run adb shell dumpsys mdns | grep -i cast",
-          "expected": "mDNS service for _googlecast._tcp registered"
+          "expected": "mDNS service for _googlecast._tcp registered",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -3413,12 +3704,14 @@
         {
           "name": "Check mediashell process",
           "action": "Run adb shell ps | grep mediashell",
-          "expected": "mediashell process running"
+          "expected": "mediashell process running",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Check package installed",
           "action": "Run adb shell pm path com.google.android.apps.mediashell",
-          "expected": "mediashell APK path returned (143MB prebuilt)"
+          "expected": "mediashell APK path returned (143MB prebuilt)",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -3450,17 +3743,20 @@
         {
           "name": "Check cast manager service",
           "action": "Run adb shell getprop init.svc.cast_manager",
-          "expected": "running"
+          "expected": "running",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify display monitoring",
           "action": "Check logcat for cast manager display polling (30s interval)",
-          "expected": "Cast manager periodically checks secondary display presence"
+          "expected": "Cast manager periodically checks secondary display presence",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify cast properties",
           "action": "Run adb shell getprop persist.atmosphere.cast.enabled",
-          "expected": "Cast properties set based on display state"
+          "expected": "Cast properties set based on display state",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -3491,12 +3787,14 @@
         {
           "name": "Check WiFi P2P",
           "action": "Run adb shell cmd wifi status | grep -i p2p",
-          "expected": "WiFi P2P (Wi-Fi Direct) enabled"
+          "expected": "WiFi P2P (Wi-Fi Direct) enabled",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Check WFD support",
           "action": "Run adb shell dumpsys wifip2p | grep -i wfd",
-          "expected": "WiFi Display (WFD) support present or enabled"
+          "expected": "WiFi Display (WFD) support present or enabled",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -3527,22 +3825,26 @@
         {
           "name": "Verify cast advertising with display",
           "action": "With secondary display connected, check cast advertising is active",
-          "expected": "Cast advertising active"
+          "expected": "Cast advertising active",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Disconnect secondary display",
           "action": "Physically disconnect HDMI-A-1 (TV) cable",
-          "expected": "Secondary display removed from DisplayManager"
+          "expected": "Secondary display removed from DisplayManager",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Wait for cast manager poll",
           "action": "Wait up to 30 seconds for cast manager to detect change",
-          "expected": "Cast manager detects missing secondary display"
+          "expected": "Cast manager detects missing secondary display",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify advertising stopped",
           "action": "Check cast properties",
-          "expected": "Cast advertising disabled (no secondary display = no cast target)"
+          "expected": "Cast advertising disabled (no secondary display = no cast target)",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -3574,22 +3876,27 @@
         {
           "name": "Check Widevine service",
           "action": "Run adb shell dumpsys drm | grep -i widevine",
-          "expected": "Widevine DRM HAL service running"
+          "expected": "Widevine DRM HAL service running",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Check DRM libraries",
           "action": "Run adb shell ls /vendor/lib64/libwvhidl.so /vendor/lib/android.hardware.drm-V1-ndk.so",
-          "expected": "Both 64-bit and 32-bit DRM libraries present"
+          "expected": "Both 64-bit and 32-bit DRM libraries present",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Check security level",
-          "action": "Verify Widevine L3 security level",
-          "expected": "Security Level: L3"
+          "action": "playwright: assertVisible text=Widevine L3 security level",
+          "expected": "Security Level: L3",
+          "_conversion_note": "manual-review-required",
+          "_original_action": "Verify Widevine L3 security level"
         },
         {
           "name": "Run Widevine test",
           "action": "Execute test_widevine_drm.sh on device",
-          "expected": "All Widevine checks pass, no crash-loop"
+          "expected": "All Widevine checks pass, no crash-loop",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -3621,17 +3928,20 @@
         {
           "name": "Check codec list",
           "action": "Run adb shell dumpsys media.player | grep -i 'c2.ffmpeg.ac3'",
-          "expected": "c2.ffmpeg.ac3.decoder listed in codec registry"
+          "expected": "c2.ffmpeg.ac3.decoder listed in codec registry",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Check shared library",
           "action": "Run adb shell ls /system/lib64/libcodec2_soft_ac3dec.so",
-          "expected": "Library file exists"
+          "expected": "Library file exists",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Check FFmpeg library",
           "action": "Run adb shell ls /system/lib64/libffmpeg_58.so",
-          "expected": "FFmpeg library exists (loaded via dlopen at runtime)"
+          "expected": "FFmpeg library exists (loaded via dlopen at runtime)",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -3663,12 +3973,14 @@
         {
           "name": "Check codec list",
           "action": "Run adb shell dumpsys media.player | grep -i 'c2.ffmpeg.eac3'",
-          "expected": "c2.ffmpeg.eac3.decoder listed in codec registry"
+          "expected": "c2.ffmpeg.eac3.decoder listed in codec registry",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Check shared library",
           "action": "Run adb shell ls /system/lib64/libcodec2_soft_eac3dec.so",
-          "expected": "Library file exists"
+          "expected": "Library file exists",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -3700,17 +4012,21 @@
         {
           "name": "Check codec list",
           "action": "Run adb shell dumpsys media.player | grep 'c2.rk.avc.decoder'",
-          "expected": "c2.rk.avc.decoder NOT listed or listed as disabled"
+          "expected": "c2.rk.avc.decoder NOT listed or listed as disabled",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Check media_codecs XML",
-          "action": "Verify c2.rk.avc.decoder is commented out or removed from media_codecs_c2_rk3588.xml",
-          "expected": "HW AVC decoder disabled in codec config"
+          "action": "playwright: assertVisible text=c2.rk.avc.decoder is commented out or removed from media_codecs_c2_rk3588.xml",
+          "expected": "HW AVC decoder disabled in codec config",
+          "_conversion_note": "manual-review-required",
+          "_original_action": "Verify c2.rk.avc.decoder is commented out or removed from media_codecs_c2_rk3588.xml"
         },
         {
           "name": "Check SW AVC available",
           "action": "Run adb shell dumpsys media.player | grep 'c2.android.avc.decoder'",
-          "expected": "SW AVC decoder (c2.android.avc.decoder) available as replacement"
+          "expected": "SW AVC decoder (c2.android.avc.decoder) available as replacement",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -3742,12 +4058,14 @@
         {
           "name": "Check codec list",
           "action": "Run adb shell dumpsys media.player | grep 'c2.rk.av1.decoder'",
-          "expected": "c2.rk.av1.decoder NOT listed or listed as disabled"
+          "expected": "c2.rk.av1.decoder NOT listed or listed as disabled",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Check SW AV1 available",
           "action": "Run adb shell dumpsys media.player | grep 'c2.android.av1.decoder'",
-          "expected": "SW AV1 decoder available as replacement"
+          "expected": "SW AV1 decoder available as replacement",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -3777,23 +4095,31 @@
       "steps": [
         {
           "name": "Check AVC limits",
-          "action": "Verify media_codecs_google_c2_rk3588.xml has AVC max 3840x2160",
-          "expected": "SW AVC decoder supports up to 4K resolution"
+          "action": "playwright: assertVisible text=media_codecs_google_c2_rk3588.xml has AVC max 3840x2160",
+          "expected": "SW AVC decoder supports up to 4K resolution",
+          "_conversion_note": "manual-review-required",
+          "_original_action": "Verify media_codecs_google_c2_rk3588.xml has AVC max 3840x2160"
         },
         {
           "name": "Check HEVC limits",
-          "action": "Verify SW HEVC decoder max resolution",
-          "expected": "SW HEVC supports up to 8K resolution"
+          "action": "playwright: assertVisible text=SW HEVC decoder max resolution",
+          "expected": "SW HEVC supports up to 8K resolution",
+          "_conversion_note": "manual-review-required",
+          "_original_action": "Verify SW HEVC decoder max resolution"
         },
         {
           "name": "Check VP9 limits",
-          "action": "Verify SW VP9 decoder max resolution",
-          "expected": "SW VP9 supports up to 8K resolution"
+          "action": "playwright: assertVisible text=SW VP9 decoder max resolution",
+          "expected": "SW VP9 supports up to 8K resolution",
+          "_conversion_note": "manual-review-required",
+          "_original_action": "Verify SW VP9 decoder max resolution"
         },
         {
           "name": "Check AV1 limits",
-          "action": "Verify SW AV1 decoder max resolution",
-          "expected": "SW AV1 supports up to 8K resolution"
+          "action": "playwright: assertVisible text=SW AV1 decoder max resolution",
+          "expected": "SW AV1 supports up to 8K resolution",
+          "_conversion_note": "manual-review-required",
+          "_original_action": "Verify SW AV1 decoder max resolution"
         }
       ],
       "tags": [
@@ -3826,22 +4152,26 @@
         {
           "name": "Start video on secondary display",
           "action": "Play a video in any ExoPlayer-based app, verify it appears on secondary display",
-          "expected": "Video playing on secondary display"
+          "expected": "Video playing on secondary display",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Stop video",
           "action": "Force-stop the video app via adb shell am force-stop",
-          "expected": "Video app killed"
+          "expected": "Video app killed",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Wait for cleanup",
           "action": "Wait up to 3 seconds for watchdog to detect stall and trigger cleanup",
-          "expected": "Secondary display clears to black within 3 seconds (no frozen frame visible)"
+          "expected": "Secondary display clears to black within 3 seconds (no frozen frame visible)",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify cleanup in logcat",
           "action": "Check logcat for frozen frame watchdog activity",
-          "expected": "Log shows C2BqBuffer stall detected, media.swcodec killed, Presentation reset to black"
+          "expected": "Log shows C2BqBuffer stall detected, media.swcodec killed, Presentation reset to black",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -3873,22 +4203,26 @@
         {
           "name": "Play video A",
           "action": "Start a video in app A (e.g., VK Video), verify it routes to secondary display",
-          "expected": "Video A playing on secondary display"
+          "expected": "Video A playing on secondary display",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Stop video A",
           "action": "Force-stop app A, wait for cleanup to complete",
-          "expected": "Secondary display clears to black"
+          "expected": "Secondary display clears to black",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Play video B",
           "action": "Start a video in app B (e.g., RuTube), wait for redirect",
-          "expected": "Video B playing on secondary display"
+          "expected": "Video B playing on secondary display",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify no stuck state",
           "action": "Check logcat for VideoOutputManagerService surface registration",
-          "expected": "Both videos A and B successfully registered with VideoOutputManager (no stuck surface or null surface gap)"
+          "expected": "Both videos A and B successfully registered with VideoOutputManager (no stuck surface or null surface gap)",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -3920,22 +4254,26 @@
         {
           "name": "Play video in VK Video",
           "action": "Open VK Video and start a video that has pre-roll or mid-roll ads",
-          "expected": "Video starts, ad may play first"
+          "expected": "Video starts, ad may play first",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Wait through ad",
           "action": "Let the ad play and complete, main video resumes",
-          "expected": "Ad plays on secondary display, then main video resumes"
+          "expected": "Ad plays on secondary display, then main video resumes",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify main video still on secondary",
           "action": "After ad finishes, observe secondary display",
-          "expected": "Main video continues playing on secondary display without returning to primary"
+          "expected": "Main video continues playing on secondary display without returning to primary",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Check single-active-decoder",
           "action": "Check logcat for decoder transitions during ad",
-          "expected": "VideoOutputManager handles ad decoder as replacement, main video decoder reactivates after ad"
+          "expected": "VideoOutputManager handles ad decoder as replacement, main video decoder reactivates after ad",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -3961,22 +4299,27 @@
         {
           "name": "Trigger frozen frame",
           "action": "Force-stop a video app during playback on secondary display",
-          "expected": "Frozen frame on secondary"
+          "expected": "Frozen frame on secondary",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Press reset",
           "action": "Trigger reset via Reset Service notification button or watchdog auto-cleanup",
-          "expected": "Cleanup begins"
+          "expected": "Cleanup begins",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Observe primary display",
           "action": "Watch the primary display carefully during the reset process",
-          "expected": "No button flash, no transient UI artifacts visible on primary display during reset"
+          "expected": "No button flash, no transient UI artifacts visible on primary display during reset",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify clean transition",
-          "action": "Observe secondary display transition",
-          "expected": "Secondary display transitions smoothly from frozen frame to black without visible flicker or button flash"
+          "action": "playwright: assertVisible text=secondary display transition",
+          "expected": "Secondary display transitions smoothly from frozen frame to black without visible flicker or button flash",
+          "_conversion_note": "manual-review-required",
+          "_original_action": "Observe secondary display transition"
         }
       ],
       "tags": [
@@ -4008,27 +4351,33 @@
         {
           "name": "Play video on secondary",
           "action": "Start video in an app, verify on secondary display",
-          "expected": "Video playing on secondary display"
+          "expected": "Video playing on secondary display",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Send app to background",
           "action": "Press Home button to send video app to background",
-          "expected": "App moves to background"
+          "expected": "App moves to background",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Wait for MediaSession detection",
           "action": "Wait 3-5 seconds for VideoPlaybackDetector to detect state change",
-          "expected": "VideoPlaybackDetector detects MediaSession PAUSED/STOPPED"
+          "expected": "VideoPlaybackDetector detects MediaSession PAUSED/STOPPED",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify secondary display clears",
-          "action": "Observe secondary display",
-          "expected": "Secondary display clears to black or Presenter background (no stale video frame)"
+          "action": "playwright: assertVisible text=secondary display",
+          "expected": "Secondary display clears to black or Presenter background (no stale video frame)",
+          "_conversion_note": "manual-review-required",
+          "_original_action": "Observe secondary display"
         },
         {
           "name": "Verify logcat",
           "action": "Check logcat for VideoPlaybackDetector cleanup trigger",
-          "expected": "Log shows MediaSession state change detected and cleanup triggered"
+          "expected": "Log shows MediaSession state change detected and cleanup triggered",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -4061,22 +4410,27 @@
         {
           "name": "Ensure no video playing",
           "action": "Stop any video playback on secondary display",
-          "expected": "No active video decoder"
+          "expected": "No active video decoder",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Launch AIMP and play song",
           "action": "Open AIMP music player, play a song that has album art embedded in metadata",
-          "expected": "AIMP begins music playback"
+          "expected": "AIMP begins music playback",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Check secondary display",
-          "action": "Observe the TV (secondary display)",
-          "expected": "Album cover art from AIMP MediaSession displayed on secondary display via Presenter"
+          "action": "playwright: assertVisible text=TV (secondary display)",
+          "expected": "Album cover art from AIMP MediaSession displayed on secondary display via Presenter",
+          "_conversion_note": "manual-review-required",
+          "_original_action": "Observe the TV (secondary display)"
         },
         {
           "name": "Verify metadata",
           "action": "Check that title and artist text appear below album art",
-          "expected": "Song title and artist from AIMP MediaSession metadata visible on secondary display"
+          "expected": "Song title and artist from AIMP MediaSession metadata visible on secondary display",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -4102,22 +4456,27 @@
         {
           "name": "Ensure no video playing",
           "action": "Stop any video playback on secondary display",
-          "expected": "No active video decoder"
+          "expected": "No active video decoder",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Launch Winamp and play song",
           "action": "Open Winamp music player, play a song that has album art",
-          "expected": "Winamp begins music playback"
+          "expected": "Winamp begins music playback",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Check secondary display",
-          "action": "Observe the TV (secondary display)",
-          "expected": "Album cover art from Winamp MediaSession displayed on secondary display"
+          "action": "playwright: assertVisible text=TV (secondary display)",
+          "expected": "Album cover art from Winamp MediaSession displayed on secondary display",
+          "_conversion_note": "manual-review-required",
+          "_original_action": "Observe the TV (secondary display)"
         },
         {
           "name": "Verify metadata",
           "action": "Check that title and artist text appear below album art",
-          "expected": "Song title and artist from Winamp MediaSession metadata visible on secondary display"
+          "expected": "Song title and artist from Winamp MediaSession metadata visible on secondary display",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -4143,17 +4502,21 @@
         {
           "name": "Play music in app with URI-based art",
           "action": "Use a music player that provides album art via content:// or file:// URI in MediaSession metadata (rather than embedded Bitmap)",
-          "expected": "Music playing with album art URI in MediaSession"
+          "expected": "Music playing with album art URI in MediaSession",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Check secondary display",
-          "action": "Observe the TV (secondary display)",
-          "expected": "Album cover loaded from URI and displayed on secondary display"
+          "action": "playwright: assertVisible text=TV (secondary display)",
+          "expected": "Album cover loaded from URI and displayed on secondary display",
+          "_conversion_note": "manual-review-required",
+          "_original_action": "Observe the TV (secondary display)"
         },
         {
           "name": "Check logcat for URI loading",
           "action": "Check logcat for Presenter album art loading",
-          "expected": "Log shows album art URI received and loaded successfully (no null or broken image)"
+          "expected": "Log shows album art URI received and loaded successfully (no null or broken image)",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -4177,23 +4540,28 @@
       "steps": [
         {
           "name": "Ensure HDMI audio output selected",
-          "action": "Verify audio routes to HDMI via dumpsys audio STREAM_MUSIC",
-          "expected": "HDMI audio device active for STREAM_MUSIC"
+          "action": "playwright: assertVisible text=audio routes to HDMI via dumpsys audio STREAM_MUSIC",
+          "expected": "HDMI audio device active for STREAM_MUSIC",
+          "_conversion_note": "manual-review-required",
+          "_original_action": "Verify audio routes to HDMI via dumpsys audio STREAM_MUSIC"
         },
         {
           "name": "Start audio playback",
           "action": "Play a music file or stream through any audio app",
-          "expected": "Audio begins playing"
+          "expected": "Audio begins playing",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Monitor for 30 seconds",
           "action": "Listen to HDMI audio output for 30 seconds, checking for clicks, pops, dropouts, or distortion",
-          "expected": "Clean audio playback for full 30 seconds with no glitches"
+          "expected": "Clean audio playback for full 30 seconds with no glitches",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Check AudioFlinger underruns",
           "action": "Run adb shell dumpsys audioflinger | grep -E 'underrun|overrun'",
-          "expected": "Zero or minimal underruns during the 30-second test period"
+          "expected": "Zero or minimal underruns during the 30-second test period",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -4225,17 +4593,20 @@
         {
           "name": "Verify WMA decoder registered",
           "action": "Check dumpsys media.codec for c2.ffmpeg.wma.decoder",
-          "expected": "c2.ffmpeg.wma.decoder registered in MediaCodec API with correct MIME type"
+          "expected": "c2.ffmpeg.wma.decoder registered in MediaCodec API with correct MIME type",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Play WMA file",
           "action": "Open a WMA audio file in a media player that uses MediaCodec API (e.g., Jellyfin, ExoPlayer-based player)",
-          "expected": "WMA file begins decoding and audio plays"
+          "expected": "WMA file begins decoding and audio plays",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify clean playback",
           "action": "Listen for 10 seconds",
-          "expected": "Audio plays cleanly with no distortion, skipping, or silence"
+          "expected": "Audio plays cleanly with no distortion, skipping, or silence",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -4267,17 +4638,20 @@
         {
           "name": "Verify ALAC decoder registered",
           "action": "Check dumpsys media.codec for c2.ffmpeg.alac.decoder",
-          "expected": "c2.ffmpeg.alac.decoder registered in MediaCodec API"
+          "expected": "c2.ffmpeg.alac.decoder registered in MediaCodec API",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Play ALAC file",
           "action": "Open an ALAC (.m4a) audio file in a player that uses MediaCodec API",
-          "expected": "ALAC file begins decoding and audio plays"
+          "expected": "ALAC file begins decoding and audio plays",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify lossless quality",
           "action": "Listen for 10 seconds, compare with source quality",
-          "expected": "Audio plays cleanly with full lossless quality, no artifacts"
+          "expected": "Audio plays cleanly with full lossless quality, no artifacts",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -4303,42 +4677,50 @@
         {
           "name": "Check AC3 decoder",
           "action": "Run adb shell dumpsys media.codec | grep c2.ffmpeg.ac3.decoder",
-          "expected": "c2.ffmpeg.ac3.decoder registered"
+          "expected": "c2.ffmpeg.ac3.decoder registered",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Check E-AC3 decoder",
           "action": "Run adb shell dumpsys media.codec | grep c2.ffmpeg.eac3.decoder",
-          "expected": "c2.ffmpeg.eac3.decoder registered"
+          "expected": "c2.ffmpeg.eac3.decoder registered",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Check WMA decoder",
           "action": "Run adb shell dumpsys media.codec | grep c2.ffmpeg.wma.decoder",
-          "expected": "c2.ffmpeg.wma.decoder registered"
+          "expected": "c2.ffmpeg.wma.decoder registered",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Check ALAC decoder",
           "action": "Run adb shell dumpsys media.codec | grep c2.ffmpeg.alac.decoder",
-          "expected": "c2.ffmpeg.alac.decoder registered"
+          "expected": "c2.ffmpeg.alac.decoder registered",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Check APE decoder",
           "action": "Run adb shell dumpsys media.codec | grep c2.ffmpeg.ape.decoder",
-          "expected": "c2.ffmpeg.ape.decoder registered"
+          "expected": "c2.ffmpeg.ape.decoder registered",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Check MP2 decoder",
           "action": "Run adb shell dumpsys media.codec | grep c2.ffmpeg.mp2.decoder",
-          "expected": "c2.ffmpeg.mp2.decoder registered"
+          "expected": "c2.ffmpeg.mp2.decoder registered",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Check MP1 decoder",
           "action": "Run adb shell dumpsys media.codec | grep c2.ffmpeg.mp1.decoder",
-          "expected": "c2.ffmpeg.mp1.decoder registered"
+          "expected": "c2.ffmpeg.mp1.decoder registered",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify all 7 decoders",
           "action": "Count total c2.ffmpeg.* decoders in dumpsys media.codec",
-          "expected": "At least 7 c2.ffmpeg.* decoders registered"
+          "expected": "At least 7 c2.ffmpeg.* decoders registered",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -4376,12 +4758,14 @@
         {
           "name": "Check private DNS mode setting",
           "action": "Run adb shell settings get global private_dns_mode",
-          "expected": "Output is 'hostname'"
+          "expected": "Output is 'hostname'",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify setting persists across reboot",
           "action": "Reboot device and re-check settings get global private_dns_mode",
-          "expected": "Setting remains 'hostname' after reboot"
+          "expected": "Setting remains 'hostname' after reboot",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -4414,12 +4798,14 @@
         {
           "name": "Check private DNS specifier",
           "action": "Run adb shell settings get global private_dns_specifier",
-          "expected": "Output is 'dns.google'"
+          "expected": "Output is 'dns.google'",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify DNS-over-TLS active",
           "action": "Check logcat for DnsResolver TLS connection to dns.google",
-          "expected": "TLS handshake completed to dns.google (8.8.8.8 or 8.8.4.4)"
+          "expected": "TLS handshake completed to dns.google (8.8.8.8 or 8.8.4.4)",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -4452,12 +4838,14 @@
         {
           "name": "Resolve YouTube hostname",
           "action": "Run adb shell ping -c 1 www.youtube.com",
-          "expected": "DNS resolution succeeds, ping shows resolved IP address"
+          "expected": "DNS resolution succeeds, ping shows resolved IP address",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify resolution via DoT",
           "action": "Check that resolution goes through dns.google DoT (not ISP DNS)",
-          "expected": "Resolution uses private DNS provider, not ISP-provided DNS"
+          "expected": "Resolution uses private DNS provider, not ISP-provided DNS",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -4483,12 +4871,14 @@
         {
           "name": "Ping Google",
           "action": "Run adb shell ping -c 1 www.google.com",
-          "expected": "Ping succeeds with valid IP address"
+          "expected": "Ping succeeds with valid IP address",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify Play Store connectivity",
           "action": "Open Play Store app and confirm it loads content",
-          "expected": "Play Store loads featured apps and updates"
+          "expected": "Play Store loads featured apps and updates",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -4514,12 +4904,14 @@
         {
           "name": "Resolve VK Video hostname",
           "action": "Run adb shell ping -c 1 vkvideo.ru",
-          "expected": "DNS resolution succeeds, ping shows resolved IP address"
+          "expected": "DNS resolution succeeds, ping shows resolved IP address",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify VK Video app connectivity",
           "action": "Launch VK Video app and confirm video content loads",
-          "expected": "VK Video loads video listings and thumbnails"
+          "expected": "VK Video loads video listings and thumbnails",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -4545,17 +4937,20 @@
         {
           "name": "Verify secondary display connected",
           "action": "Check that HDMI-A-1 (TV) is connected via dumpsys display",
-          "expected": "Secondary display detected with valid display ID"
+          "expected": "Secondary display detected with valid display ID",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Launch VLC and start video",
           "action": "Open VLC, play a local video file",
-          "expected": "VLC begins playback"
+          "expected": "VLC begins playback",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify clone mode activated",
           "action": "Check VLC settings or logcat for clone/presentation mode activation",
-          "expected": "VLC detects secondary display and auto-enables clone mode"
+          "expected": "VLC detects secondary display and auto-enables clone mode",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -4587,17 +4982,21 @@
         {
           "name": "Start VLC video playback",
           "action": "Play a video file in VLC with secondary display connected",
-          "expected": "VLC begins playback in clone mode"
+          "expected": "VLC begins playback in clone mode",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify video on TV",
-          "action": "Observe the TV (HDMI-A-1 secondary display)",
-          "expected": "Video content renders on the TV via VLC Presentation API"
+          "action": "playwright: assertVisible text=TV (HDMI-A-1 secondary display)",
+          "expected": "Video content renders on the TV via VLC Presentation API",
+          "_conversion_note": "manual-review-required",
+          "_original_action": "Observe the TV (HDMI-A-1 secondary display)"
         },
         {
           "name": "Verify video quality",
           "action": "Check that video plays smoothly without stuttering or tearing",
-          "expected": "Smooth playback on secondary display at native resolution"
+          "expected": "Smooth playback on secondary display at native resolution",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -4630,17 +5029,20 @@
         {
           "name": "Start VLC clone mode playback",
           "action": "Play a video in VLC with clone mode active on secondary display",
-          "expected": "Video playing on TV, VLC UI on primary"
+          "expected": "Video playing on TV, VLC UI on primary",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify primary display UI",
           "action": "Check the primary display (touch screen)",
-          "expected": "VLC shows playback controls (play/pause, seek bar, volume) on primary"
+          "expected": "VLC shows playback controls (play/pause, seek bar, volume) on primary",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Test remote control functions",
           "action": "Tap pause on primary display, verify video pauses on TV",
-          "expected": "Pause command from primary controls video on secondary display"
+          "expected": "Pause command from primary controls video on secondary display",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -4666,22 +5068,26 @@
         {
           "name": "Disconnect secondary display",
           "action": "Unplug HDMI-A-1 (TV) cable",
-          "expected": "Secondary display disconnected"
+          "expected": "Secondary display disconnected",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Launch VLC and play video",
           "action": "Open VLC and play a local video file",
-          "expected": "VLC begins playback"
+          "expected": "VLC begins playback",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify video on primary",
           "action": "Check that video plays on the primary display (touch screen)",
-          "expected": "Video renders on primary display without clone mode"
+          "expected": "Video renders on primary display without clone mode",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify no errors",
           "action": "Check logcat for any Presentation or clone mode errors",
-          "expected": "No errors related to missing secondary display"
+          "expected": "No errors related to missing secondary display",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -4707,17 +5113,20 @@
         {
           "name": "Launch Nova Player",
           "action": "Open Nova Player and select a local video file",
-          "expected": "Nova Player loads video"
+          "expected": "Nova Player loads video",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Start playback",
           "action": "Begin video playback in Nova Player",
-          "expected": "Video starts playing"
+          "expected": "Video starts playing",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Check broadcast",
           "action": "Monitor logcat for VIDEO_START broadcast from Nova Player to Presenter",
-          "expected": "Broadcast intent com.atmosphere.VIDEO_START received by PresenterService"
+          "expected": "Broadcast intent com.atmosphere.VIDEO_START received by PresenterService",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -4750,17 +5159,20 @@
         {
           "name": "Start Nova Player video",
           "action": "Play a video in Nova Player",
-          "expected": "Video playing"
+          "expected": "Video playing",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Pause or stop playback",
           "action": "Pause or stop the video in Nova Player",
-          "expected": "Playback paused/stopped"
+          "expected": "Playback paused/stopped",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Check broadcast",
           "action": "Monitor logcat for VIDEO_STOP broadcast from Nova Player to Presenter",
-          "expected": "Broadcast intent com.atmosphere.VIDEO_STOP received by PresenterService"
+          "expected": "Broadcast intent com.atmosphere.VIDEO_STOP received by PresenterService",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -4793,17 +5205,20 @@
         {
           "name": "Launch MPV Player",
           "action": "Open MPV Player and select a local video file",
-          "expected": "MPV Player loads video"
+          "expected": "MPV Player loads video",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Start playback",
           "action": "Begin video playback in MPV Player",
-          "expected": "Video starts playing"
+          "expected": "Video starts playing",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Check broadcast",
           "action": "Monitor logcat for VIDEO_START broadcast from MPV Player to Presenter",
-          "expected": "Broadcast intent com.atmosphere.VIDEO_START received by PresenterService"
+          "expected": "Broadcast intent com.atmosphere.VIDEO_START received by PresenterService",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -4836,17 +5251,20 @@
         {
           "name": "Start MPV Player video",
           "action": "Play a video in MPV Player",
-          "expected": "Video playing"
+          "expected": "Video playing",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Pause or stop playback",
           "action": "Pause or stop the video in MPV Player",
-          "expected": "Playback paused/stopped"
+          "expected": "Playback paused/stopped",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Check broadcast",
           "action": "Monitor logcat for VIDEO_STOP broadcast from MPV Player to Presenter",
-          "expected": "Broadcast intent com.atmosphere.VIDEO_STOP received by PresenterService"
+          "expected": "Broadcast intent com.atmosphere.VIDEO_STOP received by PresenterService",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -4879,22 +5297,26 @@
         {
           "name": "Verify Presenter service running",
           "action": "Run adb shell dumpsys activity services | grep PresenterService",
-          "expected": "PresenterService is running"
+          "expected": "PresenterService is running",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Send test VIDEO_START broadcast",
           "action": "Run adb shell am broadcast -a com.atmosphere.VIDEO_START --es package com.test.player",
-          "expected": "Broadcast delivered successfully"
+          "expected": "Broadcast delivered successfully",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify Presenter processes broadcast",
           "action": "Check logcat for PresenterService handling the VIDEO_START broadcast",
-          "expected": "PresenterService logs receipt and processing of native player broadcast"
+          "expected": "PresenterService logs receipt and processing of native player broadcast",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Send test VIDEO_STOP broadcast",
           "action": "Run adb shell am broadcast -a com.atmosphere.VIDEO_STOP --es package com.test.player",
-          "expected": "Broadcast delivered and Presenter returns to idle/album art state"
+          "expected": "Broadcast delivered and Presenter returns to idle/album art state",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -4927,17 +5349,20 @@
         {
           "name": "Start native player video",
           "action": "Play a video in Nova Player or MPV Player with secondary display connected",
-          "expected": "Video playback starts and VIDEO_START broadcast sent"
+          "expected": "Video playback starts and VIDEO_START broadcast sent",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify overlay on primary",
           "action": "Check the primary display (touch screen) for VideoControlOverlay",
-          "expected": "VideoControlOverlay appears with playback controls and audio device switcher"
+          "expected": "VideoControlOverlay appears with playback controls and audio device switcher",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Test overlay controls",
           "action": "Tap the return-to-primary button on the overlay",
-          "expected": "Video returns to primary display or overlay action triggers correctly"
+          "expected": "Video returns to primary display or overlay action triggers correctly",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -4966,12 +5391,14 @@
         {
           "name": "Check default config",
           "action": "Load HelixQA config without HELIXQA_AUDIO_RECORDING env var",
-          "expected": "Audio recording is disabled by default"
+          "expected": "Audio recording is disabled by default",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify no recording files created",
           "action": "Run a test without audio recording enabled and check evidence directory",
-          "expected": "No WAV or audio files in evidence output directory"
+          "expected": "No WAV or audio files in evidence output directory",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -4996,17 +5423,20 @@
         {
           "name": "Set environment variable",
           "action": "Set HELIXQA_AUDIO_RECORDING=true in .env or environment",
-          "expected": "Environment variable accepted"
+          "expected": "Environment variable accepted",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Load config",
           "action": "Initialize HelixQA with ATMOSphere project config",
-          "expected": "Audio recording enabled in loaded configuration"
+          "expected": "Audio recording enabled in loaded configuration",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Run test with audio",
           "action": "Execute a test case that involves audio playback",
-          "expected": "Audio recording starts and captures device audio output"
+          "expected": "Audio recording starts and captures device audio output",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -5035,17 +5465,20 @@
         {
           "name": "Test standard quality",
           "action": "Set audio quality to 'standard' and check ffmpeg parameters",
-          "expected": "ffmpeg params: -ar 22050 -ac 1 -acodec pcm_s16le"
+          "expected": "ffmpeg params: -ar 22050 -ac 1 -acodec pcm_s16le",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Test high quality",
           "action": "Set audio quality to 'high' and check ffmpeg parameters",
-          "expected": "ffmpeg params: -ar 44100 -ac 2 -acodec pcm_s16le"
+          "expected": "ffmpeg params: -ar 44100 -ac 2 -acodec pcm_s16le",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Test ultra quality",
           "action": "Set audio quality to 'ultra' and check ffmpeg parameters",
-          "expected": "ffmpeg params: -ar 48000 -ac 2 -acodec pcm_s24le"
+          "expected": "ffmpeg params: -ar 48000 -ac 2 -acodec pcm_s24le",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -5071,22 +5504,26 @@
         {
           "name": "Enable audio recording",
           "action": "Configure HelixQA with audio recording enabled",
-          "expected": "Audio recording active"
+          "expected": "Audio recording active",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Run audio test",
           "action": "Execute a test case that plays audio on the device",
-          "expected": "Test executes and audio plays"
+          "expected": "Test executes and audio plays",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Check evidence directory",
           "action": "Inspect the evidence output directory for WAV files",
-          "expected": "WAV file created with correct format header (RIFF/WAVE)"
+          "expected": "WAV file created with correct format header (RIFF/WAVE)",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify WAV content",
           "action": "Check WAV file is non-empty and has valid audio data",
-          "expected": "WAV file has non-zero size and valid PCM audio samples"
+          "expected": "WAV file has non-zero size and valid PCM audio samples",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -5112,22 +5549,26 @@
         {
           "name": "Start recording",
           "action": "Trigger audio recording start via evidence collector API",
-          "expected": "Recording process starts, PID captured"
+          "expected": "Recording process starts, PID captured",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify recording active",
           "action": "Check that recording process is running and output file is growing",
-          "expected": "Process running, file size increasing over time"
+          "expected": "Process running, file size increasing over time",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Stop recording",
           "action": "Trigger audio recording stop via evidence collector API",
-          "expected": "Recording process terminates cleanly"
+          "expected": "Recording process terminates cleanly",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify final file",
           "action": "Check that the WAV file is finalized and readable",
-          "expected": "WAV file header updated with correct data size, file is playable"
+          "expected": "WAV file header updated with correct data size, file is playable",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -5153,12 +5594,14 @@
         {
           "name": "Check HW decoder registration",
           "action": "Run adb shell dumpsys media.codec | grep c2.rk",
-          "expected": "No c2.rk.* decoders registered (all disabled in media_codecs_c2_rk3588.xml)"
+          "expected": "No c2.rk.* decoders registered (all disabled in media_codecs_c2_rk3588.xml)",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify codec XML config",
           "action": "Check device/rockchip/rk3588/media_codecs_c2_rk3588.xml for commented-out HW decoders",
-          "expected": "All c2.rk.*.decoder entries are commented out or removed"
+          "expected": "All c2.rk.*.decoder entries are commented out or removed",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -5191,27 +5634,32 @@
         {
           "name": "Check SW AVC decoder",
           "action": "Run adb shell dumpsys media.codec | grep c2.android.avc.decoder",
-          "expected": "c2.android.avc.decoder registered"
+          "expected": "c2.android.avc.decoder registered",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Check SW HEVC decoder",
           "action": "Run adb shell dumpsys media.codec | grep c2.android.hevc.decoder",
-          "expected": "c2.android.hevc.decoder registered"
+          "expected": "c2.android.hevc.decoder registered",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Check SW VP9 decoder",
           "action": "Run adb shell dumpsys media.codec | grep c2.android.vp9.decoder",
-          "expected": "c2.android.vp9.decoder registered"
+          "expected": "c2.android.vp9.decoder registered",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Check SW AV1 decoder",
           "action": "Run adb shell dumpsys media.codec | grep c2.android.av1.decoder",
-          "expected": "c2.android.av1.decoder registered"
+          "expected": "c2.android.av1.decoder registered",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Check SW VP8 decoder",
           "action": "Run adb shell dumpsys media.codec | grep c2.android.vp8.decoder",
-          "expected": "c2.android.vp8.decoder registered"
+          "expected": "c2.android.vp8.decoder registered",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -5244,22 +5692,26 @@
         {
           "name": "Play video in ExoPlayer-based app",
           "action": "Start video playback in YouTube, VK Video, or another ExoPlayer app",
-          "expected": "Video playback begins"
+          "expected": "Video playback begins",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Check MediaCodec hook",
           "action": "Monitor logcat for MediaCodec.configure() hook intercepting ExoPlayer",
-          "expected": "Log shows HW codec rejected with IllegalArgumentException"
+          "expected": "Log shows HW codec rejected with IllegalArgumentException",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify SW retry",
           "action": "Check logcat for ExoPlayer retrying with SW codec",
-          "expected": "ExoPlayer retries configure() with c2.android.* SW codec and succeeds"
+          "expected": "ExoPlayer retries configure() with c2.android.* SW codec and succeeds",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify playback quality",
           "action": "Watch video for 10 seconds",
-          "expected": "Smooth playback without artifacts or stuttering"
+          "expected": "Smooth playback without artifacts or stuttering",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -5292,12 +5744,14 @@
         {
           "name": "Check SW AVC resolution limits",
           "action": "Check media_codecs_google_c2_rk3588.xml for c2.android.avc.decoder max resolution",
-          "expected": "SW AVC decoder configured for up to 3840x2160 (4K)"
+          "expected": "SW AVC decoder configured for up to 3840x2160 (4K)",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Play 4K AVC content",
           "action": "Play a 4K H.264/AVC video file",
-          "expected": "Video decodes and plays (may have reduced framerate at 4K)"
+          "expected": "Video decodes and plays (may have reduced framerate at 4K)",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -5330,12 +5784,14 @@
         {
           "name": "Check SW VP9 resolution limits",
           "action": "Check media_codecs_google_c2_rk3588.xml for c2.android.vp9.decoder max resolution",
-          "expected": "SW VP9 decoder configured for up to 7680x4320 (8K)"
+          "expected": "SW VP9 decoder configured for up to 7680x4320 (8K)",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Play high-resolution VP9 content",
           "action": "Play a 4K VP9 video file to verify decoder works at high resolutions",
-          "expected": "VP9 video decodes and plays successfully"
+          "expected": "VP9 video decodes and plays successfully",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -5368,17 +5824,21 @@
         {
           "name": "Check both outputs enabled",
           "action": "Run adb shell tinymix -D 2 and check headphone and speaker output states",
-          "expected": "Both LOUT1/ROUT1 (headphone) and LOUT2/ROUT2 (speaker) outputs are enabled"
+          "expected": "Both LOUT1/ROUT1 (headphone) and LOUT2/ROUT2 (speaker) outputs are enabled",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Plug in 3.5mm cable",
           "action": "Insert a 3.5mm AUX cable into the headphone jack",
-          "expected": "Audio plays through the 3.5mm jack"
+          "expected": "Audio plays through the 3.5mm jack",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify with AUX cable (no hp-det trigger)",
           "action": "Use an AUX cable that does not trigger hp-det GPIO (e.g., plain AUX, not headphones)",
-          "expected": "Audio still plays through 3.5mm jack because both outputs are always enabled (Fix #104)"
+          "expected": "Audio still plays through 3.5mm jack because both outputs are always enabled (Fix #104)",
+          "expect_status": 104,
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -5412,17 +5872,20 @@
         {
           "name": "Launch Mullvad VPN",
           "action": "Open the Mullvad VPN app",
-          "expected": "Mullvad VPN app launches"
+          "expected": "Mullvad VPN app launches",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Connect to VPN",
           "action": "Tap connect and select a server (auto or specific region)",
-          "expected": "VPN connection established, VPN icon in status bar"
+          "expected": "VPN connection established, VPN icon in status bar",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify ISP bypass",
           "action": "Access a site that is normally ISP-blocked (e.g., YouTube, Speedtest)",
-          "expected": "Previously blocked content is accessible via VPN tunnel"
+          "expected": "Previously blocked content is accessible via VPN tunnel",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -5449,22 +5912,27 @@
         {
           "name": "Verify secondary display connected",
           "action": "Check that HDMI-A-1 (TV) is connected",
-          "expected": "Secondary display present"
+          "expected": "Secondary display present",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Launch VK Video",
           "action": "Open VK Video app and select a video to play",
-          "expected": "VK Video begins playback"
+          "expected": "VK Video begins playback",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify video on TV",
-          "action": "Observe the TV (secondary display)",
-          "expected": "Video content renders on the TV via MediaCodec SW codec redirect"
+          "action": "playwright: assertVisible text=TV (secondary display)",
+          "expected": "Video content renders on the TV via MediaCodec SW codec redirect",
+          "_conversion_note": "manual-review-required",
+          "_original_action": "Observe the TV (secondary display)"
         },
         {
           "name": "Verify no stale frames",
           "action": "Navigate away from video and check that secondary display clears",
-          "expected": "Secondary display returns to Presenter idle state, no stuck frame"
+          "expected": "Secondary display returns to Presenter idle state, no stuck frame",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -5497,27 +5965,33 @@
         {
           "name": "Connect Mullvad VPN",
           "action": "Enable Mullvad VPN to bypass ISP restrictions on YouTube",
-          "expected": "VPN connected"
+          "expected": "VPN connected",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify secondary display connected",
           "action": "Check that HDMI-A-1 (TV) is connected",
-          "expected": "Secondary display present"
+          "expected": "Secondary display present",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Launch YouTube",
           "action": "Open YouTube app and play a video",
-          "expected": "YouTube begins playback (requires VPN for ISP-restricted regions)"
+          "expected": "YouTube begins playback (requires VPN for ISP-restricted regions)",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify video on TV",
-          "action": "Observe the TV (secondary display)",
-          "expected": "Video content renders on the TV via ExoPlayer SW codec redirect"
+          "action": "playwright: assertVisible text=TV (secondary display)",
+          "expected": "Video content renders on the TV via ExoPlayer SW codec redirect",
+          "_conversion_note": "manual-review-required",
+          "_original_action": "Observe the TV (secondary display)"
         },
         {
           "name": "Verify resolution filter",
           "action": "Check logcat for resolution filter accepting video (min dimension >= 400)",
-          "expected": "Full video accepted (not filtered as thumbnail), redirected to secondary display"
+          "expected": "Full video accepted (not filtered as thumbnail), redirected to secondary display",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [

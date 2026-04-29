@@ -5,7 +5,9 @@
   "metadata": {
     "author": "vasic-digital",
     "app": "Catalogizer",
-    "version": "1.0.0"
+    "version": "1.0.0",
+    "bluff_audit_status": "converted-by-bank-prose-to-http.py",
+    "bluff_audit_date": "2026-04-29"
   },
   "test_cases": [
     {
@@ -23,12 +25,15 @@
         {
           "name": "Warm up",
           "action": "Send 3 GET /api/v1/health requests to warm connection pool",
-          "expected": "All return 200 OK"
+          "expected": "All return 200 OK",
+          "expect_status": 200,
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Measure response time",
           "action": "Send 20 GET /api/v1/health requests and measure each",
-          "expected": "p95 response time < 100ms"
+          "expected": "p95 response time < 100ms",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -54,12 +59,14 @@
         {
           "name": "Populate test data",
           "action": "Ensure at least 500 entities in database",
-          "expected": "Test data ready"
+          "expected": "Test data ready",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Measure search response",
           "action": "Send 20 GET /api/v1/entities?search=test requests",
-          "expected": "p95 response time < 500ms"
+          "expected": "p95 response time < 500ms",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -85,12 +92,14 @@
         {
           "name": "Populate test data",
           "action": "Ensure at least 200 entities in database",
-          "expected": "Test data ready"
+          "expected": "Test data ready",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Measure listing response",
           "action": "Send 20 GET /api/v1/entities?per_page=20 requests",
-          "expected": "p95 response time < 300ms"
+          "expected": "p95 response time < 300ms",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -115,13 +124,17 @@
       "steps": [
         {
           "name": "Navigate to directory with many files",
-          "action": "GET /api/v1/files?path=/large-dir&page=1&per_page=50",
-          "expected": "200 OK"
+          "action": "http: GET /api/v1/files?path=/large-dir&page=1&per_page=50",
+          "expected": "200 OK",
+          "_original_action": "GET /api/v1/files?path=/large-dir&page=1&per_page=50",
+          "expect_status": 200,
+          "auth": "admin"
         },
         {
           "name": "Measure response time",
           "action": "Send 20 paginated file listing requests",
-          "expected": "p95 response time < 500ms"
+          "expected": "p95 response time < 500ms",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -147,7 +160,8 @@
         {
           "name": "Get entity by ID",
           "action": "Send 20 GET /api/v1/entities/{id} requests for known entity",
-          "expected": "p95 response time < 100ms"
+          "expected": "p95 response time < 100ms",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -174,7 +188,8 @@
         {
           "name": "Measure login time",
           "action": "Send 10 POST /api/v1/auth/login with valid credentials",
-          "expected": "p95 response time < 200ms"
+          "expected": "p95 response time < 200ms",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -199,7 +214,8 @@
         {
           "name": "Measure admin info response",
           "action": "Send 10 GET /api/v1/admin/system-info requests",
-          "expected": "p95 response time < 200ms"
+          "expected": "p95 response time < 200ms",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -224,7 +240,8 @@
         {
           "name": "Measure stats response",
           "action": "Send 10 GET /api/v1/entities/stats requests",
-          "expected": "p95 response time < 300ms"
+          "expected": "p95 response time < 300ms",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -248,7 +265,8 @@
         {
           "name": "Measure metrics response",
           "action": "Send 10 GET /metrics requests",
-          "expected": "p95 response time < 200ms"
+          "expected": "p95 response time < 200ms",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -273,17 +291,22 @@
         {
           "name": "Send concurrent requests",
           "action": "Send 10 GET /api/v1/entities requests simultaneously",
-          "expected": "All 10 responses received"
+          "expected": "All 10 responses received",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify all succeeded",
           "action": "Check all responses are 200 OK",
-          "expected": "No 503 or timeout errors"
+          "expected": "No 503 or timeout errors",
+          "expect_status": 503,
+          "expect_body_contains": "error",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Check response times",
           "action": "Measure response time for each",
-          "expected": "All complete within 2 seconds"
+          "expected": "All complete within 2 seconds",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -307,12 +330,15 @@
         {
           "name": "Send 25 concurrent requests",
           "action": "Send 25 GET /api/v1/entities requests simultaneously",
-          "expected": "All responses received"
+          "expected": "All responses received",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify success rate",
           "action": "Count successful responses",
-          "expected": "At least 95% return 200 OK (some 429 acceptable)"
+          "expected": "At least 95% return 200 OK (some 429 acceptable)",
+          "expect_status": 200,
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -336,17 +362,23 @@
         {
           "name": "Send 50 concurrent requests",
           "action": "Send 50 GET /api/v1/health requests simultaneously",
-          "expected": "All responses received"
+          "expected": "All responses received",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify no crashes",
           "action": "Check server health after burst",
-          "expected": "Server still responsive (GET /api/v1/health returns 200)"
+          "expected": "Server still responsive (GET /api/v1/health returns 200)",
+          "expect_status": 200,
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Measure success rate",
           "action": "Count 200 and 429 responses",
-          "expected": "No 500 errors, all responses are 200 or 429"
+          "expected": "No 500 errors, all responses are 200 or 429",
+          "expect_status": 500,
+          "expect_body_contains": "error",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -370,12 +402,14 @@
         {
           "name": "Run mixed workload",
           "action": "Simultaneously: 5 GET entity requests, 3 POST create requests, 2 PUT update requests",
-          "expected": "All operations complete"
+          "expected": "All operations complete",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify data integrity",
           "action": "Check all created/updated entities have correct data",
-          "expected": "No data corruption from concurrent writes"
+          "expected": "No data corruption from concurrent writes",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -399,12 +433,14 @@
         {
           "name": "Send 10 concurrent searches",
           "action": "Send 10 simultaneous GET /api/v1/entities?search=<different_terms>",
-          "expected": "All return correct results"
+          "expected": "All return correct results",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify result correctness",
           "action": "Each search returns results matching its specific query",
-          "expected": "No result bleed between concurrent queries"
+          "expected": "No result bleed between concurrent queries",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -429,22 +465,28 @@
         {
           "name": "Populate large dataset",
           "action": "Ensure at least 1000 entities in database",
-          "expected": "Test data ready"
+          "expected": "Test data ready",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Request large page",
-          "action": "GET /api/v1/entities?per_page=1000",
-          "expected": "Response received with 1000 entities"
+          "action": "http: GET /api/v1/entities?per_page=1000",
+          "expected": "Response received with 1000 entities",
+          "_original_action": "GET /api/v1/entities?per_page=1000",
+          "auth": "admin"
         },
         {
           "name": "Measure response time",
           "action": "Time the full response",
-          "expected": "Response completes within 3 seconds"
+          "expected": "Response completes within 3 seconds",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify JSON validity",
           "action": "Parse the full JSON response",
-          "expected": "Valid JSON with all 1000 entities"
+          "expected": "Valid JSON with all 1000 entities",
+          "expect_json_path": "$.all",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -469,17 +511,23 @@
         {
           "name": "Create deep hierarchy",
           "action": "Create TV show with 10 seasons, each with 20 episodes",
-          "expected": "210 entities in hierarchy"
+          "expected": "210 entities in hierarchy",
+          "expect_status": 210,
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Query full hierarchy",
-          "action": "GET /api/v1/entities/{show_id}/children?recursive=true",
-          "expected": "All 200+ entities returned"
+          "action": "http: GET /api/v1/entities/{show_id}/children?recursive=true",
+          "expected": "All 200+ entities returned",
+          "_original_action": "GET /api/v1/entities/{show_id}/children?recursive=true",
+          "expect_status": 200,
+          "auth": "admin"
         },
         {
           "name": "Measure response time",
           "action": "Time the hierarchical query",
-          "expected": "Response within 2 seconds"
+          "expected": "Response within 2 seconds",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -503,18 +551,22 @@
       "steps": [
         {
           "name": "Ensure large dataset",
-          "action": "Verify 1000+ entities in database",
-          "expected": "Test data ready"
+          "action": "playwright: assertVisible text=1000+ entities in database",
+          "expected": "Test data ready",
+          "_conversion_note": "manual-review-required",
+          "_original_action": "Verify 1000+ entities in database"
         },
         {
           "name": "Navigate all pages sequentially",
           "action": "Request page 1, 2, 3, ... through all pages with per_page=50",
-          "expected": "All pages load correctly"
+          "expected": "All pages load correctly",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Measure consistent page time",
           "action": "Compare response times across pages",
-          "expected": "No page takes more than 2x the average (no degradation)"
+          "expected": "No page takes more than 2x the average (no degradation)",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -540,12 +592,14 @@
         {
           "name": "Measure connection time",
           "action": "Establish 10 WebSocket connections to /api/v1/ws and measure each",
-          "expected": "p95 connection establishment < 200ms"
+          "expected": "p95 connection establishment < 200ms",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Close connections",
           "action": "Close all test connections",
-          "expected": "All connections closed cleanly"
+          "expected": "All connections closed cleanly",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -570,12 +624,14 @@
         {
           "name": "Establish connection",
           "action": "Connect WebSocket client",
-          "expected": "Connected"
+          "expected": "Connected",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Measure message round-trip",
           "action": "Send 20 ping messages and measure server response time",
-          "expected": "p95 message delivery < 100ms"
+          "expected": "p95 message delivery < 100ms",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -599,17 +655,21 @@
         {
           "name": "Open 20 connections",
           "action": "Establish 20 simultaneous WebSocket connections",
-          "expected": "All connections established"
+          "expected": "All connections established",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Broadcast message",
           "action": "Trigger event that broadcasts to all connected clients",
-          "expected": "All 20 clients receive the message"
+          "expected": "All 20 clients receive the message",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify server stability",
-          "action": "GET /api/v1/health",
-          "expected": "200 OK (server stable under WebSocket load)"
+          "action": "http: GET /api/v1/health",
+          "expected": "200 OK (server stable under WebSocket load)",
+          "_original_action": "GET /api/v1/health",
+          "expect_status": 200
         }
       ],
       "tags": [
@@ -633,17 +693,20 @@
         {
           "name": "Establish connection",
           "action": "Connect WebSocket client",
-          "expected": "Connected"
+          "expected": "Connected",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Send message burst",
           "action": "Send 100 messages in 5 seconds",
-          "expected": "All messages accepted or rate limited gracefully"
+          "expected": "All messages accepted or rate limited gracefully",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify connection stable",
           "action": "Send one more message after burst",
-          "expected": "Connection still active, message delivered"
+          "expected": "Connection still active, message delivered",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -666,18 +729,23 @@
       "steps": [
         {
           "name": "Request JS bundle",
-          "action": "GET /assets/vendor.js (or hashed variant)",
-          "expected": "Cache-Control header with max-age >= 86400"
+          "action": "http: GET /assets/vendor.js",
+          "expected": "Cache-Control header with max-age >= 86400",
+          "_original_action": "GET /assets/vendor.js (or hashed variant)",
+          "auth": "admin"
         },
         {
           "name": "Request CSS",
-          "action": "GET /assets/index.css",
-          "expected": "Cache-Control header with max-age >= 86400"
+          "action": "http: GET /assets/index.css",
+          "expected": "Cache-Control header with max-age >= 86400",
+          "_original_action": "GET /assets/index.css",
+          "auth": "admin"
         },
         {
           "name": "Check ETag",
           "action": "Inspect ETag header on static assets",
-          "expected": "ETag present for conditional request support"
+          "expected": "ETag present for conditional request support",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -700,13 +768,19 @@
       "steps": [
         {
           "name": "First request",
-          "action": "GET /assets/vendor.js and note ETag value",
-          "expected": "200 OK with ETag header"
+          "action": "http: GET /assets/vendor.js",
+          "expected": "200 OK with ETag header",
+          "_original_action": "GET /assets/vendor.js and note ETag value",
+          "expect_status": 200,
+          "auth": "admin"
         },
         {
           "name": "Conditional request",
-          "action": "GET /assets/vendor.js with If-None-Match: <etag>",
-          "expected": "304 Not Modified (no body transferred)"
+          "action": "http: GET /assets/vendor.js",
+          "expected": "304 Not Modified (no body transferred)",
+          "_original_action": "GET /assets/vendor.js with If-None-Match: <etag>",
+          "expect_status": 304,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -729,18 +803,23 @@
       "steps": [
         {
           "name": "First request",
-          "action": "GET /api/v1/entities?type=movie and measure time",
-          "expected": "Response returned"
+          "action": "http: GET /api/v1/entities?type=movie",
+          "expected": "Response returned",
+          "_original_action": "GET /api/v1/entities?type=movie and measure time",
+          "auth": "admin"
         },
         {
           "name": "Second identical request",
-          "action": "GET /api/v1/entities?type=movie immediately after",
-          "expected": "Response time significantly faster (cache hit)"
+          "action": "http: GET /api/v1/entities?type=movie",
+          "expected": "Response time significantly faster (cache hit)",
+          "_original_action": "GET /api/v1/entities?type=movie immediately after",
+          "auth": "admin"
         },
         {
           "name": "Verify cache hit",
           "action": "Check for X-Cache-Status header or compare times",
-          "expected": "Second request faster due to cache"
+          "expected": "Second request faster due to cache",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -764,18 +843,23 @@
       "steps": [
         {
           "name": "Request without compression",
-          "action": "GET /api/v1/entities with Accept-Encoding: identity",
-          "expected": "Uncompressed response, note size"
+          "action": "http: GET /api/v1/entities",
+          "expected": "Uncompressed response, note size",
+          "_original_action": "GET /api/v1/entities with Accept-Encoding: identity",
+          "auth": "admin"
         },
         {
           "name": "Request with Brotli",
-          "action": "GET /api/v1/entities with Accept-Encoding: br",
-          "expected": "Content-Encoding: br, smaller response"
+          "action": "http: GET /api/v1/entities",
+          "expected": "Content-Encoding: br, smaller response",
+          "_original_action": "GET /api/v1/entities with Accept-Encoding: br",
+          "auth": "admin"
         },
         {
           "name": "Compare sizes",
           "action": "Calculate compression ratio",
-          "expected": "Brotli response at least 30% smaller"
+          "expected": "Brotli response at least 30% smaller",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -799,13 +883,16 @@
       "steps": [
         {
           "name": "Request with gzip only",
-          "action": "GET /api/v1/entities with Accept-Encoding: gzip",
-          "expected": "Content-Encoding: gzip"
+          "action": "http: GET /api/v1/entities",
+          "expected": "Content-Encoding: gzip",
+          "_original_action": "GET /api/v1/entities with Accept-Encoding: gzip",
+          "auth": "admin"
         },
         {
           "name": "Verify valid gzip",
           "action": "Decompress response body",
-          "expected": "Valid JSON after decompression"
+          "expected": "Valid JSON after decompression",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -829,17 +916,21 @@
         {
           "name": "Measure uncompressed response time",
           "action": "Send 10 requests with Accept-Encoding: identity",
-          "expected": "Baseline response times recorded"
+          "expected": "Baseline response times recorded",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Measure compressed response time",
           "action": "Send 10 requests with Accept-Encoding: br",
-          "expected": "Compressed response times recorded"
+          "expected": "Compressed response times recorded",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Compare latencies",
-          "action": "Verify compression overhead < 50ms for typical responses",
-          "expected": "Compression adds minimal latency"
+          "action": "playwright: assertVisible text=compression overhead < 50ms for typical responses",
+          "expected": "Compression adds minimal latency",
+          "_conversion_note": "manual-review-required",
+          "_original_action": "Verify compression overhead < 50ms for typical responses"
         }
       ],
       "tags": [
@@ -863,22 +954,26 @@
         {
           "name": "Record baseline memory",
           "action": "Check server memory usage via /metrics or process stats",
-          "expected": "Baseline memory recorded"
+          "expected": "Baseline memory recorded",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Run sustained load",
           "action": "Send 500 requests over 60 seconds (mix of reads and writes)",
-          "expected": "All requests processed"
+          "expected": "All requests processed",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Check memory after load",
           "action": "Record memory usage after load test",
-          "expected": "Memory increase < 50% of baseline (no unbounded growth)"
+          "expected": "Memory increase < 50% of baseline (no unbounded growth)",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Wait for GC",
           "action": "Wait 30 seconds for garbage collection",
-          "expected": "Memory returns close to baseline"
+          "expected": "Memory returns close to baseline",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -902,27 +997,32 @@
         {
           "name": "Record baseline memory",
           "action": "Note server memory before connections",
-          "expected": "Baseline recorded"
+          "expected": "Baseline recorded",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Open 20 WebSocket connections",
           "action": "Establish 20 concurrent WebSocket connections",
-          "expected": "All connected"
+          "expected": "All connected",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Hold connections for 60 seconds",
           "action": "Keep connections alive with periodic pings",
-          "expected": "All connections stable"
+          "expected": "All connections stable",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Close all connections",
           "action": "Close all 20 WebSocket connections",
-          "expected": "All closed"
+          "expected": "All closed",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Check memory recovery",
           "action": "Wait 30s then check memory usage",
-          "expected": "Memory returns close to baseline"
+          "expected": "Memory returns close to baseline",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -945,18 +1045,21 @@
       "steps": [
         {
           "name": "Record baseline goroutine count",
-          "action": "GET /metrics and note go_goroutines value",
-          "expected": "Baseline goroutine count recorded"
+          "action": "http: GET /metrics",
+          "expected": "Baseline goroutine count recorded",
+          "_original_action": "GET /metrics and note go_goroutines value"
         },
         {
           "name": "Run 100 requests",
           "action": "Send 100 mixed API requests",
-          "expected": "All requests complete"
+          "expected": "All requests complete",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Check goroutine count",
-          "action": "GET /metrics and note go_goroutines",
-          "expected": "Goroutine count within 10% of baseline (no leak)"
+          "action": "http: GET /metrics",
+          "expected": "Goroutine count within 10% of baseline (no leak)",
+          "_original_action": "GET /metrics and note go_goroutines"
         }
       ],
       "tags": [
@@ -980,17 +1083,22 @@
         {
           "name": "Populate 5000 entities",
           "action": "Insert 5000 test entities",
-          "expected": "Data inserted"
+          "expected": "Data inserted",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Search by indexed field",
-          "action": "GET /api/v1/entities?type=movie (indexed)",
-          "expected": "Response within 500ms"
+          "action": "http: GET /api/v1/entities?type=movie",
+          "expected": "Response within 500ms",
+          "_original_action": "GET /api/v1/entities?type=movie (indexed)",
+          "auth": "admin"
         },
         {
           "name": "Search by title",
-          "action": "GET /api/v1/entities?search=Test",
-          "expected": "Response within 500ms"
+          "action": "http: GET /api/v1/entities?search=Test",
+          "expected": "Response within 500ms",
+          "_original_action": "GET /api/v1/entities?search=Test",
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -1014,17 +1122,20 @@
         {
           "name": "Send concurrent database-heavy requests",
           "action": "Send 25 concurrent requests that each perform multiple DB queries",
-          "expected": "All requests complete (some may queue at pool)"
+          "expected": "All requests complete (some may queue at pool)",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify no connection timeout",
           "action": "Check no 500 errors caused by pool exhaustion",
-          "expected": "All requests succeed within 10 seconds"
+          "expected": "All requests succeed within 10 seconds",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Pool recovers",
           "action": "Send single request after burst",
-          "expected": "Immediate response (pool not stuck)"
+          "expected": "Immediate response (pool not stuck)",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -1048,12 +1159,15 @@
         {
           "name": "Insert 100 entities sequentially",
           "action": "POST 100 entity creation requests",
-          "expected": "All created"
+          "expected": "All created",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Measure total time",
           "action": "Time from first to last insert",
-          "expected": "100 inserts complete within 30 seconds"
+          "expected": "100 inserts complete within 30 seconds",
+          "expect_status": 100,
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -1077,12 +1191,14 @@
         {
           "name": "Verify WAL mode active",
           "action": "Check PRAGMA journal_mode returns 'wal'",
-          "expected": "WAL mode confirmed"
+          "expected": "WAL mode confirmed",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Concurrent reads during write",
           "action": "Start a write transaction and simultaneously send 10 read requests",
-          "expected": "Read requests complete without blocking on write lock"
+          "expected": "Read requests complete without blocking on write lock",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -1105,18 +1221,24 @@
       "steps": [
         {
           "name": "Trigger scan",
-          "action": "POST /api/v1/admin/scan on directory with 1000 files",
-          "expected": "Scan starts"
+          "action": "http: POST /api/v1/admin/scan",
+          "expected": "Scan starts",
+          "_original_action": "POST /api/v1/admin/scan on directory with 1000 files",
+          "auth": "admin"
         },
         {
           "name": "Monitor progress",
           "action": "Poll scan status every 5 seconds",
-          "expected": "Progress increasing"
+          "expected": "Progress increasing",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify completion",
-          "action": "Wait for scan completion",
-          "expected": "Scan of 1000 files completes within 120 seconds"
+          "action": "playwright: waitFor text=scan completion",
+          "expected": "Scan of 1000 files completes within 120 seconds",
+          "expect_status": 120,
+          "_conversion_note": "manual-review-required",
+          "_original_action": "Wait for scan completion"
         }
       ],
       "tags": [
@@ -1139,18 +1261,23 @@
       "steps": [
         {
           "name": "Start scan",
-          "action": "POST /api/v1/admin/scan on large directory",
-          "expected": "Scan in progress"
+          "action": "http: POST /api/v1/admin/scan",
+          "expected": "Scan in progress",
+          "_original_action": "POST /api/v1/admin/scan on large directory",
+          "auth": "admin"
         },
         {
           "name": "Measure API response during scan",
           "action": "Send 20 GET /api/v1/health requests during active scan",
-          "expected": "All return 200 OK within 500ms"
+          "expected": "All return 200 OK within 500ms",
+          "expect_status": 200,
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Measure entity queries during scan",
           "action": "Send GET /api/v1/entities during active scan",
-          "expected": "Response within 1 second"
+          "expected": "Response within 1 second",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -1174,17 +1301,21 @@
         {
           "name": "Complete scan of 500 files",
           "action": "Scan directory with 500 media files",
-          "expected": "Scan completes"
+          "expected": "Scan completes",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Measure aggregation time",
           "action": "Time from scan completion to all entities created",
-          "expected": "Aggregation completes within 60 seconds"
+          "expected": "Aggregation completes within 60 seconds",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify all entities created",
-          "action": "GET /api/v1/entities and count",
-          "expected": "Entities created for all recognized media files"
+          "action": "http: GET /api/v1/entities",
+          "expected": "Entities created for all recognized media files",
+          "_original_action": "GET /api/v1/entities and count",
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -1208,17 +1339,20 @@
         {
           "name": "Run k6 load test",
           "action": "Execute k6 with 5 virtual users sending 10 req/s each for 30 seconds",
-          "expected": "1500 total requests sent"
+          "expected": "1500 total requests sent",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify success rate",
           "action": "Check k6 results",
-          "expected": "Success rate >= 99%"
+          "expected": "Success rate >= 99%",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify p95 latency",
           "action": "Check p95 response time from k6 report",
-          "expected": "p95 < 500ms"
+          "expected": "p95 < 500ms",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -1242,17 +1376,23 @@
         {
           "name": "Ramp to 100 req/s",
           "action": "Gradually increase request rate from 10 to 100 req/s",
-          "expected": "Some requests may return 429"
+          "expected": "Some requests may return 429",
+          "expect_status": 429,
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify no 500 errors",
           "action": "Check for server errors in responses",
-          "expected": "Zero 500 errors (only 200 and 429)"
+          "expected": "Zero 500 errors (only 200 and 429)",
+          "expect_status": 500,
+          "expect_body_contains": "error",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify recovery",
           "action": "Reduce rate to 10 req/s",
-          "expected": "All requests succeed at reduced rate"
+          "expected": "All requests succeed at reduced rate",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -1276,7 +1416,8 @@
         {
           "name": "Start server",
           "action": "Launch catalog-api and measure time to first successful health check",
-          "expected": "Health check succeeds within 5 seconds of process start"
+          "expected": "Health check succeeds within 5 seconds of process start",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -1300,12 +1441,14 @@
         {
           "name": "Ensure large database exists",
           "action": "Database with 5000+ entities",
-          "expected": "Database file present"
+          "expected": "Database file present",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Start server",
           "action": "Launch catalog-api",
-          "expected": "Server starts and health check passes within 10 seconds"
+          "expected": "Server starts and health check passes within 10 seconds",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -1329,17 +1472,21 @@
         {
           "name": "Clear browser cache",
           "action": "Clear all cached data",
-          "expected": "Cache cleared"
+          "expected": "Cache cleared",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Load web application",
-          "action": "Navigate to http://localhost:3000",
-          "expected": "Page loads"
+          "action": "playwright: navigate http://localhost:3000",
+          "expected": "Page loads",
+          "_conversion_note": "manual-review-required",
+          "_original_action": "Navigate to http://localhost:3000"
         },
         {
           "name": "Measure time to interactive",
           "action": "Record Time to Interactive (TTI) metric",
-          "expected": "TTI < 3 seconds on broadband connection"
+          "expected": "TTI < 3 seconds on broadband connection",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -1363,17 +1510,22 @@
         {
           "name": "First load",
           "action": "Load web app, note vendor chunk download",
-          "expected": "Vendor chunk downloaded (~200-500KB)"
+          "expected": "Vendor chunk downloaded (~200-500KB)",
+          "expect_status": 200,
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Second load",
           "action": "Reload page",
-          "expected": "Vendor chunk served from cache (304 or disk cache)"
+          "expected": "Vendor chunk served from cache (304 or disk cache)",
+          "expect_status": 304,
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Measure load improvement",
           "action": "Compare total transfer size on second load",
-          "expected": "Significantly less data transferred"
+          "expected": "Significantly less data transferred",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -1397,18 +1549,23 @@
       "steps": [
         {
           "name": "Ensure 100+ entities",
-          "action": "Verify database has 100+ entities",
-          "expected": "Data ready"
+          "action": "playwright: assertVisible text=database has 100+ entities",
+          "expected": "Data ready",
+          "_conversion_note": "manual-review-required",
+          "_original_action": "Verify database has 100+ entities"
         },
         {
           "name": "Open entity browser",
           "action": "Navigate to /browse with per_page=100",
-          "expected": "100 entity cards rendered"
+          "expected": "100 entity cards rendered",
+          "expect_status": 100,
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Scroll performance",
           "action": "Scroll through all 100 cards",
-          "expected": "Smooth scrolling, no jank (60fps)"
+          "expected": "Smooth scrolling, no jank (60fps)",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -1434,17 +1591,20 @@
         {
           "name": "Open search",
           "action": "Focus search input on /browse",
-          "expected": "Search bar active"
+          "expected": "Search bar active",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Type rapidly",
           "action": "Type 'the matrix' quickly (10 characters)",
-          "expected": "API calls debounced"
+          "expected": "API calls debounced",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Count API requests",
           "action": "Monitor network tab for search requests",
-          "expected": "Fewer than 5 search API calls (not one per keystroke)"
+          "expected": "Fewer than 5 search API calls (not one per keystroke)",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -1469,12 +1629,14 @@
         {
           "name": "Run normal workload",
           "action": "Send 10 req/s for 30 seconds (mix of reads)",
-          "expected": "Requests processed"
+          "expected": "Requests processed",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Monitor CPU",
           "action": "Check CPU usage via podman stats or top",
-          "expected": "catalog-api CPU usage < 40% of allocated cores"
+          "expected": "catalog-api CPU usage < 40% of allocated cores",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -1498,12 +1660,14 @@
         {
           "name": "Run load test",
           "action": "Send 500 requests over 60 seconds",
-          "expected": "Requests processed"
+          "expected": "Requests processed",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Check container memory",
           "action": "podman stats --no-stream",
-          "expected": "API container memory < 4GB limit"
+          "expected": "API container memory < 4GB limit",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -1527,12 +1691,14 @@
         {
           "name": "Run cached queries",
           "action": "Send 50 identical entity listing requests",
-          "expected": "All return successfully"
+          "expected": "All return successfully",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Check disk I/O",
           "action": "Monitor disk reads during cached queries",
-          "expected": "Minimal disk I/O (cache serving most requests)"
+          "expected": "Minimal disk I/O (cache serving most requests)",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -1557,17 +1723,20 @@
         {
           "name": "Establish HTTP/3 connection",
           "action": "Send first request via QUIC",
-          "expected": "Connection established with QUIC handshake"
+          "expected": "Connection established with QUIC handshake",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Send subsequent requests",
           "action": "Send 20 more requests on same QUIC connection",
-          "expected": "Requests multiplexed on existing connection"
+          "expected": "Requests multiplexed on existing connection",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Measure latency reduction",
           "action": "Compare first request latency vs subsequent",
-          "expected": "Subsequent requests faster (no new handshake)"
+          "expected": "Subsequent requests faster (no new handshake)",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -1592,12 +1761,14 @@
         {
           "name": "Connect via HTTP/2",
           "action": "Send request with HTTP/2 only (no QUIC)",
-          "expected": "HTTP/2 connection established"
+          "expected": "HTTP/2 connection established",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Measure response time",
           "action": "Send 20 requests via HTTP/2",
-          "expected": "p95 < 600ms (slightly higher than HTTP/3 is acceptable)"
+          "expected": "p95 < 600ms (slightly higher than HTTP/3 is acceptable)",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -1621,17 +1792,20 @@
         {
           "name": "Record baseline",
           "action": "Note memory, goroutine count, open file descriptors",
-          "expected": "Baseline metrics recorded"
+          "expected": "Baseline metrics recorded",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Run soak test",
           "action": "Send 20 req/s for 30 minutes (k6 soak_test.js)",
-          "expected": "All requests processed throughout"
+          "expected": "All requests processed throughout",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Compare metrics",
           "action": "Record memory, goroutines, file descriptors after 30 min",
-          "expected": "No metric has grown more than 20% from baseline"
+          "expected": "No metric has grown more than 20% from baseline",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -1655,17 +1829,20 @@
         {
           "name": "Record baseline connections",
           "action": "Note database pool open connections and active goroutines",
-          "expected": "Baseline recorded"
+          "expected": "Baseline recorded",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Run 500 requests with connection cycling",
           "action": "Send 500 requests, each from a new HTTP client",
-          "expected": "All requests complete"
+          "expected": "All requests complete",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify connection cleanup",
           "action": "Wait 60s then check connection metrics",
-          "expected": "Connections returned to near-baseline levels"
+          "expected": "Connections returned to near-baseline levels",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -1688,18 +1865,24 @@
       "steps": [
         {
           "name": "Clear cache",
-          "action": "POST /api/v1/admin/cache/clear",
-          "expected": "Cache cleared"
+          "action": "http: POST /api/v1/admin/cache/clear",
+          "expected": "Cache cleared",
+          "_original_action": "POST /api/v1/admin/cache/clear",
+          "auth": "admin"
         },
         {
           "name": "Measure cold cache query",
-          "action": "GET /api/v1/entities?per_page=50 immediately after cache clear",
-          "expected": "Response within 1 second (cold cache)"
+          "action": "http: GET /api/v1/entities?per_page=50",
+          "expected": "Response within 1 second (cold cache)",
+          "_original_action": "GET /api/v1/entities?per_page=50 immediately after cache clear",
+          "auth": "admin"
         },
         {
           "name": "Measure warm cache query",
-          "action": "GET /api/v1/entities?per_page=50 again",
-          "expected": "Response faster than cold cache query"
+          "action": "http: GET /api/v1/entities?per_page=50",
+          "expected": "Response faster than cold cache query",
+          "_original_action": "GET /api/v1/entities?per_page=50 again",
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -1723,17 +1906,20 @@
         {
           "name": "Fill cache with diverse queries",
           "action": "Send 200 unique search queries to fill cache",
-          "expected": "Cache populated"
+          "expected": "Cache populated",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Trigger eviction",
           "action": "Continue sending unique queries to force eviction",
-          "expected": "Older entries evicted"
+          "expected": "Older entries evicted",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Measure performance during eviction",
           "action": "Time requests during cache eviction phase",
-          "expected": "No request takes more than 2x the warm cache time"
+          "expected": "No request takes more than 2x the warm cache time",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -1757,17 +1943,22 @@
         {
           "name": "Run k6 stress test",
           "action": "Execute k6 stress_test.js ramping from 0 to 300 virtual users",
-          "expected": "Test completes"
+          "expected": "Test completes",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Identify breaking point",
-          "action": "Find the VU count where error rate exceeds 5%",
-          "expected": "Breaking point identified"
+          "action": "playwright: assertVisible text=VU count where error rate exceeds 5%",
+          "expected": "Breaking point identified",
+          "_conversion_note": "manual-review-required",
+          "_original_action": "Find the VU count where error rate exceeds 5%"
         },
         {
           "name": "Verify recovery",
           "action": "After ramp-down, send single request",
-          "expected": "Server recovered, 200 OK response"
+          "expected": "Server recovered, 200 OK response",
+          "expect_status": 200,
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [

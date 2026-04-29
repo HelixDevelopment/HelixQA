@@ -5,7 +5,9 @@
   "metadata": {
     "author": "vasic-digital",
     "app": "Catalogizer",
-    "version": "2.3.0"
+    "version": "2.3.0",
+    "bluff_audit_status": "converted-by-bank-prose-to-http.py",
+    "bluff_audit_date": "2026-04-29"
   },
   "test_cases": [
     {
@@ -2109,7 +2111,7 @@
         },
         {
           "name": "Enter Cyrillic query",
-          "action": "text: \u041c\u0430\u0442\u0440\u0438\u0446\u0430",
+          "action": "text: Матрица",
           "expected": "Search field accepts Cyrillic characters"
         },
         {
@@ -6739,7 +6741,7 @@
       "steps": [
         {
           "name": "Search Cyrillic",
-          "action": "text: \u041c\u0430\u0442\u0440\u0438\u0446\u0430",
+          "action": "text: Матрица",
           "expected": "Search processes Cyrillic text"
         },
         {

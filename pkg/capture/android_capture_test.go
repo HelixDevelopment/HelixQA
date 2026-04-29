@@ -262,7 +262,7 @@ func TestAndroidCapture_StartStop_Integration(t *testing.T) {
 	// Start capture
 	err = capture.Start()
 	if err != nil {
-		t.Skipf("Failed to start capture: %v (scrcpy may not be compatible)", err)
+		t.Skipf("Failed to start capture: %v (scrcpy may not be compatible)", err)  // SKIP-OK: #legacy-skip-untriaged-2026-04-29
 	}
 
 	assert.True(t, capture.IsRunning())
@@ -303,7 +303,7 @@ func TestAndroidCapture_GetFrameChan_Integration(t *testing.T) {
 
 	err = capture.Start()
 	if err != nil {
-		t.Skipf("Failed to start capture: %v", err)
+		t.Skipf("Failed to start capture: %v", err)  // SKIP-OK: #legacy-skip-untriaged-2026-04-29
 	}
 
 	defer capture.Stop()

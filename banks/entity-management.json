@@ -5,7 +5,9 @@
   "metadata": {
     "author": "vasic-digital",
     "app": "Catalogizer",
-    "version": "1.0.0"
+    "version": "1.0.0",
+    "bluff_audit_status": "converted-by-bank-prose-to-http.py",
+    "bluff_audit_date": "2026-04-29"
   },
   "test_cases": [
     {
@@ -21,13 +23,18 @@
       "steps": [
         {
           "name": "Send create entity request",
-          "action": "POST /api/v1/entities with type 'movie', title 'Test Movie', year 2025",
-          "expected": "201 Created with entity ID in response body"
+          "action": "http: POST /api/v1/entities",
+          "expected": "201 Created with entity ID in response body",
+          "_original_action": "POST /api/v1/entities with type 'movie', title 'Test Movie', year 2025",
+          "expect_status": 201,
+          "auth": "admin"
         },
         {
           "name": "Verify entity exists",
-          "action": "GET /api/v1/entities/{id}",
-          "expected": "Entity returned with correct title, type, and year"
+          "action": "http: GET /api/v1/entities/{id}",
+          "expected": "Entity returned with correct title, type, and year",
+          "_original_action": "GET /api/v1/entities/{id}",
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -52,13 +59,18 @@
       "steps": [
         {
           "name": "Send create entity request",
-          "action": "POST /api/v1/entities with type 'tv_show', title 'Test TV Show'",
-          "expected": "201 Created with entity ID"
+          "action": "http: POST /api/v1/entities",
+          "expected": "201 Created with entity ID",
+          "_original_action": "POST /api/v1/entities with type 'tv_show', title 'Test TV Show'",
+          "expect_status": 201,
+          "auth": "admin"
         },
         {
           "name": "Verify entity type",
-          "action": "GET /api/v1/entities/{id}",
-          "expected": "Entity type is 'tv_show'"
+          "action": "http: GET /api/v1/entities/{id}",
+          "expected": "Entity type is 'tv_show'",
+          "_original_action": "GET /api/v1/entities/{id}",
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -83,13 +95,18 @@
       "steps": [
         {
           "name": "Send create entity request",
-          "action": "POST /api/v1/entities with type 'music_album', title 'Test Album', artist 'Test Artist'",
-          "expected": "201 Created with entity ID"
+          "action": "http: POST /api/v1/entities",
+          "expected": "201 Created with entity ID",
+          "_original_action": "POST /api/v1/entities with type 'music_album', title 'Test Album', artist 'Test Artist'",
+          "expect_status": 201,
+          "auth": "admin"
         },
         {
           "name": "Verify entity metadata",
-          "action": "GET /api/v1/entities/{id}",
-          "expected": "Entity has correct type and title"
+          "action": "http: GET /api/v1/entities/{id}",
+          "expected": "Entity has correct type and title",
+          "_original_action": "GET /api/v1/entities/{id}",
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -114,13 +131,18 @@
       "steps": [
         {
           "name": "Send create entity request",
-          "action": "POST /api/v1/entities with type 'game', title 'Test Game'",
-          "expected": "201 Created with entity ID"
+          "action": "http: POST /api/v1/entities",
+          "expected": "201 Created with entity ID",
+          "_original_action": "POST /api/v1/entities with type 'game', title 'Test Game'",
+          "expect_status": 201,
+          "auth": "admin"
         },
         {
           "name": "Verify entity",
-          "action": "GET /api/v1/entities/{id}",
-          "expected": "Entity type is 'game'"
+          "action": "http: GET /api/v1/entities/{id}",
+          "expected": "Entity type is 'game'",
+          "_original_action": "GET /api/v1/entities/{id}",
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -145,13 +167,18 @@
       "steps": [
         {
           "name": "Send create entity request",
-          "action": "POST /api/v1/entities with type 'software', title 'Test Software v2.0'",
-          "expected": "201 Created with entity ID"
+          "action": "http: POST /api/v1/entities",
+          "expected": "201 Created with entity ID",
+          "_original_action": "POST /api/v1/entities with type 'software', title 'Test Software v2.0'",
+          "expect_status": 201,
+          "auth": "admin"
         },
         {
           "name": "Verify entity",
-          "action": "GET /api/v1/entities/{id}",
-          "expected": "Entity type is 'software', title matches"
+          "action": "http: GET /api/v1/entities/{id}",
+          "expected": "Entity type is 'software', title matches",
+          "_original_action": "GET /api/v1/entities/{id}",
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -176,13 +203,18 @@
       "steps": [
         {
           "name": "Send create entity request",
-          "action": "POST /api/v1/entities with type 'book', title 'Test Book', year 2024",
-          "expected": "201 Created with entity ID"
+          "action": "http: POST /api/v1/entities",
+          "expected": "201 Created with entity ID",
+          "_original_action": "POST /api/v1/entities with type 'book', title 'Test Book', year 2024",
+          "expect_status": 201,
+          "auth": "admin"
         },
         {
           "name": "Verify entity",
-          "action": "GET /api/v1/entities/{id}",
-          "expected": "Entity type is 'book' with correct year"
+          "action": "http: GET /api/v1/entities/{id}",
+          "expected": "Entity type is 'book' with correct year",
+          "_original_action": "GET /api/v1/entities/{id}",
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -207,13 +239,18 @@
       "steps": [
         {
           "name": "Send create entity request",
-          "action": "POST /api/v1/entities with type 'comic', title 'Test Comic Issue 1'",
-          "expected": "201 Created with entity ID"
+          "action": "http: POST /api/v1/entities",
+          "expected": "201 Created with entity ID",
+          "_original_action": "POST /api/v1/entities with type 'comic', title 'Test Comic Issue 1'",
+          "expect_status": 201,
+          "auth": "admin"
         },
         {
           "name": "Verify entity",
-          "action": "GET /api/v1/entities/{id}",
-          "expected": "Entity type is 'comic'"
+          "action": "http: GET /api/v1/entities/{id}",
+          "expected": "Entity type is 'comic'",
+          "_original_action": "GET /api/v1/entities/{id}",
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -238,13 +275,18 @@
       "steps": [
         {
           "name": "Send create entity request",
-          "action": "POST /api/v1/entities with type 'music_artist', title 'Test Artist'",
-          "expected": "201 Created with entity ID"
+          "action": "http: POST /api/v1/entities",
+          "expected": "201 Created with entity ID",
+          "_original_action": "POST /api/v1/entities with type 'music_artist', title 'Test Artist'",
+          "expect_status": 201,
+          "auth": "admin"
         },
         {
           "name": "Verify entity",
-          "action": "GET /api/v1/entities/{id}",
-          "expected": "Entity type is 'music_artist'"
+          "action": "http: GET /api/v1/entities/{id}",
+          "expected": "Entity type is 'music_artist'",
+          "_original_action": "GET /api/v1/entities/{id}",
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -269,13 +311,18 @@
       "steps": [
         {
           "name": "Send create entity request",
-          "action": "POST /api/v1/entities with type 'song', title 'Test Song'",
-          "expected": "201 Created with entity ID"
+          "action": "http: POST /api/v1/entities",
+          "expected": "201 Created with entity ID",
+          "_original_action": "POST /api/v1/entities with type 'song', title 'Test Song'",
+          "expect_status": 201,
+          "auth": "admin"
         },
         {
           "name": "Verify entity",
-          "action": "GET /api/v1/entities/{id}",
-          "expected": "Entity type is 'song'"
+          "action": "http: GET /api/v1/entities/{id}",
+          "expected": "Entity type is 'song'",
+          "_original_action": "GET /api/v1/entities/{id}",
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -300,18 +347,26 @@
       "steps": [
         {
           "name": "Create parent TV show",
-          "action": "POST /api/v1/entities with type 'tv_show', title 'Parent Show'",
-          "expected": "201 Created with parent entity ID"
+          "action": "http: POST /api/v1/entities",
+          "expected": "201 Created with parent entity ID",
+          "_original_action": "POST /api/v1/entities with type 'tv_show', title 'Parent Show'",
+          "expect_status": 201,
+          "auth": "admin"
         },
         {
           "name": "Create TV season",
-          "action": "POST /api/v1/entities with type 'tv_season', title 'Season 1', parent_id set to TV show ID",
-          "expected": "201 Created with season entity ID"
+          "action": "http: POST /api/v1/entities",
+          "expected": "201 Created with season entity ID",
+          "_original_action": "POST /api/v1/entities with type 'tv_season', title 'Season 1', parent_id set to TV show ID",
+          "expect_status": 201,
+          "auth": "admin"
         },
         {
           "name": "Verify parent link",
-          "action": "GET /api/v1/entities/{season_id}",
-          "expected": "Entity type is 'tv_season' with parent_id referencing the TV show"
+          "action": "http: GET /api/v1/entities/{season_id}",
+          "expected": "Entity type is 'tv_season' with parent_id referencing the TV show",
+          "_original_action": "GET /api/v1/entities/{season_id}",
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -337,18 +392,26 @@
       "steps": [
         {
           "name": "Create parent TV season",
-          "action": "POST /api/v1/entities with type 'tv_season', title 'Season 1'",
-          "expected": "201 Created with season ID"
+          "action": "http: POST /api/v1/entities",
+          "expected": "201 Created with season ID",
+          "_original_action": "POST /api/v1/entities with type 'tv_season', title 'Season 1'",
+          "expect_status": 201,
+          "auth": "admin"
         },
         {
           "name": "Create TV episode",
-          "action": "POST /api/v1/entities with type 'tv_episode', title 'Pilot', parent_id set to season ID",
-          "expected": "201 Created with episode entity ID"
+          "action": "http: POST /api/v1/entities",
+          "expected": "201 Created with episode entity ID",
+          "_original_action": "POST /api/v1/entities with type 'tv_episode', title 'Pilot', parent_id set to season ID",
+          "expect_status": 201,
+          "auth": "admin"
         },
         {
           "name": "Verify parent link",
-          "action": "GET /api/v1/entities/{episode_id}",
-          "expected": "Entity type is 'tv_episode' with parent_id referencing the season"
+          "action": "http: GET /api/v1/entities/{episode_id}",
+          "expected": "Entity type is 'tv_episode' with parent_id referencing the season",
+          "_original_action": "GET /api/v1/entities/{episode_id}",
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -373,13 +436,19 @@
       "steps": [
         {
           "name": "Send create with unknown type",
-          "action": "POST /api/v1/entities with type 'podcast', title 'Test'",
-          "expected": "400 Bad Request with error describing invalid type"
+          "action": "http: POST /api/v1/entities",
+          "expected": "400 Bad Request with error describing invalid type",
+          "_original_action": "POST /api/v1/entities with type 'podcast', title 'Test'",
+          "expect_status": 400,
+          "expect_body_contains": "error",
+          "auth": "admin"
         },
         {
           "name": "Verify no entity created",
-          "action": "GET /api/v1/entities?search=Test",
-          "expected": "No entity with type 'podcast' in results"
+          "action": "http: GET /api/v1/entities?search=Test",
+          "expected": "No entity with type 'podcast' in results",
+          "_original_action": "GET /api/v1/entities?search=Test",
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -403,8 +472,12 @@
       "steps": [
         {
           "name": "Send create without title",
-          "action": "POST /api/v1/entities with type 'movie', title omitted",
-          "expected": "400 Bad Request with validation error for missing title"
+          "action": "http: POST /api/v1/entities",
+          "expected": "400 Bad Request with validation error for missing title",
+          "_original_action": "POST /api/v1/entities with type 'movie', title omitted",
+          "expect_status": 400,
+          "expect_body_contains": "error",
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -430,28 +503,41 @@
       "steps": [
         {
           "name": "Create TV show",
-          "action": "POST /api/v1/entities with type 'tv_show', title 'Breaking Bad'",
-          "expected": "201 Created"
+          "action": "http: POST /api/v1/entities",
+          "expected": "201 Created",
+          "_original_action": "POST /api/v1/entities with type 'tv_show', title 'Breaking Bad'",
+          "expect_status": 201,
+          "auth": "admin"
         },
         {
           "name": "Create Season 1",
-          "action": "POST /api/v1/entities with type 'tv_season', title 'Season 1', parent_id = show ID",
-          "expected": "201 Created"
+          "action": "http: POST /api/v1/entities",
+          "expected": "201 Created",
+          "_original_action": "POST /api/v1/entities with type 'tv_season', title 'Season 1', parent_id = show ID",
+          "expect_status": 201,
+          "auth": "admin"
         },
         {
           "name": "Create Episode 1",
-          "action": "POST /api/v1/entities with type 'tv_episode', title 'Pilot', parent_id = season ID",
-          "expected": "201 Created"
+          "action": "http: POST /api/v1/entities",
+          "expected": "201 Created",
+          "_original_action": "POST /api/v1/entities with type 'tv_episode', title 'Pilot', parent_id = season ID",
+          "expect_status": 201,
+          "auth": "admin"
         },
         {
           "name": "Query hierarchy",
-          "action": "GET /api/v1/entities/{show_id}/children",
-          "expected": "Season 1 listed as child"
+          "action": "http: GET /api/v1/entities/{show_id}/children",
+          "expected": "Season 1 listed as child",
+          "_original_action": "GET /api/v1/entities/{show_id}/children",
+          "auth": "admin"
         },
         {
           "name": "Query season children",
-          "action": "GET /api/v1/entities/{season_id}/children",
-          "expected": "Pilot episode listed as child"
+          "action": "http: GET /api/v1/entities/{season_id}/children",
+          "expected": "Pilot episode listed as child",
+          "_original_action": "GET /api/v1/entities/{season_id}/children",
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -477,23 +563,34 @@
       "steps": [
         {
           "name": "Create music artist",
-          "action": "POST /api/v1/entities with type 'music_artist', title 'The Beatles'",
-          "expected": "201 Created"
+          "action": "http: POST /api/v1/entities",
+          "expected": "201 Created",
+          "_original_action": "POST /api/v1/entities with type 'music_artist', title 'The Beatles'",
+          "expect_status": 201,
+          "auth": "admin"
         },
         {
           "name": "Create album",
-          "action": "POST /api/v1/entities with type 'music_album', title 'Abbey Road', parent_id = artist ID",
-          "expected": "201 Created"
+          "action": "http: POST /api/v1/entities",
+          "expected": "201 Created",
+          "_original_action": "POST /api/v1/entities with type 'music_album', title 'Abbey Road', parent_id = artist ID",
+          "expect_status": 201,
+          "auth": "admin"
         },
         {
           "name": "Create song",
-          "action": "POST /api/v1/entities with type 'song', title 'Come Together', parent_id = album ID",
-          "expected": "201 Created"
+          "action": "http: POST /api/v1/entities",
+          "expected": "201 Created",
+          "_original_action": "POST /api/v1/entities with type 'song', title 'Come Together', parent_id = album ID",
+          "expect_status": 201,
+          "auth": "admin"
         },
         {
           "name": "Traverse hierarchy",
-          "action": "GET /api/v1/entities/{artist_id}/children then GET children of album",
-          "expected": "Album under artist, song under album"
+          "action": "http: GET /api/v1/entities/{artist_id}/children",
+          "expected": "Album under artist, song under album",
+          "_original_action": "GET /api/v1/entities/{artist_id}/children then GET children of album",
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -519,13 +616,18 @@
       "steps": [
         {
           "name": "Create standalone movie",
-          "action": "POST /api/v1/entities with type 'movie', title 'Standalone Film'",
-          "expected": "201 Created"
+          "action": "http: POST /api/v1/entities",
+          "expected": "201 Created",
+          "_original_action": "POST /api/v1/entities with type 'movie', title 'Standalone Film'",
+          "expect_status": 201,
+          "auth": "admin"
         },
         {
           "name": "Query children",
-          "action": "GET /api/v1/entities/{id}/children",
-          "expected": "Empty array returned, not an error"
+          "action": "http: GET /api/v1/entities/{id}/children",
+          "expected": "Empty array returned, not an error",
+          "_original_action": "GET /api/v1/entities/{id}/children",
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -550,28 +652,42 @@
       "steps": [
         {
           "name": "Create TV show",
-          "action": "POST /api/v1/entities with type 'tv_show', title 'Multi-Season Show'",
-          "expected": "201 Created"
+          "action": "http: POST /api/v1/entities",
+          "expected": "201 Created",
+          "_original_action": "POST /api/v1/entities with type 'tv_show', title 'Multi-Season Show'",
+          "expect_status": 201,
+          "auth": "admin"
         },
         {
           "name": "Create Season 1",
-          "action": "POST /api/v1/entities with type 'tv_season', title 'Season 1', parent_id = show ID",
-          "expected": "201 Created"
+          "action": "http: POST /api/v1/entities",
+          "expected": "201 Created",
+          "_original_action": "POST /api/v1/entities with type 'tv_season', title 'Season 1', parent_id = show ID",
+          "expect_status": 201,
+          "auth": "admin"
         },
         {
           "name": "Create Season 2",
-          "action": "POST /api/v1/entities with type 'tv_season', title 'Season 2', parent_id = show ID",
-          "expected": "201 Created"
+          "action": "http: POST /api/v1/entities",
+          "expected": "201 Created",
+          "_original_action": "POST /api/v1/entities with type 'tv_season', title 'Season 2', parent_id = show ID",
+          "expect_status": 201,
+          "auth": "admin"
         },
         {
           "name": "Create Season 3",
-          "action": "POST /api/v1/entities with type 'tv_season', title 'Season 3', parent_id = show ID",
-          "expected": "201 Created"
+          "action": "http: POST /api/v1/entities",
+          "expected": "201 Created",
+          "_original_action": "POST /api/v1/entities with type 'tv_season', title 'Season 3', parent_id = show ID",
+          "expect_status": 201,
+          "auth": "admin"
         },
         {
           "name": "Query show children",
-          "action": "GET /api/v1/entities/{show_id}/children",
-          "expected": "Three seasons returned in order"
+          "action": "http: GET /api/v1/entities/{show_id}/children",
+          "expected": "Three seasons returned in order",
+          "_original_action": "GET /api/v1/entities/{show_id}/children",
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -597,17 +713,22 @@
         {
           "name": "Create TV show and season",
           "action": "Create show and Season 1 hierarchy",
-          "expected": "Show and season created"
+          "expected": "Show and season created",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Create 5 episodes",
           "action": "POST 5 episodes with parent_id = season ID, titles Episode 1 through 5",
-          "expected": "All 5 episodes created (201 for each)"
+          "expected": "All 5 episodes created (201 for each)",
+          "expect_status": 201,
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Query season children",
-          "action": "GET /api/v1/entities/{season_id}/children",
-          "expected": "5 episodes returned"
+          "action": "http: GET /api/v1/entities/{season_id}/children",
+          "expected": "5 episodes returned",
+          "_original_action": "GET /api/v1/entities/{season_id}/children",
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -633,12 +754,15 @@
         {
           "name": "Create entities with known titles",
           "action": "Create movie 'The Matrix' and book 'The Matrix Comics'",
-          "expected": "Both entities created"
+          "expected": "Both entities created",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Search by title",
-          "action": "GET /api/v1/entities?search=Matrix",
-          "expected": "Both entities returned in results"
+          "action": "http: GET /api/v1/entities?search=Matrix",
+          "expected": "Both entities returned in results",
+          "_original_action": "GET /api/v1/entities?search=Matrix",
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -664,12 +788,15 @@
         {
           "name": "Create mixed entities",
           "action": "Create 2 movies, 1 book, 1 game",
-          "expected": "All entities created"
+          "expected": "All entities created",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Filter by type movie",
-          "action": "GET /api/v1/entities?type=movie",
-          "expected": "Only movie entities returned"
+          "action": "http: GET /api/v1/entities?type=movie",
+          "expected": "Only movie entities returned",
+          "_original_action": "GET /api/v1/entities?type=movie",
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -695,12 +822,15 @@
         {
           "name": "Create entities with different years",
           "action": "Create movie year 2020, movie year 2025, book year 2020",
-          "expected": "All entities created"
+          "expected": "All entities created",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Filter by year 2020",
-          "action": "GET /api/v1/entities?year=2020",
-          "expected": "Two entities (movie and book from 2020) returned"
+          "action": "http: GET /api/v1/entities?year=2020",
+          "expected": "Two entities (movie and book from 2020) returned",
+          "_original_action": "GET /api/v1/entities?year=2020",
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -726,12 +856,15 @@
         {
           "name": "Create entities",
           "action": "Create movie 'Inception', book 'Inception: The Art', game 'Inception'",
-          "expected": "Three entities created"
+          "expected": "Three entities created",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Search title+type",
-          "action": "GET /api/v1/entities?search=Inception&type=movie",
-          "expected": "Only movie 'Inception' returned"
+          "action": "http: GET /api/v1/entities?search=Inception&type=movie",
+          "expected": "Only movie 'Inception' returned",
+          "_original_action": "GET /api/v1/entities?search=Inception&type=movie",
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -755,8 +888,11 @@
       "steps": [
         {
           "name": "Search for non-existent title",
-          "action": "GET /api/v1/entities?search=XYZNonexistentTitle123",
-          "expected": "Empty result array, 200 OK"
+          "action": "http: GET /api/v1/entities?search=XYZNonexistentTitle123",
+          "expected": "Empty result array, 200 OK",
+          "_original_action": "GET /api/v1/entities?search=XYZNonexistentTitle123",
+          "expect_status": 200,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -781,17 +917,22 @@
         {
           "name": "Create entity with mixed case",
           "action": "Create movie 'The Dark Knight'",
-          "expected": "Entity created"
+          "expected": "Entity created",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Search lowercase",
-          "action": "GET /api/v1/entities?search=the dark knight",
-          "expected": "Entity found regardless of case"
+          "action": "http: GET /api/v1/entities?search=the",
+          "expected": "Entity found regardless of case",
+          "_original_action": "GET /api/v1/entities?search=the dark knight",
+          "auth": "admin"
         },
         {
           "name": "Search uppercase",
-          "action": "GET /api/v1/entities?search=THE DARK KNIGHT",
-          "expected": "Same entity found"
+          "action": "http: GET /api/v1/entities?search=THE",
+          "expected": "Same entity found",
+          "_original_action": "GET /api/v1/entities?search=THE DARK KNIGHT",
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -816,13 +957,19 @@
       "steps": [
         {
           "name": "Create first entity",
-          "action": "POST /api/v1/entities with type 'movie', title 'Dune', year 2021",
-          "expected": "201 Created"
+          "action": "http: POST /api/v1/entities",
+          "expected": "201 Created",
+          "_original_action": "POST /api/v1/entities with type 'movie', title 'Dune', year 2021",
+          "expect_status": 201,
+          "auth": "admin"
         },
         {
           "name": "Create duplicate",
-          "action": "POST /api/v1/entities with type 'movie', title 'Dune', year 2021",
-          "expected": "409 Conflict or warning indicating duplicate detected"
+          "action": "http: POST /api/v1/entities",
+          "expected": "409 Conflict or warning indicating duplicate detected",
+          "_original_action": "POST /api/v1/entities with type 'movie', title 'Dune', year 2021",
+          "expect_status": 409,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -846,13 +993,19 @@
       "steps": [
         {
           "name": "Create movie",
-          "action": "POST /api/v1/entities with type 'movie', title 'Dune'",
-          "expected": "201 Created"
+          "action": "http: POST /api/v1/entities",
+          "expected": "201 Created",
+          "_original_action": "POST /api/v1/entities with type 'movie', title 'Dune'",
+          "expect_status": 201,
+          "auth": "admin"
         },
         {
           "name": "Create book with same title",
-          "action": "POST /api/v1/entities with type 'book', title 'Dune'",
-          "expected": "201 Created (not a duplicate since different type)"
+          "action": "http: POST /api/v1/entities",
+          "expected": "201 Created (not a duplicate since different type)",
+          "_original_action": "POST /api/v1/entities with type 'book', title 'Dune'",
+          "expect_status": 201,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -876,13 +1029,19 @@
       "steps": [
         {
           "name": "Create movie 1984",
-          "action": "POST /api/v1/entities with type 'movie', title 'Dune', year 1984",
-          "expected": "201 Created"
+          "action": "http: POST /api/v1/entities",
+          "expected": "201 Created",
+          "_original_action": "POST /api/v1/entities with type 'movie', title 'Dune', year 1984",
+          "expect_status": 201,
+          "auth": "admin"
         },
         {
           "name": "Create movie 2021",
-          "action": "POST /api/v1/entities with type 'movie', title 'Dune', year 2021",
-          "expected": "201 Created (different year, not a duplicate)"
+          "action": "http: POST /api/v1/entities",
+          "expected": "201 Created (different year, not a duplicate)",
+          "_original_action": "POST /api/v1/entities with type 'movie', title 'Dune', year 2021",
+          "expect_status": 201,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -907,18 +1066,26 @@
       "steps": [
         {
           "name": "Create entity",
-          "action": "POST /api/v1/entities with type 'movie', title 'Old Title'",
-          "expected": "201 Created"
+          "action": "http: POST /api/v1/entities",
+          "expected": "201 Created",
+          "_original_action": "POST /api/v1/entities with type 'movie', title 'Old Title'",
+          "expect_status": 201,
+          "auth": "admin"
         },
         {
           "name": "Update title",
-          "action": "PUT /api/v1/entities/{id} with title 'New Title'",
-          "expected": "200 OK"
+          "action": "http: PUT /api/v1/entities/{id}",
+          "expected": "200 OK",
+          "_original_action": "PUT /api/v1/entities/{id} with title 'New Title'",
+          "expect_status": 200,
+          "auth": "admin"
         },
         {
           "name": "Verify update",
-          "action": "GET /api/v1/entities/{id}",
-          "expected": "Title is 'New Title'"
+          "action": "http: GET /api/v1/entities/{id}",
+          "expected": "Title is 'New Title'",
+          "_original_action": "GET /api/v1/entities/{id}",
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -943,18 +1110,26 @@
       "steps": [
         {
           "name": "Create entity",
-          "action": "POST /api/v1/entities with type 'movie', title 'Metadata Test'",
-          "expected": "201 Created"
+          "action": "http: POST /api/v1/entities",
+          "expected": "201 Created",
+          "_original_action": "POST /api/v1/entities with type 'movie', title 'Metadata Test'",
+          "expect_status": 201,
+          "auth": "admin"
         },
         {
           "name": "Add metadata",
-          "action": "PUT /api/v1/entities/{id}/metadata with genre 'Sci-Fi', rating '8.5'",
-          "expected": "200 OK"
+          "action": "http: PUT /api/v1/entities/{id}/metadata",
+          "expected": "200 OK",
+          "_original_action": "PUT /api/v1/entities/{id}/metadata with genre 'Sci-Fi', rating '8.5'",
+          "expect_status": 200,
+          "auth": "admin"
         },
         {
           "name": "Verify metadata",
-          "action": "GET /api/v1/entities/{id}",
-          "expected": "Metadata fields present with correct values"
+          "action": "http: GET /api/v1/entities/{id}",
+          "expected": "Metadata fields present with correct values",
+          "_original_action": "GET /api/v1/entities/{id}",
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -978,18 +1153,26 @@
       "steps": [
         {
           "name": "Create entity with year",
-          "action": "POST /api/v1/entities with type 'movie', title 'Year Test', year 2020",
-          "expected": "201 Created"
+          "action": "http: POST /api/v1/entities",
+          "expected": "201 Created",
+          "_original_action": "POST /api/v1/entities with type 'movie', title 'Year Test', year 2020",
+          "expect_status": 201,
+          "auth": "admin"
         },
         {
           "name": "Update year",
-          "action": "PUT /api/v1/entities/{id} with year 2021",
-          "expected": "200 OK"
+          "action": "http: PUT /api/v1/entities/{id}",
+          "expected": "200 OK",
+          "_original_action": "PUT /api/v1/entities/{id} with year 2021",
+          "expect_status": 200,
+          "auth": "admin"
         },
         {
           "name": "Verify year",
-          "action": "GET /api/v1/entities/{id}",
-          "expected": "Year is 2021"
+          "action": "http: GET /api/v1/entities/{id}",
+          "expected": "Year is 2021",
+          "_original_action": "GET /api/v1/entities/{id}",
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -1013,8 +1196,11 @@
       "steps": [
         {
           "name": "Update non-existent entity",
-          "action": "PUT /api/v1/entities/99999 with title 'Ghost'",
-          "expected": "404 Not Found"
+          "action": "http: PUT /api/v1/entities/99999",
+          "expected": "404 Not Found",
+          "_original_action": "PUT /api/v1/entities/99999 with title 'Ghost'",
+          "expect_status": 404,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -1039,18 +1225,27 @@
       "steps": [
         {
           "name": "Create entity",
-          "action": "POST /api/v1/entities with type 'game', title 'Delete Me'",
-          "expected": "201 Created"
+          "action": "http: POST /api/v1/entities",
+          "expected": "201 Created",
+          "_original_action": "POST /api/v1/entities with type 'game', title 'Delete Me'",
+          "expect_status": 201,
+          "auth": "admin"
         },
         {
           "name": "Delete entity",
-          "action": "DELETE /api/v1/entities/{id}",
-          "expected": "200 OK or 204 No Content"
+          "action": "http: DELETE /api/v1/entities/{id}",
+          "expected": "200 OK or 204 No Content",
+          "_original_action": "DELETE /api/v1/entities/{id}",
+          "expect_status": 200,
+          "auth": "admin"
         },
         {
           "name": "Verify deletion",
-          "action": "GET /api/v1/entities/{id}",
-          "expected": "404 Not Found"
+          "action": "http: GET /api/v1/entities/{id}",
+          "expected": "404 Not Found",
+          "_original_action": "GET /api/v1/entities/{id}",
+          "expect_status": 404,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -1074,17 +1269,23 @@
         {
           "name": "Create TV show with season and episode",
           "action": "Create full hierarchy: show > season > episode",
-          "expected": "All three entities created"
+          "expected": "All three entities created",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Delete parent show",
-          "action": "DELETE /api/v1/entities/{show_id}",
-          "expected": "Either cascade deletes children or 409 Conflict if children exist"
+          "action": "http: DELETE /api/v1/entities/{show_id}",
+          "expected": "Either cascade deletes children or 409 Conflict if children exist",
+          "_original_action": "DELETE /api/v1/entities/{show_id}",
+          "expect_status": 409,
+          "auth": "admin"
         },
         {
           "name": "Verify outcome",
-          "action": "GET /api/v1/entities/{show_id} and GET children",
-          "expected": "Consistent state: all deleted or parent still present with error"
+          "action": "http: GET /api/v1/entities/{show_id}",
+          "expected": "Consistent state: all deleted or parent still present with error",
+          "_original_action": "GET /api/v1/entities/{show_id} and GET children",
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -1108,8 +1309,11 @@
       "steps": [
         {
           "name": "Delete non-existent entity",
-          "action": "DELETE /api/v1/entities/99999",
-          "expected": "404 Not Found"
+          "action": "http: DELETE /api/v1/entities/99999",
+          "expected": "404 Not Found",
+          "_original_action": "DELETE /api/v1/entities/99999",
+          "expect_status": 404,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -1135,17 +1339,21 @@
         {
           "name": "Create 30 entities",
           "action": "POST 30 movie entities with sequential titles",
-          "expected": "All 30 created"
+          "expected": "All 30 created",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Browse first page",
-          "action": "GET /api/v1/entities?page=1&per_page=10",
-          "expected": "10 entities returned with pagination metadata"
+          "action": "http: GET /api/v1/entities?page=1&per_page=10",
+          "expected": "10 entities returned with pagination metadata",
+          "_original_action": "GET /api/v1/entities?page=1&per_page=10",
+          "auth": "admin"
         },
         {
           "name": "Verify pagination metadata",
           "action": "Check response headers or body for total count and page info",
-          "expected": "Total count >= 30, page 1 of 3+"
+          "expected": "Total count >= 30, page 1 of 3+",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -1170,18 +1378,23 @@
       "steps": [
         {
           "name": "Ensure 30+ entities exist",
-          "action": "Verify or create sufficient entities",
-          "expected": "30+ entities in database"
+          "action": "playwright: assertVisible text=or create sufficient entities",
+          "expected": "30+ entities in database",
+          "_conversion_note": "manual-review-required",
+          "_original_action": "Verify or create sufficient entities"
         },
         {
           "name": "Request page 2",
-          "action": "GET /api/v1/entities?page=2&per_page=10",
-          "expected": "10 different entities from page 1"
+          "action": "http: GET /api/v1/entities?page=2&per_page=10",
+          "expected": "10 different entities from page 1",
+          "_original_action": "GET /api/v1/entities?page=2&per_page=10",
+          "auth": "admin"
         },
         {
           "name": "Verify no overlap with page 1",
           "action": "Compare IDs with page 1 results",
-          "expected": "No duplicate IDs between pages"
+          "expected": "No duplicate IDs between pages",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -1205,8 +1418,11 @@
       "steps": [
         {
           "name": "Request page far beyond data",
-          "action": "GET /api/v1/entities?page=9999&per_page=10",
-          "expected": "Empty array returned, 200 OK"
+          "action": "http: GET /api/v1/entities?page=9999&per_page=10",
+          "expected": "Empty array returned, 200 OK",
+          "_original_action": "GET /api/v1/entities?page=9999&per_page=10",
+          "expect_status": 200,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -1232,12 +1448,15 @@
         {
           "name": "Create entities with varied titles",
           "action": "Create entities: 'Zebra', 'Alpha', 'Middle'",
-          "expected": "All created"
+          "expected": "All created",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Request sorted by title ascending",
-          "action": "GET /api/v1/entities?sort=title&order=asc",
-          "expected": "Alpha, Middle, Zebra order"
+          "action": "http: GET /api/v1/entities?sort=title&order=asc",
+          "expected": "Alpha, Middle, Zebra order",
+          "_original_action": "GET /api/v1/entities?sort=title&order=asc",
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -1262,12 +1481,15 @@
         {
           "name": "Create entities sequentially",
           "action": "Create entity A, then B, then C with short delays",
-          "expected": "All created with increasing timestamps"
+          "expected": "All created with increasing timestamps",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Sort by created_at descending",
-          "action": "GET /api/v1/entities?sort=created_at&order=desc",
-          "expected": "C first, then B, then A"
+          "action": "http: GET /api/v1/entities?sort=created_at&order=desc",
+          "expected": "C first, then B, then A",
+          "_original_action": "GET /api/v1/entities?sort=created_at&order=desc",
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -1293,12 +1515,15 @@
         {
           "name": "Create mixed entities",
           "action": "Create 3 movies, 2 books, 1 game",
-          "expected": "6 entities created"
+          "expected": "6 entities created",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Filter by movie",
-          "action": "GET /api/v1/entities?type=movie",
-          "expected": "Exactly 3 movie entities returned"
+          "action": "http: GET /api/v1/entities?type=movie",
+          "expected": "Exactly 3 movie entities returned",
+          "_original_action": "GET /api/v1/entities?type=movie",
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -1323,13 +1548,17 @@
       "steps": [
         {
           "name": "Ensure mixed entities exist",
-          "action": "Verify movies, books, games in database",
-          "expected": "Multiple types present"
+          "action": "playwright: assertVisible text=movies, books, games in database",
+          "expected": "Multiple types present",
+          "_conversion_note": "manual-review-required",
+          "_original_action": "Verify movies, books, games in database"
         },
         {
           "name": "Filter by book",
-          "action": "GET /api/v1/entities?type=book",
-          "expected": "Only book entities returned"
+          "action": "http: GET /api/v1/entities?type=book",
+          "expected": "Only book entities returned",
+          "_original_action": "GET /api/v1/entities?type=book",
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -1353,8 +1582,10 @@
       "steps": [
         {
           "name": "Filter by game",
-          "action": "GET /api/v1/entities?type=game",
-          "expected": "Only game entities returned"
+          "action": "http: GET /api/v1/entities?type=game",
+          "expected": "Only game entities returned",
+          "_original_action": "GET /api/v1/entities?type=game",
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -1378,8 +1609,10 @@
       "steps": [
         {
           "name": "Filter by tv_show",
-          "action": "GET /api/v1/entities?type=tv_show",
-          "expected": "Only tv_show entities returned (not seasons or episodes)"
+          "action": "http: GET /api/v1/entities?type=tv_show",
+          "expected": "Only tv_show entities returned (not seasons or episodes)",
+          "_original_action": "GET /api/v1/entities?type=tv_show",
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -1403,8 +1636,11 @@
       "steps": [
         {
           "name": "Filter by non-existent type",
-          "action": "GET /api/v1/entities?type=podcast",
-          "expected": "Empty array or 400 Bad Request"
+          "action": "http: GET /api/v1/entities?type=podcast",
+          "expected": "Empty array or 400 Bad Request",
+          "_original_action": "GET /api/v1/entities?type=podcast",
+          "expect_status": 400,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -1431,12 +1667,15 @@
         {
           "name": "Create known set of entities",
           "action": "Create 5 movies, 3 books, 2 games",
-          "expected": "10 entities created"
+          "expected": "10 entities created",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Request statistics",
-          "action": "GET /api/v1/entities/stats",
-          "expected": "Breakdown by type: movie=5, book=3, game=2"
+          "action": "http: GET /api/v1/entities/stats",
+          "expected": "Breakdown by type: movie=5, book=3, game=2",
+          "_original_action": "GET /api/v1/entities/stats",
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -1461,8 +1700,10 @@
       "steps": [
         {
           "name": "Request entity count",
-          "action": "GET /api/v1/entities/stats or GET /api/v1/entities?count_only=true",
-          "expected": "Total entity count matches expected number"
+          "action": "http: GET /api/v1/entities/stats",
+          "expected": "Total entity count matches expected number",
+          "_original_action": "GET /api/v1/entities/stats or GET /api/v1/entities?count_only=true",
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -1485,8 +1726,11 @@
       "steps": [
         {
           "name": "Request statistics on clean database",
-          "action": "GET /api/v1/entities/stats before creating entities",
-          "expected": "All counts zero, response 200 OK"
+          "action": "http: GET /api/v1/entities/stats",
+          "expected": "All counts zero, response 200 OK",
+          "_original_action": "GET /api/v1/entities/stats before creating entities",
+          "expect_status": 200,
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -1510,18 +1754,26 @@
       "steps": [
         {
           "name": "Create movie entity",
-          "action": "POST /api/v1/entities with type 'movie', title 'File Association Test'",
-          "expected": "201 Created"
+          "action": "http: POST /api/v1/entities",
+          "expected": "201 Created",
+          "_original_action": "POST /api/v1/entities with type 'movie', title 'File Association Test'",
+          "expect_status": 201,
+          "auth": "admin"
         },
         {
           "name": "Link file to entity",
-          "action": "POST /api/v1/entities/{id}/files with file_id from scanned file",
-          "expected": "200 OK or 201 Created"
+          "action": "http: POST /api/v1/entities/{id}/files",
+          "expected": "200 OK or 201 Created",
+          "_original_action": "POST /api/v1/entities/{id}/files with file_id from scanned file",
+          "expect_status": 200,
+          "auth": "admin"
         },
         {
           "name": "Verify association",
-          "action": "GET /api/v1/entities/{id}/files",
-          "expected": "Linked file appears in entity file list"
+          "action": "http: GET /api/v1/entities/{id}/files",
+          "expected": "Linked file appears in entity file list",
+          "_original_action": "GET /api/v1/entities/{id}/files",
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -1545,18 +1797,24 @@
       "steps": [
         {
           "name": "Create movie entity",
-          "action": "POST /api/v1/entities with type 'movie', title 'Multi-File Movie'",
-          "expected": "201 Created"
+          "action": "http: POST /api/v1/entities",
+          "expected": "201 Created",
+          "_original_action": "POST /api/v1/entities with type 'movie', title 'Multi-File Movie'",
+          "expect_status": 201,
+          "auth": "admin"
         },
         {
           "name": "Link 3 files",
           "action": "POST 3 file associations (video, subtitle, poster)",
-          "expected": "All 3 associations created"
+          "expected": "All 3 associations created",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify all files",
-          "action": "GET /api/v1/entities/{id}/files",
-          "expected": "3 files listed"
+          "action": "http: GET /api/v1/entities/{id}/files",
+          "expected": "3 files listed",
+          "_original_action": "GET /api/v1/entities/{id}/files",
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -1580,17 +1838,23 @@
         {
           "name": "Create entity with file",
           "action": "Create entity and link a file",
-          "expected": "Entity with one associated file"
+          "expected": "Entity with one associated file",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Remove file association",
-          "action": "DELETE /api/v1/entities/{id}/files/{file_id}",
-          "expected": "200 OK or 204 No Content"
+          "action": "http: DELETE /api/v1/entities/{id}/files/{file_id}",
+          "expected": "200 OK or 204 No Content",
+          "_original_action": "DELETE /api/v1/entities/{id}/files/{file_id}",
+          "expect_status": 200,
+          "auth": "admin"
         },
         {
           "name": "Verify removal",
-          "action": "GET /api/v1/entities/{id}/files",
-          "expected": "Empty file list"
+          "action": "http: GET /api/v1/entities/{id}/files",
+          "expected": "Empty file list",
+          "_original_action": "GET /api/v1/entities/{id}/files",
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -1615,18 +1879,31 @@
       "steps": [
         {
           "name": "Create collection",
-          "action": "POST /api/v1/collections with name 'Sci-Fi Favorites'",
-          "expected": "201 Created with collection ID"
+          "action": "http: POST /api/v1/collections",
+          "expected": "201 Created with collection ID",
+          "_original_action": "POST /api/v1/collections with name 'Sci-Fi Favorites'",
+          "expect_status": 201,
+          "auth": "admin",
+          "body": {
+            "name": "Default Collection_ENT-051_0",
+            "description": "Auto-generated by bank-patch-default-bodies"
+          },
+          "_patched_by": [
+            "bank-patch-default-bodies"
+          ]
         },
         {
           "name": "Add entities to collection",
           "action": "POST 3 movie entities to the collection",
-          "expected": "All 3 added successfully"
+          "expected": "All 3 added successfully",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Query collection",
-          "action": "GET /api/v1/collections/{id}/items",
-          "expected": "3 entities listed in collection"
+          "action": "http: GET /api/v1/collections/{id}/items",
+          "expected": "3 entities listed in collection",
+          "_original_action": "GET /api/v1/collections/{id}/items",
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -1651,17 +1928,23 @@
         {
           "name": "Create collection with 3 entities",
           "action": "Create collection and add 3 movies",
-          "expected": "Collection has 3 items"
+          "expected": "Collection has 3 items",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Remove one entity",
-          "action": "DELETE /api/v1/collections/{collection_id}/items/{entity_id}",
-          "expected": "200 OK"
+          "action": "http: DELETE /api/v1/collections/{collection_id}/items/{entity_id}",
+          "expected": "200 OK",
+          "_original_action": "DELETE /api/v1/collections/{collection_id}/items/{entity_id}",
+          "expect_status": 200,
+          "auth": "admin"
         },
         {
           "name": "Verify removal",
-          "action": "GET /api/v1/collections/{id}/items",
-          "expected": "2 entities remaining"
+          "action": "http: GET /api/v1/collections/{id}/items",
+          "expected": "2 entities remaining",
+          "_original_action": "GET /api/v1/collections/{id}/items",
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -1686,17 +1969,21 @@
         {
           "name": "Navigate to entity browser",
           "action": "Open /browse in web application",
-          "expected": "Entity browser page loads with entity list"
+          "expected": "Entity browser page loads with entity list",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify entity cards displayed",
           "action": "Check that entity cards show title, type, and thumbnail",
-          "expected": "Cards rendered correctly"
+          "expected": "Cards rendered correctly",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Click an entity",
-          "action": "Click on a movie entity card",
-          "expected": "Entity detail page /entity/{id} opens"
+          "action": "playwright: click text=a movie entity card",
+          "expected": "Entity detail page /entity/{id} opens",
+          "_conversion_note": "manual-review-required",
+          "_original_action": "Click on a movie entity card"
         }
       ],
       "tags": [
@@ -1721,22 +2008,26 @@
         {
           "name": "Navigate to entity detail",
           "action": "Open /entity/{id} for a movie with metadata",
-          "expected": "Detail page loads"
+          "expected": "Detail page loads",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify title and type",
           "action": "Check title and type badge on page",
-          "expected": "Correct title and type shown"
+          "expected": "Correct title and type shown",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify metadata",
           "action": "Check metadata section (year, genre, rating)",
-          "expected": "All metadata fields displayed"
+          "expected": "All metadata fields displayed",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify associated files",
           "action": "Check files section",
-          "expected": "Associated files listed"
+          "expected": "Associated files listed",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -1761,17 +2052,20 @@
         {
           "name": "Open entity browser",
           "action": "Navigate to /browse",
-          "expected": "All entities displayed"
+          "expected": "All entities displayed",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Select type filter",
           "action": "Click 'Movies' filter chip or dropdown",
-          "expected": "Only movie entities shown"
+          "expected": "Only movie entities shown",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Clear filter",
           "action": "Click 'All' or clear filter",
-          "expected": "All entity types shown again"
+          "expected": "All entity types shown again",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -1796,17 +2090,21 @@
         {
           "name": "Open entity browser",
           "action": "Navigate to /browse",
-          "expected": "Search bar visible"
+          "expected": "Search bar visible",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Type search query",
-          "action": "Type 'Matrix' in search bar",
-          "expected": "Results filter in real-time or after submit"
+          "action": "playwright: fill input[name=search] Matrix",
+          "expected": "Results filter in real-time or after submit",
+          "_conversion_note": "manual-review-required",
+          "_original_action": "Type 'Matrix' in search bar"
         },
         {
           "name": "Verify results",
           "action": "Check displayed entities",
-          "expected": "Only entities matching 'Matrix' shown"
+          "expected": "Only entities matching 'Matrix' shown",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -1829,18 +2127,23 @@
       "steps": [
         {
           "name": "Trigger scan of storage root",
-          "action": "POST /api/v1/scan with storage root containing media files",
-          "expected": "Scan completes successfully"
+          "action": "http: POST /api/v1/scan",
+          "expected": "Scan completes successfully",
+          "_original_action": "POST /api/v1/scan with storage root containing media files",
+          "auth": "admin"
         },
         {
           "name": "Verify entities created",
-          "action": "GET /api/v1/entities",
-          "expected": "Entities automatically created from scanned file names"
+          "action": "http: GET /api/v1/entities",
+          "expected": "Entities automatically created from scanned file names",
+          "_original_action": "GET /api/v1/entities",
+          "auth": "admin"
         },
         {
           "name": "Verify file associations",
           "action": "Check that scanned files are linked to entities",
-          "expected": "Each scanned file associated with a recognized entity"
+          "expected": "Each scanned file associated with a recognized entity",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -1864,12 +2167,15 @@
         {
           "name": "Scan file with standard naming",
           "action": "Scan directory containing 'The.Matrix.1999.1080p.BluRay.mp4'",
-          "expected": "Scan completes"
+          "expected": "Scan completes",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify parsed entity",
-          "action": "GET /api/v1/entities?search=Matrix",
-          "expected": "Movie entity created with title 'The Matrix', year 1999"
+          "action": "http: GET /api/v1/entities?search=Matrix",
+          "expected": "Movie entity created with title 'The Matrix', year 1999",
+          "_original_action": "GET /api/v1/entities?search=Matrix",
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -1893,12 +2199,15 @@
         {
           "name": "Scan file with TV naming",
           "action": "Scan directory containing 'Breaking.Bad.S01E01.Pilot.720p.mkv'",
-          "expected": "Scan completes"
+          "expected": "Scan completes",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify hierarchy",
-          "action": "GET /api/v1/entities?search=Breaking Bad",
-          "expected": "TV show 'Breaking Bad' with Season 1 and Episode 1 in hierarchy"
+          "action": "http: GET /api/v1/entities?search=Breaking",
+          "expected": "TV show 'Breaking Bad' with Season 1 and Episode 1 in hierarchy",
+          "_original_action": "GET /api/v1/entities?search=Breaking Bad",
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -1922,12 +2231,15 @@
         {
           "name": "Scan directory with duplicate movie files",
           "action": "Scan two files: 'The.Matrix.1999.1080p.mp4' and 'The.Matrix.1999.720p.mp4'",
-          "expected": "Scan completes"
+          "expected": "Scan completes",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify single entity",
-          "action": "GET /api/v1/entities?search=Matrix&type=movie",
-          "expected": "One movie entity with two associated files"
+          "action": "http: GET /api/v1/entities?search=Matrix&type=movie",
+          "expected": "One movie entity with two associated files",
+          "_original_action": "GET /api/v1/entities?search=Matrix&type=movie",
+          "auth": "admin"
         }
       ],
       "tags": [

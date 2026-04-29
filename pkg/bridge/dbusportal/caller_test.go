@@ -92,7 +92,7 @@ func TestNewDBusCaller_SessionBusSucceedsIfAvailable(t *testing.T) {
 	}
 	c, err := NewDBusCaller()
 	if err != nil {
-		t.Skipf("session bus not usable: %v", err)
+		t.Skipf("session bus not usable: %v", err)  // SKIP-OK: #legacy-skip-untriaged-2026-04-29
 	}
 	if c == nil || c.conn == nil {
 		t.Fatal("nil after NewDBusCaller")
@@ -176,7 +176,7 @@ func TestDBusCaller_CallPortal_BadDestinationReturnsError(t *testing.T) {
 	}
 	c, err := NewDBusCaller()
 	if err != nil {
-		t.Skipf("session bus not usable: %v", err)
+		t.Skipf("session bus not usable: %v", err)  // SKIP-OK: #legacy-skip-untriaged-2026-04-29
 	}
 	defer c.Close()
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)

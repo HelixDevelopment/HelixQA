@@ -113,6 +113,56 @@ const (
 	// actually rendering (not a frozen first frame). Value format:
 	// "<waitMs>" — defaults to 2000 ms.
 	ActionTypeFrameDiff ActionType = "frame_diff"
+	// ActionTypeHTTP performs an HTTP request against a backend
+	// API and asserts on the response. Value format:
+	// "<METHOD> <PATH>" e.g. "GET /api/v1/health" or
+	// "POST /api/v1/auth/login". Body, headers, expected status,
+	// and JSON-path assertions are supplied via the dedicated
+	// TestStep fields (Body, Headers, ExpectStatus,
+	// ExpectJSONPath, ExpectBodyContains, AuthMode). The base URL
+	// comes from the executor's HTTPBaseURL config.
+	//
+	// Added 2026-04-29 to close the BLUFF-HELIXQA-BANKS-REWRITE-001
+	// gap: prior banks (full-qa-api, full-qa-web, atmosphere) used
+	// prose ActionTypeDescription strings that the executor could
+	// not run, producing 4034 PROSE_HELIXQA_ACTION findings in the
+	// bluff audit. With this type, those banks become structurally
+	// executable.
+	ActionTypeHTTP ActionType = "http"
+	// ActionTypeAssert evaluates a structured assertion against
+	// the most recent HTTP response, captured screenshot, or
+	// device state. Value format: "<kind>: <expr>" — kinds are
+	// status_eq, json_path_eq, body_contains, header_eq.
+	// Used in tandem with ActionTypeHTTP for complex assertions
+	// that span multiple checks; simpler one-shot expectations
+	// can ride on the HTTP step's ExpectStatus / ExpectJSONPath
+	// / ExpectBodyContains fields directly.
+	ActionTypeAssert ActionType = "assert"
+	// ActionTypePlaywright drives a web browser via the Playwright
+	// adapter for deterministic UI test bank steps. Value format:
+	//   "<verb> <selector|target>"
+	// where verb is one of:
+	//   navigate <url>            — open a URL
+	//   click    <selector>       — click an element
+	//   fill     <selector> <txt> — type into an input
+	//   waitFor  <selector>       — wait for element
+	//   assertVisible    <selector>
+	//   assertNotVisible <selector>
+	//   press    <key>            — keyboard press (e.g. Enter)
+	//
+	// Selectors are Playwright selectors (CSS, text=, role=, etc).
+	//
+	// Added 2026-04-29 for BLUFF-HELIXQA-BANKS-REWRITE-001 step 3
+	// to bring full-qa-web.json (572 prose entries) under the
+	// structured-action umbrella. The current executor stub
+	// records the step as structurally valid but needs the
+	// Playwright runtime wired in via PlaywrightCLIAdapter from
+	// the Challenges submodule (separate PR — banks are
+	// converted ahead of the runtime so a single integration
+	// commit closes the gap). Until then ActionTypePlaywright
+	// steps SKIP with PLAYWRIGHT-RUNTIME-PENDING rather than
+	// false-PASS, keeping Article XI compliance.
+	ActionTypePlaywright ActionType = "playwright"
 )
 
 // TestStep is a single step within a test case.
@@ -143,6 +193,39 @@ type TestStep struct {
 
 	// VisionVerify enables LLM vision verification of the result.
 	VisionVerify bool `yaml:"vision_verify,omitempty" json:"vision_verify,omitempty"`
+
+	// Body is the HTTP request body for ActionTypeHTTP. Strings
+	// are sent verbatim; map/slice values are JSON-encoded.
+	Body any `yaml:"body,omitempty" json:"body,omitempty"`
+
+	// Headers carries extra HTTP headers for ActionTypeHTTP.
+	// Common defaults (Accept, Content-Type for JSON bodies) are
+	// added by the executor unless overridden here.
+	Headers map[string]string `yaml:"headers,omitempty" json:"headers,omitempty"`
+
+	// AuthMode selects how authentication is applied to an
+	// ActionTypeHTTP step. Recognized values:
+	//   "none"      — no Authorization header (default)
+	//   "admin"     — log in as admin once per session, attach
+	//                 Bearer <session_token>
+	//   "as:<user>" — log in as the named user (creds resolved
+	//                 from the executor's UserCredentials map)
+	//   "raw:<token>" — attach Bearer <token> verbatim
+	AuthMode string `yaml:"auth,omitempty" json:"auth,omitempty"`
+
+	// ExpectStatus is the expected HTTP status code (e.g. 200,
+	// 201, 401). Zero means "do not check status".
+	ExpectStatus int `yaml:"expect_status,omitempty" json:"expect_status,omitempty"`
+
+	// ExpectJSONPath is a single JSON-path expression that must
+	// resolve to a non-null value in the HTTP response body.
+	// Example: "$.session_token". Empty means "do not check".
+	ExpectJSONPath string `yaml:"expect_json_path,omitempty" json:"expect_json_path,omitempty"`
+
+	// ExpectBodyContains is a substring that must appear in the
+	// HTTP response body (case-sensitive). Empty means
+	// "do not check".
+	ExpectBodyContains string `yaml:"expect_body_contains,omitempty" json:"expect_body_contains,omitempty"`
 }
 
 // ParseAction parses the action string and returns the type and value.
@@ -182,6 +265,12 @@ func (ts *TestStep) ParseAction() (ActionType, string) {
 			return ActionTypePlaybackCheck, value
 		case ActionTypeFrameDiff:
 			return ActionTypeFrameDiff, value
+		case ActionTypeHTTP:
+			return ActionTypeHTTP, value
+		case ActionTypeAssert:
+			return ActionTypeAssert, value
+		case ActionTypePlaywright:
+			return ActionTypePlaywright, value
 		}
 	}
 

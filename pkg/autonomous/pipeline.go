@@ -61,6 +61,30 @@ type PipelineConfig struct {
 	// reconciliation.
 	BanksDir string
 
+	// HTTPBaseURL is the root URL the structured executor
+	// uses for ActionTypeHTTP steps (e.g.
+	// "http://thinker.local:8092"). When empty, the executor
+	// falls back to the HELIXQA_HTTP_BASE_URL env var. When
+	// both are empty, ActionTypeHTTP steps fail with a clear
+	// configuration error rather than silently no-op.
+	//
+	// Added 2026-04-29 for BLUFF-HELIXQA-BANKS-REWRITE-001 —
+	// see HelixQA/pkg/autonomous/http_executor.go.
+	HTTPBaseURL string
+
+	// PlaywrightCDPURL is the Chrome DevTools Protocol
+	// WebSocket endpoint the structured executor uses for
+	// ActionTypePlaywright steps (e.g. "ws://localhost:9222"
+	// or "ws://playwright-container:9222"). When empty, the
+	// executor falls back to the HELIXQA_PLAYWRIGHT_CDP_URL
+	// env var. When both are empty, ActionTypePlaywright
+	// steps SKIP with PLAYWRIGHT-RUNTIME-PENDING (no false
+	// PASS, no false FAIL — Article XI §11.2.2).
+	//
+	// Added 2026-04-29 to wire ActionTypePlaywright through
+	// digital.vasic.challenges/pkg/userflow.PlaywrightCLIAdapter.
+	PlaywrightCDPURL string
+
 	// Timeout is the maximum duration for the entire
 	// pipeline run.
 	Timeout time.Duration
