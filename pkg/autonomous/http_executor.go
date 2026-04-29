@@ -248,8 +248,65 @@ func (h *HTTPExecutor) Execute(
 	if err != nil {
 		return ActionResult{Success: false, Message: fmt.Sprintf("http: request failed: %v", err)}
 	}
-	defer resp.Body.Close()
 	body, _ := io.ReadAll(resp.Body)
+	resp.Body.Close()
+
+	// Article XI §11.5: 401 on a request that USED a cached
+	// bearer token usually means the cached token was invalidated
+	// (e.g. by a previous /auth/logout step in the bank, or
+	// catalog-api session expiry). Evict the cache entry and
+	// retry the request once with a fresh login. Without this,
+	// every admin: call after FQA-API-007 (logout) silently fails
+	// with 401 — the bluff scanner would file 14 "phantom"
+	// catalog-api defects when the truth is just a stale cache.
+	if resp.StatusCode == http.StatusUnauthorized && step.AuthMode != "" &&
+		!strings.EqualFold(step.AuthMode, "none") &&
+		!strings.HasPrefix(step.AuthMode, "raw:") {
+		h.invalidateCachedToken(step.AuthMode)
+		// Rebuild the request body reader (the original was consumed).
+		var retryBody io.Reader
+		if step.Body != nil {
+			switch v := step.Body.(type) {
+			case string:
+				retryBody = strings.NewReader(v)
+			case []byte:
+				retryBody = bytes.NewReader(v)
+			default:
+				if b, err := json.Marshal(v); err == nil {
+					retryBody = bytes.NewReader(b)
+				}
+			}
+		}
+		retryReq, retryErr := http.NewRequestWithContext(ctx, method, url, retryBody)
+		if retryErr == nil {
+			if contentType != "" {
+				retryReq.Header.Set("Content-Type", contentType)
+			}
+			retryReq.Header.Set("Accept", "application/json")
+			for k, v := range step.Headers {
+				retryReq.Header.Set(k, v)
+			}
+			if err := h.applyAuth(ctx, retryReq, step.AuthMode); err == nil {
+				if h.needsCSRF(method, path) {
+					h.mu.Lock()
+					tok, ckName, ckVal := h.csrfToken, h.csrfCookieName, h.csrfCookieValue
+					h.mu.Unlock()
+					if tok != "" {
+						retryReq.Header.Set(h.CSRFHeaderName, tok)
+					}
+					if ckName != "" && ckVal != "" {
+						retryReq.AddCookie(&http.Cookie{Name: ckName, Value: ckVal})
+					}
+				}
+				if retryResp, retryErr := h.HTTPClient.Do(retryReq); retryErr == nil {
+					retryBytes, _ := io.ReadAll(retryResp.Body)
+					retryResp.Body.Close()
+					resp = retryResp
+					body = retryBytes
+				}
+			}
+		}
+	}
 
 	h.mu.Lock()
 	h.lastResponse = body
@@ -315,23 +372,9 @@ func (h *HTTPExecutor) applyAuth(ctx context.Context, req *http.Request, mode st
 		return nil
 	}
 
-	var creds Credentials
-	credsKey := mode
-	switch {
-	case strings.EqualFold(mode, "admin"):
-		creds = h.AdminCreds
-		if creds.Username == "" {
-			creds = Credentials{Username: "admin", Password: "admin123"}
-		}
-	case strings.HasPrefix(mode, "as:"):
-		user := strings.TrimSpace(mode[len("as:"):])
-		var ok bool
-		creds, ok = h.UserCredentials[user]
-		if !ok {
-			return fmt.Errorf("auth as:%s — credentials not registered", user)
-		}
-	default:
-		return fmt.Errorf("unknown AuthMode %q (expected: none|admin|as:<user>|raw:<token>)", mode)
+	creds, credsKey, err := h.resolveCreds(mode)
+	if err != nil {
+		return err
 	}
 
 	h.mu.Lock()
@@ -351,6 +394,47 @@ func (h *HTTPExecutor) applyAuth(ctx context.Context, req *http.Request, mode st
 	h.mu.Unlock()
 	req.Header.Set("Authorization", "Bearer "+tok)
 	return nil
+}
+
+// resolveCreds maps an AuthMode string ("admin" / "as:<user>") to a
+// (Credentials, cache-key) pair. Extracted so applyAuth and the
+// 401-retry path in Execute share one source of truth.
+func (h *HTTPExecutor) resolveCreds(mode string) (Credentials, string, error) {
+	credsKey := mode
+	switch {
+	case strings.EqualFold(mode, "admin"):
+		creds := h.AdminCreds
+		if creds.Username == "" {
+			creds = Credentials{Username: "admin", Password: "admin123"}
+		}
+		return creds, credsKey, nil
+	case strings.HasPrefix(mode, "as:"):
+		user := strings.TrimSpace(mode[len("as:"):])
+		creds, ok := h.UserCredentials[user]
+		if !ok {
+			return Credentials{}, "", fmt.Errorf("auth as:%s — credentials not registered", user)
+		}
+		return creds, credsKey, nil
+	}
+	return Credentials{}, "", fmt.Errorf("unknown AuthMode %q (expected: none|admin|as:<user>|raw:<token>)", mode)
+}
+
+// invalidateCachedToken evicts the cached bearer for the given
+// AuthMode. Used after a 401 on a cached-token request — the
+// catalog-api invalidated the session (e.g. /auth/logout was just
+// called) and the cache entry is now dead. The next applyAuth call
+// will re-login. Article XI §11.5: silently keeping a stale token
+// in the cache causes ~all subsequent admin: requests to fail with
+// 401, which a reviewer would mistake for a catalog-api defect
+// instead of an executor cache-staleness bug.
+func (h *HTTPExecutor) invalidateCachedToken(mode string) {
+	mode = strings.TrimSpace(mode)
+	if mode == "" || strings.EqualFold(mode, "none") || strings.HasPrefix(mode, "raw:") {
+		return
+	}
+	h.mu.Lock()
+	delete(h.tokenCache, mode)
+	h.mu.Unlock()
 }
 
 func (h *HTTPExecutor) login(ctx context.Context, creds Credentials) (string, error) {

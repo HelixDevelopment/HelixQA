@@ -481,6 +481,64 @@ func TestHTTPExecutor_CSRFCachedAcrossCalls(t *testing.T) {
 		"preflight must run exactly once for the lifetime of the executor")
 }
 
+// TestHTTPExecutor_AutoRefreshOnInvalidatedToken asserts that the
+// executor handles the post-/auth/logout case gracefully: when a
+// cached bearer token has been invalidated server-side, the next
+// admin: request gets 401, the executor evicts the cache and
+// retries with a fresh login.
+//
+// Article XI §11.5 anchor: without this retry, every admin: call
+// after FQA-API-007's logout step would silently 401 forever, and
+// a reviewer would (wrongly) file 14 catalog-api "Unauthorized"
+// defects when the truth is just a stale cache.
+func TestHTTPExecutor_AutoRefreshOnInvalidatedToken(t *testing.T) {
+	var (
+		loginCalls    int
+		validToken    string
+		invalidatedAt string
+	)
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch {
+		case r.Method == http.MethodPost && r.URL.Path == "/api/v1/auth/login":
+			loginCalls++
+			validToken = fmt.Sprintf("token-%d", loginCalls)
+			w.Header().Set("Content-Type", "application/json")
+			_, _ = fmt.Fprintf(w, `{"session_token":%q}`, validToken)
+		case r.URL.Path == "/api/v1/auth/me":
+			tok := strings.TrimPrefix(r.Header.Get("Authorization"), "Bearer ")
+			if tok == invalidatedAt || tok == "" {
+				w.WriteHeader(http.StatusUnauthorized)
+				_, _ = fmt.Fprint(w, `{"error":"Invalid token"}`)
+				return
+			}
+			w.WriteHeader(http.StatusOK)
+			_, _ = fmt.Fprintf(w, `{"username":"admin"}`)
+		default:
+			w.WriteHeader(http.StatusNotFound)
+		}
+	}))
+	defer srv.Close()
+
+	h := NewHTTPExecutor(srv.URL)
+	// First call mints token-1 and gets 200.
+	res1 := h.Execute(context.Background(), "GET", "/api/v1/auth/me",
+		testbank.TestStep{ExpectStatus: 200, AuthMode: "admin"})
+	require.True(t, res1.Success, "first /auth/me must succeed: %s", res1.Message)
+	require.Equal(t, 1, loginCalls)
+
+	// Server invalidates token-1 (simulating a logout call).
+	invalidatedAt = "token-1"
+
+	// Second call uses the cached (now-invalid) token-1 → 401 → executor
+	// must evict cache, re-login (token-2), and retry.
+	res2 := h.Execute(context.Background(), "GET", "/api/v1/auth/me",
+		testbank.TestStep{ExpectStatus: 200, AuthMode: "admin"})
+	require.True(t, res2.Success,
+		"second /auth/me MUST auto-refresh and succeed; got %s", res2.Message)
+	assert.Equal(t, 2, loginCalls,
+		"executor must have re-logged in to mint token-2")
+}
+
 // TestHTTPExecutor_ExplicitSkipHonored asserts that a step with
 // _skip: true is SKIPPED before any HTTP traffic, with the
 // _skip_reason surfaced in the result message.
