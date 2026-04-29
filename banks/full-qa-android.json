@@ -4802,7 +4802,9 @@
           },
           "_patched_by": [
             "bank-patch-default-bodies"
-          ]
+          ],
+          "_skip": true,
+          "_skip_reason": "destructive on shared catalog-api: actually changing admin password would break subsequent admin: tests across all bank suites"
         },
         {
           "name": "Login with new password",
