@@ -66,7 +66,8 @@
           },
           "_original_action": "POST /api/v1/auth/login with body {\"username\":\"admin\",\"password\":\"wrongpass\"}",
           "expect_status": 401,
-          "expect_body_contains": "error"
+          "expect_body_contains": "error",
+          "auth": "none"
         }
       ],
       "tags": [
@@ -96,7 +97,8 @@
             "password": "test123"
           },
           "_original_action": "POST /api/v1/auth/login with body {\"username\":\"ghost_user\",\"password\":\"test123\"}",
-          "expect_status": 401
+          "expect_status": 401,
+          "auth": "none"
         }
       ],
       "tags": [
@@ -126,7 +128,8 @@
             "password": ""
           },
           "_original_action": "POST /api/v1/auth/login with body {\"username\":\"\",\"password\":\"\"}",
-          "expect_status": 400
+          "expect_status": 400,
+          "auth": "none"
         }
       ],
       "tags": [
@@ -156,7 +159,8 @@
             "password": "anything"
           },
           "_original_action": "POST /api/v1/auth/login with body {\"username\":\"admin' OR '1'='1\",\"password\":\"anything\"}",
-          "expect_status": 401
+          "expect_status": 401,
+          "auth": "none"
         },
         {
           "name": "Verify server is still healthy",
@@ -267,7 +271,7 @@
           "expected": "401 Unauthorized (token blacklisted)",
           "_original_action": "GET /api/v1/entities with the logged-out token",
           "expect_status": 401,
-          "auth": "admin"
+          "auth": "none"
         }
       ],
       "tags": [
@@ -293,7 +297,7 @@
           "expected": "401 Unauthorized",
           "_original_action": "GET /api/v1/entities",
           "expect_status": 401,
-          "auth": "admin"
+          "auth": "none"
         }
       ],
       "tags": [
@@ -317,7 +321,8 @@
           "name": "Craft a JWT with exp claim in the past",
           "action": "Sign JWT with the server secret but exp = now - 3600",
           "expected": "Expired token crafted",
-          "_conversion_note": "manual-review-required"
+          "_conversion_note": "manual-review-required",
+          "auth": "none"
         },
         {
           "name": "Send request with expired token",
@@ -325,7 +330,7 @@
           "expected": "401 Unauthorized with token expired message",
           "_original_action": "GET /api/v1/entities with Authorization: Bearer <expired_token>",
           "expect_status": 401,
-          "auth": "admin"
+          "auth": "none"
         }
       ],
       "tags": [
@@ -582,7 +587,7 @@
           "expected": "200 OK with authentication status info",
           "_original_action": "GET /api/v1/auth/status",
           "expect_status": 200,
-          "auth": "admin"
+          "auth": "none"
         }
       ],
       "tags": [
@@ -743,7 +748,7 @@
           "expected": "401 Unauthorized",
           "_original_action": "GET /api/v1/entities with forged token",
           "expect_status": 401,
-          "auth": "admin"
+          "auth": "none"
         }
       ],
       "tags": [
@@ -2282,7 +2287,7 @@
           "expected": "401 Unauthorized",
           "_original_action": "POST /api/v1/scans with no Authorization header",
           "expect_status": 401,
-          "auth": "admin",
+          "auth": "none",
           "body": {
             "path": "/"
           },
@@ -5082,7 +5087,7 @@
           },
           "_original_action": "POST /api/v1/collections with body {\"name\":\"Unauthorized\"} and no auth",
           "expect_status": 401,
-          "auth": "admin"
+          "auth": "none"
         }
       ],
       "tags": [
@@ -5498,7 +5503,7 @@
           "expected": "401 Unauthorized",
           "_original_action": "GET /api/v1/collections with no auth header",
           "expect_status": 401,
-          "auth": "admin"
+          "auth": "none"
         }
       ],
       "tags": [
@@ -6075,7 +6080,7 @@
           "expected": "401 Unauthorized",
           "_original_action": "GET /api/v1/playlists without Authorization header",
           "expect_status": 401,
-          "auth": "admin"
+          "auth": "none"
         }
       ],
       "tags": [
@@ -6651,7 +6656,7 @@
           "expected": "401 Unauthorized",
           "_original_action": "GET /api/v1/favorites without auth",
           "expect_status": 401,
-          "auth": "admin"
+          "auth": "none"
         }
       ],
       "tags": [
@@ -6885,7 +6890,7 @@
           "expected": "401 Unauthorized",
           "_original_action": "GET /api/v1/stream/1 without auth",
           "expect_status": 401,
-          "auth": "admin"
+          "auth": "none"
         }
       ],
       "tags": [
@@ -7093,7 +7098,7 @@
           "expected": "401 Unauthorized or connection rejected",
           "_original_action": "GET /ws with Upgrade: websocket but no auth token",
           "expect_status": 401,
-          "auth": "admin"
+          "auth": "none"
         }
       ],
       "tags": [
@@ -7678,7 +7683,8 @@
           },
           "_patched_by": [
             "bank-patch-default-bodies"
-          ]
+          ],
+          "auth": "none"
         },
         {
           "name": "Unlock account",
