@@ -1096,3 +1096,59 @@ pre-build run. Same regression class as Phase 23.2 (Challenges
 submodule, same week). The 100% anti-bluff floor catches this kind
 of remote-merge dropout that would otherwise go unnoticed for
 cycles.
+
+
+## MANDATORY §12.6 MEMORY-BUDGET CEILING — 60% MAXIMUM (User mandate, 2026-04-30)
+
+**Forensic anchor — direct user mandate (verbatim):**
+
+> "We had to restart this session 3rd time in a row! The system of
+> the host stays with no RAM memory for some reason! First make sure
+> that whatever we do through our procedures related to this project
+> MUST NOT use more than 60% of total system memory! All processes
+> MUST be able to function normally!"
+
+**The mandate.** Project procedures MUST NOT use more than **60%
+of total system RAM** (`HOST_SAFETY_MAX_MEM_PCT`). The remaining
+40% is reserved for the operator's other workloads so the host can
+keep serving them while project work proceeds.
+
+**Three consecutive session-loss SIGKILLs on 2026-04-30** during
+1.1.5-dev — every one happened while `scripts/build.sh` was running
+`m -j5` AOSP. Each Soong/Ninja job peaks at ~5–8 GiB RSS;
+collective RSS overran the 60% envelope and the kernel OOM-killer
+escalated, taking down `user@1000.service`. **§12.1's pre-flight
+check (refusing to start if host already distressed) was not enough**
+— the missing piece was an active CONSTRAINT on heavy work itself.
+
+**Mandatory protections (rock-solid):**
+
+1. `HOST_SAFETY_MAX_MEM_PCT` defaults to 60 in
+   `scripts/lib/host_session_safety.sh`.
+2. `HOST_SAFETY_BUDGET_GB` is computed at source-time from
+   `MemTotal × MAX_PCT/100`.
+3. `bounded_run` clamps `MemoryMax` down to the budget if the
+   caller asks for more (cgroup-level enforcement via
+   `systemd-run --user --scope -p MemoryMax=…`).
+4. `host_safe_parallel_jobs` and `host_safe_build_jobs` return
+   the safe `-j` count given an estimated per-job RSS, capped at
+   `nproc`.
+5. `scripts/build.sh` wraps `m -j` in `bounded_run`. If the
+   build's collective RSS exceeds the budget, only the scope is
+   OOM-killed; `user@<uid>.service` stays alive.
+
+**Captured-evidence enforcement.** Pre-build gate
+`CM-MEMBUDGET-METATEST` locks all 7 invariants and fires every
+pre-build run.
+
+**No escape hatch.** §12.6 has NO operator-facing override flag.
+The cap exists for the operator's own protection; bypassing it is
+the bluff the §11.4 covenant specifically prohibits. Operators who
+need more headroom should reduce parallelism, close other
+workloads, or add RAM — NOT raise the percentage.
+
+**Canonical authority:** parent
+[`docs/guides/ATMOSPHERE_CONSTITUTION.md`](../../docs/guides/ATMOSPHERE_CONSTITUTION.md)
+§12.6.
+
+Non-compliance is a release blocker regardless of context.
