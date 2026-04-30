@@ -81,6 +81,7 @@ func TestExecRunner_ContextCancel(t *testing.T) {
 // --- OSProcessLauncher ---
 
 func TestOSProcessLauncher_SpawnAndSignal(t *testing.T) {
+	// bluff-scan: nil-only-ok (process lifecycle — spawn → SIGTERM → wait must complete without error)
 	if runtime.GOOS == "windows" {
 		t.Skip("POSIX /bin/sleep not available")  // SKIP-OK: #legacy-untriaged
 	}
@@ -100,6 +101,7 @@ func TestOSProcessLauncher_SpawnAndSignal(t *testing.T) {
 }
 
 func TestOSProcessLauncher_Kill(t *testing.T) {
+	// bluff-scan: nil-only-ok (process lifecycle — spawn → kill must complete without error)
 	if runtime.GOOS == "windows" {
 		t.Skip("POSIX /bin/sleep not available")  // SKIP-OK: #legacy-untriaged
 	}

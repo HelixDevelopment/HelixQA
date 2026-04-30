@@ -5,7 +5,9 @@
   "metadata": {
     "author": "vasic-digital",
     "app": "Catalogizer",
-    "version": "1.0.0"
+    "version": "1.0.0",
+    "bluff_audit_status": "converted-by-bank-prose-to-http.py",
+    "bluff_audit_date": "2026-04-29"
   },
   "test_cases": [
     {
@@ -22,13 +24,19 @@
       "steps": [
         {
           "name": "Access protected endpoint without token",
-          "action": "GET /api/v1/entities with no Authorization header",
-          "expected": "401 Unauthorized"
+          "action": "http: GET /api/v1/entities",
+          "expected": "401 Unauthorized",
+          "auth": "admin",
+          "_original_action": "GET /api/v1/entities with no Authorization header",
+          "expect_status": 401
         },
         {
           "name": "Access with valid token",
-          "action": "GET /api/v1/entities with valid JWT in Authorization header",
-          "expected": "200 OK with entity data"
+          "action": "http: GET /api/v1/entities",
+          "expected": "200 OK with entity data",
+          "auth": "admin",
+          "_original_action": "GET /api/v1/entities with valid JWT in Authorization header",
+          "expect_status": 200
         }
       ],
       "tags": [
@@ -51,18 +59,29 @@
       "steps": [
         {
           "name": "POST without token",
-          "action": "POST /api/v1/entities with valid body but no Authorization header",
-          "expected": "401 Unauthorized"
+          "action": "http: POST /api/v1/entities",
+          "expected": "401 Unauthorized",
+          "auth": "admin",
+          "_original_action": "POST /api/v1/entities with valid body but no Authorization header",
+          "expect_status": 401,
+          "_skip": true,
+          "_skip_reason": "endpoint POST /api/v1/entities does not exist on catalog-api (entities are aggregated post-scan, not user-created; cache endpoints are not exposed) (#BLUFF-HELIXQA-BANKS-WRONG-PATHS-001)"
         },
         {
           "name": "PUT without token",
-          "action": "PUT /api/v1/entities/1 with valid body but no Authorization header",
-          "expected": "401 Unauthorized"
+          "action": "http: PUT /api/v1/entities/1",
+          "expected": "401 Unauthorized",
+          "auth": "admin",
+          "_original_action": "PUT /api/v1/entities/1 with valid body but no Authorization header",
+          "expect_status": 401
         },
         {
           "name": "DELETE without token",
-          "action": "DELETE /api/v1/entities/1 with no Authorization header",
-          "expected": "401 Unauthorized"
+          "action": "http: DELETE /api/v1/entities/1",
+          "expected": "401 Unauthorized",
+          "auth": "admin",
+          "_original_action": "DELETE /api/v1/entities/1 with no Authorization header",
+          "expect_status": 401
         }
       ],
       "tags": [
@@ -89,12 +108,17 @@
         {
           "name": "Create expired token",
           "action": "Use a JWT token with exp claim in the past",
-          "expected": "Token created"
+          "expected": "Token created",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Access protected endpoint",
-          "action": "GET /api/v1/entities with expired token",
-          "expected": "401 Unauthorized with 'token expired' error"
+          "action": "http: GET /api/v1/entities",
+          "expected": "401 Unauthorized with 'token expired' error",
+          "auth": "admin",
+          "_original_action": "GET /api/v1/entities with expired token",
+          "expect_status": 401,
+          "expect_body_contains": "error"
         }
       ],
       "tags": [
@@ -121,12 +145,16 @@
         {
           "name": "Craft token with wrong secret",
           "action": "Sign a JWT with a different secret key than server uses",
-          "expected": "Token created with invalid signature"
+          "expected": "Token created with invalid signature",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Access protected endpoint",
-          "action": "GET /api/v1/entities with invalid-signature token",
-          "expected": "401 Unauthorized"
+          "action": "http: GET /api/v1/entities",
+          "expected": "401 Unauthorized",
+          "auth": "admin",
+          "_original_action": "GET /api/v1/entities with invalid-signature token",
+          "expect_status": 401
         }
       ],
       "tags": [
@@ -149,18 +177,27 @@
       "steps": [
         {
           "name": "Send malformed token",
-          "action": "GET /api/v1/entities with Authorization: Bearer not.a.jwt.token",
-          "expected": "401 Unauthorized"
+          "action": "http: GET /api/v1/entities",
+          "expected": "401 Unauthorized",
+          "auth": "admin",
+          "_original_action": "GET /api/v1/entities with Authorization: Bearer not.a.jwt.token",
+          "expect_status": 401
         },
         {
           "name": "Send empty bearer",
-          "action": "GET /api/v1/entities with Authorization: Bearer (empty)",
-          "expected": "401 Unauthorized"
+          "action": "http: GET /api/v1/entities",
+          "expected": "401 Unauthorized",
+          "auth": "admin",
+          "_original_action": "GET /api/v1/entities with Authorization: Bearer (empty)",
+          "expect_status": 401
         },
         {
           "name": "Send random string",
-          "action": "GET /api/v1/entities with Authorization: Bearer abc123xyz",
-          "expected": "401 Unauthorized"
+          "action": "http: GET /api/v1/entities",
+          "expected": "401 Unauthorized",
+          "auth": "admin",
+          "_original_action": "GET /api/v1/entities with Authorization: Bearer abc123xyz",
+          "expect_status": 401
         }
       ],
       "tags": [
@@ -184,12 +221,16 @@
         {
           "name": "Craft token with alg:none",
           "action": "Create JWT with header {\"alg\":\"none\"} and unsigned payload",
-          "expected": "Token crafted"
+          "expected": "Token crafted",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Access protected endpoint",
-          "action": "GET /api/v1/entities with alg:none token",
-          "expected": "401 Unauthorized (none algorithm not accepted)"
+          "action": "http: GET /api/v1/entities",
+          "expected": "401 Unauthorized (none algorithm not accepted)",
+          "auth": "admin",
+          "_original_action": "GET /api/v1/entities with alg:none token",
+          "expect_status": 401
         }
       ],
       "tags": [
@@ -215,18 +256,28 @@
       "steps": [
         {
           "name": "Login and get token",
-          "action": "POST /api/v1/auth/login",
-          "expected": "200 OK with access token and refresh token"
+          "action": "http: POST /api/v1/auth/login",
+          "expected": "200 OK with access token and refresh token",
+          "_original_action": "POST /api/v1/auth/login",
+          "expect_status": 200,
+          "body": {
+            "username": "admin",
+            "password": "admin123"
+          }
         },
         {
           "name": "Use refresh token",
-          "action": "POST /api/v1/auth/refresh with refresh token",
-          "expected": "200 OK with new access token"
+          "action": "http: POST /api/v1/auth/refresh",
+          "expected": "200 OK with new access token",
+          "_original_action": "POST /api/v1/auth/refresh with refresh token",
+          "expect_status": 200
         },
         {
           "name": "Old token still valid until expiry",
           "action": "Use original access token",
-          "expected": "200 OK (token not yet expired)"
+          "expected": "200 OK (token not yet expired)",
+          "expect_status": 200,
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -250,13 +301,17 @@
       "steps": [
         {
           "name": "Send classic SQL injection",
-          "action": "GET /api/v1/entities?search=' OR '1'='1",
-          "expected": "Empty results or 400 Bad Request (not a database dump)"
+          "action": "http: GET /api/v1/entities?search=",
+          "expected": "Empty results or 400 Bad Request (not a database dump)",
+          "auth": "admin",
+          "_original_action": "GET /api/v1/entities?search=' OR '1'='1",
+          "expect_status": 400
         },
         {
           "name": "Verify no data leak",
           "action": "Check response does not contain all entities",
-          "expected": "Only legitimately matching results (if any)"
+          "expected": "Only legitimately matching results (if any)",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -280,13 +335,19 @@
       "steps": [
         {
           "name": "Create entity with SQL payload",
-          "action": "POST /api/v1/entities with title \"'; DROP TABLE media_items; --\"",
-          "expected": "Entity created with literal title string (no SQL execution)"
+          "action": "http: POST /api/v1/entities",
+          "expected": "Entity created with literal title string (no SQL execution)",
+          "auth": "admin",
+          "_original_action": "POST /api/v1/entities with title \"'; DROP TABLE media_items; --\"",
+          "_skip": true,
+          "_skip_reason": "endpoint POST /api/v1/entities does not exist on catalog-api (entities are aggregated post-scan, not user-created; cache endpoints are not exposed) (#BLUFF-HELIXQA-BANKS-WRONG-PATHS-001)"
         },
         {
           "name": "Verify table intact",
-          "action": "GET /api/v1/entities",
-          "expected": "Entity list works normally, table not dropped"
+          "action": "http: GET /api/v1/entities",
+          "expected": "Entity list works normally, table not dropped",
+          "auth": "admin",
+          "_original_action": "GET /api/v1/entities"
         }
       ],
       "tags": [
@@ -309,8 +370,11 @@
       "steps": [
         {
           "name": "Send injection in sort",
-          "action": "GET /api/v1/entities?sort=title; DROP TABLE users;--",
-          "expected": "400 Bad Request or sort ignored (not executed)"
+          "action": "http: GET /api/v1/entities?sort=title",
+          "expected": "400 Bad Request or sort ignored (not executed)",
+          "auth": "admin",
+          "_original_action": "GET /api/v1/entities?sort=title; DROP TABLE users;--",
+          "expect_status": 400
         }
       ],
       "tags": [
@@ -333,13 +397,17 @@
       "steps": [
         {
           "name": "Send UNION injection",
-          "action": "GET /api/v1/entities?search=' UNION SELECT username,password FROM users--",
-          "expected": "Empty results or 400 Bad Request"
+          "action": "http: GET /api/v1/entities?search=",
+          "expected": "Empty results or 400 Bad Request",
+          "auth": "admin",
+          "_original_action": "GET /api/v1/entities?search=' UNION SELECT username,password FROM users--",
+          "expect_status": 400
         },
         {
           "name": "Verify no credential leak",
           "action": "Check response for any user credentials",
-          "expected": "No credentials in response"
+          "expected": "No credentials in response",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -363,18 +431,25 @@
       "steps": [
         {
           "name": "Create entity with script tag",
-          "action": "POST /api/v1/entities with title '<script>alert(\"xss\")</script>'",
-          "expected": "Entity created (title stored safely)"
+          "action": "http: POST /api/v1/entities",
+          "expected": "Entity created (title stored safely)",
+          "auth": "admin",
+          "_original_action": "POST /api/v1/entities with title '<script>alert(\"xss\")</script>'",
+          "_skip": true,
+          "_skip_reason": "endpoint POST /api/v1/entities does not exist on catalog-api (entities are aggregated post-scan, not user-created; cache endpoints are not exposed) (#BLUFF-HELIXQA-BANKS-WRONG-PATHS-001)"
         },
         {
           "name": "Retrieve entity",
-          "action": "GET /api/v1/entities/{id}",
-          "expected": "Title returned with HTML entities escaped or stripped"
+          "action": "http: GET /api/v1/entities/{id}",
+          "expected": "Title returned with HTML entities escaped or stripped",
+          "auth": "admin",
+          "_original_action": "GET /api/v1/entities/{id}"
         },
         {
           "name": "Render in web UI",
           "action": "View entity in browser",
-          "expected": "Script tag not executed, shown as text"
+          "expected": "Script tag not executed, shown as text",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -398,8 +473,10 @@
       "steps": [
         {
           "name": "Search with script payload",
-          "action": "GET /api/v1/entities?search=<img src=x onerror=alert('xss')>",
-          "expected": "Search returns results normally, payload not reflected as HTML"
+          "action": "http: GET /api/v1/entities?search=",
+          "expected": "Search returns results normally, payload not reflected as HTML",
+          "auth": "admin",
+          "_original_action": "GET /api/v1/entities?search=<img src=x onerror=alert('xss')>"
         }
       ],
       "tags": [
@@ -423,13 +500,18 @@
       "steps": [
         {
           "name": "Create entity with event handler",
-          "action": "POST /api/v1/entities with title '\" onmouseover=\"alert(1)\"'",
-          "expected": "Entity created"
+          "action": "http: POST /api/v1/entities",
+          "expected": "Entity created",
+          "auth": "admin",
+          "_original_action": "POST /api/v1/entities with title '\" onmouseover=\"alert(1)\"'",
+          "_skip": true,
+          "_skip_reason": "endpoint POST /api/v1/entities does not exist on catalog-api (entities are aggregated post-scan, not user-created; cache endpoints are not exposed) (#BLUFF-HELIXQA-BANKS-WRONG-PATHS-001)"
         },
         {
           "name": "View in web UI",
           "action": "Render entity card in browser",
-          "expected": "Event handler not rendered as attribute, shown as text"
+          "expected": "Event handler not rendered as attribute, shown as text",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -453,13 +535,18 @@
       "steps": [
         {
           "name": "Submit SVG XSS",
-          "action": "POST /api/v1/entities with title '<svg onload=alert(1)>'",
-          "expected": "Entity created with sanitized title"
+          "action": "http: POST /api/v1/entities",
+          "expected": "Entity created with sanitized title",
+          "auth": "admin",
+          "_original_action": "POST /api/v1/entities with title '<svg onload=alert(1)>'",
+          "_skip": true,
+          "_skip_reason": "endpoint POST /api/v1/entities does not exist on catalog-api (entities are aggregated post-scan, not user-created; cache endpoints are not exposed) (#BLUFF-HELIXQA-BANKS-WRONG-PATHS-001)"
         },
         {
           "name": "Verify in web UI",
           "action": "View entity in browser",
-          "expected": "SVG tag not executed"
+          "expected": "SVG tag not executed",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -483,13 +570,17 @@
       "steps": [
         {
           "name": "Request file with traversal",
-          "action": "GET /api/v1/files?path=../../etc/passwd",
-          "expected": "400 Bad Request or 403 Forbidden"
+          "action": "http: GET /api/v1/files?path=../../etc/passwd",
+          "expected": "400 Bad Request or 403 Forbidden",
+          "auth": "admin",
+          "_original_action": "GET /api/v1/files?path=../../etc/passwd",
+          "expect_status": 400
         },
         {
           "name": "Verify no file content returned",
           "action": "Check response body",
-          "expected": "No system file content leaked"
+          "expected": "No system file content leaked",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -512,13 +603,19 @@
       "steps": [
         {
           "name": "Request with URL-encoded traversal",
-          "action": "GET /api/v1/files?path=%2e%2e%2f%2e%2e%2fetc%2fpasswd",
-          "expected": "400 Bad Request or 403 Forbidden"
+          "action": "http: GET /api/v1/files?path=",
+          "expected": "400 Bad Request or 403 Forbidden",
+          "auth": "admin",
+          "_original_action": "GET /api/v1/files?path=%2e%2e%2f%2e%2e%2fetc%2fpasswd",
+          "expect_status": 400
         },
         {
           "name": "Request with double-encoded traversal",
-          "action": "GET /api/v1/files?path=%252e%252e%252f%252e%252e%252fetc%252fpasswd",
-          "expected": "400 Bad Request or 403 Forbidden"
+          "action": "http: GET /api/v1/files?path=",
+          "expected": "400 Bad Request or 403 Forbidden",
+          "auth": "admin",
+          "_original_action": "GET /api/v1/files?path=%252e%252e%252f%252e%252e%252fetc%252fpasswd",
+          "expect_status": 400
         }
       ],
       "tags": [
@@ -541,8 +638,11 @@
       "steps": [
         {
           "name": "Request with null byte",
-          "action": "GET /api/v1/files?path=../../../etc/passwd%00.jpg",
-          "expected": "400 Bad Request or 403 Forbidden"
+          "action": "http: GET /api/v1/files?path=../../../etc/passwd",
+          "expected": "400 Bad Request or 403 Forbidden",
+          "auth": "admin",
+          "_original_action": "GET /api/v1/files?path=../../../etc/passwd%00.jpg",
+          "expect_status": 400
         }
       ],
       "tags": [
@@ -568,13 +668,20 @@
       "steps": [
         {
           "name": "Send rapid login attempts",
-          "action": "POST /api/v1/auth/login 20 times in 10 seconds with wrong password",
-          "expected": "After threshold, responses become 429 Too Many Requests"
+          "action": "http: POST /api/v1/auth/login",
+          "expected": "After threshold, responses become 429 Too Many Requests",
+          "_original_action": "POST /api/v1/auth/login 20 times in 10 seconds with wrong password",
+          "expect_status": 429,
+          "body": {
+            "username": "admin",
+            "password": "admin123"
+          }
         },
         {
           "name": "Verify rate limit header",
           "action": "Check response headers for rate limit info",
-          "expected": "X-RateLimit-Remaining or Retry-After header present"
+          "expected": "X-RateLimit-Remaining or Retry-After header present",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -598,12 +705,16 @@
         {
           "name": "Send burst of requests",
           "action": "Send 100 GET /api/v1/entities requests in 5 seconds",
-          "expected": "After rate limit threshold, some requests return 429"
+          "expected": "After rate limit threshold, some requests return 429",
+          "expect_status": 429,
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Wait for rate limit reset",
-          "action": "Wait for rate limit window to expire",
-          "expected": "Subsequent requests succeed (200 OK)"
+          "action": "playwright: waitFor text=rate limit window to expire",
+          "expected": "Subsequent requests succeed (200 OK)",
+          "_original_action": "Wait for rate limit window to expire",
+          "expect_status": 200
         }
       ],
       "tags": [
@@ -627,12 +738,15 @@
         {
           "name": "Exhaust rate limit from one IP",
           "action": "Send requests until 429 from client A",
-          "expected": "Client A rate limited"
+          "expected": "Client A rate limited",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify other IPs unaffected",
           "action": "Send request from client B",
-          "expected": "Client B receives 200 OK (independent rate limit)"
+          "expected": "Client B receives 200 OK (independent rate limit)",
+          "expect_status": 200,
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -656,18 +770,23 @@
       "steps": [
         {
           "name": "Send preflight OPTIONS request",
-          "action": "OPTIONS /api/v1/entities with Origin: http://localhost:3000",
-          "expected": "200 OK with Access-Control-Allow-Origin header"
+          "action": "http: OPTIONS /api/v1/entities",
+          "expected": "200 OK with Access-Control-Allow-Origin header",
+          "auth": "admin",
+          "_original_action": "OPTIONS /api/v1/entities with Origin: http://localhost:3000",
+          "expect_status": 200
         },
         {
           "name": "Verify allowed methods",
           "action": "Check Access-Control-Allow-Methods header",
-          "expected": "GET, POST, PUT, DELETE included"
+          "expected": "GET, POST, PUT, DELETE included",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify allowed headers",
           "action": "Check Access-Control-Allow-Headers header",
-          "expected": "Authorization, Content-Type included"
+          "expected": "Authorization, Content-Type included",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -690,8 +809,10 @@
       "steps": [
         {
           "name": "Send request from unauthorized origin",
-          "action": "OPTIONS /api/v1/entities with Origin: http://evil.example.com",
-          "expected": "No Access-Control-Allow-Origin header or origin not in allowed list"
+          "action": "http: OPTIONS /api/v1/entities",
+          "expected": "No Access-Control-Allow-Origin header or origin not in allowed list",
+          "auth": "admin",
+          "_original_action": "OPTIONS /api/v1/entities with Origin: http://evil.example.com"
         }
       ],
       "tags": [
@@ -714,13 +835,22 @@
       "steps": [
         {
           "name": "POST with wrong Content-Type",
-          "action": "POST /api/v1/entities with Content-Type: text/plain and JSON body",
-          "expected": "415 Unsupported Media Type or 400 Bad Request"
+          "action": "http: POST /api/v1/entities",
+          "expected": "415 Unsupported Media Type or 400 Bad Request",
+          "auth": "admin",
+          "_original_action": "POST /api/v1/entities with Content-Type: text/plain and JSON body",
+          "expect_status": 415,
+          "_skip": true,
+          "_skip_reason": "endpoint POST /api/v1/entities does not exist on catalog-api (entities are aggregated post-scan, not user-created; cache endpoints are not exposed) (#BLUFF-HELIXQA-BANKS-WRONG-PATHS-001)"
         },
         {
           "name": "POST with correct Content-Type",
-          "action": "POST /api/v1/entities with Content-Type: application/json",
-          "expected": "Request processed normally"
+          "action": "http: POST /api/v1/entities",
+          "expected": "Request processed normally",
+          "auth": "admin",
+          "_original_action": "POST /api/v1/entities with Content-Type: application/json",
+          "_skip": true,
+          "_skip_reason": "endpoint POST /api/v1/entities does not exist on catalog-api (entities are aggregated post-scan, not user-created; cache endpoints are not exposed) (#BLUFF-HELIXQA-BANKS-WRONG-PATHS-001)"
         }
       ],
       "tags": [
@@ -743,8 +873,13 @@
       "steps": [
         {
           "name": "Send oversized payload",
-          "action": "POST /api/v1/entities with 50MB JSON body",
-          "expected": "413 Request Entity Too Large or connection closed"
+          "action": "http: POST /api/v1/entities",
+          "expected": "413 Request Entity Too Large or connection closed",
+          "auth": "admin",
+          "_original_action": "POST /api/v1/entities with 50MB JSON body",
+          "expect_status": 413,
+          "_skip": true,
+          "_skip_reason": "endpoint POST /api/v1/entities does not exist on catalog-api (entities are aggregated post-scan, not user-created; cache endpoints are not exposed) (#BLUFF-HELIXQA-BANKS-WRONG-PATHS-001)"
         }
       ],
       "tags": [
@@ -768,13 +903,19 @@
       "steps": [
         {
           "name": "Access admin endpoint as user",
-          "action": "GET /api/v1/admin/users with regular user JWT",
-          "expected": "403 Forbidden"
+          "action": "http: GET /api/v1/admin/users",
+          "expected": "403 Forbidden",
+          "auth": "admin",
+          "_original_action": "GET /api/v1/admin/users with regular user JWT",
+          "expect_status": 403
         },
         {
           "name": "Access admin endpoint as admin",
-          "action": "GET /api/v1/admin/users with admin JWT",
-          "expected": "200 OK"
+          "action": "http: GET /api/v1/admin/users",
+          "expected": "200 OK",
+          "auth": "admin",
+          "_original_action": "GET /api/v1/admin/users with admin JWT",
+          "expect_status": 200
         }
       ],
       "tags": [
@@ -798,12 +939,16 @@
         {
           "name": "Craft token with escalated role",
           "action": "Create JWT with role 'admin' but signed with user's context",
-          "expected": "Token created"
+          "expected": "Token created",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Access admin endpoint",
-          "action": "GET /api/v1/admin/users with crafted token",
-          "expected": "401 Unauthorized or 403 Forbidden (server validates role from DB, not JWT claim alone)"
+          "action": "http: GET /api/v1/admin/users",
+          "expected": "401 Unauthorized or 403 Forbidden (server validates role from DB, not JWT claim alone)",
+          "auth": "admin",
+          "_original_action": "GET /api/v1/admin/users with crafted token",
+          "expect_status": 401
         }
       ],
       "tags": [
@@ -829,18 +974,29 @@
       "steps": [
         {
           "name": "Login and get token",
-          "action": "POST /api/v1/auth/login",
-          "expected": "200 OK with JWT token"
+          "action": "http: POST /api/v1/auth/login",
+          "expected": "200 OK with JWT token",
+          "_original_action": "POST /api/v1/auth/login",
+          "expect_status": 200,
+          "body": {
+            "username": "admin",
+            "password": "admin123"
+          }
         },
         {
           "name": "Logout",
-          "action": "POST /api/v1/auth/logout with token",
-          "expected": "200 OK"
+          "action": "http: POST /api/v1/auth/logout",
+          "expected": "200 OK",
+          "_original_action": "POST /api/v1/auth/logout with token",
+          "expect_status": 200
         },
         {
           "name": "Use old token",
-          "action": "GET /api/v1/entities with logged-out token",
-          "expected": "401 Unauthorized (token blacklisted)"
+          "action": "http: GET /api/v1/entities",
+          "expected": "401 Unauthorized (token blacklisted)",
+          "auth": "admin",
+          "_original_action": "GET /api/v1/entities with logged-out token",
+          "expect_status": 401
         }
       ],
       "tags": [
@@ -864,18 +1020,30 @@
       "steps": [
         {
           "name": "Login from client A",
-          "action": "POST /api/v1/auth/login",
-          "expected": "Token A issued"
+          "action": "http: POST /api/v1/auth/login",
+          "expected": "Token A issued",
+          "_original_action": "POST /api/v1/auth/login",
+          "body": {
+            "username": "admin",
+            "password": "admin123"
+          }
         },
         {
           "name": "Login from client B",
-          "action": "POST /api/v1/auth/login (same user)",
-          "expected": "Token B issued"
+          "action": "http: POST /api/v1/auth/login",
+          "expected": "Token B issued",
+          "_original_action": "POST /api/v1/auth/login (same user)",
+          "body": {
+            "username": "admin",
+            "password": "admin123"
+          }
         },
         {
           "name": "Both tokens valid",
           "action": "Use Token A and Token B on separate requests",
-          "expected": "Both return 200 OK"
+          "expected": "Both return 200 OK",
+          "expect_status": 200,
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -901,18 +1069,27 @@
       "steps": [
         {
           "name": "Change password without current",
-          "action": "PUT /api/v1/auth/password with new_password only",
-          "expected": "400 Bad Request requiring current_password"
+          "action": "http: PUT /api/v1/auth/password",
+          "expected": "400 Bad Request requiring current_password",
+          "auth": "admin",
+          "_original_action": "PUT /api/v1/auth/password with new_password only",
+          "expect_status": 400
         },
         {
           "name": "Change with wrong current password",
-          "action": "PUT /api/v1/auth/password with wrong current_password",
-          "expected": "401 Unauthorized or 403 Forbidden"
+          "action": "http: PUT /api/v1/auth/password",
+          "expected": "401 Unauthorized or 403 Forbidden",
+          "auth": "admin",
+          "_original_action": "PUT /api/v1/auth/password with wrong current_password",
+          "expect_status": 401
         },
         {
           "name": "Change with correct current password",
-          "action": "PUT /api/v1/auth/password with correct current_password and new_password",
-          "expected": "200 OK"
+          "action": "http: PUT /api/v1/auth/password",
+          "expected": "200 OK",
+          "auth": "admin",
+          "_original_action": "PUT /api/v1/auth/password with correct current_password and new_password",
+          "expect_status": 200
         }
       ],
       "tags": [
@@ -936,13 +1113,24 @@
       "steps": [
         {
           "name": "Set very short password",
-          "action": "POST /api/v1/admin/users with password '123'",
-          "expected": "400 Bad Request with password policy error"
+          "action": "http: POST /api/v1/admin/users",
+          "expected": "400 Bad Request with password policy error",
+          "auth": "admin",
+          "_original_action": "POST /api/v1/admin/users with password '123'",
+          "expect_status": 400,
+          "expect_body_contains": "error",
+          "_skip": true,
+          "_skip_reason": "endpoint POST /api/v1/admin/users does not exist on catalog-api; bank assumes a different API surface (#BLUFF-HELIXQA-BANKS-WRONG-PATHS-001)"
         },
         {
           "name": "Set password meeting policy",
-          "action": "POST /api/v1/admin/users with password 'SecureP@ss123'",
-          "expected": "201 Created"
+          "action": "http: POST /api/v1/admin/users",
+          "expected": "201 Created",
+          "auth": "admin",
+          "_original_action": "POST /api/v1/admin/users with password 'SecureP@ss123'",
+          "expect_status": 201,
+          "_skip": true,
+          "_skip_reason": "endpoint POST /api/v1/admin/users does not exist on catalog-api; bank assumes a different API surface (#BLUFF-HELIXQA-BANKS-WRONG-PATHS-001)"
         }
       ],
       "tags": [
@@ -965,13 +1153,17 @@
       "steps": [
         {
           "name": "List users",
-          "action": "GET /api/v1/admin/users",
-          "expected": "User objects do not contain password or password_hash fields"
+          "action": "http: GET /api/v1/admin/users",
+          "expected": "User objects do not contain password or password_hash fields",
+          "auth": "admin",
+          "_original_action": "GET /api/v1/admin/users"
         },
         {
           "name": "Get single user",
-          "action": "GET /api/v1/admin/users/{id}",
-          "expected": "No password field in response"
+          "action": "http: GET /api/v1/admin/users/{id}",
+          "expected": "No password field in response",
+          "auth": "admin",
+          "_original_action": "GET /api/v1/admin/users/{id}"
         }
       ],
       "tags": [
@@ -998,12 +1190,15 @@
         {
           "name": "Access API over HTTPS",
           "action": "GET https://localhost/api/v1/health",
-          "expected": "200 OK over TLS"
+          "expected": "200 OK over TLS",
+          "expect_status": 200,
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Access API over HTTP",
           "action": "GET http://localhost/api/v1/health",
-          "expected": "Redirect to HTTPS or connection refused"
+          "expected": "Redirect to HTTPS or connection refused",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -1028,12 +1223,14 @@
         {
           "name": "Connect via HTTP/3",
           "action": "Send QUIC connection to API server",
-          "expected": "HTTP/3 connection established"
+          "expected": "HTTP/3 connection established",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify Alt-Svc header",
           "action": "Check response headers for Alt-Svc: h3",
-          "expected": "Alt-Svc header advertises HTTP/3"
+          "expected": "Alt-Svc header advertises HTTP/3",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -1057,13 +1254,16 @@
       "steps": [
         {
           "name": "Request with Brotli accept",
-          "action": "GET /api/v1/entities with Accept-Encoding: br",
-          "expected": "Response has Content-Encoding: br"
+          "action": "http: GET /api/v1/entities",
+          "expected": "Response has Content-Encoding: br",
+          "auth": "admin",
+          "_original_action": "GET /api/v1/entities with Accept-Encoding: br"
         },
         {
           "name": "Verify compressed size",
           "action": "Compare response size with uncompressed",
-          "expected": "Compressed response is smaller"
+          "expected": "Compressed response is smaller",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -1087,18 +1287,21 @@
       "steps": [
         {
           "name": "Check response headers",
-          "action": "GET /api/v1/health and inspect headers",
-          "expected": "X-Content-Type-Options: nosniff present"
+          "action": "http: GET /api/v1/health",
+          "expected": "X-Content-Type-Options: nosniff present",
+          "_original_action": "GET /api/v1/health and inspect headers"
         },
         {
           "name": "Check frame options",
           "action": "Inspect X-Frame-Options header",
-          "expected": "X-Frame-Options: DENY or SAMEORIGIN"
+          "expected": "X-Frame-Options: DENY or SAMEORIGIN",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Check XSS protection",
           "action": "Inspect X-XSS-Protection header",
-          "expected": "X-XSS-Protection: 1; mode=block or CSP alternative"
+          "expected": "X-XSS-Protection: 1; mode=block or CSP alternative",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -1122,12 +1325,14 @@
         {
           "name": "Load web application",
           "action": "GET / (web frontend)",
-          "expected": "Content-Security-Policy header present"
+          "expected": "Content-Security-Policy header present",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify script-src",
           "action": "Check CSP script-src directive",
-          "expected": "script-src restricts to self or specific hashes"
+          "expected": "script-src restricts to self or specific hashes",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -1151,8 +1356,9 @@
       "steps": [
         {
           "name": "Check Server header",
-          "action": "GET /api/v1/health and inspect Server header",
-          "expected": "No detailed server version info (no 'Go/1.24' or 'gin-gonic' version)"
+          "action": "http: GET /api/v1/health",
+          "expected": "No detailed server version info (no 'Go/1.24' or 'gin-gonic' version)",
+          "_original_action": "GET /api/v1/health and inspect Server header"
         }
       ],
       "tags": [
@@ -1175,13 +1381,21 @@
       "steps": [
         {
           "name": "Send very long title",
-          "action": "POST /api/v1/entities with title of 100,000 characters",
-          "expected": "400 Bad Request with length validation error or truncated safely"
+          "action": "http: POST /api/v1/entities",
+          "expected": "400 Bad Request with length validation error or truncated safely",
+          "auth": "admin",
+          "_original_action": "POST /api/v1/entities with title of 100,000 characters",
+          "expect_status": 400,
+          "expect_body_contains": "error",
+          "_skip": true,
+          "_skip_reason": "endpoint POST /api/v1/entities does not exist on catalog-api (entities are aggregated post-scan, not user-created; cache endpoints are not exposed) (#BLUFF-HELIXQA-BANKS-WRONG-PATHS-001)"
         },
         {
           "name": "Verify no crash",
-          "action": "GET /api/v1/health",
-          "expected": "200 OK (server still responsive)"
+          "action": "http: GET /api/v1/health",
+          "expected": "200 OK (server still responsive)",
+          "_original_action": "GET /api/v1/health",
+          "expect_status": 200
         }
       ],
       "tags": [
@@ -1205,13 +1419,19 @@
       "steps": [
         {
           "name": "Create entity with unicode",
-          "action": "POST /api/v1/entities with title containing emoji, CJK, RTL characters",
-          "expected": "Entity created with unicode preserved"
+          "action": "http: POST /api/v1/entities",
+          "expected": "Entity created with unicode preserved",
+          "auth": "admin",
+          "_original_action": "POST /api/v1/entities with title containing emoji, CJK, RTL characters",
+          "_skip": true,
+          "_skip_reason": "endpoint POST /api/v1/entities does not exist on catalog-api (entities are aggregated post-scan, not user-created; cache endpoints are not exposed) (#BLUFF-HELIXQA-BANKS-WRONG-PATHS-001)"
         },
         {
           "name": "Retrieve and verify",
-          "action": "GET /api/v1/entities/{id}",
-          "expected": "Unicode characters returned correctly"
+          "action": "http: GET /api/v1/entities/{id}",
+          "expected": "Unicode characters returned correctly",
+          "auth": "admin",
+          "_original_action": "GET /api/v1/entities/{id}"
         }
       ],
       "tags": [
@@ -1234,8 +1454,13 @@
       "steps": [
         {
           "name": "Send null byte in title",
-          "action": "POST /api/v1/entities with title containing %00",
-          "expected": "400 Bad Request or null byte stripped"
+          "action": "http: POST /api/v1/entities",
+          "expected": "400 Bad Request or null byte stripped",
+          "auth": "admin",
+          "_original_action": "POST /api/v1/entities with title containing %00",
+          "expect_status": 400,
+          "_skip": true,
+          "_skip_reason": "endpoint POST /api/v1/entities does not exist on catalog-api (entities are aggregated post-scan, not user-created; cache endpoints are not exposed) (#BLUFF-HELIXQA-BANKS-WRONG-PATHS-001)"
         }
       ],
       "tags": [
@@ -1258,13 +1483,18 @@
       "steps": [
         {
           "name": "Send nested JSON injection",
-          "action": "POST /api/v1/entities with extra fields: {\"title\":\"Test\",\"role\":\"admin\",\"is_admin\":true}",
-          "expected": "Extra fields ignored, only allowed fields processed"
+          "action": "http: POST /api/v1/entities",
+          "expected": "Extra fields ignored, only allowed fields processed",
+          "auth": "admin",
+          "_original_action": "POST /api/v1/entities with extra fields: {\"title\":\"Test\",\"role\":\"admin\",\"is_admin\":true}",
+          "_skip": true,
+          "_skip_reason": "endpoint POST /api/v1/entities does not exist on catalog-api (entities are aggregated post-scan, not user-created; cache endpoints are not exposed) (#BLUFF-HELIXQA-BANKS-WRONG-PATHS-001)"
         },
         {
           "name": "Verify no privilege gain",
           "action": "Check created entity has no admin properties",
-          "expected": "Entity created with only allowed fields"
+          "expected": "Entity created with only allowed fields",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -1287,13 +1517,17 @@
       "steps": [
         {
           "name": "Send command injection",
-          "action": "GET /api/v1/files?path=; rm -rf /; echo",
-          "expected": "400 Bad Request or 403 Forbidden"
+          "action": "http: GET /api/v1/files?path=",
+          "expected": "400 Bad Request or 403 Forbidden",
+          "auth": "admin",
+          "_original_action": "GET /api/v1/files?path=; rm -rf /; echo",
+          "expect_status": 400
         },
         {
           "name": "Verify no execution",
           "action": "Check server is still running normally",
-          "expected": "Server operational, no command executed"
+          "expected": "Server operational, no command executed",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -1316,8 +1550,11 @@
       "steps": [
         {
           "name": "Send backtick injection",
-          "action": "GET /api/v1/files?path=`whoami`",
-          "expected": "400 Bad Request or path treated as literal"
+          "action": "http: GET /api/v1/files?path=",
+          "expected": "400 Bad Request or path treated as literal",
+          "auth": "admin",
+          "_original_action": "GET /api/v1/files?path=`whoami`",
+          "expect_status": 400
         }
       ],
       "tags": [
@@ -1341,12 +1578,16 @@
         {
           "name": "Submit internal URL as storage",
           "action": "POST storage config with URL http://169.254.169.254/latest/meta-data/",
-          "expected": "400 Bad Request or connection blocked"
+          "expected": "400 Bad Request or connection blocked",
+          "expect_status": 400,
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Submit localhost URL",
           "action": "POST storage config with URL http://127.0.0.1:6379/",
-          "expected": "400 Bad Request or connection blocked"
+          "expected": "400 Bad Request or connection blocked",
+          "expect_status": 400,
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -1370,12 +1611,16 @@
         {
           "name": "Trigger server error",
           "action": "Send malformed request designed to cause internal error",
-          "expected": "500 Internal Server Error with generic message"
+          "expected": "500 Internal Server Error with generic message",
+          "expect_status": 500,
+          "expect_body_contains": "error",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Check response body",
-          "action": "Verify no Go stack trace, file paths, or line numbers in response",
-          "expected": "Generic error message only"
+          "action": "playwright: assertVisible text=no Go stack trace, file paths, or line numbers in response",
+          "expected": "Generic error message only",
+          "_original_action": "Verify no Go stack trace, file paths, or line numbers in response"
         }
       ],
       "tags": [
@@ -1399,13 +1644,17 @@
       "steps": [
         {
           "name": "Request non-existent path",
-          "action": "GET /api/v1/nonexistent/path",
-          "expected": "404 Not Found with generic message"
+          "action": "http: GET /api/v1/nonexistent/path",
+          "expected": "404 Not Found with generic message",
+          "auth": "admin",
+          "_original_action": "GET /api/v1/nonexistent/path",
+          "expect_status": 404
         },
         {
           "name": "Check response",
-          "action": "Verify no file system paths in response",
-          "expected": "No absolute paths or directory structure revealed"
+          "action": "playwright: assertVisible text=no file system paths in response",
+          "expected": "No absolute paths or directory structure revealed",
+          "_original_action": "Verify no file system paths in response"
         }
       ],
       "tags": [
@@ -1428,18 +1677,25 @@
       "steps": [
         {
           "name": "Time login with valid username",
-          "action": "POST /api/v1/auth/login with valid username, wrong password, measure response time",
-          "expected": "Response time noted"
+          "action": "http: POST /api/v1/auth/login",
+          "expected": "Response time noted",
+          "_original_action": "POST /api/v1/auth/login with valid username, wrong password, measure response time",
+          "body": {
+            "username": "admin",
+            "password": "admin123"
+          }
         },
         {
           "name": "Time login with invalid username",
-          "action": "POST /api/v1/auth/login with non-existent username, measure response time",
-          "expected": "Response time similar to valid username case"
+          "action": "http: POST /api/v1/auth/login",
+          "expected": "Response time similar to valid username case",
+          "_original_action": "POST /api/v1/auth/login with non-existent username, measure response time"
         },
         {
           "name": "Compare timings",
-          "action": "Verify difference is < 50ms across 10 attempts",
-          "expected": "Consistent timing prevents username enumeration"
+          "action": "playwright: assertVisible text=difference is < 50ms across 10 attempts",
+          "expected": "Consistent timing prevents username enumeration",
+          "_original_action": "Verify difference is < 50ms across 10 attempts"
         }
       ],
       "tags": [
@@ -1464,7 +1720,10 @@
         {
           "name": "Upload executable",
           "action": "POST file upload with .exe or .sh file",
-          "expected": "400 Bad Request with disallowed file type error"
+          "expected": "400 Bad Request with disallowed file type error",
+          "expect_status": 400,
+          "expect_body_contains": "error",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -1489,7 +1748,9 @@
         {
           "name": "Upload double extension file",
           "action": "POST file upload with name 'malware.jpg.exe'",
-          "expected": "400 Bad Request or file type validated by content, not extension"
+          "expected": "400 Bad Request or file type validated by content, not extension",
+          "expect_status": 400,
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -1513,7 +1774,8 @@
         {
           "name": "Upload file with mismatched MIME",
           "action": "POST file with Content-Type: image/jpeg but actual content is HTML",
-          "expected": "Server validates actual content type, rejects mismatch"
+          "expected": "Server validates actual content type, rejects mismatch",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -1538,12 +1800,15 @@
         {
           "name": "Connect WebSocket without token",
           "action": "Attempt ws:// connection to /api/v1/ws without auth",
-          "expected": "Connection rejected with 401"
+          "expected": "Connection rejected with 401",
+          "expect_status": 401,
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Connect with valid token",
           "action": "Connect ws:// with valid JWT in query param or header",
-          "expected": "Connection established"
+          "expected": "Connection established",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -1568,12 +1833,14 @@
         {
           "name": "Connect from unauthorized origin",
           "action": "WebSocket connection with Origin: http://evil.example.com",
-          "expected": "Connection rejected"
+          "expected": "Connection rejected",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Connect from authorized origin",
           "action": "WebSocket connection with Origin: http://localhost:3000",
-          "expected": "Connection accepted"
+          "expected": "Connection accepted",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -1597,7 +1864,8 @@
         {
           "name": "Send oversized WebSocket message",
           "action": "Send 10MB message over WebSocket connection",
-          "expected": "Connection closed with message too large error"
+          "expected": "Connection closed with message too large error",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -1620,13 +1888,19 @@
       "steps": [
         {
           "name": "Login via web UI",
-          "action": "POST /api/v1/auth/login from browser",
-          "expected": "Set-Cookie header present"
+          "action": "http: POST /api/v1/auth/login",
+          "expected": "Set-Cookie header present",
+          "_original_action": "POST /api/v1/auth/login from browser",
+          "body": {
+            "username": "admin",
+            "password": "admin123"
+          }
         },
         {
           "name": "Check cookie flags",
           "action": "Inspect Set-Cookie header",
-          "expected": "HttpOnly, Secure, SameSite=Strict or Lax flags set"
+          "expected": "HttpOnly, Secure, SameSite=Strict or Lax flags set",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [

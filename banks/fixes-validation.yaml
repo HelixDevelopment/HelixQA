@@ -152,7 +152,7 @@ test_cases:
         action: "adb shell am force-stop com.catalogizer.androidtv"
         expected: "Process killed"
       - name: "Cold-start without intent extras"
-        action: "adb shell am start -n com.catalogizer.androidtv/.ui.MainActivity --es qa_username admin --es qa_password admin123"
+        action: "adb shell am start -n com.catalogizer.androidtv/.ui.MainActivity"
         expected: "App lands directly on home screen without showing login"
       - name: "Verify library content"
         action: "Screenshot home"

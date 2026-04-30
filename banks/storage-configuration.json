@@ -5,7 +5,9 @@
   "metadata": {
     "author": "vasic-digital",
     "app": "Yole",
-    "version": "1.0.0"
+    "version": "1.0.0",
+    "bluff_audit_status": "converted-by-bank-prose-to-http.py",
+    "bluff_audit_date": "2026-04-29"
   },
   "test_cases": [
     {
@@ -21,32 +23,38 @@
         {
           "name": "Open storage settings",
           "action": "Navigate to Settings > Storage Protocols",
-          "expected": "Storage configuration screen visible"
+          "expected": "Storage configuration screen visible",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Select WebDAV",
           "action": "Tap/click 'Add WebDAV server'",
-          "expected": "WebDAV configuration form displayed"
+          "expected": "WebDAV configuration form displayed",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Enter server URL",
           "action": "Type 'https://dav.example.com/remote.php/dav/files/user/'",
-          "expected": "URL field shows entered value"
+          "expected": "URL field shows entered value",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Enter credentials",
           "action": "Enter username 'testuser' and password 'testpass123'",
-          "expected": "Credentials accepted"
+          "expected": "Credentials accepted",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Test connection",
           "action": "Tap/click 'Test Connection' button",
-          "expected": "Progress indicator shown, then green success indicator"
+          "expected": "Progress indicator shown, then green success indicator",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Save configuration",
           "action": "Tap/click 'Save'",
-          "expected": "WebDAV server appears in storage list"
+          "expected": "WebDAV server appears in storage list",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -78,22 +86,28 @@
         {
           "name": "Open WebDAV config form",
           "action": "Navigate to add WebDAV configuration",
-          "expected": "Configuration form displayed"
+          "expected": "Configuration form displayed",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Enter wrong credentials",
           "action": "Enter valid URL but wrong password 'wrongpass'",
-          "expected": "Fields populated"
+          "expected": "Fields populated",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Test connection",
           "action": "Tap/click 'Test Connection'",
-          "expected": "Error message: 'Authentication failed (401)' or equivalent"
+          "expected": "Error message: 'Authentication failed (401)' or equivalent",
+          "expect_status": 401,
+          "expect_body_contains": "error",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify form not closed",
           "action": "Check that config form remains open",
-          "expected": "Form still visible, no partial save"
+          "expected": "Form still visible, no partial save",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -118,22 +132,26 @@
         {
           "name": "Enter unreachable server",
           "action": "Type 'https://192.0.2.1/dav/' (non-routable address)",
-          "expected": "URL accepted"
+          "expected": "URL accepted",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Test connection",
           "action": "Tap/click 'Test Connection'",
-          "expected": "Progress indicator shown"
+          "expected": "Progress indicator shown",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Wait for timeout",
           "action": "Wait up to 30 seconds",
-          "expected": "Timeout error: 'Connection timed out' or similar"
+          "expected": "Timeout error: 'Connection timed out' or similar",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "App remains responsive",
           "action": "Scroll, tap other UI elements",
-          "expected": "App UI fully responsive during and after timeout"
+          "expected": "App UI fully responsive during and after timeout",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -158,22 +176,26 @@
         {
           "name": "Open WebDAV config form",
           "action": "Navigate to add WebDAV configuration",
-          "expected": "Configuration form displayed"
+          "expected": "Configuration form displayed",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Enter partial data",
           "action": "Enter URL and username only",
-          "expected": "Fields partially filled"
+          "expected": "Fields partially filled",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Cancel",
           "action": "Tap/click 'Cancel' or press Back",
-          "expected": "Form dismissed without saving"
+          "expected": "Form dismissed without saving",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify no entry created",
           "action": "Check storage list",
-          "expected": "No new WebDAV entry in the list"
+          "expected": "No new WebDAV entry in the list",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -197,27 +219,32 @@
         {
           "name": "Select FTP",
           "action": "Tap/click 'Add FTP server'",
-          "expected": "FTP configuration form displayed"
+          "expected": "FTP configuration form displayed",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Enter host and port",
           "action": "Enter host 'ftp.example.com' and port '21'",
-          "expected": "Host and port fields populated"
+          "expected": "Host and port fields populated",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Enter credentials",
           "action": "Enter username 'ftpuser' and password 'ftppass'",
-          "expected": "Credentials entered"
+          "expected": "Credentials entered",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Test connection",
           "action": "Tap/click 'Test Connection'",
-          "expected": "Success indicator: 'Connected to ftp.example.com'"
+          "expected": "Success indicator: 'Connected to ftp.example.com'",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Save",
           "action": "Tap/click 'Save'",
-          "expected": "FTP server appears in storage list"
+          "expected": "FTP server appears in storage list",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -242,12 +269,14 @@
         {
           "name": "Enter invalid FTP host",
           "action": "Enter host 'notaftp.invalid' port '21'",
-          "expected": "Fields populated"
+          "expected": "Fields populated",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Test connection",
           "action": "Tap/click 'Test Connection'",
-          "expected": "Error: 'Host not found' or 'Connection refused'"
+          "expected": "Error: 'Host not found' or 'Connection refused'",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -272,17 +301,20 @@
         {
           "name": "Enter FTP config with custom port",
           "action": "Enter host 'ftp.example.com' and port '2121'",
-          "expected": "Port field accepts 2121"
+          "expected": "Port field accepts 2121",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Save configuration",
           "action": "Tap/click 'Save' without testing",
-          "expected": "Configuration saved with port 2121"
+          "expected": "Configuration saved with port 2121",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Reopen config",
           "action": "Tap/click the saved FTP entry to edit",
-          "expected": "Port field shows '2121'"
+          "expected": "Port field shows '2121'",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -307,27 +339,32 @@
         {
           "name": "Add SFTP server",
           "action": "Tap/click 'Add SFTP server'",
-          "expected": "SFTP form displayed with SSH key option visible"
+          "expected": "SFTP form displayed with SSH key option visible",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Enter host and port",
           "action": "Enter host 'sftp.example.com' port '22'",
-          "expected": "Fields populated"
+          "expected": "Fields populated",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Choose password auth",
           "action": "Select 'Password' authentication mode",
-          "expected": "Username and password fields active"
+          "expected": "Username and password fields active",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Enter credentials",
           "action": "Enter username 'sftpuser' password 'sftppass'",
-          "expected": "Credentials entered"
+          "expected": "Credentials entered",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Test and save",
           "action": "Test connection then Save",
-          "expected": "SFTP server saved in storage list"
+          "expected": "SFTP server saved in storage list",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -352,27 +389,32 @@
         {
           "name": "Add SFTP server",
           "action": "Tap/click 'Add SFTP server'",
-          "expected": "SFTP form visible"
+          "expected": "SFTP form visible",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Select SSH key auth",
           "action": "Toggle 'SSH Key' authentication option",
-          "expected": "Key picker or key path field appears"
+          "expected": "Key picker or key path field appears",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Select SSH key file",
           "action": "Tap/click 'Browse' and select id_rsa private key",
-          "expected": "Key path displayed in field"
+          "expected": "Key path displayed in field",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Enter passphrase (if any)",
           "action": "Enter optional passphrase field",
-          "expected": "Passphrase accepted"
+          "expected": "Passphrase accepted",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Save configuration",
           "action": "Tap/click 'Save'",
-          "expected": "SFTP entry saved with 'SSH Key' auth label"
+          "expected": "SFTP entry saved with 'SSH Key' auth label",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -396,17 +438,20 @@
         {
           "name": "Connect to new SFTP host",
           "action": "Test connection to a host not seen before",
-          "expected": "Host key fingerprint dialog shown"
+          "expected": "Host key fingerprint dialog shown",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Accept host key",
           "action": "Tap/click 'Trust' or 'Accept'",
-          "expected": "Connection proceeds, key stored"
+          "expected": "Connection proceeds, key stored",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Reconnect",
           "action": "Test connection again",
-          "expected": "No second prompt; connection succeeds silently"
+          "expected": "No second prompt; connection succeeds silently",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -431,27 +476,33 @@
         {
           "name": "Add SMB share",
           "action": "Tap/click 'Add SMB / Windows Share'",
-          "expected": "SMB form with host, share, domain, username, password fields"
+          "expected": "SMB form with host, share, domain, username, password fields",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Enter host and share",
           "action": "Enter host '192.168.1.100' share 'Documents'",
-          "expected": "Host and share fields populated"
+          "expected": "Host and share fields populated",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Enter domain credentials",
           "action": "Enter domain 'WORKGROUP' username 'user' password 'pass'",
-          "expected": "All fields filled"
+          "expected": "All fields filled",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Test connection",
           "action": "Tap/click 'Test Connection'",
-          "expected": "Connection success to \\\\192.168.1.100\\Documents"
+          "expected": "Connection success to \\\\192.168.1.100\\Documents",
+          "expect_status": 192,
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Save",
           "action": "Save the configuration",
-          "expected": "SMB share visible in storage list"
+          "expected": "SMB share visible in storage list",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -476,17 +527,20 @@
         {
           "name": "Add SMB share",
           "action": "Open SMB configuration form",
-          "expected": "SMB form visible"
+          "expected": "SMB form visible",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Leave credentials blank",
           "action": "Enter host and share only, leave username/password empty",
-          "expected": "Fields left blank, no validation error"
+          "expected": "Fields left blank, no validation error",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Test connection",
           "action": "Test connection to a guest-accessible share",
-          "expected": "Connection succeeds (or error if share requires auth)"
+          "expected": "Connection succeeds (or error if share requires auth)",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -511,32 +565,38 @@
         {
           "name": "Add Git repository",
           "action": "Tap/click 'Add Git Repository'",
-          "expected": "Git config form: URL, branch, credentials fields"
+          "expected": "Git config form: URL, branch, credentials fields",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Enter repository URL",
           "action": "Enter 'https://github.com/user/notes.git'",
-          "expected": "URL field accepts HTTPS URL"
+          "expected": "URL field accepts HTTPS URL",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Enter branch",
           "action": "Enter branch name 'main'",
-          "expected": "Branch field populated"
+          "expected": "Branch field populated",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Enter credentials",
           "action": "Enter username and personal access token",
-          "expected": "Credentials entered"
+          "expected": "Credentials entered",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Test connection",
           "action": "Test connection to verify repo accessible",
-          "expected": "Repo accessible confirmation"
+          "expected": "Repo accessible confirmation",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Save",
           "action": "Save configuration",
-          "expected": "Git repo in storage list"
+          "expected": "Git repo in storage list",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -560,13 +620,15 @@
       "steps": [
         {
           "name": "Enter malformed URL",
-          "action": "Type 'not-a-valid-url' in repository URL field",
-          "expected": "Inline validation error 'Invalid URL format'"
+          "action": "playwright: fill input[name=repository] not-a-valid-url",
+          "expected": "Inline validation error 'Invalid URL format'",
+          "_original_action": "Type 'not-a-valid-url' in repository URL field"
         },
         {
           "name": "Attempt to save",
           "action": "Tap/click Save without correcting URL",
-          "expected": "Save blocked, validation error highlighted"
+          "expected": "Save blocked, validation error highlighted",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -591,22 +653,26 @@
         {
           "name": "Add Git repository",
           "action": "Open Git configuration form",
-          "expected": "Form visible"
+          "expected": "Form visible",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Enter SSH repository URL",
           "action": "Enter 'git@github.com:user/notes.git'",
-          "expected": "SSH URL accepted"
+          "expected": "SSH URL accepted",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Select SSH key",
           "action": "Choose SSH private key file from picker",
-          "expected": "Key path shown in config"
+          "expected": "Key path shown in config",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Save",
           "action": "Save the configuration",
-          "expected": "Git SSH config saved"
+          "expected": "Git SSH config saved",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -630,27 +696,32 @@
         {
           "name": "Open Dropbox configuration",
           "action": "Tap/click 'Add Dropbox'",
-          "expected": "Dropbox OAuth2 config form with app key and secret fields"
+          "expected": "Dropbox OAuth2 config form with app key and secret fields",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Enter app key and secret",
           "action": "Enter app key 'testappkey' and app secret 'testappsecret'",
-          "expected": "Fields populated"
+          "expected": "Fields populated",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Initiate OAuth2 flow",
           "action": "Tap/click 'Authorize with Dropbox'",
-          "expected": "Browser or WebView opens with Dropbox authorization URL"
+          "expected": "Browser or WebView opens with Dropbox authorization URL",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Complete authorization",
           "action": "Simulate OAuth2 callback with valid token",
-          "expected": "Token stored, Dropbox connection confirmed"
+          "expected": "Token stored, Dropbox connection confirmed",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Save",
           "action": "Save Dropbox configuration",
-          "expected": "Dropbox entry in storage list with connected status"
+          "expected": "Dropbox entry in storage list with connected status",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -675,17 +746,20 @@
         {
           "name": "Initiate Dropbox OAuth2",
           "action": "Begin Dropbox authorization flow",
-          "expected": "Browser/WebView opens"
+          "expected": "Browser/WebView opens",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Cancel in browser",
           "action": "Close browser or tap 'Cancel' in auth screen",
-          "expected": "App returns to config screen"
+          "expected": "App returns to config screen",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify no partial save",
           "action": "Check storage list",
-          "expected": "No Dropbox entry added; config discarded"
+          "expected": "No Dropbox entry added; config discarded",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -710,27 +784,32 @@
         {
           "name": "Open Google Drive configuration",
           "action": "Tap/click 'Add Google Drive'",
-          "expected": "Google Drive OAuth2 config form with client ID and secret fields"
+          "expected": "Google Drive OAuth2 config form with client ID and secret fields",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Enter client credentials",
           "action": "Enter client ID 'client_id.apps.googleusercontent.com' and secret",
-          "expected": "Fields populated"
+          "expected": "Fields populated",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Start OAuth2 flow",
           "action": "Tap/click 'Sign in with Google'",
-          "expected": "Browser opens Google authorization URL"
+          "expected": "Browser opens Google authorization URL",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Complete authorization",
           "action": "Simulate successful OAuth2 callback",
-          "expected": "Google Drive connected, account email shown"
+          "expected": "Google Drive connected, account email shown",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Save",
           "action": "Save configuration",
-          "expected": "Google Drive entry in storage list"
+          "expected": "Google Drive entry in storage list",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -754,13 +833,15 @@
       "steps": [
         {
           "name": "Enter malformed client ID",
-          "action": "Type 'bad-id' in client ID field",
-          "expected": "Field accepts input"
+          "action": "playwright: fill input[name=client] bad-id",
+          "expected": "Field accepts input",
+          "_original_action": "Type 'bad-id' in client ID field"
         },
         {
           "name": "Attempt OAuth2 flow",
           "action": "Tap/click 'Sign in with Google'",
-          "expected": "Error: 'Invalid client ID format' or OAuth2 error from Google"
+          "expected": "Error: 'Invalid client ID format' or OAuth2 error from Google",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -785,27 +866,32 @@
         {
           "name": "Open OneDrive configuration",
           "action": "Tap/click 'Add OneDrive'",
-          "expected": "OneDrive config form with client ID and secret fields"
+          "expected": "OneDrive config form with client ID and secret fields",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Enter Azure app credentials",
           "action": "Enter client ID 'xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx' and secret",
-          "expected": "Fields populated"
+          "expected": "Fields populated",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Start OAuth2 flow",
           "action": "Tap/click 'Sign in with Microsoft'",
-          "expected": "Browser opens Microsoft authorization URL"
+          "expected": "Browser opens Microsoft authorization URL",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Complete authorization",
           "action": "Simulate successful OAuth2 callback with Microsoft token",
-          "expected": "OneDrive connected, account shown"
+          "expected": "OneDrive connected, account shown",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Save",
           "action": "Save configuration",
-          "expected": "OneDrive entry in storage list"
+          "expected": "OneDrive entry in storage list",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -830,17 +916,20 @@
         {
           "name": "Simulate expired token",
           "action": "Set OAuth2 token expiry to past timestamp in test config",
-          "expected": "Token flagged as expired"
+          "expected": "Token flagged as expired",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Attempt file operation",
           "action": "Try to list OneDrive files",
-          "expected": "Re-authentication dialog appears"
+          "expected": "Re-authentication dialog appears",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Re-authorize",
           "action": "Complete re-auth flow",
-          "expected": "New token stored, file listing proceeds"
+          "expected": "New token stored, file listing proceeds",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -865,17 +954,20 @@
         {
           "name": "Configure two protocols",
           "action": "Add WebDAV and FTP configurations",
-          "expected": "Both appear in storage list"
+          "expected": "Both appear in storage list",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Switch between them",
           "action": "Select WebDAV storage, then FTP storage",
-          "expected": "Each shows its own file tree"
+          "expected": "Each shows its own file tree",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Remove one",
           "action": "Delete the FTP configuration",
-          "expected": "FTP removed, WebDAV still present"
+          "expected": "FTP removed, WebDAV still present",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -899,17 +991,20 @@
         {
           "name": "Configure WebDAV",
           "action": "Add and save a WebDAV configuration",
-          "expected": "WebDAV in storage list"
+          "expected": "WebDAV in storage list",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Restart app",
           "action": "Force-close and relaunch Yole",
-          "expected": "App launches normally"
+          "expected": "App launches normally",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Check storage list",
           "action": "Navigate to storage configuration screen",
-          "expected": "WebDAV entry still present with all settings"
+          "expected": "WebDAV entry still present with all settings",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [

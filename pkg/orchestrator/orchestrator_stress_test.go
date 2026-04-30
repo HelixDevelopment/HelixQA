@@ -38,6 +38,7 @@ func TestOrchestrator_Stress_ConcurrentInstantiation(t *testing.T) {
 }
 
 func TestOrchestrator_Stress_RunWithCancellation(t *testing.T) {
+	// bluff-scan: no-assert-ok (orchestrator stress/cancel smoke — must not panic)
 	b := bank.New()
 	for i := 0; i < 50; i++ {
 		def := &challenge.Definition{

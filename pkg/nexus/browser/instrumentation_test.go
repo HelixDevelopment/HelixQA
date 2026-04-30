@@ -61,6 +61,7 @@ func TestInstrumentedEngine_EmitsMetricsAndSpans(t *testing.T) {
 }
 
 func TestInstrumentedEngine_NilMetricsStillWorks(t *testing.T) {
+	// bluff-scan: nil-only-ok (regression — nil metrics path must not panic/error)
 	base, _ := NewEngine(&mockDriver{kind: EngineChromedp}, Config{Engine: EngineChromedp})
 	eng := Instrument(base, nil)
 	sess, err := eng.Open(context.Background(), nexus.SessionOptions{})

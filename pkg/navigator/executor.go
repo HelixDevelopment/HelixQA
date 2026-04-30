@@ -133,20 +133,41 @@ func (a *ADBExecutor) Click(
 }
 
 // Type enters text via adb shell input text.
+//
+// Compose-TV correctness: a focused EditText on Android TV
+// (Jetpack Compose for TV) does NOT have its IME open until
+// the user presses DPAD_CENTER on the field. Without the IME
+// open, `adb shell input text` is dropped silently — the
+// classic "form looks ready but every keystroke goes nowhere"
+// failure observed in qa-results/session-20260429_164618 where
+// 100+ login banks all failed with stagnation. This was
+// independently reproduced by the manual audit at
+// docs/audits/androidtv-realdevice-2026-04-29.md.
+//
+// Fix per HelixQA's "Universal Solution Principle": the helper
+// is HelixQA's, not the app's — open IME with DPAD_CENTER
+// before typing, dismiss it with BACK after, all in a single
+// `adb shell` script to avoid inter-command round-trip lag on
+// Mi Box / Android 9.
+//
+// On non-Compose Android (regular phone EditText), DPAD_CENTER
+// on a focused EditText is benign — it opens IME the same way
+// touch focus would.
 func (a *ADBExecutor) Type(
 	ctx context.Context, text string,
 ) error {
-	// Atomically clear and type in a SINGLE adb shell call.
-	// This avoids the multi-command round-trip issue where
-	// batch DEL keycodes hang on Android TV virtual keyboards.
-	//
-	// The shell script: move to end, delete 20 chars (enough
-	// for any previous search query), then type the new text.
-	// All in one `adb shell` invocation = no inter-command lag.
+	// Atomically open IME, clear, type, dismiss — one shell call.
+	// The 0.3s sleep gives the soft keyboard time to come up
+	// before MOVE_END/DEL/text events are dispatched (otherwise
+	// the IME swallows the early keys on slow TV hardware).
 	script := fmt.Sprintf(
-		"input keyevent KEYCODE_MOVE_END && "+
+		"input keyevent KEYCODE_DPAD_CENTER && "+
+			"sleep 0.3 && "+
+			"input keyevent KEYCODE_MOVE_END && "+
 			"input keyevent 67 67 67 67 67 67 67 67 67 67 67 67 67 67 67 67 67 67 67 67 && "+
-			"input text '%s'",
+			"input text '%s' && "+
+			"sleep 0.2 && "+
+			"input keyevent KEYCODE_BACK",
 		strings.ReplaceAll(text, "'", "'\\''"),
 	)
 	_, err := a.cmdRunner.Run(ctx,

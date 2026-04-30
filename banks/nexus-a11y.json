@@ -2,6 +2,8 @@
   "name": "Helix Nexus \u2014 Accessibility",
   "description": "Bank covering axe-core integration, WCAG A/AA/AAA assertion, Section 508 filter, and injection script vendoring.",
   "metadata": {
+    "_llm_driven": true,
+    "_llm_driven_reason": "Vision-driven test suite per HelixQA Constitution §1 (Fully Autonomous LLM-Driven QA): prose actions are interpreted by the vision model. Article XI §11.5 exemption.",
     "feature": "helix-nexus-a11y",
     "phase": 5
   },

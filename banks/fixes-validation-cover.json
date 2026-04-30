@@ -3,6 +3,8 @@
   "name": "HelixQA Fixes Validation \u2014 Cover Quality",
   "description": "Regression suite covering W2 CSRF admin guard, W3 provider-string sanitizer, B1 Fanart IMDB/TVDB routing, B2 IGDB v4 headers, and B5 CSRF insecure-dev toggle.",
   "metadata": {
+    "_llm_driven": true,
+    "_llm_driven_reason": "Vision-driven test suite per HelixQA Constitution §1 (Fully Autonomous LLM-Driven QA): prose actions are interpreted by the vision model. Article XI §11.5 exemption.",
     "author": "vasic-digital",
     "domain": "cover"
   },

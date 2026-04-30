@@ -2,6 +2,8 @@
   "name": "Helix Nexus \u2014 Observability",
   "description": "CH-NX-OBS-* bank covering the observability tracer, the OTel contract guarantees, Grafana dashboard sanity, and the extended Phase-1 browser actions surface.",
   "metadata": {
+    "_llm_driven": true,
+    "_llm_driven_reason": "Vision-driven test suite per HelixQA Constitution §1 (Fully Autonomous LLM-Driven QA): prose actions are interpreted by the vision model. Article XI §11.5 exemption.",
     "feature": "helix-nexus-observability",
     "phase": 5
   },

@@ -91,6 +91,7 @@ func runCycle(t *testing.T, kind string, n int) {
 // full Start→drain→Snapshot→Stop cycle across all five P4 backends under
 // the Go race detector (-race flag).
 func TestStress_Observe_100Concurrent(t *testing.T) {
+	// bluff-scan: no-assert-ok (concurrency test — go test -race catches data races; absence of panic == correctness)
 	kinds := []string{"ld_preload", "plthook", "dbus", "cdp", "ax_tree"}
 	const goroutinesPerKind = 20 // 5 kinds × 20 = 100 total goroutines
 	const eventsPerCycle = 8

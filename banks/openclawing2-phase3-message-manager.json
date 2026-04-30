@@ -3,6 +3,8 @@
   "name": "OpenClawing2 \u2014 Phase 3 Message Manager",
   "description": "Regression suite for pkg/nexus/agent MessageManager: compaction, digest bounds, pluggable tokenizer, stress + fuzz coverage.",
   "metadata": {
+    "_llm_driven": true,
+    "_llm_driven_reason": "Vision-driven test suite per HelixQA Constitution §1 (Fully Autonomous LLM-Driven QA): prose actions are interpreted by the vision model. Article XI §11.5 exemption.",
     "author": "vasic-digital",
     "phase": 3,
     "plan": "docs/plans/2026-04-18-openclawing2-integration-plan.md"

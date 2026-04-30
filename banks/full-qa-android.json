@@ -5,7 +5,9 @@
   "metadata": {
     "author": "vasic-digital",
     "app": "Catalogizer",
-    "version": "2.3.0"
+    "version": "2.3.0",
+    "bluff_audit_status": "converted-by-bank-prose-to-http.py",
+    "bluff_audit_date": "2026-04-29"
   },
   "test_cases": [
     {
@@ -20,12 +22,14 @@
         {
           "name": "Launch app from launcher",
           "action": "Tap Catalogizer icon on home screen or app drawer",
-          "expected": "Splash screen appears briefly, then login screen is displayed"
+          "expected": "Splash screen appears briefly, then login screen is displayed",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify login screen elements",
           "action": "Inspect login screen layout",
-          "expected": "Catalogizer title, 'Sign in to your account' subtitle, username/password fields, Sign In button, Server Connection section, Vasic Digital branding footer all visible"
+          "expected": "Catalogizer title, 'Sign in to your account' subtitle, username/password fields, Sign In button, Server Connection section, Vasic Digital branding footer all visible",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -49,17 +53,22 @@
         {
           "name": "Locate server URL field",
           "action": "Scroll to Server Connection section on login screen",
-          "expected": "Server URL text field visible with placeholder 'http://192.168.0.100:8080'"
+          "expected": "Server URL text field visible with placeholder 'http://192.168.0.100:8080'",
+          "expect_status": 192,
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Enter server URL",
           "action": "Tap server URL field and type 'http://192.168.0.100:8080'",
-          "expected": "URL text appears in the field"
+          "expected": "URL text appears in the field",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Tap Connect",
           "action": "Tap the Connect button",
-          "expected": "Server saved, connection status shown as 'Connected: http://192.168.0.100:8080'"
+          "expected": "Server saved, connection status shown as 'Connected: http://192.168.0.100:8080'",
+          "expect_status": 192,
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -83,17 +92,21 @@
         {
           "name": "Tap Discover button",
           "action": "Tap the Discover button in Server Connection section",
-          "expected": "Loading spinner appears in server URL field trailing icon"
+          "expected": "Loading spinner appears in server URL field trailing icon",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Wait for discovery results",
-          "action": "Wait for network scan to complete (up to 30s)",
-          "expected": "Either discovered server URLs appear as selectable buttons below, or 'No servers found on the network' error shown"
+          "action": "playwright: waitFor text=network scan to complete (up to 30s)",
+          "expected": "Either discovered server URLs appear as selectable buttons below, or 'No servers found on the network' error shown",
+          "_conversion_note": "manual-review-required",
+          "_original_action": "Wait for network scan to complete (up to 30s)"
         },
         {
           "name": "Select discovered server",
           "action": "If servers found, tap one of the discovered server URLs",
-          "expected": "Server URL field populated with selected URL, connection established"
+          "expected": "Server URL field populated with selected URL, connection established",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -117,22 +130,26 @@
         {
           "name": "Enter username",
           "action": "Tap username field and type 'admin'",
-          "expected": "Username text appears in field"
+          "expected": "Username text appears in field",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Enter password",
           "action": "Tap password field and type valid password",
-          "expected": "Password masked with dots"
+          "expected": "Password masked with dots",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Tap Sign In",
           "action": "Tap the Sign In button",
-          "expected": "Loading spinner appears on button, then navigates to home screen"
+          "expected": "Loading spinner appears on button, then navigates to home screen",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify home screen",
           "action": "Check that home screen is displayed",
-          "expected": "Home screen with 'Catalogizer' title in top bar, search and settings icons visible"
+          "expected": "Home screen with 'Catalogizer' title in top bar, search and settings icons visible",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -155,18 +172,23 @@
       "steps": [
         {
           "name": "Enter wrong username",
-          "action": "Type 'wronguser' in username field",
-          "expected": "Text entered"
+          "action": "playwright: fill input[name=username] wronguser",
+          "expected": "Text entered",
+          "_conversion_note": "manual-review-required",
+          "_original_action": "Type 'wronguser' in username field"
         },
         {
           "name": "Enter wrong password",
-          "action": "Type 'wrongpassword' in password field",
-          "expected": "Password masked"
+          "action": "playwright: fill input[name=password] wrongpassword",
+          "expected": "Password masked",
+          "_conversion_note": "manual-review-required",
+          "_original_action": "Type 'wrongpassword' in password field"
         },
         {
           "name": "Tap Sign In",
           "action": "Tap Sign In button",
-          "expected": "Error message displayed below password field, user remains on login screen"
+          "expected": "Error message displayed below password field, user remains on login screen",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -190,17 +212,20 @@
         {
           "name": "Leave username empty",
           "action": "Ensure username field is empty",
-          "expected": "Username field is blank"
+          "expected": "Username field is blank",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Enter password",
           "action": "Type a password in password field",
-          "expected": "Password entered"
+          "expected": "Password entered",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Check Sign In button state",
           "action": "Inspect Sign In button",
-          "expected": "Sign In button is disabled (username is blank)"
+          "expected": "Sign In button is disabled (username is blank)",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -223,18 +248,22 @@
       "steps": [
         {
           "name": "Enter username",
-          "action": "Type 'admin' in username field",
-          "expected": "Username entered"
+          "action": "playwright: fill input[name=username] admin",
+          "expected": "Username entered",
+          "_conversion_note": "manual-review-required",
+          "_original_action": "Type 'admin' in username field"
         },
         {
           "name": "Leave password empty",
           "action": "Ensure password field is empty",
-          "expected": "Password field is blank"
+          "expected": "Password field is blank",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Check Sign In button state",
           "action": "Inspect Sign In button",
-          "expected": "Sign In button is disabled (password is blank)"
+          "expected": "Sign In button is disabled (password is blank)",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -257,18 +286,22 @@
       "steps": [
         {
           "name": "Enter password",
-          "action": "Type 'testpassword' in password field",
-          "expected": "Password shown as dots (masked)"
+          "action": "playwright: fill input[name=password] testpassword",
+          "expected": "Password shown as dots (masked)",
+          "_conversion_note": "manual-review-required",
+          "_original_action": "Type 'testpassword' in password field"
         },
         {
           "name": "Tap visibility icon",
           "action": "Tap the eye icon (trailing icon) on password field",
-          "expected": "Password text becomes visible as plain text, icon changes to eye-off"
+          "expected": "Password text becomes visible as plain text, icon changes to eye-off",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Tap visibility icon again",
           "action": "Tap the eye-off icon",
-          "expected": "Password masked again with dots, icon reverts to eye"
+          "expected": "Password masked again with dots, icon reverts to eye",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -292,12 +325,14 @@
         {
           "name": "Tap username field",
           "action": "Focus the username field",
-          "expected": "Keyboard appears with Next IME action"
+          "expected": "Keyboard appears with Next IME action",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Press Next on keyboard",
           "action": "Tap the Next/arrow button on soft keyboard",
-          "expected": "Focus moves to password field"
+          "expected": "Focus moves to password field",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -321,12 +356,14 @@
         {
           "name": "Enter credentials",
           "action": "Type valid username and password",
-          "expected": "Both fields populated"
+          "expected": "Both fields populated",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Press Done on keyboard",
           "action": "Tap the Done button on soft keyboard while password field is focused",
-          "expected": "Login attempt initiated (same as tapping Sign In button)"
+          "expected": "Login attempt initiated (same as tapping Sign In button)",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -350,17 +387,20 @@
         {
           "name": "Clear server URL",
           "action": "Ensure server URL field is empty and no server is connected",
-          "expected": "No connection status shown"
+          "expected": "No connection status shown",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Check field states",
           "action": "Inspect username and password fields",
-          "expected": "Username and password fields are disabled (server not connected)"
+          "expected": "Username and password fields are disabled (server not connected)",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Check Sign In button",
           "action": "Inspect Sign In button",
-          "expected": "Sign In button is disabled"
+          "expected": "Sign In button is disabled",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -383,13 +423,16 @@
       "steps": [
         {
           "name": "Check biometric support",
-          "action": "Verify device has biometric hardware (fingerprint sensor)",
-          "expected": "BiometricHelper.isAvailable() returns true on supported devices"
+          "action": "playwright: assertVisible text=device has biometric hardware (fingerprint sensor)",
+          "expected": "BiometricHelper.isAvailable() returns true on supported devices",
+          "_conversion_note": "manual-review-required",
+          "_original_action": "Verify device has biometric hardware (fingerprint sensor)"
         },
         {
           "name": "Trigger biometric prompt",
           "action": "Invoke biometric authentication flow",
-          "expected": "System biometric dialog appears with title 'Biometric Login' and subtitle 'Use your fingerprint to sign in'"
+          "expected": "System biometric dialog appears with title 'Biometric Login' and subtitle 'Use your fingerprint to sign in'",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -413,12 +456,14 @@
         {
           "name": "Trigger biometric login",
           "action": "Initiate biometric authentication from login screen",
-          "expected": "Biometric prompt displayed"
+          "expected": "Biometric prompt displayed",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Authenticate with fingerprint",
           "action": "Place registered fingerprint on sensor",
-          "expected": "Authentication succeeds, navigates to home screen"
+          "expected": "Authentication succeeds, navigates to home screen",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -442,12 +487,14 @@
         {
           "name": "Trigger biometric login",
           "action": "Initiate biometric authentication",
-          "expected": "Biometric prompt shown"
+          "expected": "Biometric prompt shown",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Tap 'Use password' button",
           "action": "Tap the negative button ('Use password') on biometric dialog",
-          "expected": "Dialog dismissed, login screen remains active with password fields"
+          "expected": "Dialog dismissed, login screen remains active with password fields",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -471,12 +518,15 @@
         {
           "name": "Login successfully",
           "action": "Login with valid credentials",
-          "expected": "Home screen displayed"
+          "expected": "Home screen displayed",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Kill and relaunch app",
-          "action": "Force-stop the app and relaunch from launcher",
-          "expected": "App opens directly to home screen (session token persisted via DataStore)"
+          "action": "adb_shell: am force-stop the",
+          "expected": "App opens directly to home screen (session token persisted via DataStore)",
+          "_conversion_note": "manual-review-required",
+          "_original_action": "Force-stop the app and relaunch from launcher"
         }
       ],
       "tags": [
@@ -500,12 +550,15 @@
         {
           "name": "Configure server URL",
           "action": "Set server URL to 'http://192.168.0.100:8080' and connect",
-          "expected": "Connection established"
+          "expected": "Connection established",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Kill and relaunch app",
-          "action": "Force-stop and relaunch",
-          "expected": "Server URL restored from DataStore, connection status shows saved URL"
+          "action": "adb_shell: am force-stop and",
+          "expected": "Server URL restored from DataStore, connection status shows saved URL",
+          "_conversion_note": "manual-review-required",
+          "_original_action": "Force-stop and relaunch"
         }
       ],
       "tags": [
@@ -529,17 +582,20 @@
         {
           "name": "Navigate to settings",
           "action": "Tap settings icon in home screen top bar",
-          "expected": "Settings screen displayed"
+          "expected": "Settings screen displayed",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Tap Sign Out",
           "action": "Tap the Sign Out button in the red sign-out card",
-          "expected": "User logged out, navigation stack cleared, login screen displayed"
+          "expected": "User logged out, navigation stack cleared, login screen displayed",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify login screen",
           "action": "Check that login screen is showing",
-          "expected": "Login screen visible with empty credential fields"
+          "expected": "Login screen visible with empty credential fields",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -563,12 +619,14 @@
         {
           "name": "Tap username field",
           "action": "Focus the username text field",
-          "expected": "Soft keyboard appears"
+          "expected": "Soft keyboard appears",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Scroll login form",
           "action": "Scroll the login card content vertically",
-          "expected": "Content scrolls to reveal server configuration section and branding footer below keyboard"
+          "expected": "Content scrolls to reveal server configuration section and branding footer below keyboard",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -592,12 +650,14 @@
         {
           "name": "Scroll to bottom of login card",
           "action": "Scroll down on login screen",
-          "expected": "'Made with heart by Vasic Digital' text visible"
+          "expected": "'Made with heart by Vasic Digital' text visible",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify copyright",
           "action": "Check copyright text below branding",
-          "expected": "Copyright year matches current year, 'Vasic Digital. All rights reserved.' shown"
+          "expected": "Copyright year matches current year, 'Vasic Digital. All rights reserved.' shown",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -620,13 +680,16 @@
       "steps": [
         {
           "name": "Enter invalid URL",
-          "action": "Type 'not-a-url' in server URL field",
-          "expected": "Text entered"
+          "action": "playwright: fill input[name=server] not-a-url",
+          "expected": "Text entered",
+          "_conversion_note": "manual-review-required",
+          "_original_action": "Type 'not-a-url' in server URL field"
         },
         {
           "name": "Tap Connect",
           "action": "Tap Connect button",
-          "expected": "Server saved with warning: 'Server saved (could not verify - check URL if login fails)'"
+          "expected": "Server saved with warning: 'Server saved (could not verify - check URL if login fails)'",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -650,12 +713,14 @@
         {
           "name": "Login and reach home",
           "action": "Login with valid credentials",
-          "expected": "Home screen displayed"
+          "expected": "Home screen displayed",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify Recently Added section",
           "action": "Check for 'Recently Added' section",
-          "expected": "Horizontal carousel of media cards under 'Recently Added' title"
+          "expected": "Horizontal carousel of media cards under 'Recently Added' title",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -679,7 +744,8 @@
         {
           "name": "Verify Favorites section",
           "action": "Scroll down on home screen to find 'Favorites' section",
-          "expected": "Horizontal carousel of favorited media cards under 'Favorites' title"
+          "expected": "Horizontal carousel of favorited media cards under 'Favorites' title",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -703,12 +769,14 @@
         {
           "name": "Login to account with no media",
           "action": "Login to a fresh account with empty library",
-          "expected": "Home screen loads"
+          "expected": "Home screen loads",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify empty state",
           "action": "Check content area",
-          "expected": "'No media found' title with message 'Your media library is empty. Configure storage sources to get started.'"
+          "expected": "'No media found' title with message 'Your media library is empty. Configure storage sources to get started.'",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -731,12 +799,15 @@
         {
           "name": "Navigate to home",
           "action": "Trigger home data load",
-          "expected": "CircularProgressIndicator centered on screen while data loads"
+          "expected": "CircularProgressIndicator centered on screen while data loads",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Wait for load",
-          "action": "Wait for data to arrive",
-          "expected": "Loading indicator disappears, content sections appear"
+          "action": "playwright: waitFor text=data to arrive",
+          "expected": "Loading indicator disappears, content sections appear",
+          "_conversion_note": "manual-review-required",
+          "_original_action": "Wait for data to arrive"
         }
       ],
       "tags": [
@@ -760,12 +831,14 @@
         {
           "name": "Simulate server error",
           "action": "Disconnect from server or make API fail",
-          "expected": "Home screen loads with error card"
+          "expected": "Home screen loads with error card",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify error card",
           "action": "Check error display",
-          "expected": "Red/error-colored card with error message text visible"
+          "expected": "Red/error-colored card with error message text visible",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -789,7 +862,8 @@
         {
           "name": "Tap search icon",
           "action": "Tap the search icon in the top app bar",
-          "expected": "Search screen opens with text input field and back button"
+          "expected": "Search screen opens with text input field and back button",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -813,7 +887,8 @@
         {
           "name": "Tap settings icon",
           "action": "Tap the settings icon in the top app bar",
-          "expected": "Settings screen opens with 'Settings' title and back button"
+          "expected": "Settings screen opens with 'Settings' title and back button",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -837,7 +912,8 @@
         {
           "name": "View a media card in carousel",
           "action": "Look at a media card in Recently Added or Favorites",
-          "expected": "Card shows media type initial letter in placeholder, title text (max 2 lines with ellipsis), year if available"
+          "expected": "Card shows media type initial letter in placeholder, title text (max 2 lines with ellipsis), year if available",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -862,7 +938,8 @@
         {
           "name": "Find a rated media card",
           "action": "Scroll through carousels to find a card with rating",
-          "expected": "Rating displayed as formatted decimal (e.g., '8.5') in primary color"
+          "expected": "Rating displayed as formatted decimal (e.g., '8.5') in primary color",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -886,12 +963,14 @@
         {
           "name": "Swipe carousel left",
           "action": "Swipe left on the Recently Added carousel",
-          "expected": "Carousel scrolls to reveal more media cards to the right"
+          "expected": "Carousel scrolls to reveal more media cards to the right",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Swipe carousel right",
           "action": "Swipe right on the carousel",
-          "expected": "Carousel scrolls back to the beginning"
+          "expected": "Carousel scrolls back to the beginning",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -916,7 +995,8 @@
         {
           "name": "Tap a media card",
           "action": "Tap on any media card in a carousel",
-          "expected": "Navigation to media detail screen triggered (onNavigateToMediaDetail callback)"
+          "expected": "Navigation to media detail screen triggered (onNavigateToMediaDetail callback)",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -941,12 +1021,14 @@
         {
           "name": "Scroll down",
           "action": "Scroll down on home screen past Recently Added section",
-          "expected": "Favorites section scrolls into view"
+          "expected": "Favorites section scrolls into view",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Scroll up",
           "action": "Scroll back to the top",
-          "expected": "Recently Added section visible again with top bar"
+          "expected": "Recently Added section visible again with top bar",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -970,7 +1052,8 @@
         {
           "name": "Observe card placeholders",
           "action": "Look at media cards without cover art",
-          "expected": "Each card shows the first character of the media type uppercased (e.g., 'M' for movie, 'T' for tv_show) in surfaceVariant background"
+          "expected": "Each card shows the first character of the media type uppercased (e.g., 'M' for movie, 'T' for tv_show) in surfaceVariant background",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -993,8 +1076,10 @@
       "steps": [
         {
           "name": "Inspect carousel layout",
-          "action": "Observe horizontal spacing between media cards",
-          "expected": "Cards have 12dp horizontal spacing, 16dp padding from screen edges"
+          "action": "playwright: assertVisible text=horizontal spacing between media cards",
+          "expected": "Cards have 12dp horizontal spacing, 16dp padding from screen edges",
+          "_conversion_note": "manual-review-required",
+          "_original_action": "Observe horizontal spacing between media cards"
         }
       ],
       "tags": [
@@ -1018,7 +1103,8 @@
         {
           "name": "Check section titles",
           "action": "Verify 'Recently Added' and 'Favorites' text style",
-          "expected": "Titles use titleLarge typography with 16dp horizontal padding and 8dp vertical padding"
+          "expected": "Titles use titleLarge typography with 16dp horizontal padding and 8dp vertical padding",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -1042,7 +1128,8 @@
         {
           "name": "Inspect media card dimensions",
           "action": "Check card layout measurements",
-          "expected": "Card width is 140dp, image area height is 180dp"
+          "expected": "Card width is 140dp, image area height is 180dp",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -1066,7 +1153,8 @@
         {
           "name": "Verify top bar",
           "action": "Check the top app bar content",
-          "expected": "Title shows 'Catalogizer', search and settings action icons present"
+          "expected": "Title shows 'Catalogizer', search and settings action icons present",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -1090,12 +1178,14 @@
         {
           "name": "Navigate away from home",
           "action": "Go to search screen",
-          "expected": "Search screen displayed"
+          "expected": "Search screen displayed",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Navigate back to home",
           "action": "Tap back button",
-          "expected": "Home screen displayed with data reload triggered (LaunchedEffect on Unit)"
+          "expected": "Home screen displayed with data reload triggered (LaunchedEffect on Unit)",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -1119,12 +1209,14 @@
         {
           "name": "Load library with many items",
           "action": "Ensure server has 100+ media items",
-          "expected": "Recently Added carousel loads without lag"
+          "expected": "Recently Added carousel loads without lag",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Scroll through all items",
           "action": "Swipe carousel to the end",
-          "expected": "All items accessible via horizontal scroll, no jank or dropped frames"
+          "expected": "All items accessible via horizontal scroll, no jank or dropped frames",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -1147,8 +1239,10 @@
       "steps": [
         {
           "name": "Verify color scheme",
-          "action": "Observe home screen color usage",
-          "expected": "Material 3 color scheme applied: primary color for ratings, surfaceVariant for card placeholders, errorContainer for error cards"
+          "action": "playwright: assertVisible text=home screen color usage",
+          "expected": "Material 3 color scheme applied: primary color for ratings, surfaceVariant for card placeholders, errorContainer for error cards",
+          "_conversion_note": "manual-review-required",
+          "_original_action": "Observe home screen color usage"
         }
       ],
       "tags": [
@@ -1173,7 +1267,8 @@
         {
           "name": "Navigate to search",
           "action": "Tap search icon from home screen",
-          "expected": "Search screen with text field in top bar, back arrow, and prompt 'Enter a search term to find media'"
+          "expected": "Search screen with text field in top bar, back arrow, and prompt 'Enter a search term to find media'",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -1195,13 +1290,16 @@
       "steps": [
         {
           "name": "Type search query",
-          "action": "Type 'Matrix' in the search field",
-          "expected": "Debounced search triggers after typing"
+          "action": "playwright: fill input[name=search] Matrix",
+          "expected": "Debounced search triggers after typing",
+          "_conversion_note": "manual-review-required",
+          "_original_action": "Type 'Matrix' in the search field"
         },
         {
           "name": "Verify results",
           "action": "Check search results list",
-          "expected": "Results containing 'Matrix' displayed in scrollable list with title, media type, year, and quality"
+          "expected": "Results containing 'Matrix' displayed in scrollable list with title, media type, year, and quality",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -1225,13 +1323,16 @@
       "steps": [
         {
           "name": "Type search query",
-          "action": "Type 'Metallica' in the search field",
-          "expected": "Search triggers"
+          "action": "playwright: fill input[name=search] Metallica",
+          "expected": "Search triggers",
+          "_conversion_note": "manual-review-required",
+          "_original_action": "Type 'Metallica' in the search field"
         },
         {
           "name": "Verify results",
           "action": "Check for music results",
-          "expected": "Metallica-related media items shown with music media type"
+          "expected": "Metallica-related media items shown with music media type",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -1255,17 +1356,20 @@
         {
           "name": "Switch to Cyrillic keyboard",
           "action": "Switch input method to Russian/Cyrillic layout",
-          "expected": "Cyrillic keyboard active"
+          "expected": "Cyrillic keyboard active",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Type Cyrillic query",
           "action": "Type a Cyrillic search term (e.g., a movie title in Russian)",
-          "expected": "Search executes with Cyrillic characters"
+          "expected": "Search executes with Cyrillic characters",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify results or empty state",
           "action": "Check results",
-          "expected": "Results matching Cyrillic query shown, or proper 'No results found' message"
+          "expected": "Results matching Cyrillic query shown, or proper 'No results found' message",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -1288,13 +1392,16 @@
       "steps": [
         {
           "name": "Search for a common term",
-          "action": "Type 'the' in search field",
-          "expected": "Multiple results appear"
+          "action": "playwright: fill input[name=search] the",
+          "expected": "Multiple results appear",
+          "_conversion_note": "manual-review-required",
+          "_original_action": "Type 'the' in search field"
         },
         {
           "name": "Verify result card layout",
           "action": "Inspect a search result item",
-          "expected": "Each result shows: 48dp type icon placeholder, title (1 line, ellipsis), media type label, year, quality badge, and rating if available"
+          "expected": "Each result shows: 48dp type icon placeholder, title (1 line, ellipsis), media type label, year, quality badge, and rating if available",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -1318,13 +1425,16 @@
       "steps": [
         {
           "name": "Type nonsense query",
-          "action": "Type 'xyzzy12345nonexistent' in search field",
-          "expected": "Search completes with no matches"
+          "action": "playwright: fill input[name=search] xyzzy12345nonexistent",
+          "expected": "Search completes with no matches",
+          "_conversion_note": "manual-review-required",
+          "_original_action": "Type 'xyzzy12345nonexistent' in search field"
         },
         {
           "name": "Verify empty results",
           "action": "Check display",
-          "expected": "'No results found for \"xyzzy12345nonexistent\"' message centered on screen"
+          "expected": "'No results found for \"xyzzy12345nonexistent\"' message centered on screen",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -1348,12 +1458,15 @@
         {
           "name": "Type query",
           "action": "Type a search term",
-          "expected": "CircularProgressIndicator appears centered while searching"
+          "expected": "CircularProgressIndicator appears centered while searching",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Wait for results",
-          "action": "Wait for API response",
-          "expected": "Spinner replaced by results list"
+          "action": "playwright: waitFor text=API response",
+          "expected": "Spinner replaced by results list",
+          "_conversion_note": "manual-review-required",
+          "_original_action": "Wait for API response"
         }
       ],
       "tags": [
@@ -1376,13 +1489,16 @@
       "steps": [
         {
           "name": "Enter query",
-          "action": "Type 'Matrix' in search field",
-          "expected": "Clear (X) icon appears as trailing icon"
+          "action": "playwright: fill input[name=search] Matrix",
+          "expected": "Clear (X) icon appears as trailing icon",
+          "_conversion_note": "manual-review-required",
+          "_original_action": "Type 'Matrix' in search field"
         },
         {
           "name": "Tap clear",
           "action": "Tap the X clear button",
-          "expected": "Search field cleared, results cleared, initial prompt 'Enter a search term to find media' shown again"
+          "expected": "Search field cleared, results cleared, initial prompt 'Enter a search term to find media' shown again",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -1406,7 +1522,8 @@
         {
           "name": "Tap back arrow",
           "action": "Tap the back arrow icon in search screen top bar",
-          "expected": "Navigation pops back to home screen"
+          "expected": "Navigation pops back to home screen",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -1429,12 +1546,14 @@
         {
           "name": "Search and find results",
           "action": "Type 'Matrix' and wait for results",
-          "expected": "Results displayed"
+          "expected": "Results displayed",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Tap a result",
           "action": "Tap on a search result card",
-          "expected": "Navigation to media detail screen for that item (onNavigateToMediaDetail callback fired with item ID)"
+          "expected": "Navigation to media detail screen for that item (onNavigateToMediaDetail callback fired with item ID)",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -1458,12 +1577,14 @@
         {
           "name": "Type rapidly",
           "action": "Quickly type 'Matrix' one character at a time",
-          "expected": "Search does not trigger on every keystroke"
+          "expected": "Search does not trigger on every keystroke",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Pause typing",
           "action": "Stop typing and wait 500ms",
-          "expected": "Single search request fires after debounce period"
+          "expected": "Single search request fires after debounce period",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -1487,12 +1608,14 @@
         {
           "name": "Search by media type",
           "action": "Search with media type filter set to 'movie'",
-          "expected": "Only movie-type results returned"
+          "expected": "Only movie-type results returned",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify results",
           "action": "Check media type labels on all results",
-          "expected": "All results show 'movie' as media type"
+          "expected": "All results show 'movie' as media type",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -1516,7 +1639,8 @@
         {
           "name": "Filter by TV shows",
           "action": "Search with media type filter set to 'tv_show'",
-          "expected": "Only TV show results returned"
+          "expected": "Only TV show results returned",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -1540,7 +1664,8 @@
         {
           "name": "Filter by music",
           "action": "Search with media type filter set to 'music'",
-          "expected": "Only music results returned"
+          "expected": "Only music results returned",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -1564,7 +1689,8 @@
         {
           "name": "Filter by games",
           "action": "Search with media type filter set to 'game'",
-          "expected": "Only game results returned"
+          "expected": "Only game results returned",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -1588,7 +1714,8 @@
         {
           "name": "Filter by software",
           "action": "Search with media type filter set to 'software'",
-          "expected": "Only software results returned"
+          "expected": "Only software results returned",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -1612,7 +1739,8 @@
         {
           "name": "Filter by ebooks",
           "action": "Search with media type filter set to 'ebook'",
-          "expected": "Only ebook results returned"
+          "expected": "Only ebook results returned",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -1636,7 +1764,8 @@
         {
           "name": "Filter by anime",
           "action": "Search with media type filter set to 'anime'",
-          "expected": "Only anime results returned"
+          "expected": "Only anime results returned",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -1660,7 +1789,8 @@
         {
           "name": "Filter by documentaries",
           "action": "Search with media type filter set to 'documentary'",
-          "expected": "Only documentary results returned"
+          "expected": "Only documentary results returned",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -1684,7 +1814,8 @@
         {
           "name": "Apply sort",
           "action": "Search with sort_by='title' and sort_order='asc'",
-          "expected": "Results ordered alphabetically A-Z by title"
+          "expected": "Results ordered alphabetically A-Z by title",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -1708,7 +1839,8 @@
         {
           "name": "Apply sort",
           "action": "Search with sort_by='year' and sort_order='desc'",
-          "expected": "Results ordered by year, newest first"
+          "expected": "Results ordered by year, newest first",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -1732,7 +1864,8 @@
         {
           "name": "Apply sort",
           "action": "Search with sort_by='rating' and sort_order='desc'",
-          "expected": "Results ordered by rating, highest first"
+          "expected": "Results ordered by rating, highest first",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -1755,7 +1888,8 @@
         {
           "name": "Apply sort",
           "action": "Search with sort_by='created_at' and sort_order='desc'",
-          "expected": "Results ordered by creation date, most recent first"
+          "expected": "Results ordered by creation date, most recent first",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -1779,7 +1913,8 @@
         {
           "name": "Apply sort",
           "action": "Search with sort_by='file_size' and sort_order='desc'",
-          "expected": "Results ordered by file size, largest first"
+          "expected": "Results ordered by file size, largest first",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -1802,7 +1937,8 @@
         {
           "name": "Apply quality filter",
           "action": "Search with quality filter set to '1080p'",
-          "expected": "Only 1080p quality items returned"
+          "expected": "Only 1080p quality items returned",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -1825,7 +1961,8 @@
         {
           "name": "Apply quality filter",
           "action": "Search with quality filter set to '4k'",
-          "expected": "Only 4K quality items returned"
+          "expected": "Only 4K quality items returned",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -1849,12 +1986,14 @@
         {
           "name": "Apply year range filter",
           "action": "Search with year_min=2020 and year_max=2025",
-          "expected": "Only items from 2020-2025 returned"
+          "expected": "Only items from 2020-2025 returned",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify year range",
           "action": "Check years on all results",
-          "expected": "All results have year between 2020 and 2025 inclusive"
+          "expected": "All results have year between 2020 and 2025 inclusive",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -1878,7 +2017,8 @@
         {
           "name": "Apply rating filter",
           "action": "Search with rating_min=8.0",
-          "expected": "Only items rated 8.0 or higher returned"
+          "expected": "Only items rated 8.0 or higher returned",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -1901,12 +2041,14 @@
         {
           "name": "Search with many results",
           "action": "Perform a broad search that returns more than 20 items",
-          "expected": "First page of 20 results displayed"
+          "expected": "First page of 20 results displayed",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Scroll to bottom",
           "action": "Scroll to the bottom of the results list",
-          "expected": "Next page loads automatically (Paging 3 prefetch), additional results appear"
+          "expected": "Next page loads automatically (Paging 3 prefetch), additional results appear",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -1930,7 +2072,8 @@
         {
           "name": "Scroll to very end",
           "action": "Scroll through all pages until no more results",
-          "expected": "Last page loads, no further loading triggers"
+          "expected": "Last page loads, no further loading triggers",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -1952,8 +2095,10 @@
       "steps": [
         {
           "name": "Search with query and filter",
-          "action": "Type 'action' in search and filter by media_type='movie'",
-          "expected": "Only movies matching 'action' query returned"
+          "action": "playwright: fill input[name=search] action",
+          "expected": "Only movies matching 'action' query returned",
+          "_conversion_note": "manual-review-required",
+          "_original_action": "Type 'action' in search and filter by media_type='movie'"
         }
       ],
       "tags": [
@@ -1976,13 +2121,17 @@
       "steps": [
         {
           "name": "Type special characters",
-          "action": "Type '!@#$%^&*()' in search field",
-          "expected": "Search handles gracefully, no crash"
+          "action": "playwright: fill input[name=search] !@#$%^&*()",
+          "expected": "Search handles gracefully, no crash",
+          "_conversion_note": "manual-review-required",
+          "_original_action": "Type '!@#$%^&*()' in search field"
         },
         {
           "name": "Check results",
-          "action": "Verify app state",
-          "expected": "Empty results or matching results, no error crash"
+          "action": "playwright: assertVisible text=app state",
+          "expected": "Empty results or matching results, no error crash",
+          "_conversion_note": "manual-review-required",
+          "_original_action": "Verify app state"
         }
       ],
       "tags": [
@@ -2006,7 +2155,8 @@
         {
           "name": "Type extremely long query",
           "action": "Type a 500-character string in search field",
-          "expected": "Input accepted, search completes without crash or ANR"
+          "expected": "Input accepted, search completes without crash or ANR",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -2029,8 +2179,10 @@
       "steps": [
         {
           "name": "Type single character",
-          "action": "Type 'a' in search field",
-          "expected": "Search executes, returns items starting with or containing 'a'"
+          "action": "playwright: fill input[name=search] a",
+          "expected": "Search executes, returns items starting with or containing 'a'",
+          "_conversion_note": "manual-review-required",
+          "_original_action": "Type 'a' in search field"
         }
       ],
       "tags": [
@@ -2053,12 +2205,14 @@
         {
           "name": "Load many results",
           "action": "Search with broad query returning 50+ results",
-          "expected": "Results loaded"
+          "expected": "Results loaded",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Rapidly scroll up and down",
           "action": "Fling scroll list rapidly in both directions",
-          "expected": "Smooth 60fps scrolling, no dropped frames or jank"
+          "expected": "Smooth 60fps scrolling, no dropped frames or jank",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -2081,8 +2235,10 @@
       "steps": [
         {
           "name": "Search for TV show",
-          "action": "Type 'Breaking Bad' in search field",
-          "expected": "Results include Breaking Bad with tv_show media type"
+          "action": "playwright: fill input[name=search] Breaking Bad",
+          "expected": "Results include Breaking Bad with tv_show media type",
+          "_conversion_note": "manual-review-required",
+          "_original_action": "Type 'Breaking Bad' in search field"
         }
       ],
       "tags": [
@@ -2106,7 +2262,8 @@
         {
           "name": "Search audiobooks",
           "action": "Search with media_type='audiobook' filter",
-          "expected": "Only audiobook results returned"
+          "expected": "Only audiobook results returned",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -2129,7 +2286,8 @@
         {
           "name": "Search podcasts",
           "action": "Search with media_type='podcast' filter",
-          "expected": "Only podcast results returned"
+          "expected": "Only podcast results returned",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -2152,7 +2310,8 @@
         {
           "name": "Search training",
           "action": "Search with media_type='training' filter",
-          "expected": "Only training content returned"
+          "expected": "Only training content returned",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -2176,7 +2335,8 @@
         {
           "name": "Search YouTube",
           "action": "Search with media_type='youtube_video' filter",
-          "expected": "Only YouTube video results returned"
+          "expected": "Only YouTube video results returned",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -2199,12 +2359,14 @@
         {
           "name": "Navigate to movie detail",
           "action": "Tap a movie result from search",
-          "expected": "Detail screen loads for the movie"
+          "expected": "Detail screen loads for the movie",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify metadata fields",
           "action": "Check displayed information",
-          "expected": "Title, year, media type, description, rating, quality, file size, and duration visible"
+          "expected": "Title, year, media type, description, rating, quality, file size, and duration visible",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -2228,12 +2390,14 @@
         {
           "name": "Navigate to TV show detail",
           "action": "Tap a TV show result",
-          "expected": "Detail screen loads"
+          "expected": "Detail screen loads",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Check episode listing",
           "action": "Scroll down for episode/season information",
-          "expected": "TV show hierarchy (seasons and episodes) visible"
+          "expected": "TV show hierarchy (seasons and episodes) visible",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -2257,12 +2421,14 @@
         {
           "name": "Navigate to music detail",
           "action": "Tap a music album result",
-          "expected": "Detail screen loads"
+          "expected": "Detail screen loads",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Check track listing",
           "action": "Scroll for track/song information",
-          "expected": "Track list or album details visible"
+          "expected": "Track list or album details visible",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -2286,7 +2452,8 @@
         {
           "name": "Open detail for item without cover",
           "action": "Navigate to media item with no coverImage",
-          "expected": "Placeholder with media type initial letter displayed instead of missing image"
+          "expected": "Placeholder with media type initial letter displayed instead of missing image",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -2310,7 +2477,8 @@
         {
           "name": "Open detail for item with cover",
           "action": "Navigate to media item with coverImage or posterUrl",
-          "expected": "Cover art image loaded and displayed (via Coil image loader)"
+          "expected": "Cover art image loaded and displayed (via Coil image loader)",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -2334,7 +2502,8 @@
         {
           "name": "Open a movie with TMDB metadata",
           "action": "Navigate to a movie that has external TMDB metadata",
-          "expected": "External metadata section shows TMDB data: genres, cast, crew, description"
+          "expected": "External metadata section shows TMDB data: genres, cast, crew, description",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -2358,12 +2527,14 @@
         {
           "name": "Open media detail",
           "action": "Navigate to a playable media item",
-          "expected": "Detail screen loaded"
+          "expected": "Detail screen loaded",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Tap play button",
           "action": "Tap the Play or Start button",
-          "expected": "Playback initiated, navigates to media player"
+          "expected": "Playback initiated, navigates to media player",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -2387,17 +2558,20 @@
         {
           "name": "Open media detail",
           "action": "Navigate to a media item",
-          "expected": "Detail screen loaded with favorite icon/button"
+          "expected": "Detail screen loaded with favorite icon/button",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Tap favorite",
           "action": "Tap the favorite/heart button",
-          "expected": "Optimistic local update: favorite status toggles immediately, sync with server in background"
+          "expected": "Optimistic local update: favorite status toggles immediately, sync with server in background",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify toggle",
           "action": "Tap again to unfavorite",
-          "expected": "Favorite status reverts, server sync triggered"
+          "expected": "Favorite status reverts, server sync triggered",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -2421,12 +2595,14 @@
         {
           "name": "Disconnect server",
           "action": "Ensure server is unreachable",
-          "expected": "Server offline"
+          "expected": "Server offline",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Toggle favorite",
           "action": "Tap favorite button on a media item",
-          "expected": "Optimistic toggle shown, then reverted when server sync fails"
+          "expected": "Optimistic toggle shown, then reverted when server sync fails",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -2451,7 +2627,8 @@
         {
           "name": "Open rated media",
           "action": "Navigate to a media item with a rating",
-          "expected": "Rating displayed as formatted decimal (e.g., '8.5')"
+          "expected": "Rating displayed as formatted decimal (e.g., '8.5')",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -2474,7 +2651,8 @@
         {
           "name": "Open media with quality info",
           "action": "Navigate to a media item with quality field set",
-          "expected": "Quality badge visible (e.g., '1080p HD', '4K UHD', 'HDR')"
+          "expected": "Quality badge visible (e.g., '1080p HD', '4K UHD', 'HDR')",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -2498,7 +2676,8 @@
         {
           "name": "Open media with file size",
           "action": "Navigate to a media item with fileSize set",
-          "expected": "File size displayed in human-readable format (MB/GB)"
+          "expected": "File size displayed in human-readable format (MB/GB)",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -2521,7 +2700,8 @@
         {
           "name": "Open media with duration",
           "action": "Navigate to a video/audio item with duration",
-          "expected": "Duration displayed in human-readable format (e.g., '1h 45m')"
+          "expected": "Duration displayed in human-readable format (e.g., '1h 45m')",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -2545,7 +2725,8 @@
         {
           "name": "Open media with description",
           "action": "Navigate to a media item with description field",
-          "expected": "Full description text displayed, scrollable if long"
+          "expected": "Full description text displayed, scrollable if long",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -2569,7 +2750,8 @@
         {
           "name": "Open media with multiple versions",
           "action": "Navigate to a media item that has multiple versions (different qualities/codecs)",
-          "expected": "Version list displayed with quality, codec, resolution, and file size for each"
+          "expected": "Version list displayed with quality, codec, resolution, and file size for each",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -2593,12 +2775,14 @@
         {
           "name": "Open media detail",
           "action": "Navigate to a media item",
-          "expected": "Detail screen loaded"
+          "expected": "Detail screen loaded",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Trigger metadata refresh",
           "action": "Tap refresh metadata button or pull-to-refresh",
-          "expected": "Metadata refreshed from external providers (TMDB, MusicBrainz, etc.)"
+          "expected": "Metadata refreshed from external providers (TMDB, MusicBrainz, etc.)",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -2622,7 +2806,8 @@
         {
           "name": "Navigate to game detail",
           "action": "Tap a game media item",
-          "expected": "Detail screen shows game-specific metadata"
+          "expected": "Detail screen shows game-specific metadata",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -2645,7 +2830,8 @@
         {
           "name": "Navigate to software detail",
           "action": "Tap a software media item",
-          "expected": "Detail screen shows software metadata"
+          "expected": "Detail screen shows software metadata",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -2668,7 +2854,8 @@
         {
           "name": "Navigate to documentary detail",
           "action": "Tap a documentary media item",
-          "expected": "Detail screen with documentary metadata including description and year"
+          "expected": "Detail screen with documentary metadata including description and year",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -2691,7 +2878,8 @@
         {
           "name": "Open partially watched media",
           "action": "Navigate to a media item with watchProgress > 0",
-          "expected": "Watch progress bar or percentage indicator visible"
+          "expected": "Watch progress bar or percentage indicator visible",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -2715,7 +2903,8 @@
         {
           "name": "Open media from SMB source",
           "action": "Navigate to a media item with smbPath set",
-          "expected": "SMB path or storage source information visible"
+          "expected": "SMB path or storage source information visible",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -2739,7 +2928,8 @@
         {
           "name": "Open media with genres",
           "action": "Navigate to a media item with genre data in externalMetadata",
-          "expected": "Genre tags/chips displayed (e.g., 'Action', 'Sci-Fi', 'Drama')"
+          "expected": "Genre tags/chips displayed (e.g., 'Action', 'Sci-Fi', 'Drama')",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -2763,7 +2953,8 @@
         {
           "name": "Open media with cast info",
           "action": "Navigate to a movie/show with cast data in externalMetadata",
-          "expected": "Cast list displayed with actor names"
+          "expected": "Cast list displayed with actor names",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -2787,7 +2978,8 @@
         {
           "name": "Open media with backdrop",
           "action": "Navigate to a media item with backdropUrl in externalMetadata",
-          "expected": "Backdrop image displayed as header/background"
+          "expected": "Backdrop image displayed as header/background",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -2811,7 +3003,8 @@
         {
           "name": "Open minimal media item",
           "action": "Navigate to a media item with only required fields (id, title, mediaType, directoryPath, createdAt, updatedAt)",
-          "expected": "Detail screen renders without crash; optional fields (year, description, coverImage, rating, quality, duration, fileSize) are absent without blank/broken sections"
+          "expected": "Detail screen renders without crash; optional fields (year, description, coverImage, rating, quality, duration, fileSize) are absent without blank/broken sections",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -2835,12 +3028,14 @@
         {
           "name": "Open video item",
           "action": "Navigate to a movie/video and tap play",
-          "expected": "Stream URL fetched from API"
+          "expected": "Stream URL fetched from API",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify playback",
           "action": "Check ExoPlayer state",
-          "expected": "Video starts playing with visual content and audio"
+          "expected": "Video starts playing with visual content and audio",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -2865,12 +3060,14 @@
         {
           "name": "Open music item",
           "action": "Navigate to a music/song and tap play",
-          "expected": "Audio stream URL fetched"
+          "expected": "Audio stream URL fetched",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify audio playback",
           "action": "Listen for audio output",
-          "expected": "Audio plays, player controls visible"
+          "expected": "Audio plays, player controls visible",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -2894,17 +3091,20 @@
         {
           "name": "Start video playback",
           "action": "Play a video",
-          "expected": "Video playing"
+          "expected": "Video playing",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Tap pause",
           "action": "Tap the pause button on player controls",
-          "expected": "Playback pauses, button changes to play icon"
+          "expected": "Playback pauses, button changes to play icon",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Tap play",
           "action": "Tap the play button",
-          "expected": "Playback resumes from paused position"
+          "expected": "Playback resumes from paused position",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -2928,12 +3128,14 @@
         {
           "name": "Start video playback",
           "action": "Play a video",
-          "expected": "Video playing"
+          "expected": "Video playing",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Drag seek bar forward",
           "action": "Drag the seek/progress bar forward 30 seconds",
-          "expected": "Playback position jumps forward, video continues from new position"
+          "expected": "Playback position jumps forward, video continues from new position",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -2957,12 +3159,14 @@
         {
           "name": "Play and advance",
           "action": "Play a video and let it advance 60+ seconds",
-          "expected": "Video at 60+ second mark"
+          "expected": "Video at 60+ second mark",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Drag seek bar backward",
           "action": "Drag seek bar backward 30 seconds",
-          "expected": "Playback position jumps backward, video plays from new position"
+          "expected": "Playback position jumps backward, video plays from new position",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -2986,17 +3190,20 @@
         {
           "name": "Start playback",
           "action": "Play a media item with audio",
-          "expected": "Audio playing"
+          "expected": "Audio playing",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Press volume up",
           "action": "Press hardware volume up button",
-          "expected": "Volume increases, system volume indicator appears"
+          "expected": "Volume increases, system volume indicator appears",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Press volume down",
           "action": "Press hardware volume down button",
-          "expected": "Volume decreases"
+          "expected": "Volume decreases",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -3020,17 +3227,20 @@
         {
           "name": "Start video playback",
           "action": "Play a video",
-          "expected": "Video playing in normal mode"
+          "expected": "Video playing in normal mode",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Enter fullscreen",
           "action": "Tap fullscreen button or rotate device to landscape",
-          "expected": "Video fills entire screen, system bars hidden"
+          "expected": "Video fills entire screen, system bars hidden",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Exit fullscreen",
           "action": "Tap exit fullscreen or rotate back to portrait",
-          "expected": "Video returns to normal mode"
+          "expected": "Video returns to normal mode",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -3054,17 +3264,20 @@
         {
           "name": "Play video for 30 seconds",
           "action": "Start video and let it play for 30+ seconds",
-          "expected": "Video playing, position advancing"
+          "expected": "Video playing, position advancing",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Exit playback",
           "action": "Navigate back from player",
-          "expected": "Watch progress saved locally and synced to server"
+          "expected": "Watch progress saved locally and synced to server",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Reopen same video",
           "action": "Navigate back to the same media item",
-          "expected": "Watch progress indicator shows previous position"
+          "expected": "Watch progress indicator shows previous position",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -3088,12 +3301,14 @@
         {
           "name": "Open partially watched media",
           "action": "Navigate to a media item with previous watch progress",
-          "expected": "Resume prompt or auto-resume"
+          "expected": "Resume prompt or auto-resume",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Resume playback",
           "action": "Confirm resume or tap play",
-          "expected": "Playback starts from last saved position, not from the beginning"
+          "expected": "Playback starts from last saved position, not from the beginning",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -3117,17 +3332,20 @@
         {
           "name": "Start video playback",
           "action": "Play a video",
-          "expected": "Video playing"
+          "expected": "Video playing",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Trigger PiP",
           "action": "Press home button or swipe up to go home",
-          "expected": "Video continues in a small floating PiP window"
+          "expected": "Video continues in a small floating PiP window",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Return from PiP",
           "action": "Tap the PiP window",
-          "expected": "App returns to fullscreen player"
+          "expected": "App returns to fullscreen player",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -3151,17 +3369,21 @@
         {
           "name": "Start music playback",
           "action": "Play a music/audio item",
-          "expected": "Audio playing"
+          "expected": "Audio playing",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Minimize app",
-          "action": "Press home button",
-          "expected": "Audio continues playing in the background"
+          "action": "keypress: KEYCODE_HOME",
+          "expected": "Audio continues playing in the background",
+          "_conversion_note": "manual-review-required",
+          "_original_action": "Press home button"
         },
         {
           "name": "Check notification",
           "action": "Pull down notification shade",
-          "expected": "Media notification with playback controls visible"
+          "expected": "Media notification with playback controls visible",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -3186,12 +3408,14 @@
         {
           "name": "Open image media",
           "action": "Navigate to an image/photo media item",
-          "expected": "Image displayed in viewer"
+          "expected": "Image displayed in viewer",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Pinch to zoom",
           "action": "Pinch-to-zoom gesture on image",
-          "expected": "Image zooms in and out"
+          "expected": "Image zooms in and out",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -3216,7 +3440,8 @@
         {
           "name": "Try to play unavailable media",
           "action": "Attempt to play a media item whose stream URL is unreachable",
-          "expected": "Error message displayed (e.g., 'Stream URL not found in response' or 'Failed to get stream URL')"
+          "expected": "Error message displayed (e.g., 'Stream URL not found in response' or 'Failed to get stream URL')",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -3240,12 +3465,14 @@
         {
           "name": "Open media detail",
           "action": "Navigate to a downloadable media item",
-          "expected": "Download option available"
+          "expected": "Download option available",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Request download",
           "action": "Tap download button",
-          "expected": "Download URL fetched from API, download initiated"
+          "expected": "Download URL fetched from API, download initiated",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -3269,17 +3496,20 @@
         {
           "name": "Start streaming playback",
           "action": "Play a video via streaming",
-          "expected": "Video playing"
+          "expected": "Video playing",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Disable network",
           "action": "Turn off WiFi and mobile data",
-          "expected": "Playback buffers, then shows error or pauses"
+          "expected": "Playback buffers, then shows error or pauses",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Restore network",
           "action": "Turn WiFi back on",
-          "expected": "Playback resumes or retry option available"
+          "expected": "Playback resumes or retry option available",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -3304,12 +3534,14 @@
         {
           "name": "Open media with versions",
           "action": "Navigate to a media item with multiple versions",
-          "expected": "Version list displayed"
+          "expected": "Version list displayed",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Select a specific version",
           "action": "Tap a different quality version",
-          "expected": "Selected version plays with its specific quality, codec, and resolution"
+          "expected": "Selected version plays with its specific quality, codec, and resolution",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -3332,17 +3564,20 @@
         {
           "name": "Start video playback",
           "action": "Play a video and tap screen to show controls",
-          "expected": "Player controls overlay visible"
+          "expected": "Player controls overlay visible",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Wait for auto-hide",
           "action": "Do not interact for 3-5 seconds",
-          "expected": "Controls fade out, video plays in unobstructed view"
+          "expected": "Controls fade out, video plays in unobstructed view",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Tap to show again",
           "action": "Tap the video area",
-          "expected": "Controls reappear"
+          "expected": "Controls reappear",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -3366,7 +3601,8 @@
         {
           "name": "Try to play unsupported format",
           "action": "Attempt to play a media file with an unsupported codec",
-          "expected": "ExoPlayer shows codec error, user-friendly error message displayed"
+          "expected": "ExoPlayer shows codec error, user-friendly error message displayed",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -3391,12 +3627,14 @@
         {
           "name": "Play audio",
           "action": "Start playing a music item",
-          "expected": "Audio playing"
+          "expected": "Audio playing",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Switch to video",
           "action": "Navigate to a video and tap play",
-          "expected": "Audio stops, video starts playing"
+          "expected": "Audio stops, video starts playing",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -3420,17 +3658,20 @@
         {
           "name": "Start audio playback",
           "action": "Play a music item",
-          "expected": "Audio playing"
+          "expected": "Audio playing",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Receive phone call",
           "action": "Simulate incoming call or notification with audio",
-          "expected": "Playback pauses or ducks audio"
+          "expected": "Playback pauses or ducks audio",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "End interruption",
           "action": "Dismiss the call/notification",
-          "expected": "Playback resumes"
+          "expected": "Playback resumes",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -3454,12 +3695,14 @@
         {
           "name": "Open media detail",
           "action": "Navigate to a media item that is not favorited",
-          "expected": "Favorite button shows unfavorited state"
+          "expected": "Favorite button shows unfavorited state",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Tap favorite",
           "action": "Tap favorite/heart button",
-          "expected": "Button transitions to favorited state, optimistic update applied"
+          "expected": "Button transitions to favorited state, optimistic update applied",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -3483,12 +3726,14 @@
         {
           "name": "Open favorited item",
           "action": "Navigate to a media item that is already favorited",
-          "expected": "Favorite button shows favorited state"
+          "expected": "Favorite button shows favorited state",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Tap to unfavorite",
           "action": "Tap favorite button",
-          "expected": "Button transitions to unfavorited state, API sync in background"
+          "expected": "Button transitions to unfavorited state, API sync in background",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -3512,12 +3757,14 @@
         {
           "name": "Favorite an item",
           "action": "Add a media item to favorites",
-          "expected": "Favorite toggled"
+          "expected": "Favorite toggled",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Return to home",
           "action": "Navigate back to home screen",
-          "expected": "Favorites section updated to include the newly favorited item"
+          "expected": "Favorites section updated to include the newly favorited item",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -3541,12 +3788,14 @@
         {
           "name": "Access favorites",
           "action": "Navigate to favorites list (via home section or dedicated screen)",
-          "expected": "Paginated list of favorited items displayed"
+          "expected": "Paginated list of favorited items displayed",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Scroll through favorites",
           "action": "Scroll the favorites list",
-          "expected": "All favorited items visible with titles and metadata"
+          "expected": "All favorited items visible with titles and metadata",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -3570,12 +3819,14 @@
         {
           "name": "Remove all favorites",
           "action": "Ensure no items are favorited",
-          "expected": "Favorites section/list empty"
+          "expected": "Favorites section/list empty",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify empty state",
           "action": "Check favorites display",
-          "expected": "Empty state message or section hidden on home screen"
+          "expected": "Empty state message or section hidden on home screen",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -3598,12 +3849,14 @@
         {
           "name": "Open media detail",
           "action": "Navigate to a media item",
-          "expected": "Detail screen loaded"
+          "expected": "Detail screen loaded",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Tap add to watchlist",
           "action": "Tap watchlist/bookmark button",
-          "expected": "Item added to watchlist via API (POST user/watchlist/{mediaId})"
+          "expected": "Item added to watchlist via API (POST user/watchlist/{mediaId})",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -3627,12 +3880,14 @@
         {
           "name": "Open watchlisted item",
           "action": "Navigate to a media item on the watchlist",
-          "expected": "Watchlist button shows active state"
+          "expected": "Watchlist button shows active state",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Remove from watchlist",
           "action": "Tap watchlist button to remove",
-          "expected": "Item removed from watchlist via API (DELETE user/watchlist/{mediaId})"
+          "expected": "Item removed from watchlist via API (DELETE user/watchlist/{mediaId})",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -3655,7 +3910,8 @@
         {
           "name": "Navigate to watchlist",
           "action": "Open the watchlist section",
-          "expected": "Paginated list of watchlisted items displayed"
+          "expected": "Paginated list of watchlisted items displayed",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -3678,12 +3934,14 @@
         {
           "name": "Have partially watched items",
           "action": "Ensure some media items have watch progress > 0",
-          "expected": "Continue watching data available"
+          "expected": "Continue watching data available",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "View continue watching",
           "action": "Check for continue watching section or navigate to it",
-          "expected": "Partially watched items displayed with progress indicators"
+          "expected": "Partially watched items displayed with progress indicators",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -3707,12 +3965,14 @@
         {
           "name": "Have many partially watched items",
           "action": "Ensure 20+ items have watch progress",
-          "expected": "Continue watching data available"
+          "expected": "Continue watching data available",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Scroll through list",
           "action": "Scroll the continue watching list",
-          "expected": "Paging loads additional partially watched items"
+          "expected": "Paging loads additional partially watched items",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -3735,12 +3995,14 @@
         {
           "name": "Open media detail",
           "action": "Navigate to a media item",
-          "expected": "Detail screen loaded"
+          "expected": "Detail screen loaded",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Submit rating",
           "action": "Tap rating control and select a rating value",
-          "expected": "Rating submitted via API (PUT media/{id}/rating), local display updated"
+          "expected": "Rating submitted via API (PUT media/{id}/rating), local display updated",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -3763,12 +4025,15 @@
         {
           "name": "Favorite an item",
           "action": "Add an item to favorites",
-          "expected": "Favorite saved locally and synced"
+          "expected": "Favorite saved locally and synced",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Restart app",
-          "action": "Force-stop and relaunch",
-          "expected": "Favorited item still shows as favorited (persisted in Room DB)"
+          "action": "adb_shell: am force-stop and",
+          "expected": "Favorited item still shows as favorited (persisted in Room DB)",
+          "_conversion_note": "manual-review-required",
+          "_original_action": "Force-stop and relaunch"
         }
       ],
       "tags": [
@@ -3792,17 +4057,20 @@
         {
           "name": "Watch a video partially",
           "action": "Play a video for 60 seconds then exit",
-          "expected": "Watch progress saved to local Room DB"
+          "expected": "Watch progress saved to local Room DB",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Go offline",
           "action": "Disable network",
-          "expected": "Offline mode active"
+          "expected": "Offline mode active",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Check watch progress",
           "action": "Navigate to the same media item",
-          "expected": "Watch progress indicator shows saved position from local cache"
+          "expected": "Watch progress indicator shows saved position from local cache",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -3826,12 +4094,14 @@
         {
           "name": "Have mixed favorites",
           "action": "Favorite items of different media types (movies, music, shows)",
-          "expected": "Multiple types favorited"
+          "expected": "Multiple types favorited",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Filter favorites by type",
           "action": "Apply media type filter to favorites list",
-          "expected": "Only favorites of selected type shown"
+          "expected": "Only favorites of selected type shown",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -3854,7 +4124,8 @@
         {
           "name": "Check popular section",
           "action": "View popular/top-rated media section",
-          "expected": "Items ordered by rating, highest first"
+          "expected": "Items ordered by rating, highest first",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -3878,22 +4149,26 @@
         {
           "name": "Favorite first item",
           "action": "Navigate to and favorite item 1",
-          "expected": "Item 1 favorited"
+          "expected": "Item 1 favorited",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Favorite second item",
           "action": "Navigate to and favorite item 2",
-          "expected": "Item 2 favorited"
+          "expected": "Item 2 favorited",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Favorite third item",
           "action": "Navigate to and favorite item 3",
-          "expected": "Item 3 favorited"
+          "expected": "Item 3 favorited",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify all favorites",
           "action": "View favorites list",
-          "expected": "All three items present in favorites"
+          "expected": "All three items present in favorites",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -3917,12 +4192,14 @@
         {
           "name": "Access dashboard",
           "action": "Navigate to analytics/dashboard screen",
-          "expected": "Dashboard data fetched from /api/v1/analytics/dashboard"
+          "expected": "Dashboard data fetched from /api/v1/analytics/dashboard",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify data display",
           "action": "Check charts and statistics",
-          "expected": "Statistics displayed including total items, items by type, total size"
+          "expected": "Statistics displayed including total items, items by type, total size",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -3945,12 +4222,14 @@
         {
           "name": "View media stats",
           "action": "Access media statistics via API (/api/v1/media/stats)",
-          "expected": "Stats loaded"
+          "expected": "Stats loaded",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify stats",
           "action": "Check totalItems, byType, byQuality, totalSize, recentAdditions",
-          "expected": "All statistics fields populated with meaningful data"
+          "expected": "All statistics fields populated with meaningful data",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -3974,7 +4253,8 @@
         {
           "name": "Trigger full refresh",
           "action": "Call refreshAllMedia() to sync all items",
-          "expected": "All media items fetched from server (up to 1000) and inserted into Room DB"
+          "expected": "All media items fetched from server (up to 1000) and inserted into Room DB",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -3998,12 +4278,14 @@
         {
           "name": "Clear cache",
           "action": "Trigger cache clear via settings or clearCache()",
-          "expected": "All media items deleted from local Room database"
+          "expected": "All media items deleted from local Room database",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify empty local DB",
           "action": "Check media count",
-          "expected": "Zero items in local database"
+          "expected": "Zero items in local database",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -4027,7 +4309,8 @@
         {
           "name": "Get all media types",
           "action": "Query getAllMediaTypes() from DAO",
-          "expected": "Returns list of all distinct media types in local database"
+          "expected": "Returns list of all distinct media types in local database",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -4051,7 +4334,8 @@
         {
           "name": "Get count for movies",
           "action": "Query getCountByType('movie')",
-          "expected": "Returns count of movie items in local database"
+          "expected": "Returns count of movie items in local database",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -4075,7 +4359,8 @@
         {
           "name": "Check SMB status",
           "action": "Fetch /api/v1/smb/sources/status",
-          "expected": "SMB source status information returned"
+          "expected": "SMB source status information returned",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -4099,7 +4384,8 @@
         {
           "name": "Check SMB health",
           "action": "Fetch /api/v1/smb/health",
-          "expected": "SMB health information returned"
+          "expected": "SMB health information returned",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -4121,8 +4407,10 @@
       "steps": [
         {
           "name": "Trigger SMB reconnect",
-          "action": "POST /api/v1/smb/sources/{id}/reconnect",
-          "expected": "Reconnection initiated, status updated"
+          "action": "http: POST /api/v1/smb/sources/{id}/reconnect",
+          "expected": "Reconnection initiated, status updated",
+          "_original_action": "POST /api/v1/smb/sources/{id}/reconnect",
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -4146,7 +4434,8 @@
         {
           "name": "Navigate to settings",
           "action": "Tap settings icon from home screen",
-          "expected": "Settings screen with 'Settings' title, back arrow, About card, and Sign Out card"
+          "expected": "Settings screen with 'Settings' title, back arrow, About card, and Sign Out card",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -4170,7 +4459,8 @@
         {
           "name": "Tap back arrow",
           "action": "Tap the back arrow in settings top bar",
-          "expected": "Navigates back to home screen (popBackStack)"
+          "expected": "Navigates back to home screen (popBackStack)",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -4193,7 +4483,8 @@
         {
           "name": "Check about card",
           "action": "Read the About card content in settings",
-          "expected": "Title 'About', text 'Catalogizer for Android', subtitle 'Multi-platform media collection manager'"
+          "expected": "Title 'About', text 'Catalogizer for Android', subtitle 'Multi-platform media collection manager'",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -4217,7 +4508,8 @@
         {
           "name": "Check sign out card",
           "action": "Inspect the Sign Out card",
-          "expected": "Card uses errorContainer background color, Sign Out title and subtitle in onErrorContainer color, red-styled button with logout icon"
+          "expected": "Card uses errorContainer background color, Sign Out title and subtitle in onErrorContainer color, red-styled button with logout icon",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -4242,7 +4534,8 @@
         {
           "name": "Tap Sign Out button",
           "action": "Tap the Sign Out button in settings",
-          "expected": "User logged out, entire navigation stack cleared (popUpTo 0 inclusive), login screen displayed"
+          "expected": "User logged out, entire navigation stack cleared (popUpTo 0 inclusive), login screen displayed",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -4265,13 +4558,17 @@
       "steps": [
         {
           "name": "Check theme on Android 12+",
-          "action": "Verify Material 3 dynamic colors applied from wallpaper",
-          "expected": "App colors derived from system wallpaper (dynamic theming on API 31+)"
+          "action": "playwright: assertVisible text=Material 3 dynamic colors applied from wallpaper",
+          "expected": "App colors derived from system wallpaper (dynamic theming on API 31+)",
+          "_conversion_note": "manual-review-required",
+          "_original_action": "Verify Material 3 dynamic colors applied from wallpaper"
         },
         {
           "name": "Check theme on older Android",
-          "action": "Verify fallback Material 3 theme",
-          "expected": "Default Material 3 color scheme applied"
+          "action": "playwright: assertVisible text=fallback Material 3 theme",
+          "expected": "Default Material 3 color scheme applied",
+          "_conversion_note": "manual-review-required",
+          "_original_action": "Verify fallback Material 3 theme"
         }
       ],
       "tags": [
@@ -4295,12 +4592,14 @@
         {
           "name": "Enable dark mode",
           "action": "Set system theme to dark mode via system settings",
-          "expected": "App switches to dark Material 3 theme"
+          "expected": "App switches to dark Material 3 theme",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify colors",
           "action": "Check background, text, and card colors",
-          "expected": "Dark backgrounds, light text, proper contrast ratios"
+          "expected": "Dark backgrounds, light text, proper contrast ratios",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -4324,12 +4623,14 @@
         {
           "name": "Enable light mode",
           "action": "Set system theme to light mode",
-          "expected": "App switches to light Material 3 theme"
+          "expected": "App switches to light Material 3 theme",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify colors",
           "action": "Check background, text, and card colors",
-          "expected": "Light backgrounds, dark text, proper contrast"
+          "expected": "Light backgrounds, dark text, proper contrast",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -4353,17 +4654,20 @@
         {
           "name": "Logout to access server config",
           "action": "Sign out from settings",
-          "expected": "Login screen with server configuration section"
+          "expected": "Login screen with server configuration section",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Change server URL",
           "action": "Enter a different server URL and tap Connect",
-          "expected": "New server URL saved and connected"
+          "expected": "New server URL saved and connected",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Login to new server",
           "action": "Login with credentials for the new server",
-          "expected": "Authentication succeeds against new server"
+          "expected": "Authentication succeeds against new server",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -4387,7 +4691,9 @@
         {
           "name": "Check system health",
           "action": "Fetch /api/v1/health endpoint",
-          "expected": "Health status returned (200 OK)"
+          "expected": "Health status returned (200 OK)",
+          "expect_status": 200,
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -4411,7 +4717,8 @@
         {
           "name": "Check system status",
           "action": "Fetch /api/v1/status endpoint",
-          "expected": "System status information returned including version and component status"
+          "expected": "System status information returned including version and component status",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -4435,7 +4742,8 @@
         {
           "name": "Check permissions",
           "action": "Fetch /api/v1/auth/permissions",
-          "expected": "User permissions map returned"
+          "expected": "User permissions map returned",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -4459,7 +4767,8 @@
         {
           "name": "Get profile",
           "action": "Fetch /api/v1/auth/profile",
-          "expected": "User profile data returned including username and role"
+          "expected": "User profile data returned including username and role",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -4482,13 +4791,26 @@
       "steps": [
         {
           "name": "Submit password change",
-          "action": "POST /api/v1/auth/change-password with current and new password",
-          "expected": "Password changed successfully (200 OK)"
+          "action": "http: POST /api/v1/auth/change-password",
+          "expected": "Password changed successfully (200 OK)",
+          "_original_action": "POST /api/v1/auth/change-password with current and new password",
+          "expect_status": 200,
+          "auth": "admin",
+          "body": {
+            "old_password": "admin123",
+            "new_password": "NewAdmin!23"
+          },
+          "_patched_by": [
+            "bank-patch-default-bodies"
+          ],
+          "_skip": true,
+          "_skip_reason": "destructive on shared catalog-api: actually changing admin password would break subsequent admin: tests across all bank suites"
         },
         {
           "name": "Login with new password",
           "action": "Logout and login with new password",
-          "expected": "Authentication succeeds with new password"
+          "expected": "Authentication succeeds with new password",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -4511,8 +4833,10 @@
       "steps": [
         {
           "name": "Update profile",
-          "action": "PUT /api/v1/auth/profile with updated profile data",
-          "expected": "Profile updated, response contains updated user object"
+          "action": "http: PUT /api/v1/auth/profile",
+          "expected": "Profile updated, response contains updated user object",
+          "_original_action": "PUT /api/v1/auth/profile with updated profile data",
+          "auth": "admin"
         }
       ],
       "tags": [
@@ -4536,12 +4860,14 @@
         {
           "name": "Disable all network",
           "action": "Turn off WiFi and mobile data",
-          "expected": "Device offline"
+          "expected": "Device offline",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Launch app",
           "action": "Open Catalogizer",
-          "expected": "App launches with cached data from Room database; error card for failed API calls but no crash"
+          "expected": "App launches with cached data from Room database; error card for failed API calls but no crash",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -4566,17 +4892,20 @@
         {
           "name": "Load data online first",
           "action": "Browse media while online to populate Room cache",
-          "expected": "Media items cached locally"
+          "expected": "Media items cached locally",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Go offline",
           "action": "Disable network",
-          "expected": "Offline mode"
+          "expected": "Offline mode",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Browse cached content",
           "action": "Navigate home, scroll through items",
-          "expected": "Cached media items displayed from local Room database"
+          "expected": "Cached media items displayed from local Room database",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -4601,12 +4930,14 @@
         {
           "name": "Go offline with cached data",
           "action": "Ensure items cached, then disable network",
-          "expected": "Offline"
+          "expected": "Offline",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Search locally",
           "action": "Type a search query matching cached items",
-          "expected": "Results from local Room database (searchMediaPaging)"
+          "expected": "Results from local Room database (searchMediaPaging)",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -4630,17 +4961,21 @@
         {
           "name": "Login and browse",
           "action": "Login and navigate to home screen",
-          "expected": "Home screen visible"
+          "expected": "Home screen visible",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Background app",
-          "action": "Press home button",
-          "expected": "App moves to background"
+          "action": "keypress: KEYCODE_HOME",
+          "expected": "App moves to background",
+          "_conversion_note": "manual-review-required",
+          "_original_action": "Press home button"
         },
         {
           "name": "Resume app",
           "action": "Tap Catalogizer in recent apps",
-          "expected": "App resumes on same screen with state preserved"
+          "expected": "App resumes on same screen with state preserved",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -4664,17 +4999,20 @@
         {
           "name": "Navigate to search with results",
           "action": "Search for 'Matrix' and see results",
-          "expected": "Search results displayed"
+          "expected": "Search results displayed",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Rotate to landscape",
           "action": "Rotate device to landscape orientation",
-          "expected": "Screen recomposes, search query and results preserved (ViewModel survives rotation)"
+          "expected": "Screen recomposes, search query and results preserved (ViewModel survives rotation)",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Rotate back to portrait",
           "action": "Rotate back to portrait",
-          "expected": "State preserved again"
+          "expected": "State preserved again",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -4698,7 +5036,8 @@
         {
           "name": "Trigger deep link",
           "action": "Open deep link URL pointing to a specific media item",
-          "expected": "App opens (or comes to foreground) and navigates to the media detail screen for the linked item"
+          "expected": "App opens (or comes to foreground) and navigates to the media detail screen for the linked item",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -4722,7 +5061,8 @@
         {
           "name": "Rapidly tap search icon",
           "action": "Quickly tap the search icon 5 times in rapid succession",
-          "expected": "Only one search screen pushed to navigation stack, no duplicates"
+          "expected": "Only one search screen pushed to navigation stack, no duplicates",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -4746,12 +5086,14 @@
         {
           "name": "Navigate deep",
           "action": "Go to home > search > result detail",
-          "expected": "3 screens in back stack"
+          "expected": "3 screens in back stack",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Rapidly press back",
           "action": "Press back button rapidly 5 times",
-          "expected": "Navigation pops cleanly to home or login, no crash"
+          "expected": "Navigation pops cleanly to home or login, no crash",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -4775,12 +5117,14 @@
         {
           "name": "Navigate to settings",
           "action": "Go to settings screen",
-          "expected": "Settings displayed"
+          "expected": "Settings displayed",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Swipe back gesture",
           "action": "Swipe from left edge to navigate back (Android gesture navigation)",
-          "expected": "Navigates back to home screen"
+          "expected": "Navigates back to home screen",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -4804,7 +5148,8 @@
         {
           "name": "Long press a media card",
           "action": "Long press on a media card in home carousel",
-          "expected": "Context menu or haptic feedback (if implemented), or no crash if not implemented"
+          "expected": "Context menu or haptic feedback (if implemented), or no crash if not implemented",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -4827,12 +5172,14 @@
         {
           "name": "Login and observe WebSocket",
           "action": "Login and check WebSocket connection status",
-          "expected": "WebSocket connected event received"
+          "expected": "WebSocket connected event received",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Trigger server-side change",
           "action": "Add a new media item via API from another client",
-          "expected": "WebSocket MediaUpdate event received, UI refreshes with new data"
+          "expected": "WebSocket MediaUpdate event received, UI refreshes with new data",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -4856,12 +5203,14 @@
         {
           "name": "Establish WebSocket",
           "action": "Login and wait for WebSocket connection",
-          "expected": "WebSocket connected"
+          "expected": "WebSocket connected",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Simulate disconnect",
           "action": "Briefly disable and re-enable network",
-          "expected": "WebSocket disconnected event, then automatic reconnection attempt"
+          "expected": "WebSocket disconnected event, then automatic reconnection attempt",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -4884,13 +5233,16 @@
       "steps": [
         {
           "name": "Check sync worker",
-          "action": "Verify SyncWorker is enqueued with WorkManager",
-          "expected": "Periodic sync work request scheduled"
+          "action": "playwright: assertVisible text=SyncWorker is enqueued with WorkManager",
+          "expected": "Periodic sync work request scheduled",
+          "_conversion_note": "manual-review-required",
+          "_original_action": "Verify SyncWorker is enqueued with WorkManager"
         },
         {
           "name": "Verify sync execution",
           "action": "Check WorkManager work status",
-          "expected": "Sync worker runs on schedule and syncs data with server"
+          "expected": "Sync worker runs on schedule and syncs data with server",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -4914,17 +5266,20 @@
         {
           "name": "Go offline",
           "action": "Disable network",
-          "expected": "Offline"
+          "expected": "Offline",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Toggle favorite",
           "action": "Favorite a media item while offline",
-          "expected": "Favorite toggled locally, sync operation queued in SyncOperationDao"
+          "expected": "Favorite toggled locally, sync operation queued in SyncOperationDao",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Go online",
           "action": "Re-enable network",
-          "expected": "Queued sync operations executed, favorite synced to server"
+          "expected": "Queued sync operations executed, favorite synced to server",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -4949,12 +5304,14 @@
         {
           "name": "Open many screens",
           "action": "Navigate through login > home > search > settings > back > search multiple times",
-          "expected": "No OOM crash"
+          "expected": "No OOM crash",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Load many items",
           "action": "Search with broad query, scroll through 100+ results",
-          "expected": "Paging keeps memory bounded, no crash"
+          "expected": "Paging keeps memory bounded, no crash",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -4978,17 +5335,20 @@
         {
           "name": "Login and navigate",
           "action": "Login, navigate to search, type a query",
-          "expected": "Search results visible"
+          "expected": "Search results visible",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Kill process",
           "action": "Kill app process via developer options or adb",
-          "expected": "Process terminated"
+          "expected": "Process terminated",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Restore from recents",
           "action": "Tap Catalogizer in recent apps",
-          "expected": "App restores, navigation state recovered (or graceful restart to login if token expired)"
+          "expected": "App restores, navigation state recovered (or graceful restart to login if token expired)",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -5012,12 +5372,14 @@
         {
           "name": "Receive notification",
           "action": "Server sends a notification event via WebSocket",
-          "expected": "System notification appears"
+          "expected": "System notification appears",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Tap notification",
           "action": "Tap the notification in the notification shade",
-          "expected": "App opens to relevant screen based on notification type"
+          "expected": "App opens to relevant screen based on notification type",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -5041,12 +5403,14 @@
         {
           "name": "Open media detail",
           "action": "Navigate to a media item",
-          "expected": "Detail screen"
+          "expected": "Detail screen",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Tap share",
           "action": "Tap share button (if available)",
-          "expected": "Android share sheet opens with media title and deep link URL"
+          "expected": "Android share sheet opens with media title and deep link URL",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -5070,12 +5434,15 @@
         {
           "name": "Verify network security config",
           "action": "Check network_security_config.xml",
-          "expected": "Cleartext only allowed for 10.x.x.x, 192.168.x.x, 127.x.x.x domains"
+          "expected": "Cleartext only allowed for 10.x.x.x, 192.168.x.x, 127.x.x.x domains",
+          "expect_status": 192,
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Try remote cleartext",
           "action": "Attempt connection to non-local HTTP (cleartext) URL",
-          "expected": "Connection blocked by network security config"
+          "expected": "Connection blocked by network security config",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -5099,12 +5466,14 @@
         {
           "name": "Connect to older server",
           "action": "Configure server URL to an older API version",
-          "expected": "Connection established"
+          "expected": "Connection established",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Use app features",
           "action": "Browse, search, and interact with media",
-          "expected": "App handles missing endpoints or changed response shapes gracefully with error messages, no crashes"
+          "expected": "App handles missing endpoints or changed response shapes gracefully with error messages, no crashes",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [

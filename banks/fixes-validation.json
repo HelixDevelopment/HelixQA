@@ -3,6 +3,8 @@
   "name": "Catalogizer Fixes Validation Suite",
   "description": "Regression tests ensuring all discovered and fixed bugs never recur. Each entry maps to a specific bug fix with evidence.",
   "metadata": {
+    "_llm_driven": true,
+    "_llm_driven_reason": "Vision-driven test suite per HelixQA Constitution §1 (Fully Autonomous LLM-Driven QA): prose actions are interpreted by the vision model. Article XI §11.5 exemption.",
     "author": "vasic-digital",
     "app": "Catalogizer",
     "version": "2.3.0"
@@ -230,7 +232,7 @@
         },
         {
           "name": "Cold-start without intent extras",
-          "action": "adb shell am start -n com.catalogizer.androidtv/.ui.MainActivity --es qa_username admin --es qa_password admin123",
+          "action": "adb shell am start -n com.catalogizer.androidtv/.ui.MainActivity",
           "expected": "App lands directly on home screen without showing login"
         },
         {

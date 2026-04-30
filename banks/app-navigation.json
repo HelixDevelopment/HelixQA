@@ -5,7 +5,9 @@
   "metadata": {
     "author": "vasic-digital",
     "app": "Yole",
-    "version": "1.0.0"
+    "version": "1.0.0",
+    "bluff_audit_status": "converted-by-bank-prose-to-http.py",
+    "bluff_audit_date": "2026-04-29"
   },
   "test_cases": [
     {
@@ -22,12 +24,14 @@
         {
           "name": "Launch app",
           "action": "Open Yole application",
-          "expected": "App launches to default screen"
+          "expected": "App launches to default screen",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Tap Files tab",
           "action": "Tap/click 'Files' in bottom navigation bar or sidebar",
-          "expected": "Files screen displayed with file browser or recent files"
+          "expected": "Files screen displayed with file browser or recent files",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -59,7 +63,8 @@
         {
           "name": "Tap Todo tab",
           "action": "Tap/click 'Todo' in navigation bar",
-          "expected": "Todo screen shown with todo.txt task list or empty state"
+          "expected": "Todo screen shown with todo.txt task list or empty state",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -84,12 +89,14 @@
         {
           "name": "Tap QuickNote tab",
           "action": "Tap/click 'QuickNote' in navigation bar",
-          "expected": "QuickNote editor screen displayed"
+          "expected": "QuickNote editor screen displayed",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify quick note editor",
           "action": "Check that text input is immediately available",
-          "expected": "Editor ready for input without extra taps"
+          "expected": "Editor ready for input without extra taps",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -114,12 +121,14 @@
         {
           "name": "Tap More tab",
           "action": "Tap/click 'More' or overflow menu in navigation bar",
-          "expected": "More screen or settings menu opens"
+          "expected": "More screen or settings menu opens",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify menu items",
           "action": "Check visible menu options",
-          "expected": "Settings, About, Storage, Theme options visible"
+          "expected": "Settings, About, Storage, Theme options visible",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -145,17 +154,20 @@
         {
           "name": "Browse to a text file",
           "action": "Navigate file browser to a .md file",
-          "expected": "File listing visible"
+          "expected": "File listing visible",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Open file",
           "action": "Tap/click the file",
-          "expected": "Editor screen opens with file content"
+          "expected": "Editor screen opens with file content",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify back navigation",
           "action": "Press Back or close editor",
-          "expected": "Returns to file browser at same location"
+          "expected": "Returns to file browser at same location",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -181,17 +193,20 @@
         {
           "name": "Open a markdown file in editor",
           "action": "Open any .md file",
-          "expected": "Editor showing markdown source"
+          "expected": "Editor showing markdown source",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Switch to Preview tab",
           "action": "Tap/click 'Preview' tab",
-          "expected": "HTML preview rendered"
+          "expected": "HTML preview rendered",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Switch back to Edit tab",
           "action": "Tap/click 'Edit' tab",
-          "expected": "Source editor restored, cursor position preserved"
+          "expected": "Source editor restored, cursor position preserved",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -217,17 +232,20 @@
         {
           "name": "Navigate to Settings",
           "action": "Go to More > Settings",
-          "expected": "Settings screen opens"
+          "expected": "Settings screen opens",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Check settings categories",
           "action": "Scroll through settings list",
-          "expected": "Categories: Editor, Appearance, Storage, About visible"
+          "expected": "Categories: Editor, Appearance, Storage, About visible",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Return to previous screen",
-          "action": "Press Back",
-          "expected": "Returns to More screen"
+          "action": "keypress: KEYCODE_BACK",
+          "expected": "Returns to More screen",
+          "_original_action": "Press Back"
         }
       ],
       "tags": [
@@ -251,12 +269,14 @@
         {
           "name": "Tap each tab in order",
           "action": "Tap Files, Todo, QuickNote, More in sequence",
-          "expected": "Each screen displays correctly on each tap"
+          "expected": "Each screen displays correctly on each tap",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Re-tap current tab",
           "action": "While on Files screen, tap Files again",
-          "expected": "Scrolls to top or refreshes list (no double-navigation)"
+          "expected": "Scrolls to top or refreshes list (no double-navigation)",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -279,17 +299,20 @@
         {
           "name": "Open drawer",
           "action": "Swipe right from left edge or tap hamburger menu",
-          "expected": "Navigation drawer slides open"
+          "expected": "Navigation drawer slides open",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Select item from drawer",
           "action": "Tap a navigation destination in the drawer",
-          "expected": "Correct screen opens, drawer closes"
+          "expected": "Correct screen opens, drawer closes",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Close drawer without navigating",
           "action": "Tap outside drawer or swipe left",
-          "expected": "Drawer closes, current screen unchanged"
+          "expected": "Drawer closes, current screen unchanged",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -312,17 +335,20 @@
         {
           "name": "Navigate into sub-screen",
           "action": "Open a file in the editor",
-          "expected": "Editor screen visible"
+          "expected": "Editor screen visible",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Press system back",
           "action": "Press Android system back button",
-          "expected": "Returns to file browser"
+          "expected": "Returns to file browser",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Press system back again",
           "action": "Press back from file browser",
-          "expected": "Returns to main Files tab or minimizes app"
+          "expected": "Returns to main Files tab or minimizes app",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -345,23 +371,27 @@
       "steps": [
         {
           "name": "Verify sidebar visible",
-          "action": "Launch desktop app",
-          "expected": "Left sidebar with navigation items visible"
+          "action": "adb_shell: monkey -p desktop -c android.intent.category.LAUNCHER 1",
+          "expected": "Left sidebar with navigation items visible",
+          "_original_action": "Launch desktop app"
         },
         {
           "name": "Click sidebar items",
-          "action": "Click Files, Todo, QuickNote in sidebar",
-          "expected": "Each screen loads in main content area"
+          "action": "playwright: click text=Files, Todo, QuickNote in sidebar",
+          "expected": "Each screen loads in main content area",
+          "_original_action": "Click Files, Todo, QuickNote in sidebar"
         },
         {
           "name": "Collapse sidebar",
-          "action": "Click sidebar toggle button",
-          "expected": "Sidebar collapses to icon-only mode"
+          "action": "playwright: click text=sidebar toggle",
+          "expected": "Sidebar collapses to icon-only mode",
+          "_original_action": "Click sidebar toggle button"
         },
         {
           "name": "Expand sidebar",
-          "action": "Click toggle again",
-          "expected": "Sidebar expands with labels"
+          "action": "playwright: click text=toggle again",
+          "expected": "Sidebar expands with labels",
+          "_original_action": "Click toggle again"
         }
       ],
       "tags": [
@@ -386,22 +416,26 @@
         {
           "name": "Open first file",
           "action": "Open file1.md in editor",
-          "expected": "Tab 1 shows file1.md"
+          "expected": "Tab 1 shows file1.md",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Open second file",
           "action": "Open file2.txt from file browser",
-          "expected": "Tab 2 created, switches to file2.txt"
+          "expected": "Tab 2 created, switches to file2.txt",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Open third file",
           "action": "Open file3.org",
-          "expected": "Tab 3 created for file3.org"
+          "expected": "Tab 3 created for file3.org",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify tab bar",
           "action": "Check tab bar has 3 tabs",
-          "expected": "3 tabs visible with correct filenames"
+          "expected": "3 tabs visible with correct filenames",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -426,17 +460,20 @@
         {
           "name": "Open two files in tabs",
           "action": "Open file1.md and file2.txt",
-          "expected": "Both tabs present"
+          "expected": "Both tabs present",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Switch to tab 1",
           "action": "Tap/click tab 1 (file1.md)",
-          "expected": "file1.md content displayed"
+          "expected": "file1.md content displayed",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Switch to tab 2",
           "action": "Tap/click tab 2 (file2.txt)",
-          "expected": "file2.txt content displayed"
+          "expected": "file2.txt content displayed",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -461,17 +498,20 @@
         {
           "name": "Open two files in tabs",
           "action": "Open file1.md and file2.txt",
-          "expected": "2 tabs visible"
+          "expected": "2 tabs visible",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Close tab 1",
           "action": "Tap 'X' on tab 1 or swipe tab away",
-          "expected": "Tab 1 closed, tab 2 becomes active"
+          "expected": "Tab 1 closed, tab 2 becomes active",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify single tab remains",
           "action": "Check tab bar",
-          "expected": "Only file2.txt tab remains"
+          "expected": "Only file2.txt tab remains",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -496,17 +536,20 @@
         {
           "name": "Open file and make unsaved changes",
           "action": "Open file.md and type new content without saving",
-          "expected": "Unsaved indicator visible (dot or asterisk on tab)"
+          "expected": "Unsaved indicator visible (dot or asterisk on tab)",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Close the unsaved tab",
           "action": "Attempt to close the tab",
-          "expected": "Dialog: 'Unsaved changes \u2014 Save, Discard, Cancel?'"
+          "expected": "Dialog: 'Unsaved changes — Save, Discard, Cancel?'",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Choose Discard",
           "action": "Tap 'Discard'",
-          "expected": "Tab closed, changes lost"
+          "expected": "Tab closed, changes lost",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -530,17 +573,20 @@
         {
           "name": "Open file in editor",
           "action": "Open a markdown file, type some text",
-          "expected": "Editor in portrait mode with content"
+          "expected": "Editor in portrait mode with content",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Rotate to landscape",
           "action": "Rotate device 90 degrees",
-          "expected": "Editor redraws in landscape, content and cursor preserved"
+          "expected": "Editor redraws in landscape, content and cursor preserved",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Rotate back to portrait",
           "action": "Rotate device back",
-          "expected": "Editor in portrait, scroll position preserved"
+          "expected": "Editor in portrait, scroll position preserved",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -564,17 +610,20 @@
         {
           "name": "Browse to nested directory",
           "action": "Navigate 3 levels deep in file browser",
-          "expected": "Nested directory shown"
+          "expected": "Nested directory shown",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Rotate device",
           "action": "Rotate to landscape",
-          "expected": "Same directory shown in landscape layout"
+          "expected": "Same directory shown in landscape layout",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify path preserved",
           "action": "Check breadcrumb",
-          "expected": "Breadcrumb shows same path as before rotation"
+          "expected": "Breadcrumb shows same path as before rotation",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -598,12 +647,14 @@
         {
           "name": "Open a .md file from Files app",
           "action": "In Android Files app, tap a .md file and choose Yole",
-          "expected": "Yole opens with the selected file in editor"
+          "expected": "Yole opens with the selected file in editor",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify file content",
           "action": "Check editor shows correct content",
-          "expected": "File loaded correctly via intent"
+          "expected": "File loaded correctly via intent",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -627,12 +678,14 @@
         {
           "name": "Share text from another app",
           "action": "In browser, select text and share to Yole",
-          "expected": "Yole opens with shared text pre-filled in QuickNote or new file"
+          "expected": "Yole opens with shared text pre-filled in QuickNote or new file",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify content",
           "action": "Check editor content",
-          "expected": "Shared text visible in editor"
+          "expected": "Shared text visible in editor",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -658,17 +711,20 @@
         {
           "name": "Change a setting",
           "action": "Enable line numbers in Settings > Editor",
-          "expected": "Line numbers appear in editor"
+          "expected": "Line numbers appear in editor",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Restart app",
           "action": "Force-close and relaunch Yole",
-          "expected": "App launches"
+          "expected": "App launches",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify setting persisted",
           "action": "Open any file in editor",
-          "expected": "Line numbers still enabled"
+          "expected": "Line numbers still enabled",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -694,17 +750,20 @@
         {
           "name": "Open theme settings",
           "action": "Go to Settings > Appearance > Theme",
-          "expected": "Theme picker visible: Light, Dark, System"
+          "expected": "Theme picker visible: Light, Dark, System",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Select Dark",
           "action": "Tap/click 'Dark'",
-          "expected": "App switches to dark theme immediately"
+          "expected": "App switches to dark theme immediately",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify dark theme",
           "action": "Check backgrounds and text colors",
-          "expected": "Dark backgrounds, light text throughout the app"
+          "expected": "Dark backgrounds, light text throughout the app",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -729,12 +788,14 @@
         {
           "name": "Set theme to System",
           "action": "Select 'System' in theme settings",
-          "expected": "Theme matches current OS dark/light mode"
+          "expected": "Theme matches current OS dark/light mode",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Toggle OS dark mode",
           "action": "Switch OS to dark mode (or back to light)",
-          "expected": "Yole switches theme to match OS setting"
+          "expected": "Yole switches theme to match OS setting",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [

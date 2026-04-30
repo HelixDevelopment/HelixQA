@@ -13,8 +13,10 @@ import (
 	"net/http"
 	"os"
 	osexec "os/exec"
+	"os/signal"
 	"path/filepath"
 	"strings"
+	"syscall"
 	"time"
 
 	"digital.vasic.helixqa/pkg/analysis"
@@ -60,6 +62,30 @@ type PipelineConfig struct {
 	// files for reconciliation. Empty means skip
 	// reconciliation.
 	BanksDir string
+
+	// HTTPBaseURL is the root URL the structured executor
+	// uses for ActionTypeHTTP steps (e.g.
+	// "http://thinker.local:8092"). When empty, the executor
+	// falls back to the HELIXQA_HTTP_BASE_URL env var. When
+	// both are empty, ActionTypeHTTP steps fail with a clear
+	// configuration error rather than silently no-op.
+	//
+	// Added 2026-04-29 for BLUFF-HELIXQA-BANKS-REWRITE-001 —
+	// see HelixQA/pkg/autonomous/http_executor.go.
+	HTTPBaseURL string
+
+	// PlaywrightCDPURL is the Chrome DevTools Protocol
+	// WebSocket endpoint the structured executor uses for
+	// ActionTypePlaywright steps (e.g. "ws://localhost:9222"
+	// or "ws://playwright-container:9222"). When empty, the
+	// executor falls back to the HELIXQA_PLAYWRIGHT_CDP_URL
+	// env var. When both are empty, ActionTypePlaywright
+	// steps SKIP with PLAYWRIGHT-RUNTIME-PENDING (no false
+	// PASS, no false FAIL — Article XI §11.2.2).
+	//
+	// Added 2026-04-29 to wire ActionTypePlaywright through
+	// digital.vasic.challenges/pkg/userflow.PlaywrightCLIAdapter.
+	PlaywrightCDPURL string
 
 	// Timeout is the maximum duration for the entire
 	// pipeline run.
@@ -191,38 +217,6 @@ type PipelineResult struct {
 	CoveragePct    float64          `json:"coverage_pct"`
 	Cost           *llm.CostSummary `json:"cost,omitempty"`
 	Error          string           `json:"error,omitempty"`
-}
-
-// qaUsername returns the admin username from QA credentials.
-func (c *PipelineConfig) qaUsername() string {
-	if c.QACredentials == nil {
-		return ""
-	}
-	for _, key := range []string{
-		"ADMIN_USERNAME", "ADMIN_USER", "USERNAME",
-		"DEFAULT_USER", "TEST_USERNAME",
-	} {
-		if v := c.QACredentials[key]; v != "" {
-			return v
-		}
-	}
-	return ""
-}
-
-// qaPassword returns the admin password from QA credentials.
-func (c *PipelineConfig) qaPassword() string {
-	if c.QACredentials == nil {
-		return ""
-	}
-	for _, key := range []string{
-		"ADMIN_PASSWORD", "ADMIN_PASS", "PASSWORD",
-		"DEFAULT_PASSWORD", "TEST_PASSWORD",
-	} {
-		if v := c.QACredentials[key]; v != "" {
-			return v
-		}
-	}
-	return ""
 }
 
 // SessionPipeline orchestrates the four-phase autonomous QA
@@ -924,6 +918,15 @@ func (sp *SessionPipeline) Run(
 	// wandered into Settings → Accessibility). This is defence in
 	// depth — the LLM still shouldn't navigate into device settings,
 	// but if it does, the device never stays polluted.
+	//
+	// FIX-QA-2026-04-29-018 (signal-safe restore): defer alone
+	// doesn't fire on SIGKILL or unrecovered panics. Register a
+	// signal handler that restores on SIGINT/SIGTERM/SIGHUP too, so
+	// operator Ctrl-C / `pkill -TERM helixqa` still leaves the
+	// device clean. Fixes a 2026-04-29 user-reported repeat of the
+	// same font_scale=2.0 pollution when an in-progress session was
+	// stopped via SIGTERM.
+	var snapshots []*devicePreservedSettings
 	for _, device := range allDevices {
 		snap, err := captureDeviceSettings(ctx, device)
 		if err != nil {
@@ -933,7 +936,26 @@ func (sp *SessionPipeline) Run(
 			)
 			continue
 		}
+		snapshots = append(snapshots, snap)
 		defer snap.restore(context.Background())
+	}
+	if len(snapshots) > 0 {
+		sigCh := make(chan os.Signal, 1)
+		signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP)
+		go func() {
+			s, ok := <-sigCh
+			if !ok {
+				return
+			}
+			fmt.Printf("[pipeline] caught %s — running device-preserve restore before exit\n", s)
+			for _, snap := range snapshots {
+				snap.restore(context.Background())
+			}
+			// Re-raise the signal with the default disposition so
+			// the parent shell still sees the expected exit status.
+			signal.Reset(s)
+			_ = syscall.Kill(syscall.Getpid(), s.(syscall.Signal))
+		}()
 	}
 
 	for _, device := range allDevices {
@@ -963,27 +985,21 @@ func (sp *SessionPipeline) Run(
 			launchCtx, lc := context.WithTimeout(
 				ctx, 10*time.Second,
 			)
-			// Launch with QA credentials via intent extras
-			// so the app auto-logs in (bypasses keyboard).
+			// Launch with a clean intent — see structured_executor.go
+			// for the full justification of why qa_username/
+			// qa_password extras are forbidden (HelixQA's
+			// "Fully Autonomous LLM-Driven QA" + the consuming
+			// project's "Universal Solution Principle").
 			args := []string{
 				"-s", device, "shell", "am", "start",
 				"-n", sp.config.AndroidPackage +
 					"/.ui.MainActivity",
 			}
-			// Inject credentials from KB if available.
-			user := sp.config.qaUsername()
-			pass := sp.config.qaPassword()
-			if user != "" && pass != "" {
-				args = append(args,
-					"--es", "qa_username", user,
-					"--es", "qa_password", pass,
-				)
-				fmt.Printf(
-					"[pipeline] launching %s on %s "+
-						"with QA auto-login\n",
-					sp.config.AndroidPackage, device,
-				)
-			}
+			fmt.Printf(
+				"[pipeline] launching %s on %s "+
+					"(LLM-driven login, no bypass extras)\n",
+				sp.config.AndroidPackage, device,
+			)
 			_, _ = osexec.CommandContext(
 				launchCtx, "adb", args...,
 			).CombinedOutput()
@@ -1765,18 +1781,15 @@ func (sp *SessionPipeline) Run(
 				launchCtx, lc := context.WithTimeout(
 					ctx, 10*time.Second,
 				)
+				// Clean launch — qa_username/qa_password
+				// extras are forbidden (see structured_executor.go
+				// for the full justification: HelixQA's
+				// LLM-driven constitution + the app-side
+				// Universal Solution Principle).
 				args := []string{
 					"-s", ct.device, "shell", "am", "start",
 					"-n", sp.config.AndroidPackage +
 						"/.ui.MainActivity",
-				}
-				user := sp.config.qaUsername()
-				pass := sp.config.qaPassword()
-				if user != "" && pass != "" {
-					args = append(args,
-						"--es", "qa_username", user,
-						"--es", "qa_password", pass,
-					)
 				}
 				_, _ = osexec.CommandContext(
 					launchCtx, "adb", args...,
@@ -1905,6 +1918,18 @@ func (sp *SessionPipeline) Run(
 				// Guard: verify the target app is still in the
 				// foreground. If the LLM navigated away (e.g.,
 				// pressed back to the launcher), relaunch the app.
+				//
+				// FIX-QA-2026-04-29-019 (Settings-trap blocker): when
+				// the system Settings app is in the foreground, the
+				// LLM has likely proposed a DPAD action that would
+				// have toggled an Accessibility setting (font_scale,
+				// brightness, density, etc.). Such actions persist
+				// across sessions and pollute the operator's device.
+				// We hard-block any further action this iteration —
+				// relaunch the target app and `continue` so the next
+				// LLM call screenshots the correct app, not Settings.
+				// Without this `continue`, the guard relaunched the
+				// app but then dispatched a now-mis-aligned action.
 				if (platform == "android" || platform == "androidtv") && device != "" && expectedPkg != "" {
 					fgOut, _ := osexec.CommandContext(
 						curiosityCtx,
@@ -1912,30 +1937,40 @@ func (sp *SessionPipeline) Run(
 						"shell", "dumpsys", "window", "windows",
 					).CombinedOutput()
 					fgStr := string(fgOut)
-					// Check if the expected package appears in the
-					// current focus window.
-					if len(fgStr) > 0 && !strings.Contains(fgStr, expectedPkg) {
+					// Settings package names vary by OEM — match all
+					// known patterns + a generic "settings" substring.
+					inSettings := strings.Contains(fgStr, "com.android.tv.settings") ||
+						strings.Contains(fgStr, "com.android.settings") ||
+						strings.Contains(fgStr, "com.google.android.tvlauncher") &&
+							strings.Contains(fgStr, "Settings")
+					driftedAway := len(fgStr) > 0 && !strings.Contains(fgStr, expectedPkg)
+					if inSettings || driftedAway {
+						reason := "app not in foreground"
+						if inSettings {
+							reason = "device Settings detected in foreground (Article VIII guard)"
+						}
 						fmt.Printf(
-							"  [curiosity %s #%d] app not in foreground, relaunching %s\n",
-							platform, i+1, expectedPkg,
+							"  [curiosity %s #%d] %s — relaunching %s and skipping this step\n",
+							platform, i+1, reason, expectedPkg,
 						)
+						// Clean relaunch — see structured_executor.go
+						// for the qa_username/qa_password ban
+						// rationale.
 						launchArgs := []string{
 							"-s", device, "shell", "am", "start",
 							"-n", expectedPkg + "/.ui.MainActivity",
-						}
-						user := sp.config.qaUsername()
-						pass := sp.config.qaPassword()
-						if user != "" && pass != "" {
-							launchArgs = append(launchArgs,
-								"--es", "qa_username", user,
-								"--es", "qa_password", pass,
-							)
 						}
 						_, _ = osexec.CommandContext(
 							curiosityCtx,
 							"adb", launchArgs...,
 						).CombinedOutput()
 						time.Sleep(3 * time.Second)
+						// CRITICAL: skip the rest of this iteration
+						// so the LLM's now-stale action (generated
+						// from the wrong screenshot) is NOT
+						// dispatched. The next iteration will
+						// screenshot the correct app and re-plan.
+						continue
 					}
 				}
 

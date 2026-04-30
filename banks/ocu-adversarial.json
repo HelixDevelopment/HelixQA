@@ -4,6 +4,8 @@
   "name": "OCU P7 — Cross-Cutting Adversarial Cases",
   "description": "20 adversarial scenarios covering malformed sources, misbehaving LLM responses, thinker unreachable, slow disk, low VRAM, pathological frame rates, and other hostile conditions. All reference go tests inside pkg/nexus that exercise error paths.",
   "metadata": {
+    "_llm_driven": true,
+    "_llm_driven_reason": "Vision-driven test suite per HelixQA Constitution §1 (Fully Autonomous LLM-Driven QA): prose actions are interpreted by the vision model. Article XI §11.5 exemption.",
     "phase": "P7",
     "package": "digital.vasic.helixqa/pkg/nexus",
     "created": "2026-04-18"

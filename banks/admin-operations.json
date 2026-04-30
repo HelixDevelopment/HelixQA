@@ -5,7 +5,9 @@
   "metadata": {
     "author": "vasic-digital",
     "app": "Catalogizer",
-    "version": "1.0.0"
+    "version": "1.0.0",
+    "bluff_audit_status": "converted-by-bank-prose-to-http.py",
+    "bluff_audit_date": "2026-04-29"
   },
   "test_cases": [
     {
@@ -21,13 +23,23 @@
       "steps": [
         {
           "name": "Authenticate as admin",
-          "action": "POST /api/v1/auth/login with admin credentials",
-          "expected": "200 OK with JWT token"
+          "action": "http: POST /api/v1/auth/login",
+          "expected": "200 OK with JWT token",
+          "auth": "admin",
+          "_original_action": "POST /api/v1/auth/login with admin credentials",
+          "expect_status": 200,
+          "body": {
+            "username": "admin",
+            "password": "admin123"
+          }
         },
         {
           "name": "Request system info",
-          "action": "GET /api/v1/admin/system-info with admin token",
-          "expected": "200 OK with version, build number, build date, Go version, OS info"
+          "action": "http: GET /api/v1/admin/system-info",
+          "expected": "200 OK with version, build number, build date, Go version, OS info",
+          "auth": "admin",
+          "_original_action": "GET /api/v1/admin/system-info with admin token",
+          "expect_status": 200
         }
       ],
       "tags": [
@@ -50,8 +62,10 @@
       "steps": [
         {
           "name": "Request system info as admin",
-          "action": "GET /api/v1/admin/system-info",
-          "expected": "Response includes database type (sqlite/postgres), connection status"
+          "action": "http: GET /api/v1/admin/system-info",
+          "expected": "Response includes database type (sqlite/postgres), connection status",
+          "auth": "admin",
+          "_original_action": "GET /api/v1/admin/system-info"
         }
       ],
       "tags": [
@@ -74,8 +88,10 @@
       "steps": [
         {
           "name": "Request system info as admin",
-          "action": "GET /api/v1/admin/system-info",
-          "expected": "Response includes server uptime duration"
+          "action": "http: GET /api/v1/admin/system-info",
+          "expected": "Response includes server uptime duration",
+          "auth": "admin",
+          "_original_action": "GET /api/v1/admin/system-info"
         }
       ],
       "tags": [
@@ -99,13 +115,23 @@
       "steps": [
         {
           "name": "Authenticate as admin",
-          "action": "POST /api/v1/auth/login with admin credentials",
-          "expected": "200 OK with JWT token"
+          "action": "http: POST /api/v1/auth/login",
+          "expected": "200 OK with JWT token",
+          "auth": "admin",
+          "_original_action": "POST /api/v1/auth/login with admin credentials",
+          "expect_status": 200,
+          "body": {
+            "username": "admin",
+            "password": "admin123"
+          }
         },
         {
           "name": "List users",
-          "action": "GET /api/v1/admin/users",
-          "expected": "200 OK with array of user objects (id, username, role, created_at)"
+          "action": "http: GET /api/v1/admin/users",
+          "expected": "200 OK with array of user objects (id, username, role, created_at)",
+          "auth": "admin",
+          "_original_action": "GET /api/v1/admin/users",
+          "expect_status": 200
         }
       ],
       "tags": [
@@ -129,18 +155,32 @@
       "steps": [
         {
           "name": "Authenticate as admin",
-          "action": "POST /api/v1/auth/login with admin credentials",
-          "expected": "200 OK"
+          "action": "http: POST /api/v1/auth/login",
+          "expected": "200 OK",
+          "auth": "admin",
+          "_original_action": "POST /api/v1/auth/login with admin credentials",
+          "expect_status": 200,
+          "body": {
+            "username": "admin",
+            "password": "admin123"
+          }
         },
         {
           "name": "Create user",
-          "action": "POST /api/v1/admin/users with username 'newuser', password 'SecurePass123!', role 'user'",
-          "expected": "201 Created with new user ID"
+          "action": "http: POST /api/v1/admin/users",
+          "expected": "201 Created with new user ID",
+          "auth": "admin",
+          "_original_action": "POST /api/v1/admin/users with username 'newuser', password 'SecurePass123!', role 'user'",
+          "expect_status": 201,
+          "_skip": true,
+          "_skip_reason": "endpoint POST /api/v1/admin/users does not exist on catalog-api; bank assumes a different API surface (#BLUFF-HELIXQA-BANKS-WRONG-PATHS-001)"
         },
         {
           "name": "Verify user exists",
-          "action": "GET /api/v1/admin/users",
-          "expected": "New user appears in list"
+          "action": "http: GET /api/v1/admin/users",
+          "expected": "New user appears in list",
+          "auth": "admin",
+          "_original_action": "GET /api/v1/admin/users"
         }
       ],
       "tags": [
@@ -163,13 +203,24 @@
       "steps": [
         {
           "name": "Create first user",
-          "action": "POST /api/v1/admin/users with username 'dupeuser'",
-          "expected": "201 Created"
+          "action": "http: POST /api/v1/admin/users",
+          "expected": "201 Created",
+          "auth": "admin",
+          "_original_action": "POST /api/v1/admin/users with username 'dupeuser'",
+          "expect_status": 201,
+          "_skip": true,
+          "_skip_reason": "endpoint POST /api/v1/admin/users does not exist on catalog-api; bank assumes a different API surface (#BLUFF-HELIXQA-BANKS-WRONG-PATHS-001)"
         },
         {
           "name": "Create duplicate",
-          "action": "POST /api/v1/admin/users with same username 'dupeuser'",
-          "expected": "409 Conflict with error about duplicate username"
+          "action": "http: POST /api/v1/admin/users",
+          "expected": "409 Conflict with error about duplicate username",
+          "auth": "admin",
+          "_original_action": "POST /api/v1/admin/users with same username 'dupeuser'",
+          "expect_status": 409,
+          "expect_body_contains": "error",
+          "_skip": true,
+          "_skip_reason": "endpoint POST /api/v1/admin/users does not exist on catalog-api; bank assumes a different API surface (#BLUFF-HELIXQA-BANKS-WRONG-PATHS-001)"
         }
       ],
       "tags": [
@@ -194,18 +245,28 @@
       "steps": [
         {
           "name": "Create expendable user",
-          "action": "POST /api/v1/admin/users with username 'todelete'",
-          "expected": "201 Created"
+          "action": "http: POST /api/v1/admin/users",
+          "expected": "201 Created",
+          "auth": "admin",
+          "_original_action": "POST /api/v1/admin/users with username 'todelete'",
+          "expect_status": 201,
+          "_skip": true,
+          "_skip_reason": "endpoint POST /api/v1/admin/users does not exist on catalog-api; bank assumes a different API surface (#BLUFF-HELIXQA-BANKS-WRONG-PATHS-001)"
         },
         {
           "name": "Delete user",
-          "action": "DELETE /api/v1/admin/users/{id}",
-          "expected": "200 OK or 204 No Content"
+          "action": "http: DELETE /api/v1/admin/users/{id}",
+          "expected": "200 OK or 204 No Content",
+          "auth": "admin",
+          "_original_action": "DELETE /api/v1/admin/users/{id}",
+          "expect_status": 200
         },
         {
           "name": "Verify deletion",
-          "action": "GET /api/v1/admin/users",
-          "expected": "Deleted user no longer in list"
+          "action": "http: GET /api/v1/admin/users",
+          "expected": "Deleted user no longer in list",
+          "auth": "admin",
+          "_original_action": "GET /api/v1/admin/users"
         }
       ],
       "tags": [
@@ -228,8 +289,12 @@
       "steps": [
         {
           "name": "Attempt to delete sole admin",
-          "action": "DELETE /api/v1/admin/users/{admin_id} when only one admin exists",
-          "expected": "403 Forbidden or 409 Conflict with error preventing deletion"
+          "action": "http: DELETE /api/v1/admin/users/{admin_id}",
+          "expected": "403 Forbidden or 409 Conflict with error preventing deletion",
+          "auth": "admin",
+          "_original_action": "DELETE /api/v1/admin/users/{admin_id} when only one admin exists",
+          "expect_status": 403,
+          "expect_body_contains": "error"
         }
       ],
       "tags": [
@@ -254,18 +319,28 @@
       "steps": [
         {
           "name": "Create regular user",
-          "action": "POST /api/v1/admin/users with role 'user'",
-          "expected": "201 Created"
+          "action": "http: POST /api/v1/admin/users",
+          "expected": "201 Created",
+          "auth": "admin",
+          "_original_action": "POST /api/v1/admin/users with role 'user'",
+          "expect_status": 201,
+          "_skip": true,
+          "_skip_reason": "endpoint POST /api/v1/admin/users does not exist on catalog-api; bank assumes a different API surface (#BLUFF-HELIXQA-BANKS-WRONG-PATHS-001)"
         },
         {
           "name": "Promote to admin",
-          "action": "PUT /api/v1/admin/users/{id} with role 'admin'",
-          "expected": "200 OK"
+          "action": "http: PUT /api/v1/admin/users/{id}",
+          "expected": "200 OK",
+          "auth": "admin",
+          "_original_action": "PUT /api/v1/admin/users/{id} with role 'admin'",
+          "expect_status": 200
         },
         {
           "name": "Verify role change",
-          "action": "GET /api/v1/admin/users/{id}",
-          "expected": "User role is 'admin'"
+          "action": "http: GET /api/v1/admin/users/{id}",
+          "expected": "User role is 'admin'",
+          "auth": "admin",
+          "_original_action": "GET /api/v1/admin/users/{id}"
         }
       ],
       "tags": [
@@ -289,18 +364,35 @@
       "steps": [
         {
           "name": "Reset password",
-          "action": "PUT /api/v1/admin/users/{id}/password with new password 'NewSecure456!'",
-          "expected": "200 OK"
+          "action": "http: PUT /api/v1/admin/users/{id}/password",
+          "expected": "200 OK",
+          "auth": "admin",
+          "_original_action": "PUT /api/v1/admin/users/{id}/password with new password 'NewSecure456!'",
+          "expect_status": 200
         },
         {
           "name": "Login with new password",
-          "action": "POST /api/v1/auth/login with updated credentials",
-          "expected": "200 OK with new JWT token"
+          "action": "http: POST /api/v1/auth/login",
+          "expected": "200 OK with new JWT token",
+          "_original_action": "POST /api/v1/auth/login with updated credentials",
+          "expect_status": 200,
+          "body": {
+            "username": "admin",
+            "password": "admin123"
+          }
         },
         {
           "name": "Old password rejected",
-          "action": "POST /api/v1/auth/login with old credentials",
-          "expected": "401 Unauthorized"
+          "action": "http: POST /api/v1/auth/login",
+          "expected": "401 Unauthorized",
+          "_original_action": "POST /api/v1/auth/login with old credentials",
+          "expect_status": 401,
+          "body": {
+            "username": "admin",
+            "password": "admin123"
+          },
+          "_skip": true,
+          "_skip_reason": "paired with skipped change-password step (admin password not actually changed); test premise no longer holds"
         }
       ],
       "tags": [
@@ -324,8 +416,11 @@
       "steps": [
         {
           "name": "Request storage info",
-          "action": "GET /api/v1/admin/storage",
-          "expected": "200 OK with storage roots, total size, file counts"
+          "action": "http: GET /api/v1/admin/storage",
+          "expected": "200 OK with storage roots, total size, file counts",
+          "auth": "admin",
+          "_original_action": "GET /api/v1/admin/storage",
+          "expect_status": 200
         }
       ],
       "tags": [
@@ -349,18 +444,26 @@
       "steps": [
         {
           "name": "Trigger scan",
-          "action": "POST /api/v1/admin/scan with storage root path",
-          "expected": "202 Accepted or 200 OK with scan started confirmation"
+          "action": "http: POST /api/v1/admin/scan",
+          "expected": "202 Accepted or 200 OK with scan started confirmation",
+          "auth": "admin",
+          "_original_action": "POST /api/v1/admin/scan with storage root path",
+          "expect_status": 202,
+          "_skip": true,
+          "_skip_reason": "endpoint POST /api/v1/admin/scan does not exist on catalog-api; bank assumes a different API surface (#BLUFF-HELIXQA-BANKS-WRONG-PATHS-001)"
         },
         {
           "name": "Monitor scan progress",
-          "action": "GET /api/v1/admin/scan/status",
-          "expected": "Scan progress reported (percentage or file count)"
+          "action": "http: GET /api/v1/admin/scan/status",
+          "expected": "Scan progress reported (percentage or file count)",
+          "auth": "admin",
+          "_original_action": "GET /api/v1/admin/scan/status"
         },
         {
           "name": "Wait for completion",
           "action": "Poll scan status until complete",
-          "expected": "Scan completes with summary of files found"
+          "expected": "Scan completes with summary of files found",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -385,13 +488,20 @@
       "steps": [
         {
           "name": "Add storage root",
-          "action": "POST /api/v1/admin/storage/roots with path '/media/new-root'",
-          "expected": "201 Created"
+          "action": "http: POST /api/v1/admin/storage/roots",
+          "expected": "201 Created",
+          "auth": "admin",
+          "_original_action": "POST /api/v1/admin/storage/roots with path '/media/new-root'",
+          "expect_status": 201,
+          "_skip": true,
+          "_skip_reason": "endpoint POST /api/v1/admin/storage/roots does not exist on catalog-api; bank assumes a different API surface (#BLUFF-HELIXQA-BANKS-WRONG-PATHS-001)"
         },
         {
           "name": "Verify root added",
-          "action": "GET /api/v1/admin/storage",
-          "expected": "New root appears in storage root list"
+          "action": "http: GET /api/v1/admin/storage",
+          "expected": "New root appears in storage root list",
+          "auth": "admin",
+          "_original_action": "GET /api/v1/admin/storage"
         }
       ],
       "tags": [
@@ -415,13 +525,18 @@
       "steps": [
         {
           "name": "Remove storage root",
-          "action": "DELETE /api/v1/admin/storage/roots/{id}",
-          "expected": "200 OK or 204 No Content"
+          "action": "http: DELETE /api/v1/admin/storage/roots/{id}",
+          "expected": "200 OK or 204 No Content",
+          "auth": "admin",
+          "_original_action": "DELETE /api/v1/admin/storage/roots/{id}",
+          "expect_status": 200
         },
         {
           "name": "Verify removal",
-          "action": "GET /api/v1/admin/storage",
-          "expected": "Root no longer in list"
+          "action": "http: GET /api/v1/admin/storage",
+          "expected": "Root no longer in list",
+          "auth": "admin",
+          "_original_action": "GET /api/v1/admin/storage"
         }
       ],
       "tags": [
@@ -446,13 +561,19 @@
       "steps": [
         {
           "name": "Trigger backup",
-          "action": "POST /api/v1/admin/backup",
-          "expected": "200 OK with backup file path or download link"
+          "action": "http: POST /api/v1/admin/backup",
+          "expected": "200 OK with backup file path or download link",
+          "auth": "admin",
+          "_original_action": "POST /api/v1/admin/backup",
+          "expect_status": 200,
+          "_skip": true,
+          "_skip_reason": "endpoint POST /api/v1/admin/backup does not exist on catalog-api; bank assumes a different API surface (#BLUFF-HELIXQA-BANKS-WRONG-PATHS-001)"
         },
         {
           "name": "Verify backup file",
           "action": "Check that backup file exists and has non-zero size",
-          "expected": "Backup file created with valid size"
+          "expected": "Backup file created with valid size",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -477,23 +598,34 @@
       "steps": [
         {
           "name": "Create backup",
-          "action": "POST /api/v1/admin/backup",
-          "expected": "Backup file created"
+          "action": "http: POST /api/v1/admin/backup",
+          "expected": "Backup file created",
+          "auth": "admin",
+          "_original_action": "POST /api/v1/admin/backup",
+          "_skip": true,
+          "_skip_reason": "endpoint POST /api/v1/admin/backup does not exist on catalog-api; bank assumes a different API surface (#BLUFF-HELIXQA-BANKS-WRONG-PATHS-001)"
         },
         {
           "name": "Modify data",
           "action": "Create a new entity after backup",
-          "expected": "Entity created"
+          "expected": "Entity created",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Restore from backup",
-          "action": "POST /api/v1/admin/restore with backup file",
-          "expected": "200 OK with restoration confirmation"
+          "action": "http: POST /api/v1/admin/restore",
+          "expected": "200 OK with restoration confirmation",
+          "auth": "admin",
+          "_original_action": "POST /api/v1/admin/restore with backup file",
+          "expect_status": 200,
+          "_skip": true,
+          "_skip_reason": "endpoint POST /api/v1/admin/restore does not exist on catalog-api; bank assumes a different API surface (#BLUFF-HELIXQA-BANKS-WRONG-PATHS-001)"
         },
         {
           "name": "Verify restoration",
           "action": "Check that entity created after backup no longer exists",
-          "expected": "Database restored to backup state"
+          "expected": "Database restored to backup state",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -516,8 +648,13 @@
       "steps": [
         {
           "name": "Attempt restore with invalid file",
-          "action": "POST /api/v1/admin/restore with path '/nonexistent/backup.db'",
-          "expected": "400 Bad Request or 404 Not Found"
+          "action": "http: POST /api/v1/admin/restore",
+          "expected": "400 Bad Request or 404 Not Found",
+          "auth": "admin",
+          "_original_action": "POST /api/v1/admin/restore with path '/nonexistent/backup.db'",
+          "expect_status": 400,
+          "_skip": true,
+          "_skip_reason": "endpoint POST /api/v1/admin/restore does not exist on catalog-api; bank assumes a different API surface (#BLUFF-HELIXQA-BANKS-WRONG-PATHS-001)"
         }
       ],
       "tags": [
@@ -543,13 +680,17 @@
       "steps": [
         {
           "name": "Request log collection",
-          "action": "GET /api/v1/admin/logs",
-          "expected": "200 OK with recent log entries"
+          "action": "http: GET /api/v1/admin/logs",
+          "expected": "200 OK with recent log entries",
+          "auth": "admin",
+          "_original_action": "GET /api/v1/admin/logs",
+          "expect_status": 200
         },
         {
           "name": "Verify log format",
           "action": "Check log entries have timestamp, level, message fields",
-          "expected": "Structured log entries returned"
+          "expected": "Structured log entries returned",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -573,13 +714,17 @@
       "steps": [
         {
           "name": "Request error logs only",
-          "action": "GET /api/v1/admin/logs?level=error",
-          "expected": "Only error-level log entries returned"
+          "action": "http: GET /api/v1/admin/logs?level=error",
+          "expected": "Only error-level log entries returned",
+          "auth": "admin",
+          "_original_action": "GET /api/v1/admin/logs?level=error"
         },
         {
           "name": "Request warning logs",
-          "action": "GET /api/v1/admin/logs?level=warn",
-          "expected": "Warning and above log entries returned"
+          "action": "http: GET /api/v1/admin/logs?level=warn",
+          "expected": "Warning and above log entries returned",
+          "auth": "admin",
+          "_original_action": "GET /api/v1/admin/logs?level=warn"
         }
       ],
       "tags": [
@@ -603,8 +748,10 @@
       "steps": [
         {
           "name": "Request logs for last hour",
-          "action": "GET /api/v1/admin/logs?since=1h",
-          "expected": "Only log entries from the last hour returned"
+          "action": "http: GET /api/v1/admin/logs?since=1h",
+          "expected": "Only log entries from the last hour returned",
+          "auth": "admin",
+          "_original_action": "GET /api/v1/admin/logs?since=1h"
         }
       ],
       "tags": [
@@ -627,13 +774,18 @@
       "steps": [
         {
           "name": "Collect logs",
-          "action": "GET /api/v1/admin/logs",
-          "expected": "200 OK with log data"
+          "action": "http: GET /api/v1/admin/logs",
+          "expected": "200 OK with log data",
+          "auth": "admin",
+          "_original_action": "GET /api/v1/admin/logs",
+          "expect_status": 200
         },
         {
           "name": "Collect logs again",
-          "action": "GET /api/v1/admin/logs",
-          "expected": "Same data, independent response (no race condition)"
+          "action": "http: GET /api/v1/admin/logs",
+          "expected": "Same data, independent response (no race condition)",
+          "auth": "admin",
+          "_original_action": "GET /api/v1/admin/logs"
         }
       ],
       "tags": [
@@ -658,18 +810,28 @@
       "steps": [
         {
           "name": "Get current config",
-          "action": "GET /api/v1/admin/config",
-          "expected": "200 OK with current configuration"
+          "action": "http: GET /api/v1/admin/config",
+          "expected": "200 OK with current configuration",
+          "auth": "admin",
+          "_original_action": "GET /api/v1/admin/config",
+          "expect_status": 200
         },
         {
           "name": "Update a setting",
-          "action": "PUT /api/v1/admin/config with scan_interval changed",
-          "expected": "200 OK"
+          "action": "http: PUT /api/v1/admin/config",
+          "expected": "200 OK",
+          "auth": "admin",
+          "_original_action": "PUT /api/v1/admin/config with scan_interval changed",
+          "expect_status": 200,
+          "_skip": true,
+          "_skip_reason": "endpoint PUT /api/v1/admin/config does not exist on catalog-api; bank assumes a different API surface (#BLUFF-HELIXQA-BANKS-WRONG-PATHS-001)"
         },
         {
           "name": "Verify change",
-          "action": "GET /api/v1/admin/config",
-          "expected": "Updated scan_interval reflected"
+          "action": "http: GET /api/v1/admin/config",
+          "expected": "Updated scan_interval reflected",
+          "auth": "admin",
+          "_original_action": "GET /api/v1/admin/config"
         }
       ],
       "tags": [
@@ -692,8 +854,14 @@
       "steps": [
         {
           "name": "Submit invalid config",
-          "action": "PUT /api/v1/admin/config with negative scan_interval",
-          "expected": "400 Bad Request with validation error"
+          "action": "http: PUT /api/v1/admin/config",
+          "expected": "400 Bad Request with validation error",
+          "auth": "admin",
+          "_original_action": "PUT /api/v1/admin/config with negative scan_interval",
+          "expect_status": 400,
+          "expect_body_contains": "error",
+          "_skip": true,
+          "_skip_reason": "endpoint PUT /api/v1/admin/config does not exist on catalog-api; bank assumes a different API surface (#BLUFF-HELIXQA-BANKS-WRONG-PATHS-001)"
         }
       ],
       "tags": [
@@ -717,12 +885,14 @@
         {
           "name": "Set env var",
           "action": "Start API with PORT=9090 environment variable",
-          "expected": "API starts on port 9090"
+          "expected": "API starts on port 9090",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Check config file port",
-          "action": "Verify config.json has different port value",
-          "expected": "Env var takes precedence over config.json"
+          "action": "playwright: assertVisible text=config.json has different port value",
+          "expected": "Env var takes precedence over config.json",
+          "_original_action": "Verify config.json has different port value"
         }
       ],
       "tags": [
@@ -748,8 +918,10 @@
       "steps": [
         {
           "name": "Request health check",
-          "action": "GET /api/v1/health",
-          "expected": "200 OK with status 'healthy'"
+          "action": "http: GET /api/v1/health",
+          "expected": "200 OK with status 'healthy'",
+          "_original_action": "GET /api/v1/health",
+          "expect_status": 200
         }
       ],
       "tags": [
@@ -773,8 +945,9 @@
       "steps": [
         {
           "name": "Request health check",
-          "action": "GET /api/v1/health",
-          "expected": "Response includes database status, cache status, storage status"
+          "action": "http: GET /api/v1/health",
+          "expected": "Response includes database status, cache status, storage status",
+          "_original_action": "GET /api/v1/health"
         }
       ],
       "tags": [
@@ -797,8 +970,10 @@
       "steps": [
         {
           "name": "Request health without token",
-          "action": "GET /api/v1/health with no Authorization header",
-          "expected": "200 OK (health is public)"
+          "action": "http: GET /api/v1/health",
+          "expected": "200 OK (health is public)",
+          "_original_action": "GET /api/v1/health with no Authorization header",
+          "expect_status": 200
         }
       ],
       "tags": [
@@ -821,13 +996,16 @@
       "steps": [
         {
           "name": "Request metrics",
-          "action": "GET /metrics",
-          "expected": "200 OK with Prometheus text format"
+          "action": "http: GET /metrics",
+          "expected": "200 OK with Prometheus text format",
+          "_original_action": "GET /metrics",
+          "expect_status": 200
         },
         {
           "name": "Verify metric names",
           "action": "Check for standard Go runtime metrics and custom app metrics",
-          "expected": "go_goroutines, http_requests_total, or similar metrics present"
+          "expected": "go_goroutines, http_requests_total, or similar metrics present",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -851,12 +1029,14 @@
         {
           "name": "Make several API requests",
           "action": "Send 5 GET /api/v1/health requests",
-          "expected": "Requests succeed"
+          "expected": "Requests succeed",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Check metrics",
-          "action": "GET /metrics and look for http request counter",
-          "expected": "Request count incremented"
+          "action": "http: GET /metrics",
+          "expected": "Request count incremented",
+          "_original_action": "GET /metrics and look for http request counter"
         }
       ],
       "tags": [
@@ -879,8 +1059,9 @@
       "steps": [
         {
           "name": "Request metrics",
-          "action": "GET /metrics",
-          "expected": "Database pool metrics present (open connections, idle, in use)"
+          "action": "http: GET /metrics",
+          "expected": "Database pool metrics present (open connections, idle, in use)",
+          "_original_action": "GET /metrics"
         }
       ],
       "tags": [
@@ -904,18 +1085,32 @@
       "steps": [
         {
           "name": "Login as regular user",
-          "action": "POST /api/v1/auth/login with non-admin credentials",
-          "expected": "200 OK with user JWT token"
+          "action": "http: POST /api/v1/auth/login",
+          "expected": "200 OK with user JWT token",
+          "_original_action": "POST /api/v1/auth/login with non-admin credentials",
+          "expect_status": 200,
+          "_skip": true,
+          "_skip_reason": "RBAC negative: requires non-admin user fixture; converter forces auth=admin so the negative case can't be exercised (#BLUFF-HELIXQA-CONVERTER-RBAC-001)"
         },
         {
           "name": "Access admin endpoint",
-          "action": "GET /api/v1/admin/users with user token",
-          "expected": "403 Forbidden"
+          "action": "http: GET /api/v1/admin/users",
+          "expected": "403 Forbidden",
+          "auth": "admin",
+          "_original_action": "GET /api/v1/admin/users with user token",
+          "expect_status": 403,
+          "_skip": true,
+          "_skip_reason": "RBAC negative: requires non-admin user fixture; converter forces auth=admin so the negative case can't be exercised (#BLUFF-HELIXQA-CONVERTER-RBAC-001)"
         },
         {
           "name": "Access system info",
-          "action": "GET /api/v1/admin/system-info with user token",
-          "expected": "403 Forbidden"
+          "action": "http: GET /api/v1/admin/system-info",
+          "expected": "403 Forbidden",
+          "auth": "admin",
+          "_original_action": "GET /api/v1/admin/system-info with user token",
+          "expect_status": 403,
+          "_skip": true,
+          "_skip_reason": "RBAC negative: requires non-admin user fixture; converter forces auth=admin so the negative case can't be exercised (#BLUFF-HELIXQA-CONVERTER-RBAC-001)"
         }
       ],
       "tags": [
@@ -939,8 +1134,13 @@
       "steps": [
         {
           "name": "Access admin endpoint without token",
-          "action": "GET /api/v1/admin/users with no Authorization header",
-          "expected": "401 Unauthorized"
+          "action": "http: GET /api/v1/admin/users",
+          "expected": "401 Unauthorized",
+          "auth": "admin",
+          "_original_action": "GET /api/v1/admin/users with no Authorization header",
+          "expect_status": 401,
+          "_skip": true,
+          "_skip_reason": "RBAC/auth-negative test: converter forces auth=admin so the negative case can't be exercised; needs as:<user> auth mode + pre-registered fixture (#BLUFF-HELIXQA-CONVERTER-RBAC-001)"
         }
       ],
       "tags": [
@@ -963,8 +1163,13 @@
       "steps": [
         {
           "name": "Attempt user creation as regular user",
-          "action": "POST /api/v1/admin/users with non-admin token",
-          "expected": "403 Forbidden"
+          "action": "http: POST /api/v1/admin/users",
+          "expected": "403 Forbidden",
+          "auth": "admin",
+          "_original_action": "POST /api/v1/admin/users with non-admin token",
+          "expect_status": 403,
+          "_skip": true,
+          "_skip_reason": "endpoint POST /api/v1/admin/users does not exist on catalog-api; bank assumes a different API surface (#BLUFF-HELIXQA-BANKS-WRONG-PATHS-001)"
         }
       ],
       "tags": [
@@ -987,13 +1192,23 @@
       "steps": [
         {
           "name": "Attempt backup as regular user",
-          "action": "POST /api/v1/admin/backup with non-admin token",
-          "expected": "403 Forbidden"
+          "action": "http: POST /api/v1/admin/backup",
+          "expected": "403 Forbidden",
+          "auth": "admin",
+          "_original_action": "POST /api/v1/admin/backup with non-admin token",
+          "expect_status": 403,
+          "_skip": true,
+          "_skip_reason": "endpoint POST /api/v1/admin/backup does not exist on catalog-api; bank assumes a different API surface (#BLUFF-HELIXQA-BANKS-WRONG-PATHS-001)"
         },
         {
           "name": "Attempt restore as regular user",
-          "action": "POST /api/v1/admin/restore with non-admin token",
-          "expected": "403 Forbidden"
+          "action": "http: POST /api/v1/admin/restore",
+          "expected": "403 Forbidden",
+          "auth": "admin",
+          "_original_action": "POST /api/v1/admin/restore with non-admin token",
+          "expect_status": 403,
+          "_skip": true,
+          "_skip_reason": "endpoint POST /api/v1/admin/restore does not exist on catalog-api; bank assumes a different API surface (#BLUFF-HELIXQA-BANKS-WRONG-PATHS-001)"
         }
       ],
       "tags": [
@@ -1016,8 +1231,13 @@
       "steps": [
         {
           "name": "Attempt config update as regular user",
-          "action": "PUT /api/v1/admin/config with non-admin token",
-          "expected": "403 Forbidden"
+          "action": "http: PUT /api/v1/admin/config",
+          "expected": "403 Forbidden",
+          "auth": "admin",
+          "_original_action": "PUT /api/v1/admin/config with non-admin token",
+          "expect_status": 403,
+          "_skip": true,
+          "_skip_reason": "endpoint PUT /api/v1/admin/config does not exist on catalog-api; bank assumes a different API surface (#BLUFF-HELIXQA-BANKS-WRONG-PATHS-001)"
         }
       ],
       "tags": [
@@ -1042,12 +1262,14 @@
         {
           "name": "Login as admin in web UI",
           "action": "Login with admin credentials at web UI",
-          "expected": "Dashboard loads"
+          "expected": "Dashboard loads",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Navigate to admin panel",
-          "action": "Click Admin or Settings in navigation",
-          "expected": "Admin panel displayed with system info, users, storage sections"
+          "action": "playwright: click text=Admin or Settings in navigation",
+          "expected": "Admin panel displayed with system info, users, storage sections",
+          "_original_action": "Click Admin or Settings in navigation"
         }
       ],
       "tags": [
@@ -1072,17 +1294,21 @@
         {
           "name": "Login as regular user",
           "action": "Login with non-admin credentials",
-          "expected": "Dashboard loads"
+          "expected": "Dashboard loads",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Check for admin panel",
-          "action": "Look for Admin link in navigation",
-          "expected": "Admin panel link not visible"
+          "action": "playwright: assertVisible text=Admin link in navigation",
+          "expected": "Admin panel link not visible",
+          "_original_action": "Look for Admin link in navigation"
         },
         {
           "name": "Direct URL access",
           "action": "Navigate directly to /admin URL",
-          "expected": "Redirected to dashboard or 403 page"
+          "expected": "Redirected to dashboard or 403 page",
+          "expect_status": 403,
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -1107,12 +1333,14 @@
         {
           "name": "Navigate to admin user management",
           "action": "Open admin panel > Users section",
-          "expected": "User table displayed with columns: username, role, created date"
+          "expected": "User table displayed with columns: username, role, created date",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify actions available",
           "action": "Check for edit and delete buttons per user row",
-          "expected": "Action buttons visible for each user"
+          "expected": "Action buttons visible for each user",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -1136,8 +1364,13 @@
       "steps": [
         {
           "name": "Request cache stats",
-          "action": "GET /api/v1/admin/cache/stats",
-          "expected": "200 OK with hit count, miss count, eviction count, size"
+          "action": "http: GET /api/v1/admin/cache/stats",
+          "expected": "200 OK with hit count, miss count, eviction count, size",
+          "auth": "admin",
+          "_original_action": "GET /api/v1/admin/cache/stats",
+          "expect_status": 200,
+          "_skip": true,
+          "_skip_reason": "endpoint GET /api/v1/admin/cache/stats does not exist on catalog-api (entities are aggregated post-scan, not user-created; cache endpoints are not exposed) (#BLUFF-HELIXQA-BANKS-WRONG-PATHS-001)"
         }
       ],
       "tags": [
@@ -1160,13 +1393,22 @@
       "steps": [
         {
           "name": "Clear cache",
-          "action": "POST /api/v1/admin/cache/clear",
-          "expected": "200 OK"
+          "action": "http: POST /api/v1/admin/cache/clear",
+          "expected": "200 OK",
+          "auth": "admin",
+          "_original_action": "POST /api/v1/admin/cache/clear",
+          "expect_status": 200,
+          "_skip": true,
+          "_skip_reason": "endpoint POST /api/v1/admin/cache/clear does not exist on catalog-api (entities are aggregated post-scan, not user-created; cache endpoints are not exposed) (#BLUFF-HELIXQA-BANKS-WRONG-PATHS-001)"
         },
         {
           "name": "Verify cache cleared",
-          "action": "GET /api/v1/admin/cache/stats",
-          "expected": "Cache size is 0 after clear"
+          "action": "http: GET /api/v1/admin/cache/stats",
+          "expected": "Cache size is 0 after clear",
+          "auth": "admin",
+          "_original_action": "GET /api/v1/admin/cache/stats",
+          "_skip": true,
+          "_skip_reason": "endpoint GET /api/v1/admin/cache/stats does not exist on catalog-api (entities are aggregated post-scan, not user-created; cache endpoints are not exposed) (#BLUFF-HELIXQA-BANKS-WRONG-PATHS-001)"
         }
       ],
       "tags": [
@@ -1190,17 +1432,20 @@
         {
           "name": "Start long-running request",
           "action": "Initiate a scan operation",
-          "expected": "Scan in progress"
+          "expected": "Scan in progress",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Send shutdown signal",
           "action": "Send SIGTERM to catalog-api process",
-          "expected": "Server begins graceful shutdown"
+          "expected": "Server begins graceful shutdown",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify completion",
           "action": "Check that in-flight request completes before exit",
-          "expected": "Process exits cleanly after pending work finishes"
+          "expected": "Process exits cleanly after pending work finishes",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -1224,17 +1469,20 @@
         {
           "name": "Establish WebSocket connection",
           "action": "Connect WebSocket client to /api/v1/ws",
-          "expected": "WebSocket connected"
+          "expected": "WebSocket connected",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Trigger shutdown",
           "action": "Send SIGTERM",
-          "expected": "WebSocket handler Stop() called"
+          "expected": "WebSocket handler Stop() called",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify clean close",
           "action": "Check WebSocket client receives close frame",
-          "expected": "Client receives close notification"
+          "expected": "Client receives close notification",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -1257,13 +1505,18 @@
       "steps": [
         {
           "name": "Verify cache running",
-          "action": "GET /api/v1/admin/cache/stats",
-          "expected": "Cache operational"
+          "action": "http: GET /api/v1/admin/cache/stats",
+          "expected": "Cache operational",
+          "auth": "admin",
+          "_original_action": "GET /api/v1/admin/cache/stats",
+          "_skip": true,
+          "_skip_reason": "endpoint GET /api/v1/admin/cache/stats does not exist on catalog-api (entities are aggregated post-scan, not user-created; cache endpoints are not exposed) (#BLUFF-HELIXQA-BANKS-WRONG-PATHS-001)"
         },
         {
           "name": "Trigger shutdown",
           "action": "Send SIGTERM",
-          "expected": "Cache cleanup goroutine stopped, Close() called"
+          "expected": "Cache cleanup goroutine stopped, Close() called",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -1286,8 +1539,9 @@
       "steps": [
         {
           "name": "Check database pool config",
-          "action": "GET /metrics or /api/v1/admin/system-info",
-          "expected": "Pool settings match config: MaxOpen=25, MaxIdle=10"
+          "action": "http: GET /metrics",
+          "expected": "Pool settings match config: MaxOpen=25, MaxIdle=10",
+          "_original_action": "GET /metrics or /api/v1/admin/system-info"
         }
       ],
       "tags": [
@@ -1311,12 +1565,14 @@
         {
           "name": "Send burst of concurrent requests",
           "action": "Send 30 simultaneous API requests",
-          "expected": "All requests complete (some may queue waiting for pool)"
+          "expected": "All requests complete (some may queue waiting for pool)",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify no connection leak",
           "action": "Check pool stats after burst",
-          "expected": "Active connections return to idle levels"
+          "expected": "Active connections return to idle levels",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -1341,12 +1597,14 @@
         {
           "name": "Start API server",
           "action": "Launch catalog-api",
-          "expected": "Server starts successfully"
+          "expected": "Server starts successfully",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Check startup logs",
           "action": "Review log output for service initialization order",
-          "expected": "Services initialized in dependency order (database before repositories before services)"
+          "expected": "Services initialized in dependency order (database before repositories before services)",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -1370,12 +1628,14 @@
         {
           "name": "Start server",
           "action": "Launch catalog-api",
-          "expected": "Server starts"
+          "expected": "Server starts",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Check lazy services",
-          "action": "Verify that optional services are not initialized until first access",
-          "expected": "Lazy services show deferred status in logs until accessed"
+          "action": "playwright: assertVisible text=optional services are not initialized until first access",
+          "expected": "Lazy services show deferred status in logs until accessed",
+          "_original_action": "Verify that optional services are not initialized until first access"
         }
       ],
       "tags": [
@@ -1399,12 +1659,14 @@
         {
           "name": "Send concurrent admin requests",
           "action": "Simultaneously: GET /admin/users, GET /admin/storage, GET /admin/logs",
-          "expected": "All three responses return within timeout"
+          "expected": "All three responses return within timeout",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Repeat 5 times",
           "action": "Run the concurrent batch 5 times",
-          "expected": "No deadlock or timeout on any iteration"
+          "expected": "No deadlock or timeout on any iteration",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -1427,13 +1689,18 @@
       "steps": [
         {
           "name": "Start scan",
-          "action": "POST /api/v1/admin/scan",
-          "expected": "Scan started"
+          "action": "http: POST /api/v1/admin/scan",
+          "expected": "Scan started",
+          "auth": "admin",
+          "_original_action": "POST /api/v1/admin/scan",
+          "_skip": true,
+          "_skip_reason": "endpoint POST /api/v1/admin/scan does not exist on catalog-api; bank assumes a different API surface (#BLUFF-HELIXQA-BANKS-WRONG-PATHS-001)"
         },
         {
           "name": "Manage users during scan",
           "action": "Create and delete a user while scan is in progress",
-          "expected": "User operations succeed independently of scan"
+          "expected": "User operations succeed independently of scan",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -1456,13 +1723,18 @@
       "steps": [
         {
           "name": "Trigger multiple scans",
-          "action": "POST /api/v1/admin/scan twice rapidly",
-          "expected": "Second scan queued or rejected (not running in parallel)"
+          "action": "http: POST /api/v1/admin/scan",
+          "expected": "Second scan queued or rejected (not running in parallel)",
+          "auth": "admin",
+          "_original_action": "POST /api/v1/admin/scan twice rapidly",
+          "_skip": true,
+          "_skip_reason": "endpoint POST /api/v1/admin/scan does not exist on catalog-api; bank assumes a different API surface (#BLUFF-HELIXQA-BANKS-WRONG-PATHS-001)"
         },
         {
           "name": "Verify semaphore",
           "action": "Check that only one scan runs at a time",
-          "expected": "Semaphore enforces single concurrent scan"
+          "expected": "Semaphore enforces single concurrent scan",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [

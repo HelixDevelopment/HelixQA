@@ -13,6 +13,7 @@ import (
 	// JPEG on some ADB versions.
 	_ "image/jpeg"
 	_ "image/png"
+	"os"
 	osexec "os/exec"
 	"path/filepath"
 	"strings"
@@ -38,6 +39,19 @@ type StructuredTestExecutor struct {
 	vision       llm.Provider
 	onFinding    func(analysis.AnalysisFinding)
 	onScreenshot func(platform string, data []byte)
+	// http is the executor for ActionTypeHTTP steps. Lazy-built
+	// the first time an HTTP step appears, using
+	// PipelineConfig.HTTPBaseURL (or env HELIXQA_HTTP_BASE_URL as
+	// a fallback). Nil until needed.
+	http *HTTPExecutor
+
+	// playwright is the executor for ActionTypePlaywright steps.
+	// Lazy-built the first time a Playwright step appears, using
+	// PipelineConfig.PlaywrightCDPURL (or env
+	// HELIXQA_PLAYWRIGHT_CDP_URL). Nil until configured AND
+	// needed; absent config means Playwright steps SKIP rather
+	// than execute.
+	playwright *PlaywrightExecutor
 }
 
 // NewStructuredTestExecutor creates a new structured test executor.
@@ -163,6 +177,21 @@ func (ste *StructuredTestExecutor) executeTestCase(
 		"  [structured] [%s] %s (priority: %s, steps: %d)\n",
 		tc.ID, tc.Name, tc.Priority, len(tc.Steps),
 	)
+
+	// Article XI §11.5: env-dependent tests SKIP-OK when their
+	// declared `requires_env` variables aren't set. Better to
+	// honestly skip than fail-or-bluff-pass on unsupported hardware.
+	for _, envVar := range tc.RequiresEnv {
+		if os.Getenv(envVar) == "" {
+			fmt.Printf(
+				"  [structured] [%s] ⊘ SKIPPED — SKIP-OK: #%s — env %q not set (lab hardware unavailable)\n",
+				tc.ID, envVar, envVar,
+			)
+			result.TestCasesSkipped++
+			result.StepsExecuted += len(tc.Steps)
+			return nil
+		}
+	}
 
 	testPassed := true
 	executedSteps := 0
@@ -488,6 +517,61 @@ func (ste *StructuredTestExecutor) performAction(
 		}
 		return ActionResult{Success: true, Message: fmt.Sprintf("frames differ by %.1f%% — motion detected", diffPct)}
 
+	case testbank.ActionTypeHTTP:
+		// HTTP request against the backend API. Action value is
+		// "<METHOD> <PATH>"; the request body, headers, expected
+		// status, and JSON-path / body-contains assertions are
+		// declared on the TestStep itself. Lazy-builds the
+		// per-session HTTPExecutor on first use.
+		method, urlPath := parseHTTPAction(actionValue)
+		fmt.Printf("      [action] http: %s %s\n", method, urlPath)
+		if ste.http == nil {
+			baseURL := ste.config.HTTPBaseURL
+			if baseURL == "" {
+				baseURL = os.Getenv("HELIXQA_HTTP_BASE_URL")
+			}
+			if baseURL == "" {
+				return ActionResult{Success: false, Message: "http: HELIXQA_HTTP_BASE_URL not set and PipelineConfig.HTTPBaseURL empty"}
+			}
+			ste.http = NewHTTPExecutor(baseURL)
+		}
+		return ste.http.Execute(ctx, method, urlPath, step)
+
+	case testbank.ActionTypeAssert:
+		// Structured assertion against the most recent HTTP
+		// response captured by ActionTypeHTTP. Format:
+		// "<kind>: <expr>" where kind is one of status_eq,
+		// json_path_eq, body_contains, header_eq.
+		if ste.http == nil {
+			return ActionResult{Success: false, Message: "assert: no prior http step in this test case"}
+		}
+		fmt.Printf("      [action] assert: %s\n", actionValue)
+		return runAssertion(ste.http, actionValue)
+
+	case testbank.ActionTypePlaywright:
+		// Web browser action via the Playwright CLI adapter
+		// (Challenges/pkg/userflow.PlaywrightCLIAdapter). Lazy-
+		// builds the per-session executor on first use. When no
+		// CDP URL is configured (PipelineConfig.PlaywrightCDPURL
+		// nor HELIXQA_PLAYWRIGHT_CDP_URL env), the step SKIPs
+		// with PLAYWRIGHT-RUNTIME-PENDING — Article XI §11.2.2
+		// (no silent PASS when the real system is unreachable).
+		fmt.Printf("      [action] playwright: %s\n", actionValue)
+		if ste.playwright == nil {
+			cdpURL := ste.config.PlaywrightCDPURL
+			if cdpURL == "" {
+				cdpURL = os.Getenv("HELIXQA_PLAYWRIGHT_CDP_URL")
+			}
+			if cdpURL == "" {
+				return ActionResult{
+					Skipped: true,
+					Message: fmt.Sprintf("SKIP-OK: #PLAYWRIGHT-RUNTIME-PENDING — set PipelineConfig.PlaywrightCDPURL or HELIXQA_PLAYWRIGHT_CDP_URL to ws://host:port to run %q", actionValue),
+				}
+			}
+			ste.playwright = NewPlaywrightExecutor(cdpURL)
+		}
+		return ste.playwright.Execute(ctx, actionValue)
+
 	case testbank.ActionTypeDescription:
 		// Legacy text-only action. If the author marked it as an
 		// unfinished placeholder ("# TODO: Convert to executable ..."),
@@ -500,12 +584,79 @@ func (ste *StructuredTestExecutor) performAction(
 			return ActionResult{Skipped: true, Message: "Bank placeholder — convert to adb_shell:/sleep:/key:/text:/tap: action"}
 		}
 		fmt.Printf("      [WARNING] Text-only action (not executable): %s\n", actionValue)
-		return ActionResult{Success: false, Message: "Text-only action - not executable! Use adb_shell:, sleep:, etc."}
+		return ActionResult{Success: false, Message: "Text-only action - not executable! Use adb_shell:, sleep:, http:, etc."}
 
 	default:
 		return ActionResult{Success: false, Message: fmt.Sprintf("Unknown action type: %s", actionType)}
 	}
 }
+
+// runAssertion evaluates a structured ActionTypeAssert expression
+// against the HTTPExecutor's most recent response. Format:
+// "status_eq: 200", "json_path_eq: $.foo = bar",
+// "body_contains: hello", "header_eq: Content-Type = application/json".
+func runAssertion(h *HTTPExecutor, value string) ActionResult {
+	idx := strings.Index(value, ":")
+	if idx <= 0 {
+		return ActionResult{Success: false, Message: "assert: format is '<kind>: <expr>'"}
+	}
+	kind := strings.TrimSpace(value[:idx])
+	expr := strings.TrimSpace(value[idx+1:])
+	status, headers, body := h.LastResponse()
+
+	switch kind {
+	case "status_eq":
+		var want int
+		if _, err := fmt.Sscanf(expr, "%d", &want); err != nil {
+			return ActionResult{Success: false, Message: fmt.Sprintf("assert status_eq: bad value %q", expr)}
+		}
+		if status != want {
+			return ActionResult{Success: false, Message: fmt.Sprintf("assert status_eq: got %d, want %d", status, want)}
+		}
+		return ActionResult{Success: true, Message: fmt.Sprintf("status_eq: %d", status)}
+	case "body_contains":
+		if !strings.Contains(string(body), expr) {
+			return ActionResult{Success: false, Message: fmt.Sprintf("assert body_contains: %q not in body", expr)}
+		}
+		return ActionResult{Success: true, Message: fmt.Sprintf("body_contains: %q", expr)}
+	case "json_path_eq":
+		// "$.path = expected"
+		eq := strings.Index(expr, "=")
+		if eq <= 0 {
+			return ActionResult{Success: false, Message: "assert json_path_eq: format is '$.path = expected'"}
+		}
+		path := strings.TrimSpace(expr[:eq])
+		want := strings.TrimSpace(expr[eq+1:])
+		ok, val, err := jsonPathExists(body, path)
+		if err != nil {
+			return ActionResult{Success: false, Message: fmt.Sprintf("assert json_path_eq: %v", err)}
+		}
+		if !ok {
+			return ActionResult{Success: false, Message: fmt.Sprintf("assert json_path_eq: path %q not found", path)}
+		}
+		got := fmt.Sprintf("%v", val)
+		if got != want {
+			return ActionResult{Success: false, Message: fmt.Sprintf("assert json_path_eq: %s = %q, want %q", path, got, want)}
+		}
+		return ActionResult{Success: true, Message: fmt.Sprintf("json_path_eq: %s = %q", path, got)}
+	case "header_eq":
+		// "Header-Name = expected"
+		eq := strings.Index(expr, "=")
+		if eq <= 0 {
+			return ActionResult{Success: false, Message: "assert header_eq: format is 'Name = value'"}
+		}
+		name := strings.TrimSpace(expr[:eq])
+		want := strings.TrimSpace(expr[eq+1:])
+		got := headers.Get(name)
+		if got != want {
+			return ActionResult{Success: false, Message: fmt.Sprintf("assert header_eq: %s = %q, want %q", name, got, want)}
+		}
+		return ActionResult{Success: true, Message: fmt.Sprintf("header_eq: %s = %q", name, got)}
+	default:
+		return ActionResult{Success: false, Message: fmt.Sprintf("assert: unknown kind %q", kind)}
+	}
+}
+
 
 // preflightStopCompetingApps force-stops known channel-publishing
 // apps on Android TV so that a rogue DPAD_ENTER on a foreign
@@ -739,17 +890,29 @@ func (ste *StructuredTestExecutor) ensureAppForeground(
 		})
 	}
 
+	// IMPORTANT: do NOT append `--es qa_username/qa_password`
+	// extras to the launch intent.
+	//
+	// HelixQA's "Fully Autonomous LLM-Driven QA" constitution
+	// (HelixQA/CLAUDE.md) forbids scripted navigation flows /
+	// hardcoded keystroke sequences that bypass the LLM. The
+	// consuming-project side (Catalogizer's "Universal Solution
+	// Principle" in CLAUDE.md) forbids QA-only receivers /
+	// test-only Activity extras / app-side bypasses — the rule
+	// is: fix detection in HelixQA, never in the app under test.
+	//
+	// Together those rules mean any `qa_username` extra HelixQA
+	// emits is dead instrumentation: no app on the supported
+	// platforms will read it, and emitting it lets a reviewer
+	// believe a working bypass exists when it does not. That is
+	// the exact bluff Article XI bans. The ADBExecutor.Type()
+	// path now opens Compose-TV's IME via DPAD_CENTER before
+	// typing (see pkg/navigator/executor.go), which is the real
+	// fix for the form-fill failure mode that motivated the
+	// extras in the first place.
 	launchArgs := []string{
 		"-s", device, "shell", "am", "start",
 		"-n", expectedPkg + "/.ui.MainActivity",
-	}
-	user := ste.config.qaUsername()
-	pass := ste.config.qaPassword()
-	if user != "" && pass != "" {
-		launchArgs = append(launchArgs,
-			"--es", "qa_username", user,
-			"--es", "qa_password", pass,
-		)
 	}
 	_, _ = osexec.CommandContext(ctx, "adb", launchArgs...).CombinedOutput()
 	time.Sleep(3 * time.Second)

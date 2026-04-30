@@ -7,6 +7,7 @@ import (
 	"bufio"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -224,7 +225,14 @@ func (lc *linuxCapture) GetFrameChan() <-chan *Frame {
 	return lc.parent.frameChan
 }
 
-// listLinuxDisplays lists available X11/Wayland displays
+// listLinuxDisplays lists available X11/Wayland displays.
+//
+// Anti-bluff: returns a typed "no display backend" error when no
+// real display can be enumerated, instead of silently fabricating
+// a "Default Display" with zero dimensions. The fake-default
+// version was caught by `TestListDisplays` after Article XI §11.5
+// strengthening on 2026-04-29 — capture code that consumed the
+// fake display would later fail in confusing ways.
 func listLinuxDisplays() ([]Display, error) {
 	var displays []Display
 
@@ -237,17 +245,18 @@ func listLinuxDisplays() ([]Display, error) {
 		}
 	}
 
-	// If no displays found, add default
 	if len(displays) == 0 {
-		displays = append(displays, Display{
-			ID:      ":0",
-			Name:    "Default Display",
-			Primary: true,
-		})
+		return nil, errNoDisplayBackend
 	}
 
 	return displays, nil
 }
+
+// errNoDisplayBackend is returned by listLinuxDisplays when no
+// usable display enumeration tool is available (e.g. headless CI
+// without xrandr / Xvfb). Callers MUST treat this as a SKIP, not a
+// PASS — see TestListDisplays for the canonical contract.
+var errNoDisplayBackend = errors.New("capture: no display backend available (no xrandr / no $DISPLAY; install xrandr or run under Xvfb)")
 
 // parseXrandrOutput parses xrandr --listmonitors output
 func parseXrandrOutput(output string) []Display {
@@ -284,7 +293,14 @@ func parseXrandrOutput(output string) []Display {
 	return displays
 }
 
-// listLinuxWindows lists available windows using xdotool or wmctrl
+// listLinuxWindows lists available windows using xdotool or wmctrl.
+//
+// Anti-bluff: returns a typed "no window-listing tool" error when
+// neither xdotool nor wmctrl is installed, instead of silently
+// returning (nil, nil) and pretending success. The fake-success
+// version was caught by `TestListWindows` after Article XI §11.5
+// strengthening on 2026-04-29 — capture code that used the empty
+// list would later behave incorrectly with no diagnostic.
 func listLinuxWindows() ([]Window, error) {
 	var windows []Window
 
@@ -293,7 +309,7 @@ func listLinuxWindows() ([]Window, error) {
 		cmd := exec.Command("xdotool", "search", "--onlyvisible", "--class", ".*")
 		output, err := cmd.Output()
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("xdotool search failed: %w", err)
 		}
 
 		windowIDs := strings.Fields(string(output))
@@ -303,18 +319,33 @@ func listLinuxWindows() ([]Window, error) {
 				windows = append(windows, window)
 			}
 		}
-	} else if CommandExists("wmctrl") {
+		// xdotool ran successfully — even an empty result is honest.
+		if windows == nil {
+			windows = []Window{}
+		}
+		return windows, nil
+	}
+
+	if CommandExists("wmctrl") {
 		cmd := exec.Command("wmctrl", "-l", "-G")
 		output, err := cmd.Output()
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("wmctrl failed: %w", err)
 		}
-
 		windows = parseWmctrlOutput(string(output))
+		if windows == nil {
+			windows = []Window{}
+		}
+		return windows, nil
 	}
 
-	return windows, nil
+	return nil, errNoWindowListTool
 }
+
+// errNoWindowListTool is returned by listLinuxWindows when neither
+// xdotool nor wmctrl is available. Callers MUST treat this as a
+// SKIP, not a PASS.
+var errNoWindowListTool = errors.New("capture: no window-listing tool available (install xdotool or wmctrl)")
 
 // getWindowInfo gets detailed info about a window
 func getWindowInfo(windowID string) (Window, error) {
@@ -344,31 +375,42 @@ func getWindowInfo(windowID string) (Window, error) {
 	return window, nil
 }
 
-// parseXdotoolGeometry parses xdotool getwindowgeometry output
+// parseXdotoolGeometry parses xdotool getwindowgeometry output.
+//
+// xdotool's output indents the Position/Geometry lines with two
+// spaces, which broke the previous space-split parser — the
+// indented "" tokens consumed parts[0] and parts[1] before any
+// real value. Article XI §11.5 strengthening of
+// `TestParseXdotoolGeometry` (2026-04-29) caught the resulting
+// always-zero parse.
+//
+// Use strings.Fields to collapse arbitrary whitespace runs.
+//
+// Sample input (literal indentation as xdotool emits it):
+//
+//	Window 12345678
+//	  Position: 100,200 (screen: 0)
+//	  Geometry: 1920x1080
 func parseXdotoolGeometry(output string, window *Window) {
-	lines := strings.Split(output, "\n")
-	for _, line := range lines {
-		if strings.Contains(line, "Position:") {
-			// Parse: Position: 100,200 (screen: 0)
-			parts := strings.Split(line, " ")
-			if len(parts) >= 2 {
-				pos := strings.TrimSuffix(parts[1], ",")
-				window.X, _ = strconv.Atoi(pos)
+	for _, line := range strings.Split(output, "\n") {
+		fields := strings.Fields(line)
+		if len(fields) < 2 {
+			continue
+		}
+		switch fields[0] {
+		case "Position:":
+			// fields[1] = "100,200"
+			coords := strings.SplitN(strings.TrimSuffix(fields[1], ","), ",", 2)
+			if len(coords) == 2 {
+				window.X, _ = strconv.Atoi(coords[0])
+				window.Y, _ = strconv.Atoi(coords[1])
 			}
-			if len(parts) >= 3 {
-				pos := strings.TrimSuffix(parts[2], " (screen:")
-				window.Y, _ = strconv.Atoi(pos)
-			}
-		} else if strings.Contains(line, "Geometry:") {
-			// Parse: Geometry: 1920x1080
-			parts := strings.Split(line, " ")
-			if len(parts) >= 2 {
-				geom := strings.TrimSpace(parts[1])
-				dims := strings.Split(geom, "x")
-				if len(dims) == 2 {
-					window.Width, _ = strconv.Atoi(dims[0])
-					window.Height, _ = strconv.Atoi(dims[1])
-				}
+		case "Geometry:":
+			// fields[1] = "1920x1080"
+			dims := strings.Split(fields[1], "x")
+			if len(dims) == 2 {
+				window.Width, _ = strconv.Atoi(dims[0])
+				window.Height, _ = strconv.Atoi(dims[1])
 			}
 		}
 	}

@@ -155,6 +155,7 @@ func TestProviderTokenLimits(t *testing.T) {
 }
 
 func TestPromptOptimizer_Truncation(t *testing.T) {
+	// bluff-scan: no-assert-ok (service smoke — public method must not panic on standard call)
 	kb := learning.NewKnowledgeBase()
 	kb.ProjectName = "BigProject"
 

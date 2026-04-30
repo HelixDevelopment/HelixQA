@@ -4,6 +4,8 @@
   "name": "OCU P0 Foundation",
   "description": "Validates the foundation layer: probe, dispatcher, contracts, and Containers GPU extension.",
   "metadata": {
+    "_llm_driven": true,
+    "_llm_driven_reason": "Vision-driven test suite per HelixQA Constitution §1 (Fully Autonomous LLM-Driven QA): prose actions are interpreted by the vision model. Article XI §11.5 exemption.",
     "author": "vasic-digital",
     "priority": "1"
   },

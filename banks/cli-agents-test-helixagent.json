@@ -8,7 +8,9 @@
     "version": "1.0.0",
     "validation_strategy": "cli_agents_as_testers",
     "config_source": "exported_helixagent_configs",
-    "agents_total": 47
+    "agents_total": 47,
+    "bluff_audit_status": "converted-by-bank-prose-to-http.py",
+    "bluff_audit_date": "2026-04-29"
   },
   "test_cases": [
     {
@@ -28,32 +30,38 @@
         {
           "name": "Load exported HelixAgent config",
           "action": "--config=/etc/helixagent/agents/claude-code.yaml",
-          "expected": "Config loaded with HelixAgent endpoint, API key, model preferences"
+          "expected": "Config loaded with HelixAgent endpoint, API key, model preferences",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Test ensemble via natural chat",
           "action": "Chat: 'Use HelixAgent ensemble to explain Go interfaces'",
-          "expected": "Claude Code routes to HelixAgent /v1/ensemble/completions, shows aggregated response"
+          "expected": "Claude Code routes to HelixAgent /v1/ensemble/completions, shows aggregated response",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify multi-provider aggregation",
           "action": "Ask: 'Show me which providers contributed'",
-          "expected": "Response metadata shows Claude, DeepSeek, Gemini contributions"
+          "expected": "Response metadata shows Claude, DeepSeek, Gemini contributions",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Test MCP tools through chat",
           "action": "Chat: 'Read the HelixAgent README'",
-          "expected": "Claude Code uses MCP read_file tool via HelixAgent MCP bridge"
+          "expected": "Claude Code uses MCP read_file tool via HelixAgent MCP bridge",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Validate streaming in terminal",
           "action": "Request streaming completion",
-          "expected": "Real-time token streaming visible in terminal UI"
+          "expected": "Real-time token streaming visible in terminal UI",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Test debate mode",
           "action": "Chat: 'Debate: Should we use Redis or PostgreSQL for sessions?'",
-          "expected": "HelixAgent debate orchestrator activated, multiple viewpoints shown"
+          "expected": "HelixAgent debate orchestrator activated, multiple viewpoints shown",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -76,17 +84,20 @@
         {
           "name": "Health check via bash",
           "action": "Execute: 'curl -s http://localhost:7061/health | jq .'",
-          "expected": "Returns HelixAgent health status, containers, providers"
+          "expected": "Returns HelixAgent health status, containers, providers",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Check provider status",
           "action": "Execute: 'curl -s http://localhost:7061/v1/providers | jq '.providers | length''",
-          "expected": "Returns 22+ providers"
+          "expected": "Returns 22+ providers",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify metrics endpoint",
           "action": "Execute: 'curl -s http://localhost:7061/metrics | grep helixagent'",
-          "expected": "Prometheus metrics visible"
+          "expected": "Prometheus metrics visible",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -108,22 +119,26 @@
         {
           "name": "Check git status of HelixAgent repo",
           "action": "git: status",
-          "expected": "Shows repo state"
+          "expected": "Shows repo state",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Use ensemble to review changes",
           "action": "Chat: 'Review my git diff using HelixAgent ensemble'",
-          "expected": "HelixAgent analyzes diff, provides review comments"
+          "expected": "HelixAgent analyzes diff, provides review comments",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Commit with AI message",
           "action": "Chat: 'Generate commit message for these changes'",
-          "expected": "HelixAgent generates conventional commit message"
+          "expected": "HelixAgent generates conventional commit message",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Execute git commit",
           "action": "git: commit -m '<generated_message>'",
-          "expected": "Commit succeeds"
+          "expected": "Commit succeeds",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -152,27 +167,32 @@
         {
           "name": "Load Aider with HelixAgent backend",
           "action": "aider --model helixagent/ensemble --architect",
-          "expected": "Aider connects to HelixAgent ensemble API"
+          "expected": "Aider connects to HelixAgent ensemble API",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Request code edit via ensemble",
           "action": "/ask 'Add error handling to the validateConfig function'",
-          "expected": "HelixAgent ensemble generates code, Aider proposes diff"
+          "expected": "HelixAgent ensemble generates code, Aider proposes diff",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify repo map integration",
           "action": "/map",
-          "expected": "HelixAgent provides repository context, Aider displays structure"
+          "expected": "HelixAgent provides repository context, Aider displays structure",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Run tests via Aider",
           "action": "/test",
-          "expected": "Aider triggers HelixAgent test execution, shows results"
+          "expected": "Aider triggers HelixAgent test execution, shows results",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Commit changes",
           "action": "/commit",
-          "expected": "Aider uses HelixAgent to generate commit message, commits"
+          "expected": "Aider uses HelixAgent to generate commit message, commits",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -194,22 +214,26 @@
         {
           "name": "Add multiple files to context",
           "action": "/add internal/handlers/*.go",
-          "expected": "Files added to Aider context"
+          "expected": "Files added to Aider context",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Request refactoring",
           "action": "/ask 'Refactor these handlers to use a common base'",
-          "expected": "HelixAgent ensemble analyzes all files, proposes coordinated changes"
+          "expected": "HelixAgent ensemble analyzes all files, proposes coordinated changes",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Review multi-file diff",
           "action": "Review proposed changes across files",
-          "expected": "Consistent refactoring across all handlers"
+          "expected": "Consistent refactoring across all handlers",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Accept changes",
           "action": "/accept",
-          "expected": "All files modified atomically"
+          "expected": "All files modified atomically",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -238,27 +262,32 @@
         {
           "name": "Start OpenHands with HelixAgent config",
           "action": "openhands --config ~/.helixagent/agents/openhands.json",
-          "expected": "OpenHands loads HelixAgent endpoint, LLM config"
+          "expected": "OpenHands loads HelixAgent endpoint, LLM config",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Request task requiring containers",
           "action": "Task: 'Analyze this code using NVIDIA RAG embedding'",
-          "expected": "OpenHands triggers HelixAgent lazy container startup"
+          "expected": "OpenHands triggers HelixAgent lazy container startup",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify container startup",
           "action": "OpenHands executes: docker ps | grep nemo",
-          "expected": "NeMo Retriever container running"
+          "expected": "NeMo Retriever container running",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Test sandbox isolation",
           "action": "Task: 'Run this untrusted script in sandbox'",
-          "expected": "OpenHands uses HelixAgent sandbox, isolated execution"
+          "expected": "OpenHands uses HelixAgent sandbox, isolated execution",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify resource cleanup",
           "action": "Task completes, check container status",
-          "expected": "Resources managed according to HelixAgent policy"
+          "expected": "Resources managed according to HelixAgent policy",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -281,17 +310,20 @@
         {
           "name": "Create multi-agent task",
           "action": "Task: 'Have multiple agents review this PR'",
-          "expected": "OpenHands uses HelixAgent debate orchestrator"
+          "expected": "OpenHands uses HelixAgent debate orchestrator",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify agent coordination",
           "action": "Monitor agent communication",
-          "expected": "Multiple perspectives gathered via HelixAgent"
+          "expected": "Multiple perspectives gathered via HelixAgent",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Get consolidated review",
           "action": "Receive final output",
-          "expected": "Coordinated review from ensemble"
+          "expected": "Coordinated review from ensemble",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -320,27 +352,32 @@
         {
           "name": "Start Codex with HelixAgent backend",
           "action": "codex --model helixagent/ensemble --agent-mode",
-          "expected": "Codex connects to HelixAgent, loads tools"
+          "expected": "Codex connects to HelixAgent, loads tools",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Natural language task",
           "action": "'Add a new handler for MCP requests'",
-          "expected": "Codex uses HelixAgent to plan, generates code via ensemble"
+          "expected": "Codex uses HelixAgent to plan, generates code via ensemble",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify tool usage",
-          "action": "Observe tool calls",
-          "expected": "HelixAgent MCP tools used: read_file, write_file, edit_file"
+          "action": "playwright: assertVisible text=tool calls",
+          "expected": "HelixAgent MCP tools used: read_file, write_file, edit_file",
+          "_original_action": "Observe tool calls"
         },
         {
           "name": "Test command execution",
           "action": "Codex runs: go build ./...",
-          "expected": "Build command executed, results fed back to HelixAgent"
+          "expected": "Build command executed, results fed back to HelixAgent",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Validate final output",
           "action": "Review generated handler",
-          "expected": "Working MCP handler created"
+          "expected": "Working MCP handler created",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -369,22 +406,26 @@
         {
           "name": "Configure Cline for HelixAgent",
           "action": "cline --set-model helixagent/ensemble",
-          "expected": "Cline uses HelixAgent for all LLM requests"
+          "expected": "Cline uses HelixAgent for all LLM requests",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Test context awareness",
           "action": "Open file, ask: 'Explain this function'",
-          "expected": "HelixAgent receives file context, provides explanation"
+          "expected": "HelixAgent receives file context, provides explanation",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Test auto-approval",
           "action": "Enable auto-approve, request edit",
-          "expected": "Cline executes via HelixAgent without prompting"
+          "expected": "Cline executes via HelixAgent without prompting",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Test checkpoint navigation",
           "action": "Make changes, then revert",
-          "expected": "HelixAgent tracks changes, allows rollback"
+          "expected": "HelixAgent tracks changes, allows rollback",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -413,27 +454,32 @@
         {
           "name": "Configure Cursor with HelixAgent",
           "action": "cursor set-api http://localhost:7061/v1",
-          "expected": "Cursor uses HelixAgent ensemble"
+          "expected": "Cursor uses HelixAgent ensemble",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Test tab completion",
           "action": "Type code, press Tab",
-          "expected": "HelixAgent provides completion suggestions"
+          "expected": "HelixAgent provides completion suggestions",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Test inline edit",
           "action": "Select code, Cmd+K, 'Refactor this'",
-          "expected": "HelixAgent generates inline diff"
+          "expected": "HelixAgent generates inline diff",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Test chat panel",
           "action": "Open chat, ask about codebase",
-          "expected": "HelixAgent uses repo context to answer"
+          "expected": "HelixAgent uses repo context to answer",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Test composer",
           "action": "Use Cmd+I for multi-file edit",
-          "expected": "HelixAgent coordinates multi-file changes"
+          "expected": "HelixAgent coordinates multi-file changes",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -462,22 +508,26 @@
         {
           "name": "Configure Continue for HelixAgent",
           "action": "Edit config.json with HelixAgent endpoint",
-          "expected": "Continue uses HelixAgent as model provider"
+          "expected": "Continue uses HelixAgent as model provider",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Test local model",
           "action": "Select local-llm profile, send request",
-          "expected": "HelixAgent routes to local Ollama/Zen"
+          "expected": "HelixAgent routes to local Ollama/Zen",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Test privacy mode",
           "action": "Enable privacy mode, send code",
-          "expected": "HelixAgent ensures no external API calls"
+          "expected": "HelixAgent ensures no external API calls",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Test open source ensemble",
           "action": "Request with opensource profile",
-          "expected": "Only open source models used"
+          "expected": "Only open source models used",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -505,22 +555,26 @@
         {
           "name": "Configure Kiro for HelixAgent",
           "action": "kiro --helixagent-endpoint http://localhost:7061",
-          "expected": "Kiro uses HelixAgent context API"
+          "expected": "Kiro uses HelixAgent context API",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Test intent detection",
           "action": "Type: 'Fix the bug in auth'",
-          "expected": "HelixAgent context engine identifies auth-related files"
+          "expected": "HelixAgent context engine identifies auth-related files",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Test file relationships",
           "action": "Modify file, check related files",
-          "expected": "HelixAgent suggests related files to review"
+          "expected": "HelixAgent suggests related files to review",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Test context preservation",
           "action": "Switch tasks, return to original",
-          "expected": "HelixAgent restores previous context"
+          "expected": "HelixAgent restores previous context",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -548,22 +602,26 @@
         {
           "name": "Configure Gemini for HelixAgent",
           "action": "gemini config set endpoint http://localhost:7061",
-          "expected": "Gemini routes through HelixAgent"
+          "expected": "Gemini routes through HelixAgent",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Test image input",
           "action": "Upload architecture diagram, ask for analysis",
-          "expected": "HelixAgent vision model processes image"
+          "expected": "HelixAgent vision model processes image",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Test document processing",
           "action": "Upload PDF, ask for summary",
-          "expected": "HelixAgent extracts and summarizes text"
+          "expected": "HelixAgent extracts and summarizes text",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Test multi-modal ensemble",
           "action": "Request with image and text",
-          "expected": "Multiple models contribute to response"
+          "expected": "Multiple models contribute to response",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -591,22 +649,26 @@
         {
           "name": "Configure Amazon Q for HelixAgent",
           "action": "q configure --endpoint http://localhost:7061",
-          "expected": "Amazon Q uses HelixAgent backend"
+          "expected": "Amazon Q uses HelixAgent backend",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Test code transformation",
           "action": "'Transform this Java code to Go'",
-          "expected": "HelixAgent ensemble performs language conversion"
+          "expected": "HelixAgent ensemble performs language conversion",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Test security scanning",
           "action": "'Scan this code for vulnerabilities'",
-          "expected": "HelixAgent security module analyzes code"
+          "expected": "HelixAgent security module analyzes code",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Test compliance check",
           "action": "'Check license compliance'",
-          "expected": "HelixAgent verifies dependencies"
+          "expected": "HelixAgent verifies dependencies",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -628,22 +690,26 @@
         {
           "name": "Generate all agent configs",
           "action": "./bin/helixagent --generate-all-agents --all-agents-output-dir=./configs",
-          "expected": "47 config files created"
+          "expected": "47 config files created",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify each config",
           "action": "For each agent: validate config structure",
-          "expected": "All configs have endpoint, auth, model settings"
+          "expected": "All configs have endpoint, auth, model settings",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Test config loading",
           "action": "Each agent starts with its config",
-          "expected": "All agents connect to HelixAgent successfully"
+          "expected": "All agents connect to HelixAgent successfully",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify feature parity",
           "action": "Test core features across all agents",
-          "expected": "Consistent HelixAgent experience"
+          "expected": "Consistent HelixAgent experience",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -675,22 +741,26 @@
         {
           "name": "Test ensemble on all agents",
           "action": "Each agent requests ensemble completion",
-          "expected": "All receive valid ensemble response"
+          "expected": "All receive valid ensemble response",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Test streaming on all agents",
           "action": "Each agent requests streaming",
-          "expected": "All receive streamed response"
+          "expected": "All receive streamed response",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Test MCP on supporting agents",
           "action": "Agents with MCP request tool list",
-          "expected": "All receive 45+ tools"
+          "expected": "All receive 45+ tools",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Test health endpoint",
           "action": "Each agent checks /health",
-          "expected": "All receive healthy status"
+          "expected": "All receive healthy status",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [
@@ -712,22 +782,26 @@
         {
           "name": "Start all agents concurrently",
           "action": "Parallel: Start each of 47 agents",
-          "expected": "All agents initialize without conflict"
+          "expected": "All agents initialize without conflict",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Send concurrent requests",
           "action": "All agents request ensemble completion simultaneously",
-          "expected": "HelixAgent handles 47 concurrent ensemble requests"
+          "expected": "HelixAgent handles 47 concurrent ensemble requests",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Monitor resource usage",
           "action": "Track CPU, memory, container status",
-          "expected": "Resources within acceptable limits"
+          "expected": "Resources within acceptable limits",
+          "_conversion_note": "manual-review-required"
         },
         {
           "name": "Verify response quality",
           "action": "Check all responses are valid",
-          "expected": "No errors, all responses complete"
+          "expected": "No errors, all responses complete",
+          "_conversion_note": "manual-review-required"
         }
       ],
       "tags": [

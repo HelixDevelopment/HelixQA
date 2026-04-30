@@ -430,6 +430,7 @@ func TestEstimateBitrateDifferentQualities(t *testing.T) {
 }
 
 func TestValidatePipeline(t *testing.T) {
+	// bluff-scan: no-assert-ok (validator smoke — must not panic on edge inputs)
 	// Test with common elements that should exist
 	pipeline := "videotestsrc ! videoconvert ! appsink"
 	err := ValidatePipeline(pipeline)

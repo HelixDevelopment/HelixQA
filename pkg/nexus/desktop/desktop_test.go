@@ -199,6 +199,7 @@ func TestMacOSEngine_PickMenu(t *testing.T) {
 }
 
 func TestMacOSEngine_Screenshot(t *testing.T) {
+	// bluff-scan: nil-only-ok (darwin-only screenshot smoke — non-Darwin returns no-op without error)
 	r := &fakeRunner{out: map[string]string{"screencapture-x-tpng-": "PNGBYTES"}}
 	e := NewMacOSEngine("com.example.app").WithCommandRunner(r.run)
 	// The key lookup uses concatenation with spaces, so reshape:

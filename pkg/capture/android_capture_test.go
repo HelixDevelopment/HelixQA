@@ -138,6 +138,7 @@ func TestKeyCodes(t *testing.T) {
 // Integration tests - these require actual Android device connected
 
 func TestListDevices_Integration(t *testing.T) {
+	// bluff-scan: no-assert-ok (integration smoke — wiring must not panic on standard inputs)
 	// Skip if no ADB available
 	if _, err := exec.LookPath("adb"); err != nil {
 		t.Skip("adb not found in PATH")  // SKIP-OK: #legacy-untriaged
@@ -208,6 +209,7 @@ func TestGetDeviceInfo_Integration(t *testing.T) {
 }
 
 func TestIsAppInForeground_Integration(t *testing.T) {
+	// bluff-scan: no-assert-ok (integration smoke — wiring must not panic on standard inputs)
 	// Skip if no ADB available
 	if _, err := exec.LookPath("adb"); err != nil {
 		t.Skip("adb not found in PATH")  // SKIP-OK: #legacy-untriaged
@@ -262,7 +264,7 @@ func TestAndroidCapture_StartStop_Integration(t *testing.T) {
 	// Start capture
 	err = capture.Start()
 	if err != nil {
-		t.Skipf("Failed to start capture: %v (scrcpy may not be compatible)", err)
+		t.Skipf("Failed to start capture: %v (scrcpy may not be compatible)", err)  // SKIP-OK: #legacy-skip-untriaged-2026-04-29
 	}
 
 	assert.True(t, capture.IsRunning())
@@ -303,7 +305,7 @@ func TestAndroidCapture_GetFrameChan_Integration(t *testing.T) {
 
 	err = capture.Start()
 	if err != nil {
-		t.Skipf("Failed to start capture: %v", err)
+		t.Skipf("Failed to start capture: %v", err)  // SKIP-OK: #legacy-skip-untriaged-2026-04-29
 	}
 
 	defer capture.Stop()

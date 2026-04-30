@@ -103,6 +103,48 @@ func TestADBExecutor_Type(t *testing.T) {
 	assert.Contains(t, script, "hello")
 }
 
+// TestADBExecutor_Type_OpensImeBeforeTyping is the Article XI §11.5
+// regression guard for the Compose-TV form-fill failure documented
+// in qa-results/session-20260429_164618 and reproduced manually in
+// docs/audits/androidtv-realdevice-2026-04-29.md.
+//
+// On Compose-TV (Jetpack Compose for TV) a focused EditText has no
+// IME open until DPAD_CENTER is pressed. Without that, every
+// `adb shell input text` is silently dropped — login banks fail
+// with a stagnant frame and HelixQA reports stagnation as crash.
+//
+// The Type() implementation MUST emit DPAD_CENTER before typing
+// and BACK after typing. If a future refactor drops either, this
+// test fails — exposing the bluff before it ships.
+func TestADBExecutor_Type_OpensImeBeforeTyping(t *testing.T) {
+	runner := newMockRunner()
+	exec := NewADBExecutor("emulator-5554", runner)
+	err := exec.Type(context.Background(), "admin")
+	require.NoError(t, err)
+
+	c := runner.lastCall()
+	require.NotNil(t, c)
+	script := c.args[len(c.args)-1]
+
+	imeOpen := strings.Index(script, "KEYCODE_DPAD_CENTER")
+	textIdx := strings.Index(script, "input text")
+	require.NotEqual(t, -1, imeOpen, "expected KEYCODE_DPAD_CENTER in script; got: %s", script)
+	require.NotEqual(t, -1, textIdx, "expected `input text` in script; got: %s", script)
+	require.Less(t, imeOpen, textIdx,
+		"KEYCODE_DPAD_CENTER must appear BEFORE `input text` "+
+			"so the IME is open before keystrokes are sent. Got: %s",
+		script,
+	)
+
+	backIdx := strings.Index(script, "KEYCODE_BACK")
+	require.NotEqual(t, -1, backIdx, "expected KEYCODE_BACK postlude in script; got: %s", script)
+	require.Greater(t, backIdx, textIdx,
+		"KEYCODE_BACK must appear AFTER `input text` so the "+
+			"keyboard is dismissed. Got: %s",
+		script,
+	)
+}
+
 func TestADBExecutor_Scroll_Directions(t *testing.T) {
 	directions := []string{"up", "down", "left", "right"}
 	for _, dir := range directions {

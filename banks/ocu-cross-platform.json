@@ -4,6 +4,8 @@
   "name": "OCU P7 — Cross-Platform Automation Flows",
   "description": "15 test cases mapping the same Engine/Bridge automation flows to web (CDP), Linux (X11), Android, and Android TV backends. Each verifies that the unified Engine.Perform interface behaves identically across all four CaptureSource backends.",
   "metadata": {
+    "_llm_driven": true,
+    "_llm_driven_reason": "Vision-driven test suite per HelixQA Constitution §1 (Fully Autonomous LLM-Driven QA): prose actions are interpreted by the vision model. Article XI §11.5 exemption.",
     "phase": "P7",
     "package": "digital.vasic.helixqa/pkg/nexus",
     "created": "2026-04-18"

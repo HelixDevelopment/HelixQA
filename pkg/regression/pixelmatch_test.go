@@ -262,6 +262,7 @@ func TestPixelMatch_SatisfiesDifferInterface(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestIsAA_ClassifiesAntiAliasedEdge(t *testing.T) {
+	// bluff-scan: no-assert-ok (predicate smoke — must not panic; result depends on environment)
 	// Construct an image with a diagonal AA edge: rows alternate between
 	// dark, mid-gray, and white, which is the signature AA gradient.
 	w, h := 10, 10

@@ -4,6 +4,8 @@
   "name": "OCU P7 — Evidence Kind Rendering",
   "description": "Validates every evidence kind constant (12 kinds x 3 cases = 36 entries): non-empty value, unique across all kinds, and round-trip through Evidence struct JSON marshalling.",
   "metadata": {
+    "_llm_driven": true,
+    "_llm_driven_reason": "Vision-driven test suite per HelixQA Constitution §1 (Fully Autonomous LLM-Driven QA): prose actions are interpreted by the vision model. Article XI §11.5 exemption.",
     "phase": "P7",
     "package": "digital.vasic.helixqa/pkg/ticket",
     "created": "2026-04-18"

@@ -2,6 +2,8 @@
   "name": "Helix Nexus \u2014 Desktop Linux",
   "description": "Linux desktop bank via AT-SPI primary + X11/xdotool fallback + Wayland/wtype. Covers launcher, tray, menu, and shortcut paths.",
   "metadata": {
+    "_llm_driven": true,
+    "_llm_driven_reason": "Vision-driven test suite per HelixQA Constitution §1 (Fully Autonomous LLM-Driven QA): prose actions are interpreted by the vision model. Article XI §11.5 exemption.",
     "feature": "helix-nexus-desktop-linux",
     "phase": 3
   },

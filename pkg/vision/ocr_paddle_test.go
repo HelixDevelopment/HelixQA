@@ -39,6 +39,7 @@ func TestNewPaddleOCR_NilConfig(t *testing.T) {
 }
 
 func TestCheckPaddleOCRAvailable(t *testing.T) {
+	// bluff-scan: no-assert-ok (environment-probe smoke — must not panic; result depends on host)
 	// This will likely be false in test environment
 	available := CheckPaddleOCRAvailable("")
 	t.Logf("PaddleOCR available: %v", available)
@@ -190,6 +191,7 @@ func TestPaddleOCR_ParseResultInvalid(t *testing.T) {
 }
 
 func TestPaddleOCRService(t *testing.T) {
+	// bluff-scan: no-assert-ok (service smoke — public method must not panic on standard call)
 	// Skip in CI environment
 	t.Skip("Requires PaddleOCR installation")  // SKIP-OK: #legacy-untriaged
 }

@@ -309,6 +309,7 @@ func collect(t *testing.T, ch <-chan frames.Frame, n int, timeout time.Duration)
 // Ensure we don't accidentally break if someone runs the tests from a
 // different cwd — just a sanity check.
 func TestCwdSanity(t *testing.T) {
+	// bluff-scan: no-assert-ok (basic build/config smoke — must not panic)
 	wd, err := os.Getwd()
 	if err != nil {
 		t.Skip(err)  // SKIP-OK: #legacy-untriaged
