@@ -2,6 +2,8 @@
   "name": "Helix Nexus \u2014 Browser Engine",
   "description": "HelixQA bank covering the Phase 1 browser engine (Adapter, Engine, Snapshot, Pool, security hardening, AI-friendly errors). Every case validates a user-facing promise of the new CDP-native automation layer.",
   "metadata": {
+    "_llm_driven": true,
+    "_llm_driven_reason": "Vision-driven test suite per HelixQA Constitution §1 (Fully Autonomous LLM-Driven QA): prose actions are interpreted by the vision model. Article XI §11.5 exemption.",
     "author": "vasic-digital",
     "feature": "helix-nexus-browser",
     "phase": 1,

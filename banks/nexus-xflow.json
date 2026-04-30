@@ -2,6 +2,8 @@
   "name": "Helix Nexus \u2014 Cross-Platform Flows",
   "description": "Bank covering the cross-platform orchestrator, evidence vault, and RBAC policy.",
   "metadata": {
+    "_llm_driven": true,
+    "_llm_driven_reason": "Vision-driven test suite per HelixQA Constitution §1 (Fully Autonomous LLM-Driven QA): prose actions are interpreted by the vision model. Article XI §11.5 exemption.",
     "feature": "helix-nexus-xflow",
     "phase": 5
   },

@@ -2,6 +2,8 @@
   "name": "Helix Nexus \u2014 Desktop macOS",
   "description": "macOS desktop bank via AppleScript / osascript + screencapture. Covers menu navigation, shortcuts, keystrokes, and launcher flows.",
   "metadata": {
+    "_llm_driven": true,
+    "_llm_driven_reason": "Vision-driven test suite per HelixQA Constitution §1 (Fully Autonomous LLM-Driven QA): prose actions are interpreted by the vision model. Article XI §11.5 exemption.",
     "feature": "helix-nexus-desktop-macos",
     "phase": 3
   },

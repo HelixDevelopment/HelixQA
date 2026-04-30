@@ -3,6 +3,8 @@
   "name": "HelixQA Fixes Validation \u2014 Performance",
   "description": "Nexus perf-layer regression suite covering W8 K6Runner.RunScenario end-to-end wiring.",
   "metadata": {
+    "_llm_driven": true,
+    "_llm_driven_reason": "Vision-driven test suite per HelixQA Constitution §1 (Fully Autonomous LLM-Driven QA): prose actions are interpreted by the vision model. Article XI §11.5 exemption.",
     "author": "vasic-digital",
     "domain": "perf"
   },

@@ -3,6 +3,8 @@
   "name": "OpenClawing2 \u2014 Phase 6 Coord Actions",
   "description": "Regression suite for pkg/nexus/coordinate: scaling algorithm, action builders, canonical Kind constants.",
   "metadata": {
+    "_llm_driven": true,
+    "_llm_driven_reason": "Vision-driven test suite per HelixQA Constitution §1 (Fully Autonomous LLM-Driven QA): prose actions are interpreted by the vision model. Article XI §11.5 exemption.",
     "author": "vasic-digital",
     "phase": 6,
     "plan": "docs/plans/2026-04-18-openclawing2-integration-plan.md"

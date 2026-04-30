@@ -4,6 +4,8 @@
   "name": "OCU P5 Record",
   "description": "Validates the recording and streaming layer: encoder factory, 3 codec stubs (x264/nvenc/vaapi), frame ring, clipper, WebRTC stub, Recorder lifecycle, and stress behaviour.",
   "metadata": {
+    "_llm_driven": true,
+    "_llm_driven_reason": "Vision-driven test suite per HelixQA Constitution §1 (Fully Autonomous LLM-Driven QA): prose actions are interpreted by the vision model. Article XI §11.5 exemption.",
     "author": "vasic-digital",
     "priority": "2"
   },

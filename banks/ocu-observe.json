@@ -4,6 +4,8 @@
   "name": "OCU P4 Observe",
   "description": "Validates the observation engine: factory, ring buffer, 5 observer backends (ld_preload/plthook/dbus/cdp/ax_tree), stress behaviour.",
   "metadata": {
+    "_llm_driven": true,
+    "_llm_driven_reason": "Vision-driven test suite per HelixQA Constitution §1 (Fully Autonomous LLM-Driven QA): prose actions are interpreted by the vision model. Article XI §11.5 exemption.",
     "author": "vasic-digital",
     "priority": "2"
   },

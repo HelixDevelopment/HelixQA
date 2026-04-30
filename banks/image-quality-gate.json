@@ -2,6 +2,8 @@
   "name": "Image Quality Gate",
   "description": "HelixQA bank covering the cover-image quality gate + replacement cascade across platforms. Validates X-Cover-Quality / X-Cover-Source response headers, placeholder fallback behavior, LLM-resolver opt-in safety, and that no visibly blurry cover reaches any client.",
   "metadata": {
+    "_llm_driven": true,
+    "_llm_driven_reason": "Vision-driven test suite per HelixQA Constitution §1 (Fully Autonomous LLM-Driven QA): prose actions are interpreted by the vision model. Article XI §11.5 exemption.",
     "author": "vasic-digital",
     "app": "Catalogizer",
     "version": "2.3.1",

@@ -4,6 +4,8 @@
   "name": "OCU P6 — Unified Automation Surface",
   "description": "Test bank covering Engine dispatch for all ActionKinds, PixelVerifier, MultiVerifier, Bridge adapter, and concurrent stress. All sub-engines are stub-backed.",
   "metadata": {
+    "_llm_driven": true,
+    "_llm_driven_reason": "Vision-driven test suite per HelixQA Constitution §1 (Fully Autonomous LLM-Driven QA): prose actions are interpreted by the vision model. Article XI §11.5 exemption.",
     "phase": "P6",
     "package": "digital.vasic.helixqa/pkg/nexus/automation",
     "created": "2026-04-18"

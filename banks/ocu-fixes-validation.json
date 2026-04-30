@@ -4,6 +4,8 @@
   "name": "OCU P7 — Regression Fixes Validation",
   "description": "10 regression-guard entries. Each cites the commit that introduced the fix and points to the test that would fail if the regression returned. These entries run on every CI cycle to ensure closed bugs stay closed.",
   "metadata": {
+    "_llm_driven": true,
+    "_llm_driven_reason": "Vision-driven test suite per HelixQA Constitution §1 (Fully Autonomous LLM-Driven QA): prose actions are interpreted by the vision model. Article XI §11.5 exemption.",
     "phase": "P7",
     "package": "digital.vasic.helixqa",
     "created": "2026-04-18"

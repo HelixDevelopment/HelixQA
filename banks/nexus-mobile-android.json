@@ -2,6 +2,8 @@
   "name": "Helix Nexus \u2014 Mobile Android",
   "description": "Android phone + emulator bank covering the Phase 2 mobile engine. Exercises login, share sheet, notifications, deep links, permission dialogs, battery-saver, airplane-mode, and core gestures.",
   "metadata": {
+    "_llm_driven": true,
+    "_llm_driven_reason": "Vision-driven test suite per HelixQA Constitution §1 (Fully Autonomous LLM-Driven QA): prose actions are interpreted by the vision model. Article XI §11.5 exemption.",
     "author": "vasic-digital",
     "feature": "helix-nexus-mobile-android",
     "phase": 2

@@ -4,6 +4,8 @@
   "name": "OCU P2 Vision Pipeline",
   "description": "Validates the vision pipeline: Analyze/Match/Diff/OCR via remote dispatch or local CPU fallback.",
   "metadata": {
+    "_llm_driven": true,
+    "_llm_driven_reason": "Vision-driven test suite per HelixQA Constitution §1 (Fully Autonomous LLM-Driven QA): prose actions are interpreted by the vision model. Article XI §11.5 exemption.",
     "author": "vasic-digital",
     "priority": "3"
   },
