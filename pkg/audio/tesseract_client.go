@@ -27,16 +27,12 @@
 package audio
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
 	"io"
-	"mime/multipart"
 	"net/http"
 	"net/url"
-	"os"
-	"path/filepath"
 	"strconv"
 	"time"
 )
@@ -147,7 +143,7 @@ type OCROptions struct {
 // (no trim, no whitespace collapse) so callers see exactly what
 // Tesseract emitted.
 func (c *TesseractClient) OCR(ctx context.Context, imagePath string, opts OCROptions) (string, error) {
-	body, contentType, err := buildSingleFileMultipart("image", imagePath)
+	body, contentType, err := streamSingleFileMultipart("image", imagePath)
 	if err != nil {
 		return "", err
 	}
@@ -174,7 +170,7 @@ func (c *TesseractClient) OCR(ctx context.Context, imagePath string, opts OCROpt
 // OCRVideo uploads the video at videoPath to /ocr-video and
 // returns the parsed OCRVideoResult with per-frame OCR.
 func (c *TesseractClient) OCRVideo(ctx context.Context, videoPath string, opts OCROptions) (*OCRVideoResult, error) {
-	body, contentType, err := buildSingleFileMultipart("video", videoPath)
+	body, contentType, err := streamSingleFileMultipart("video", videoPath)
 	if err != nil {
 		return nil, err
 	}
@@ -200,31 +196,6 @@ func (c *TesseractClient) OCRVideo(ctx context.Context, videoPath string, opts O
 		return nil, fmt.Errorf("tesseract: decode /ocr-video: %w", err)
 	}
 	return &out, nil
-}
-
-// buildSingleFileMultipart builds a multipart/form-data body with
-// one file part named partName containing the contents of path.
-// Returns body buffer, Content-Type header value, and error.
-func buildSingleFileMultipart(partName, path string) (*bytes.Buffer, string, error) {
-	f, err := os.Open(path)
-	if err != nil {
-		return nil, "", fmt.Errorf("tesseract: open %q: %w", path, err)
-	}
-	defer f.Close()
-
-	var buf bytes.Buffer
-	mw := multipart.NewWriter(&buf)
-	part, err := mw.CreateFormFile(partName, filepath.Base(path))
-	if err != nil {
-		return nil, "", fmt.Errorf("tesseract: build multipart: %w", err)
-	}
-	if _, err := io.Copy(part, f); err != nil {
-		return nil, "", fmt.Errorf("tesseract: copy file into multipart: %w", err)
-	}
-	if err := mw.Close(); err != nil {
-		return nil, "", fmt.Errorf("tesseract: close multipart: %w", err)
-	}
-	return &buf, mw.FormDataContentType(), nil
 }
 
 // buildOCRQuery composes the query string for /ocr or /ocr-video.

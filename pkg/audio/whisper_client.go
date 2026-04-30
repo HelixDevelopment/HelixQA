@@ -17,16 +17,12 @@
 package audio
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
 	"io"
-	"mime/multipart"
 	"net/http"
 	"net/url"
-	"os"
-	"path/filepath"
 	"time"
 )
 
@@ -164,23 +160,11 @@ type TranscribeOptions struct {
 // For long videos, plan for several minutes of server CPU time on
 // the int8 backend.
 func (c *WhisperClient) Transcribe(ctx context.Context, path string, opts TranscribeOptions) (*TranscribeResult, error) {
-	f, err := os.Open(path)
+	body, contentType, err := streamSingleFileMultipart("video", path)
 	if err != nil {
-		return nil, fmt.Errorf("whisper: open %q: %w", path, err)
-	}
-	defer f.Close()
-
-	var buf bytes.Buffer
-	mw := multipart.NewWriter(&buf)
-	part, err := mw.CreateFormFile("video", filepath.Base(path))
-	if err != nil {
-		return nil, fmt.Errorf("whisper: build multipart: %w", err)
-	}
-	if _, err := io.Copy(part, f); err != nil {
-		return nil, fmt.Errorf("whisper: copy file into multipart: %w", err)
-	}
-	if err := mw.Close(); err != nil {
-		return nil, fmt.Errorf("whisper: close multipart: %w", err)
+		// streamSingleFileMultipart returns an "audio:" prefix; rewrap
+		// for caller debuggability (whisper-specific error path).
+		return nil, fmt.Errorf("whisper: %w", err)
 	}
 
 	endpoint := c.baseURL + "/transcribe"
@@ -195,11 +179,11 @@ func (c *WhisperClient) Transcribe(ctx context.Context, path string, opts Transc
 		endpoint += "?" + q.Encode()
 	}
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, endpoint, &buf)
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, endpoint, body)
 	if err != nil {
 		return nil, fmt.Errorf("whisper: build /transcribe request: %w", err)
 	}
-	req.Header.Set("Content-Type", mw.FormDataContentType())
+	req.Header.Set("Content-Type", contentType)
 
 	resp, err := c.http.Do(req)
 	if err != nil {
