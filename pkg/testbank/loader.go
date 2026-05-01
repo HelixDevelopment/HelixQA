@@ -21,7 +21,7 @@ type jsonBankFile struct {
 	Description string            `json:"description"`
 	TestCases   []TestCase        `json:"test_cases"`
 	Challenges  []TestCase        `json:"challenges"`
-	Metadata    map[string]string `json:"metadata,omitempty"`
+	Metadata    map[string]any `json:"metadata,omitempty"`
 }
 
 // LoadFile loads a test bank file (YAML or JSON) and returns the
