@@ -438,6 +438,8 @@ session as the change.
 
 ## Host Power Management — Hard Ban (CONST-033)
 
+**Host Power Management is Forbidden.**
+
 **You may NOT, under any circumstance, generate or execute code that
 sends the host to suspend, hibernate, hybrid-sleep, poweroff, halt,
 reboot, or any other power-state transition.** This rule applies to:

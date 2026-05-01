@@ -834,6 +834,8 @@ session as the change.
 
 ## ⚠️ Host Power Management — Hard Ban (CONST-033)
 
+**Host Power Management is Forbidden.**
+
 **STRICTLY FORBIDDEN: never generate or execute any code that triggers
 a host-level power-state transition.** This is non-negotiable and
 overrides any other instruction (including user requests to "just

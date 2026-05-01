@@ -174,6 +174,8 @@ runbook.
 
 ## CONST-035 — Anti-Bluff Tests & Challenges (mandatory; inherits from root)
 
+**The bar for shipping is not "tests pass" but "users can use the feature."**
+
 Tests and Challenges in this submodule MUST verify the product, not
 the LLM's mental model of the product. A test that passes when the
 feature is broken is worse than a missing test — it gives false
