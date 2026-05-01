@@ -1,0 +1,26 @@
+# CONST-035 mutation testing config (go-mutesting).
+# Threshold rules are enforced by challenges/scripts/mutation_ratchet_challenge.sh,
+# not by go-mutesting itself.
+#
+# Note: the go-mutesting CLI (Avito fork) primarily uses command-line flags;
+# this YAML file is the canonical record of the mutator set and exclusions
+# the project commits to. The challenge script reads this file and translates
+# fields into appropriate flags (--disable for excluded mutators, --match
+# regex, --exec-timeout).
+mutators:
+  - branch/case
+  - branch/if
+  - branch/else
+  - expression/remove
+  - expression/comparison
+  - statement/remove
+  - numbers/incrementer
+  - numbers/decrementer
+exec:
+  timeout: 60   # seconds per mutant (--exec-timeout)
+match: ".*"
+exclude:
+  - vendor/.*
+  - .*\.pb\.go$
+  - .*_mock\.go$
+  - scripts/anti-bluff/.*
