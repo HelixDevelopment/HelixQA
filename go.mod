@@ -125,11 +125,11 @@ require (
 replace (
 	digital.vasic.challenges => ../Challenges
 	digital.vasic.containers => ../Containers
-	digital.vasic.docprocessor => ../DocProcessor
-	digital.vasic.llmorchestrator => ../LLMOrchestrator
-	digital.vasic.llmprovider => ../LLMProvider
+	digital.vasic.docprocessor => ../Dependencies/HelixDevelopment/DocProcessor
+	digital.vasic.llmorchestrator => ../Dependencies/HelixDevelopment/LLMOrchestrator
+	digital.vasic.llmprovider => ../Dependencies/HelixDevelopment/LLMProvider
 	digital.vasic.security => ../Security
-	digital.vasic.visionengine => ../VisionEngine
+	digital.vasic.visionengine => ../Dependencies/HelixDevelopment/VisionEngine
 )
 
 require (
@@ -164,4 +164,4 @@ require (
 // layout with go.mod at the root (module path
 // digital.vasic.llmsverifier). The earlier llm-verifier/ wrapper is
 // historical; the correct replace target is the repo root.
-replace digital.vasic.llmsverifier => ../LLMsVerifier
+replace digital.vasic.llmsverifier => ../Dependencies/HelixDevelopment/LLMsVerifier
