@@ -43,8 +43,19 @@ For Go tests: `<path>.go::<TestFuncName>`. Verifier greps for
 | CAP-015 | submodule:HelixQA | Test plan generator produces test cases from knowledge base | pkg/planning/planner_test.go::TestTestPlanGenerator_Generate | TestPlanGenerator.Generate() returns a non-empty test plan with priority ordering | active |
 | CAP-016 | submodule:HelixQA | Vision analyzer produces analysis from a screenshot | pkg/analysis/vision_test.go::TestVisionAnalyzer_AnalyzeScreenshot | VisionAnalyzer.AnalyzeScreenshot() returns AnalysisResult with non-empty findings | active |
 | CAP-017 | submodule:HelixQA | scrcpy recorder reports start state correctly | pkg/video/scrcpy_test.go::TestScrcpyRecorder_StartState | ScrcpyRecorder transitions from Idle → Recording on Start() | active |
+| CAP-018 | submodule:HelixQA | Geo-restriction probe registry: register endpoint + alternative pair | pkg/autonomous/geo_probe_test.go::TestRegisterEndpoint_And_Alternative | RegisterEndpoint() + RegisterAlternative() expose the registered pair via the lookup API (no ATMOSphere-specific defaults baked in) | active |
+| CAP-019 | submodule:HelixQA | Cost tracker constructor produces a usable tracker | pkg/llm/cost_tracker_test.go::TestNewCostTracker | NewCostTracker() returns a thread-safe tracker with zero baseline cost and per-provider rate registry | active |
+| CAP-020 | submodule:HelixQA | Anthropic provider exposes its canonical name | pkg/llm/anthropic_test.go::TestAnthropicProvider_Name | AnthropicProvider.Name() returns "anthropic" — used by AdaptiveProvider routing | active |
+| CAP-021 | submodule:HelixQA | Full autonomous QA pipeline executes end-to-end on a single platform | pkg/orchestrator/integration_test.go::TestIntegration_FullPipeline_SinglePlatform | Pipeline runs Learn → Plan → Execute → Curiosity → Analyze → Report and produces a populated PipelineResult | active |
+| CAP-022 | submodule:HelixQA | Phase manager initial state is Pending for every declared phase | pkg/autonomous/phase_test.go::TestNewPhaseManager | NewPhaseManager() creates phases (setup/doc-driven/curiosity/report) all in Pending status | active |
+| CAP-023 | submodule:HelixQA | Test-feature validator accepts a well-formed feature definition | pkg/testbank/generator_test.go::TestFeature_Validate_Valid | Feature.Validate() returns nil for a feature with non-empty id/name/steps | active |
+| CAP-024 | submodule:HelixQA | OCU evidence kinds are exhaustively defined (no "unknown" leaks) | pkg/ticket/ocu_evidence_test.go::TestOCUEvidenceKinds_NonEmpty | EvidenceKinds() returns a non-empty list — every ticket type has a registered evidence kind | active |
+| CAP-025 | submodule:HelixQA | PELT change-point detector flags a real step change | pkg/analysis/pelt/pelt_test.go::TestPELT_DetectsStepChange | PELT.Detect() returns at least one change-point on a synthetic series with a clear step | active |
+| CAP-026 | submodule:HelixQA | Frame extractor produces well-formed ffmpeg argv | pkg/video/frames_test.go::TestFrameExtractor_BuildFFmpegArgs | BuildFFmpegArgs() returns argv with -i input, -vf select filter, -y output (validated against reference) | active |
+| CAP-027 | submodule:HelixQA | helixqa-x11grab CLI argv parser surfaces health subcommand | cmd/helixqa-x11grab/main_test.go::TestParseArgv_Health | ParseArgv(["health"]) returns the Health flag set without consuming additional positional args | active |
 
-(More capabilities — geo-restriction probe, device-state preservation,
-LLM cost tracking, llama.cpp RPC distributed inference, websocket
-streaming, full e2e autonomous session — populated in subsequent
-iterations of sub-project 3.)
+(Manifest now covers core orchestrator+autonomous+LLM+evidence+
+testbank+ticket+analysis+video+CLI capabilities — 27 active rows.
+Long-tail: per-LLM-provider tests, video segmenting/concat,
+device-preservation restore paths, websocket streaming, and the
+full ocu/oclaw campaign integration.)
