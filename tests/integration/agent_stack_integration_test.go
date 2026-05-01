@@ -1,7 +1,10 @@
+//go:build helixqa_external
+
+
 // SPDX-FileCopyrightText: 2026 Milos Vasic
 // SPDX-License-Identifier: Apache-2.0
 
-package e2e
+package integration
 
 import (
 	"context"
