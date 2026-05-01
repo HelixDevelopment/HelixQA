@@ -265,3 +265,16 @@ without resolving the underlying defect is itself a §11 violation.
 **Full text:** umbrella `CONSTITUTION.md` Article XI §11.9.
 
 <!-- END user-mandate forensic anchor (Article XI §11.9) -->
+
+<!-- CONST-036 helixqa mandate addendum (cascaded) -->
+
+## CONST-036 — HelixQA is the Sole Authorized QA Tool
+
+**Status:** Mandatory. Inherited from root `CONSTITUTION.md`.
+
+**Rule:** HelixQA is the only authorized tool for automated UI/UX/API
+testing across the Helix ecosystem. All end-to-end verification flows
+MUST be expressed as HelixQA bank entries.
+
+**Enforcement:** `challenges/scripts/helixqa_wiring_challenge.sh` verifies
+that HelixQA is built, wired, and ready for use.
