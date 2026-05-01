@@ -5,18 +5,11 @@
 # Section 2: per-file mutation kill rates, format <path>:<rate>:<mutants>.
 # Section 3: anchor-manifest gaps, format <capability-id>:MISSING_ANCHOR.
 # === SECTION 1: STATIC SCANNER HITS ===
-pkg/autonomous/bank_realbinary_test.go:BLUFF-G-003
-pkg/capture/android_capture_test.go:BLUFF-G-003
-pkg/capture/android/direct_test.go:BLUFF-G-003
-pkg/capture/desktop_capture_test.go:BLUFF-G-003
-pkg/discovery/host_discovery_test.go:BLUFF-G-003
-pkg/gst/frame_extractor_test.go:BLUFF-G-003
-pkg/gst/pipeline_test.go:BLUFF-G-003
-pkg/llm/prompt_optimizer_test.go:BLUFF-G-003
-pkg/vision/llm_ollama_test.go:BLUFF-G-003
-pkg/vision/ocr_paddle_test.go:BLUFF-G-003
-pkg/vision/ocr_tesseract_test.go:BLUFF-G-003
-tests/integration/ocu_capture_test.go:BLUFF-G-003
+# (empty — all 12 pre-existing BLUFF-G-003 hits already carried
+#  `// bluff-scan: no-assert-ok` markers from a prior anti-bluff
+#  effort; the scanner now recognizes that marker as a valid exempt
+#  convention alongside SKIP-OK and ANTI-BLUFF-EXEMPT, per
+#  sub-project 4 iter 8 update.)
 # === SECTION 2: PER-FILE MUTATION KILL RATES ===
 pkg/nexus/automation/agent_bridge/bridge.go:100:1
 pkg/nexus/automation/verifier/verifier.go:100:7
