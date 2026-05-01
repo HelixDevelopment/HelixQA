@@ -161,10 +161,10 @@ func (NoopTracer) Finished() []FinishedSpan { return nil }
 
 type noopSpan struct{}
 
-func (noopSpan) SetAttribute(string, any)        {}
-func (noopSpan) AddEvent(string, map[string]any) {}
-func (noopSpan) SetError(error)                  {}
-func (noopSpan) End()                            {}
+func (noopSpan) SetAttribute(_ string, _ any)        {} // intentionally empty: noop span discards attributes
+func (noopSpan) AddEvent(_ string, _ map[string]any) {} // intentionally empty: noop span discards events
+func (noopSpan) SetError(_ error)                  {} // intentionally empty: noop span discards errors
+func (noopSpan) End()                            {} // intentionally empty: noop span has nothing to finalize
 
 // --- Default registration ---
 

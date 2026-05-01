@@ -24,7 +24,7 @@ When operator says "push", confirm which mirror — `origin` only updates GitFli
 
 These are mandatory project-wide rules, not suggestions:
 
-- **Anti-bluff:** No `TODO`, `FIXME`, `XXX`, `placeholder`, empty function bodies, dead code, or tests that pass without exercising real behavior. Details in Constitution §1.
+- **Anti-bluff:** No `TODO`, `FIXME`, `XXX`, `placeholder`, empty function bodies, dead code, or tests that pass without exercising real behaviour. Details in Constitution §1. Explicitly forbidden: `assert.True(t, true)`, `assert.NotNil(t, nil)`, and any tautologically true assertion. Tests MUST confirm that all tested codebase really works as expected and can be used by end users.
 - **Containers only:** Every service, DB, build step, test runner, and scanner runs inside a container. Definitions live in `vasic-digital/Containers` — never vendor a `Dockerfile` outside that submodule. No faking a local toolchain.
 - **Decoupling:** Reusable components live in **public** `vasic-digital` Git/Go submodules. Reuse before recreating.
 
