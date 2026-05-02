@@ -1,0 +1,23 @@
+# CONST-035 baseline file.
+# Captured: 2026-05-01 (sub-project 1).
+# Reducing this file is the work of campaign sub-projects 4-5.
+# Section 1: static scanner hits, format <path>:<BLUFF-ID>.
+# Section 2: per-file mutation kill rates, format <path>:<rate>:<mutants>.
+# Section 3: anchor-manifest gaps, format <capability-id>:MISSING_ANCHOR.
+# === SECTION 1: STATIC SCANNER HITS ===
+# (empty — all 12 pre-existing BLUFF-G-003 hits already carried
+#  `// bluff-scan: no-assert-ok` markers from a prior anti-bluff
+#  effort; the scanner now recognizes that marker as a valid exempt
+#  convention alongside SKIP-OK and ANTI-BLUFF-EXEMPT, per
+#  sub-project 4 iter 8 update.)
+# === SECTION 2: PER-FILE MUTATION KILL RATES ===
+pkg/nexus/automation/agent_bridge/bridge.go:100:1
+pkg/nexus/automation/verifier/verifier.go:100:7
+pkg/nexus/capture/factory.go:88:9
+pkg/nexus/interact/factory.go:88:9
+pkg/nexus/interact/verify/verifier.go:20:5
+pkg/nexus/native/budget/assert.go:33:3
+pkg/nexus/native/budget/budget.go:100:27
+pkg/nexus/observe/plthook/observer.go:100:3
+pkg/nexus/record/encoder/encoder.go:77:9
+# === SECTION 3: ANCHOR-MANIFEST GAPS ===

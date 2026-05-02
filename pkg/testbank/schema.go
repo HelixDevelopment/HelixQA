@@ -337,7 +337,7 @@ type BankFile struct {
 	TestCases []TestCase `yaml:"test_cases" json:"test_cases"`
 
 	// Metadata holds arbitrary key-value pairs.
-	Metadata map[string]string `yaml:"metadata,omitempty" json:"metadata,omitempty"`
+	Metadata map[string]any `yaml:"metadata,omitempty" json:"metadata,omitempty"`
 }
 
 // ToDefinition converts a TestCase to a Challenges Definition
