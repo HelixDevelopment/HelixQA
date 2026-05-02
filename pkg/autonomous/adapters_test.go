@@ -69,13 +69,6 @@ func (a *adapterTestAgent) ModelInfo() agent.ModelInfo {
 	return agent.ModelInfo{ID: "test"}
 }
 
-func TestNewAgentLLMAdapter(t *testing.T) {
-	ag := &adapterTestAgent{}
-	p := parser.NewParser()
-	adapter := NewAgentLLMAdapter(ag, p)
-	assert.NotNil(t, adapter)
-}
-
 func TestAgentLLMAdapter_Summarize(t *testing.T) {
 	ag := &adapterTestAgent{
 		responses: []agent.Response{

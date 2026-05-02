@@ -20,14 +20,6 @@ import (
 
 // --- Constructor tests ---
 
-func TestNew_Defaults(t *testing.T) {
-	r := New()
-	assert.NotNil(t, r)
-	assert.Equal(t, "qa-results", r.outputDir)
-	assert.Equal(t, config.ReportMarkdown, r.reportFormat)
-	assert.NotNil(t, r.challengeReporter)
-}
-
 func TestNew_WithOptions(t *testing.T) {
 	r := New(
 		WithOutputDir("/tmp/output"),

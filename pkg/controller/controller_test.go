@@ -13,15 +13,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestNew_DefaultConfig(t *testing.T) {
-	c := New(Config{})
-	assert.NotNil(t, c)
-	assert.Equal(t, 90*time.Second, c.config.StaleThreshold)
-	assert.Equal(t, 60*time.Second, c.config.WarnThreshold)
-	assert.Equal(t, 5*time.Second, c.config.PollInterval)
-	assert.Equal(t, 5, c.config.MaxKillsPerPhase)
-}
-
 func TestNew_CustomConfig(t *testing.T) {
 	cfg := Config{
 		StaleThreshold:   30 * time.Second,

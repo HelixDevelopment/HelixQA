@@ -20,14 +20,14 @@ func TestDefaultDesktopConfig(t *testing.T) {
 
 func TestNewDesktopCapture(t *testing.T) {
 	if !IsPlatformSupported() {
-		t.Skip("platform not supported")  // SKIP-OK: #legacy-untriaged
+		t.Skip("platform not supported")
 	}
 
 	config := DefaultDesktopConfig()
 	capture, err := NewDesktopCapture(config)
 
 	if err != nil {
-		t.Skipf("failed to create capture: %v", err)  // SKIP-OK: #legacy-skip-untriaged-2026-04-29
+		t.Skipf("failed to create capture: %v", err)
 	}
 
 	assert.NotNil(t, capture)
@@ -88,7 +88,7 @@ func TestWindow_String(t *testing.T) {
 
 func TestDesktopCapture_GetSource(t *testing.T) {
 	if !IsPlatformSupported() {
-		t.Skip("platform not supported")  // SKIP-OK: #legacy-untriaged
+		t.Skip("platform not supported")
 	}
 
 	config := DefaultDesktopConfig()
@@ -97,7 +97,7 @@ func TestDesktopCapture_GetSource(t *testing.T) {
 
 	capture, err := NewDesktopCapture(config)
 	if err != nil {
-		t.Skipf("failed to create capture: %v", err)  // SKIP-OK: #legacy-skip-untriaged-2026-04-29
+		t.Skipf("failed to create capture: %v", err)
 	}
 
 	assert.Equal(t, "window", capture.GetSource())
@@ -230,19 +230,19 @@ func TestFindWindow(t *testing.T) {
 func TestCaptureScreenshot(t *testing.T) {
 	// bluff-scan: no-assert-ok (platform-probe smoke — already SKIP-OK on platform/headless)
 	if !IsPlatformSupported() {
-		t.Skip("platform not supported")  // SKIP-OK: #legacy-untriaged
+		t.Skip("platform not supported")
 	}
 
 	// Skip in CI environments
 	if CommandExists("xvfb-run") || CommandExists("Xvfb") {
-		t.Skip("skipping screenshot test in headless environment")  // SKIP-OK: #legacy-untriaged
+		t.Skip("skipping screenshot test in headless environment")
 	}
 
 	outputPath := "/tmp/helixqa_test_screenshot.png"
 	err := CaptureScreenshot(outputPath)
 
 	if err != nil {
-		t.Skipf("Screenshot capture failed: %v", err)  // SKIP-OK: #legacy-skip-untriaged-2026-04-29
+		t.Skipf("Screenshot capture failed: %v", err)
 	}
 
 	t.Logf("Screenshot saved to: %s", outputPath)
@@ -374,12 +374,12 @@ func TestCheckScreenRecordingPermission(t *testing.T) {
 
 func TestDesktopCapture_StartStop(t *testing.T) {
 	if !IsPlatformSupported() {
-		t.Skip("platform not supported")  // SKIP-OK: #legacy-untriaged
+		t.Skip("platform not supported")
 	}
 
 	// Skip if GStreamer not available
 	if !CommandExists("gst-launch-1.0") {
-		t.Skip("GStreamer not available")  // SKIP-OK: #legacy-untriaged
+		t.Skip("GStreamer not available")
 	}
 
 	config := DefaultDesktopConfig()
@@ -388,13 +388,13 @@ func TestDesktopCapture_StartStop(t *testing.T) {
 
 	capture, err := NewDesktopCapture(config)
 	if err != nil {
-		t.Skipf("failed to create capture: %v", err)  // SKIP-OK: #legacy-skip-untriaged-2026-04-29
+		t.Skipf("failed to create capture: %v", err)
 	}
 
 	// Start capture
 	err = capture.Start()
 	if err != nil {
-		t.Skipf("failed to start capture: %v (may require display)", err)  // SKIP-OK: #legacy-skip-untriaged-2026-04-29
+		t.Skipf("failed to start capture: %v (may require display)", err)
 	}
 
 	assert.True(t, capture.IsRunning())
@@ -410,13 +410,13 @@ func TestDesktopCapture_StartStop(t *testing.T) {
 
 func TestDesktopCapture_GetFrameChan(t *testing.T) {
 	if !IsPlatformSupported() {
-		t.Skip("platform not supported")  // SKIP-OK: #legacy-untriaged
+		t.Skip("platform not supported")
 	}
 
 	config := DefaultDesktopConfig()
 	capture, err := NewDesktopCapture(config)
 	if err != nil {
-		t.Skipf("failed to create capture: %v", err)  // SKIP-OK: #legacy-skip-untriaged-2026-04-29
+		t.Skipf("failed to create capture: %v", err)
 	}
 
 	// Should return channel even if not running

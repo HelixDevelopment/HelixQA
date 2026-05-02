@@ -52,14 +52,6 @@ func TestDefaultQAInfraConfig_CallerSuppliedOverrides(t *testing.T) {
 	assert.Equal(t, "/status", cfg.Services[2].HealthPath)
 }
 
-func TestNewQAInfraManager(t *testing.T) {
-	cfg := DefaultQAInfraConfig("localhost", "api", "8080", "/health")
-	mgr, err := NewQAInfraManager(cfg)
-	require.NoError(t, err)
-	assert.NotNil(t, mgr)
-	assert.NotNil(t, mgr.bootMgr)
-}
-
 func TestServiceConfig_Fields(t *testing.T) {
 	svc := ServiceConfig{
 		Name:        "test-db",

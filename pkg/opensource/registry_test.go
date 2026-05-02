@@ -22,7 +22,7 @@ func TestAudit_P1_T9_EverySubmoduleDocumented(t *testing.T) {
 	licencesDoc := filepath.Join(repoRoot, "docs", "licences-inventory.md")
 
 	if _, err := os.Stat(openSourceDir); os.IsNotExist(err) {
-		t.Skipf("tools/opensource/ not present in this checkout")  // SKIP-OK: #legacy-skip-untriaged-2026-04-29
+		t.Skipf("tools/opensource/ not present in this checkout")
 	}
 
 	result, err := Audit(openSourceDir, referencesDoc, licencesDoc)
@@ -99,7 +99,7 @@ func TestLocateLicenceFile_OpenClawing2Set(t *testing.T) {
 	repoRoot := findRepoRoot(t)
 	openSourceDir := filepath.Join(repoRoot, "tools", "opensource")
 	if _, err := os.Stat(openSourceDir); os.IsNotExist(err) {
-		t.Skipf("tools/opensource/ not present")  // SKIP-OK: #legacy-skip-untriaged-2026-04-29
+		t.Skipf("tools/opensource/ not present")
 	}
 	openClawingSet := []string{
 		"browser-use",
@@ -130,7 +130,7 @@ func TestLocateLicenceFile_PreExistingInfo(t *testing.T) {
 	repoRoot := findRepoRoot(t)
 	openSourceDir := filepath.Join(repoRoot, "tools", "opensource")
 	if _, err := os.Stat(openSourceDir); os.IsNotExist(err) {
-		t.Skipf("tools/opensource/ not present")  // SKIP-OK: #legacy-skip-untriaged-2026-04-29
+		t.Skipf("tools/opensource/ not present")
 	}
 	err := WalkGitDirs(openSourceDir, func(name, path string) error {
 		if LocateLicenceFile(path) == "" {

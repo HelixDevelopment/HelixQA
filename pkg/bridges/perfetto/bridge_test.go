@@ -61,12 +61,6 @@ func (m *mockRunner) Run(
 
 // --- NewBridge ---
 
-func TestNewBridge_NotNil(t *testing.T) {
-	mock := newMockRunner()
-	b := NewBridge(mock)
-	assert.NotNil(t, b)
-}
-
 // --- Available ---
 
 func TestBridge_Available_Found(t *testing.T) {

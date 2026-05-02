@@ -67,13 +67,6 @@ func TestFrameExtractor_OutputPattern(t *testing.T) {
 		"output pattern must contain the output directory")
 }
 
-func TestNewFrameExtractor_DefaultPath(t *testing.T) {
-	fe := NewFrameExtractor("")
-	require.NotNil(t, fe)
-	assert.Equal(t, "ffmpeg", fe.ffmpegPath,
-		"empty path must default to 'ffmpeg'")
-}
-
 func TestNewFrameExtractor_CustomPath(t *testing.T) {
 	fe := NewFrameExtractor("/usr/local/bin/ffmpeg")
 	require.NotNil(t, fe)

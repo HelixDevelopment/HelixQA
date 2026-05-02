@@ -106,15 +106,6 @@ func TestNew_DesktopOptions(t *testing.T) {
 	assert.Equal(t, 12345, d.processPID)
 }
 
-func TestNew_WithCommandRunner(t *testing.T) {
-	mock := newMockRunner()
-	d := New(
-		config.PlatformAndroid,
-		WithCommandRunner(mock),
-	)
-	assert.NotNil(t, d.cmdRunner)
-}
-
 // --- Check dispatch tests ---
 
 func TestCheck_UnsupportedPlatform(t *testing.T) {

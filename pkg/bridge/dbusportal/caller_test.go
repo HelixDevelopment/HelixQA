@@ -88,11 +88,11 @@ func TestNewDBusCaller_RequiresBus(t *testing.T) {
 
 func TestNewDBusCaller_SessionBusSucceedsIfAvailable(t *testing.T) {
 	if os.Getenv("DBUS_SESSION_BUS_ADDRESS") == "" {
-		t.Skip("no DBUS_SESSION_BUS_ADDRESS; skipping")  // SKIP-OK: #legacy-untriaged
+		t.Skip("no DBUS_SESSION_BUS_ADDRESS; skipping")
 	}
 	c, err := NewDBusCaller()
 	if err != nil {
-		t.Skipf("session bus not usable: %v", err)  // SKIP-OK: #legacy-skip-untriaged-2026-04-29
+		t.Skipf("session bus not usable: %v", err)
 	}
 	if c == nil || c.conn == nil {
 		t.Fatal("nil after NewDBusCaller")
@@ -172,11 +172,11 @@ func TestDBusCallerFactory_SatisfiesInterface(t *testing.T) {
 
 func TestDBusCaller_CallPortal_BadDestinationReturnsError(t *testing.T) {
 	if os.Getenv("DBUS_SESSION_BUS_ADDRESS") == "" {
-		t.Skip("no DBUS_SESSION_BUS_ADDRESS; skipping")  // SKIP-OK: #legacy-untriaged
+		t.Skip("no DBUS_SESSION_BUS_ADDRESS; skipping")
 	}
 	c, err := NewDBusCaller()
 	if err != nil {
-		t.Skipf("session bus not usable: %v", err)  // SKIP-OK: #legacy-skip-untriaged-2026-04-29
+		t.Skipf("session bus not usable: %v", err)
 	}
 	defer c.Close()
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)

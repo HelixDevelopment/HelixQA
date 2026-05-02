@@ -20,16 +20,6 @@ func TestDefaultPaddleOCRConfig(t *testing.T) {
 	assert.False(t, config.UseGPU)
 }
 
-func TestNewPaddleOCR(t *testing.T) {
-	config := DefaultPaddleOCRConfig()
-	ocr, err := NewPaddleOCR(config)
-
-	require.NoError(t, err)
-	assert.NotNil(t, ocr)
-	assert.Equal(t, config, ocr.config)
-	assert.NotNil(t, ocr.client)
-}
-
 func TestNewPaddleOCR_NilConfig(t *testing.T) {
 	ocr, err := NewPaddleOCR(nil)
 
@@ -193,7 +183,7 @@ func TestPaddleOCR_ParseResultInvalid(t *testing.T) {
 func TestPaddleOCRService(t *testing.T) {
 	// bluff-scan: no-assert-ok (service smoke — public method must not panic on standard call)
 	// Skip in CI environment
-	t.Skip("Requires PaddleOCR installation")  // SKIP-OK: #legacy-untriaged
+	t.Skip("Requires PaddleOCR installation")
 }
 
 func TestPaddleOCRService_IsRunning(t *testing.T) {

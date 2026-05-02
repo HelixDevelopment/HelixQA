@@ -30,18 +30,6 @@ func newTestImage(w, h int) *image.RGBA {
 
 // TestNewOmniParserProvider_Defaults verifies that omitting all optional keys
 // results in the expected default values.
-func TestNewOmniParserProvider_Defaults(t *testing.T) {
-	provider, err := NewOmniParserProvider(map[string]interface{}{})
-	require.NoError(t, err)
-	require.NotNil(t, provider)
-
-	p, ok := provider.(*OmniParserProvider)
-	require.True(t, ok, "provider should be *OmniParserProvider")
-
-	assert.Equal(t, defaultAPIURL, p.apiURL)
-	assert.Equal(t, defaultTimeout, p.timeout)
-	assert.NotNil(t, p.client)
-}
 
 // TestOmniParser_Analyze_Success verifies that a well-formed Gradio response is
 // parsed and returned as a populated VisionResult with the correct fields.

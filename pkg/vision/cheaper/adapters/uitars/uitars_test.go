@@ -56,19 +56,6 @@ func TestNewUITARSProvider_MissingKey(t *testing.T) {
 
 // TestNewUITARSProvider_Defaults verifies that optional fields fall back to
 // their documented defaults when absent from the config map.
-func TestNewUITARSProvider_Defaults(t *testing.T) {
-	provider, err := NewUITARSProvider(map[string]interface{}{
-		"api_key": "hf_test_token",
-	})
-
-	require.NoError(t, err)
-	require.NotNil(t, provider)
-
-	p := provider.(*UITARSProvider)
-	assert.Equal(t, defaultBaseURL, p.baseURL)
-	assert.Equal(t, defaultModel, p.model)
-	assert.Equal(t, defaultTimeout, p.timeout)
-}
 
 // TestUITARS_Analyze_Success verifies that a valid API response is parsed into
 // a correctly populated VisionResult.

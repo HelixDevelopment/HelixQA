@@ -312,7 +312,7 @@ func TestCwdSanity(t *testing.T) {
 	// bluff-scan: no-assert-ok (basic build/config smoke — must not panic)
 	wd, err := os.Getwd()
 	if err != nil {
-		t.Skip(err)  // SKIP-OK: #legacy-untriaged
+		t.Skip(err)
 	}
 	if filepath.Base(wd) != "android" {
 		t.Logf("cwd = %s (informational)", wd)
