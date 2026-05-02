@@ -170,7 +170,7 @@ func TestParsePlatforms_WithSpaces(t *testing.T) {
 }
 
 func TestParsePlatforms_Invalid(t *testing.T) {
-	_, err := ParsePlatforms("ios")
+	_, err := ParsePlatforms("foo")
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "invalid platform")
 }
