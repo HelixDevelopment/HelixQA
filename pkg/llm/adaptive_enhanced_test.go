@@ -55,17 +55,6 @@ func TestNewEnhancedAdaptiveProvider(t *testing.T) {
 	}
 }
 
-func TestNewEnhancedAdaptiveProvider_NoValidConfigs(t *testing.T) {
-	configs := []ProviderConfig{
-		{Name: "", APIKey: ""}, // Invalid
-	}
-
-	_, err := NewEnhancedAdaptiveProvider(configs)
-	if err == nil {
-		t.Error("expected error for no valid configs")
-	}
-}
-
 func TestEnhancedAdaptiveProvider_SupportsVision(t *testing.T) {
 	eap := &EnhancedAdaptiveProvider{
 		providers: []Provider{

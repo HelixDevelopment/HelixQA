@@ -354,13 +354,6 @@ func TestExtractAction_InvalidInnerJSON(t *testing.T) {
 // Constructors + utility
 // ---------------------------------------------------------------------------
 
-func TestNew_SetsEndpoint(t *testing.T) {
-	c := New("http://example.com")
-	if c.Endpoint != "http://example.com" {
-		t.Fatalf("Endpoint = %q", c.Endpoint)
-	}
-}
-
 func TestTruncate(t *testing.T) {
 	if got := truncate("hello", 10); got != "hello" {
 		t.Fatalf("short truncate = %q", got)

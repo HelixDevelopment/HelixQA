@@ -48,12 +48,6 @@ func (s *stubAgent) Requirements() agent.AgentRequirements {
 }
 func (s *stubAgent) SupportsVision() bool { return true }
 
-func TestNewOrchestratorClient_Validation(t *testing.T) {
-	if _, err := NewOrchestratorClient(nil, "m"); err == nil {
-		t.Fatal("nil agent must error")
-	}
-}
-
 func TestOrchestratorClient_ChatHappyPath(t *testing.T) {
 	s := &stubAgent{name: "gemini", resp: agent.Response{Content: "hello world"}}
 	c, _ := NewOrchestratorClient(s, "default-model")

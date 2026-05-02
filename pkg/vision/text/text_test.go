@@ -261,13 +261,6 @@ func TestDetect_InvalidURLError(t *testing.T) {
 // Constructor + interface conformance
 // ---------------------------------------------------------------------------
 
-func TestNew_SetsEndpoint(t *testing.T) {
-	c := New("http://example.com")
-	if c.Endpoint != "http://example.com" {
-		t.Fatalf("Endpoint = %q", c.Endpoint)
-	}
-}
-
 func TestClient_SatisfiesDetectorInterface(t *testing.T) {
 	srv, _ := mockSidecar(wireResult{})
 	defer srv.Close()

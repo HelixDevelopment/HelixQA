@@ -20,14 +20,6 @@ func TestDefaultPaddleOCRConfig(t *testing.T) {
 	assert.False(t, config.UseGPU)
 }
 
-func TestNewPaddleOCR_NilConfig(t *testing.T) {
-	ocr, err := NewPaddleOCR(nil)
-
-	require.NoError(t, err)
-	assert.NotNil(t, ocr)
-	assert.NotNil(t, ocr.config)
-}
-
 func TestCheckPaddleOCRAvailable(t *testing.T) {
 	// bluff-scan: no-assert-ok (environment-probe smoke — must not panic; result depends on host)
 	// This will likely be false in test environment

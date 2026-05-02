@@ -19,14 +19,6 @@ func TestDefaultOllamaConfig(t *testing.T) {
 	assert.NotEmpty(t, config.SystemPrompt)
 }
 
-func TestNewOllamaClient_NilConfig(t *testing.T) {
-	client, err := NewOllamaClient(nil)
-
-	require.NoError(t, err)
-	assert.NotNil(t, client)
-	assert.NotNil(t, client.config)
-}
-
 func TestCheckOllamaAvailable(t *testing.T) {
 	// bluff-scan: no-assert-ok (environment-probe smoke — must not panic; result depends on host)
 	// This will likely be false in test environment

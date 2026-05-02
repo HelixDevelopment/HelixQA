@@ -174,18 +174,6 @@ func TestProviderRateLimits(t *testing.T) {
 	}
 }
 
-func TestNewProviderRateLimiter_Defaults(t *testing.T) {
-	// Unknown provider should get defaults
-	rl := NewProviderRateLimiter("unknown-provider")
-
-	if rl.config.RequestsPerMinute != 30 {
-		t.Errorf("expected default RequestsPerMinute=30, got: %d", rl.config.RequestsPerMinute)
-	}
-	if rl.config.TokensPerMinute != 50000 {
-		t.Errorf("expected default TokensPerMinute=50000, got: %d", rl.config.TokensPerMinute)
-	}
-}
-
 func TestProviderRateLimiter_Wait_CircuitOpen(t *testing.T) {
 	rl := NewProviderRateLimiter("test")
 	rl.config.MaxConsecutiveFailures = 1

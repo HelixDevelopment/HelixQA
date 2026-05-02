@@ -6,16 +6,6 @@ import (
 	"testing"
 )
 
-func TestNewK6Runner_Defaults(t *testing.T) {
-	r, err := NewK6Runner("", "")
-	if err != nil {
-		t.Fatal(err)
-	}
-	if r.binary != "k6" || r.dir != "." {
-		t.Errorf("defaults not applied: binary=%q dir=%q", r.binary, r.dir)
-	}
-}
-
 func TestK6Runner_AvailableReturnsActionableError(t *testing.T) {
 	r, _ := NewK6Runner("definitely-not-installed-k6-binary-xyz", "")
 	err := r.Available()

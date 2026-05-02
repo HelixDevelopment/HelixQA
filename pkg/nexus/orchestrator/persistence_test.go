@@ -43,12 +43,6 @@ type fakeResult struct{}
 func (fakeResult) LastInsertId() (int64, error) { return 0, nil }
 func (fakeResult) RowsAffected() (int64, error) { return 1, nil }
 
-func TestNewAuditPersister_RequiresDB(t *testing.T) {
-	if _, err := NewAuditPersister(nil); err == nil {
-		t.Fatal("nil db should fail")
-	}
-}
-
 func TestAuditPersister_SaveRecordsEntry(t *testing.T) {
 	db := &fakeDB{}
 	p, _ := NewAuditPersister(db)

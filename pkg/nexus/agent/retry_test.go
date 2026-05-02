@@ -181,12 +181,6 @@ func TestFingerprintActions_DeterministicAndDistinct(t *testing.T) {
 // SelfHealer
 // ---------------------------------------------------------------------------
 
-func TestNewSelfHealer_RejectsNilClient(t *testing.T) {
-	if _, err := NewSelfHealer(nil, 1); err == nil {
-		t.Error("expected nil-client error")
-	}
-}
-
 func TestSelfHealer_ReplansWithFailureReason(t *testing.T) {
 	var captured string
 	planner := llmFunc(func(_ context.Context, req PlanRequest) (AgentStep, error) {

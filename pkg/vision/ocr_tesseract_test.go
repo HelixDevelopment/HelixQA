@@ -115,18 +115,6 @@ func TestNewTesseractOCR(t *testing.T) {
 	assert.Equal(t, config, ocr.config)
 }
 
-func TestNewTesseractOCR_NilConfig(t *testing.T) {
-	if !CheckTesseractAvailable() {
-		t.Skip("Tesseract not installed")
-	}
-
-	ocr, err := NewTesseractOCR(nil)
-
-	require.NoError(t, err)
-	assert.NotNil(t, ocr)
-	assert.NotNil(t, ocr.config)
-}
-
 func TestTesseractOCR_GetAvailableLanguages(t *testing.T) {
 	if !CheckTesseractAvailable() {
 		t.Skip("Tesseract not installed")

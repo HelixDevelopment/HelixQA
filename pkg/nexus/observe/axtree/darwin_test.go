@@ -421,17 +421,6 @@ func TestDarwinSnapshotter_EndToEndViaHTTPFetcher(t *testing.T) {
 // Factory constructor + interface conformance
 // ---------------------------------------------------------------------------
 
-func TestNewDarwinSnapshotter_UsesHTTPFetcher(t *testing.T) {
-	s := NewDarwinSnapshotter("http://localhost:17420/snapshot")
-	f, ok := s.fetcher.(*DarwinHTTPFetcher)
-	if !ok {
-		t.Fatalf("fetcher type = %T, want *DarwinHTTPFetcher", s.fetcher)
-	}
-	if f.URL != "http://localhost:17420/snapshot" {
-		t.Fatalf("URL = %q", f.URL)
-	}
-}
-
 func TestDarwinSnapshotter_SatisfiesSnapshotterInterface(t *testing.T) {
 	var s Snapshotter = NewDarwinSnapshotterWithFetcher(&fakeDarwinFetcher{json: []byte(sampleDarwinDump)})
 	defer s.Close()

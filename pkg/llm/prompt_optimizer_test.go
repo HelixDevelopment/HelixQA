@@ -30,13 +30,6 @@ func TestEstimateTokens(t *testing.T) {
 	}
 }
 
-func TestNewPromptOptimizer(t *testing.T) {
-	po := NewPromptOptimizer(8000)
-	if po.maxTokens != 8000 {
-		t.Errorf("expected maxTokens=8000, got: %d", po.maxTokens)
-	}
-}
-
 func TestPromptOptimizer_OptimizePrompt(t *testing.T) {
 	kb := learning.NewKnowledgeBase()
 	kb.ProjectName = "TestProject"

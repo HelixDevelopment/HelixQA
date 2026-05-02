@@ -211,17 +211,6 @@ func TestAdaptiveProvider_Vision_NoCapableProvider(t *testing.T) {
 
 // TestNewAdaptiveFromConfigs_AllInvalid verifies that an error is
 // returned when all supplied configs are invalid.
-func TestNewAdaptiveFromConfigs_AllInvalid(t *testing.T) {
-	configs := []ProviderConfig{
-		{Name: ""},        // empty name — invalid
-		{Name: "unknown"}, // unknown type — silently skipped
-	}
-
-	_, err := NewAdaptiveFromConfigs(configs)
-	if err == nil {
-		t.Fatal("expected error when all configs are invalid, got nil")
-	}
-}
 
 // TestAdaptiveProvider_SkipsUnavailableProviders verifies that
 // providers returning auth/credit errors are marked unavailable

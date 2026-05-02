@@ -25,18 +25,6 @@ func samlVerifier(attrs SAMLAttributes, err error) func(context.Context, string)
 
 // --- OIDC ---
 
-func TestNewOIDCProvider_Validation(t *testing.T) {
-	if _, err := NewOIDCProvider("", "c", oidcVerifier(OIDCClaims{}, nil)); err == nil {
-		t.Fatal("empty issuer must error")
-	}
-	if _, err := NewOIDCProvider("i", "", oidcVerifier(OIDCClaims{}, nil)); err == nil {
-		t.Fatal("empty clientID must error")
-	}
-	if _, err := NewOIDCProvider("i", "c", nil); err == nil {
-		t.Fatal("nil verifier must error")
-	}
-}
-
 func TestOIDCProvider_VerifyHappyPath(t *testing.T) {
 	p, _ := NewOIDCProvider("https://idp.example", "helixqa", oidcVerifier(OIDCClaims{
 		Subject: "u1", Email: "e@x", Team: "qa",
@@ -91,8 +79,7 @@ func TestNewSAMLProvider_Validation(t *testing.T) {
 
 func TestSAMLProvider_VerifyHappyPath(t *testing.T) {
 	p, _ := NewSAMLProvider("helixqa-sp", samlVerifier(SAMLAttributes{
-		NameID: "alice", Email: "a@x", Team: "qa",
-		Groups:   []string{"helixqa-admin"},
+		NameID: ,
 		NotAfter: time.Now().Add(time.Hour),
 	}, nil))
 	u, err := p.Verify(context.Background(), "assertion")

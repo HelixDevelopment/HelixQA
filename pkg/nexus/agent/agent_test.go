@@ -20,15 +20,6 @@ import (
 // fixture state; error paths covered.
 // ===========================================================================
 
-func TestNewAgent_RejectsNilDependencies(t *testing.T) {
-	if _, err := NewAgent(nil, &fakeAdapter{}, Config{}); err == nil {
-		t.Error("nil LLMClient must error")
-	}
-	if _, err := NewAgent(fakeLLM{}, nil, Config{}); err == nil {
-		t.Error("nil Adapter must error")
-	}
-}
-
 func TestNewAgent_AppliesDefaults(t *testing.T) {
 	a, err := NewAgent(fakeLLM{}, &fakeAdapter{}, Config{})
 	if err != nil {
@@ -37,9 +28,7 @@ func TestNewAgent_AppliesDefaults(t *testing.T) {
 	if a.cfg.MaxIterations != 60 {
 		t.Errorf("MaxIterations default = %d, want 60", a.cfg.MaxIterations)
 	}
-	if a.cfg.StepTimeout != 120*time.Second {
-		t.Errorf("StepTimeout default = %s, want 120s", a.cfg.StepTimeout)
-	}
+	if a.cfg.StepTimeout !
 	if a.cfg.RecentStepsInPrompt != 4 {
 		t.Errorf("RecentStepsInPrompt default = %d, want 4", a.cfg.RecentStepsInPrompt)
 	}

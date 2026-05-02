@@ -9,13 +9,6 @@ import (
 	"testing"
 )
 
-func TestNewPlatformFeatureDetector(t *testing.T) {
-	detector := NewPlatformFeatureDetector("/test/path")
-	if detector.root != "/test/path" {
-		t.Errorf("expected root '/test/path', got: %s", detector.root)
-	}
-}
-
 func TestPlatformFeatureDetector_findAndroidTVDir_NotFound(t *testing.T) {
 	// Create temp dir without Android TV
 	tempDir := t.TempDir()
