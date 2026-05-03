@@ -103,8 +103,9 @@ func (wc *windowsCapture) buildPipeline() string {
 
 // readFrames reads H.264 frames from GStreamer output
 func (wc *windowsCapture) readFrames(stdout *exec.Cmd) {
-	// Similar to Linux implementation
-	// Read from stdout pipe and send to frameChan
+	_ = wc
+	_ = stdout
+	// TODO: implement Windows frame reading (similar to Linux implementation)
 }
 
 // Stop stops the capture

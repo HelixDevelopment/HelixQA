@@ -94,7 +94,9 @@ func (mc *macOSCapture) buildPipeline() string {
 
 // readFrames reads H.264 frames from GStreamer output
 func (mc *macOSCapture) readFrames(stdout *exec.Cmd) {
-	// Similar to Linux implementation
+	_ = mc
+	_ = stdout
+	// TODO: implement macOS frame reading (similar to Linux implementation)
 }
 
 // Stop stops the capture
