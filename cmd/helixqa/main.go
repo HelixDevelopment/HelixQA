@@ -33,6 +33,7 @@ import (
 	"digital.vasic.helixqa/pkg/autonomous"
 	"digital.vasic.helixqa/pkg/config"
 	"digital.vasic.helixqa/pkg/controller"
+	"digital.vasic.helixqa/pkg/helixqa"
 	qainfra "digital.vasic.helixqa/pkg/infra"
 	"digital.vasic.helixqa/pkg/llm"
 	"digital.vasic.helixqa/pkg/memory"
@@ -61,6 +62,8 @@ func main() {
 		cmdAutonomous(os.Args[2:])
 	case "replay":
 		os.Exit(runReplay(os.Args[2:]))
+	case "signoff":
+		cmdSignoff(os.Args[2:])
 	case "version":
 		fmt.Printf("helixqa v%s\n", version)
 	case "help", "-h", "--help":
@@ -85,6 +88,7 @@ func printUsage() {
 	fmt.Println("  replay      Replay a ticket's OCU action chain (dry-run by default)")
 	fmt.Println("  list        List test cases from banks")
 	fmt.Println("  report      Generate report from existing results")
+	fmt.Println("  signoff     Run release gate (Constitution §6.7)")
 	fmt.Println("  version     Print version information")
 	fmt.Println("  help        Show this help")
 	fmt.Println()
@@ -923,4 +927,47 @@ func loadEnvFile(path string) error {
 		os.Setenv(key, val)
 	}
 	return scanner.Err()
+}
+
+// cmdSignoff runs the HelixPlay release gate (Constitution §6.7).
+// It executes the full test matrix via the helixqa orchestrator and
+// evaluates the release gate. Exit 0 = signoff granted, Exit 1 = blocked.
+func cmdSignoff(args []string) {
+	fs := flag.NewFlagSet("signoff", flag.ExitOnError)
+	_ = fs.Float64("threshold", 0.85, "minimum mutation score")
+	short := fs.Bool("short", false, "skip long-running tests")
+	_ = fs.Parse(args)
+
+	fmt.Println("=== HelixQA Release Signoff ===")
+	fmt.Println("Constitution §6.7: usability evidence mandatory")
+	fmt.Println()
+
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Hour)
+	defer cancel()
+
+	orc, err := helixqa.NewOrchestrator()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "ERROR: cannot create orchestrator: %v\n", err)
+		os.Exit(1)
+	}
+
+	if *short {
+		fmt.Println("Short mode: skipping stress/smoke/fullauto challenges")
+	}
+
+	allPassed := orc.RunAll(ctx)
+	fmt.Println()
+	fmt.Println(orc.Summary())
+	if !allPassed {
+		fmt.Fprintln(os.Stderr, "Some test types failed.")
+	}
+
+	gate := helixqa.NewReleaseGate()
+	if err := gate.Evaluate(orc.Results()); err != nil {
+		fmt.Fprintf(os.Stderr, "RELEASE GATE BLOCKED: %v\n", err)
+		os.Exit(1)
+	}
+
+	fmt.Println("RELEASE GATE: OPEN")
+	fmt.Println("HelixQA signoff granted.")
 }
