@@ -10,7 +10,7 @@
 > agent dispatch, any CI configuration, any code review that allows
 > green tests on broken features is a violation and MUST be rejected.
 
-> **Constitution v2.2.0**: [Read the Constitution](https://github.com/HelixDevelopment/HelixPlay/blob/main/docs/research/chapters/MVP/05_Response/01_Constitution.md)
+> **Constitution v2.3.0**: [Read the Constitution](https://github.com/HelixDevelopment/HelixPlay/blob/main/docs/research/chapters/MVP/05_Response/01_Constitution.md)
 > All rules in Constitution §1-§21 are MANDATORY. No exception.
 >
 > **Amendments (2026-05-02):**
@@ -21,6 +21,10 @@
 > - Automatic negative-leg fault injection per §1.3 / §6.3 / §11.5.7.
 > - `ValidateAntiBluff` unconditional; all challenges call `RecordAction()`.
 > - Container verifier `execCommand()` executes real commands.
+> - `go vet ./...` MUST pass with zero warnings — no suppressions, no exceptions.
+> - Anti-bluff scan MUST fail the CI lane: `scripts/anti-bluff-scan.sh` exits
+>   non-zero on any violation. Process substitution (`< <(...)>`) required over
+>   pipes for variable state propagation.
 > - Observable behaviour assertion ratio: at least 60% of assertions must verify
 >   observable behaviour per §1.2.
 > - Mutation score >= 85% enforced by `mutation_ratchet_challenge.sh` per §6.4.
