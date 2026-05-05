@@ -678,6 +678,16 @@ AGENTS.md mandate) + **§11.4 (this end-user-quality-guarantee
 forensic anchor — propagation requirement enforced by pre-build
 gate `CM-COVENANT-PROPAGATION`)**.
 
+**§11.4.1 extension (Phase 33, 2026-05-05) — FAIL-bluffs equally
+forbidden.** A test that crashes for a script-internal reason
+(undefined variable under `set -u`, regex error, malformed assertion,
+missing argument) and produces a FAIL exit code is just as misleading
+as a PASS-bluff. Both let real defects ship undetected. Per parent
+[Constitution §11.4.1](../../../../docs/guides/ATMOSPHERE_CONSTITUTION.md#114-end-user-quality-guarantee--forensic-anchor-user-mandate-2026-04-28),
+every test MUST fail ONLY for genuine product defects — script-bug
+failures must be fixed at the source layer (helper library, shared
+lib, test source), not patched in individual call sites.
+
 Non-compliance is a release blocker regardless of context.
 
 This covenant was lost from this file during the Phase 23.8 remote
