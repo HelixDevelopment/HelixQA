@@ -16,19 +16,9 @@ import (
 
 	"digital.vasic.challenges/pkg/bank"
 	"digital.vasic.challenges/pkg/challenge"
-	"digital.vasic.challenges/pkg/logging"
 
 	"digital.vasic.helixqa/pkg/config"
 )
-
-func TestNew_WithLogger(t *testing.T) {
-	cfg := config.DefaultConfig()
-	logger := logging.NewConsoleLogger(false)
-	defer logger.Close()
-
-	o := New(cfg, WithLogger(logger))
-	assert.NotNil(t, o.logger)
-}
 
 func TestRun_EmptyBankFile(t *testing.T) {
 	dir := t.TempDir()

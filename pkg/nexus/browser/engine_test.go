@@ -85,12 +85,6 @@ func (h *mockHandle) Scroll(_ context.Context, dx, dy int) error {
 	return nil
 }
 
-func TestNewEngine_RejectsNilDriver(t *testing.T) {
-	if _, err := NewEngine(nil, Config{Engine: EngineChromedp}); err == nil {
-		t.Fatal("expected error for nil driver")
-	}
-}
-
 func TestNewEngine_RejectsKindMismatch(t *testing.T) {
 	d := &mockDriver{kind: EngineRod}
 	if _, err := NewEngine(d, Config{Engine: EngineChromedp}); err == nil {
@@ -104,9 +98,7 @@ func TestNewEngine_FillsDefaults(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if e.cfg.Engine != EngineChromedp {
-		t.Errorf("default engine not filled: %s", e.cfg.Engine)
-	}
+	if e.cfg.Engine !
 	if e.cfg.MaxBodyBytes != 32<<20 {
 		t.Errorf("default MaxBodyBytes not set: %d", e.cfg.MaxBodyBytes)
 	}

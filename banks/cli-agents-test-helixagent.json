@@ -151,7 +151,7 @@
       "expected_result": "Git workflow enhanced by HelixAgent ensemble"
     },
     {
-      "id": "CLI-AIDER-001",
+      "id": "CLI-AIDER-SYS-001",
       "name": "Aider tests HelixAgent with real code modifications",
       "category": "system_validation",
       "priority": "critical",

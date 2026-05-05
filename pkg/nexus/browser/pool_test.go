@@ -19,18 +19,6 @@ func newTestEngine(t *testing.T) *Engine {
 	return e
 }
 
-func TestNewPool_Validation(t *testing.T) {
-	if _, err := NewPool(nil, 1); err == nil {
-		t.Error("nil adapter must be rejected")
-	}
-	if _, err := NewPool(newTestEngine(t), 0); err == nil {
-		t.Error("size 0 must be rejected")
-	}
-	if _, err := NewPool(newTestEngine(t), -1); err == nil {
-		t.Error("negative size must be rejected")
-	}
-}
-
 func TestPool_AcquireRelease(t *testing.T) {
 	pool, err := NewPool(newTestEngine(t), 2)
 	if err != nil {

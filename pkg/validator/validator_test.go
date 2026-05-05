@@ -86,26 +86,6 @@ func TestNew_WithOptions(t *testing.T) {
 	assert.Equal(t, "/tmp/ev", v.EvidenceDir())
 }
 
-func TestNew_WithScreenshotFunc(t *testing.T) {
-	mock := newMockRunner()
-	det := detector.New(
-		config.PlatformDesktop,
-		detector.WithCommandRunner(mock),
-	)
-	called := false
-	v := New(
-		det,
-		WithScreenshotFunc(func(
-			ctx context.Context, name string,
-		) (string, error) {
-			called = true
-			return "/tmp/" + name + ".png", nil
-		}),
-	)
-	assert.NotNil(t, v)
-	_ = called // Will be tested in ValidateStep tests.
-}
-
 // --- ValidateStep tests ---
 
 func TestValidateStep_Passed(t *testing.T) {

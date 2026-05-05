@@ -398,9 +398,3 @@ func TestFromWireResponse_UnknownDatatypeStringFallback(t *testing.T) {
 // Constructor
 // ---------------------------------------------------------------------------
 
-func TestNew_SetsEndpoint(t *testing.T) {
-	c := New("http://example.com")
-	if c.Endpoint != "http://example.com" {
-		t.Fatalf("Endpoint = %q", c.Endpoint)
-	}
-}

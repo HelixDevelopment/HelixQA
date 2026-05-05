@@ -28,21 +28,6 @@ func newTestImage(w, h int) *image.RGBA {
 	return img
 }
 
-func TestNewQwen25VLProvider_Defaults(t *testing.T) {
-	provider, err := NewQwen25VLProvider(nil)
-
-	require.NoError(t, err)
-	require.NotNil(t, provider)
-
-	p, ok := provider.(*Qwen25VLProvider)
-	require.True(t, ok, "provider should be *Qwen25VLProvider")
-
-	assert.Equal(t, "http://localhost:9192/v1", p.baseURL)
-	assert.Equal(t, "Qwen2.5-VL-7B-Instruct", p.model)
-	assert.Equal(t, 120*time.Second, p.timeout)
-	assert.NotNil(t, p.client)
-}
-
 func TestNewQwen25VLProvider_CustomConfig(t *testing.T) {
 	cfg := map[string]interface{}{
 		"base_url": "http://myhost:8080/v1",

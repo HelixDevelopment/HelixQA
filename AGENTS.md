@@ -1,474 +1,876 @@
-# AGENTS.md - HelixQA Development Guide
+# AGENTS.md — HelixCode Authoritative Agent Guide
 
-## MANDATORY HOST-SESSION SAFETY (Constitution §12)
+## HelixCode Agent Guidelines
 
-**Forensic incident, 2026-04-27 22:22:14 (MSK):** the developer's
-`user@1000.service` was SIGKILLed under an OOM cascade triggered by
-`pip3 install --user openai-whisper` running on top of chronic
-podman-pod memory pressure. The cascade SIGKILLed gnome-shell, every
-ssh session, claude-code, tmux, btop, npm, node, java, pip3 — full
-session loss. Evidence: `journalctl --since "2026-04-27 22:00"
---until "2026-04-27 22:23"`.
+**Version**: 3.0.0 (Updated with full architecture audit)
+**Date**: 2026-04-30
+**Scope**: All AI agents, human contributors, and automated processes working on HelixCode
+**Authority**: Derived from HelixAgent AGENTS.md with HelixCode-specific enhancements
 
-This invariant applies to **every script, test, helper, and AI agent**
-in this submodule. Non-compliance is a release blocker.
+---
 
-### Forbidden — directly OR indirectly
+## Project Overview
 
-1. **Suspending the host**: `systemctl suspend`, `pm-suspend`,
-   `loginctl suspend`, DBus `org.freedesktop.login1.Suspend`,
-   GNOME idle-suspend, lid-close handler.
-2. **Hibernating / hybrid-sleeping**: any `Hibernate` / `HybridSleep`
-   / `SuspendThenHibernate` method.
-3. **Logging out the user**: `loginctl terminate-session`,
-   `pkill -u <user>`, `systemctl --user --kill`, anything that
-   signals `user@<uid>.service`.
-4. **Unbounded-memory operations** inside `user@<uid>.service`
-   cgroup. Any single command expected to exceed 4 GB RSS MUST be
-   wrapped in `bounded_run` (defined in
-   `scripts/lib/host_session_safety.sh`, parent repo).
-5. **Programmatic rfkill toggles, lid-switch handlers, or
-   power-button handlers** — these cascade into idle-actions.
-6. **Disabling systemd-logind, GDM, or session managers** "to make
-   things faster" — even temporary stops leave the system unable to
-   recover the user session.
+HelixCode is an enterprise-grade distributed AI development platform built in Go. It enables intelligent task division, work preservation, cross-platform development workflows, and multi-provider LLM integration through a unified REST API, CLI, Terminal UI, Desktop, and Mobile client architecture.
 
-### Required safeguards
+**Current Status**: The `internal/` foundation is largely solid (auth, database, server, worker, task, workflow, tools, editor, notification, MCP, **verifier** are real implementations). Critical bluff and stub areas remain in select entry points and peripheral packages. All agents MUST prioritize zero-bluff implementation.
 
-Every script in this submodule that performs heavy work (build,
-transcription, model inference, large compression, multi-GB git op)
-MUST:
+**LLMsVerifier Integration Status**: `internal/verifier/` package is now implemented with REST API client, two-tier cache, circuit breaker health monitor, background poller, score adapter, and event publisher. BLUFF-002 (hardcoded CLI models) and BLUFF-004 (hardcoded external models) are FIXED. BLUFF-005 (scoring ignores verifier data) is FIXED in `ModelManager.SelectOptimalModel()`.
 
-1. Source `scripts/lib/host_session_safety.sh` from the parent repo.
-2. Call `host_check_safety` at the top and **abort if it fails**.
-3. Wrap any subprocess expected to exceed ~4 GB RSS in
-   `bounded_run "<name>" <max-mem> <max-time> -- <cmd...>` so the
-   kernel OOM killer is contained to that scope and cannot escalate
-   to user.slice.
-4. Cap parallelism (`-j`) to fit available RAM (each AOSP job ≈ 5 GB
-   peak RSS).
+**Key Features**:
+- **Distributed Computing**: SSH-based worker pools with health monitoring, auto-installation, and consensus
+- **Multi-Provider LLM Integration**: 15+ providers (OpenAI, Anthropic, Gemini, Ollama, Azure, Bedrock, Groq, Mistral, Cohere, xAI, DeepSeek, Qwen, OpenRouter, HuggingFace, Llama.cpp)
+- **Development Workflows**: Automated planning, building, testing, refactoring with real shell execution
+- **Task Management**: Intelligent task division with priorities, dependencies, checkpointing, and Redis caching
+- **MCP Protocol**: Full Model Context Protocol server over WebSocket with tool dispatch
+- **Multi-Client Architecture**: REST API (Gin), Cobra CLI, Terminal UI (tview), Desktop (Fyne), Mobile (gomobile), WebSocket
+- **Memory Systems**: In-memory, filesystem, Redis, Memcached, Cognee, ChromaDB, Qdrant, Weaviate integrations
+- **Advanced Editor**: Multi-format code editing (diff, whole-file, search/replace, line-based) with backups
+- **Tools Ecosystem**: 40+ tools across filesystem, shell, web, browser, mapping, multiedit, confirmation, notebook, git
+- **Notifications**: Multi-channel support (Slack, Email, Telegram, Discord, Yandex Messenger, Max)
 
-### Container hygiene
+---
 
-Containers (Docker / Podman) we own or rely on MUST:
+## Technology Stack
 
-1. Declare an explicit memory limit (`mem_limit` / `--memory` /
-   `MemoryMax`).
-2. Set `OOMPolicy=stop` in their systemd unit to avoid retry loops.
-3. Use exponential-backoff restart policies, never immediate retry.
-4. Be clean-slate destroyed (`podman pod stop && rm`, `podman
-   volume prune`) and rebuilt after any host crash or session loss
-   so stale lock files don't keep producing failures.
+**Core Technologies**:
+- **Language**: Go 1.24.0 with toolchain go1.24.9
+- **Module**: `dev.helix.code`
+- **HTTP Framework**: Gin v1.11.0
+- **Authentication**: JWT v4.5.2, bcrypt + argon2
+- **Database**: PostgreSQL 15+ via pgx/v5 (optional)
+- **Cache**: Redis 7+ via go-redis/v9 (optional)
+- **Configuration**: Viper v1.21.0
+- **CLI Framework**: Cobra v1.8.0
+- **Testing**: Testify v1.11.1
 
-### When in doubt
+**UI Technologies**:
+- **Desktop**: Fyne v2.7.0
+- **Terminal UI**: tview v0.42.0
+- **Mobile**: gomobile bindings
 
-Don't run heavy work blind. Check `journalctl -k --since "1 hour ago"
-| grep -c oom-kill`. If it's non-zero, **fix the offending workload
-first**. Do not stack new work on a host already in distress.
+**External Integrations**:
+- **Browser Automation**: chromedp v0.14.2
+- **Web Scraping**: goquery v1.10.3
+- **Tree-sitter**: go-tree-sitter
+- **Identity**: Azure SDK, AWS SDK v2
+- **Vector/Memory**: Cognee, ChromaDB, Qdrant, Weaviate clients
+- **Container Orchestration**: digital.vasic.containers (vasic-digital/Containers submodule)
 
-**Cross-reference:** parent `docs/guides/ATMOSPHERE_CONSTITUTION.md`
-§12 (full forensic, library API, operator directives) +
-parent `scripts/lib/host_session_safety.sh`.
+---
 
-## MANDATORY ANTI-BLUFF VALIDATION (Constitution §8.1 + §11)
+## Working Directory & Build System
 
-**This submodule inherits the parent ATMOSphere project's anti-bluff covenant.
-A test that PASSes while the feature it claims to validate is unusable to an
-end user is the single most damaging failure mode in this codebase. It has
-shipped working-on-paper / broken-on-device builds before, and that MUST NOT
-happen again.**
-
-The canonical authority is `docs/guides/ATMOSPHERE_CONSTITUTION.md` §8.1
-("NO BLUFF — positive-evidence-only validation") and §11 ("Bleeding-edge
-ultra-perfection") in the parent repo. Every contribution to THIS submodule
-is bound by it. Summarised non-negotiables:
-
-1. **Tests MUST validate user-visible behaviour, not just metadata.** A gate
-   that greps for a string in a config XML, an XML attribute, a manifest
-   entry, or a build-time symbol is METADATA — not evidence the feature
-   works for the end user. Such a gate is allowed ONLY when paired with a
-   runtime / on-device test that exercises the user-visible path and reads
-   POSITIVE EVIDENCE that the behaviour actually occurred (kernel `/proc/*`
-   runtime state, captured audio/video, dumpsys output produced *during*
-   playback, real input-event delivery, real surface composition, etc).
-2. **PASS / FAIL / SKIP must be mechanically distinguishable.** SKIP is for
-   environment limitations (no HDMI sink, no USB mic, geo-restricted endpoint
-   unreachable) and MUST always carry an explicit reason. PASS is reserved
-   for cases where positive evidence was observed. A test that completes
-   without observing evidence MUST NOT report PASS.
-3. **Every gate MUST have a paired mutation test in
-   `scripts/testing/meta_test_false_positive_proof.sh` (parent repo).** The
-   mutation deliberately breaks the feature and the gate MUST then FAIL.
-   A gate without a paired mutation is a BLUFF gate and is a Constitution
-   violation regardless of how many checks it appears to make.
-4. **Challenges (HelixQA) and tests are in the same boat.** A Challenge that
-   reports "completed" by checking the test runner exited 0, without
-   observing the system behaviour the Challenge is supposed to verify, is a
-   bluff. Challenge runners MUST cross-reference real device telemetry
-   (logcat, captured frames, network probes, kernel state) to confirm the
-   user-visible promise was kept.
-5. **The bar for shipping is not "tests pass" but "users can use the feature."**
-   If the on-device experience does not match what the test claims, the test
-   is the bug. Fix the test (positive-evidence harder), do not silence it.
-6. **No false-success results are tolerable.** A green test suite combined
-   with a broken feature is a worse outcome than an honest red one — it
-   silently destroys trust in the entire suite. Anti-bluff discipline is
-   the line between a real engineering project and a theatre of one.
-
-When in doubt: capture runtime evidence, attach it to the test result, and
-let a hostile reviewer (i.e. yourself, in six months) try to disprove that
-the feature really worked. If they can, the test is bluff and must be hardened.
-
-**Cross-references:** parent CLAUDE.md "MANDATORY DEVELOPMENT PRINCIPLES",
-parent AGENTS.md "NO BLUFF" section, parent `scripts/testing/meta_test_false_positive_proof.sh`.
-
-## MANDATORY: Project-Agnostic / 100% Decoupled
-
-**This module MUST remain 100% decoupled from any consuming project. It is designed for generic use with ANY project, not one specific consumer.**
-
-- NEVER hardcode project-specific package names, endpoints, device serials, or region-specific data
-- NEVER import anything from a consuming project
-- NEVER add project-specific defaults, presets, or fixtures into source code
-- All project-specific data MUST be registered by the caller via public APIs — never baked into the library
-- Default values MUST be empty or generic
-
-Violations void the release. Refactor to restore generic behaviour before any commit.
-
-## MANDATORY: No CI/CD Pipelines
-
-**NO GitHub Actions, GitLab CI/CD, or any automated pipeline may exist in this repository!**
-
-- No `.github/workflows/` directory
-- No `.gitlab-ci.yml` file
-- No Jenkinsfile, .travis.yml, .circleci, or any other CI configuration
-- All builds and tests are run manually or via Makefile targets
-- This rule is permanent and non-negotiable
-
-## MANDATORY: Everything Runs Inside Containers
-
-**ALL execution MUST happen inside Docker/Podman containers. No exceptions.**
-
-- All builds, tests, dev servers, QA campaigns, and any process execution MUST run inside containers
-- Client apps (admin, web, desktop) MUST be served from containers
-- Mobile testing MUST use Android emulators running inside containers (e.g., `budtmo/docker-android`)
-- HelixQA campaigns MUST execute inside containers with Playwright for browser automation
-- Video recording MUST happen inside containers using Playwright video capture or CDP screencast
-- Never run `go build`, `npm run dev`, or any tooling directly on the host machine
-- Resource limits MUST be enforced: max 35% of host CPU and RAM per CLAUDE.md constraints
-
-## Architecture
-
-HelixQA is a thin orchestration layer over two foundational modules:
-
-1. **digital.vasic.challenges** -- Test execution engine with bank loading, challenge running, assertion evaluation, and report generation.
-2. **digital.vasic.containers** -- Container lifecycle, health checking, and service discovery.
-
-HelixQA adds:
-- **Crash/ANR detection** via platform-specific system commands (ADB, pgrep, kill)
-- **Step validation** correlating crash detection with test execution phases
-- **Evidence collection** (screenshots, logs, stack traces)
-- **QA-specific reporting** wrapping the Challenges report infrastructure
-
-## Module Dependency Graph
-
-```
-digital.vasic.helixqa
-  |-- digital.vasic.challenges
-  |     |-- digital.vasic.containers
-  |-- digital.vasic.containers (direct)
-```
-
-## Development Workflow
+**CRITICAL**: All build and test commands must be run from the `HelixCode/` subdirectory, not the repository root.
 
 ```bash
-# Build
-go build ./...
-
-# Test with race detection
-go test ./... -race -count=1
-
-# Vet
-go vet ./...
-
-# Run CLI
-go run ./cmd/helixqa --help
+cd HelixCode
 ```
 
-## Adding a New Platform
+### Build Commands
+| Command | Purpose |
+|---------|---------|
+| `make build` | Build server binary to `bin/helixcode` |
+| `make test` | Run `go test -v ./...` |
+| `make test-all` | Run tests + coverage + benchmarks + docs |
+| `make test-coverage` | Generate coverage report |
+| `make test-benchmark` | Run Go benchmarks |
+| `make logo-assets` | Generate logo assets (required before first build) |
+| `make setup-deps` | Run `go mod tidy` |
+| `make fmt` | Run `go fmt ./...` |
+| `make lint` | Run `golangci-lint run ./...` |
+| `make clean` | Clean build artifacts |
+| `make dev` | Start development server |
+| `make prod` | Cross-platform production build |
+| `make mobile` | Build iOS + Android targets |
+| `make aurora-os` | Build Aurora OS target |
+| `make harmony-os` | Build Harmony OS target |
 
-1. Add platform constant in `pkg/config/config.go`
-2. Add detection logic in `pkg/detector/`
-3. Update `Detector.Check()` dispatch in `pkg/detector/detector.go`
-4. Add tests in `pkg/detector/<platform>_test.go`
-5. Update `Orchestrator.getDetector()` for platform-specific options
-6. Update `Config.ExpandedPlatforms()` if included in "all"
+### Full Infrastructure Test Commands
+| Command | Purpose |
+|---------|---------|
+| `make test-infra-up` | Start full Docker test infrastructure |
+| `make test-infra-down` | Stop full Docker test infrastructure |
+| `make test-full` | ALL tests with real infrastructure (zero skips) |
+| `make test-unit-full` | Unit tests with real services |
+| `make test-integration-full` | Integration tests with `-tags=integration` |
+| `make test-e2e-full` | E2E challenge tests via runner |
+| `make test-security-full` | Security test suite |
+| `make test-load-full` | Load tests |
+| `make test-complete` | Sequential run of all full test types |
+| `make coverage-full` | Coverage with full infrastructure |
 
-## Adding a New Report Format
+### Containerized Builds (NO Host Dependencies)
+| Command | Purpose |
+|---------|---------|
+| `make container-builder-image` | Build the builder container image |
+| `make container-build` | Build application inside container |
+| `make container-test` | Run tests inside container |
+| `make container-lint` | Run linter inside container |
+| `make container-shell` | Interactive shell in builder container |
+| `make container-dev-up` | Start containerized dev environment |
+| `make container-dev-down` | Stop containerized dev environment |
+| `make container-release` | Full release build in container |
+| `./scripts/containers/build-in-container.sh` | Convenience wrapper script |
 
-1. Add format constant in `pkg/config/config.go`
-2. Add writer in `pkg/reporter/reporter.go`
-3. Update `WriteReport()` dispatch
-4. Add tests
+The builder container includes: Go 1.24, gcc, postgresql-client, redis, docker-cli, golangci-lint, and all build tools. The only host requirement is Docker/Podman.
 
-## Vision Provider Architecture
+### Standalone Test Scripts
+| Script | Purpose |
+|--------|---------|
+| `./run_tests.sh --unit` | Unit tests |
+| `./run_tests.sh --integration` | Integration tests |
+| `./run_tests.sh --e2e` | E2E tests |
+| `./run_tests.sh --coverage` | Coverage analysis |
+| `./run_tests.sh --security` | Security tests |
+| `./run_all_tests.sh` | Orchestrates ALL suites sequentially |
+| `./run_integration_tests.sh` | DB integration tests with Docker |
 
-HelixQA uses a dual-model architecture for autonomous QA:
+### Single Test Execution
+```bash
+go test -v -run TestName ./path/to/package
+go test -v -tags=integration ./internal/database
+cd tests/e2e/challenges && go run cmd/runner/main.go -challenge ascii-art-generator-001 -providers ollama
+```
 
-### Vision Models (screenshot analysis — Execute and Curiosity phases)
-- **Astica.AI** — Specialized computer vision API (`ASTICA_API_KEY`)
-- **Gemini 2.0 Flash** — Primary cloud vision for autonomous navigation
-- **OpenAI GPT-4o** — Alternate cloud vision provider
-- **Ollama** (local) — Free inference via `minicpm-v:8b` or similar (`HELIX_OLLAMA_URL`)
-- **llama.cpp RPC** — Distributed inference across multiple hosts
+---
 
-### Chat Models (reasoning — Learn, Plan, Analyze phases)
-- Any text-capable provider (OpenAI, Anthropic, Gemini, Groq, Mistral, etc.)
-- Selected by LLMsVerifier using dynamic scoring (no hardcoded preferences)
+## Architecture & Code Organization
 
-### Dynamic Model Selection
-Model selection is fully dynamic via LLMsVerifier's Strategy pattern:
-- All configured providers are probed at session start
-- Scored on quality, speed, cost, reliability dimensions
-- Best available model selected per-phase requirements
-- No hardcoded model preferences — scores determine selection
+```
+HelixCode/
+├── cmd/                          # Application entry points
+│   ├── server/main.go            # HTTP server entry point
+│   ├── cli/main.go               # Legacy flag-based CLI client
+│   ├── root.go                   # Cobra root command (`helix`)
+│   ├── main_commands.go          # `helix start`, `helix auto`
+│   ├── other_commands.go         # `helix server`, `helix version`, etc.
+│   ├── local-llm.go              # `helix local-llm` command tree
+│   ├── local-llm-advanced.go     # Advanced local-llm commands
+│   ├── helix-config/main.go      # Dedicated config management CLI
+│   ├── security-test/main.go     # Simulated security test runner
+│   ├── security-fix/main.go      # Security fix wrapper
+│   ├── security-fix-standalone/main.go  # Standalone security scanner
+│   ├── performance-optimization/main.go # Performance optimizer
+│   ├── performance-optimization-standalone/main.go # Standalone perf simulator
+│   └── config-test/main.go       # Config hot-reload test utility
+│
+├── internal/                     # Internal packages (~40 packages)
+│   ├── auth/                     # JWT authentication, bcrypt/argon2, sessions
+│   ├── llm/                      # LLM provider implementations (15+ providers)
+│   │   ├── providers/            # Per-provider HTTP clients
+│   │   ├── compression/          # Context compression
+│   │   └── vision/               # Vision/multimodal support
+│   ├── provider/                 # Provider abstractions
+│   ├── providers/                # Provider management
+│   ├── worker/                   # SSH-based worker pool, health checks
+│   ├── task/                     # Task queues, dependencies, checkpoints
+│   ├── server/                   # Gin HTTP server, routes, middleware
+│   ├── database/                 # PostgreSQL pgx pool, schema initialization
+│   ├── redis/                    # go-redis wrapper with graceful degradation
+│   ├── tools/                    # 40+ tool ecosystem registry
+│   │   ├── filesystem/           # fs_read, fs_write, fs_edit, glob, grep
+│   │   ├── shell/                # shell, shell_background with sandbox
+│   │   ├── web/                  # web_fetch, web_search
+│   │   ├── browser/              # browser_launch, browser_navigate, browser_screenshot
+│   │   ├── multiedit/            # Transactional multi-file editing
+│   │   └── git/                  # Git automation
+│   ├── editor/                   # Multi-format code editing with backups
+│   ├── memory/                   # Memory providers (in-mem, filesystem, Redis, etc.)
+│   ├── cognee/                   # Cognee.ai memory integration
+│   ├── context/                  # Hierarchical context management with TTL
+│   ├── notification/             # Multi-channel notification engine
+│   ├── mcp/                      # Model Context Protocol WebSocket server
+│   ├── workflow/                 # Development workflow execution
+│   ├── config/                   # Viper-based configuration management
+│   ├── event/                    # Pub/sub event bus
+│   ├── logging/                  # Structured logging wrapper
+│   ├── monitoring/               # Metric collection framework
+│   ├── security/                 # Security scanning (stubbed)
+│   ├── session/                  # Development session management
+│   ├── agent/                    # Agent orchestration
+│   ├── project/                  # Project management
+│   ├── rules/                    # Rules engine
+│   ├── hooks/                    # Hook system
+│   ├── focus/                    # Focus chain management
+│   ├── template/                 # Template system
+│   ├── persistence/              # State persistence
+│   ├── deployment/               # Deployment management
+│   ├── discovery/                # Service/model discovery
+│   ├── hardware/                 # Hardware abstraction
+│   ├── repomap/                  # Repository mapping
+│   ├── version/                  # Version management
+│   ├── fix/                      # Security fix engine
+│   ├── performance/              # Performance optimization
+│   ├── testutil/                 # Test utilities
+│   └── mocks/                    # Shared mocks
+│
+├── applications/                 # Platform-specific applications
+│   ├── desktop/                  # Fyne desktop app
+│   ├── terminal-ui/              # tview terminal UI
+│   ├── android/                  # Android app
+│   ├── ios/                      # iOS app
+│   ├── aurora-os/                # Aurora OS client
+│   └── harmony-os/               # Harmony OS client
+│
+├── api/                          # OpenAPI specification
+│   └── openapi.yaml              # Full REST API spec (OpenAPI 3.0.3)
+│
+├── config/                       # Configuration files
+│   ├── config.yaml               # Primary application config
+│   ├── production-config.yaml    # Enterprise production config
+│   ├── minimal-config.yaml       # Minimal test config (DB/Redis disabled)
+│   ├── test-config.yaml          # Test-specific config
+│   ├── working-config.yaml       # Working variant
+│   ├── azure_example.yaml        # Azure-specific example
+│   └── model-aliases.example.yaml# Model alias examples
+│
+├── tests/                        # New test framework
+│   ├── e2e/challenges/           # Challenge-based E2E tests
+│   └── automation/               # Hardware automation tests
+│
+├── test/                         # Legacy/parallel test suites
+│   ├── integration/              # Integration tests
+│   ├── e2e/                      # Legacy E2E tests
+│   ├── automation/               # Provider automation tests
+│   └── load/                     # Load tests
+│
+├── benchmarks/                   # Performance benchmarks
+├── security/                     # Security tests
+├── standalone_tests/             # Standalone CLI tests
+├── docker/                       # Docker assets and extended compose
+├── scripts/                      # Build and deployment scripts
+└── assets/                       # Logo and image assets
+```
 
-### Local Model Probing
-- Ollama instances on configured hosts are auto-discovered
-- Local models compete alongside cloud providers on scoring dimensions
-- Local models get cost=1.0 (free), competing on quality/speed/reliability
-- Distributed hosts (`HELIX_VISION_HOSTS`) are each probed independently
+---
+
+## Verified Real Implementations
+
+### AUTH-001: Authentication System (VERIFIED REAL)
+**File**: `internal/auth/auth.go` (~470 lines)
+**Assessment**: Production-ready
+- User registration with validation
+- Password hashing with bcrypt + argon2 fallback
+- JWT token generation and verification (JWT v4)
+- Session management with crypto-random tokens
+- Constant-time comparison for timing attack prevention
+- Full test coverage in `internal/auth/auth_test.go` (~777 lines)
+
+### DB-001: Database Layer (VERIFIED REAL)
+**File**: `internal/database/database.go`
+**Assessment**: Production-ready
+- PostgreSQL connection pool via pgx/v5
+- Full schema initialization (users, workers, tasks, projects, sessions, LLM providers, MCP servers, notifications, audit logs)
+- `DatabaseInterface` for testability
+- Graceful degradation when host is empty
+
+### SRV-001: HTTP Server (VERIFIED REAL)
+**File**: `internal/server/server.go`
+**Assessment**: Production-ready
+- Gin-based server with 50+ routes across `/api/v1/`
+- JWT auth middleware, CORS, security headers
+- WebSocket endpoint for MCP
+- Health check with DB + Redis validation
+- Graceful shutdown (30s timeout)
+
+### LLM-001: LLM Providers (VERIFIED REAL)
+**File**: `internal/llm/` (~5000+ lines across providers)
+**Assessment**: Real HTTP clients
+- `AnthropicProvider` (~752 lines): Full SSE streaming, prompt caching, extended thinking, tool calls
+- `OpenAIProvider` (~431+ lines): Full HTTP API client
+- `ModelManager`: Multi-provider orchestration, selection strategy, fallback chain
+- 16 provider subdirectories with real HTTP implementations
+- **Note**: The `internal/llm/` package is genuine. Bluff areas are at `cmd/cli/main.go` only.
+
+### WRK-001: Worker Pool (VERIFIED REAL)
+**File**: `internal/worker/` (~800+ lines)
+**Assessment**: Real distributed worker management
+- `WorkerManager`: Register, heartbeat, assign tasks, complete tasks
+- SSH config parsing, capability matching, resource tracking
+- Health checks with TTL
+
+### TSK-001: Task Management (VERIFIED REAL)
+**File**: `internal/task/` (~1000+ lines)
+**Assessment**: Real task lifecycle
+- Priority queues, dependency validation, checkpointing
+- Redis caching with graceful degradation
+- Retry logic and cleanup
+
+### WFL-001: Workflow Engine (VERIFIED REAL)
+**File**: `internal/workflow/` (~1100+ lines)
+**Assessment**: Real shell execution
+- `Executor` dispatches to real `exec.CommandContext()` calls
+- Security filtering via `isDangerousCommand()` (rm, dd, mkfs, fork bombs, etc.)
+- LLM integration with real `LLMRequest`
+- Supports Go, Node, Python, Rust project types
+
+### TOO-001: Tools Ecosystem (VERIFIED REAL)
+**File**: `internal/tools/` (~2000+ lines)
+**Assessment**: Real tool registry
+- 8 categories: filesystem, shell, web, browser, mapping, multiedit, confirmation, notebook
+- Real chromedp browser automation
+- Transactional multi-file editing
+
+### EDT-001: Code Editor (VERIFIED REAL)
+**File**: `internal/editor/` (~600+ lines)
+**Assessment**: Real file I/O
+- Diff, whole-file, search/replace, line-based editors
+- Automatic file backup with `io.Copy`
+- `EditApplier` / `EditValidator` interfaces
+
+### NOT-001: Notification Engine (VERIFIED REAL)
+**File**: `internal/notification/` (~800+ lines)
+**Assessment**: Real HTTP/SMTP calls
+- Slack (webhook HTTP POST), Email (SMTP via `net/smtp`), Telegram (Bot API), Discord (webhook)
+- Yandex Messenger (OAuth API), Max (enterprise API)
+- Rate limiting, retry, queue, metrics
+
+### MCP-001: MCP Protocol Server (VERIFIED REAL)
+**File**: `internal/mcp/` (~400+ lines)
+**Assessment**: Real WebSocket server
+- gorilla/websocket concurrent session handling
+- JSON-RPC-like message format
+- Tool execution dispatch
+
+### CFG-001: Configuration Management (VERIFIED REAL)
+**File**: `internal/config/` (~1700+ lines)
+**Assessment**: Full Viper integration
+- Environment variable binding (`HELIX_*`)
+- Config file search (`.`, `$HOME/.helixcode`, `/etc/helixcode`)
+- Validation rules, default config creation
+- `ConfigManager` for load/save/merge
+
+### QA-001: HelixQA Integration (VERIFIED REAL)
+**Files**: `internal/helixqa/`, `internal/server/qa_handlers.go`, `applications/terminal-ui/main.go`
+**Assessment**: Full embedded QA engine with real session lifecycle
+- `Engine` struct manages QA sessions with map + sync.RWMutex
+- `StartSession()`, `CancelSession()`, `GetSession()`, `ListSessions()` with real state tracking
+- REST API: `POST /api/v1/qa/session`, `GET /api/v1/qa/session/:id/status`, `GET /api/v1/qa/session/:id/report`, `GET /api/v1/qa/session/:id/screenshot/:name`, `DELETE /api/v1/qa/session/:id`
+- CLI flags: `--qa-run`, `--qa-list`, `--qa-report`, `--qa-screenshot`, `--qa-cancel`
+- TUI dashboard with session table, stats panel, refresh/cancel actions
+- Screenshot pipeline: 8 platform engines (Linux, Web, iOS, Android, CLI, TUI, macOS, Windows)
+- Tests: `internal/helixqa/wrapper_test.go`, `internal/server/qa_handlers_test.go`, `pkg/screenshot/*_test.go`
+
+---
+
+## Verified Bluff & Stub Areas (MUST FIX)
+
+### BLUFF-001: LLM Generation is Simulated in Legacy CLI (CRITICAL) — FIXED
+**File**: `cmd/cli/main.go` lines ~236-284
+**Evidence**: Previously returned `fmt.Sprintf("Generated response for: %s...", prompt)` without calling any provider.
+**Fix**: `handleGenerate()` now constructs a real `llm.LLMRequest` with user messages and calls `provider.Generate()` / `provider.GenerateStream()`. Errors are propagated to the user if the provider is unavailable.
+**Verification**: `go build -tags nogui ./cmd/cli/` compiles; provider call is real (returns error if Ollama/etc. is not running).
+**Fix Priority**: P0 — RESOLVED
+
+### BLUFF-002: Model Listing is Hardcoded in Legacy CLI (CRITICAL) — FIXED
+**File**: `cmd/cli/main.go` lines ~101-128
+**Evidence**: Previously only 3 hardcoded models. No dynamic discovery.
+**Fix**: Replaced with verifier-aware `handleListModels()` that queries LLMsVerifier adapter first, falls back to provider discovery, then to constitutional `FallbackModels` (7 models with scores and verification status).
+**Verification**: `go test -v ./internal/verifier/...` passes; `go build ./cmd/cli/...` compiles.
+**Fix Priority**: P0 — RESOLVED
+
+### BLUFF-003: Command Execution is Simulated in Legacy CLI (HIGH) — FIXED
+**File**: `cmd/cli/main.go` lines ~310-324
+**Evidence**: Previously printed the command and slept for 1 second without executing anything.
+**Fix**: `handleCommand()` uses `exec.CommandContext(ctx, "sh", "-c", command)` with real `os.Stdout`/`os.Stderr` redirection. Exit codes are reported.
+**Verification**: `go build -tags nogui ./cmd/cli/` compiles.
+**Fix Priority**: P0 — RESOLVED
+
+### STUB-001: Security Scanning is Simulated
+**File**: `internal/security/security.go` (~132 lines)
+**Evidence**: `ScanFeature()` contains explicit "Simulate security scanning logic" comment. Always returns `Success=true, Score=95` with empty issues.
+**Fix Priority**: P1
+
+### STUB-002: Memory Redis/Memcached Providers Store Locally
+**File**: `internal/memory/` (~1800+ lines)
+**Evidence**: `RedisMemoryProvider` and `MemcachedMemoryProvider` store data in local maps with comments like "Redis client would be used in production." Connection config is parsed but not used.
+**Fix Priority**: P2
+
+### STUB-003: Security-Test Entry Point is Entirely Simulated
+**File**: `cmd/security-test/main.go`
+**Evidence**: Hardcoded list of 12 simulated security tests. `simulateSecurityScan()` returns pre-canned issue lists per category.
+**Fix Priority**: P2
+
+### STUB-004: Several `helix` Subcommands are Print-Only
+**File**: `cmd/other_commands.go`
+**Evidence**: `server`, `generate`, `test`, `worker`, `notify` commands are stubbed (print placeholder messages).
+**Fix Priority**: P2
+
+### STUB-005: Several `helix-config` Subcommands are Placeholders
+**File**: `cmd/helix-config/main.go`
+**Evidence**: Many template/history/schema subcommands print placeholder messages.
+**Fix Priority**: P3
+
+### BLUFF-004: LLMsVerifier Integration is Stubbed or Bypassed (CRITICAL)
+**File Pattern**: `internal/verifier/*.go` containing empty structs, `// TODO`, or methods that return hardcoded data instead of calling the verifier.
+**Evidence**:
+- `VerificationService` methods return hardcoded `VerificationResult{OverallScore: 8.5}` instead of querying the verifier database
+- `ModelDiscoveryService` returns an empty slice instead of calling provider APIs
+- The verifier client returns fallback models without attempting a real HTTP call
+**Fix Priority**: P0 - Immediate
+**Verification Command**:
+```bash
+make test-verifier-integration
+# This MUST pass with real verifier data, not mocked scores
+```
+
+### BLUFF-005: Provider Discovery Uses Hardcoded Env Var Names (HIGH)
+**File Pattern**: `internal/verifier/startup.go` or provider adapter files containing hardcoded strings like `"OPENAI_API_KEY"` without checking `SupportedProviders[provider].EnvVars`.
+**Fix Priority**: P1 - High
+
+### BLUFF-006: Model Capabilities Are Hardcoded (HIGH)
+**File Pattern**: `internal/llm/*.go` containing `SupportsToolUse: true` as a struct literal for specific models, or `Provider.GetCapabilities()` returning a static slice.
+**Fix Priority**: P1 - High
+**Constitutional Impact**: Violates CONST-041 (MCP/LSP/ACP/Embedding/RAG/Skills/Plugins Integration Mandate).
+
+### BLUFF-007: Test Claims Integration But Uses Mocked Verifier (CRITICAL)
+**File Pattern**: `*_test.go` files with `testify/mock` or `testMode: true` in non-unit test files.
+**Fix Priority**: P0 - Immediate
+**Constitutional Impact**: Violates CONST-038 (Model Provider Anti-Bluff Guarantee) and CONST-035 (Zero-Bluff Testing).
+
+### BLUFF-008: Scoring Weights Do Not Sum to 1.0 (MEDIUM)
+**File Pattern**: `configs/verifier.yaml` or `internal/verifier/config.go` where scoring weights are misconfigured.
+**Fix Priority**: P2 - Medium
+
+### BLUFF-009: `/metrics` Endpoint Returns Hardcoded Zeros (CRITICAL) — FIXED
+**File**: `internal/server/handlers.go` lines ~834-855
+**Evidence**: All dynamic metrics (goroutines, memory, database connections) were hardcoded to `0`.
+**Fix**: `getMetrics()` now calls `runtime.ReadMemStats()`, `runtime.NumGoroutine()`, and `s.db.Pool.Stat()` to return real values.
+**Fix Priority**: P0 — RESOLVED
+
+### BLUFF-010: Multi-Edit Conflict Detection is a No-Op (HIGH) — FIXED
+**File**: `internal/tools/multiedit/transaction.go` lines ~352-369
+**Evidence**: `detectFileConflict()` always returned `nil, nil` with comment "For now, we'll assume no conflicts."
+**Fix**: Implemented real conflict detection — reads the file from disk, computes SHA-256, and compares against the `Checksum` field. Returns `ConflictModified` or `ConflictDeleted` when appropriate.
+**Fix Priority**: P1 — RESOLVED
+
+---
+
+## Configuration Management
+
+### Primary Configuration
+Main config at `config/config.yaml`:
+
+```yaml
+server:
+  address: "0.0.0.0"
+  port: 8080
+  read_timeout: 30
+  write_timeout: 30
+  idle_timeout: 300
+  shutdown_timeout: 30
+
+database:
+  host: ""          # Empty string disables PostgreSQL
+  port: 5432
+  user: "helix"
+  password: "${HELIX_DATABASE_PASSWORD}"
+  dbname: "helixcode_prod"
+  sslmode: "disable"
+
+redis:
+  host: "redis"
+  port: 6379
+  password: "${HELIX_REDIS_PASSWORD}"
+  db: 0
+  enabled: true
+
+auth:
+  jwt_secret: "${HELIX_AUTH_JWT_SECRET}"
+  token_expiry: 86400
+  session_expiry: 604800
+  bcrypt_cost: 12
+
+workers:
+  health_check_interval: 30
+  health_ttl: 120
+  max_concurrent_tasks: 10
+
+tasks:
+  max_retries: 3
+  checkpoint_interval: 300
+  cleanup_interval: 3600
+
+llm:
+  default_provider: "local"
+  max_tokens: 4096
+  temperature: 0.7
+  timeout: 30
+  max_retries: 3
+  providers:
+    <name>:
+      type: <provider-type>
+      endpoint: <url>
+      enabled: true
+      parameters:
+        timeout: 30.0
+        max_retries: 3
+        streaming_support: true
+        api_key: ""
+  selection:
+    strategy: "performance"
+    fallback_enabled: true
+    health_check_interval: 30
+
+logging:
+  level: "info"
+  format: "text"
+  output: "stdout"
+
+notifications:
+  enabled: true
+  rules:
+    - name: "..."
+      condition: "type==error"
+      channels: ["slack", "email"]
+      priority: urgent
+      enabled: true
+  channels:
+    slack: { enabled, webhook_url, channel, username, timeout }
+    telegram: { enabled, bot_token, chat_id, timeout }
+    email: { enabled, smtp: { server, port, username, password, tls }, recipients, timeout }
+    discord: { enabled, webhook_url, timeout }
+```
+
+### Environment Variables
+**Required for Production**:
+- `HELIX_DATABASE_PASSWORD`
+- `HELIX_AUTH_JWT_SECRET`
+- `HELIX_REDIS_PASSWORD`
+
+**LLM Provider Keys** (as needed):
+- `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `GEMINI_API_KEY`, `XAI_API_KEY`, `DEEPSEEK_API_KEY`, `GROQ_API_KEY`, `MISTRAL_API_KEY`, `COHERE_API_KEY`, `AZURE_OPENAI_API_KEY`, `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY`
+
+**Notification Integrations**:
+- `HELIX_SLACK_WEBHOOK_URL`
+- `HELIX_TELEGRAM_BOT_TOKEN`, `HELIX_TELEGRAM_CHAT_ID`
+- `HELIX_EMAIL_SMTP_SERVER`, `HELIX_EMAIL_USERNAME`, `HELIX_EMAIL_PASSWORD`
+- `HELIX_DISCORD_WEBHOOK_URL`
+
+---
 
 ## Testing Strategy
 
-- All packages use `testify` for assertions
-- Detector tests use `CommandRunner` interface with mock implementations
-- Orchestrator tests use mock runners and temporary bank files
-- No external dependencies required for test execution
+### Test Categories
+1. **Unit tests**: Mocks allowed, `*_test.go`, `-short` flag
+2. **Contract tests**: Real API schemas, no mocks
+3. **Component tests**: Real subsystems wired together
+4. **Integration tests**: Full app with real dependencies (`-tags=integration`)
+5. **E2E challenges**: Complete user workflows against real LLM APIs
+6. **Security tests**: OWASP compliance
+7. **Performance tests**: Benchmarks
+8. **Automation tests**: Provider/hardware automation (`-tags=automation`)
+9. **Load tests**: Stress testing
 
+### Anti-Bluff Testing Rules
+- Unit tests: Mocks OK
+- **ALL other tests: Real infrastructure ONLY**
+- Every PASS guarantees **Quality + Completion + Usability**
+- Challenges fail on simulated/stubbed behavior
+- No bare `t.Skip()` without `SKIP-OK: #<ticket>` marker
 
-## ⚠️ MANDATORY: NO SUDO OR ROOT EXECUTION
+### Docker Test Infrastructure
+- `docker-compose.test.yml`: PostgreSQL 16, Redis 7, Memcached, Cognee, ChromaDB, Qdrant, Ollama, Prometheus, Grafana
+- `docker-compose.full-test.yml`: Complete stack with mock-LLM server, Selenium, ChromeDP, SSH server + 3 workers, Cognee, Weaviate, mock-Slack, multicast router
 
-**ALL operations MUST run at local user level ONLY.**
+### Challenge Framework (`tests/e2e/challenges/`)
+The most rigorous test system validates HelixCode by having it **generate real projects** and testing them:
+- **Challenge Definitions**: JSON specs (ASCII art generator, CLI task manager, JSON validator, notes API, tic-tac-toe TUI, URL shortener)
+- **Execution Flow**: Load spec → Call real LLM API → Parse generated code → Compile → Test → Runtime validation
+- **Validation Layers**: Directory structure, code quality, compilation, testing, functionality, runtime validation with diverse data
+- **Test Matrix**: Supports CLI, TUI, REST, WebSocket interfaces across 15+ providers and worker pool distributions
 
-This is a PERMANENT and NON-NEGOTIABLE security constraint:
+### Test Scripts Summary
+```bash
+# Basic
+cd HelixCode && make test
 
-- **NEVER** use `sudo` in ANY command
-- **NEVER** use `su` in ANY command
-- **NEVER** execute operations as `root` user
-- **NEVER** elevate privileges for file operations
-- **ALL** infrastructure commands MUST use user-level container runtimes (rootless podman/docker)
-- **ALL** file operations MUST be within user-accessible directories
-- **ALL** service management MUST be done via user systemd or local process management
-- **ALL** builds, tests, and deployments MUST run as the current user
+# Full infrastructure (recommended for validation)
+make test-infra-up
+make test-complete
+make test-infra-down
 
-### Container-Based Solutions
-When a build or runtime environment requires system-level dependencies, use containers instead of elevation:
+# Individual categories
+make test-unit-full
+make test-integration-full
+make test-e2e-full
+make test-security-full
+make test-load-full
 
-- **Use the `Containers` submodule** (`https://github.com/vasic-digital/Containers`) for containerized build and runtime environments
-- **Add the `Containers` submodule as a Git dependency** and configure it for local use within the project
-- **Build and run inside containers** to avoid any need for privilege escalation
-- **Rootless Podman/Docker** is the preferred container runtime
+# Legacy scripts
+./run_tests.sh --all
+./run_all_tests.sh
+./run_integration_tests.sh
+```
 
-### Why This Matters
-- **Security**: Prevents accidental system-wide damage
-- **Reproducibility**: User-level operations are portable across systems
-- **Safety**: Limits blast radius of any issues
-- **Best Practice**: Modern container workflows are rootless by design
+---
 
-### When You See SUDO
-If any script or command suggests using `sudo` or `su`:
-1. STOP immediately
-2. Find a user-level alternative
-3. Use rootless container runtimes
-4. Use the `Containers` submodule for containerized builds
-5. Modify commands to work within user permissions
+## Docker Deployment
 
-**VIOLATION OF THIS CONSTRAINT IS STRICTLY PROHIBITED.**
+### Production (`docker-compose.yml`)
+Services: helixcode-server (8080, 2222), postgres:15, redis:7, nginx (80, 443), prometheus (9090), grafana (3000)
 
+### Quick Start
+```bash
+cd HelixCode
+cp .env.example .env
+# Edit .env with secure passwords
+docker compose up -d
+docker compose ps
+curl http://localhost/health
+```
 
-## API Keys & Secrets
-- **NEVER commit `.env` files** — real API keys
-- **NEVER add keys to source code** — use `.env` only
-- `.env.example` (templates) OK to commit
-- Before commit: `git ls-files --cached | grep ".env"` must show NO `.env`
+### Other Compose Files
+| File | Purpose |
+|------|---------|
+| `docker-compose-simple.yml` | Minimal dev (postgres + redis only) |
+| `docker-compose.test.yml` | Integration/E2E testing stack |
+| `docker-compose.full-test.yml` | Zero-skip full test infrastructure |
+| `docker-compose.aurora-os.yml` | Security-focused Aurora OS platform |
+| `docker-compose.harmony-os.yml` | Distributed Harmony OS platform |
+| `docker-compose.specialized-platforms.yml` | Combined Aurora + Harmony |
+| `docker/docker-compose.yml` | Extended full-stack with Milvus, Elasticsearch, MLflow, Jaeger, Jupyter, Portainer |
 
-### ⚠️⚠️⚠️ ABSOLUTELY MANDATORY: ZERO UNFINISHED WORK POLICY
+### Deployment Patterns
+- Healthchecks on every service
+- Docker profiles: `monitoring`, `distributed`, `with-redis`, `production`, `dev`, `server`
+- Isolated bridge networks per deployment
+- Named persistent volumes for all stateful services
+- `.env` file for secrets
 
-**NO unfinished work, TODOs, or known issues may remain in the codebase. EVER.**
+---
 
-This is a **ZERO TOLERANCE** policy for all code, tests, scripts, and documentation.
+## Code Style & Development Conventions
 
-**PROHIBITED:**
-- ❌ **TODO/FIXME comments** in committed code
-- ❌ **Empty implementations** with "// Implement later"  
-- ❌ **Silent error ignoring** (`_ = err` patterns in production code)
-- ❌ **Hardcoded fake data** or fabricated metrics
-- ❌ **Coverage fraud** - tests that inflate coverage without testing logic
-- ❌ **unwrap() calls** in Rust that can panic
-- ❌ **Empty catch blocks** in TypeScript/JavaScript
-- ❌ **Partial implementations** left for "future completion"
-- ❌ **Known bugs** documented but not fixed
+### Go Conventions
+- Standard Go formatting: `go fmt ./...`
+- Linting: `golangci-lint run ./...` (timeout 10m in CI)
+- Vet: `go vet ./...`
+- Table-driven tests with `t.Run()` subtests
+- Build tags for integration/automation tests: `//go:build integration`
 
-**REQUIRED:**
-- ✅ **Fix ALL discovered issues immediately** - no deferrals
-- ✅ **When fixing, fix ALL instances** - not just the reported one
-- ✅ **Complete implementations** before committing
-- ✅ **Proper error handling** in ALL code paths
-- ✅ **Real test assertions** - no fake coverage
-- ✅ **Code compiles without warnings**
-- ✅ **Zero outstanding issues** at commit time
+### Project Conventions
+- **Always work from `HelixCode/` subdirectory**
+- **Generate logo assets before first build**: `make logo-assets`
+- **Database/Redis optional**: Disable by setting `database.host: ""`
+- **Environment variables override config file**
+- Use `internal/` for all core packages; no `pkg/` directory in active use
+- Error handling: explicit, no silent failures
+- Concurrent access: use `sync.RWMutex` or channel patterns
 
-**Definition of "Done":**
-1. Feature/bug fix is fully implemented
-2. All TODOs are resolved (implemented or removed)
-3. All error cases handled properly
-4. All tests pass with real assertions
-5. No fake/hardcoded data remains
-6. Code review passes with ZERO outstanding issues
-7. Documentation is updated
-8. No compiler warnings or linter errors
+### API Conventions
+- REST API documented in `api/openapi.yaml` (OpenAPI 3.0.3)
+- Base path: `/api/v1`
+- Authentication: Bearer JWT via `Authorization` header
+- Health endpoint: `GET /health` (no auth required)
 
-**Quality Principle:**
-> "If it's not finished, it doesn't ship. If it ships, it's finished."
+---
+
+## Security Considerations
+
+### Verified Security Features
+- Password hashing: bcrypt (cost 12) with argon2 fallback
+- JWT with constant-time comparison
+- CORS middleware, security headers (X-Frame-Options, CSP, HSTS)
+- Rate limiting support in production config
+- Session timeout, concurrent session limits, IP binding options
+- Workflow `isDangerousCommand()` filter blocks rm, dd, mkfs, fork bombs, etc.
+- Input validation in auth and server packages
+
+### Security Testing
+- `security/security_test.go`: OWASP Top 10, SAST, DAST, credential scanning, TLS enforcement, input validation (path traversal, XSS, SQL injection, command injection, SSRF)
+- File permission checks (0600 for configs)
+
+### Known Security Stubs
+- `internal/security/security.go`: Simulated scanning (always returns clean)
+- `cmd/security-test/main.go`: Entirely simulated security tests
+
+### Production Hardening
+- Use `HELIX_AUTH_JWT_SECRET` with high entropy
+- Enable PostgreSQL SSL in production
+- Enable Redis authentication
+- Configure CORS `allowed_origins` explicitly
+- Enable audit logging
+- Set `bcrypt_cost: 14` in production
+
+---
 
 ## Universal Mandatory Constraints
 
-These rules are non-negotiable across every project, submodule, and sibling
-repository. They are derived from the HelixAgent root `CLAUDE.md`. Each
-project MUST surface them in its own `CLAUDE.md`, `AGENTS.md`, and
-`CONSTITUTION.md`. Project-specific addenda are welcome but cannot weaken
-or override these.
-
 ### Hard Stops (permanent, non-negotiable)
-
-1. **NO CI/CD pipelines.** No `.github/workflows/`, `.gitlab-ci.yml`,
-   `Jenkinsfile`, `.travis.yml`, `.circleci/`, or any automated pipeline.
-   No Git hooks either. All builds and tests run manually or via Makefile/
-   script targets.
-2. **NO HTTPS for Git.** SSH URLs only (`git@github.com:…`,
-   `git@gitlab.com:…`, etc.) for clones, fetches, pushes, and submodule
-   updates. Including for public repos. SSH keys are configured on every
-   service.
-3. **NO manual container commands.** Container orchestration is owned by
-   the project's binary/orchestrator (e.g. `make build` → `./bin/<app>`).
-   Direct `docker`/`podman start|stop|rm` and `docker-compose up|down`
-   are prohibited as workflows. The orchestrator reads its configured
-   `.env` and brings up everything.
+1. **NO CI/CD pipelines** (Note: existing workflow files in `.github/workflows/` are legacy and must not be expanded)
+2. **NO HTTPS for Git** (SSH only)
+3. **NO manual container commands** (orchestrator-owned)
 
 ### Mandatory Development Standards
+1. **100% Test Coverage** (unit, integration, E2E, automation, security, benchmark)
+2. **Challenge Coverage** (every component)
+3. **Real Data** (actual API calls, real DB, live services)
+4. **Health & Observability** (health endpoints, circuit breakers)
+5. **Documentation & Quality** (update docs with code changes)
+6. **Validation Before Release** (full suite + all challenges)
+7. **No Mocks in Production**
+8. **Comprehensive Verification** (runtime, compile, structure, dependencies, compatibility)
+9. **Resource Limits** (30-40% of host resources max)
+10. **Bugfix Documentation** (root cause, affected files, fix, verification link)
+11. **Real Infrastructure for All Non-Unit Tests**
+12. **Reproduction-Before-Fix** (Challenge first, then fix)
+13. **Concurrent-Safe Collections**
 
-1. **100% Test Coverage.** Every component MUST have unit, integration,
-   E2E, automation, security/penetration, and benchmark tests. No false
-   positives. Mocks/stubs ONLY in unit tests; all other test types use
-   real data and live services.
-2. **Challenge Coverage.** Every component MUST have Challenge scripts
-   (`./challenges/scripts/`) validating real-life use cases. No false
-   success — validate actual behavior, not return codes.
-3. **Real Data.** Beyond unit tests, all components MUST use actual API
-   calls, real databases, live services. No simulated success. Fallback
-   chains tested with actual failures.
-4. **Health & Observability.** Every service MUST expose health
-   endpoints. Circuit breakers for all external dependencies. Prometheus
-   / OpenTelemetry integration where applicable.
-5. **Documentation & Quality.** Update `CLAUDE.md`, `AGENTS.md`, and
-   relevant docs alongside code changes. Pass language-appropriate
-   format/lint/security gates. Conventional Commits:
-   `<type>(<scope>): <description>`.
-6. **Validation Before Release.** Pass the project's full validation
-   suite (`make ci-validate-all`-equivalent) plus all challenges
-   (`./challenges/scripts/run_all_challenges.sh`).
-7. **No Mocks or Stubs in Production.** Mocks, stubs, fakes, placeholder
-   classes, TODO implementations are STRICTLY FORBIDDEN in production
-   code. All production code is fully functional with real integrations.
-   Only unit tests may use mocks/stubs.
-8. **Comprehensive Verification.** Every fix MUST be verified from all
-   angles: runtime testing (actual HTTP requests / real CLI invocations),
-   compile verification, code structure checks, dependency existence
-   checks, backward compatibility, and no false positives in tests or
-   challenges. Grep-only validation is NEVER sufficient.
-9. **Resource Limits for Tests & Challenges (CRITICAL).** ALL test and
-   challenge execution MUST be strictly limited to 30-40% of host system
-   resources. Use `GOMAXPROCS=2`, `nice -n 19`, `ionice -c 3`, `-p 1`
-   for `go test`. Container limits required. The host runs
-   mission-critical processes — exceeding limits causes system crashes.
-10. **Bugfix Documentation.** All bug fixes MUST be documented in
-    `docs/issues/fixed/BUGFIXES.md` (or the project's equivalent) with
-    root cause analysis, affected files, fix description, and a link to
-    the verification test/challenge.
-11. **Real Infrastructure for All Non-Unit Tests.** Mocks/fakes/stubs/
-    placeholders MAY be used ONLY in unit tests (files ending `_test.go`
-    run under `go test -short`, equivalent for other languages). ALL
-    other test types — integration, E2E, functional, security, stress,
-    chaos, challenge, benchmark, runtime verification — MUST execute
-    against the REAL running system with REAL containers, REAL
-    databases, REAL services, and REAL HTTP calls. Non-unit tests that
-    cannot connect to real services MUST skip (not fail).
-12. **Reproduction-Before-Fix (CONST-032 — MANDATORY).** Every reported
-    error, defect, or unexpected behavior MUST be reproduced by a
-    Challenge script BEFORE any fix is attempted. Sequence:
-    (1) Write the Challenge first. (2) Run it; confirm fail (it
-    reproduces the bug). (3) Then write the fix. (4) Re-run; confirm
-    pass. (5) Commit Challenge + fix together. The Challenge becomes
-    the regression guard for that bug forever.
-13. **Concurrent-Safe Containers (Go-specific, where applicable).** Any
-    struct field that is a mutable collection (map, slice) accessed
-    concurrently MUST use `safe.Store[K,V]` / `safe.Slice[T]` from
-    `digital.vasic.concurrency/pkg/safe` (or the project's equivalent
-    primitives). Bare `sync.Mutex + map/slice` combinations are
-    prohibited for new code.
+### Definition of Done
+A change is NOT done because code compiles. "Done" requires:
+- Pasted terminal output from a real run
+- No self-certification words without evidence
+- Demo commands that run against real artifacts
+- Loud skips with `SKIP-OK: #<ticket>` markers
 
-### Definition of Done (universal)
+---
 
-A change is NOT done because code compiles and tests pass. "Done"
-requires pasted terminal output from a real run, produced in the same
-session as the change.
+## CONST-035 — End-User Usability Mandate
 
-- **No self-certification.** Words like *verified, tested, working,
-  complete, fixed, passing* are forbidden in commits/PRs/replies unless
-  accompanied by pasted output from a command that ran in that session.
-- **Demo before code.** Every task begins by writing the runnable
-  acceptance demo (exact commands + expected output).
-- **Real system, every time.** Demos run against real artifacts.
-- **Skips are loud.** `t.Skip` / `@Ignore` / `xit` / `describe.skip`
-  without a trailing `SKIP-OK: #<ticket>` comment break validation.
-- **Evidence in the PR.** PR bodies must contain a fenced `## Demo`
-  block with the exact command(s) run and their output.
+A test or Challenge that PASSES is a CLAIM that the tested behavior **works for the end user of the product**.
 
-<!-- BEGIN host-power-management addendum (CONST-033) -->
+The HelixAgent project has repeatedly hit the failure mode where every test ran green AND every Challenge reported PASS, yet most product features did not actually work — buggy challenge wrappers masked failed assertions, scripts checked file existence without executing the file, "reachability" tests tolerated timeouts, contracts were honest in advertising but broken in dispatch. **This MUST NOT recur in HelixCode.**
+
+Every PASS result MUST guarantee:
+a. **Quality** — correct behavior under real inputs, edge cases, concurrency
+b. **Completion** — wired end-to-end with no stub/placeholder gaps
+c. **Full usability** — a user following documentation succeeds
+
+A passing test that doesn't certify all three is a **bluff** and MUST be tightened.
+
+### Bluff Taxonomy (each pattern observed and now forbidden)
+
+- **Wrapper bluff** — assertions PASS but wrapper's exit-code logic is buggy
+- **Contract bluff** — system advertises capability but rejects it in dispatch
+- **Structural bluff** — file exists but doesn't contain working code
+- **Comment bluff** — comment promises behavior code doesn't have
+- **Skip bluff** — `t.Skip("not running yet")` without `SKIP-OK: #<ticket>` marker
+
+The taxonomy is illustrative, not exhaustive. Every Challenge or test added going forward MUST pass an honest self-review against this taxonomy before being committed.
+
+## Constitutional anchors (cascaded from `CONSTITUTION.md`)
+
+### Article XI §11.9 — Anti-Bluff Forensic Anchor
+> Verbatim user mandate: *"We had been in position that all tests do execute with success and all Challenges as well, but in reality the most of the features does not work and can't be used! This MUST NOT be the case and execution of tests and Challenges MUST guarantee the quality, the completion and full usability by end users of the product!"*
+>
+> Operative rule: **The bar for shipping is not "tests pass" but "users can use the feature."** Every PASS in this codebase MUST carry positive runtime evidence captured during execution. Metadata-only / configuration-only / absence-of-error / grep-based PASS without runtime evidence are critical defects regardless of how green the summary line looks. No false-success results are tolerable.
+
+### Article XII §12.1 (CONST-042) — No-Secret-Leak
+No API key, token, password, certificate, or other credential may be committed to any repository owned by HelixDevelopment or vasic-digital. All secrets live in `.env` files (mode 0600) listed in `.gitignore`. Any leak is a release blocker until rotated and post-mortemed.
+
+### Article XII §12.2 (CONST-043) — No-Force-Push
+No force push, force-with-lease push, history rewrite, branch deletion of `main`/`master`, or upstream-overwriting operation may be performed without explicit, in-conversation user approval per operation. Authorization for one push does not extend further. Bypassing hooks / signing / protected-branch rules also requires explicit approval.
+
+---
+
+## CONST-036: LLMsVerifier Single Source of Truth Mandate
+
+**Rule**: LLMsVerifier SHALL BE the sole authoritative source for:
+1. All model metadata (names, IDs, context windows, capabilities)
+2. All provider metadata (endpoints, auth types, supported models)
+3. All verification status (verified, partial, failed, pending)
+4. All scoring data (overall scores, capability scores, tier rankings)
+
+**Prohibition**: NO hardcoded model lists, NO hardcoded provider lists, NO simulated model discovery. Any code path that presents a model or provider listing to a user MUST fetch that listing from the LLMsVerifier subsystem or its cached replica.
+
+**Anti-Bluff Verification**:
+- Challenge script `challenges/scripts/verifier_hardcode_check.sh` scans all Go source files for hardcoded model arrays.
+- The only permitted hardcoded data is the 7-entry fallback list in `internal/verifier/fallback_models.go`.
+
+---
+
+## CONST-037: Model Provider Anti-Bluff Guarantee
+
+**Rule**: Every model displayed to an end user MUST have been verified by LLMsVerifier within the last 24h. Models older than this MUST display a "stale" indicator and be deprioritized.
+
+**Anti-Bluff Testing**:
+- Unit tests MAY mock the verifier client.
+- Integration tests MUST start the verifier server and perform real provider discovery.
+- The Makefile target `make test-verifier-integration` MUST exist and run without mocks.
+
+---
+
+## CONST-038: Real-Time Model Status Accuracy
+
+**Rule**: Model status (available, rate-limited, cooldown, offline, deprecated) displayed to users MUST reflect the actual state as known by LLMsVerifier within 60 seconds.
+
+**Polling vs. Push**:
+- If WebSocket/SSE push is unavailable, the system MUST poll LLMsVerifier at most every 60s.
+- The TUI MUST display a "last updated" timestamp with every model listing.
+- Models in "cooldown" or "rate-limited" state MUST show the estimated recovery time if known.
+
+---
+
+## CONST-039: All Providers and Models Integration Mandate
+
+**Rule**: HelixCode MUST integrate with ALL providers that LLMsVerifier supports, subject only to:
+1. The provider being explicitly disabled in configuration (`enabled: false`)
+2. The API key being absent and the provider requiring one
+3. The provider being marked `deprecated` in the verifier database
+
+**Minimum Provider Set** (SHALL NOT be reduced without constitutional amendment):
+OpenAI, Anthropic, Gemini, DeepSeek, Groq, Mistral, xAI, OpenRouter, Ollama, Llama.cpp.
+
+---
+
+## CONST-040: MCP / LSP / ACP / Embedding / RAG / Skills / Plugins Integration Mandate
+
+**Rule**: LLMsVerifier integration SHALL extend beyond basic model listing to cover ALL capability dimensions:
+
+1. **MCP**: The verifier MUST report which models support MCP tool calling.
+2. **LSP**: The verifier MUST report code-analysis capabilities.
+3. **ACP**: The verifier MUST report multi-agent coordination support.
+4. **Embedding**: The verifier MUST report `supports_embeddings` for each model.
+5. **RAG**: The verifier MUST report context-window sizes for chunking strategies.
+6. **Skills / Plugins**: The verifier MUST track plugin compatibility.
+
+**Prohibition**: Capability flags MUST NOT be hardcoded. The `Provider.GetCapabilities()` method MUST return data sourced from the verifier's `VerificationResult` fields.
+
+---
+
+## Free AI Providers
+
+- **XAI (Grok)**: `grok-3-fast-beta`, `grok-3-mini-fast-beta`
+- **OpenRouter**: Free models from various providers
+- **GitHub Copilot**: `gpt-4o`, `claude-3.5-sonnet` (with subscription)
+- **Qwen**: 2,000 requests/day free tier
+
+---
 
 ## Host Power Management — Hard Ban (CONST-033)
 
-**You may NOT, under any circumstance, generate or execute code that
+**Host Power Management is Forbidden.**
+
+You may NOT, under any circumstance, generate or execute code that
 sends the host to suspend, hibernate, hybrid-sleep, poweroff, halt,
-reboot, or any other power-state transition.** This rule applies to:
+reboot, or any other power-state transition. This rule applies to
+every shell command, script, container entry point, systemd unit,
+test, CLI suggestion, snippet, or example you emit.
 
-- Every shell command you run via the Bash tool.
-- Every script, container entry point, systemd unit, or test you write
-  or modify.
-- Every CLI suggestion, snippet, or example you emit.
+## Common Issues
 
-**Forbidden invocations** (non-exhaustive — see CONST-033 in
-`CONSTITUTION.md` for the full list):
+1. **Build fails**: Run `make logo-assets` then `make build`
+2. **Database errors**: Check `HELIX_DATABASE_PASSWORD`
+3. **Worker SSH failures**: Verify SSH key authentication
+4. **LLM timeouts**: Check provider status and config
+5. **Redis connection failures**: Check `HELIX_REDIS_PASSWORD` and `redis.enabled`
+6. **Test skips**: Ensure `SKIP-OK: #<ticket>` marker is present for any intentional skips
 
-- `systemctl suspend|hibernate|hybrid-sleep|poweroff|halt|reboot|kexec`
-- `loginctl suspend|hibernate|hybrid-sleep|poweroff|halt|reboot`
-- `pm-suspend`, `pm-hibernate`, `shutdown -h|-r|-P|now`
-- `dbus-send` / `busctl` calls to `org.freedesktop.login1.Manager.Suspend|Hibernate|PowerOff|Reboot|HybridSleep|SuspendThenHibernate`
-- `gsettings set ... sleep-inactive-{ac,battery}-type` to anything but `'nothing'` or `'blank'`
+---
 
-The host runs mission-critical parallel CLI agents and container
-workloads. Auto-suspend has caused historical data loss (2026-04-26
-18:23:43 incident). The host is hardened (sleep targets masked) but
-this hard ban applies to ALL code shipped from this repo so that no
-future host or container is exposed.
+## Resources & References
 
-**Defence:** every project ships
-`scripts/host-power-management/check-no-suspend-calls.sh` (static
-scanner) and
-`challenges/scripts/no_suspend_calls_challenge.sh` (challenge wrapper).
-Both MUST be wired into the project's CI / `run_all_challenges.sh`.
+- **Constitution**: `CONSTITUTION.md`
+- **CLAUDE.md**: `CLAUDE.md`
+- **Gap Analysis**: `HELIXCODE_GAP_ANALYSIS.md`
+- **Zero-Bluff Plan**: `HELIXCODE_ZERO_BLUFF_PLAN.md`
+- **Testing Strategy**: `ANTI_BLUFF_TESTING_STRATEGY.md`
+- **OpenAPI Spec**: `HelixCode/api/openapi.yaml`
+- **Docker Guide**: `HelixCode/DOCKER_DEPLOYMENT.md`
 
-**Full background:** `docs/HOST_POWER_MANAGEMENT.md` and `CONSTITUTION.md` (CONST-033).
+---
 
 <!-- END host-power-management addendum (CONST-033) -->
 
@@ -755,3 +1157,4 @@ workloads, or add RAM — NOT raise the percentage.
 §12.6.
 
 Non-compliance is a release blocker regardless of context.
+*Built with zero-bluff commitment. Every feature actually works.*

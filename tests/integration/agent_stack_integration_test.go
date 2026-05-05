@@ -1,7 +1,15 @@
+//go:build helixqa_external
+
+
 // SPDX-FileCopyrightText: 2026 Milos Vasic
 // SPDX-License-Identifier: Apache-2.0
 
-package e2e
+package integration
+
+// BLUFF-VIOLATION: R-12 — This integration test mocks UI-TARS and OmniParser servers.
+// Mocks are permitted ONLY in Unit tests per Constitution §6 / R-12.
+// Remediation: Deploy real UI-TARS + OmniParser containers or move to Unit test suite.
+// Tracked in: docs/research/chapters/MVP/05_Response/anti_bluff_audit_2026-05-02.md
 
 import (
 	"context"

@@ -70,7 +70,7 @@ func TestOpen_MissingDevice(t *testing.T) {
 		// the udev rule, which is the error we document.
 		if f, err := os.OpenFile("/dev/uinput", os.O_WRONLY, 0); err == nil {
 			_ = f.Close()
-			t.Skip("/dev/uinput is writable — can't exercise the error branch on this host")  // SKIP-OK: #legacy-untriaged
+			t.Skip("/dev/uinput is writable — can't exercise the error branch on this host")
 		}
 	}
 	_, err := Open(Config{Name: "probe", EnableKey: true, KeyBits: []uint16{KeyA}})

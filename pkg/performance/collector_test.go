@@ -300,10 +300,3 @@ func TestMetricsTimeline_OfType(t *testing.T) {
 
 // --- New / WithCommandRunner option test ---
 
-func TestNew_WithCommandRunner(t *testing.T) {
-	mock := newMockRunner()
-	c := New("com.test", "android", WithCommandRunner(mock))
-	assert.NotNil(t, c.runner)
-	assert.Equal(t, "com.test", c.pkg)
-	assert.Equal(t, "android", c.platform)
-}

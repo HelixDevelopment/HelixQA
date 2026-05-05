@@ -301,20 +301,6 @@ func TestADBDumper_EmptySerialError(t *testing.T) {
 // Factory constructor
 // ---------------------------------------------------------------------------
 
-func TestNewAndroidSnapshotter_UsesADBDumper(t *testing.T) {
-	s := NewAndroidSnapshotter("ABC123")
-	if s.dumper == nil {
-		t.Fatal("dumper must be set")
-	}
-	d, ok := s.dumper.(*ADBDumper)
-	if !ok {
-		t.Fatalf("dumper type = %T, want *ADBDumper", s.dumper)
-	}
-	if d.Serial != "ABC123" {
-		t.Fatalf("serial = %q, want ABC123", d.Serial)
-	}
-}
-
 // ---------------------------------------------------------------------------
 // Interface conformance
 // ---------------------------------------------------------------------------

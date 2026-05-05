@@ -222,7 +222,7 @@ func TestMultiHealth(t *testing.T) {
 
 func TestPassFD_RecvFD_Roundtrip(t *testing.T) {
 	if runtime.GOOS == "windows" {
-		t.Skip("SCM_RIGHTS not supported on windows")  // SKIP-OK: #legacy-untriaged
+		t.Skip("SCM_RIGHTS not supported on windows")
 	}
 	// Create a socketpair of UnixConns.
 	fds, err := syscall.Socketpair(syscall.AF_UNIX, syscall.SOCK_STREAM, 0)
@@ -300,7 +300,7 @@ func TestPassFD_BadFD(t *testing.T) {
 	conn, _ := net.Dial("unix", "") // will fail but conn is nil; skip if dial works
 	if conn != nil {
 		conn.Close()
-		t.Skip("unexpected dial success")  // SKIP-OK: #legacy-untriaged
+		t.Skip("unexpected dial success")
 	}
 	// Use a placeholder conn by pairing sockets but passing a negative fd.
 	fds, err := syscall.Socketpair(syscall.AF_UNIX, syscall.SOCK_STREAM, 0)

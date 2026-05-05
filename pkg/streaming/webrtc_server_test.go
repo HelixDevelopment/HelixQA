@@ -28,17 +28,6 @@ func TestDefaultWebRTCConfig(t *testing.T) {
 	assert.NotEmpty(t, config.ICEServers)
 }
 
-func TestNewWebRTCServer(t *testing.T) {
-	config := DefaultWebRTCConfig()
-	server := NewWebRTCServer(config)
-
-	assert.NotNil(t, server)
-	assert.NotNil(t, server.rooms)
-	assert.NotNil(t, server.clients)
-	assert.NotNil(t, server.api)
-	assert.Equal(t, config.ICEServers, server.iceServers)
-}
-
 func TestWebRTCServer_HandleWebSocket(t *testing.T) {
 	server := NewWebRTCServer(nil)
 

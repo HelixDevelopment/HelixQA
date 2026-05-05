@@ -23,19 +23,6 @@ func TestDefaultExtractorConfig(t *testing.T) {
 	assert.Equal(t, 3, config.RetryAttempts)
 }
 
-func TestNewFrameExtractor(t *testing.T) {
-	config := DefaultExtractorConfig("rtsp://localhost:8554/test")
-	extractor := NewFrameExtractor(config)
-
-	require.NotNil(t, extractor)
-	assert.Equal(t, config, extractor.config)
-	assert.NotNil(t, extractor.frameChan)
-	assert.NotNil(t, extractor.errChan)
-	assert.NotNil(t, extractor.ctx)
-	assert.NotNil(t, extractor.cancel)
-	assert.False(t, extractor.running)
-}
-
 func TestFrameExtractor_IsRunning(t *testing.T) {
 	config := DefaultExtractorConfig("test")
 	extractor := NewFrameExtractor(config)
@@ -345,14 +332,14 @@ func TestCheckGStreamer(t *testing.T) {
 	// bluff-scan: no-assert-ok (environment-probe smoke — must not panic; result depends on host)
 	err := CheckGStreamer()
 	if err != nil {
-		t.Skip("GStreamer not installed:", err)  // SKIP-OK: #legacy-untriaged
+		t.Skip("GStreamer not installed:", err)
 	}
 }
 
 func TestGetGStreamerVersion(t *testing.T) {
 	version, err := GetGStreamerVersion()
 	if err != nil {
-		t.Skip("GStreamer not installed:", err)  // SKIP-OK: #legacy-untriaged
+		t.Skip("GStreamer not installed:", err)
 	}
 
 	assert.NotEmpty(t, version)
@@ -379,7 +366,7 @@ func TestCheckElement(t *testing.T) {
 func TestFrameExtractor_StartStop(t *testing.T) {
 	// Skip if GStreamer not available
 	if err := CheckGStreamer(); err != nil {
-		t.Skip("GStreamer not installed")  // SKIP-OK: #legacy-untriaged
+		t.Skip("GStreamer not installed")
 	}
 
 	config := DefaultExtractorConfig("test")

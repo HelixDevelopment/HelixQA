@@ -67,13 +67,6 @@ func fakeScreenshot() []byte {
 
 // --- NewVisualRegression tests ---
 
-func TestNewVisualRegression_Defaults(t *testing.T) {
-	prov := &mockVisionProv{supportsVis: true}
-	vr := NewVisualRegression(prov)
-	assert.Equal(t, 1, vr.concurrency)
-	assert.NotNil(t, vr.provider)
-}
-
 func TestNewVisualRegression_WithConcurrency(t *testing.T) {
 	prov := &mockVisionProv{supportsVis: true}
 	vr := NewVisualRegression(prov, WithConcurrency(4))

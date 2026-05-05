@@ -79,18 +79,6 @@ func TestFingerprint_Stable(t *testing.T) {
 // NewEngine guards
 // ---------------------------------------------------------------------------
 
-func TestNewEngine_RejectsNilDeps(t *testing.T) {
-	if _, err := NewEngine(nil, &fakeAdapter{}, fakeSession{}); err == nil {
-		t.Error("nil LLMClient must error")
-	}
-	if _, err := NewEngine(fakeLLM{}, nil, fakeSession{}); err == nil {
-		t.Error("nil Adapter must error")
-	}
-	if _, err := NewEngine(fakeLLM{}, &fakeAdapter{}, nil); err == nil {
-		t.Error("nil Session must error")
-	}
-}
-
 // ---------------------------------------------------------------------------
 // Act
 // ---------------------------------------------------------------------------

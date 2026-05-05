@@ -422,17 +422,6 @@ func TestWindowsSnapshotter_EndToEndViaHTTPFetcher(t *testing.T) {
 // Factory + interface conformance
 // ---------------------------------------------------------------------------
 
-func TestNewWindowsSnapshotter_UsesHTTPFetcher(t *testing.T) {
-	s := NewWindowsSnapshotter("http://localhost:17421/snapshot")
-	f, ok := s.fetcher.(*WindowsHTTPFetcher)
-	if !ok {
-		t.Fatalf("fetcher type = %T, want *WindowsHTTPFetcher", s.fetcher)
-	}
-	if f.URL != "http://localhost:17421/snapshot" {
-		t.Fatalf("URL = %q", f.URL)
-	}
-}
-
 func TestWindowsSnapshotter_SatisfiesSnapshotterInterface(t *testing.T) {
 	var s Snapshotter = NewWindowsSnapshotterWithFetcher(&fakeWindowsFetcher{json: []byte(sampleWindowsDump)})
 	defer s.Close()

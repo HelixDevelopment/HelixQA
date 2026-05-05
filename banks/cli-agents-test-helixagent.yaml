@@ -94,7 +94,7 @@ test_cases:
     expected_result: "Git workflow enhanced by HelixAgent ensemble"
 
   # ==================== AIDER: Code-Focused System Testing ====================
-  - id: CLI-AIDER-001
+  - id: CLI-AIDER-SYS-001
     name: "Aider tests HelixAgent with real code modifications"
     category: system_validation
     priority: critical

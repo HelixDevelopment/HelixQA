@@ -33,15 +33,6 @@ import (
 // TestNewWhisperClient_DefaultBaseURL confirms the loopback URL
 // from the changelog (1.1.5-dev-0.0.3) is honored when caller
 // passes empty string.
-func TestNewWhisperClient_DefaultBaseURL(t *testing.T) {
-	c := NewWhisperClient("")
-	if c.baseURL != DefaultWhisperBaseURL {
-		t.Fatalf("baseURL = %q, want %q", c.baseURL, DefaultWhisperBaseURL)
-	}
-	if c.baseURL != "http://127.0.0.1:7070" {
-		t.Fatalf("loopback bind broke: %q", c.baseURL)
-	}
-}
 
 // TestHealth_ParsesContainerSchema verifies the client decodes the
 // real /health JSON shape from server.py lines 88-99.

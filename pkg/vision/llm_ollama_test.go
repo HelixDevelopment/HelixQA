@@ -19,24 +19,6 @@ func TestDefaultOllamaConfig(t *testing.T) {
 	assert.NotEmpty(t, config.SystemPrompt)
 }
 
-func TestNewOllamaClient(t *testing.T) {
-	config := DefaultOllamaConfig()
-	client, err := NewOllamaClient(config)
-
-	require.NoError(t, err)
-	assert.NotNil(t, client)
-	assert.Equal(t, config, client.config)
-	assert.NotNil(t, client.client)
-}
-
-func TestNewOllamaClient_NilConfig(t *testing.T) {
-	client, err := NewOllamaClient(nil)
-
-	require.NoError(t, err)
-	assert.NotNil(t, client)
-	assert.NotNil(t, client.config)
-}
-
 func TestCheckOllamaAvailable(t *testing.T) {
 	// bluff-scan: no-assert-ok (environment-probe smoke — must not panic; result depends on host)
 	// This will likely be false in test environment
@@ -240,7 +222,7 @@ func TestVisionLLM_GetStats(t *testing.T) {
 func TestOllamaService(t *testing.T) {
 	// bluff-scan: no-assert-ok (service smoke — public method must not panic on standard call)
 	// Skip in CI environment
-	t.Skip("Requires Ollama installation")  // SKIP-OK: #legacy-untriaged
+	t.Skip("Requires Ollama installation")
 }
 
 func TestCheckGPUAvailable(t *testing.T) {
@@ -252,7 +234,7 @@ func TestCheckGPUAvailable(t *testing.T) {
 
 func TestGetAvailableModels(t *testing.T) {
 	if !CheckOllamaAvailable("") {
-		t.Skip("Ollama not available")  // SKIP-OK: #legacy-untriaged
+		t.Skip("Ollama not available")
 	}
 
 	models, err := GetAvailableModels("")

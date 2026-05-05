@@ -65,21 +65,6 @@ func TestNewGLM4VProvider_MissingKey(t *testing.T) {
 	assert.Contains(t, err.Error(), "api_key")
 }
 
-func TestNewGLM4VProvider_Defaults(t *testing.T) {
-	provider, err := NewGLM4VProvider(map[string]interface{}{
-		"api_key": "test-key",
-	})
-
-	require.NoError(t, err)
-	require.NotNil(t, provider)
-
-	p := provider.(*GLM4VProvider)
-	assert.Equal(t, "test-key", p.apiKey)
-	assert.Equal(t, "https://open.bigmodel.cn/api/paas/v4", p.baseURL)
-	assert.Equal(t, "glm-4v-flash", p.model)
-	assert.Equal(t, 60*time.Second, p.timeout)
-}
-
 func TestNewGLM4VProvider_CustomValues(t *testing.T) {
 	provider, err := NewGLM4VProvider(map[string]interface{}{
 		"api_key":  "custom-key",

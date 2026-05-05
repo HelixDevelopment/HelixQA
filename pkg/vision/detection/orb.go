@@ -477,8 +477,8 @@ func bytesToMat(data []byte, bounds image.Rectangle) (gocv.Mat, error) {
 	// For now, assume raw BGR data
 	if bounds.Empty() {
 		// Try to decode as image
-		// This is a placeholder - actual implementation would use image.Decode
-		return gocv.NewMat(), fmt.Errorf("image decoding not implemented")
+		// Actual implementation requires image.Decode with format detection (JPEG, PNG, BMP, etc.)
+		return gocv.NewMat(), fmt.Errorf("bytesToMat: image decode not implemented — add format-specific decoder (JPEG/PNG/BMP) via image.Decode() with gocv conversion")
 	}
 
 	// Create mat from raw bytes

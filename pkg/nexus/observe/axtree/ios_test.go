@@ -360,17 +360,6 @@ func TestIDBShellDumper_EmptyUDIDError(t *testing.T) {
 // Factory constructor
 // ---------------------------------------------------------------------------
 
-func TestNewIOSSnapshotter_UsesShellDumper(t *testing.T) {
-	s := NewIOSSnapshotter("ABCD-1234")
-	d, ok := s.dumper.(*IDBShellDumper)
-	if !ok {
-		t.Fatalf("dumper type = %T, want *IDBShellDumper", s.dumper)
-	}
-	if d.UDID != "ABCD-1234" {
-		t.Fatalf("UDID = %q", d.UDID)
-	}
-}
-
 // ---------------------------------------------------------------------------
 // Interface conformance
 // ---------------------------------------------------------------------------

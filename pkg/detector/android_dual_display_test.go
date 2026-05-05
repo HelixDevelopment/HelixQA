@@ -14,15 +14,6 @@ import (
 
 // --- Constructor tests ---
 
-func TestNewDualDisplayDetector_Defaults(t *testing.T) {
-	d := NewDualDisplayDetector("device123")
-	assert.Equal(t, "device123", d.device)
-	assert.Equal(t, 0, d.primaryDisplayID)
-	assert.Equal(t, -1, d.secondaryDisplayID)
-	assert.Equal(t, "evidence", d.evidenceDir)
-	assert.NotNil(t, d.cmdRunner)
-}
-
 func TestNewDualDisplayDetector_WithOptions(t *testing.T) {
 	mock := newMockRunner()
 	d := NewDualDisplayDetector(

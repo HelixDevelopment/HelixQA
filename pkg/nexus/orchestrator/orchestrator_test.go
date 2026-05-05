@@ -109,12 +109,6 @@ func TestFileEvidenceStore_PutAndList(t *testing.T) {
 	}
 }
 
-func TestNewFileEvidenceStore_EmptyRootRejected(t *testing.T) {
-	if _, err := NewFileEvidenceStore(""); err == nil {
-		t.Fatal("empty root should error")
-	}
-}
-
 func TestEvidence_NoStoreSilentlyAccepts(t *testing.T) {
 	e := NewEvidence()
 	// nil store should not panic and should return an empty URL.

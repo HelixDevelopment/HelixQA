@@ -31,6 +31,12 @@ const (
 	PlatformAPI Platform = "api"
 	// PlatformAll targets all supported platforms.
 	PlatformAll Platform = "all"
+	// PlatformLinux targets Linux desktop environments.
+	PlatformLinux Platform = "linux"
+	// PlatformTUI targets terminal UI applications.
+	PlatformTUI Platform = "tui"
+	// PlatformIOS targets iOS devices and simulators.
+	PlatformIOS Platform = "ios"
 )
 
 // SpeedMode controls the pacing of test execution.
@@ -409,6 +415,7 @@ func isValidPlatform(p Platform) bool {
 	switch p {
 	case PlatformAndroid, PlatformAndroidTV, PlatformWeb,
 		PlatformDesktop, PlatformCLI, PlatformAPI,
+		PlatformLinux, PlatformTUI, PlatformIOS,
 		PlatformAll:
 		return true
 	}

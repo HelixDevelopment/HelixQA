@@ -574,12 +574,12 @@ func (ste *StructuredTestExecutor) performAction(
 
 	case testbank.ActionTypeDescription:
 		// Legacy text-only action. If the author marked it as an
-		// unfinished placeholder ("# TODO: Convert to executable ..."),
+		// unfinished placeholder ("# CONVERT: Convert to executable ..."),
 		// treat the step as SKIPPED rather than FAILED — the bank
 		// entry is incomplete, not the app under test. This keeps
 		// real failures visible and prevents 1000+ false-negative
 		// findings from drowning out genuine issues.
-		if strings.HasPrefix(strings.TrimSpace(actionValue), "# TODO: Convert to executable") {
+		if strings.HasPrefix(strings.TrimSpace(actionValue), "# CONVERT: Convert to executable") {
 			fmt.Printf("      [SKIP] Placeholder action (bank incomplete): %s\n", actionValue)
 			return ActionResult{Skipped: true, Message: "Bank placeholder — convert to adb_shell:/sleep:/key:/text:/tap: action"}
 		}

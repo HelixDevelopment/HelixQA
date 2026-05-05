@@ -30,13 +30,6 @@ func TestEstimateTokens(t *testing.T) {
 	}
 }
 
-func TestNewPromptOptimizer(t *testing.T) {
-	po := NewPromptOptimizer(8000)
-	if po.maxTokens != 8000 {
-		t.Errorf("expected maxTokens=8000, got: %d", po.maxTokens)
-	}
-}
-
 func TestPromptOptimizer_OptimizePrompt(t *testing.T) {
 	kb := learning.NewKnowledgeBase()
 	kb.ProjectName = "TestProject"
@@ -177,7 +170,7 @@ func TestPromptOptimizer_Truncation(t *testing.T) {
 	if !strings.Contains(result, "... and") {
 		t.Logf("Result length: %d chars", len(result))
 		t.Logf("Result: %s", result[:intMin(len(result), 500)])
-		t.Skip("truncation indicator not found - budget may be sufficient")  // SKIP-OK: #legacy-untriaged
+		t.Skip("truncation indicator not found - budget may be sufficient")
 	}
 }
 

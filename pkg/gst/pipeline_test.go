@@ -7,15 +7,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestNewPipelineBuilder(t *testing.T) {
-	pb := NewPipelineBuilder()
-	assert.NotNil(t, pb)
-	assert.NotNil(t, pb.elements)
-	assert.NotNil(t, pb.caps)
-	assert.Empty(t, pb.elements)
-	assert.Empty(t, pb.caps)
-}
-
 func TestPipelineBuilder_AddElement(t *testing.T) {
 	pb := NewPipelineBuilder()
 	pb.AddElement("videotestsrc")

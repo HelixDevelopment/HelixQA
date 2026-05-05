@@ -39,7 +39,6 @@ require (
 	github.com/felixge/httpsnoop v1.0.4 // indirect
 	github.com/go-ini/ini v1.67.0 // indirect
 	github.com/go-jose/go-jose/v4 v4.1.4 // indirect
-	github.com/go-json-experiment/json v0.0.0-20260214004413-d219187c3433 // indirect
 	github.com/go-logr/logr v1.4.3 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-ole/go-ole v1.2.6 // indirect
@@ -114,8 +113,7 @@ require (
 	golang.org/x/crypto v0.49.0 // indirect
 	golang.org/x/net v0.52.0 // indirect
 	golang.org/x/oauth2 v0.36.0 // indirect
-	golang.org/x/sys v0.42.0 // indirect
-	golang.org/x/text v0.35.0 // indirect
+	golang.org/x/text v0.36.0 // indirect
 	golang.org/x/time v0.14.0 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20260401024825-9d38bb4040a9 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20260401024825-9d38bb4040a9 // indirect
@@ -128,17 +126,19 @@ replace (
 	digital.vasic.docprocessor => ../DocProcessor
 	digital.vasic.llmorchestrator => ../LLMOrchestrator
 	digital.vasic.llmprovider => ../LLMProvider
+	digital.vasic.llmsverifier => ../LLMsVerifier/llm-verifier
 	digital.vasic.security => ../Security
 	digital.vasic.visionengine => ../VisionEngine
 )
 
 require (
-	digital.vasic.llmsverifier v0.0.0
+	digital.vasic.llmsverifier v0.0.0-00010101000000-000000000000
 	github.com/chromedp/cdproto v0.0.0-20260405000525-47a8ff65b46a
 	github.com/chromedp/chromedp v0.15.1
 	github.com/coreos/go-oidc/v3 v3.18.0
 	github.com/crewjam/saml v0.5.1
 	github.com/failsafe-go/failsafe-go v0.9.6
+	github.com/go-json-experiment/json v0.0.0-20260214004413-d219187c3433
 	github.com/go-rod/rod v0.116.2
 	github.com/godbus/dbus/v5 v5.2.2
 	github.com/google/uuid v1.6.0
@@ -157,11 +157,6 @@ require (
 	go.opentelemetry.io/otel/sdk v1.43.0
 	go.opentelemetry.io/otel/trace v1.43.0
 	gocv.io/x/gocv v0.43.0
+	golang.org/x/sys v0.43.0
 	google.golang.org/protobuf v1.36.11
 )
-
-// digital.vasic.llmsverifier — the LLMsVerifier submodule has a flat
-// layout with go.mod at the root (module path
-// digital.vasic.llmsverifier). The earlier llm-verifier/ wrapper is
-// historical; the correct replace target is the repo root.
-replace digital.vasic.llmsverifier => ../LLMsVerifier

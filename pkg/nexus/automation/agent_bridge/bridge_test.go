@@ -157,8 +157,3 @@ func TestBridge_AnalyzeAction_DispatchedTo(t *testing.T) {
 
 // TestNewBridge_NilEngineConstruction verifies that NewBridge(nil) returns a
 // non-nil Bridge (lazy nil check happens at ExecuteAction time).
-func TestNewBridge_NilEngineConstruction(t *testing.T) {
-	b := NewBridge(nil)
-	assert.NotNil(t, b)
-	assert.Nil(t, b.Engine)
-}

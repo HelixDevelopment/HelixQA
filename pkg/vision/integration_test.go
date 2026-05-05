@@ -32,7 +32,7 @@ func TestEndToEndVisionPipeline(t *testing.T) {
 // TestVisionWithOCR tests element detection with OCR
 func TestVisionWithOCR(t *testing.T) {
 	if !CheckTesseractAvailable() && !CheckPaddleOCRAvailable("") {
-		t.Skip("No OCR engine available")  // SKIP-OK: #legacy-untriaged
+		t.Skip("No OCR engine available")
 	}
 
 	img := createTestUIImage(640, 480)
@@ -59,7 +59,7 @@ func TestVisionWithOCR(t *testing.T) {
 // TestVisionLLMIntegration tests the complete Vision+LLM pipeline
 func TestVisionLLMIntegration(t *testing.T) {
 	if !CheckOllamaAvailable("") {
-		t.Skip("Ollama not available")  // SKIP-OK: #legacy-untriaged
+		t.Skip("Ollama not available")
 	}
 
 	img := createTestUIImage(640, 480)
@@ -152,7 +152,7 @@ func TestBatchProcessing(t *testing.T) {
 
 // TestRealTimeProcessingPerformance tests processing performance
 func TestRealTimeProcessingPerformance(t *testing.T) {
-	t.Skip("Performance test - run manually")  // SKIP-OK: #legacy-untriaged
+	t.Skip("Performance test - run manually")
 
 	img := createTestUIImage(1920, 1080)
 

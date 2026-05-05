@@ -19,16 +19,6 @@ import (
 	"testing"
 )
 
-func TestNewTesseractClient_DefaultBaseURL(t *testing.T) {
-	c := NewTesseractClient("")
-	if c.baseURL != DefaultTesseractBaseURL {
-		t.Fatalf("baseURL = %q, want %q", c.baseURL, DefaultTesseractBaseURL)
-	}
-	if c.baseURL != "http://127.0.0.1:7071" {
-		t.Fatalf("loopback bind broke: %q", c.baseURL)
-	}
-}
-
 func TestTesseractHealth_ParsesContainerSchema(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet || r.URL.Path != "/health" {

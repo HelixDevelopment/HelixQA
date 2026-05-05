@@ -3,6 +3,12 @@
 
 // Package benchmark_test provides Go benchmark tests for the core HelixQA
 // packages. Run with: go test ./tests/benchmark/ -bench=. -benchmem
+
+// BLUFF-VIOLATION: R-12 — This benchmark test uses mockBenchProvider (mock LLM).
+// Mocks are permitted ONLY in Unit tests per Constitution §6 / R-12.
+// Remediation: Use real LLM provider with rate-limited API key or containerized local model.
+// Tracked in: docs/research/chapters/MVP/05_Response/anti_bluff_audit_2026-05-02.md
+
 package benchmark_test
 
 import (

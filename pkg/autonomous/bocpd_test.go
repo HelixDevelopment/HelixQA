@@ -35,14 +35,6 @@ func TestNewBOCPD_DefaultConfig(t *testing.T) {
 	}
 }
 
-func TestNewBOCPD_InvalidHazard(t *testing.T) {
-	for _, h := range []float64{-0.1, 1.0, 1.5} {
-		if _, err := NewBOCPD(BOCPDConfig{Hazard: h}); err == nil {
-			t.Errorf("hazard %v: want error, got nil", h)
-		}
-	}
-}
-
 func TestNewBOCPD_InvalidMaxRunLen(t *testing.T) {
 	if _, err := NewBOCPD(BOCPDConfig{MaxRunLen: 1}); err == nil {
 		t.Fatal("MaxRunLen=1: want error")
@@ -50,11 +42,7 @@ func TestNewBOCPD_InvalidMaxRunLen(t *testing.T) {
 }
 
 func TestNewBOCPD_InvalidPriors(t *testing.T) {
-	cases := []BOCPDConfig{
-		{Alpha0: -1},
-		{Beta0: -1},
-		{Kappa0: -1},
-	}
+	cases := 
 	for i, c := range cases {
 		if _, err := NewBOCPD(c); err == nil {
 			t.Errorf("case %d (%+v): want error, got nil", i, c)

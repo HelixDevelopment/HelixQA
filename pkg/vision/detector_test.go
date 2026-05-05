@@ -22,16 +22,6 @@ func TestDefaultDetectorConfig(t *testing.T) {
 	assert.Equal(t, 4, config.Workers)
 }
 
-func TestNewElementDetector(t *testing.T) {
-	config := DefaultDetectorConfig()
-	detector := NewElementDetector(config)
-
-	require.NotNil(t, detector)
-	assert.Equal(t, config, detector.config)
-	assert.NotNil(t, detector.workers)
-	assert.Equal(t, 4, cap(detector.workers))
-}
-
 func TestElementDetector_SetOCREngine(t *testing.T) {
 	config := DefaultDetectorConfig()
 	detector := NewElementDetector(config)

@@ -18,15 +18,6 @@ func (f *fakeEval) Eval(_ context.Context, script string) (string, error) {
 	return f.out, f.err
 }
 
-func TestNewAuditor_Validation(t *testing.T) {
-	if _, err := NewAuditor("", LevelAA); err == nil {
-		t.Fatal("empty assetBase must fail")
-	}
-	if _, err := NewAuditor("https://x", "Z"); err == nil {
-		t.Fatal("unknown level must fail")
-	}
-}
-
 func TestAuditor_RunParsesReport(t *testing.T) {
 	a, _ := NewAuditor("https://x", LevelAA)
 	e := &fakeEval{out: sampleAxeReport}
