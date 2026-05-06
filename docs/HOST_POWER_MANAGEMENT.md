@@ -40,7 +40,7 @@ limited to:
 Three layers, in order of strength:
 
 1. **Host-level masking (manual prereq, sudo required, run once):**
-   `scripts/host-power-management/install-host-suspend-guard.sh`
+   `scripts/host_power_management/install-host-suspend-guard.sh`
    masks `sleep.target`, `suspend.target`, `hibernate.target`,
    `hybrid-sleep.target`, writes `/etc/systemd/sleep.conf.d/00-no-suspend.conf`
    with `AllowSuspend=no`, and writes
@@ -49,14 +49,14 @@ Three layers, in order of strength:
    user / session / DE / greeter / cron job can suspend the host.
 
 2. **User-session bootstrap (no sudo):**
-   `scripts/host-power-management/user_session_no_suspend_bootstrap.sh`
+   `scripts/host_power_management/user_session_no_suspend_bootstrap.sh`
    runs `gsettings`, `xset -dpms`, and (opt-in via
    `HOST_POWER_MANAGEMENT_SESSION_INHIBIT=1`) `systemd-inhibit` to
    protect the current GUI/CLI session of the invoking user. Idempotent.
    Safe to source from `start.sh` / `setup.sh` / `bootstrap.sh`.
 
 3. **Source-tree static gate:**
-   `scripts/host-power-management/check-no-suspend-calls.sh` walks the
+   `scripts/host_power_management/check-no-suspend-calls.sh` walks the
    tree and exits non-zero on any forbidden invocation.
    `challenges/scripts/no_suspend_calls_challenge.sh` wraps it as a
    challenge that runs in CI / `run_all_challenges.sh`.
