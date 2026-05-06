@@ -117,7 +117,8 @@ HelixCode/                                # ← repo root (governance + submodul
 ├── Security/       ← SUBMODULE: security tooling
 ├── Assets/         ← SUBMODULE: logos, themes, brand
 ├── Github-Pages-Website/ ← SUBMODULE: marketing site
-└── Example_Projects/     ← reference projects (Aider, Cline, Plandex, OpenHands, …)
+├── cli_agents/          ← reference CLI agents (aider, cline, plandex, openhands, …) — formerly Example_Projects/
+└── cli_agents_resources/ ← reference resources (Awesome-AI-Agents, Cheshire-Cat-Ai, …) — formerly Example_Resources/
 ```
 
 #### 3.2.1 Inner Go application — `HelixCode/` submodule
