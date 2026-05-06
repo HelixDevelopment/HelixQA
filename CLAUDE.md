@@ -73,6 +73,9 @@ No API key, token, password, certificate, or other credential may be committed t
 ### Article XII §12.2 (CONST-043) — No-Force-Push
 No force push, force-with-lease push, history rewrite, branch deletion of `main`/`master`, or upstream-overwriting operation may be performed without explicit, in-conversation user approval per operation. Authorization for one push does not extend further. Bypassing hooks / signing / protected-branch rules also requires explicit approval.
 
+### Article XIII §13.1 (CONST-044) — Continuation Document Maintenance Mandate
+The meta-repo's `docs/CONTINUATION.md` MUST be kept in sync with actual programme state. It is the authoritative resumption record for any CLI agent picking up the CLI-Agent Fusion programme. Every commit that advances state (task completion, feature close-out, push, known-issue discovery, deferred-item resolution, phase transition, submodule/remote add or remove) MUST update CONTINUATION in the same commit. Out-of-sync CONTINUATION is a **CRITICAL DEFECT** — same severity as a false-success test result under CONST-035 / Article XI §11.9. See `CONSTITUTION.md` Article XIII §13.1 for the full mandate.
+
 ---
 
 ## 3. HelixCode-Specific Architecture

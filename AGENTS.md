@@ -763,6 +763,9 @@ No API key, token, password, certificate, or other credential may be committed t
 ### Article XII §12.2 (CONST-043) — No-Force-Push
 No force push, force-with-lease push, history rewrite, branch deletion of `main`/`master`, or upstream-overwriting operation may be performed without explicit, in-conversation user approval per operation. Authorization for one push does not extend further. Bypassing hooks / signing / protected-branch rules also requires explicit approval.
 
+### Article XIII §13.1 (CONST-044) — Continuation Document Maintenance Mandate
+The meta-repo's `docs/CONTINUATION.md` MUST be maintained in sync with actual programme state at all times. It is the authoritative resumption record for any CLI agent or LLM picking up the CLI-Agent Fusion programme. Every commit that advances state — task completion, feature close-out, push, known-issue discovery, deferred-item resolution, phase transition, submodule/remote add or remove — MUST update CONTINUATION in the same commit. Out-of-sync CONTINUATION is a **CRITICAL DEFECT** — same severity as a false-success test result under CONST-035 / Article XI §11.9. Cascade applies to every owned-by-us repo's three governance files. See `CONSTITUTION.md` Article XIII §13.1 for the full mandate.
+
 ---
 
 ## CONST-036: LLMsVerifier Single Source of Truth Mandate
