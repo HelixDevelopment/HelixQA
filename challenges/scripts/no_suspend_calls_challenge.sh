@@ -15,13 +15,13 @@
 set -uo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-# The scanner is in scripts/host-power-management/, but we may be in
+# The scanner is in scripts/host_power_management/, but we may be in
 # challenges/scripts/. Resolve the project root by walking up until
-# we find scripts/host-power-management/check-no-suspend-calls.sh.
+# we find scripts/host_power_management/check-no-suspend-calls.sh.
 find_project_root() {
   local d="$1"
   while [[ "$d" != "/" ]]; do
-    if [[ -f "$d/scripts/host-power-management/check-no-suspend-calls.sh" ]]; then
+    if [[ -f "$d/scripts/host_power_management/check-no-suspend-calls.sh" ]]; then
       echo "$d"; return 0
     fi
     d=$(dirname "$d")
@@ -31,11 +31,11 @@ find_project_root() {
 
 PROJECT_ROOT=$(find_project_root "$SCRIPT_DIR" || true)
 if [[ -z "${PROJECT_ROOT:-}" ]]; then
-  echo "FAIL: cannot locate scripts/host-power-management/check-no-suspend-calls.sh" >&2
+  echo "FAIL: cannot locate scripts/host_power_management/check-no-suspend-calls.sh" >&2
   exit 2
 fi
 
-SCANNER="$PROJECT_ROOT/scripts/host-power-management/check-no-suspend-calls.sh"
+SCANNER="$PROJECT_ROOT/scripts/host_power_management/check-no-suspend-calls.sh"
 echo "=== no_suspend_calls_challenge ==="
 echo "Scanner: $SCANNER"
 echo "Root:    $PROJECT_ROOT"

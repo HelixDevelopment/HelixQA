@@ -5,12 +5,17 @@
 	anti-bluff anti-bluff-scan anti-bluff-anchors anti-bluff-mutation \
 	anti-bluff-mutation-changed update-baseline qa-all challenge
 
+# P1.5-WP4: API-key loader. Sourced before build/test recipes so credentials
+# from $HOME/api_keys.sh (or .env fallback) are available in the env. Guard
+# keeps recipes working when the loader is absent.
+LOAD_KEYS := if [ -f scripts/load_api_keys.sh ]; then . scripts/load_api_keys.sh; fi
+
 # Default target
 all: vet test build
 
 ## Build the helixqa binary
 build:
-	go build -o bin/helixqa ./cmd/helixqa
+	@$(LOAD_KEYS); go build -o bin/helixqa ./cmd/helixqa
 
 ## Install the helixqa binary
 install:
@@ -18,7 +23,7 @@ install:
 
 ## Run all tests
 test:
-	go test ./... -count=1
+	@$(LOAD_KEYS); go test ./... -count=1
 
 ## Run all tests with race detection
 test-race:

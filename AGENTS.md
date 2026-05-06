@@ -763,6 +763,9 @@ No API key, token, password, certificate, or other credential may be committed t
 ### Article XII §12.2 (CONST-043) — No-Force-Push
 No force push, force-with-lease push, history rewrite, branch deletion of `main`/`master`, or upstream-overwriting operation may be performed without explicit, in-conversation user approval per operation. Authorization for one push does not extend further. Bypassing hooks / signing / protected-branch rules also requires explicit approval.
 
+### Article XIII §13.1 (CONST-044) — Continuation Document Maintenance Mandate
+The meta-repo's `docs/CONTINUATION.md` MUST be maintained in sync with actual programme state at all times. It is the authoritative resumption record for any CLI agent or LLM picking up the CLI-Agent Fusion programme. Every commit that advances state — task completion, feature close-out, push, known-issue discovery, deferred-item resolution, phase transition, submodule/remote add or remove — MUST update CONTINUATION in the same commit. Out-of-sync CONTINUATION is a **CRITICAL DEFECT** — same severity as a false-success test result under CONST-035 / Article XI §11.9. Cascade applies to every owned-by-us repo's three governance files. See `CONSTITUTION.md` Article XIII §13.1 for the full mandate.
+
 ---
 
 ## CONST-036: LLMsVerifier Single Source of Truth Mandate
@@ -872,4 +875,289 @@ test, CLI suggestion, snippet, or example you emit.
 
 ---
 
+<!-- END host-power-management addendum (CONST-033) -->
+
+
+
+<!-- CONST-035 anti-bluff addendum (cascaded) -->
+
+## CONST-035 — Anti-Bluff Tests & Challenges (mandatory; inherits from root)
+
+Tests and Challenges in this submodule MUST verify the product, not
+the LLM's mental model of the product. A test that passes when the
+feature is broken is worse than a missing test — it gives false
+confidence and lets defects ship to users. Functional probes at the
+protocol layer are mandatory:
+
+- TCP-open is the FLOOR, not the ceiling. Postgres → execute
+  `SELECT 1`. Redis → `PING` returns `PONG`. ChromaDB → `GET
+  /api/v1/heartbeat` returns 200. MCP server → TCP connect + valid
+  JSON-RPC handshake. HTTP gateway → real request, real response,
+  non-empty body.
+- Container `Up` is NOT application healthy. A `docker/podman ps`
+  `Up` status only means PID 1 is running; the application may be
+  crash-looping internally.
+- No mocks/fakes outside unit tests (already CONST-030; CONST-035
+  raises the cost of a mock-driven false pass to the same severity
+  as a regression).
+- Re-verify after every change. Don't assume a previously-passing
+  test still verifies the same scope after a refactor.
+- Verification of CONST-035 itself: deliberately break the feature
+  (e.g. `kill <service>`, swap a password). The test MUST fail. If
+  it still passes, the test is non-conformant and MUST be tightened.
+
+## CONST-033 clarification — distinguishing host events from sluggishness
+
+Heavy container builds (BuildKit pulling many GB of layers, parallel
+podman/docker compose-up across many services) can make the host
+**appear** unresponsive — high load average, slow SSH, watchers
+timing out. **This is NOT a CONST-033 violation.** Suspend / hibernate
+/ logout are categorically different events. Distinguish via:
+
+- `uptime` — recent boot? if so, the host actually rebooted.
+- `loginctl list-sessions` — session(s) still active? if yes, no logout.
+- `journalctl ... | grep -i 'will suspend\|hibernate'` — zero broadcasts
+  since the CONST-033 fix means no suspend ever happened.
+- `dmesg | grep -i 'killed process\|out of memory'` — OOM kills are
+  also NOT host-power events; they're memory-pressure-induced and
+  require their own separate fix (lower per-container memory limits,
+  reduce parallelism).
+
+A sluggish host under build pressure recovers when the build finishes;
+a suspended host requires explicit unsuspend (and CONST-033 should
+make that impossible by hardening `IdleAction=ignore` +
+`HandleSuspendKey=ignore` + masked `sleep.target`,
+`suspend.target`, `hibernate.target`, `hybrid-sleep.target`).
+
+If you observe what looks like a suspend during heavy builds, the
+correct first action is **not** "edit CONST-033" but `bash
+challenges/scripts/host_no_auto_suspend_challenge.sh` to confirm the
+hardening is intact. If hardening is intact AND no suspend
+broadcast appears in journal, the perceived event was build-pressure
+sluggishness, not a power transition.
+
+<!-- BEGIN no-session-termination addendum (CONST-036) -->
+
+## User-Session Termination — Hard Ban (CONST-036)
+
+**You may NOT, under any circumstance, generate or execute code that
+ends the currently-logged-in user's desktop session, kills their
+`user@<UID>.service` user manager, or indirectly forces them to
+manually log out / power off.** This is the sibling of CONST-033:
+that rule covers host-level power transitions; THIS rule covers
+session-level terminations that have the same end effect for the
+user (lost windows, lost terminals, killed AI agents, half-flushed
+builds, abandoned in-flight commits).
+
+**Why this rule exists.** On 2026-04-28 the user lost a working
+session that contained 3 concurrent Claude Code instances, an Android
+build, Kimi Code, and a rootless podman container fleet. The
+`user.slice` consumed 60.6 GiB peak / 5.2 GiB swap, the GUI became
+unresponsive, the user was forced to log out and then power off via
+the GNOME shell. The host could not auto-suspend (CONST-033 was in
+place and verified) and the kernel OOM killer never fired — but the
+user had to manually end the session anyway, because nothing
+prevented overlapping heavy workloads from saturating the slice.
+CONST-036 closes that loophole at both the source-code layer and the
+operational layer. See
+`docs/issues/fixed/SESSION_LOSS_2026-04-28.md` in the HelixAgent
+project.
+
+**Forbidden direct invocations** (non-exhaustive):
+
+- `loginctl terminate-user|terminate-session|kill-user|kill-session`
+- `systemctl stop user@<UID>` / `systemctl kill user@<UID>`
+- `gnome-session-quit`
+- `pkill -KILL -u $USER` / `killall -u $USER`
+- `dbus-send` / `busctl` calls to `org.gnome.SessionManager.Logout|Shutdown|Reboot`
+- `echo X > /sys/power/state`
+- `/usr/bin/poweroff`, `/usr/bin/reboot`, `/usr/bin/halt`
+
+**Indirect-pressure clauses:**
+
+1. Do not spawn parallel heavy workloads casually; check `free -h`
+   first; keep `user.slice` under 70% of physical RAM.
+2. Long-lived background subagents go in `system.slice`. Rootless
+   podman containers die with the user manager.
+3. Document AI-agent concurrency caps in CLAUDE.md.
+4. Never script "log out and back in" recovery flows.
+
+**Defence:** every project ships
+`scripts/host-power-management/check-no-session-termination-calls.sh`
+(static scanner) and
+`challenges/scripts/no_session_termination_calls_challenge.sh`
+(challenge wrapper). Both MUST be wired into the project's CI /
+`run_all_challenges.sh`.
+
+<!-- END no-session-termination addendum (CONST-036) -->
+
+<!-- BEGIN const035-strengthening-2026-04-29 -->
+
+## CONST-035 — End-User Usability Mandate (2026-04-29 strengthening)
+
+A test or Challenge that PASSES is a CLAIM that the tested behavior
+**works for the end user of the product**. The HelixAgent project
+has repeatedly hit the failure mode where every test ran green AND
+every Challenge reported PASS, yet most product features did not
+actually work — buggy challenge wrappers masked failed assertions,
+scripts checked file existence without executing the file,
+"reachability" tests tolerated timeouts, contracts were honest in
+advertising but broken in dispatch. **This MUST NOT recur.**
+
+Every PASS result MUST guarantee:
+
+a. **Quality** — the feature behaves correctly under inputs an end
+   user will send, including malformed input, edge cases, and
+   concurrency that real workloads produce.
+b. **Completion** — the feature is wired end-to-end from public
+   API surface down to backing infrastructure, with no stub /
+   placeholder / "wired lazily later" gaps that silently 503.
+c. **Full usability** — a CLI agent / SDK consumer / direct curl
+   client following the documented model IDs, request shapes, and
+   endpoints SUCCEEDS without having to know which of N internal
+   aliases the dispatcher actually accepts.
+
+A passing test that doesn't certify all three is a **bluff** and
+MUST be tightened, or marked `t.Skip("...SKIP-OK: #<ticket>")`
+so absence of coverage is loud rather than silent.
+
+### Bluff taxonomy (each pattern observed in HelixAgent and now forbidden)
+
+- **Wrapper bluff** — assertions PASS but the wrapper's exit-code
+  logic is buggy, marking the run FAILED (or the inverse: assertions
+  FAIL but the wrapper swallows them). Every aggregating wrapper MUST
+  use a robust counter (`! grep -qs "|FAILED|" "$LOG"` style) —
+  never inline arithmetic on a command that prints AND exits
+  non-zero.
+- **Contract bluff** — the system advertises a capability but
+  rejects it in dispatch. Every advertised capability MUST be
+  exercised by a test or Challenge that actually invokes it.
+- **Structural bluff** — `check_file_exists "foo_test.go"` passes
+  if the file is present but doesn't run the test or assert anything
+  about its content. File-existence checks MUST be paired with at
+  least one functional assertion.
+- **Comment bluff** — a code comment promises a behavior the code
+  doesn't actually have. Documentation written before / about code
+  MUST be re-verified against the code on every change touching the
+  documented function.
+- **Skip bluff** — `t.Skip("not running yet")` without a
+  `SKIP-OK: #<ticket>` marker silently passes. Every skip needs the
+  marker; CI fails on bare skips.
+
+The taxonomy is illustrative, not exhaustive. Every Challenge or
+test added going forward MUST pass an honest self-review against
+this taxonomy before being committed.
+
+<!-- END const035-strengthening-2026-04-29 -->
+
+## MANDATORY ANTI-BLUFF COVENANT — END-USER QUALITY GUARANTEE (User mandate, 2026-04-28)
+
+**Forensic anchor — direct user mandate (verbatim):**
+
+> "We had been in position that all tests do execute with success and all Challenges as well, but in reality the most of the features does not work and can't be used! This MUST NOT be the case and execution of tests and Challenges MUST guarantee the quality, the completion and full usability by end users of the product!"
+
+This is the historical origin of the project's anti-bluff covenant.
+Every test, every Challenge, every gate, every mutation pair exists
+to make the failure mode (PASS on broken-for-end-user feature)
+mechanically impossible.
+
+**Operative rule:** the bar for shipping is **not** "tests pass"
+but **"users can use the feature."** Every PASS in this codebase
+MUST carry positive evidence captured during execution that the
+feature works for the end user. Metadata-only PASS, configuration-
+only PASS, "absence-of-error" PASS, and grep-based PASS without
+runtime evidence are all critical defects regardless of how green
+the summary line looks.
+
+**Tests AND Challenges (HelixQA) are bound equally** — a Challenge
+that scores PASS on a non-functional feature is the same class of
+defect as a unit test that does. Both must produce positive end-
+user evidence; both are subject to the §8.1 five-constraint rule
+and §11 captured-evidence requirement.
+
+**Canonical authority:** parent
+[`docs/guides/ATMOSPHERE_CONSTITUTION.md`](../../../docs/guides/ATMOSPHERE_CONSTITUTION.md)
+§8.1 (positive-evidence-only validation) + §11 (bleeding-edge
+ultra-perfection quality bar) + §11.3 (the "no bluff" CLAUDE.md /
+AGENTS.md mandate) + **§11.4 (this end-user-quality-guarantee
+forensic anchor — propagation requirement enforced by pre-build
+gate `CM-COVENANT-PROPAGATION`)**.
+
+**§11.4.1 extension (Phase 33, 2026-05-05) — FAIL-bluffs equally
+forbidden.** A test that crashes for a script-internal reason
+(undefined variable under `set -u`, regex error, malformed assertion,
+missing argument) and produces a FAIL exit code is just as misleading
+as a PASS-bluff. Both let real defects ship undetected. Per parent
+[Constitution §11.4.1](../../../../docs/guides/ATMOSPHERE_CONSTITUTION.md#114-end-user-quality-guarantee--forensic-anchor-user-mandate-2026-04-28),
+every test MUST fail ONLY for genuine product defects — script-bug
+failures must be fixed at the source layer (helper library, shared
+lib, test source), not patched in individual call sites.
+
+Non-compliance is a release blocker regardless of context.
+
+This covenant was lost from this file during the Phase 23.8 remote
+merge (unrelated `pkg/autonomous/` work pulled in concurrently with
+the Whisper Go client) and was restored in Phase 24.2b (2026-04-30)
+when the parent repo's `CM-COVENANT-PROPAGATION` and
+`CM-COVENANT-FORENSIC-QUOTE` gates flagged it during a routine
+pre-build run. Same regression class as Phase 23.2 (Challenges
+submodule, same week). The 100% anti-bluff floor catches this kind
+of remote-merge dropout that would otherwise go unnoticed for
+cycles.
+
+
+## MANDATORY §12.6 MEMORY-BUDGET CEILING — 60% MAXIMUM (User mandate, 2026-04-30)
+
+**Forensic anchor — direct user mandate (verbatim):**
+
+> "We had to restart this session 3rd time in a row! The system of
+> the host stays with no RAM memory for some reason! First make sure
+> that whatever we do through our procedures related to this project
+> MUST NOT use more than 60% of total system memory! All processes
+> MUST be able to function normally!"
+
+**The mandate.** Project procedures MUST NOT use more than **60%
+of total system RAM** (`HOST_SAFETY_MAX_MEM_PCT`). The remaining
+40% is reserved for the operator's other workloads so the host can
+keep serving them while project work proceeds.
+
+**Three consecutive session-loss SIGKILLs on 2026-04-30** during
+1.1.5-dev — every one happened while `scripts/build.sh` was running
+`m -j5` AOSP. Each Soong/Ninja job peaks at ~5–8 GiB RSS;
+collective RSS overran the 60% envelope and the kernel OOM-killer
+escalated, taking down `user@1000.service`. **§12.1's pre-flight
+check (refusing to start if host already distressed) was not enough**
+— the missing piece was an active CONSTRAINT on heavy work itself.
+
+**Mandatory protections (rock-solid):**
+
+1. `HOST_SAFETY_MAX_MEM_PCT` defaults to 60 in
+   `scripts/lib/host_session_safety.sh`.
+2. `HOST_SAFETY_BUDGET_GB` is computed at source-time from
+   `MemTotal × MAX_PCT/100`.
+3. `bounded_run` clamps `MemoryMax` down to the budget if the
+   caller asks for more (cgroup-level enforcement via
+   `systemd-run --user --scope -p MemoryMax=…`).
+4. `host_safe_parallel_jobs` and `host_safe_build_jobs` return
+   the safe `-j` count given an estimated per-job RSS, capped at
+   `nproc`.
+5. `scripts/build.sh` wraps `m -j` in `bounded_run`. If the
+   build's collective RSS exceeds the budget, only the scope is
+   OOM-killed; `user@<uid>.service` stays alive.
+
+**Captured-evidence enforcement.** Pre-build gate
+`CM-MEMBUDGET-METATEST` locks all 7 invariants and fires every
+pre-build run.
+
+**No escape hatch.** §12.6 has NO operator-facing override flag.
+The cap exists for the operator's own protection; bypassing it is
+the bluff the §11.4 covenant specifically prohibits. Operators who
+need more headroom should reduce parallelism, close other
+workloads, or add RAM — NOT raise the percentage.
+
+**Canonical authority:** parent
+[`docs/guides/ATMOSPHERE_CONSTITUTION.md`](../../docs/guides/ATMOSPHERE_CONSTITUTION.md)
+§12.6.
+
+Non-compliance is a release blocker regardless of context.
 *Built with zero-bluff commitment. Every feature actually works.*
