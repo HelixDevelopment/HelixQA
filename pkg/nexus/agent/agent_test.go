@@ -28,7 +28,9 @@ func TestNewAgent_AppliesDefaults(t *testing.T) {
 	if a.cfg.MaxIterations != 60 {
 		t.Errorf("MaxIterations default = %d, want 60", a.cfg.MaxIterations)
 	}
-	if a.cfg.StepTimeout !
+	if a.cfg.StepTimeout != 45*time.Second {
+		t.Errorf("StepTimeout default = %v, want 45s", a.cfg.StepTimeout)
+	}
 	if a.cfg.RecentStepsInPrompt != 4 {
 		t.Errorf("RecentStepsInPrompt default = %d, want 4", a.cfg.RecentStepsInPrompt)
 	}

@@ -98,7 +98,9 @@ func TestNewEngine_FillsDefaults(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if e.cfg.Engine !
+	if e.cfg.Engine != "chromedp" {
+		t.Errorf("default Engine not set: %s", e.cfg.Engine)
+	}
 	if e.cfg.MaxBodyBytes != 32<<20 {
 		t.Errorf("default MaxBodyBytes not set: %d", e.cfg.MaxBodyBytes)
 	}

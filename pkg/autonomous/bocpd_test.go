@@ -42,7 +42,7 @@ func TestNewBOCPD_InvalidMaxRunLen(t *testing.T) {
 }
 
 func TestNewBOCPD_InvalidPriors(t *testing.T) {
-	cases := 
+	cases := []BOCPDConfig{{Hazard: -0.1}, {Hazard: 2.0}}
 	for i, c := range cases {
 		if _, err := NewBOCPD(c); err == nil {
 			t.Errorf("case %d (%+v): want error, got nil", i, c)
