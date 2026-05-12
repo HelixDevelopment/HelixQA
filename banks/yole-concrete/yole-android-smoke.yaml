@@ -1,0 +1,81 @@
+# SPDX-FileCopyrightText: 2026 Milos Vasic
+# SPDX-License-Identifier: Apache-2.0
+#
+# Yole Android smoke-test bank — CONCRETE actions.
+#
+# Unlike the prose-step banks (banks/file-browser.yaml et al.) which
+# `helixqa run` cannot actually execute, these cases use the concrete-
+# action schema (see HelixQA/cmd/helixqa-concrete-runner/schema.go) so
+# helixqa-concrete-runner can drive them end-to-end via adb.
+#
+# Each PASS in this bank carries POSITIVE runtime evidence (UI dump +
+# screenshot persisted to evidence-dir per CONST-035 §11.4.2).
+#
+# Reproducer:
+#   $ANDROID_SDK_ROOT/platform-tools/adb start-server
+#   $ANDROID_SDK_ROOT/emulator/emulator -avd yole-test -no-window &
+#   until adb get-state | grep -q device; do sleep 2; done
+#   ./gradlew :androidApp:assembleDebug
+#   adb install -r androidApp/build/outputs/apk/debug/androidApp-debug.apk
+#   adb shell appops set digital.vasic.yole.android MANAGE_EXTERNAL_STORAGE allow
+#   helixqa-concrete-runner \
+#     -bank HelixQA/banks/yole-concrete/yole-android-smoke.yaml \
+#     -device emulator-5554 \
+#     -adb $ANDROID_SDK_ROOT/platform-tools/adb \
+#     -evidence /tmp/yole-qa-iter33 \
+#     -package digital.vasic.yole.android
+
+version: "1.0"
+name: "Yole Android smoke (concrete)"
+platform: "android"
+
+cases:
+
+  - id: YOLE-SMOKE-001
+    name: "Cold launch produces foreground MainActivity"
+    steps:
+      - description: "Stop any prior Yole instance"
+        force_stop: "digital.vasic.yole.android"
+      - description: "Wait for force-stop to settle"
+        wait: "1s"
+      - description: "Launch MainActivity"
+        launch_activity: "digital.vasic.yole.android/.MainActivity"
+      - description: "Wait for Compose first frame"
+        wait: "5s"
+      - description: "MainActivity must be the focused activity"
+        assert_activity_current: "digital.vasic.yole.android/.MainActivity"
+      - description: "Bottom-nav tab 'Files' must be visible"
+        assert_text_present: "Files"
+        wait_for: "3s"
+      - description: "Bottom-nav tab 'QuickNote' must be visible"
+        assert_text_present: "QuickNote"
+
+  - id: YOLE-SMOKE-002
+    name: "Bottom-nav navigates to QuickNote screen"
+    steps:
+      - description: "Ensure app is foreground"
+        launch_activity: "digital.vasic.yole.android/.MainActivity"
+      - description: "Wait for first frame"
+        wait: "2s"
+      - description: "Tap the QuickNote tab"
+        tap_text: "QuickNote"
+      - description: "Wait for transition"
+        wait: "1s"
+      - description: "QuickNote editor must show its 'Save' affordance"
+        assert_text_present: "Save"
+        wait_for: "3s"
+      - description: "QuickNote editor must show the empty-state placeholder"
+        assert_text_present: "Start writing your quick note..."
+
+  - id: YOLE-SMOKE-003
+    name: "Top app bar exposes Search and Settings affordances"
+    steps:
+      - description: "Ensure app is foreground"
+        launch_activity: "digital.vasic.yole.android/.MainActivity"
+      - description: "Wait for first frame"
+        wait: "2s"
+      - description: "Top app bar must expose a 'Search' affordance"
+        assert_desc_present: "Search"
+        wait_for: "3s"
+      - description: "Top app bar must expose a 'Settings' affordance"
+        assert_desc_present: "Settings"
