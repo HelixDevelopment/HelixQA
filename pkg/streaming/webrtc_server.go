@@ -3,6 +3,8 @@ package streaming
 
 import (
 	"context"
+	"crypto/rand"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -630,7 +632,26 @@ func (s *WebRTCServer) Shutdown(ctx context.Context) error {
 	return nil
 }
 
-// generateClientID generates a unique client ID
+// generateClientID generates a unique client ID. Format:
+//   client_<unix-nano>_<8-hex-chars-of-cryptographically-random-suffix>
+//
+// The previous implementation used only `time.Now().UnixNano()` which
+// has nanosecond resolution but is NOT guaranteed unique: two adjacent
+// calls on fast hardware (Apple Silicon, server-class x86) routinely
+// return the same nanosecond value, breaking the TestGenerateClientID
+// contract `assert.NotEqual(t, id1, id2)` AND silently allowing two
+// real WebRTC clients to claim the same ID in production. Adding the
+// crypto/rand 4-byte suffix makes collisions practically impossible
+// (1 in 2^32 even at identical timestamps).
+//
+// Fixed iter 31 (2026-05-12).
 func generateClientID() string {
-	return fmt.Sprintf("client_%d", time.Now().UnixNano())
+	var randBytes [4]byte
+	if _, err := rand.Read(randBytes[:]); err != nil {
+		// crypto/rand failure is exceptional; degrade to the legacy
+		// timestamp-only ID rather than panicking — tests may briefly
+		// see collisions, but the system stays functional.
+		return fmt.Sprintf("client_%d", time.Now().UnixNano())
+	}
+	return fmt.Sprintf("client_%d_%s", time.Now().UnixNano(), hex.EncodeToString(randBytes[:]))
 }
