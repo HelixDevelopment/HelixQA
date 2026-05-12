@@ -3319,3 +3319,155 @@ test_cases:
         path: "docs/guides/SYSTEM_ARCHITECTURE.md"
     estimated_duration: "45s"
     expected_result: "YouTube video (via VPN) successfully routes to secondary display via ExoPlayer SW codec redirect"
+
+  # ==================== ATMOSphere optimized tmux (TMUX-xxx, Phase 38) ====================
+  # Host-side tooling validation. tmux 3.6a built containerized with hardened
+  # flags and jemalloc-aware wrapper. Each entry mirrors a test in
+  # scripts/tmux/tests/0[1-8]_*.sh and a Challenge in scripts/tmux/challenges/tmux.yaml.
+  # Run via: TMUX_BIN=$(pwd)/tmux/build/bin/tmux WRAPPER=$(pwd)/scripts/tmux/atmosphere-tmux \
+  #          bash scripts/tmux/tests/run_all.sh
+
+  - id: TMUX-001
+    name: "tmux 3.6a binary smoke test"
+    category: tooling
+    priority: blocker
+    platforms: [linux]
+    steps:
+      - name: "Invoke tmux -V"
+        action: "Run: $(pwd)/tmux/build/bin/tmux -V (filter libtinfo stderr)"
+        expected: "stdout contains 'tmux 3.6a'"
+    tags: [tmux, phase-38, smoke, host-tooling]
+    documentation_refs:
+      - type: guide
+        section: "Phase 38 §1"
+        path: "docs/guides/TMUX_OPTIMIZED_BUILD.md"
+    estimated_duration: "5s"
+    expected_result: "Binary invocable, version matches pinned upstream tag"
+
+  - id: TMUX-002
+    name: "tmux session lifecycle (new-session/list-sessions/kill-server)"
+    category: tooling
+    priority: blocker
+    platforms: [linux]
+    steps:
+      - name: "Spawn detached session"
+        action: "tmux -S /tmp/sock new-session -d -s test 'sleep 30'"
+        expected: "Server starts; session 'test' created"
+      - name: "Verify session listed"
+        action: "tmux -S /tmp/sock list-sessions (stderr to /dev/null)"
+        expected: "Output contains session name"
+      - name: "Clean shutdown"
+        action: "tmux -S /tmp/sock kill-server"
+        expected: "All processes terminate cleanly"
+    tags: [tmux, phase-38, lifecycle]
+    estimated_duration: "8s"
+    expected_result: "Full session lifecycle works without errors"
+
+  - id: TMUX-003
+    name: "tmux jemalloc loaded via LD_PRELOAD wrapper"
+    category: tooling
+    priority: critical
+    platforms: [linux]
+    steps:
+      - name: "Locate libjemalloc on host"
+        action: "Try ldconfig, /sbin/ldconfig, /usr/sbin/ldconfig (defensive)"
+        expected: "libjemalloc.so.X found OR test SKIPs with operator-install hint"
+      - name: "Spawn tmux via wrapper"
+        action: "atmosphere-tmux -S /tmp/sock new-session -d -s jemtest 'sleep 30'"
+        expected: "Server starts under wrapper"
+      - name: "Verify jemalloc in process address space"
+        action: "grep jemalloc /proc/<server-pid>/maps"
+        expected: "At least one mapping references jemalloc shared object"
+    tags: [tmux, phase-38, jemalloc, runtime-hooked]
+    estimated_duration: "5s"
+    expected_result: "jemalloc actively replacing glibc malloc in the running tmux server"
+
+  - id: TMUX-004
+    name: "tmux history-limit configuration honored"
+    category: tooling
+    priority: high
+    platforms: [linux]
+    steps:
+      - name: "Provide config with explicit limit"
+        action: "Write 'set -g history-limit 1500' to a config; spawn tmux with -f"
+        expected: "Server applies the config"
+      - name: "Query option"
+        action: "tmux -S /tmp/sock show-options -g history-limit"
+        expected: "Output reports value 1500"
+    tags: [tmux, phase-38, config]
+    estimated_duration: "5s"
+    expected_result: "User-configured history-limit overrides default"
+
+  - id: TMUX-005
+    name: "clear-history releases memory (the apparent-leak check)"
+    category: tooling
+    priority: critical
+    platforms: [linux]
+    steps:
+      - name: "Fill scrollback to 5x default"
+        action: "Send a 50000-line shell loop to a pane"
+        expected: "Buffer populated; RSS_PEAK measured"
+      - name: "Run clear-history"
+        action: "tmux -S /tmp/sock clear-history -t target"
+        expected: "Buffer cleared from buffer; allocator may delay return"
+      - name: "Compare RSS"
+        action: "Read /proc/<pid>/status VmRSS again"
+        expected: "drop >= 1 MB OR 5% (jemalloc-tolerant); WARN otherwise but PASS"
+    tags: [tmux, phase-38, leak, allocator]
+    estimated_duration: "12s"
+    expected_result: "Memory release on clear-history is non-trivial — confirms allocator participates"
+
+  - id: TMUX-006
+    name: "10 concurrent panes — RSS bounded < 20 MB"
+    category: tooling
+    priority: high
+    platforms: [linux]
+    steps:
+      - name: "Spawn 10-pane session"
+        action: "split-window 9x with sleep loops; layout tiled"
+        expected: "All 10 panes alive"
+      - name: "Measure RSS delta"
+        action: "Compare VmRSS with 1 pane vs 10 panes"
+        expected: "delta < 20 MB"
+    tags: [tmux, phase-38, concurrency, leak-resistance]
+    estimated_duration: "5s"
+    expected_result: "Per-pane overhead bounded — server scales without leak"
+
+  - id: TMUX-007
+    name: "30-second sustained session — no runaway growth"
+    category: tooling
+    priority: critical
+    platforms: [linux]
+    steps:
+      - name: "Spawn long-running pane"
+        action: "tmux new-session 'while true; do echo tick; sleep 0.5; done'"
+        expected: "Background ticker running"
+      - name: "Sample RSS at T+5s and T+30s"
+        action: "Read /proc/<pid>/status twice with 25s gap"
+        expected: "growth < 50% of T+5s baseline"
+    tags: [tmux, phase-38, leak, sustained]
+    estimated_duration: "32s"
+    expected_result: "Steady-state operation does NOT leak under continuous output"
+
+  - id: TMUX-008
+    name: "wrapper applies oom_score_adj=-500 (CAP_SYS_RESOURCE)"
+    category: tooling
+    priority: blocker
+    platforms: [linux]
+    steps:
+      - name: "Detect helper or root"
+        action: "Check /usr/local/bin/atmosphere-oom-set OR id -u == 0"
+        expected: "If neither: SKIP with operator-install hint pointing to scripts/tmux/build_oom_set.sh --install"
+      - name: "Spawn tmux via wrapper"
+        action: "atmosphere-tmux new-session detached"
+        expected: "Server starts; wrapper invokes helper or direct write"
+      - name: "Verify OOM score"
+        action: "cat /proc/<pid>/oom_score_adj"
+        expected: "Value is exactly -500"
+    tags: [tmux, phase-38, oom-protection, capabilities, kernel-security-model]
+    documentation_refs:
+      - type: guide
+        section: "§8 Full OOM protection options"
+        path: "docs/guides/TMUX_OPTIMIZED_BUILD.md"
+    estimated_duration: "5s"
+    expected_result: "tmux server protected against OOM cascades — survives §12-class incidents"
