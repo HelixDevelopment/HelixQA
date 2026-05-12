@@ -196,12 +196,29 @@ func cmdRun(args []string) {
 		os.Exit(1)
 	}
 
-	// Print summary.
+	// Print summary. CONST-035 anti-bluff: a "PASSED" summary that
+	// covers 0 challenges (because no execution engine drove the
+	// prose-step banks) is exactly the "absence-of-error PASS" the
+	// user mandate forbids. Distinguish three states honestly:
+	//   - 0 challenges ran: report "OBSERVED — no challenges executed"
+	//   - challenges ran AND all passed: report "PASSED"
+	//   - any failure: report "FAILED"
 	fmt.Println()
-	if result.Success {
-		fmt.Println("PASSED - All tests passed, no crashes")
-	} else {
-		fmt.Println("FAILED - Issues detected")
+	total := 0
+	if result.Report != nil {
+		total = result.Report.TotalChallenges
+	}
+	switch {
+	case total == 0:
+		fmt.Println("OBSERVED - 0 challenges executed; crash-observation only.")
+		fmt.Println("           This is NOT a PASS. The bank's prose steps require")
+		fmt.Println("           an execution backend (autonomous LLM mode or a")
+		fmt.Println("           concrete-action runner like Appium/UiAutomator2).")
+	case result.Success:
+		fmt.Printf("PASSED - All %d challenges passed, no crashes\n", total)
+	default:
+		fmt.Printf("FAILED - %d/%d challenges failed or crashes detected\n",
+			result.Report.FailedChallenges, total)
 	}
 	fmt.Printf("Report: %s\n", result.ReportPath)
 	fmt.Printf("Duration: %v\n", result.Duration)
