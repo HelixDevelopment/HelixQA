@@ -141,7 +141,7 @@ func TestListDevices_Integration(t *testing.T) {
 	// bluff-scan: no-assert-ok (integration smoke — wiring must not panic on standard inputs)
 	// Skip if no ADB available
 	if _, err := exec.LookPath("adb"); err != nil {
-		t.Skip("adb not found in PATH")
+		t.Skip("adb not found in PATH") // SKIP-OK: #env-adb-missing
 	}
 
 	devices, err := ListDevices()
@@ -160,13 +160,13 @@ func TestListDevices_Integration(t *testing.T) {
 func TestGetDeviceResolution_Integration(t *testing.T) {
 	// Skip if no ADB available
 	if _, err := exec.LookPath("adb"); err != nil {
-		t.Skip("adb not found in PATH")
+		t.Skip("adb not found in PATH") // SKIP-OK: #env-adb-missing
 	}
 
 	// Get first available device
 	devices, err := ListDevices()
 	if err != nil || len(devices) == 0 {
-		t.Skip("no Android devices connected")
+		t.Skip("no Android devices connected") // SKIP-OK: #env-no-android-device
 	}
 
 	deviceID := devices[0]
@@ -184,13 +184,13 @@ func TestGetDeviceResolution_Integration(t *testing.T) {
 func TestGetDeviceInfo_Integration(t *testing.T) {
 	// Skip if no ADB available
 	if _, err := exec.LookPath("adb"); err != nil {
-		t.Skip("adb not found in PATH")
+		t.Skip("adb not found in PATH") // SKIP-OK: #env-adb-missing
 	}
 
 	// Get first available device
 	devices, err := ListDevices()
 	if err != nil || len(devices) == 0 {
-		t.Skip("no Android devices connected")
+		t.Skip("no Android devices connected") // SKIP-OK: #env-no-android-device
 	}
 
 	deviceID := devices[0]
@@ -212,13 +212,13 @@ func TestIsAppInForeground_Integration(t *testing.T) {
 	// bluff-scan: no-assert-ok (integration smoke — wiring must not panic on standard inputs)
 	// Skip if no ADB available
 	if _, err := exec.LookPath("adb"); err != nil {
-		t.Skip("adb not found in PATH")
+		t.Skip("adb not found in PATH") // SKIP-OK: #env-adb-missing
 	}
 
 	// Get first available device
 	devices, err := ListDevices()
 	if err != nil || len(devices) == 0 {
-		t.Skip("no Android devices connected")
+		t.Skip("no Android devices connected") // SKIP-OK: #env-no-android-device
 	}
 
 	deviceID := devices[0]
@@ -236,18 +236,18 @@ func TestIsAppInForeground_Integration(t *testing.T) {
 func TestAndroidCapture_StartStop_Integration(t *testing.T) {
 	// Skip if no scrcpy available
 	if _, err := exec.LookPath("scrcpy"); err != nil {
-		t.Skip("scrcpy not found in PATH")
+		t.Skip("scrcpy not found in PATH") // SKIP-OK: #env-scrcpy-missing
 	}
 
 	// Skip if no ADB available
 	if _, err := exec.LookPath("adb"); err != nil {
-		t.Skip("adb not found in PATH")
+		t.Skip("adb not found in PATH") // SKIP-OK: #env-adb-missing
 	}
 
 	// Get first available device
 	devices, err := ListDevices()
 	if err != nil || len(devices) == 0 {
-		t.Skip("no Android devices connected")
+		t.Skip("no Android devices connected") // SKIP-OK: #env-no-android-device
 	}
 
 	deviceID := devices[0]
@@ -264,7 +264,7 @@ func TestAndroidCapture_StartStop_Integration(t *testing.T) {
 	// Start capture
 	err = capture.Start()
 	if err != nil {
-		t.Skipf("Failed to start capture: %v (scrcpy may not be compatible)", err)
+		t.Skipf("Failed to start capture: %v (scrcpy may not be compatible)", err) // SKIP-OK: #env-scrcpy-incompatible
 	}
 
 	assert.True(t, capture.IsRunning())
@@ -281,18 +281,18 @@ func TestAndroidCapture_StartStop_Integration(t *testing.T) {
 func TestAndroidCapture_GetFrameChan_Integration(t *testing.T) {
 	// Skip if no scrcpy available
 	if _, err := exec.LookPath("scrcpy"); err != nil {
-		t.Skip("scrcpy not found in PATH")
+		t.Skip("scrcpy not found in PATH") // SKIP-OK: #env-scrcpy-missing
 	}
 
 	// Skip if no ADB available
 	if _, err := exec.LookPath("adb"); err != nil {
-		t.Skip("adb not found in PATH")
+		t.Skip("adb not found in PATH") // SKIP-OK: #env-adb-missing
 	}
 
 	// Get first available device
 	devices, err := ListDevices()
 	if err != nil || len(devices) == 0 {
-		t.Skip("no Android devices connected")
+		t.Skip("no Android devices connected") // SKIP-OK: #env-no-android-device
 	}
 
 	deviceID := devices[0]
@@ -305,7 +305,7 @@ func TestAndroidCapture_GetFrameChan_Integration(t *testing.T) {
 
 	err = capture.Start()
 	if err != nil {
-		t.Skipf("Failed to start capture: %v", err)
+		t.Skipf("Failed to start capture: %v", err) // SKIP-OK: #env-capture-start-failure
 	}
 
 	defer capture.Stop()

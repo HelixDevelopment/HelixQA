@@ -42,7 +42,7 @@ func TestAppium_RealContainer_EndToEnd(t *testing.T) {
 		Started:          true,
 	})
 	if err != nil {
-		t.Skipf("testcontainers: %v (docker/podman + KVM required)", err)
+		t.Skipf("testcontainers: %v (docker/podman + KVM required)", err) // SKIP-OK: #env-testcontainers-kvm-missing
 	}
 	defer c.Terminate(context.Background())
 
