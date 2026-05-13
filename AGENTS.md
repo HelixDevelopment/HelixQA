@@ -1490,6 +1490,18 @@ No grace period — "next test will clean it up" is §11.4 PASS-bluff.
 
 Non-compliance is a release blocker regardless of context.
 
+**§11.4.15 — Item-status tracking mandate (User mandate, 2026-05-13)**
+
+Every active item in `docs/Issues.md` carries a `**Status:**` line with one of six values: `Queued`, `In progress`, `Ready for testing`, `In testing`, `Reopened`, `Fixed (→ Fixed.md)`. Status MUST be updated as the item progresses through its lifecycle. `Fixed` requires captured-evidence per §11.4.5 + migration to Fixed.md.
+
+The auto-generated `docs/Issues_Summary.md` includes the Status column. All three file types (`.md`, `.html`, `.pdf`) MUST be in sync at all times — enforced by `CM-DOCS-EXPORT-SYNC` (§11.4.12 + §11.4.15 amendment).
+
+**Canonical authority:** parent
+[`docs/guides/ATMOSPHERE_CONSTITUTION.md`](docs/guides/ATMOSPHERE_CONSTITUTION.md)
+§11.4.15. Pre-build gates `CM-ITEM-STATUS-TRACKING` + `CM-COVENANT-114-15-PROPAGATION`.
+
+Non-compliance is a release blocker regardless of context.
+
 **§11.4.13 — Out-of-band sink-side captured-evidence mandate (User mandate, 2026-05-13)**
 
 Whenever an HDMI sink with a network-accessible introspection API is
