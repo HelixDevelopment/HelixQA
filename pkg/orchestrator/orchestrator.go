@@ -187,7 +187,19 @@ func (o *Orchestrator) Run(
 	result.ReportPath = reportPath
 	result.EndTime = time.Now()
 	result.Duration = result.EndTime.Sub(result.StartTime)
-	result.Success = qaReport.FailedChallenges == 0 &&
+	// CONST-035 anti-bluff: a run with 0 executed challenges is NOT a
+	// success — it's a PASS-bluff (the absence-of-crash check passes
+	// trivially when no app was launched, but no actual behavior was
+	// verified). Success requires that at least one challenge actually
+	// ran AND that every executed challenge passed AND no crash/ANR.
+	// Previously the bool was `Failed==0 && Crashes==0 && ANRs==0`
+	// which evaluated to true for 0/0 runs — the canonical structural
+	// bluff per the operator's bluff taxonomy ("ValidateStep returns
+	// PASSED whenever HasCrash==false, regardless of whether any
+	// challenge body executed").
+	result.Success = qaReport.TotalChallenges > 0 &&
+		qaReport.PassedChallenges == qaReport.TotalChallenges &&
+		qaReport.FailedChallenges == 0 &&
 		qaReport.TotalCrashes == 0 &&
 		qaReport.TotalANRs == 0
 

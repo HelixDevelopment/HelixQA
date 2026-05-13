@@ -196,11 +196,20 @@ func cmdRun(args []string) {
 		os.Exit(1)
 	}
 
-	// Print summary.
+	// Print summary. Per CONST-035 anti-bluff (orchestrator.Result.Success
+	// now requires TotalChallenges > 0), a session that executes zero
+	// challenges is NOT a success — surface the bluff loudly so
+	// operators see it.
 	fmt.Println()
-	if result.Success {
+	switch {
+	case result.Report != nil && result.Report.TotalChallenges == 0:
+		fmt.Println("FAILED - PASS-bluff detected: 0 challenges actually executed.")
+		fmt.Println("  ValidateStep produced step-rows but no challenge runner ran the YAML bodies.")
+		fmt.Println("  See orchestrator.go and pkg/validator/validator.go ValidateStep contract.")
+		fmt.Println("  Per CONST-035 / Article XI §11.9: absence-of-crash is NOT proof of behavior.")
+	case result.Success:
 		fmt.Println("PASSED - All tests passed, no crashes")
-	} else {
+	default:
 		fmt.Println("FAILED - Issues detected")
 	}
 	fmt.Printf("Report: %s\n", result.ReportPath)

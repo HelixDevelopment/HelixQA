@@ -86,10 +86,12 @@ func TestOrchestrator_Stress_MultiplePlatforms(t *testing.T) {
 	ctx := context.Background()
 	result, err := orch.Run(ctx)
 
-	// Empty bank = quick pass.
+	// Empty bank = 0 challenges executed = NOT a success per
+	// CONST-035 anti-bluff (orchestrator.go).
 	assert.NoError(t, err)
 	assert.NotNil(t, result)
-	assert.True(t, result.Success)
+	assert.False(t, result.Success,
+		"multi-platform stress test with empty bank executes 0 challenges → Success=false")
 }
 
 func BenchmarkOrchestrator_New(b *testing.B) {
