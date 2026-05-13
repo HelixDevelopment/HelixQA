@@ -1352,3 +1352,219 @@ submodules + HelixQA dependencies.
 §11.4.6.
 
 Non-compliance is a release blocker regardless of context.
+
+**§11.4.7 — Demotion-evidence rule (Phase 38.X+2 amendment, 2026-05-11)**
+
+A demotion from any FAIL classification (`OPEN`, `POSSIBLE PRODUCT
+DEFECT`, `FAIL`) to a lower-severity classification (`INVESTIGATED`,
+`MITIGATED`, `RESOLVED`, `WORKING-AS-INTENDED`) requires positive
+evidence captured under the **same conditions** that originally
+exposed the defect — same device, same firmware, same cycle position,
+same load profile.
+
+"I cannot reproduce in isolation" is a HYPOTHESIS, not a finding. Per
+§11.4.6 it MUST be tagged `UNCONFIRMED:` until same-conditions retest
+produces positive evidence. The expanded forbidden-vocabulary list:
+
+| Forbidden phrase | Why it bluffs |
+|---|---|
+| "isolated re-run PASSes therefore X was a flake" | Strips the very environment that exposed the defect. |
+| "runtime drift" | Label for "we don't know what changed". |
+| "intermittent" / "transient" | Label for "we don't know how to reproduce". |
+| "pending stress retest" | Defers the actual investigation indefinitely. |
+| "correlates with X" | Hypothesis presented as causation. |
+
+Pre-build gate `CM-DEMOTION-EVIDENCE-RULE` scans Issues.md / Fixed.md
+/ CONTINUATION.md for these phrases outside explicit
+`UNCONFIRMED:` / `UNATTRIBUTED:` / `PENDING_CYCLE_RETEST:` blocks.
+Propagation gate `CM-COVENANT-114-7-PROPAGATION` enforces this anchor
+in every CLAUDE.md / AGENTS.md across parent + 10 owned submodules +
+HelixQA dependencies.
+
+**Canonical authority:** parent
+[`docs/guides/ATMOSPHERE_CONSTITUTION.md`](docs/guides/ATMOSPHERE_CONSTITUTION.md)
+§11.4.7.
+
+Non-compliance is a release blocker regardless of context.
+
+**§11.4.8 — Deep-web-research-before-implementation mandate (User mandate, 2026-05-12)**
+
+Before designing a non-trivial fix, implementing a new feature, or declaring
+an architectural choice, perform deep web research to verify the chosen
+approach is informed by current state-of-the-art. Research surface:
+official documentation (Android/AOSP/Khronos/CEA-861/AES/IEEE/IETF/ITU),
+vendor technical guides (Rockchip, Sipeed, Audinate Dante, Synaptics,
+Realtek, Bluetooth SIG), open-source codebases (Linux kernel, ALSA, Bluez,
+ExoPlayer, libVLC, MPV, FFmpeg, AOSP forks), coding tutorials + technical
+articles (Stack Overflow, AOSP Code Lab, AES papers), issue trackers
+(Android bug tracker, AOSP gerrit, GitHub issues).
+
+A fix that re-invents a wheel — or reproduces a known-broken pattern —
+when the open-source community has already solved the problem is a §11.4
+violation by omission. Every non-trivial fix's commit / Issues.md / Fixed.md
+entry MUST cite at least one external source URL OR the literal "NO external
+solution found — original work".
+
+Pre-build gate `CM-RESEARCH-CITATION-PRESENT` scans new fix-direction
+blocks for the pattern. Propagation gate `CM-COVENANT-114-8-PROPAGATION`
+enforces this anchor in every CLAUDE.md / AGENTS.md across parent + 10
+owned submodules + HelixQA dependencies.
+
+Documentation continuity requirement: every fix landed under §11.4.8 also
+adds to `docs/guides/` a user-facing or developer-facing guide section
+where appropriate.
+
+**Canonical authority:** parent
+[`docs/guides/ATMOSPHERE_CONSTITUTION.md`](docs/guides/ATMOSPHERE_CONSTITUTION.md)
+§11.4.8.
+
+Non-compliance is a release blocker regardless of context.
+
+**§11.4.9 — Batch-source-fixes-before-rebuild mandate (User mandate, 2026-05-12)**
+
+When closing a multi-defect batch, all source-side fixes that DO NOT require
+runtime on-device validation to design MUST be landed BEFORE the next firmware
+rebuild. Anti-pattern eliminated: `Fix A → rebuild → flash → cycle → fix B → rebuild → ...`
+serializes 7-8 hours per fix instead of batching all into ONE build cycle.
+Operator time is the scarce resource.
+
+Exceptions documented in commit message as `REQUIRES_REBUILD: <reason>`:
+kernel-5.10/ changes, atmosphere-*.sh boot-script side-effects, hardware/rockchip/
+HAL behavior — each gates downstream state and requires firmware to validate.
+
+Before declaring a batch "ready for rebuild": pre-build GREEN + meta-test GREEN +
+existing-device validations performed where possible + Issues.md/Fixed.md/CONTINUATION.md
+in sync (+ HTML/PDF exported) + §11.4.8 research citations all logged.
+
+Propagation gate `CM-COVENANT-114-9-PROPAGATION` enforces this anchor in every
+CLAUDE.md / AGENTS.md across parent + 10 owned submodules + HelixQA dependencies.
+
+**Canonical authority:** parent
+[`docs/guides/ATMOSPHERE_CONSTITUTION.md`](docs/guides/ATMOSPHERE_CONSTITUTION.md)
+§11.4.9.
+
+Non-compliance is a release blocker regardless of context.
+
+**§11.4.10 — Credentials-handling mandate (User mandate, 2026-05-12)**
+
+All credentials, secrets, API tokens, passwords, phone numbers, OAuth tokens,
+signing keys MUST NEVER live in tracked files. Templates with placeholder values
+are allowed (`.example` suffix). Tests load credentials at runtime from
+`scripts/testing/secrets/` (or per-submodule equivalent); operator-populated
+files are `chmod 600`, directory is `chmod 700`. `.env`, `.env.*`, `*.env`
+patterns + `scripts/testing/secrets/*` (with `.example` + `README.md` exception)
+git-ignored project-wide.
+
+Test scripts MUST NEVER echo credentials to stdout/stderr/logcat. Screen-
+recording of sign-in flows MUST redact credential-bearing frames. Per-service
+file separation (`.netflix.env`, `.disney.env`, etc.) limits blast radius.
+
+Forensic-rotation policy: suspected leak → rotate at provider, update local
+`.env`, audit captured artifacts. Pre-build gate `CM-CREDENTIAL-LEAK-SCAN`
+greps tracked files for entropy-suspicious password strings + known API-token
+formats. Propagation gate `CM-COVENANT-114-10-PROPAGATION` enforces this
+anchor in every CLAUDE.md / AGENTS.md across parent + 10 owned submodules +
+HelixQA dependencies.
+
+**Canonical authority:** parent
+[`docs/guides/ATMOSPHERE_CONSTITUTION.md`](docs/guides/ATMOSPHERE_CONSTITUTION.md)
+§11.4.10.
+
+Non-compliance is a release blocker regardless of context.
+
+**§11.4.14 — Test playback cleanup mandate (User mandate, 2026-05-13)**
+
+Every test that issues `am start` / `cmd media_session play` /
+`MediaController.play` MUST issue matching `am force-stop` /
+`input keyevent KEYCODE_MEDIA_STOP` + register cleanup in `EXIT` trap.
+Verified via positive evidence (Arvus codec-state → `N.E.`,
+`dumpsys media_session` shows no PLAYING for test app).
+`test_all_fixes.sh` post-test sanity check FAILs the just-completed
+test if it left orphan playback. HelixQA Challenges bound equally.
+No grace period — "next test will clean it up" is §11.4 PASS-bluff.
+
+**Canonical authority:** parent
+[`docs/guides/ATMOSPHERE_CONSTITUTION.md`](docs/guides/ATMOSPHERE_CONSTITUTION.md)
+§11.4.14. Pre-build gates `CM-TEST-PLAYBACK-CLEANUP` +
+`CM-COVENANT-114-14-PROPAGATION`.
+
+Non-compliance is a release blocker regardless of context.
+
+**§11.4.13 — Out-of-band sink-side captured-evidence mandate (User mandate, 2026-05-13)**
+
+Whenever an HDMI sink with a network-accessible introspection API is
+present (current example: Arvus H2-4D-273 at `http://192.168.4.172/`),
+the test suite MUST consume the sink's report as captured-evidence for
+every audio test asserting a codec / channel-count / passthrough mode.
+On-SoC HAL telemetry ALONE is insufficient — that is the exact "tests
+pass but the feature doesn't work" pattern §11.4 forbids. Reference:
+`scripts/testing/lib/arvus_probe.sh`, `scripts/testing/arvus_probe.sh`,
+`docs/guides/ARVUS_HDMI_INTEGRATION.md`. Pre-build gate
+`CM-ARVUS-EVIDENCE-INTEGRATED` (7 invariants) + paired mutation. No
+hardcoding (env: `ARVUS_HOST` etc.). Topology dispatch per §11.4.3 —
+sink unreachable → SKIP, never FAIL. Identity verification (MAC match)
+before consuming codec-state. Anti-stickiness post-stop. HelixQA
+Challenges bound equally.
+
+**Canonical authority:** parent
+[`docs/guides/ATMOSPHERE_CONSTITUTION.md`](docs/guides/ATMOSPHERE_CONSTITUTION.md)
+§11.4.13. Integration reference: `docs/guides/ARVUS_HDMI_INTEGRATION.md`.
+
+Non-compliance is a release blocker regardless of context.
+
+**§11.4.11 — File-layout discipline (User mandate, 2026-05-12)**
+
+Files live in canonical directories per type:
+- Shell scripts → `scripts/` (legacy: `scripts/legacy/`)
+- Log files → `logs/` (legacy: `logs/legacy/`)
+- Release artifacts → `releases/<app>/<version>/`
+- Operator credentials → `scripts/testing/secrets/` (per §11.4.10, git-ignored)
+- Markdown docs → `docs/` + `docs/guides/` + `docs/research/` + `docs/superpowers/plans/`
+- Per-version changelogs → `docs/changelogs/`
+- Hardware ID photos → `docs/hardware/<device-slug>/`
+
+Repo root contains ONLY: AOSP-mandated top-level files (Android.bp, Makefile,
+bootstrap.bash, BUILD, kokoro, lk_inc.mk, OWNERS, version_defaults.mk),
+project metadata (README/CLAUDE/AGENTS/CONTRIBUTING/LICENSE/NOTICE/VERSION),
+dot-files (.gitignore/.gitmodules), and standard top-level dirs (build/,
+device/, external/, frameworks/, hardware/, kernel-5.10/, packages/, prebuilts/,
+scripts/, system/, tools/, vendor/, docs/, releases/, logs/).
+
+NO bash scripts in repo root except AOSP-mandated `bootstrap.bash`. NO log
+files in repo root. NO duplicate filenames between root and `scripts/`. NO
+release artifacts in root. Moves require triple-verification (audit all
+references + distinguish absolute vs subdir-local + confirm no AOSP build-
+system requirement). Pre-build gate `CM-FILE-LAYOUT-DISCIPLINE` enforces.
+Propagation gate `CM-COVENANT-114-11-PROPAGATION` enforces this anchor in
+every CLAUDE.md / AGENTS.md across parent + 10 owned submodules + HelixQA
+dependencies.
+
+**Canonical authority:** parent
+[`docs/guides/ATMOSPHERE_CONSTITUTION.md`](docs/guides/ATMOSPHERE_CONSTITUTION.md)
+§11.4.11.
+
+Non-compliance is a release blocker regardless of context.
+
+**§11.4.12 — Issues_Summary.md sync mandate (User mandate, 2026-05-12)**
+
+docs/Issues_Summary.md is the canonical short-form summary of all open
+items. MUST be regenerated + re-exported (HTML + PDF) whenever Issues.md
+changes. Generator: scripts/testing/generate_issues_summary.sh. Pre-build
+gates `CM-ISSUES-SUMMARY-SYNC` + `CM-COVENANT-114-12-PROPAGATION` enforce
+mechanically.
+
+**Sort order (User mandate refinement 2026-05-12):** severity DESC
+(C → M → L), then intra-group criticality DESC inside each group.
+Most critical row = #1, least critical = #N. Documented at the top
+of the generated file.
+
+**Auto-sync wrapper:** `scripts/testing/sync_issues_docs.sh` — runs
+generator + `export_progress_docs.sh` in one shot. MUST be invoked
+after any edit to Issues.md or Issues_Summary.md. HTML+PDF exports
+are NEVER manually invoked; they ALWAYS travel with the markdown.
+
+**Canonical authority:** parent
+[`docs/guides/ATMOSPHERE_CONSTITUTION.md`](docs/guides/ATMOSPHERE_CONSTITUTION.md)
+§11.4.12.
+
+Non-compliance is a release blocker regardless of context.
