@@ -175,7 +175,7 @@ func TestPaddleOCR_ParseResultInvalid(t *testing.T) {
 func TestPaddleOCRService(t *testing.T) {
 	// bluff-scan: no-assert-ok (service smoke — public method must not panic on standard call)
 	// Skip in CI environment
-	t.Skip("Requires PaddleOCR installation")
+	t.Skip("Requires PaddleOCR installation") // SKIP-OK: #env-paddleocr-missing
 }
 
 func TestPaddleOCRService_IsRunning(t *testing.T) {

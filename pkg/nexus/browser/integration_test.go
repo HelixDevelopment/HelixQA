@@ -59,7 +59,7 @@ func TestChromedp_RealContainer_EndToEnd(t *testing.T) {
 		Started:          true,
 	})
 	if err != nil {
-		t.Skipf("testcontainers: %v (docker/podman socket required)", err)
+		t.Skipf("testcontainers: %v (docker/podman socket required)", err) // SKIP-OK: #env-testcontainers-missing
 	}
 	defer c.Terminate(context.Background())
 

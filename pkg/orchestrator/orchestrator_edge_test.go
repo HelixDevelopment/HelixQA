@@ -46,7 +46,9 @@ func TestRun_EmptyBankFile(t *testing.T) {
 
 	result, err := o.Run(context.Background())
 	require.NoError(t, err)
-	assert.True(t, result.Success)
+	// CONST-035 anti-bluff: 0 challenges executed → Success=false.
+	assert.False(t, result.Success,
+		"empty bank file produces 0 challenges → Success=false")
 	assert.Equal(t, 0, result.Report.TotalChallenges)
 }
 

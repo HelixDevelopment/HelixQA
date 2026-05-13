@@ -222,7 +222,7 @@ func TestVisionLLM_GetStats(t *testing.T) {
 func TestOllamaService(t *testing.T) {
 	// bluff-scan: no-assert-ok (service smoke — public method must not panic on standard call)
 	// Skip in CI environment
-	t.Skip("Requires Ollama installation")
+	t.Skip("Requires Ollama installation") // SKIP-OK: #env-ollama-missing
 }
 
 func TestCheckGPUAvailable(t *testing.T) {
@@ -234,7 +234,7 @@ func TestCheckGPUAvailable(t *testing.T) {
 
 func TestGetAvailableModels(t *testing.T) {
 	if !CheckOllamaAvailable("") {
-		t.Skip("Ollama not available")
+		t.Skip("Ollama not available") // SKIP-OK: #env-ollama-missing
 	}
 
 	models, err := GetAvailableModels("")

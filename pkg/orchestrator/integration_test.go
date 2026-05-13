@@ -91,7 +91,12 @@ func TestIntegration_FullPipeline_SinglePlatform(t *testing.T) {
 	result, err := orch.Run(ctx)
 	require.NoError(t, err)
 	assert.NotNil(t, result)
-	assert.True(t, result.Success)
+	// 0-challenge runs are NOT Success per CONST-035 anti-bluff. This
+	// test exercises orchestrator plumbing (report path, duration) with
+	// an empty bank; the bookkeeping fields still populate but Success
+	// stays false.
+	assert.False(t, result.Success,
+		"empty-bank plumbing test executes 0 challenges → Success=false")
 	assert.NotEmpty(t, result.ReportPath)
 	assert.Greater(t, result.Duration, time.Duration(0))
 
@@ -124,7 +129,12 @@ func TestIntegration_FullPipeline_AllPlatforms(t *testing.T) {
 
 	result, err := orch.Run(ctx)
 	require.NoError(t, err)
-	assert.True(t, result.Success)
+	// 0-challenge runs are NOT Success per CONST-035 anti-bluff
+	// (orchestrator.go). This test verifies the orchestrator wires up
+	// all three platforms and reports back; the empty bank means no
+	// challenges execute, so Success stays false.
+	assert.False(t, result.Success,
+		"3-platform empty-bank run executes 0 challenges → Success=false")
 	assert.NotNil(t, result.Report)
 
 	// Should have results for all 3 platforms.
@@ -255,6 +265,13 @@ func TestIntegration_FullPipeline_Cancellation(t *testing.T) {
 	assert.Error(t, err)
 }
 
+// TestIntegration_FullPipeline_EmptyBank verifies CONST-035 anti-bluff:
+// a run that executes 0 challenges is NOT a success, regardless of how
+// many "no error" signals the validator produces. The previous version
+// of this test asserted `Success == true` with the comment "No tests
+// = no failures" — that comment was the bluff in plain English, and
+// the assertion let the absence-of-crash PASS-bluff ship undetected.
+// See orchestrator.go: Success now requires TotalChallenges > 0.
 func TestIntegration_FullPipeline_EmptyBank(t *testing.T) {
 	b := bank.New()
 
@@ -274,8 +291,10 @@ func TestIntegration_FullPipeline_EmptyBank(t *testing.T) {
 
 	result, err := orch.Run(ctx)
 	require.NoError(t, err)
-	assert.True(t, result.Success) // No tests = no failures.
-	assert.Equal(t, 0, result.Report.TotalChallenges)
+	assert.False(t, result.Success,
+		"a run with 0 executed challenges MUST report Success=false (CONST-035 anti-bluff)")
+	assert.Equal(t, 0, result.Report.TotalChallenges,
+		"empty bank produces 0 challenges")
 }
 
 func TestIntegration_ReporterFromResults(t *testing.T) {

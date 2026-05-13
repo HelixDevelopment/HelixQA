@@ -79,7 +79,9 @@ func TestNewSAMLProvider_Validation(t *testing.T) {
 
 func TestSAMLProvider_VerifyHappyPath(t *testing.T) {
 	p, _ := NewSAMLProvider("helixqa-sp", samlVerifier(SAMLAttributes{
-		NameID: ,
+		NameID:   "a@x",
+		Email:    "a@x",
+		Groups:   []string{"admin"},
 		NotAfter: time.Now().Add(time.Hour),
 	}, nil))
 	u, err := p.Verify(context.Background(), "assertion")

@@ -332,14 +332,14 @@ func TestCheckGStreamer(t *testing.T) {
 	// bluff-scan: no-assert-ok (environment-probe smoke — must not panic; result depends on host)
 	err := CheckGStreamer()
 	if err != nil {
-		t.Skip("GStreamer not installed:", err)
+		t.Skip("GStreamer not installed:", err) // SKIP-OK: #env-gstreamer-missing
 	}
 }
 
 func TestGetGStreamerVersion(t *testing.T) {
 	version, err := GetGStreamerVersion()
 	if err != nil {
-		t.Skip("GStreamer not installed:", err)
+		t.Skip("GStreamer not installed:", err) // SKIP-OK: #env-gstreamer-missing
 	}
 
 	assert.NotEmpty(t, version)
@@ -366,7 +366,7 @@ func TestCheckElement(t *testing.T) {
 func TestFrameExtractor_StartStop(t *testing.T) {
 	// Skip if GStreamer not available
 	if err := CheckGStreamer(); err != nil {
-		t.Skip("GStreamer not installed")
+		t.Skip("GStreamer not installed") // SKIP-OK: #env-gstreamer-missing
 	}
 
 	config := DefaultExtractorConfig("test")

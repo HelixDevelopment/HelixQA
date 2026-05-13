@@ -305,7 +305,7 @@ func TestPerformance_SSIM_Under5msPer480pFrame(t *testing.T) {
 		t.Skip("perf test — skip in short mode")  // SKIP-OK: #short-mode
 	}
 	if underRace {
-		t.Skip("perf test — -race instrumentation invalidates timing (5-30× overhead)")
+		t.Skip("perf test — -race instrumentation invalidates timing (5-30× overhead)") // SKIP-OK: #env-race-perf-invalid
 	}
 	s := NewSSIM()
 	a := gradientRGBA(854, 480)

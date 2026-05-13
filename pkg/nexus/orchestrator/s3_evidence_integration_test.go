@@ -56,7 +56,7 @@ func minioContainer(t *testing.T, ctx context.Context) (string, string, string, 
 		Started:          true,
 	})
 	if err != nil {
-		t.Skipf("testcontainers: %v (docker/podman socket required)", err)
+		t.Skipf("testcontainers: %v (docker/podman socket required)", err) // SKIP-OK: #env-testcontainers-missing
 	}
 	host, err := c.Host(ctx)
 	if err != nil {
