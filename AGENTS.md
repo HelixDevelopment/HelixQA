@@ -1531,6 +1531,18 @@ The auto-generated `docs/Issues_Summary.md` includes the Status column. All thre
 
 Non-compliance is a release blocker regardless of context.
 
+**§11.4.16 — Item-type tracking mandate (User mandate, 2026-05-14)**
+
+Every active item in `docs/Issues.md` carries a `**Type:**` line with one of three values: `Bug` (product defect / regression / user-visible broken behaviour), `Feature` (new capability not previously offered to end users), `Task` (internal workstream — refactor, doc, infra, gate, audit; the lowest-stakes default when ambiguous). The vocabulary is CLOSED — no other value is permitted.
+
+The auto-generated `docs/Issues_Summary.md` includes the Type column. All three file types (`.md`, `.html`, `.pdf`) MUST be in sync at all times — enforced by `CM-DOCS-EXPORT-SYNC` (§11.4.12 + §11.4.15 + §11.4.16 amendment).
+
+**Canonical authority:** parent
+[`docs/guides/ATMOSPHERE_CONSTITUTION.md`](docs/guides/ATMOSPHERE_CONSTITUTION.md)
+§11.4.16. Pre-build gates `CM-ITEM-TYPE-TRACKING` + `CM-COVENANT-114-16-PROPAGATION`.
+
+Non-compliance is a release blocker regardless of context.
+
 **§11.4.13 — Out-of-band sink-side captured-evidence mandate (User mandate, 2026-05-13)**
 
 Whenever an HDMI sink with a network-accessible introspection API is
