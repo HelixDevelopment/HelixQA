@@ -1,3 +1,32 @@
+## INHERITED FROM Helix Constitution
+
+> Base agent rules live in the Helix Constitution submodule at the
+> parent project's `constitution/AGENTS.md` and the universal
+> `constitution/Constitution.md` it references. **READ THOSE FIRST.**
+> The base file is authoritative for any topic not covered here.
+> Module-specific rules below extend them; they never weaken them.
+
+Critical universal rules every CLI agent (Claude Code, Cursor, Aider,
+Codex, Gemini CLI) MUST honour while working in this module:
+
+- **No bluffing.** Every PASS carries positive evidence. Constitution §11.4.
+- **Mutation-paired gates.** Every new gate has a paired mutation
+  proving it catches regressions. Constitution §1.1.
+- **No guessing language** (`likely`, `probably`, `maybe`, `seems`).
+  Constitution §11.4.6.
+- **Credentials never tracked.** `.env` patterns git-ignored; runtime-load
+  only. Constitution §11.4.10.
+- **Never force-push.** Force-push requires explicit per-session
+  authorization AND a green §9.1.5 post-op gate. Constitution §9.
+- **CONTINUATION.md kept in sync** in every non-trivial commit.
+  Constitution §12.10.
+- **60% RAM cap.** Heavy work wrapped in bounded execution scope.
+  Constitution §12.6.
+
+Canonical reference: <https://github.com/HelixDevelopment/HelixConstitution>
+
+---
+
 # AGENTS.md — HelixCode Authoritative Agent Guide
 
 ## HelixCode Agent Guidelines
