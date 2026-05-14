@@ -1070,3 +1070,27 @@ submodules + HelixQA dependencies.
 §11.4.6.
 
 Non-compliance is a release blocker regardless of context.
+<!-- BEGIN submodule-decoupling-and-reusability (parent-mirror) -->
+
+## Submodule Decoupling & Reusability — MANDATORY
+
+This repository is **shared infrastructure** consumed by multiple
+independent consumer projects. Its specialized responsibility makes
+it reusable — and that reusability is destroyed the moment any
+consumer's specifics leak in.
+
+**Hard rules when editing anything in this repository:**
+
+- DO NOT hardcode any specific consumer project's name, platform
+  list, paths, version strings, or release-naming conventions.
+- DO NOT import / reference any consumer-project namespace.
+- DO NOT embed consumer-project-specific governance, branding, or
+  rule numbering in `CONSTITUTION.md` / `CLAUDE.md` / `AGENTS.md`.
+- DO assume N ≥ 2 unrelated consumer projects exist, even if you
+  only know of one today.
+
+Cross-project rules MUST be phrased generically ("every consuming
+project's full platform matrix"), never with a specific consumer's
+matrix hardcoded.
+
+<!-- END submodule-decoupling-and-reusability (parent-mirror) -->
