@@ -522,3 +522,49 @@ Constitution amendments require:
 ---
 
 *This Constitution is the supreme law of the HelixCode project. No code, test, or process may contradict it.*
+<!-- BEGIN cross-platform-impact (mirrors Yole CONST-037) -->
+
+### Cross-Platform Impact — Mandatory Consideration (mirrors Yole CONST-037)
+
+**Status:** Mandatory. Non-negotiable. Mirrors CONST-037 in the parent
+Yole project's `CONSTITUTION.md`.
+
+**Rule:** This submodule is consumed by the Yole multi-platform project
+(Android / Desktop / iOS / Web). Every change MUST be reasoned about
+across all four target platforms BEFORE coding. A fix that works on one
+target but silently breaks another is a regression.
+
+**Pre-edit checklist:** Before any code change, answer:
+
+1. Does this compile on every Yole target (Android, Desktop, iOS, Web)?
+2. Does it behave identically — or by-design differently — on each?
+3. Is the change covered by a test on every affected target?
+4. Are platform manifests (AndroidManifest.xml, Info.plist, web
+   manifest, container packaging) updated coherently?
+
+**Commit body requirement:** every change MUST include a
+"Cross-platform impact" block listing each Yole platform's disposition
+(changed / unchanged / N/A with reason).
+
+```
+Cross-platform impact:
+- Android: <disposition>
+- Desktop: <disposition>
+- iOS:     <disposition>
+- Web:     <disposition>
+```
+
+**Why:** End users experience the integrated Yole product, not this
+submodule in isolation. Cross-platform regressions caused by
+submodule-local changes have shipped to users in the past; mandatory
+up-front consideration is the only mitigation.
+
+**Enforcement:** the parent Yole repo runs
+`yole-challenges/scripts/cross_platform_parity_challenge.sh` in
+`make qa-all`. Submodule changes that cause that challenge to fail
+MUST be reverted or fixed.
+
+**See also:** CONST-037 in the parent Yole repo's `CONSTITUTION.md`
+for the full rule and forensic anchor.
+
+<!-- END cross-platform-impact (mirrors Yole CONST-037) -->

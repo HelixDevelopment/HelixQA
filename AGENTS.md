@@ -1352,3 +1352,38 @@ submodules + HelixQA dependencies.
 §11.4.6.
 
 Non-compliance is a release blocker regardless of context.
+<!-- BEGIN cross-platform-impact (mirrors Yole CONST-037) -->
+
+## Cross-Platform Impact — MANDATORY for ALL AI Agents (mirrors Yole CONST-037)
+
+**Applies to ALL CLI agents (Codex, Cursor, Gemini CLI, Copilot CLI,
+Claude Code, etc.) working on this submodule.**
+
+This submodule is consumed by the Yole multi-platform project
+(Android / Desktop / iOS / Web). Every change MUST be reasoned about
+across all four target platforms BEFORE coding. A regression on one
+target ships to end users on that target.
+
+**Pre-edit checklist:**
+
+- [ ] Does this compile on every Yole target?
+- [ ] Does it behave identically — or by-design differently — on each?
+- [ ] Is the change covered by a test on every affected target?
+- [ ] Are platform manifests updated coherently?
+
+**Commit body requirement:** any change affecting more than one Yole
+platform MUST include a "Cross-platform impact" block enumerating each
+platform's disposition.
+
+```
+Cross-platform impact:
+- Android: <disposition>
+- Desktop: <disposition>
+- iOS:     <disposition>
+- Web:     <disposition>
+```
+
+See CONST-037 in the parent Yole repo's `CONSTITUTION.md` for the full
+rule and forensic anchor.
+
+<!-- END cross-platform-impact (mirrors Yole CONST-037) -->
