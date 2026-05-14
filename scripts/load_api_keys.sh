@@ -11,10 +11,24 @@
 #   source $(git rev-parse --show-toplevel)/scripts/load_api_keys.sh  # from anywhere in repo
 
 helixcode_load_api_keys() {
+    # CONST-035 readiness fix: user api_keys.sh files commonly reference
+    # variables that aren't defined in the same file (e.g.
+    # `export VERTEX_API_KEY=${ApiKey_Google_Vertex_AI}` where
+    # ApiKey_Google_Vertex_AI is set elsewhere). Under a caller's
+    # `set -u`, that reference errors out and the loader silently aborts
+    # the whole calling script. Disable -u for the user-file sourcing
+    # so unbound expansions become empty strings (consistent with the
+    # behaviour of running the file directly in an interactive shell
+    # without -u). Restore the caller's -u state after.
+    local _u_was_set=0
+    case $- in *u*) _u_was_set=1 ;; esac
+    set +u
+
     # Prefer ~/api_keys.sh (always honoured if present)
     if [ -f "$HOME/api_keys.sh" ]; then
         # shellcheck source=/dev/null
         . "$HOME/api_keys.sh"
+        [ "$_u_was_set" = "1" ] && set -u
         return 0
     fi
 
@@ -28,6 +42,7 @@ helixcode_load_api_keys() {
             # shellcheck source=/dev/null
             . "$dir/.env"
             set +a
+            [ "$_u_was_set" = "1" ] && set -u
             return 0
         fi
         if [ -f "$dir/.env" ]; then
@@ -36,12 +51,14 @@ helixcode_load_api_keys() {
             # shellcheck source=/dev/null
             . "$dir/.env"
             set +a
+            [ "$_u_was_set" = "1" ] && set -u
             return 0
         fi
         dir="$(dirname "$dir")"
     done
 
     # Neither found - silent (don't fail; caller may not need keys)
+    [ "$_u_was_set" = "1" ] && set -u
     return 1
 }
 
