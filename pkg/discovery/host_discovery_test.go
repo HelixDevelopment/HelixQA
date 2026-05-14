@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"runtime"
+	"strings"
 	"testing"
 	"time"
 
@@ -464,21 +465,35 @@ func TestHostDiscovery_MarshalJSON(t *testing.T) {
 }
 
 func TestAutoDiscover(t *testing.T) {
+	// Anti-bluff (CONST-035 / §11.9): the original form silently returned
+	// on error after only `t.Logf`'ing it, and on success asserted only
+	// NotNil + t.Logf'd the host count — passing whether AutoDiscover
+	// returned 0 hosts, 1000 hosts, or any error. Either of those outcomes
+	// could indicate a real defect (e.g. AutoDiscover always returning
+	// nil-hd + nil-err, or always returning empty host list). Pin the
+	// documented contract: AutoDiscover either errors with a discovery-
+	// related message OR returns a non-nil result that includes at least
+	// the local host (which the implementation always probes).
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	// This may or may not find hosts depending on network
 	hd, err := AutoDiscover(ctx)
 
-	// Should not error, might just find localhost
 	if err != nil {
-		t.Logf("AutoDiscover returned error (may be expected): %v", err)
+		msg := strings.ToLower(err.Error())
+		assert.True(t,
+			strings.Contains(msg, "discover") ||
+				strings.Contains(msg, "network") ||
+				strings.Contains(msg, "host") ||
+				strings.Contains(msg, "scan"),
+			"AutoDiscover error must surface a discovery/network/host/scan-related message; got %q", err.Error())
 		return
 	}
 
-	assert.NotNil(t, hd)
-	// May find 0 or more hosts depending on network
-	t.Logf("Found %d hosts", len(hd.GetHosts()))
+	require.NotNil(t, hd, "successful AutoDiscover must return a non-nil HostDiscovery")
+	hosts := hd.GetHosts()
+	assert.GreaterOrEqual(t, len(hosts), 1,
+		"AutoDiscover on a healthy host MUST return at least one entry (the local host itself)")
 }
 
 func TestHostDiscovery_getLocalHostInfo(t *testing.T) {
