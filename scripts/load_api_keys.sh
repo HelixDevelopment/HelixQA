@@ -1,7 +1,10 @@
 #!/usr/bin/env bash
 # scripts/load_api_keys.sh
-# HelixCode API-key loader: prefers $HOME/api_keys.sh (with `export VAR=value`),
-# falls back to local .env (VAR=value).
+# Generic API-key loader (project-agnostic per CONST-051(B)): prefers
+# $HOME/api_keys.sh (with `export VAR=value`), falls back to local .env
+# (VAR=value). Originated in HelixCode but reusable by any consumer —
+# function names use `helixcode_*` as a namespace prefix; forkers may
+# alias / rename without changing behaviour.
 #
 # Source this file from any subdirectory; it walks up to find the meta-repo root
 # (presence of .gitmodules) for .env fallback location.
@@ -67,9 +70,9 @@ helixcode_load_api_keys() {
 # <PROVIDER>_API_KEY canonical names that the Go provider constructors
 # actually read via os.Getenv. Without this translation, a user with a
 # populated $HOME/api_keys.sh would have keys exported as ApiKey_Groq,
-# ApiKey_OpenAI, etc., but the HelixCode providers would not find them
-# — a CONST-035 readiness bluff (canonical loader sources keys, but the
-# product features can't see them).
+# ApiKey_OpenAI, etc., but downstream LLM-provider constructors would
+# not find them — a CONST-035 readiness bluff (canonical loader sources
+# keys, but the product features can't see them).
 #
 # Round-41 readiness fix: only sets a canonical name if it's currently
 # empty AND the ApiKey_<Provider> name has a non-empty value. Existing
