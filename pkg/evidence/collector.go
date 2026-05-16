@@ -419,6 +419,42 @@ func (c *Collector) Reset() {
 	c.items = nil
 }
 
+// CaptureGeneric records a pre-built Item in the collector. Intended for
+// callers (typically server-side consumers like lava-api-go) that produce
+// evidence outside the Collector's built-in capture methods — for example
+// a text dump written via os.WriteFile, an HTTP trace serialized to disk,
+// or a metric snapshot. The caller is responsible for ensuring the file
+// referenced by item.Path exists; CaptureGeneric stamps item.Timestamp
+// (if zero) and item.Size from the on-disk file (best-effort) before
+// appending to the collector's item slice.
+//
+// CaptureGeneric is the public counterpart of the package-private addItem
+// helper used by CaptureScreenshot / CaptureLogcat / etc. It does NOT
+// invoke any command runner and does NOT write any file — pure record
+// keeping. Concurrent calls are safe.
+//
+// Use CaptureGeneric when the built-in capture methods do not fit the
+// platform (e.g. a Go service emitting structured logs as evidence rather
+// than ADB-driven screenshots). For the built-in Android / Web / Desktop
+// flows, prefer CaptureScreenshot / CaptureLogcat / etc.
+func (c *Collector) CaptureGeneric(item Item) Item {
+	if item.Timestamp.IsZero() {
+		item.Timestamp = time.Now()
+	}
+	if item.Platform == "" {
+		item.Platform = c.platform
+	}
+	if item.Size == 0 && item.Path != "" {
+		if info, err := os.Stat(item.Path); err == nil {
+			item.Size = info.Size()
+		}
+	}
+	c.mu.Lock()
+	c.items = append(c.items, item)
+	c.mu.Unlock()
+	return item
+}
+
 // captureAndroidScreenshot uses ADB screencap.
 func (c *Collector) captureAndroidScreenshot(
 	ctx context.Context,
