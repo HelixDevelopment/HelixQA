@@ -22,7 +22,7 @@ func TestAudit_P1_T9_EverySubmoduleDocumented(t *testing.T) {
 	licencesDoc := filepath.Join(repoRoot, "docs", "licences-inventory.md")
 
 	if _, err := os.Stat(openSourceDir); os.IsNotExist(err) {
-		t.Skipf("tools/opensource/ not present in this checkout")
+		t.Skipf("tools/opensource/ not present in this checkout SKIP-OK: #opensource-vendor-tree-optional")
 	}
 
 	result, err := Audit(openSourceDir, referencesDoc, licencesDoc)
@@ -99,7 +99,7 @@ func TestLocateLicenceFile_OpenClawing2Set(t *testing.T) {
 	repoRoot := findRepoRoot(t)
 	openSourceDir := filepath.Join(repoRoot, "tools", "opensource")
 	if _, err := os.Stat(openSourceDir); os.IsNotExist(err) {
-		t.Skipf("tools/opensource/ not present")
+		t.Skipf("tools/opensource/ not present SKIP-OK: #opensource-vendor-tree-optional")
 	}
 	openClawingSet := []string{
 		"browser-use",
@@ -112,12 +112,12 @@ func TestLocateLicenceFile_OpenClawing2Set(t *testing.T) {
 	for _, name := range openClawingSet {
 		path := filepath.Join(openSourceDir, name)
 		if _, err := os.Stat(path); os.IsNotExist(err) {
-			t.Skipf("OpenClawing2 reference submodule %s is not vendored — skipping", name)
+			t.Skipf("OpenClawing2 reference submodule %s is not vendored SKIP-OK: #openclawing-vendor-optional", name)
 			continue
 		}
 		entries, _ := os.ReadDir(path)
 		if len(entries) == 0 {
-			t.Skipf("OpenClawing2 reference submodule %s is empty — skipping", name)
+			t.Skipf("OpenClawing2 reference submodule %s is empty SKIP-OK: #openclawing-vendor-optional", name)
 			continue
 		}
 		if LocateLicenceFile(path) == "" {
@@ -135,7 +135,7 @@ func TestLocateLicenceFile_PreExistingInfo(t *testing.T) {
 	repoRoot := findRepoRoot(t)
 	openSourceDir := filepath.Join(repoRoot, "tools", "opensource")
 	if _, err := os.Stat(openSourceDir); os.IsNotExist(err) {
-		t.Skipf("tools/opensource/ not present")
+		t.Skipf("tools/opensource/ not present SKIP-OK: #opensource-vendor-tree-optional")
 	}
 	err := WalkGitDirs(openSourceDir, func(name, path string) error {
 		if LocateLicenceFile(path) == "" {
