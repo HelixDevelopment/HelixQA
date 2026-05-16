@@ -1,4 +1,9 @@
 # AGENTS.md — HelixCode Authoritative Agent Guide
+> **Base agent rules:** `HelixConstitution/AGENTS.md` — READ IT FIRST.
+> All rules in `HelixConstitution/AGENTS.md` apply unconditionally.
+> Rules below extend them and MUST NOT weaken any inherited clause.
+
+
 
 ## HelixCode Agent Guidelines
 
@@ -1377,3 +1382,26 @@ project's full platform matrix"), never with a specific consumer's
 matrix hardcoded.
 
 <!-- END submodule-decoupling-and-reusability (parent-mirror) -->
+
+<!-- BEGIN helix-constitution-inheritance + anti-bluff escalation -->
+
+## Anti-Bluff End-User Quality Guarantee (Escalated via HelixConstitution)
+
+**Canonical authority:** `HelixConstitution/Constitution.md` §7.1 + §11.4.
+
+**Forensic anchor — verbatim operator mandate (2026-04-28):**
+
+> "We had been in position that all tests do execute with success and all
+> Challenges as well, but in reality the most of the features does not work
+> and can't be used! This MUST NOT be the case and execution of tests and
+> Challenges MUST guarantee the quality, the completition and full usability
+> by end users of the product! This MUST BE part of Constitution of our
+> project, its CLAUDE.MD and AGENTS.MD if it is not there already, and to be
+> applied to all Submodules's Constitution, CLAUDE.MD and AGENTS.MD as well
+> (if not there already)!"
+
+Every PASS MUST carry positive runtime evidence. Consuming-project-specific
+requirements are defined by each consuming project's Constitution.
+This submodule's rules remain project-agnostic.
+
+<!-- END helix-constitution-inheritance + anti-bluff escalation -->
