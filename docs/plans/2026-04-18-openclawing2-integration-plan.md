@@ -56,7 +56,7 @@ Each phase is a single PR. Each PR carries (a) code, (b) tests in all 10 categor
 
 ### Phase 1 — OSS submodule vendoring + sandbox (est. 2 days)
 
-Purpose: bring every reference codebase into `HelixQA/tools/opensource/` so the team can inspect the source without leaving the monorepo. No behaviour change yet.
+Purpose: bring every reference codebase into `helix_qa/tools/opensource/` so the team can inspect the source without leaving the monorepo. No behaviour change yet.
 
 Tasks:
 - **P1.T1** — Add `browser-use` as submodule at `tools/opensource/browser-use` (SSH URL). Tracks `main`.

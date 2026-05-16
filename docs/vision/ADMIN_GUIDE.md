@@ -63,7 +63,7 @@ After=network.target
 [Service]
 WorkingDirectory=/home/milosvasic/HelixQA
 EnvironmentFile=%h/.local/share/helixqa/.env
-ExecStart=/home/milosvasic/HelixQA/bin/helixqa server
+ExecStart=/home/milosvasic/helix_qa/bin/helixqa server
 Restart=on-failure
 RestartSec=5
 

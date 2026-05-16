@@ -88,7 +88,7 @@ type TestCase struct {
 	//   requires_env: [HELIXQA_LAB_HAS_SOUNDBAR]   // for audio-delay tests
 	//   requires_env: [HELIXQA_LAB_FULL_HARDWARE]  // generic catch-all
 	//
-	// Operators set the var(s) in their .env (or HelixQA/.env) when
+	// Operators set the var(s) in their .env (or helix_qa/.env) when
 	// the corresponding hardware is available. Lab installs without
 	// the hardware see honest SKIP-OK results — anti-bluff compliant.
 	RequiresEnv []string `yaml:"requires_env,omitempty" json:"requires_env,omitempty"`

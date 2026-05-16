@@ -49,7 +49,7 @@ func (p *PlaywrightExecutor) findBridge() string {
 	}
 	// Check common locations.
 	candidates := []string{
-		"HelixQA/scripts/playwright-bridge.js",
+		"helix_qa/scripts/playwright-bridge.js",
 		"scripts/playwright-bridge.js",
 	}
 	// Try relative to executable.

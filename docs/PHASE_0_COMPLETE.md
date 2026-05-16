@@ -212,7 +212,7 @@ With Phase 0 complete, the following is now ready:
 ## 📁 Complete File Inventory
 
 ```
-HelixQA/
+helix_qa/
 ├── pkg/
 │   ├── discovery/
 │   │   ├── host_discovery.go          ✅ Tested

@@ -19,15 +19,15 @@ test_cases:
     platforms: [cross-platform]
     steps:
       - name: "userflow-runner --platform api --platform-groups config/userflow-platform-groups.json"
-        action: "Challenges/cmd/userflow-runner"
+        action: "challenges/cmd/userflow-runner"
         expected: "CLI loads groups from JSON, logs 'platform_groups_loaded=6'"
       - name: "userflow-runner --platform api (no --platform-groups)"
-        action: "Challenges/cmd/userflow-runner"
+        action: "challenges/cmd/userflow-runner"
         expected: "CLI exits with actionable error — hardcoded Catalogizer default no longer exists"
     expected_result: "CLI is project-agnostic; callers must declare their topology explicitly"
     fix_reference:
       id: decoupling-challenges
-      file: "Challenges/cmd/userflow-runner/main.go"
+      file: "challenges/cmd/userflow-runner/main.go"
       rationale: "Removed hardcoded catalog-api/catalog-web service lists; loaded from JSON per --platform-groups"
 
   - id: FIX-XFLOW-002
@@ -57,9 +57,9 @@ test_cases:
     platforms: [cross-platform]
     steps:
       - name: "distributed-test (no --go-api-dir / --js-projects / --android-projects)"
-        action: "Containers/cmd/distributed-test"
+        action: "containers/cmd/distributed-test"
         expected: "Go tier skipped with 'no --go-api-dir supplied'; JS+Android tiers return nil"
     expected_result: "CLI doesn't blow up on a minimal invocation — project decides what to run"
     fix_reference:
       id: decoupling-containers
-      file: "Containers/cmd/distributed-test/main.go"
+      file: "containers/cmd/distributed-test/main.go"

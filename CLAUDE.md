@@ -40,7 +40,7 @@ This `CLAUDE.md` sits alongside several other agent/governance manuals at the re
 - `CONSTITUTION.md` — source of truth for all mandates (CONST-033, CONST-035, CONST-036–040, Article XI §11.9). When this file conflicts with the Constitution, the Constitution wins.
 - `AGENTS.md` — generic agent manual (40 KB; mirror anti-bluff rules here).
 - `CRUSH.md`, `QWEN.md` — sibling agent manuals for other CLI tools. Cascade rule changes to all of them.
-- `HelixCode/CLAUDE.md`, `HelixQA/CLAUDE.md`, `Challenges/CLAUDE.md` — submodule-scoped manuals; this root file inherits from them and they inherit from this one.
+- `helix_code/CLAUDE.md`, `helix_qa/CLAUDE.md`, `challenges/CLAUDE.md` — submodule-scoped manuals; this root file inherits from them and they inherit from this one.
 
 ---
 
@@ -101,7 +101,7 @@ The meta-repo's `docs/CONTINUATION.md` MUST be kept in sync with actual programm
 ## 3. HelixCode-Specific Architecture
 
 ### 3.1 Technology Stack
-- **Language**: Go — root meta-repo on `go 1.25.2`, inner Go application (`HelixCode/`) on `go 1.26`. Keep both modules current; do not downgrade.
+- **Language**: Go — root meta-repo on `go 1.25.2`, inner Go application (`helix_code/`) on `go 1.26`. Keep both modules current; do not downgrade.
 - **Module IDs**: root `dev.helix.code` (thin), inner `dev.helix.code` (full app + transitive deps).
 - **HTTP / API**: Gin v1.11.0, gorilla/websocket v1.5.3, gRPC v1.80.0.
 - **Persistence**: PostgreSQL 15+ via pgx/v5 + lib/pq; Redis 7+ via go-redis/v9.
@@ -113,10 +113,10 @@ The meta-repo's `docs/CONTINUATION.md` MUST be kept in sync with actual programm
 
 ### 3.2 Repository Layout — Meta-Repo + Submodules
 
-**This repo is a governance/meta-repo, not the Go application.** The actual Go binary lives in the `HelixCode/` subdirectory (a submodule). When an agent says "edit `internal/auth`," they almost always mean `HelixCode/internal/auth`, not the root `internal/`.
+**This repo is a governance/meta-repo, not the Go application.** The actual Go binary lives in the `helix_code/` subdirectory (a submodule). When an agent says "edit `internal/auth`," they almost always mean `helix_code/internal/auth`, not the root `internal/`.
 
 ```
-HelixCode/                                # ← repo root (governance + submodules)
+helix_code/                                # ← repo root (governance + submodules)
 ├── CLAUDE.md / AGENTS.md / CONSTITUTION.md / CRUSH.md / QWEN.md   # agent manuals
 ├── Makefile                              # governance gates only (see §3.4)
 ├── go.mod                                # thin root module (dev.helix.code, go 1.25.2)
@@ -132,22 +132,22 @@ HelixCode/                                # ← repo root (governance + submodul
 ├── docs/                                 # ARCHITECTURE.md, COMPLETE_*.md guides,
 │                                         #   bluff-proofing/, llms_verifier/, helix_qa/
 │
-├── HelixCode/      ← TRACKED SUBDIRECTORY (NOT a submodule — meta-repo's primary inner directory; circular reference if promoted; see §3.2.1)
-├── HelixQA/        ← SUBMODULE: QA / challenge-orchestration platform
-├── Challenges/     ← SUBMODULE: cross-cutting Challenge bank (Panoptic, banks/)
-├── Containers/     ← SUBMODULE: Docker/container artefacts
+├── helix_code/      ← TRACKED SUBDIRECTORY (NOT a submodule — meta-repo's primary inner directory; circular reference if promoted; see §3.2.1)
+├── helix_qa/        ← SUBMODULE: QA / challenge-orchestration platform
+├── challenges/     ← SUBMODULE: cross-cutting Challenge bank (Panoptic, banks/)
+├── containers/     ← SUBMODULE: Docker/container artefacts
 ├── Dependencies/   ← SUBMODULES: LLama_CPP, Ollama, HuggingFace_Hub, …
-├── Security/       ← SUBMODULE: security tooling
+├── security/       ← SUBMODULE: security tooling
 ├── Assets/         ← SUBMODULE: logos, themes, brand
-├── Github-Pages-Website/ ← SUBMODULE: marketing site
+├── github_pages_website/ ← SUBMODULE: marketing site
 ├── cli_agents/          ← reference CLI agents (aider, cline, plandex, openhands, …) — formerly Example_Projects/
 └── cli_agents_resources/ ← reference resources (Awesome-AI-Agents, Cheshire-Cat-Ai, …) — formerly Example_Resources/
 ```
 
-#### 3.2.1 Inner Go application — `HelixCode/` submodule
+#### 3.2.1 Inner Go application — `helix_code/` submodule
 
 ```
-HelixCode/HelixCode/                      # module dev.helix.code, go 1.26
+helix_code/helix_code/                      # module dev.helix.code, go 1.26
 ├── Makefile                              # real build/test targets (see §3.4)
 ├── cmd/
 │   ├── server/                           # HTTP server entry → bin/helixcode
@@ -181,14 +181,14 @@ HelixCode/HelixCode/                      # module dev.helix.code, go 1.26
 └── docker-compose.full-test.yml + .env.full-test    # zero-skip integration stack
 ```
 
-**Cardinal rule:** if a path in instructions doesn't start with `HelixCode/`, `HelixQA/`, etc., assume it is relative to the inner Go module and prefix with `HelixCode/`.
+**Cardinal rule:** if a path in instructions doesn't start with `helix_code/`, `helix_qa/`, etc., assume it is relative to the inner Go module and prefix with `helix_code/`.
 
 ### 3.3 Historical Bluffs — Resolved, Guard Against Regression
 
-The three patterns below were live bluffs in earlier revisions of `HelixCode/cmd/cli/main.go`. They have been fixed (verify with `grep -rn "simulate\|For now\|TODO implement\|placeholder" HelixCode/cmd/cli/main.go` — must return empty). Treat these as canonical anti-pattern examples; if a future change reintroduces any of them, the change is broken regardless of whether tests pass.
+The three patterns below were live bluffs in earlier revisions of `helix_code/cmd/cli/main.go`. They have been fixed (verify with `grep -rn "simulate\|For now\|TODO implement\|placeholder" helix_code/cmd/cli/main.go` — must return empty). Treat these as canonical anti-pattern examples; if a future change reintroduces any of them, the change is broken regardless of whether tests pass.
 
 #### BLUFF-001: LLM Generation is Simulated
-**Location**: `HelixCode/cmd/cli/main.go` → function `handleGenerate`
+**Location**: `helix_code/cmd/cli/main.go` → function `handleGenerate`
 **Status**: RESOLVED — now calls `provider.Generate` / `GenerateStream` directly. Do not regress.
 **Code Pattern**:
 ```go
@@ -211,7 +211,7 @@ fmt.Println(resp.Text)
 
 ### 3.4 Build & Test Commands
 
-Two Makefiles. The **root** Makefile only runs governance gates; the **inner** `HelixCode/Makefile` does real builds and tests. Always know which directory you are in.
+Two Makefiles. The **root** Makefile only runs governance gates; the **inner** `helix_code/Makefile` does real builds and tests. Always know which directory you are in.
 
 **Root governance gates** (run from repo root):
 ```bash
@@ -226,7 +226,7 @@ make ci-validate-all         # all governance gates in warn-mode
 ./helix start | stop | logs | shell          # Docker facade for the platform
 ```
 
-**Inner application** (run from `HelixCode/`):
+**Inner application** (run from `helix_code/`):
 ```bash
 make build                   # → bin/helixcode (server)
 make verify-compile          # quick compile-only sanity check
@@ -268,7 +268,7 @@ go test -v -race -coverprofile=cover.out ./internal/llm                  # one p
 
 **E2E challenges** (real, end-to-end, runtime evidence required):
 ```bash
-cd HelixCode/tests/e2e/challenges && go run cmd/runner/main.go -all
+cd helix_code/tests/e2e/challenges && go run cmd/runner/main.go -all
 # Or root-level cross-cutting Challenges:
 cd Challenges && make <target>
 ```
@@ -276,7 +276,7 @@ cd Challenges && make <target>
 **Anti-bluff smoke check** (must always pass):
 ```bash
 grep -rn "simulated\|for now\|TODO implement\|placeholder" \
-  HelixCode/internal HelixCode/cmd && echo "BLUFF FOUND" || echo "clean"
+  helix_code/internal helix_code/cmd && echo "BLUFF FOUND" || echo "clean"
 ```
 
 **Platform / mobile builds** (inner module):
@@ -287,7 +287,7 @@ make aurora-os && make harmony-os
 ```
 
 #### BLUFF-002: Model Listing is Hardcoded
-**Location**: `HelixCode/cmd/cli/main.go` → function `handleListModels`
+**Location**: `helix_code/cmd/cli/main.go` → function `handleListModels`
 **Status**: RESOLVED — must continue to query `c.providerManager.GetProviders()` per CONST-036/037 (LLMsVerifier is the single source of truth).
 **Correct Pattern**:
 ```go
@@ -309,7 +309,7 @@ func (c *CLI) handleListModels(ctx context.Context) error {
 ```
 
 #### BLUFF-003: Command Execution is Simulated
-**Location**: `HelixCode/cmd/cli/main.go` → function `handleCommand`
+**Location**: `helix_code/cmd/cli/main.go` → function `handleCommand`
 **Status**: RESOLVED — must continue to use `os/exec` via `exec.CommandContext` and surface real exit codes. Never replace with print-and-sleep.
 **Correct Pattern**:
 ```go
@@ -611,7 +611,7 @@ cd HelixCode && go test -count=1 ./...
 
 # 3. Anti-bluff scan
 grep -rn "simulated\|for now\|TODO implement\|placeholder" \
-  HelixCode/internal HelixCode/cmd && echo "BLUFF FOUND" || echo "clean"
+  helix_code/internal helix_code/cmd && echo "BLUFF FOUND" || echo "clean"
 
 # 4. Real LLM end-to-end (requires `make test-infra-up` first)
 curl -sS -X POST http://localhost:8080/api/v1/llm/generate \

@@ -242,7 +242,7 @@ This document presents a comprehensive, production-ready computer vision archite
 ## 4. Directory Structure
 
 ```
-HelixQA/pkg/vision/
+helix_qa/pkg/vision/
 ├── core/                          # Core vision interfaces
 │   ├── interfaces.go
 │   ├── frame.go
@@ -310,7 +310,7 @@ HelixQA/pkg/vision/
     ├── colors.go
     └── math.go
 
-HelixQA/pkg/bridges/
+helix_qa/pkg/bridges/
 ├── midscene/                      # Midscene.js bridge
 │   ├── bridge.go
 │   ├── client.go
@@ -325,7 +325,7 @@ HelixQA/pkg/bridges/
     ├── adapter.go
     └── optics_test.go
 
-HelixQA/pkg/maestro/
+helix_qa/pkg/maestro/
 ├── enhanced_runner.go             # Enhanced Maestro runner
 ├── vision_steps.go                # Vision-based steps
 └── maestro_test.go

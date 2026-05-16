@@ -59,7 +59,7 @@ data/memory.db.bak
 data/memory.db-shm
 data/memory.db-wal
 .env.androidtv
-HelixQA/
+helix_qa/
 docs/issues/HELIX-*.md
 
 # Runtime SQLite databases

@@ -550,7 +550,7 @@ func (ste *StructuredTestExecutor) performAction(
 
 	case testbank.ActionTypePlaywright:
 		// Web browser action via the Playwright CLI adapter
-		// (Challenges/pkg/userflow.PlaywrightCLIAdapter). Lazy-
+		// (challenges/pkg/userflow.PlaywrightCLIAdapter). Lazy-
 		// builds the per-session executor on first use. When no
 		// CDP URL is configured (PipelineConfig.PlaywrightCDPURL
 		// nor HELIXQA_PLAYWRIGHT_CDP_URL env), the step SKIPs
@@ -894,7 +894,7 @@ func (ste *StructuredTestExecutor) ensureAppForeground(
 	// extras to the launch intent.
 	//
 	// HelixQA's "Fully Autonomous LLM-Driven QA" constitution
-	// (HelixQA/CLAUDE.md) forbids scripted navigation flows /
+	// (helix_qa/CLAUDE.md) forbids scripted navigation flows /
 	// hardcoded keystroke sequences that bypass the LLM. The
 	// consuming-project side (Catalogizer's "Universal Solution
 	// Principle" in CLAUDE.md) forbids QA-only receivers /

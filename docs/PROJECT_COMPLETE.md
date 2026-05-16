@@ -280,7 +280,7 @@ stateManager.PublishFrameState(ctx, state)
 ## 📁 Project Structure
 
 ```
-HelixQA/
+helix_qa/
 ├── pkg/
 │   ├── capture/          # Video capture (Android/Desktop)
 │   ├── discovery/        # Host discovery

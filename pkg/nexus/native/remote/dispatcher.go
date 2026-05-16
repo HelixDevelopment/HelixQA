@@ -3,7 +3,7 @@
 
 // Package remote is the HelixQA-side adapter that maps
 // contracts.Capability requests to a local or remote Worker via
-// Containers/pkg/scheduler + /pkg/distribution. It deliberately
+// containers/pkg/scheduler + /pkg/distribution. It deliberately
 // stays thin: host discovery, GPU probing, and scoring all live in
 // Containers.
 package remote

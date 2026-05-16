@@ -203,7 +203,7 @@ type FrameProcessingState struct {
 ## 📝 Files Created Today
 
 ```
-HelixQA/
+helix_qa/
 ├── pkg/
 │   ├── discovery/
 │   │   ├── host_discovery.go       # Host scanning & capability detection

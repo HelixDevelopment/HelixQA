@@ -15,7 +15,7 @@
 **Assignee:** Primary engineer
 
 ```go
-// Create: HelixQA/pkg/discovery/host_discovery.go
+// Create: helix_qa/pkg/discovery/host_discovery.go
 
 package discovery
 
@@ -144,7 +144,7 @@ func TestHostDiscovery_ScanNetwork(t *testing.T) {
 
 ```bash
 #!/bin/bash
-# Create: HelixQA/scripts/setup-video-host.sh
+# Create: helix_qa/scripts/setup-video-host.sh
 
 set -e
 
@@ -297,7 +297,7 @@ main "$@"
 **ETA:** 3 hours
 
 ```dockerfile
-# Create: HelixQA/docker/base-opencv-gstreamer/Dockerfile
+# Create: helix_qa/docker/base-opencv-gstreamer/Dockerfile
 
 FROM docker.io/library/ubuntu:22.04
 
@@ -394,7 +394,7 @@ CMD ["/bin/bash"]
 
 **Build Command:**
 ```bash
-cd HelixQA/docker/base-opencv-gstreamer
+cd helix_qa/docker/base-opencv-gstreamer
 podman build --network host -t helixqa/base-opencv-gstreamer:latest .
 ```
 

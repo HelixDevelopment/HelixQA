@@ -10,7 +10,7 @@ set -uo pipefail
 QA_BIN="${HELIXQA_BIN:-}"
 if [[ -z "$QA_BIN" ]]; then
     SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-    for cand in "$SCRIPT_DIR/../../bin/helixqa" "HelixQA/bin/helixqa" "$SCRIPT_DIR/../../../bin/helixqa"; do
+    for cand in "$SCRIPT_DIR/../../bin/helixqa" "helix_qa/bin/helixqa" "$SCRIPT_DIR/../../../bin/helixqa"; do
         if [[ -x "$cand" ]]; then QA_BIN="$cand"; break; fi
     done
 fi

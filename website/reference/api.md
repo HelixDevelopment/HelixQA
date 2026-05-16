@@ -351,12 +351,12 @@ helixqa list --banks banks/ --tag smoke --json
 
 ## Session Management
 
-Session data is stored in the SQLite memory database at `HelixQA/data/memory.db`. There is no REST endpoint for session management -- access is via the CLI and filesystem.
+Session data is stored in the SQLite memory database at `helix_qa/data/memory.db`. There is no REST endpoint for session management -- access is via the CLI and filesystem.
 
 ### Session Data Location
 
 ```
-HelixQA/data/memory.db          # SQLite memory database
+helix_qa/data/memory.db          # SQLite memory database
 qa-results/session-<timestamp>/ # Session output directory
 docs/issues/                    # Generated issue tickets
 ```
@@ -378,7 +378,7 @@ docs/issues/                    # Generated issue tickets
 For debugging or analysis, query the memory database directly with SQLite:
 
 ```bash
-sqlite3 HelixQA/data/memory.db
+sqlite3 helix_qa/data/memory.db
 
 -- List all sessions
 SELECT id, start_time, pass_number, platforms

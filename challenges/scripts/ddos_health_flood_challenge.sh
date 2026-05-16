@@ -37,7 +37,7 @@ echo "[1/5] Pre-flood probe — HelixQA must be reachable..."
 pre_code=$(curl -sS --max-time "$TIMEOUT_SEC" -o /dev/null -w "%{http_code}" "$HEALTH_URL" 2>/dev/null) || pre_code="000"
 if [[ "$pre_code" != "200" ]]; then
     echo "  SKIP: HelixQA not reachable (HTTP $pre_code) — SKIP-OK: #env-helixqa-not-running"
-    echo "  (start HelixQA via docker-compose -f HelixQA/docker-compose.stack.yml up to exercise)"
+    echo "  (start HelixQA via docker-compose -f helix_qa/docker-compose.stack.yml up to exercise)"
     echo
     echo "=== HelixQA DDoS Challenge: PASSED (SKIP-OK) ==="
     exit 0

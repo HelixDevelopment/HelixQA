@@ -254,7 +254,7 @@ capture.CaptureScreenshot("/path/to/screenshot.png")
 ## 📁 File Inventory
 
 ```
-HelixQA/pkg/capture/
+helix_qa/pkg/capture/
 ├── android_capture.go           ✅ 11.6 KB
 ├── android_capture_test.go      ✅ 7.8 KB
 ├── desktop_capture.go           ✅ 6.1 KB

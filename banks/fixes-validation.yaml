@@ -835,7 +835,7 @@ test_cases:
     platforms: [all]
     steps:
       - name: "Banner present"
-        action: "grep -n 'custom_browser.py' HelixQA/docs/openclawing/OpenClawing2.md"
+        action: "grep -n 'custom_browser.py' helix_qa/docs/openclawing/OpenClawing2.md"
         expected: "Match within the retraction banner, labelled as not-existing"
     tags: [regression, retraction, openclawing2, docs]
     estimated_duration: "1s"
@@ -843,7 +843,7 @@ test_cases:
     fix_reference:
       bug_id: "FIX-OC2-001"
       description: "OpenClawing2.md §4.3.2 cited browser_use/browser/custom_browser.py which does not exist in browser-use/browser-use"
-      fix_file: "HelixQA/docs/openclawing/OpenClawing2.md"
+      fix_file: "helix_qa/docs/openclawing/OpenClawing2.md"
       fix_commit: "pending"
 
   - id: FIX-OC2-002
@@ -853,7 +853,7 @@ test_cases:
     platforms: [all]
     steps:
       - name: "Banner present"
-        action: "grep -n 'skyvern/agent/prompts.py' HelixQA/docs/openclawing/OpenClawing2.md"
+        action: "grep -n 'skyvern/agent/prompts.py' helix_qa/docs/openclawing/OpenClawing2.md"
         expected: "Match within the retraction banner, labelled as not-existing"
     tags: [regression, retraction, openclawing2, docs]
     estimated_duration: "1s"
@@ -861,7 +861,7 @@ test_cases:
     fix_reference:
       bug_id: "FIX-OC2-002"
       description: "OpenClawing2.md §5.1.2 cited skyvern/agent/prompts.py; Skyvern has no agent/ directory"
-      fix_file: "HelixQA/docs/openclawing/OpenClawing2.md"
+      fix_file: "helix_qa/docs/openclawing/OpenClawing2.md"
       fix_commit: "pending"
 
   - id: FIX-OC2-003
@@ -871,7 +871,7 @@ test_cases:
     platforms: [all]
     steps:
       - name: "Banner present"
-        action: "grep -n 'PlanEvaluate' HelixQA/docs/openclawing/OpenClawing2.md"
+        action: "grep -n 'PlanEvaluate' helix_qa/docs/openclawing/OpenClawing2.md"
         expected: "Match within the retraction banner as 'not a real class'"
     tags: [regression, retraction, openclawing2, docs]
     estimated_duration: "1s"
@@ -879,7 +879,7 @@ test_cases:
     fix_reference:
       bug_id: "FIX-OC2-003"
       description: "OpenClawing2.md §10.1.1 and §8.1.2 referenced PlanEvaluate class that does not exist in browser-use"
-      fix_file: "HelixQA/docs/openclawing/OpenClawing2.md"
+      fix_file: "helix_qa/docs/openclawing/OpenClawing2.md"
       fix_commit: "pending"
 
   - id: FIX-OC3-001
@@ -889,10 +889,10 @@ test_cases:
     platforms: [all]
     steps:
       - name: "Banner present"
-        action: "grep -nE 'src/.*fabricated|Every file path.*src/' HelixQA/docs/openclawing/OpenClawing3.md"
+        action: "grep -nE 'src/.*fabricated|Every file path.*src/' helix_qa/docs/openclawing/OpenClawing3.md"
         expected: "Match within the retraction banner declaring src/... fabricated"
       - name: "pkg/ map present in OpenClawing4 §7"
-        action: "grep -c '^| `pkg/' HelixQA/docs/openclawing/OpenClawing4.md"
+        action: "grep -c '^| `pkg/' helix_qa/docs/openclawing/OpenClawing4.md"
         expected: "Count >= 5"
     tags: [regression, retraction, openclawing3, docs, architecture]
     estimated_duration: "1s"
@@ -900,7 +900,7 @@ test_cases:
     fix_reference:
       bug_id: "FIX-OC3-001"
       description: "OpenClawing3 invented an src/... C++/TS tree that does not exist in HelixQA's Go pkg/... layout"
-      fix_file: "HelixQA/docs/openclawing/OpenClawing3.md"
+      fix_file: "helix_qa/docs/openclawing/OpenClawing3.md"
       fix_commit: "pending"
 
   - id: FIX-OC3-002
@@ -910,13 +910,13 @@ test_cases:
     platforms: [all]
     steps:
       - name: "Retraction banner present"
-        action: "grep -nE 'sudo.*violates.*CLAUDE|NO SUDO OR ROOT' HelixQA/docs/openclawing/OpenClawing3.md"
+        action: "grep -nE 'sudo.*violates.*CLAUDE|NO SUDO OR ROOT' helix_qa/docs/openclawing/OpenClawing3.md"
         expected: "Match within the retraction banner"
       - name: "Hook script present and executable"
-        action: "test -x HelixQA/scripts/hooks/no-sudo.sh"
+        action: "test -x helix_qa/scripts/hooks/no-sudo.sh"
         expected: "Script is executable"
       - name: "Pre-commit config wires the hook"
-        action: "grep -n 'no-sudo' HelixQA/.pre-commit-config.yaml"
+        action: "grep -n 'no-sudo' helix_qa/.pre-commit-config.yaml"
         expected: "Hook wired via local repo entry"
     tags: [security, retraction, openclawing3, constitution, hook]
     estimated_duration: "2s"
@@ -924,7 +924,7 @@ test_cases:
     fix_reference:
       bug_id: "FIX-OC3-002"
       description: "OpenClawing3 §14 used sudo dpkg/apt-get/usermod/make — violates HelixQA CLAUDE.md NO SUDO OR ROOT EXECUTION rule"
-      fix_file: "HelixQA/scripts/hooks/no-sudo.sh"
+      fix_file: "helix_qa/scripts/hooks/no-sudo.sh"
       fix_commit: "pending"
 
   - id: FIX-OC3-003
@@ -934,7 +934,7 @@ test_cases:
     platforms: [all]
     steps:
       - name: "Retraction banner flags enqueueV3 bindings_ misuse"
-        action: "grep -n 'enqueueV3' HelixQA/docs/openclawing/OpenClawing3.md"
+        action: "grep -n 'enqueueV3' helix_qa/docs/openclawing/OpenClawing3.md"
         expected: "Match within the retraction banner"
     tags: [regression, retraction, openclawing3, gpu, tensorrt]
     estimated_duration: "1s"
@@ -942,7 +942,7 @@ test_cases:
     fix_reference:
       bug_id: "FIX-OC3-003"
       description: "OpenClawing3 copy-pasted TensorRT v2 bindings_ array into v3-style enqueueV3 call"
-      fix_file: "HelixQA/docs/openclawing/OpenClawing3.md"
+      fix_file: "helix_qa/docs/openclawing/OpenClawing3.md"
       fix_commit: "pending"
 
   - id: FIX-OC3-004
@@ -952,10 +952,10 @@ test_cases:
     platforms: [all]
     steps:
       - name: "Verify OpenClawing4 declares llama.cpp RPC primary"
-        action: "grep -nE 'llama\\.cpp RPC is the primary' HelixQA/docs/openclawing/OpenClawing4.md"
+        action: "grep -nE 'llama\\.cpp RPC is the primary' helix_qa/docs/openclawing/OpenClawing4.md"
         expected: "At least one match in §1.2 design invariants"
       - name: "Verify HelixQA CLAUDE.md preserves the rule"
-        action: "grep -n 'llama.cpp RPC distributed inference is the primary' HelixQA/CLAUDE.md"
+        action: "grep -n 'llama.cpp RPC distributed inference is the primary' helix_qa/CLAUDE.md"
         expected: "Rule intact"
     tags: [regression, retraction, openclawing3, llm, constitution]
     estimated_duration: "1s"
@@ -963,7 +963,7 @@ test_cases:
     fix_reference:
       bug_id: "FIX-OC3-004"
       description: "OpenClawing3 proposed TensorRT as primary local inference, contradicting HelixQA CLAUDE.md llama.cpp RPC mandate"
-      fix_file: "HelixQA/docs/openclawing/OpenClawing4.md"
+      fix_file: "helix_qa/docs/openclawing/OpenClawing4.md"
       fix_commit: "pending"
 
   - id: FIX-OC3-005
@@ -973,7 +973,7 @@ test_cases:
     platforms: [all]
     steps:
       - name: "Retraction banner present"
-        action: "grep -nE 'Zero-copy DXGI|zero-copy.*DXGI' HelixQA/docs/openclawing/OpenClawing3.md"
+        action: "grep -nE 'Zero-copy DXGI|zero-copy.*DXGI' helix_qa/docs/openclawing/OpenClawing3.md"
         expected: "Match within the retraction banner"
     tags: [regression, retraction, openclawing3, gpu, dxgi]
     estimated_duration: "1s"
@@ -981,7 +981,7 @@ test_cases:
     fix_reference:
       bug_id: "FIX-OC3-005"
       description: "OpenClawing3 §6.1 L1036-1037 claimed DXGI GetSharedHandle provides zero-copy; actually GPU-GPU copy"
-      fix_file: "HelixQA/docs/openclawing/OpenClawing3.md"
+      fix_file: "helix_qa/docs/openclawing/OpenClawing3.md"
       fix_commit: "pending"
 
   - id: FIX-OC3-006
@@ -991,7 +991,7 @@ test_cases:
     platforms: [all]
     steps:
       - name: "Retraction banner present"
-        action: "grep -nE 'Benchmarks.*optimistic|3.7.*optimistic|RTX 3060' HelixQA/docs/openclawing/OpenClawing3.md | head"
+        action: "grep -nE 'Benchmarks.*optimistic|3.7.*optimistic|RTX 3060' helix_qa/docs/openclawing/OpenClawing3.md | head"
         expected: "Match within the retraction banner declaring benchmarks 3–7× optimistic"
     tags: [regression, retraction, openclawing3, benchmarks]
     estimated_duration: "1s"
@@ -999,7 +999,7 @@ test_cases:
     fix_reference:
       bug_id: "FIX-OC3-006"
       description: "OpenClawing3 '<2 ms template match on 1080p' and '<16 ms full pipeline' on RTX 3060 are 3–7× off"
-      fix_file: "HelixQA/docs/openclawing/OpenClawing3.md"
+      fix_file: "helix_qa/docs/openclawing/OpenClawing3.md"
       fix_commit: "pending"
 
   - id: FIX-OC3-007
@@ -1009,10 +1009,10 @@ test_cases:
     platforms: [all]
     steps:
       - name: "Retraction banner present"
-        action: "grep -nE '16-week.*47|47-tech|plan replaced' HelixQA/docs/openclawing/OpenClawing3.md | head"
+        action: "grep -nE '16-week.*47|47-tech|plan replaced' helix_qa/docs/openclawing/OpenClawing3.md | head"
         expected: "Match within the retraction banner"
       - name: "OpenClawing4 phase plan present"
-        action: "grep -nE '^## 8\\. Phased delivery plan|^### 1\\.3 Phase roadmap' HelixQA/docs/openclawing/OpenClawing4.md"
+        action: "grep -nE '^## 8\\. Phased delivery plan|^### 1\\.3 Phase roadmap' helix_qa/docs/openclawing/OpenClawing4.md"
         expected: "Phase plan section present in OpenClawing4"
     tags: [regression, retraction, openclawing3, plan]
     estimated_duration: "1s"
@@ -1020,7 +1020,7 @@ test_cases:
     fix_reference:
       bug_id: "FIX-OC3-007"
       description: "OpenClawing3 §12 scheduled 47 technologies across 16 weeks — 5-10x too optimistic"
-      fix_file: "HelixQA/docs/openclawing/OpenClawing4.md"
+      fix_file: "helix_qa/docs/openclawing/OpenClawing4.md"
       fix_commit: "pending"
 
   - id: FIX-OC3-008
@@ -1030,7 +1030,7 @@ test_cases:
     platforms: [all]
     steps:
       - name: "Retraction banner mentions namespace in .c file"
-        action: "grep -nE 'namespace.*\\.c file|\\.c file.*namespace' HelixQA/docs/openclawing/OpenClawing3.md | head"
+        action: "grep -nE 'namespace.*\\.c file|\\.c file.*namespace' helix_qa/docs/openclawing/OpenClawing3.md | head"
         expected: "Match within the retraction banner"
     tags: [regression, retraction, openclawing3, compile]
     estimated_duration: "1s"
@@ -1038,7 +1038,7 @@ test_cases:
     fix_reference:
       bug_id: "FIX-OC3-008"
       description: "OpenClawing3 §6.2 L1091-1248 put `namespace openclaw{}` inside a .c file — C has no namespaces"
-      fix_file: "HelixQA/docs/openclawing/OpenClawing3.md"
+      fix_file: "helix_qa/docs/openclawing/OpenClawing3.md"
       fix_commit: "pending"
 
   - id: FIX-OC3-009
@@ -1048,7 +1048,7 @@ test_cases:
     platforms: [all]
     steps:
       - name: "Retraction banner mentions kCUDA_GRAPH"
-        action: "grep -n 'kCUDA_GRAPH' HelixQA/docs/openclawing/OpenClawing3.md"
+        action: "grep -n 'kCUDA_GRAPH' helix_qa/docs/openclawing/OpenClawing3.md"
         expected: "Match within the retraction banner"
     tags: [regression, retraction, openclawing3, gpu]
     estimated_duration: "1s"
@@ -1056,7 +1056,7 @@ test_cases:
     fix_reference:
       bug_id: "FIX-OC3-009"
       description: "OpenClawing3 L727 referenced BuilderFlag::kCUDA_GRAPH which is not a valid TensorRT flag"
-      fix_file: "HelixQA/docs/openclawing/OpenClawing3.md"
+      fix_file: "helix_qa/docs/openclawing/OpenClawing3.md"
       fix_commit: "pending"
 
   - id: FIX-OC3-010
@@ -1066,7 +1066,7 @@ test_cases:
     platforms: [all]
     steps:
       - name: "Retraction banner mentions the TS type error"
-        action: "grep -nE '\\{key:.?.Down.?.?\\}\\.repeat|TS type error|type error' HelixQA/docs/openclawing/OpenClawing3.md | head"
+        action: "grep -nE '\\{key:.?.Down.?.?\\}\\.repeat|TS type error|type error' helix_qa/docs/openclawing/OpenClawing3.md | head"
         expected: "Match within the retraction banner"
     tags: [regression, retraction, openclawing3, typescript]
     estimated_duration: "1s"
@@ -1074,7 +1074,7 @@ test_cases:
     fix_reference:
       bug_id: "FIX-OC3-010"
       description: "OpenClawing3 L2561 contained `{key:'Down'}.repeat(n)` which is a TS type error"
-      fix_file: "HelixQA/docs/openclawing/OpenClawing3.md"
+      fix_file: "helix_qa/docs/openclawing/OpenClawing3.md"
       fix_commit: "pending"
 
   - id: FIX-OC3-011
@@ -1084,7 +1084,7 @@ test_cases:
     platforms: [all]
     steps:
       - name: "Retraction banner mentions scrcpy wire format"
-        action: "grep -nE 'scrcpy.*wire format|action_button|buttons.*uint32' HelixQA/docs/openclawing/OpenClawing3.md | head"
+        action: "grep -nE 'scrcpy.*wire format|action_button|buttons.*uint32' helix_qa/docs/openclawing/OpenClawing3.md | head"
         expected: "Match within the retraction banner"
     tags: [regression, retraction, openclawing3, scrcpy]
     estimated_duration: "1s"
@@ -1092,7 +1092,7 @@ test_cases:
     fix_reference:
       bug_id: "FIX-OC3-011"
       description: "OpenClawing3 §6.5 used scrcpy v1.x control packet layout missing action_button/buttons uint32 fields"
-      fix_file: "HelixQA/docs/openclawing/OpenClawing3.md"
+      fix_file: "helix_qa/docs/openclawing/OpenClawing3.md"
       fix_commit: "pending"
 
   - id: FIX-OC4-001
@@ -1113,7 +1113,7 @@ test_cases:
     fix_reference:
       bug_id: "FIX-OC4-001"
       description: "First implementation of resizeGray used box-average over all source pixels, producing ~58 ms per 1080p frame — 11× over the <5 ms Phase-2 tier-1 budget. Replaced with nearest-neighbor sampling at region centers + fast-paths for image.RGBA / image.NRGBA / image.Gray / image.YCbCr (direct Pix-byte access, no interface dispatch, no 16-bit channel expansion). Final per-frame cost on commodity CPU: ~1 µs (DHash64) / ~3 µs (DHash256)."
-      fix_file: "HelixQA/pkg/vision/hash/dhash.go"
+      fix_file: "helix_qa/pkg/vision/hash/dhash.go"
       fix_commit: "pending"
 
   - id: FIX-OC4-002
@@ -1134,7 +1134,7 @@ test_cases:
     fix_reference:
       bug_id: "FIX-OC4-002"
       description: "Initial BOCPD implementation returned next[0] (the r=0 posterior mass) as the change probability. Under constant-hazard BOCPD this is algebraically identical to the hazard rate regardless of observation — useless as a change signal. Fixed by returning P(r_t ≤ ChangeThreshold | x_{1:t}), the posterior mass that has collapsed to short run lengths. This is the quantity that actually spikes when the stream shifts; see Gundersen 2019 and Turner's reference implementation."
-      fix_file: "HelixQA/pkg/autonomous/bocpd.go"
+      fix_file: "helix_qa/pkg/autonomous/bocpd.go"
       fix_commit: "pending"
 
   - id: FIX-OC4-003
@@ -1155,7 +1155,7 @@ test_cases:
     fix_reference:
       bug_id: "FIX-OC4-003"
       description: "Guards the pixelmatch addition against accidental regressions in the existing pkg/regression (visual.go) LLM-comparison code. The two paths share the package but are semantically distinct — pixel-diff vs VLM-compare — and must coexist cleanly."
-      fix_file: "HelixQA/pkg/regression/pixelmatch.go"
+      fix_file: "helix_qa/pkg/regression/pixelmatch.go"
       fix_commit: "pending"
 
   - id: FIX-OC4-004
@@ -1179,7 +1179,7 @@ test_cases:
     fix_reference:
       bug_id: "FIX-OC4-004"
       description: "Establishes the LinuxBus narrow-interface contract between LinuxSnapshotter and whatever backend it runs on. Production uses linuxBusGodbus (session bus → org.a11y.Bus.GetAddress → a11y bus → AT-SPI2 methods); tests inject a fake that returns scripted trees. The boundary is essential because a real a11y bus requires a GNOME/KDE session that CI does not have, and writing a full D-Bus mock would double the code for no gain."
-      fix_file: "HelixQA/pkg/nexus/observe/axtree/linux.go"
+      fix_file: "helix_qa/pkg/nexus/observe/axtree/linux.go"
       fix_commit: "pending"
 
   - id: FIX-OC4-005
@@ -1200,7 +1200,7 @@ test_cases:
     fix_reference:
       bug_id: "FIX-OC4-005"
       description: "The UIAutomator dump format uses '[x1,y1][x2,y2]' for bounds and literal 'true'/'false' strings for boolean attributes. parseAndroidBounds uses a compiled regexp with explicit bracket structure so device-vendor variants that emit extra whitespace, different separators, or rotated coord orders either work (via the existing regex) or deterministically fall back to the zero rect. boolAttr is deliberately strict — a vendor emitting 'TRUE' would be a bug to flag, not silently accept."
-      fix_file: "HelixQA/pkg/nexus/observe/axtree/android.go"
+      fix_file: "helix_qa/pkg/nexus/observe/axtree/android.go"
       fix_commit: "pending"
 
   - id: FIX-OC4-006
@@ -1221,7 +1221,7 @@ test_cases:
     fix_reference:
       bug_id: "FIX-OC4-006"
       description: "Initial SSIM impl landed at 6.5 ms / 480p frame — over the Phase-2 tier-2 budget (5 ms). Fixed in three steps: (1) uint64 accumulators in the block-stats inner loop to avoid float64 conversion per pixel; (2) rec709Luma fast-path rewrite for image.RGBA/NRGBA/Gray using direct Pix-slice indexing with pre-computed base offsets; (3) warm-up iterations + best-of-20 measurement in the perf test to eliminate first-run allocator/cache noise. Also adds build-tag-based underRace constant so the perf test skips under -race instrumentation, which inflates timing 5-30× and makes the budget assertion meaningless."
-      fix_file: "HelixQA/pkg/vision/perceptual/ssim.go"
+      fix_file: "helix_qa/pkg/vision/perceptual/ssim.go"
       fix_commit: "pending"
 
   - id: FIX-OC4-007
@@ -1242,7 +1242,7 @@ test_cases:
     fix_reference:
       bug_id: "FIX-OC4-007"
       description: "Guards the DreamSim client's compliance with Triton KServe v2 /infer — the wire format that the deployed DreamSim ONNX runtime expects. The client uses BYTES datatype with Shape=[1] and base64-PNG data, the canonical envelope for image-in-bytes inputs. The similarity output is mapped from DreamSim's native [0, 1] to the canonical Comparator [-1, 1] range (1.0 → 1.0, 0.5 → 0.0, 0.0 → -1.0); this mapping must stay linear or the tier-3 tiebreaker score loses comparability with SSIM and dHash distances."
-      fix_file: "HelixQA/pkg/vision/perceptual/dreamsim.go"
+      fix_file: "helix_qa/pkg/vision/perceptual/dreamsim.go"
       fix_commit: "pending"
 
   - id: FIX-OC4-008
@@ -1266,7 +1266,7 @@ test_cases:
     fix_reference:
       bug_id: "FIX-OC4-008"
       description: "Guards the core PELT dynamic-programming invariants: (1) the pruning step (drop candidates whose F[s] + cost(s,tau) already exceeds F[tau]) must never remove a candidate that could still be optimal, else the algorithm loses its O(n²)-beats-O(n³) advantage AND can return a non-optimal segmentation; (2) the traceback must produce strictly-increasing change-point indices within (0, n); (3) higher penalties must monotonically reduce the number of change points (BIC-like behaviour required for interpretability). All three properties have explicit tests that would fail on any regression."
-      fix_file: "HelixQA/pkg/analysis/pelt/pelt.go"
+      fix_file: "helix_qa/pkg/analysis/pelt/pelt.go"
       fix_commit: "pending"
 
   - id: FIX-OC4-009
@@ -1287,7 +1287,7 @@ test_cases:
     fix_reference:
       bug_id: "FIX-OC4-009"
       description: "Guards the UI-TARS client's compliance with llama-server's OpenAI /v1/chat/completions endpoint — the wire format that every VLM backend HelixQA targets (llama-server, vLLM, TGI) implements. The client sends image_url content parts with base64 PNG data URLs, the canonical envelope for OpenAI vision. ExtractAction's brace-count parser is deliberately tolerant of surrounding prose because real-world VLM outputs frequently emit 'Thought: ... Action: {json}' chain-of-thought prefixes, and upgrading to a strict JSON-only parser would silently break on every minor model update."
-      fix_file: "HelixQA/pkg/agent/uitars/uitars.go"
+      fix_file: "helix_qa/pkg/agent/uitars/uitars.go"
       fix_commit: "pending"
 
   - id: FIX-OC4-010
@@ -1314,7 +1314,7 @@ test_cases:
     fix_reference:
       bug_id: "FIX-OC4-010"
       description: "Two orthogonal invariants are guarded. (1) Wire: Python sidecars canonically accept multipart/form-data uploads with an 'image' field — drifting to JSON+base64 or a different field name would silently break the sidecar, and the request-shape test catches that at commit time. (2) Geometry: Go's image.Rectangle uses Min-inclusive/Max-exclusive semantics, and FindInteractiveContaining must return the smallest enclosing interactive element (not any enclosing one) — otherwise a huge toolbar or background group would swallow every click the VLM proposes. Both invariants have explicit tests that would fail on any regression."
-      fix_file: "HelixQA/pkg/agent/omniparser/omniparser.go"
+      fix_file: "helix_qa/pkg/agent/omniparser/omniparser.go"
       fix_commit: "pending"
 
   - id: FIX-OC4-011
@@ -1341,7 +1341,7 @@ test_cases:
     fix_reference:
       bug_id: "FIX-OC4-011"
       description: "Guards three grounding invariants. (1) Graceful degradation: the Grounder must pass UI-TARS actions through unchanged when the Detector (OmniParser sidecar) is nil — the sidecar is operator-action-gated (§10.3), and hard-failing when it is unavailable would brick the agent pipeline in every deployment without one. (2) Confidence floor: low-confidence OmniParser elements (< 0.5 default) are phantom detections on busy screens and MUST NOT capture VLM clicks, otherwise the agent targets noise. (3) MaxSnapDist cap: snap-to-nearest without a distance ceiling produces nonsensical long-range snaps across huge empty regions; the default 64px keeps snaps visually local. All three are guarded by explicit tests."
-      fix_file: "HelixQA/pkg/agent/ground/ground.go"
+      fix_file: "helix_qa/pkg/agent/ground/ground.go"
       fix_commit: "pending"
 
   - id: FIX-OC4-012
@@ -1368,7 +1368,7 @@ test_cases:
     fix_reference:
       bug_id: "FIX-OC4-012"
       description: "Guards four orthogonal Runner invariants. (1) The Done action is the VLM's 'goal reached' signal — dispatching it to the device executor (uinput / scrcpy control) would result in a no-op at best and undefined behaviour at worst; Runner records Done in History but stops before Execute. (2) MaxSteps / Stuck termination must return a successful (err=nil) Result so callers can branch on Done/Stuck/MaxSteps flags — hard-erroring would force every caller into error wrapping for normal outcomes. (3) sameCore(a, b) ignores Reason because VLMs emit different rationalizations for the same literal action on each call; stuck detection must see through prose drift to catch the actual repetition. (4) StepTimeout bounds each iteration; without it, a hanging Screenshotter can wedge the agent loop indefinitely under the parent context's much-longer deadline."
-      fix_file: "HelixQA/pkg/agent/graph/graph.go"
+      fix_file: "helix_qa/pkg/agent/graph/graph.go"
       fix_commit: "pending"
 
   - id: FIX-OC4-013
@@ -1395,7 +1395,7 @@ test_cases:
     fix_reference:
       bug_id: "FIX-OC4-013"
       description: "Guards four structured-generation invariants. (1) MaxTextLen MUST count runes, not bytes — HelixQA runs multilingual (Cyrillic, CJK, etc.) and byte-counting would falsely reject perfectly valid 3-character Cyrillic input under MaxTextLen=3. (2) ScreenBounds checks MUST only fire on Kinds with coordinates (Click, Swipe); Type/Key/Done/Wait have no coords and must not be rejected for being 'outside bounds'. (3) The retry instruction MUST preserve the original goal text AND append the specific validation error — just re-sending the original wastes a VLM call because the model has no signal that the previous attempt failed. (4) ErrRetriesExhausted MUST be a unique sentinel so callers can errors.Is-branch on 'retries exhausted' vs 'VLM unreachable' vs 'context canceled' — all three are different failure modes with different recovery strategies."
-      fix_file: "HelixQA/pkg/agent/sglang/sglang.go"
+      fix_file: "helix_qa/pkg/agent/sglang/sglang.go"
       fix_commit: "pending"
 
   - id: FIX-OC4-014
@@ -1425,7 +1425,7 @@ test_cases:
     fix_reference:
       bug_id: "FIX-OC4-014"
       description: "Guards three orthogonal invariants for the iOS axtree backend. (1) JSON tolerance: real `idb ui describe-all` output shape has changed across idb versions (single object vs array of windows vs nested wrapper). The parser must accept array-or-object top-level silently; a scalar JSON (rare but possible on error) must fail cleanly, not silently produce a zero Node. (2) Name/RawID fallbacks: iOS AX conventions favor AXLabel over title for name, and custom widgets may lack an accessibility identifier — the fallback to 'type:title' means action resolution always has SOME handle to target, avoiding silent loss of interactivity. (3) Cross-platform Node contract: the whole point of axtree is that Linux + Android + iOS (+ future macOS/Windows) emit the SAME Node shape. The compile-time + runtime Snapshotter-interface checks are the primary regression guard against any platform drifting toward a Platform-specific subtype."
-      fix_file: "HelixQA/pkg/nexus/observe/axtree/ios.go"
+      fix_file: "helix_qa/pkg/nexus/observe/axtree/ios.go"
       fix_commit: "pending"
 
   - id: FIX-OC4-015
@@ -1455,7 +1455,7 @@ test_cases:
     fix_reference:
       bug_id: "FIX-OC4-015"
       description: "Guards four macOS-axtree invariants. (1) Wire: the Swift sidecar speaks GET /snapshot returning JSON object-or-array (same shape as iOS) — if the sidecar devs drift to multipart or gRPC, the HTTPFetcher request-shape tests catch it. (2) Name precedence: macOS AX convention is AXTitle > AXDescription; reversing this would silently degrade grounding (VLMs use Name to disambiguate nested widgets). (3) AXRole fallback: unknown AX-prefixed roles strip 'AX' + lowercase (AXCustomWidget → customwidget) instead of silently mapping to the empty string or the raw role string — keeps the normalized ARIA vocabulary usable without hiding new widget types. (4) Cross-platform contract: the FOUR backends (Linux AT-SPI2, Android UIAutomator, iOS idb, Darwin Swift) must all emit the SAME Node type with Platform set correctly; the compile-time guards (var _ Snapshotter = (*…)(nil)) + runtime interface tests are the primary regression protection."
-      fix_file: "HelixQA/pkg/nexus/observe/axtree/darwin.go"
+      fix_file: "helix_qa/pkg/nexus/observe/axtree/darwin.go"
       fix_commit: "pending"
 
   - id: FIX-OC4-016
@@ -1482,7 +1482,7 @@ test_cases:
     fix_reference:
       bug_id: "FIX-OC4-016"
       description: "Guards two orthogonal color-science invariants. (1) CIEDE2000: the formula is notoriously prone to subtle sign/branching errors (Sharma 2005 itself was published to clarify ambiguities in the CIE 2002 spec). The 10-pair reference table is the gold-standard conformance test; any drift is a hard correctness bug with brand-compliance impact. (2) sRGB → LAB: the D65 illuminant + IEC 61966-2-1 gamma + CIE 2° observer combination is the standard web/video pipeline. Getting the matrix coefficients or gamma branch wrong would silently bias every color measurement in the system. Both invariants have tight tolerances (±0.01 on ΔE, ±0.2 on primary color LAB)."
-      fix_file: "HelixQA/pkg/regression/deltae.go"
+      fix_file: "helix_qa/pkg/regression/deltae.go"
       fix_commit: "pending"
 
   - id: FIX-OC4-017
@@ -1503,7 +1503,7 @@ test_cases:
     fix_reference:
       bug_id: "FIX-OC4-017"
       description: "Initial Reporter impl used plain string fields for the base64 data URLs. html/template's contextual autoescape sanitizes data: URLs by default (replacing them with #ZgotmplZ) because arbitrary data URLs CAN carry XSS payloads. Since our data URLs are produced by encodePNGDataURL under our control (always data:image/png;base64,<safe-base64>), switching the DataURL fields to template.URL bypasses the sanitization safely. The regression test asserts the unescaped prefix appears in output — any future refactor that drops the template.URL cast will fail this test immediately, before broken reports ship to QA sessions."
-      fix_file: "HelixQA/pkg/regression/report.go"
+      fix_file: "helix_qa/pkg/regression/report.go"
       fix_commit: "pending"
 
   - id: FIX-QA-2026-04-20-001
@@ -1524,7 +1524,7 @@ test_cases:
     fix_reference:
       bug_id: "FIX-QA-2026-04-20-001"
       description: "Two compounding bugs at the same site in tests/e2e/pipeline_test.go. (1) createTestFrames() output is a smooth RGB gradient — the contour-based ElementDetector correctly returns zero elements on featureless images, so the step was structurally guaranteed to fail. Fixed by routing the feature-rich createTestImageWithText helper (white canvas + blue button rect + text stripes) through the vision step — matches what the detector is designed to find. (2) The step used assert.NotEmpty (non-fatal in testify) and then unconditionally logged the success line — the exact false-positive anti-pattern that CLAUDE.md Article VII prohibits. Converted to require.NotEmpty so the success log is only reachable after every upstream assertion genuinely passed. Guards the invariant that 'test passed + success log printed' implies 'feature actually worked'."
-      fix_file: "HelixQA/tests/e2e/pipeline_test.go"
+      fix_file: "helix_qa/tests/e2e/pipeline_test.go"
       fix_commit: "pending"
 
   - id: FIX-QA-2026-04-20-002
@@ -1545,7 +1545,7 @@ test_cases:
     fix_reference:
       bug_id: "FIX-QA-2026-04-20-002"
       description: "Surfaced in iteration 2 of the Article VII Master Cycle immediately after FIX-QA-2026-04-20-001. TestPerformance exposed a second instance of the same anti-pattern: assert.Less followed by unconditional '✅ Performance test completed'. On iteration-1's full-suite run, TestPerformance recorded 198ms/frame (blown 100ms budget) but still printed success. Audit of the full file surfaced five more sites in the same E2ETestSuite — TestDistributedState, TestWebRTCSignaling, TestHostDiscovery, TestVisionOCRIntegration, TestGStreamerPipeline, TestConcurrentProcessing — each pairing assert.* with an unconditional '✅ … completed' log. All converted to require.*. TestPerformance's 100ms latency budget also tightened to 500ms to survive full-suite CPU contention from TestConcurrentProcessing + GStreamer tests (isolated run measures ~1-65µs/frame, full-suite 150-250ms/frame under load). 500ms still catches order-of-magnitude detector regressions. Fix also guards against a latent divide-by-zero in the FPS calculation when latencyMs rounds to 0."
-      fix_file: "HelixQA/tests/e2e/pipeline_test.go"
+      fix_file: "helix_qa/tests/e2e/pipeline_test.go"
       fix_commit: "pending"
 
   - id: FIX-QA-2026-04-21-001
@@ -1706,7 +1706,7 @@ test_cases:
     expected_result: "RunAll/RunByCategory stay long-running but traceable; single-challenge POSTs terminate on client disconnect"
     fix_reference:
       bug_id: "FIX-QA-2026-04-21-008"
-      description: "U-cycle partial closure of DEFER-QA-2026-04-21-001 items #3 and #5. Previously, RunAll / RunByCategory passed context.Background() to their services — long-running safely, but losing every request-scoped value (tracing, request_id, auth subject). Switched to context.WithoutCancel(c.Request.Context()) which is the Go 1.21+ primitive built exactly for this shape: inherit values, ignore cancel. Only item #4 of DEFER-001 remains open — threading ctx end-to-end through Challenges/pkg/runner so individual challenges co-operatively observe progress, which is a submodule refactor across 508 challenges."
+      description: "U-cycle partial closure of DEFER-QA-2026-04-21-001 items #3 and #5. Previously, RunAll / RunByCategory passed context.Background() to their services — long-running safely, but losing every request-scoped value (tracing, request_id, auth subject). Switched to context.WithoutCancel(c.Request.Context()) which is the Go 1.21+ primitive built exactly for this shape: inherit values, ignore cancel. Only item #4 of DEFER-001 remains open — threading ctx end-to-end through challenges/pkg/runner so individual challenges co-operatively observe progress, which is a submodule refactor across 508 challenges."
       fix_file: "catalog-api/handlers/challenge.go"
       fix_commit: "pending"
 

@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0
 #
 # no-sudo.sh — pre-commit hook enforcing the "NO SUDO OR ROOT EXECUTION" rule
-# from HelixQA/CLAUDE.md and Catalogizer/CLAUDE.md.
+# from helix_qa/CLAUDE.md and Catalogizer/CLAUDE.md.
 #
 # Rationale: sudo in committed content (code, scripts, docs without strike-through)
 # signals a design that requires runtime privilege escalation, which is forbidden
@@ -70,7 +70,7 @@ if (( ${#violations[@]} > 0 )); then
     printf '  - %s\n' "${violations[@]}" | sort -u >&2
     echo >&2
     echo "Allowed in design docs only as ~~sudo~~ (strike-through) or \"sudo\" (quoted reference)." >&2
-    echo "See HelixQA/CLAUDE.md § NO SUDO OR ROOT EXECUTION." >&2
+    echo "See helix_qa/CLAUDE.md § NO SUDO OR ROOT EXECUTION." >&2
     exit 1
 fi
 

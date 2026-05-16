@@ -105,7 +105,7 @@ helixqa report --input qa-results/session-* --format html
 
 ## Photographic Memory
 
-HelixQA maintains a SQLite database (`HelixQA/data/memory.db`) that persists across sessions:
+HelixQA maintains a SQLite database (`helix_qa/data/memory.db`) that persists across sessions:
 
 - **Sessions** — every QA run with timestamps, coverage, pass/fail counts
 - **Findings** — every issue discovered with lifecycle tracking

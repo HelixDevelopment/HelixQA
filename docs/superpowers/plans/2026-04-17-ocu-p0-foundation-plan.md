@@ -2,18 +2,18 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Land the foundation layer that every other OCU sub-project (P1–P7) depends on: contracts, shared budget constants, capability probing, remote dispatch adapter, and the upstream GPU extension to `Containers/`. Prove end-to-end with a trivial vertical slice that dispatches a command to `thinker.local` via `Containers/pkg/distribution`.
+**Goal:** Land the foundation layer that every other OCU sub-project (P1–P7) depends on: contracts, shared budget constants, capability probing, remote dispatch adapter, and the upstream GPU extension to `containers/`. Prove end-to-end with a trivial vertical slice that dispatches a command to `thinker.local` via `containers/pkg/distribution`.
 
-**Architecture:** Additive only. New packages under `HelixQA/pkg/nexus/native/{contracts,budget,probe,bridge,remote}`. `Containers/` gets GPU-aware fields on existing structs and one new `probe_gpu.go` file. No existing test fails. No public API breaks anywhere.
+**Architecture:** Additive only. New packages under `helix_qa/pkg/nexus/native/{contracts,budget,probe,bridge,remote}`. `containers/` gets GPU-aware fields on existing structs and one new `probe_gpu.go` file. No existing test fails. No public API breaks anywhere.
 
 **Tech Stack:** Go 1.25.3, stdlib (no new runtime deps in P0), `testify/assert` + `testify/require` for tests (both already in both modules), `digital.vasic.containers` consumed via its existing replace directive in HelixQA `go.mod`.
 
-**Spec reference:** `HelixQA/docs/superpowers/specs/2026-04-17-openclaw-ultimate-program-design.md` §0–§5.
+**Spec reference:** `helix_qa/docs/superpowers/specs/2026-04-17-openclaw-ultimate-program-design.md` §0–§5.
 
 **Working directories:**
 
-- `HelixQA/` — primary (subagent dispatches should `cd` here for `go` commands)
-- `Containers/` — upstream submodule extension
+- `helix_qa/` — primary (subagent dispatches should `cd` here for `go` commands)
+- `containers/` — upstream submodule extension
 - `/run/media/milosvasic/DATA4TB/Projects/Catalogizer/` — main repo (submodule pointer bump + closure brief tick at the end)
 
 All paths in this plan are relative to `/run/media/milosvasic/DATA4TB/Projects/Catalogizer/` unless noted.
@@ -22,7 +22,7 @@ All paths in this plan are relative to `/run/media/milosvasic/DATA4TB/Projects/C
 
 ## Scope check
 
-This plan covers P0 only. P1–P7 each get their own brainstorm + plan cycle later. P0 itself does **not** implement any real capture, vision, interact, observe, record, or automation — it only ships the contracts, the shared primitives, the distribution adapter, and the upstream `Containers/` GPU plumbing needed so later sub-projects can run in parallel.
+This plan covers P0 only. P1–P7 each get their own brainstorm + plan cycle later. P0 itself does **not** implement any real capture, vision, interact, observe, record, or automation — it only ships the contracts, the shared primitives, the distribution adapter, and the upstream `containers/` GPU plumbing needed so later sub-projects can run in parallel.
 
 A P0 release alone produces a working, testable artifact: `cmd/ocu-probe` reports thinker.local GPU capability end-to-end; `cmd/ocu-dispatch-test` sends a trivial dispatched command and prints its result. That is enough for Wave 1's exit gate (spec §5.1).
 
@@ -44,7 +44,7 @@ A P0 release alone produces a working, testable artifact: `cmd/ocu-probe` report
 | `pkg/nexus/native/budget/assert.go` | `AssertWithin(name, got, budget)` + `Ceiling` + `RecordedMetric` helpers |
 | `pkg/nexus/native/budget/budget_test.go` | Tests for every constant + every assert helper |
 | `pkg/nexus/native/probe/local.go` | `ProbeLocal()` — OS, CPU, RAM, `nvidia-smi` local (if present), OpenCL, Vulkan |
-| `pkg/nexus/native/probe/remote.go` | `ProbeRemote(ctx, host)` — delegates to `Containers/pkg/remote.ProbeGPU` + mirrors |
+| `pkg/nexus/native/probe/remote.go` | `ProbeRemote(ctx, host)` — delegates to `containers/pkg/remote.ProbeGPU` + mirrors |
 | `pkg/nexus/native/probe/probe_test.go` | Unit tests (table-driven synthetic output) |
 | `pkg/nexus/native/bridge/bridge.go` | Bridge kind enum + shared error sentinels (CGO/subprocess/RPC all land in later phases) |
 | `pkg/nexus/native/bridge/bridge_test.go` | Enum coverage + sentinel identity |
@@ -100,12 +100,12 @@ Goal: land all six interface contracts as data-only Go files. P1–P5 will imple
 ### Task A1: Capture contract file
 
 **Files:**
-- Create: `HelixQA/pkg/nexus/native/contracts/capture.go`
-- Test: `HelixQA/pkg/nexus/native/contracts/contracts_test.go`
+- Create: `helix_qa/pkg/nexus/native/contracts/capture.go`
+- Test: `helix_qa/pkg/nexus/native/contracts/contracts_test.go`
 
 - [ ] **Step 1: Write the failing test**
 
-Append the following function to a new file `HelixQA/pkg/nexus/native/contracts/contracts_test.go`. Create it with this content:
+Append the following function to a new file `helix_qa/pkg/nexus/native/contracts/contracts_test.go`. Create it with this content:
 
 ```go
 // SPDX-FileCopyrightText: 2026 Milos Vasic
@@ -164,7 +164,7 @@ Expected: **FAIL** — package does not exist.
 
 - [ ] **Step 3: Write the minimal implementation**
 
-Create `HelixQA/pkg/nexus/native/contracts/capture.go`:
+Create `helix_qa/pkg/nexus/native/contracts/capture.go`:
 
 ```go
 // SPDX-FileCopyrightText: 2026 Milos Vasic
@@ -286,8 +286,8 @@ Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>"
 ### Task A2: Vision contract file
 
 **Files:**
-- Create: `HelixQA/pkg/nexus/native/contracts/vision.go`
-- Extend: `HelixQA/pkg/nexus/native/contracts/contracts_test.go`
+- Create: `helix_qa/pkg/nexus/native/contracts/vision.go`
+- Extend: `helix_qa/pkg/nexus/native/contracts/contracts_test.go`
 
 - [ ] **Step 1: Write the failing test**
 
@@ -333,7 +333,7 @@ Expected: **FAIL** — types undefined.
 
 - [ ] **Step 3: Write the minimal implementation**
 
-Create `HelixQA/pkg/nexus/native/contracts/vision.go`:
+Create `helix_qa/pkg/nexus/native/contracts/vision.go`:
 
 ```go
 // SPDX-FileCopyrightText: 2026 Milos Vasic
@@ -446,8 +446,8 @@ Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>"
 ### Task A3: Interact contract file
 
 **Files:**
-- Create: `HelixQA/pkg/nexus/native/contracts/interact.go`
-- Extend: `HelixQA/pkg/nexus/native/contracts/contracts_test.go`
+- Create: `helix_qa/pkg/nexus/native/contracts/interact.go`
+- Extend: `helix_qa/pkg/nexus/native/contracts/contracts_test.go`
 
 - [ ] **Step 1: Write the failing test**
 
@@ -483,7 +483,7 @@ Expected: **FAIL** — `Point` undefined.
 
 - [ ] **Step 3: Write the minimal implementation**
 
-Create `HelixQA/pkg/nexus/native/contracts/interact.go`:
+Create `helix_qa/pkg/nexus/native/contracts/interact.go`:
 
 ```go
 // SPDX-FileCopyrightText: 2026 Milos Vasic
@@ -601,8 +601,8 @@ Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>"
 ### Task A4: Observe contract file
 
 **Files:**
-- Create: `HelixQA/pkg/nexus/native/contracts/observe.go`
-- Extend: `HelixQA/pkg/nexus/native/contracts/contracts_test.go`
+- Create: `helix_qa/pkg/nexus/native/contracts/observe.go`
+- Extend: `helix_qa/pkg/nexus/native/contracts/contracts_test.go`
 
 - [ ] **Step 1: Write the failing test**
 
@@ -633,7 +633,7 @@ Expected: **FAIL** — undefined.
 
 - [ ] **Step 3: Write the implementation**
 
-Create `HelixQA/pkg/nexus/native/contracts/observe.go`:
+Create `helix_qa/pkg/nexus/native/contracts/observe.go`:
 
 ```go
 // SPDX-FileCopyrightText: 2026 Milos Vasic
@@ -707,8 +707,8 @@ Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>"
 ### Task A5: Record contract file
 
 **Files:**
-- Create: `HelixQA/pkg/nexus/native/contracts/record.go`
-- Extend: `HelixQA/pkg/nexus/native/contracts/contracts_test.go`
+- Create: `helix_qa/pkg/nexus/native/contracts/record.go`
+- Extend: `helix_qa/pkg/nexus/native/contracts/contracts_test.go`
 
 - [ ] **Step 1: Write the failing test**
 
@@ -739,7 +739,7 @@ Expected: **FAIL** — undefined.
 
 - [ ] **Step 3: Write the implementation**
 
-Create `HelixQA/pkg/nexus/native/contracts/record.go`:
+Create `helix_qa/pkg/nexus/native/contracts/record.go`:
 
 ```go
 // SPDX-FileCopyrightText: 2026 Milos Vasic
@@ -810,8 +810,8 @@ Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>"
 ### Task A6: Remote-dispatch contract file
 
 **Files:**
-- Create: `HelixQA/pkg/nexus/native/contracts/remote.go`
-- Extend: `HelixQA/pkg/nexus/native/contracts/contracts_test.go`
+- Create: `helix_qa/pkg/nexus/native/contracts/remote.go`
+- Extend: `helix_qa/pkg/nexus/native/contracts/contracts_test.go`
 
 - [ ] **Step 1: Write the failing test**
 
@@ -842,7 +842,7 @@ Expected: **FAIL** — undefined.
 
 - [ ] **Step 3: Write the implementation**
 
-Create `HelixQA/pkg/nexus/native/contracts/remote.go`:
+Create `helix_qa/pkg/nexus/native/contracts/remote.go`:
 
 ```go
 // SPDX-FileCopyrightText: 2026 Milos Vasic
@@ -929,12 +929,12 @@ Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>"
 ### Task B1: Budget constants file
 
 **Files:**
-- Create: `HelixQA/pkg/nexus/native/budget/budget.go`
-- Test: `HelixQA/pkg/nexus/native/budget/budget_test.go`
+- Create: `helix_qa/pkg/nexus/native/budget/budget.go`
+- Test: `helix_qa/pkg/nexus/native/budget/budget_test.go`
 
 - [ ] **Step 1: Write the failing test**
 
-Create `HelixQA/pkg/nexus/native/budget/budget_test.go`:
+Create `helix_qa/pkg/nexus/native/budget/budget_test.go`:
 
 ```go
 // SPDX-FileCopyrightText: 2026 Milos Vasic
@@ -978,7 +978,7 @@ Expected: **FAIL** — package missing.
 
 - [ ] **Step 3: Write the minimal implementation**
 
-Create `HelixQA/pkg/nexus/native/budget/budget.go`:
+Create `helix_qa/pkg/nexus/native/budget/budget.go`:
 
 ```go
 // SPDX-FileCopyrightText: 2026 Milos Vasic
@@ -1057,8 +1057,8 @@ Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>"
 ### Task B2: Assertion helpers
 
 **Files:**
-- Create: `HelixQA/pkg/nexus/native/budget/assert.go`
-- Extend: `HelixQA/pkg/nexus/native/budget/budget_test.go`
+- Create: `helix_qa/pkg/nexus/native/budget/assert.go`
+- Extend: `helix_qa/pkg/nexus/native/budget/budget_test.go`
 
 - [ ] **Step 1: Write the failing test**
 
@@ -1098,7 +1098,7 @@ Expected: **FAIL** — `AssertWithin` undefined.
 
 - [ ] **Step 3: Write the minimal implementation**
 
-Create `HelixQA/pkg/nexus/native/budget/assert.go`:
+Create `helix_qa/pkg/nexus/native/budget/assert.go`:
 
 ```go
 // SPDX-FileCopyrightText: 2026 Milos Vasic
@@ -1164,18 +1164,18 @@ Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>"
 
 ## Group C — Containers GPU extension
 
-The following work lives in the Containers submodule. Every task runs from `Containers/` (not `HelixQA/`). Commits land on the Containers submodule's `main` branch and are pushed to both Containers upstream remotes (`origin`, `gitlab`).
+The following work lives in the Containers submodule. Every task runs from `containers/` (not `helix_qa/`). Commits land on the Containers submodule's `main` branch and are pushed to both Containers upstream remotes (`origin`, `gitlab`).
 
 ### Task C1: GPUDevice struct + HostResources.GPU field
 
 **Files:**
-- Create: `Containers/pkg/remote/gpu.go`
-- Modify: `Containers/pkg/remote/types.go:67-100` (add `GPU []GPUDevice` field)
-- Test: `Containers/pkg/remote/gpu_test.go`
+- Create: `containers/pkg/remote/gpu.go`
+- Modify: `containers/pkg/remote/types.go:67-100` (add `GPU []GPUDevice` field)
+- Test: `containers/pkg/remote/gpu_test.go`
 
 - [ ] **Step 1: Write the failing test**
 
-Create `Containers/pkg/remote/gpu_test.go`:
+Create `containers/pkg/remote/gpu_test.go`:
 
 ```go
 package remote
@@ -1234,7 +1234,7 @@ Expected: **FAIL** — `GPUDevice` undefined.
 
 - [ ] **Step 3: Write the implementation**
 
-Create `Containers/pkg/remote/gpu.go`:
+Create `containers/pkg/remote/gpu.go`:
 
 ```go
 package remote
@@ -1267,7 +1267,7 @@ func (r *HostResources) HasGPU() bool {
 }
 ```
 
-And modify `Containers/pkg/remote/types.go` — find the `HostResources` struct (starts at line 67 per the grep earlier) and add one line at the end of the field list, *before the closing brace*:
+And modify `containers/pkg/remote/types.go` — find the `HostResources` struct (starts at line 67 per the grep earlier) and add one line at the end of the field list, *before the closing brace*:
 
 ```go
 	// GPU is the list of GPU devices on this host; nil if none.
@@ -1310,12 +1310,12 @@ Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>"
 ### Task C2: GPU parse helpers (nvidia-smi / rocm-smi / clinfo)
 
 **Files:**
-- Create: `Containers/pkg/remote/gpu_parse.go`
-- Test: `Containers/pkg/remote/gpu_parse_test.go`
+- Create: `containers/pkg/remote/gpu_parse.go`
+- Test: `containers/pkg/remote/gpu_parse_test.go`
 
 - [ ] **Step 1: Write the failing test**
 
-Create `Containers/pkg/remote/gpu_parse_test.go`:
+Create `containers/pkg/remote/gpu_parse_test.go`:
 
 ```go
 package remote
@@ -1381,7 +1381,7 @@ Expected: **FAIL** — `ParseNvidiaSmi` undefined.
 
 - [ ] **Step 3: Write the implementation**
 
-Create `Containers/pkg/remote/gpu_parse.go`:
+Create `containers/pkg/remote/gpu_parse.go`:
 
 ```go
 package remote
@@ -1537,12 +1537,12 @@ Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>"
 ### Task C3: ProbeGPU SSH transport
 
 **Files:**
-- Create: `Containers/pkg/remote/probe_gpu.go`
-- Test: `Containers/pkg/remote/probe_gpu_test.go`
+- Create: `containers/pkg/remote/probe_gpu.go`
+- Test: `containers/pkg/remote/probe_gpu_test.go`
 
 - [ ] **Step 1: Write the failing test**
 
-Create `Containers/pkg/remote/probe_gpu_test.go`:
+Create `containers/pkg/remote/probe_gpu_test.go`:
 
 ```go
 package remote
@@ -1621,7 +1621,7 @@ Expected: **FAIL** — `ProbeGPU` + `probeNvidiaCmd` undefined.
 
 - [ ] **Step 3: Write the implementation**
 
-Create `Containers/pkg/remote/probe_gpu.go`:
+Create `containers/pkg/remote/probe_gpu.go`:
 
 ```go
 package remote
@@ -1731,13 +1731,13 @@ Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>"
 ### Task C4: GPURequirement + ContainerRequirements.GPU
 
 **Files:**
-- Create: `Containers/pkg/scheduler/gpu.go`
-- Modify: `Containers/pkg/scheduler/types.go:29-49` (add `GPU *GPURequirement` field + `StrategyGPUAffinity` const)
-- Test: `Containers/pkg/scheduler/gpu_test.go`
+- Create: `containers/pkg/scheduler/gpu.go`
+- Modify: `containers/pkg/scheduler/types.go:29-49` (add `GPU *GPURequirement` field + `StrategyGPUAffinity` const)
+- Test: `containers/pkg/scheduler/gpu_test.go`
 
 - [ ] **Step 1: Write the failing test**
 
-Create `Containers/pkg/scheduler/gpu_test.go`:
+Create `containers/pkg/scheduler/gpu_test.go`:
 
 ```go
 package scheduler
@@ -1778,7 +1778,7 @@ Expected: **FAIL** — `GPURequirement` undefined.
 
 - [ ] **Step 3: Write the implementation**
 
-Create `Containers/pkg/scheduler/gpu.go`:
+Create `containers/pkg/scheduler/gpu.go`:
 
 ```go
 package scheduler
@@ -1803,7 +1803,7 @@ type GPURequirement struct {
 }
 ```
 
-Modify `Containers/pkg/scheduler/types.go`:
+Modify `containers/pkg/scheduler/types.go`:
 1. Add one field to `ContainerRequirements` (before the closing brace):
    ```go
    	// GPU is optional; nil = no GPU needed.
@@ -1842,12 +1842,12 @@ Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>"
 ### Task C5: GPU-aware CanFit + Score
 
 **Files:**
-- Modify: `Containers/pkg/scheduler/scorer.go` (add GPU branch)
-- Extend: `Containers/pkg/scheduler/gpu_test.go`
+- Modify: `containers/pkg/scheduler/scorer.go` (add GPU branch)
+- Extend: `containers/pkg/scheduler/gpu_test.go`
 
 - [ ] **Step 1: Write the failing test**
 
-Append to `Containers/pkg/scheduler/gpu_test.go`:
+Append to `containers/pkg/scheduler/gpu_test.go`:
 
 ```go
 import (
@@ -1935,7 +1935,7 @@ Expected: **FAIL** — existing CanFit doesn't check GPU, so the `HostHasNoGPU` 
 
 - [ ] **Step 3: Write the implementation**
 
-Modify `Containers/pkg/scheduler/scorer.go`. After the existing disk branch in `CanFit` (before `return true`), insert:
+Modify `containers/pkg/scheduler/scorer.go`. After the existing disk branch in `CanFit` (before `return true`), insert:
 
 ```go
 	// Check GPU.
@@ -1954,7 +1954,7 @@ Modify `Containers/pkg/scheduler/scorer.go`. After the existing disk branch in `
 Add a GPU score component. First add `GPUWeight` to `Options`:
 
 ```bash
-grep -n 'CPUWeight\|MemoryWeight' Containers/pkg/scheduler/options.go 2>/dev/null || grep -rn 'type Options struct' Containers/pkg/scheduler/
+grep -n 'CPUWeight\|MemoryWeight' containers/pkg/scheduler/options.go 2>/dev/null || grep -rn 'type Options struct' containers/pkg/scheduler/
 ```
 
 If `Options` is in `options.go`, open it and add `GPUWeight float64` next to the others. Default it to 0 when unset so existing callers (who never set it) keep their current scoring.
@@ -2087,8 +2087,8 @@ Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>"
 ### Task C6: gpu_affinity placement strategy
 
 **Files:**
-- Modify: `Containers/pkg/scheduler/strategies.go` (add `gpu_affinity` handler)
-- Test: Append to `Containers/pkg/scheduler/gpu_test.go`
+- Modify: `containers/pkg/scheduler/strategies.go` (add `gpu_affinity` handler)
+- Test: Append to `containers/pkg/scheduler/gpu_test.go`
 
 - [ ] **Step 1: Write the failing test**
 
@@ -2133,7 +2133,7 @@ Expected: **FAIL** — `selectByStrategy` doesn't know `StrategyGPUAffinity`.
 
 - [ ] **Step 3: Write the implementation**
 
-Open `Containers/pkg/scheduler/strategies.go` and find the switch on strategy. Add a `StrategyGPUAffinity` case that calls a new helper:
+Open `containers/pkg/scheduler/strategies.go` and find the switch on strategy. Add a `StrategyGPUAffinity` case that calls a new helper:
 
 ```go
 case StrategyGPUAffinity:
@@ -2198,12 +2198,12 @@ Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>"
 ### Task C7: Health GPU check
 
 **Files:**
-- Create: `Containers/pkg/health/gpu.go`
-- Test: `Containers/pkg/health/gpu_test.go`
+- Create: `containers/pkg/health/gpu.go`
+- Test: `containers/pkg/health/gpu_test.go`
 
 - [ ] **Step 1: Write the failing test**
 
-Create `Containers/pkg/health/gpu_test.go`:
+Create `containers/pkg/health/gpu_test.go`:
 
 ```go
 package health
@@ -2255,7 +2255,7 @@ Expected: **FAIL** — undefined.
 
 - [ ] **Step 3: Write the implementation**
 
-Create `Containers/pkg/health/gpu.go`:
+Create `containers/pkg/health/gpu.go`:
 
 ```go
 package health
@@ -2329,12 +2329,12 @@ Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>"
 ### Task C8: Env-config GPU label parsing
 
 **Files:**
-- Modify: `Containers/pkg/envconfig/parser.go` (recognise `CONTAINERS_REMOTE_HOST_N_GPU_AUTOPROBE` env var and propagate)
-- Test: Extend `Containers/pkg/envconfig/parser_test.go`
+- Modify: `containers/pkg/envconfig/parser.go` (recognise `CONTAINERS_REMOTE_HOST_N_GPU_AUTOPROBE` env var and propagate)
+- Test: Extend `containers/pkg/envconfig/parser_test.go`
 
 - [ ] **Step 1: Write the failing test**
 
-Append to `Containers/pkg/envconfig/parser_test.go`:
+Append to `containers/pkg/envconfig/parser_test.go`:
 
 ```go
 func TestParse_HostGPUAutoprobe(t *testing.T) {
@@ -2364,7 +2364,7 @@ Expected: **FAIL** — env var not recognised, `gpu_autoprobe` not in labels.
 
 - [ ] **Step 3: Write the implementation**
 
-Open `Containers/pkg/envconfig/parser.go`. Find where per-host env keys are parsed (look for `CONTAINERS_REMOTE_HOST_`). After the `LABELS` handler, add:
+Open `containers/pkg/envconfig/parser.go`. Find where per-host env keys are parsed (look for `CONTAINERS_REMOTE_HOST_`). After the `LABELS` handler, add:
 
 ```go
 	if v := os.Getenv(fmt.Sprintf(
@@ -2405,14 +2405,14 @@ Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>"
 ### Task C9: Backward-compat regression test + docs
 
 **Files:**
-- Create: `Containers/tests/backcompat/gpu_backcompat_test.go` (if `tests/backcompat` doesn't exist, create at the module root level)
-- Create: `Containers/docs/gpu-scheduling.md`
-- Modify: `Containers/ARCHITECTURE.md` (add "GPU-aware scheduling" section)
-- Modify: `Containers/CHANGELOG.md` (bump minor version)
+- Create: `containers/tests/backcompat/gpu_backcompat_test.go` (if `tests/backcompat` doesn't exist, create at the module root level)
+- Create: `containers/docs/gpu-scheduling.md`
+- Modify: `containers/ARCHITECTURE.md` (add "GPU-aware scheduling" section)
+- Modify: `containers/CHANGELOG.md` (bump minor version)
 
 - [ ] **Step 1: Write the regression test**
 
-Check if `Containers/tests/backcompat/` exists; if not, create `Containers/tests/backcompat_test.go` at the module root level as a file directly:
+Check if `containers/tests/backcompat/` exists; if not, create `containers/tests/backcompat_test.go` at the module root level as a file directly:
 
 ```bash
 cd Containers && ls tests/
@@ -2420,7 +2420,7 @@ cd Containers && ls tests/
 
 If the `tests/` directory already contains test files, place it there; otherwise put it next to the existing integration tests. Use this path (adjust per what you find):
 
-Create `Containers/pkg/scheduler/backcompat_test.go`:
+Create `containers/pkg/scheduler/backcompat_test.go`:
 
 ```go
 package scheduler
@@ -2464,7 +2464,7 @@ Expected: **PASS** — this test encodes the backward-compat guarantee; if it ev
 
 - [ ] **Step 3: Write the docs**
 
-Create `Containers/docs/gpu-scheduling.md`:
+Create `containers/docs/gpu-scheduling.md`:
 
 ```markdown
 # GPU-Aware Scheduling
@@ -2531,7 +2531,7 @@ summary, err := dist.Distribute(ctx, []scheduler.ContainerRequirements{req})
 
 - [ ] **Step 4: Append to `CHANGELOG.md`**
 
-Open `Containers/CHANGELOG.md`. At the top, add:
+Open `containers/CHANGELOG.md`. At the top, add:
 
 ```markdown
 ## [Unreleased]
@@ -2545,7 +2545,7 @@ Open `Containers/CHANGELOG.md`. At the top, add:
 
 - [ ] **Step 5: Append to `ARCHITECTURE.md`**
 
-Open `Containers/ARCHITECTURE.md`. Append:
+Open `containers/ARCHITECTURE.md`. Append:
 
 ```markdown
 ## GPU-Aware Scheduling
@@ -2605,12 +2605,12 @@ Expected: clean push to `origin` (GitHub); gitlab push succeeds if the remote re
 ### Task D1: Local probe
 
 **Files:**
-- Create: `HelixQA/pkg/nexus/native/probe/local.go`
-- Test: `HelixQA/pkg/nexus/native/probe/probe_test.go`
+- Create: `helix_qa/pkg/nexus/native/probe/local.go`
+- Test: `helix_qa/pkg/nexus/native/probe/probe_test.go`
 
 - [ ] **Step 1: Write the failing test**
 
-Create `HelixQA/pkg/nexus/native/probe/probe_test.go`:
+Create `helix_qa/pkg/nexus/native/probe/probe_test.go`:
 
 ```go
 // SPDX-FileCopyrightText: 2026 Milos Vasic
@@ -2646,7 +2646,7 @@ Expected: **FAIL** — package missing.
 
 - [ ] **Step 3: Write the implementation**
 
-Create `HelixQA/pkg/nexus/native/probe/local.go`:
+Create `helix_qa/pkg/nexus/native/probe/local.go`:
 
 ```go
 // SPDX-FileCopyrightText: 2026 Milos Vasic
@@ -2754,7 +2754,7 @@ var (
 )
 ```
 
-Add a tiny helper file `HelixQA/pkg/nexus/native/probe/helpers.go`:
+Add a tiny helper file `helix_qa/pkg/nexus/native/probe/helpers.go`:
 
 ```go
 // SPDX-FileCopyrightText: 2026 Milos Vasic
@@ -2803,8 +2803,8 @@ Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>"
 ### Task D2: Remote probe wrapper
 
 **Files:**
-- Create: `HelixQA/pkg/nexus/native/probe/remote.go`
-- Extend: `HelixQA/pkg/nexus/native/probe/probe_test.go`
+- Create: `helix_qa/pkg/nexus/native/probe/remote.go`
+- Extend: `helix_qa/pkg/nexus/native/probe/probe_test.go`
 
 - [ ] **Step 1: Write the failing test**
 
@@ -2865,7 +2865,7 @@ Expected: **FAIL** — `ProbeRemote` undefined.
 
 - [ ] **Step 3: Write the implementation**
 
-Create `HelixQA/pkg/nexus/native/probe/remote.go`:
+Create `helix_qa/pkg/nexus/native/probe/remote.go`:
 
 ```go
 // SPDX-FileCopyrightText: 2026 Milos Vasic
@@ -2927,12 +2927,12 @@ Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>"
 ### Task E1: Dispatcher + Capability matching
 
 **Files:**
-- Create: `HelixQA/pkg/nexus/native/remote/dispatcher.go`
-- Test: `HelixQA/pkg/nexus/native/remote/dispatcher_test.go`
+- Create: `helix_qa/pkg/nexus/native/remote/dispatcher.go`
+- Test: `helix_qa/pkg/nexus/native/remote/dispatcher_test.go`
 
 - [ ] **Step 1: Write the failing test**
 
-Create `HelixQA/pkg/nexus/native/remote/dispatcher_test.go`:
+Create `helix_qa/pkg/nexus/native/remote/dispatcher_test.go`:
 
 ```go
 // SPDX-FileCopyrightText: 2026 Milos Vasic
@@ -3009,7 +3009,7 @@ Expected: **FAIL** — package missing.
 
 - [ ] **Step 3: Write the implementation**
 
-Create `HelixQA/pkg/nexus/native/remote/dispatcher.go`:
+Create `helix_qa/pkg/nexus/native/remote/dispatcher.go`:
 
 ```go
 // SPDX-FileCopyrightText: 2026 Milos Vasic
@@ -3017,7 +3017,7 @@ Create `HelixQA/pkg/nexus/native/remote/dispatcher.go`:
 
 // Package remote is the HelixQA-side adapter that maps
 // contracts.Capability requests to a local or remote Worker via
-// Containers/pkg/scheduler + /pkg/distribution. It deliberately
+// containers/pkg/scheduler + /pkg/distribution. It deliberately
 // stays thin: host discovery, GPU probing, and scoring all live in
 // Containers.
 package remote
@@ -3158,12 +3158,12 @@ Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>"
 ### Task F1: cmd/ocu-probe
 
 **Files:**
-- Create: `HelixQA/cmd/ocu-probe/main.go`
-- Test: `HelixQA/cmd/ocu-probe/main_test.go`
+- Create: `helix_qa/cmd/ocu-probe/main.go`
+- Test: `helix_qa/cmd/ocu-probe/main_test.go`
 
 - [ ] **Step 1: Write the failing test**
 
-Create `HelixQA/cmd/ocu-probe/main_test.go`:
+Create `helix_qa/cmd/ocu-probe/main_test.go`:
 
 ```go
 // SPDX-FileCopyrightText: 2026 Milos Vasic
@@ -3202,7 +3202,7 @@ Expected: **FAIL** — package missing.
 
 - [ ] **Step 3: Write the implementation**
 
-Create `HelixQA/cmd/ocu-probe/main.go`:
+Create `helix_qa/cmd/ocu-probe/main.go`:
 
 ```go
 // SPDX-FileCopyrightText: 2026 Milos Vasic
@@ -3299,12 +3299,12 @@ Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>"
 ### Task F2: cmd/ocu-dispatch-test
 
 **Files:**
-- Create: `HelixQA/cmd/ocu-dispatch-test/main.go`
-- Test: `HelixQA/cmd/ocu-dispatch-test/main_test.go`
+- Create: `helix_qa/cmd/ocu-dispatch-test/main.go`
+- Test: `helix_qa/cmd/ocu-dispatch-test/main_test.go`
 
 - [ ] **Step 1: Write the failing test**
 
-Create `HelixQA/cmd/ocu-dispatch-test/main_test.go`:
+Create `helix_qa/cmd/ocu-dispatch-test/main_test.go`:
 
 ```go
 // SPDX-FileCopyrightText: 2026 Milos Vasic
@@ -3352,7 +3352,7 @@ Expected: **FAIL** — package missing.
 
 - [ ] **Step 3: Write the implementation**
 
-Create `HelixQA/cmd/ocu-dispatch-test/main.go`:
+Create `helix_qa/cmd/ocu-dispatch-test/main.go`:
 
 ```go
 // SPDX-FileCopyrightText: 2026 Milos Vasic
@@ -3406,7 +3406,7 @@ func run(ctx context.Context, out io.Writer, hm ocuremote.HostManager) error {
 }
 ```
 
-The last block reaches into the concrete worker type to print its host. Since `remoteWorker` is unexported, expose a small accessor. Create `HelixQA/pkg/nexus/native/remote/accessor.go`:
+The last block reaches into the concrete worker type to print its host. Since `remoteWorker` is unexported, expose a small accessor. Create `helix_qa/pkg/nexus/native/remote/accessor.go`:
 
 ```go
 // SPDX-FileCopyrightText: 2026 Milos Vasic
@@ -3492,7 +3492,7 @@ P0's coverage matrix (spec §4.2): Unit, Integration, Stress, Security, Benchmar
 ### Task G1: Integration test (build-tag'd)
 
 **Files:**
-- Create: `HelixQA/tests/integration/ocu_foundation_test.go`
+- Create: `helix_qa/tests/integration/ocu_foundation_test.go`
 
 - [ ] **Step 1: Write the test**
 
@@ -3575,7 +3575,7 @@ Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>"
 ### Task G2: Benchmark
 
 **Files:**
-- Create: `HelixQA/pkg/nexus/native/probe/probe_bench_test.go`
+- Create: `helix_qa/pkg/nexus/native/probe/probe_bench_test.go`
 
 - [ ] **Step 1: Write the benchmark**
 
@@ -3612,7 +3612,7 @@ Expected: benchmark completes; note ns/op for the baseline doc.
 
 - [ ] **Step 3: Record baseline**
 
-Append result to `HelixQA/docs/benchmarks/ocu-baseline-2026-04-17.md` (create the file if absent):
+Append result to `helix_qa/docs/benchmarks/ocu-baseline-2026-04-17.md` (create the file if absent):
 
 ```markdown
 # OCU Baseline Benchmarks — 2026-04-17
@@ -3647,7 +3647,7 @@ Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>"
 ### Task G3: Security review + stress test
 
 **Files:**
-- Create: `HelixQA/pkg/nexus/native/probe/probe_stress_test.go`
+- Create: `helix_qa/pkg/nexus/native/probe/probe_stress_test.go`
 - Update: HelixQA root `docs/security/ocu-p0-audit.md`
 
 - [ ] **Step 1: Write the stress test**
@@ -3704,7 +3704,7 @@ Expected: **PASS** with `-race` clean.
 
 - [ ] **Step 3: Write the security audit note**
 
-Create `HelixQA/docs/security/ocu-p0-audit.md`:
+Create `helix_qa/docs/security/ocu-p0-audit.md`:
 
 ```markdown
 # OCU P0 — Security Audit (2026-04-17)
@@ -3712,7 +3712,7 @@ Create `HelixQA/docs/security/ocu-p0-audit.md`:
 | Item | Status | Note |
 |---|---|---|
 | No sudo/root requirements | ✅ | ProbeGPU + ProbeLocal use only read-only, user-level commands (`nvidia-smi`, `rocm-smi`, `clinfo`, `cat /proc/meminfo`). Exec `CommandContext`ed with no env inheritance not required (read-only commands) but no secrets are passed in args. |
-| SSH uses known_hosts + key auth only | ✅ | Inherits Containers/pkg/remote policy; P0 introduces no new auth path. |
+| SSH uses known_hosts + key auth only | ✅ | Inherits containers/pkg/remote policy; P0 introduces no new auth path. |
 | No new third-party runtime deps | ✅ | Only stdlib + already-present testify + protobuf. |
 | govulncheck clean | ✅ | Run in Task H3 final gate. |
 | Go vet clean | ✅ | Run in Task H3 final gate. |
@@ -3737,7 +3737,7 @@ Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>"
 ### Task G4: Register challenge bank entries
 
 **Files:**
-- Create: `HelixQA/challenges/banks/ocu-foundation.json`
+- Create: `helix_qa/challenges/banks/ocu-foundation.json`
 
 - [ ] **Step 1: Write the bank**
 
@@ -3919,7 +3919,7 @@ Open `docs/OPEN_POINTS_CLOSURE.md`. Bump the "Last refresh" date to 2026-04-17. 
       land in HelixQA; Containers GPU extension land in Containers.
       Vertical-slice `cmd/ocu-probe` + `cmd/ocu-dispatch-test` prove
       thinker.local routing end-to-end. Spec + plan in
-      `HelixQA/docs/superpowers/{specs,plans}/2026-04-17-*`.
+      `helix_qa/docs/superpowers/{specs,plans}/2026-04-17-*`.
 ```
 
 Open `docs/nexus/remaining-work.md` (HelixQA internal). Update the OpenClaw roadmap table to mark P0 as "exit-gate-green" and link to the spec + plan.
@@ -3950,14 +3950,14 @@ Expected: push to all 6 upstreams (GitHub × 2, GitLab × 2, GitFlic, GitVerse p
 ### Task H3: Create the OCU roadmap doc
 
 **Files:**
-- Create: `HelixQA/docs/nexus/ocu-roadmap.md`
+- Create: `helix_qa/docs/nexus/ocu-roadmap.md`
 
 - [ ] **Step 1: Write the doc**
 
 ```markdown
 # OpenClaw Ultimate — Program Roadmap
 
-Living status doc for the 8 OCU sub-projects. Spec: `HelixQA/docs/superpowers/specs/2026-04-17-openclaw-ultimate-program-design.md`.
+Living status doc for the 8 OCU sub-projects. Spec: `helix_qa/docs/superpowers/specs/2026-04-17-openclaw-ultimate-program-design.md`.
 
 ## Status table
 
@@ -4018,7 +4018,7 @@ cd /run/media/milosvasic/DATA4TB/Projects/Catalogizer
 git add HelixQA
 git commit -m "chore: bump HelixQA — OCU roadmap tracker
 
-Living program-level status doc added at HelixQA/docs/nexus/ocu-roadmap.md.
+Living program-level status doc added at helix_qa/docs/nexus/ocu-roadmap.md.
 
 Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>"
 GIT_SSH_COMMAND="ssh -o BatchMode=yes" git push origin main 2>&1 | tail -10
@@ -4063,7 +4063,7 @@ Mark TaskUpdate #63 as `completed`. P0 is done; P1–P4 can now start in paralle
 
 ## Execution handoff
 
-Plan complete and saved to `HelixQA/docs/superpowers/plans/2026-04-17-ocu-p0-foundation-plan.md`. Two execution options:
+Plan complete and saved to `helix_qa/docs/superpowers/plans/2026-04-17-ocu-p0-foundation-plan.md`. Two execution options:
 
 1. **Subagent-Driven (recommended)** — I dispatch a fresh subagent per task group (A, B, C, D, E, F, G, H), review between groups, fast iteration. Subagents run the TDD loop exactly as written.
 

@@ -198,7 +198,7 @@ Resolved platforms: [android web]
 Pass number:      2
 LLM provider:     anthropic
 Platforms:        [android web]
-Memory DB:        /path/to/project/HelixQA/data/memory.db
+Memory DB:        /path/to/project/helix_qa/data/memory.db
 ```
 
 The session then proceeds through each phase. With `--verbose`, you see detailed step-by-step output including LLM prompts, executor commands, and analysis results.

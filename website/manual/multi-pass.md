@@ -111,7 +111,7 @@ helixqa autonomous \
 When the memory database shows coverage at or above the target across all platforms, the session exits early with a green status. Check current coverage:
 
 ```bash
-sqlite3 HelixQA/data/memory.db \
+sqlite3 helix_qa/data/memory.db \
   "SELECT platform, COUNT(*) as screens, AVG(times_passed * 1.0 / MAX(times_tested, 1)) as pass_rate
    FROM coverage GROUP BY platform;"
 ```
