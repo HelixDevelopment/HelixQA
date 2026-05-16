@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -318,4 +319,86 @@ func TestItem_Types(t *testing.T) {
 	assert.Equal(t, Type("logcat"), TypeLogcat)
 	assert.Equal(t, Type("stacktrace"), TypeStackTrace)
 	assert.Equal(t, Type("console_log"), TypeConsoleLog)
+}
+
+// TestCollector_CaptureGeneric_BasicAppend verifies CaptureGeneric
+// records the item in the collector and returns the stamped item.
+func TestCollector_CaptureGeneric_BasicAppend(t *testing.T) {
+	dir := t.TempDir()
+	c := New(WithOutputDir(dir), WithPlatform(config.PlatformDesktop))
+
+	// Pre-write a small file so Size can be stamped.
+	path := filepath.Join(dir, "trace.txt")
+	require.NoError(t, os.WriteFile(path, []byte("hello world"), 0644))
+
+	stamped := c.CaptureGeneric(Item{
+		Type: TypeConsoleLog,
+		Path: path,
+		Step: "step-1",
+	})
+
+	assert.Equal(t, TypeConsoleLog, stamped.Type)
+	assert.Equal(t, path, stamped.Path)
+	assert.Equal(t, "step-1", stamped.Step)
+	assert.Equal(t, config.PlatformDesktop, stamped.Platform)
+	assert.False(t, stamped.Timestamp.IsZero())
+	assert.Equal(t, int64(11), stamped.Size)
+
+	items := c.Items()
+	require.Len(t, items, 1)
+	assert.Equal(t, path, items[0].Path)
+}
+
+// TestCollector_CaptureGeneric_PreservesNonZeroTimestamp verifies caller-
+// supplied timestamp is preserved rather than overwritten.
+func TestCollector_CaptureGeneric_PreservesNonZeroTimestamp(t *testing.T) {
+	c := New(WithPlatform(config.PlatformWeb))
+	supplied := time.Date(2026, 5, 16, 12, 0, 0, 0, time.UTC)
+
+	stamped := c.CaptureGeneric(Item{
+		Type:      TypeStackTrace,
+		Path:      "/nonexistent",
+		Timestamp: supplied,
+	})
+
+	assert.Equal(t, supplied, stamped.Timestamp)
+	assert.Equal(t, config.PlatformWeb, stamped.Platform)
+}
+
+// TestCollector_CaptureGeneric_PreservesExplicitPlatform verifies caller-
+// supplied platform is preserved (does not default to collector's).
+func TestCollector_CaptureGeneric_PreservesExplicitPlatform(t *testing.T) {
+	c := New(WithPlatform(config.PlatformAndroid))
+
+	stamped := c.CaptureGeneric(Item{
+		Type:     TypeLogcat,
+		Path:     "/tmp/no-such-file",
+		Platform: config.PlatformWeb,
+	})
+
+	assert.Equal(t, config.PlatformWeb, stamped.Platform)
+}
+
+// TestCollector_CaptureGeneric_ConcurrentSafe verifies concurrent
+// CaptureGeneric calls produce no item loss.
+func TestCollector_CaptureGeneric_ConcurrentSafe(t *testing.T) {
+	c := New(WithPlatform(config.PlatformDesktop))
+
+	const n = 50
+	var wg sync.WaitGroup
+	wg.Add(n)
+	for i := 0; i < n; i++ {
+		i := i
+		go func() {
+			defer wg.Done()
+			c.CaptureGeneric(Item{
+				Type: TypeConsoleLog,
+				Path: fmt.Sprintf("/tmp/concurrent-%d", i),
+				Step: fmt.Sprintf("step-%d", i),
+			})
+		}()
+	}
+	wg.Wait()
+
+	assert.Equal(t, n, c.Count())
 }
