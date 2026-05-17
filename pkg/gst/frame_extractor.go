@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"image"
 	"image/color"
+	"io"
 	"os/exec"
 	"strconv"
 	"strings"
@@ -357,50 +358,88 @@ func (fe *FrameExtractor) buildTestPipeline() string {
 	)
 }
 
-// readFrames reads frames from GStreamer's stdout
+// readFrames reads frames from GStreamer's stdout. Pipeline must be
+// configured to write raw frame bytes to stdout (e.g. `fdsink fd=1`)
+// for this to produce real Frame data.
+//
+// Previously: emitted zero-filled `make([]byte, frameSize)` frames
+// on a ticker, fabricating fake video data regardless of whether
+// GStreamer was actually producing output. Any QA session validating
+// frame contents PASSed against empty byte arrays — §11.4 simulate-
+// return bluff.
+//
+// Now: stdout is read as an io.Reader (type assertion from the
+// existing interface{} parameter signature, kept for back-compat).
+// Blocking io.ReadFull pulls `frameSize` bytes per iteration; short
+// reads or EOF surface as fe.errChan errors rather than silent
+// fabricated frames. If the pipeline isn't configured for raw-stdout
+// output (no fdsink), the read will hang and the ctx.Done()/running
+// check will terminate cleanly.
 func (fe *FrameExtractor) readFrames(stdout interface{}) {
 	defer fe.wg.Done()
 
-	// This is a simplified implementation
-	// In production, you'd parse the raw bytes properly based on format
-	// For now, we'll emit placeholder frames
+	reader, ok := stdout.(io.Reader)
+	if !ok || reader == nil {
+		select {
+		case fe.errChan <- fmt.Errorf("readFrames: stdout is not an io.Reader (got %T); pipeline must wire fdsink fd=1 or equivalent to emit raw frame bytes", stdout):
+		default:
+		}
+		return
+	}
 
-	ticker := time.NewTicker(time.Second / time.Duration(fe.config.FPS))
-	defer ticker.Stop()
+	frameSize := fe.config.Width * fe.config.Height * 3 // RGB
+	if frameSize <= 0 {
+		select {
+		case fe.errChan <- fmt.Errorf("readFrames: invalid frame size %dx%d×3 = %d; cannot read frames", fe.config.Width, fe.config.Height, frameSize):
+		default:
+		}
+		return
+	}
 
 	for {
 		select {
 		case <-fe.ctx.Done():
 			return
-		case <-ticker.C:
-			if !fe.running {
-				return
-			}
+		default:
+		}
+		if !fe.running {
+			return
+		}
 
-			// Create a frame (placeholder - real implementation would read from stdout)
-			frameSize := fe.config.Width * fe.config.Height * 3 // RGB = 3 bytes per pixel
-			frame := &Frame{
-				Data:      make([]byte, frameSize),
-				Width:     fe.config.Width,
-				Height:    fe.config.Height,
-				Format:    fe.config.Format,
-				Timestamp: time.Now(),
-				PTS:       time.Since(fe.stats.StartTime).Milliseconds(),
-				Duration:  time.Second / time.Duration(fe.config.FPS),
-			}
-
+		buf := make([]byte, frameSize)
+		n, err := io.ReadFull(reader, buf)
+		if err != nil {
+			// EOF / short-read: surface honestly, do NOT fabricate.
 			select {
-			case fe.frameChan <- frame:
-				fe.statsMu.Lock()
-				fe.stats.FramesExtracted++
-				fe.stats.BytesProcessed += uint64(frameSize)
-				fe.statsMu.Unlock()
+			case fe.errChan <- fmt.Errorf("readFrames: short/failed read after %d/%d bytes: %w", n, frameSize, err):
 			default:
-				// Buffer full, drop frame
-				fe.statsMu.Lock()
-				fe.stats.FramesDropped++
-				fe.statsMu.Unlock()
 			}
+			return
+		}
+
+		frame := &Frame{
+			Data:      buf,
+			Width:     fe.config.Width,
+			Height:    fe.config.Height,
+			Format:    fe.config.Format,
+			Timestamp: time.Now(),
+			PTS:       time.Since(fe.stats.StartTime).Milliseconds(),
+			Duration:  time.Second / time.Duration(fe.config.FPS),
+		}
+
+		select {
+		case fe.frameChan <- frame:
+			fe.statsMu.Lock()
+			fe.stats.FramesExtracted++
+			fe.stats.BytesProcessed += uint64(frameSize)
+			fe.statsMu.Unlock()
+		case <-fe.ctx.Done():
+			return
+		default:
+			// Buffer full, drop frame
+			fe.statsMu.Lock()
+			fe.stats.FramesDropped++
+			fe.statsMu.Unlock()
 		}
 	}
 }
