@@ -139,7 +139,12 @@ What navigation actions should I take? Return a JSON object with:
 	return &path, nil
 }
 
-// executeAction performs a navigation action
+// executeAction performs a navigation action. Only `back` and `home`
+// are dispatched without explicit coordinates — every other action MUST
+// carry its target coordinates / element identifier and be invoked
+// through the typed ActionExecutor API directly. Returning an explicit
+// error closes the §11.4 stub-bluff: callers that previously got `nil`
+// for an unsupported action (and assumed success) now see the failure.
 func (n *LLMNavigator) executeAction(ctx context.Context, action string) error {
 	switch action {
 	case "back":
@@ -147,8 +152,7 @@ func (n *LLMNavigator) executeAction(ctx context.Context, action string) error {
 	case "home":
 		return n.executor.Home(ctx)
 	default:
-		// For other actions, we'd need coordinates - simplified for now
-		return nil
+		return fmt.Errorf("navigator.executeAction: unsupported coordinate-free action %q (only \"back\" and \"home\" dispatch without coordinates; for click/type/scroll/swipe/longpress/keypress, invoke ActionExecutor directly with the target coordinates / key)", action)
 	}
 }
 
@@ -179,16 +183,57 @@ func (g *NavigationGraph) GetKnownScreenNames() []string {
 	return names
 }
 
-// ShortestPath computes the shortest path between two screens (simplified BFS)
+// AddTransition records a directed edge `from → to` via `action`. Multiple
+// transitions are tolerated; ShortestPath always picks the shortest by
+// edge count (BFS).
+func (g *NavigationGraph) AddTransition(from, to, action string) {
+	g.transitions[from] = append(g.transitions[from], Transition{
+		From:   from,
+		To:     to,
+		Action: action,
+	})
+}
+
+// ShortestPath computes the shortest path between two screens via BFS over
+// the recorded transitions. Returns nil if `to` is unreachable from `from`
+// (or if either screen is unknown). The previous "return single-step
+// stub" behavior was a §11.4 PASS-bluff — any test asserting multi-hop
+// navigation would PASS against a fabricated one-step path.
 func (g *NavigationGraph) ShortestPath(from, to string) *NavigationPath {
 	if from == to {
 		return &NavigationPath{Start: from, Destination: to}
 	}
-
-	// Return direct path for now - would implement BFS in full version
-	return &NavigationPath{
-		Start:       from,
-		Destination: to,
-		Actions:     []string{"navigate"},
+	if _, ok := g.screens[from]; !ok {
+		return nil
 	}
+	if _, ok := g.screens[to]; !ok {
+		return nil
+	}
+
+	type queueItem struct {
+		screen  string
+		actions []string
+	}
+	visited := map[string]bool{from: true}
+	queue := []queueItem{{screen: from, actions: nil}}
+	for len(queue) > 0 {
+		head := queue[0]
+		queue = queue[1:]
+		for _, t := range g.transitions[head.screen] {
+			if visited[t.To] {
+				continue
+			}
+			next := append(append([]string(nil), head.actions...), t.Action)
+			if t.To == to {
+				return &NavigationPath{
+					Start:       from,
+					Destination: to,
+					Actions:     next,
+				}
+			}
+			visited[t.To] = true
+			queue = append(queue, queueItem{screen: t.To, actions: next})
+		}
+	}
+	return nil
 }

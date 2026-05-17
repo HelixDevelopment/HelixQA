@@ -97,11 +97,16 @@ func NewSessionCoordinator(
 	opts ...SessionOption,
 ) *SessionCoordinator {
 	sc := &SessionCoordinator{
-		config:          cfg,
-		orchestrator:    pool,
-		visionEngine:    viz,
-		featureMap:      fm,
-		executorFactory: &NoopExecutorFactory{},
+		config:       cfg,
+		orchestrator: pool,
+		visionEngine: viz,
+		featureMap:   fm,
+		// executorFactory deliberately nil — caller MUST inject via
+		// WithExecutorFactory(...) or Run() returns an explicit error.
+		// Previous default (&NoopExecutorFactory{}) was a §11.4
+		// PASS-bluff: production binaries that forgot to pass a
+		// factory got silent-success on every UI action.
+		executorFactory: nil,
 		workers:         make(map[string]*PlatformWorker),
 		phaseManager:    NewPhaseManager(),
 		session: session.NewSessionRecorder(
@@ -120,6 +125,13 @@ func NewSessionCoordinator(
 func (sc *SessionCoordinator) Run(
 	ctx context.Context,
 ) (*SessionResult, error) {
+	if sc.executorFactory == nil {
+		return nil, fmt.Errorf(
+			"autonomous: SessionCoordinator.executorFactory is nil — " +
+				"inject via NewSessionCoordinator(..., WithExecutorFactory(f)); " +
+				"tests may use the test-only NoopExecutorFactory from noop_executor_test.go",
+		)
+	}
 	sc.mu.Lock()
 	if sc.status != StatusIdle {
 		sc.mu.Unlock()
@@ -446,22 +458,9 @@ func (sc *SessionCoordinator) finalize(result *SessionResult) {
 	}
 }
 
-// noopExecutor is a no-op ActionExecutor used as a placeholder.
-type noopExecutor struct{}
-
-func (n *noopExecutor) Click(_ context.Context, _, _ int) error { return nil }
-func (n *noopExecutor) Type(_ context.Context, _ string) error  { return nil }
-func (n *noopExecutor) Clear(_ context.Context) error           { return nil }
-func (n *noopExecutor) Scroll(_ context.Context, _ string, _ int) error {
-	return nil
-}
-func (n *noopExecutor) LongPress(_ context.Context, _, _ int) error { return nil }
-func (n *noopExecutor) Swipe(_ context.Context, _, _, _, _ int) error {
-	return nil
-}
-func (n *noopExecutor) KeyPress(_ context.Context, _ string) error { return nil }
-func (n *noopExecutor) Back(_ context.Context) error               { return nil }
-func (n *noopExecutor) Home(_ context.Context) error               { return nil }
-func (n *noopExecutor) Screenshot(_ context.Context) ([]byte, error) {
-	return []byte("mock-screenshot"), nil
-}
+// noopExecutor + NoopExecutorFactory moved to noop_executor_test.go
+// per §11.4 / CONST-050(A) — production code must not import mock
+// executors. The previous location (here, in production source) meant
+// any caller of NoopExecutorFactory.Create() got a silent-success
+// executor that "completed" every UI action without driving the
+// device. See noop_executor_test.go for the relocated types.
