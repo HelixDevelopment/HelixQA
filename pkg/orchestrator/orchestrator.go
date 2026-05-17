@@ -137,6 +137,27 @@ func (o *Orchestrator) Run(
 	o.log("Loaded %d challenge definitions from %d sources",
 		len(definitions), len(o.bank.Sources()))
 
+	// 1.5. Auto-wire runner from bank if caller didn't supply one.
+	// Bridges each bank-loaded *Definition into a definitionChallenge
+	// wrapper + registers them into a fresh registry that the runner
+	// consults. Without this, the runner short-circuits with "not
+	// found in registry" and the per-definition dispatch loop in
+	// runPlatform never appends to ChallengeResults — producing the
+	// "PASS-bluff detected: 0 challenges actually executed" exit per
+	// cmd/helixqa/main.go. (close-out⁷⁵ wiring.)
+	if o.runner == nil {
+		reg := newDefinitionRegistry()
+		for _, def := range definitions {
+			if err := reg.Register(newDefinitionChallenge(def)); err != nil {
+				return nil, fmt.Errorf(
+					"register definition %s: %w", def.ID, err)
+			}
+		}
+		o.runner = runner.NewRunner(runner.WithRegistry(reg))
+		o.log("Auto-wired runner with %d bridged definitions (close-out⁷⁵)",
+			len(definitions))
+	}
+
 	// 2. Create output directory.
 	if err := os.MkdirAll(o.config.OutputDir, 0755); err != nil {
 		return nil, fmt.Errorf("create output dir: %w", err)
