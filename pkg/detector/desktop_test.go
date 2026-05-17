@@ -14,29 +14,34 @@ import (
 	"digital.vasic.helixqa/pkg/config"
 )
 
-func TestCheckDesktop_ProcessAlive(t *testing.T) {
-	mock := newMockRunner()
-	mock.On(
-		"pgrep -f java",
-		[]byte("12345"),
-		nil,
-	)
-
+// TestCheckDesktop_NoTargetConfigured documents the close-out⁷⁵
+// contract change: when neither processName nor PID is configured,
+// isDesktopProcessAlive returns true unconditionally — the absence
+// of a configured target means "no desktop app under test", not
+// "crash detected". The prior behavior (fallback to `pgrep -f java`)
+// produced 23-of-23 false-positive crash reports against helixqa
+// runs that didn't supply -desktop-process.
+func TestCheckDesktop_NoTargetConfigured(t *testing.T) {
 	d := New(
 		config.PlatformDesktop,
-		WithCommandRunner(mock),
+		WithCommandRunner(newMockRunner()), // mock unused — no command should fire
 	)
 
 	result, err := d.checkDesktop(context.Background())
 	require.NoError(t, err)
-	assert.True(t, result.ProcessAlive)
-	assert.False(t, result.HasCrash)
+	assert.True(t, result.ProcessAlive,
+		"no-target-configured must return ProcessAlive=true (no app under test ≠ crash)")
+	assert.False(t, result.HasCrash,
+		"no-target-configured must NOT flag crash — close-out⁷⁵ contract")
 }
 
-func TestCheckDesktop_ProcessDead(t *testing.T) {
+func TestCheckDesktop_ProcessDead_RequiresExplicitTarget(t *testing.T) {
+	// close-out⁷⁵ update: a "dead process" reading now requires an
+	// explicitly configured processName OR PID. Without either, there's
+	// no target to be dead. This test exercises the explicit-name path.
 	mock := newMockRunner()
 	mock.On(
-		"pgrep -f java",
+		"pgrep -f myapp",
 		[]byte(""),
 		fmt.Errorf("no process"),
 	)
@@ -44,6 +49,7 @@ func TestCheckDesktop_ProcessDead(t *testing.T) {
 	d := New(
 		config.PlatformDesktop,
 		WithCommandRunner(mock),
+		WithProcessName("myapp"),
 	)
 
 	result, err := d.checkDesktop(context.Background())
@@ -132,13 +138,14 @@ func TestCheckDesktop_PIDTakesPrecedence(t *testing.T) {
 	assert.True(t, result.ProcessAlive)
 }
 
-func TestCheckDesktop_DefaultJava(t *testing.T) {
+// TestCheckDesktop_DefaultBehavior documents that the close-out⁷⁵
+// contract no longer falls back to `pgrep -f java`. Default = no
+// target = ProcessAlive=true. Use WithProcessName("java") explicitly
+// if you actually want java-process detection.
+func TestCheckDesktop_DefaultBehavior(t *testing.T) {
 	mock := newMockRunner()
-	mock.On(
-		"pgrep -f java",
-		[]byte("1111"),
-		nil,
-	)
+	// Mock is intentionally NOT configured for "pgrep -f java" — the
+	// detector must NOT invoke any command when no target is set.
 
 	d := New(
 		config.PlatformDesktop,
@@ -147,7 +154,8 @@ func TestCheckDesktop_DefaultJava(t *testing.T) {
 
 	result, err := d.checkDesktop(context.Background())
 	require.NoError(t, err)
-	assert.True(t, result.ProcessAlive)
+	assert.True(t, result.ProcessAlive,
+		"default (no target) returns ProcessAlive=true per close-out⁷⁵")
 }
 
 func TestCheckDesktop_PlatformIsDesktop(t *testing.T) {
