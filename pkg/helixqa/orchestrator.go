@@ -114,7 +114,22 @@ func (o *Orchestrator) RunAll(ctx context.Context) bool {
 
 		if !passed {
 			allPassed = false
-			tr.Evidence = append(tr.Evidence, o.captureFailureEvidence(tt, err)...)
+			evidencePaths, captureErr := o.captureFailureEvidence(tt, err)
+			tr.Evidence = append(tr.Evidence, evidencePaths...)
+			// Surface the capture-pipeline gap via the TestResult so
+			// downstream gates (CONST-035 / Article XI §11.9) can refuse
+			// to mark the QA run as "evidence-captured" when the real
+			// pipeline has not been wired. We preserve the original test
+			// error (the cause of the test failure) and add the capture
+			// error as a wrapped fact so neither is lost. The orchestrator
+			// itself never fabricates evidence.
+			if captureErr != nil {
+				if tr.Error != nil {
+					tr.Error = fmt.Errorf("%w (additionally: %w)", tr.Error, captureErr)
+				} else {
+					tr.Error = captureErr
+				}
+			}
 		}
 
 		o.results = append(o.results, tr)
@@ -206,9 +221,48 @@ func (o *Orchestrator) runChallenges(ctx context.Context) (bool, error) {
 	return true, nil
 }
 
-func (o *Orchestrator) captureFailureEvidence(tt TestType, err error) []string {
-	// Placeholder: in production this would capture screenshots, logs, etc.
-	return []string{filepath.Join(o.evidenceDir, string(tt)+"_failure.log")}
+// ErrEvidenceCaptureNotWired is returned to callers (via tr.Error) when the
+// orchestrator is asked to record failure evidence but the screenshot /
+// log-snapshot / structured-artefact capture pipeline has not been wired up.
+//
+// Background (round-29 §11.4 anti-bluff audit, 2026-05-17): the previous
+// implementation of captureFailureEvidence fabricated a path string
+// ("<evidenceDir>/<type>_failure.log") and labelled it as captured evidence,
+// with the comment "Placeholder: in production this would capture
+// screenshots, logs, etc." That fake path was then attached to the
+// TestResult.Evidence slice and a downstream §11.4.2 captured-evidence
+// gate could read TWO names in that slice and conclude "evidence captured"
+// while the file referenced did not exist on disk — the exact PASS-bluff
+// pattern Article XI §11.9 / CONST-035 / CONST-050(A) forbid, made worse
+// by the fact that helix_qa is the orchestrator MEANT to detect that
+// bluff class.
+//
+// Anti-bluff posture: the orchestrator now refuses to fabricate. When
+// captureFailureEvidence is invoked it returns no evidence paths AND
+// surfaces this sentinel via the TestResult.Error field, so the caller
+// is forced to either (a) wire a real capture pipeline (screenshot
+// library + log snapshot writer) or (b) accept that the QA run is NOT
+// "evidence-captured" and refuse to mark it as such at the release
+// gate.
+var ErrEvidenceCaptureNotWired = fmt.Errorf("helixqa orchestrator: failure-evidence capture has not been wired — captureFailureEvidence previously returned a fake path string ('in production this would capture screenshots, logs, etc.') in violation of Article XI §11.9 which helix_qa itself is meant to enforce. Caller MUST treat absence of real captured artefacts as a §11.4 PASS-bluff and refuse to mark the QA run as 'evidence-captured'")
+
+// captureFailureEvidence is the orchestrator hook that, in a fully-wired
+// deployment, would screenshot the failing UI / dump structured logs /
+// snapshot relevant /proc + /sys readings / collect artefacts written by
+// the failing test, and return real on-disk paths the QA reporter can
+// link to. Until that pipeline is implemented it returns an empty slice
+// and an explanatory error (ErrEvidenceCaptureNotWired). Callers MUST
+// honour both signals.
+//
+// Honesty contract: an empty []string + non-nil error from this function
+// means NO real artefact has been captured. A QA run whose TestResult
+// contains zero Evidence entries for a failing TestType MUST NOT be
+// promoted to "evidence-captured" status by any release gate per
+// Article XI §11.9 / CONST-035.
+func (o *Orchestrator) captureFailureEvidence(tt TestType, err error) ([]string, error) {
+	_ = tt
+	_ = err
+	return nil, ErrEvidenceCaptureNotWired
 }
 
 func findHelixPlayRoot() (string, error) {
