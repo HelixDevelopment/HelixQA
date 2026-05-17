@@ -168,10 +168,10 @@ ROI BREAK-EVEN:         ~1.3 months
 
 | Document | Purpose | Location |
 |----------|---------|----------|
-| `OPENCV_INTEGRATION_STRATEGY.md` | Research & architecture decisions | `HelixQA/docs/` |
-| `REALTIME_VIDEO_PIPELINE_PLAN.md` | Complete 10-week implementation plan | `HelixQA/docs/` |
-| `IMMEDIATE_EXECUTION_PLAN.md` | Day 1 tasks and week 1 goals | `HelixQA/docs/` |
-| `VIDEO_PIPELINE_SUMMARY.md` | This executive summary | `HelixQA/docs/` |
+| `OPENCV_INTEGRATION_STRATEGY.md` | Research & architecture decisions | `helix_qa/docs/` |
+| `REALTIME_VIDEO_PIPELINE_PLAN.md` | Complete 10-week implementation plan | `helix_qa/docs/` |
+| `IMMEDIATE_EXECUTION_PLAN.md` | Day 1 tasks and week 1 goals | `helix_qa/docs/` |
+| `VIDEO_PIPELINE_SUMMARY.md` | This executive summary | `helix_qa/docs/` |
 
 ---
 
@@ -180,15 +180,15 @@ ROI BREAK-EVEN:         ~1.3 months
 ### Today (Priority Order):
 
 1. **Implement Host Discovery** (4 hours)
-   - File: `HelixQA/pkg/discovery/host_discovery.go`
+   - File: `helix_qa/pkg/discovery/host_discovery.go`
    - Test: Can scan local network and detect hosts
 
 2. **Create Setup Script** (2 hours)
-   - File: `HelixQA/scripts/setup-video-host.sh`
+   - File: `helix_qa/scripts/setup-video-host.sh`
    - Test: Successfully installs all dependencies
 
 3. **Build Base Container** (3 hours)
-   - File: `HelixQA/docker/base-opencv-gstreamer/Dockerfile`
+   - File: `helix_qa/docker/base-opencv-gstreamer/Dockerfile`
    - Test: Image builds and runs OpenCV
 
 ### This Week:

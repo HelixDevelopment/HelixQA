@@ -5,7 +5,7 @@ HelixQA maintains a persistent SQLite database that accumulates knowledge across
 ## Database Location
 
 ```
-HelixQA/data/memory.db
+helix_qa/data/memory.db
 ```
 
 Override the path with the `HELIX_MEMORY_DB` environment variable:
@@ -92,7 +92,7 @@ This means pass 2 is always more targeted than pass 1, and pass 3 more targeted 
 You can inspect the memory database directly with any SQLite client:
 
 ```bash
-sqlite3 HelixQA/data/memory.db
+sqlite3 helix_qa/data/memory.db
 
 # Show all sessions
 SELECT id, started_at, pass_number, total_tests, passed, failed
@@ -130,7 +130,7 @@ HelixQA automatically sets a finding to `reopened` if it detects the same issue 
 To start completely fresh (e.g. after a major refactor):
 
 ```bash
-rm HelixQA/data/memory.db
+rm helix_qa/data/memory.db
 ```
 
 The database is recreated automatically on the next run. Note that all historical session data, findings, and coverage information will be lost.
@@ -138,7 +138,7 @@ The database is recreated automatically on the next run. Note that all historica
 To reset only coverage (keep findings history):
 
 ```bash
-sqlite3 HelixQA/data/memory.db "DELETE FROM coverage;"
+sqlite3 helix_qa/data/memory.db "DELETE FROM coverage;"
 ```
 
 ## Related Pages

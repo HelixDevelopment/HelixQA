@@ -13,11 +13,11 @@ Read order: §0 baseline → §1 architecture → §2 contracts → §3 containe
 
 ## Cross-references
 
-- Research source: `HelixQA/docs/OpenClaw_Ultimate_Capabilities_Extension.md` (4204 lines)
+- Research source: `helix_qa/docs/OpenClaw_Ultimate_Capabilities_Extension.md` (4204 lines)
 - Upstream context: `docs/nexus/OpenClawing2.md` (prior OSS integration wave)
 - Operator brief: `docs/OPEN_POINTS_CLOSURE.md` (§6 Constitution Article VI rule)
-- Submodule extension site: `Containers/pkg/{remote,scheduler,health,envconfig}`
-- Constitution: `CONSTITUTION.md` (main) + `HelixQA/CLAUDE.md` (HelixQA-specific rules)
+- Submodule extension site: `containers/pkg/{remote,scheduler,health,envconfig}`
+- Constitution: `CONSTITUTION.md` (main) + `helix_qa/CLAUDE.md` (HelixQA-specific rules)
 
 ---
 
@@ -28,12 +28,12 @@ Recorded verbatim. These are non-negotiable for the programme; changes require a
 | # | Decision | Choice |
 |---|---|---|
 | 1 | Scope | 8 sub-projects (P0 foundation, P1 capture, P2 vision, P3 interact, P4 observe, P5 record, P6 automation, P7 tickets+tests+challenges); brainstorm P0 first |
-| 2 | Language policy | Hybrid by layer — pure-Go where viable, CGO for tight loops, sidecar/container (via Containers/pkg/distribution) for CUDA + TensorRT + NVENC |
+| 2 | Language policy | Hybrid by layer — pure-Go where viable, CGO for tight loops, sidecar/container (via containers/pkg/distribution) for CUDA + TensorRT + NVENC |
 | 3 | Platform matrix | Linux desktop + web (Chromium/Firefox via CDP) + Android + Android TV |
 | 4 | Native vs LLM role | Native = eyes + hands + post-action verifier; LLM remains sole decider; HelixQA constitution intact |
 | 5 | Evidence default tier | Items 1–11, 15, 16 default on every ticket; items 13, 14 on demand; item 12 collected but not linked |
 | 6 | Sequencing + release | Diamond with parallel middle (P0 → {P1,P2,P3,P4 parallel} → P5 → P6 → P7); single **v4.0.0 "OpenClaw Ultimate"** release after P7 |
-| C | Hardware constraint | Local host has no NVIDIA GPU. Every CUDA/TensorRT/NVENC workload must run on `thinker.local` via `Containers/pkg/distribution` with GPU label extension (§3). SSH user `milosvasic`, passwordless key auth already configured. |
+| C | Hardware constraint | Local host has no NVIDIA GPU. Every CUDA/TensorRT/NVENC workload must run on `thinker.local` via `containers/pkg/distribution` with GPU label extension (§3). SSH user `milosvasic`, passwordless key auth already configured. |
 
 ---
 
@@ -42,10 +42,10 @@ Recorded verbatim. These are non-negotiable for the programme; changes require a
 ### 1.1 New + extended package tree
 
 ```
-HelixQA/
+helix_qa/
 ├── pkg/nexus/native/              [NEW — P0]
 │   ├── bridge/                    CGO + subprocess + RPC bridge primitives
-│   ├── remote/                    Thin adapter over Containers/pkg/distribution
+│   ├── remote/                    Thin adapter over containers/pkg/distribution
 │   │                              (HelixAgent-style functional-options wrapper,
 │   │                              <200 LOC: configure hosts, Resolve(Capability))
 │   ├── budget/                    Shared CPU/GPU/RAM/latency quotas (constants
@@ -91,7 +91,7 @@ HelixQA/
 ├── challenges/banks/ocu-*.json    [NEW — P7] (11 new bank files, ~180 entries)
 └── cmd/helixqa/                   [EXTEND — P7] (replay, probe, capture-test)
 
-Containers/                        [EXTEND — P0]
+containers/                        [EXTEND — P0]
 ├── pkg/remote/probe_gpu.go        [NEW] SSH GPU probe (nvidia-smi, rocm-smi, clinfo)
 ├── pkg/remote/host.go             [EXTEND] HostResources.GPU []GPUDevice
 ├── pkg/scheduler/requirements.go  [EXTEND] ContainerRequirements.GPU *GPURequirement
@@ -114,7 +114,7 @@ Containers/                        [EXTEND — P0]
 │    ├─ pkg/nexus/interact (local)                  │        │    └─ Maxine enhancer (optional)          │
 │    ├─ pkg/nexus/observe  (local)                  │        │                                           │
 │    ├─ pkg/nexus/record   (local cap; NVENC        │        │  Dispatched + lifecycle-managed by        │
-│    │                      encode remote;          │        │  Containers/pkg/distribution              │
+│    │                      encode remote;          │        │  containers/pkg/distribution              │
 │    │                      VAAPI/x264 fallback)    │        │  + GPU-aware scheduler (§3)               │
 │    └─ pkg/nexus/native/remote (the glue)          │        │                                           │
 └───────────────────────────────────────────────────┘        └───────────────────────────────────────────┘
@@ -123,7 +123,7 @@ Containers/                        [EXTEND — P0]
 ### 1.3 Design invariants baked in
 
 1. **Everything GPU-bound is dispatchable**, never hard-wired local. `pkg/nexus/native/remote` + Containers `pkg/distribution` decide per-call whether to run locally (CPU/OpenCL) or dispatch to thinker (CUDA/TensorRT/NVENC). If thinker is unreachable the system degrades, never silently fakes.
-2. **Nothing new depends on any consumer project.** Every new package is project-agnostic (matches HelixQA/CLAUDE.md project-agnostic rule).
+2. **Nothing new depends on any consumer project.** Every new package is project-agnostic (matches helix_qa/CLAUDE.md project-agnostic rule).
 3. **No CI/CD files** added (HelixQA rule).
 4. **No sudo / root** — Linux input uses `input` group + udev rule we ship; hooks stay per-process.
 5. **Constitution intact** — LLM remains sole decider; native is perception + execution + verification only.
@@ -276,7 +276,7 @@ Once P0 lands, contracts are **versioned**. A breaking change requires a new `v2
 
 ---
 
-## §3 — Containers/ GPU extension (upstream submodule change)
+## §3 — containers/ GPU extension (upstream submodule change)
 
 ### 3.1 Additions to `pkg/remote/host.go`
 
@@ -367,12 +367,12 @@ CONTAINERS_REMOTE_HOST_1_GPU_AUTOPROBE=true
 
 ### 3.8 Release
 
-- `Containers/ARCHITECTURE.md` section for GPU scheduling
-- `Containers/docs/gpu-scheduling.md` with thinker.local recipe
-- `Containers/CHANGELOG.md` minor bump (backward-compat, additive only)
+- `containers/ARCHITECTURE.md` section for GPU scheduling
+- `containers/docs/gpu-scheduling.md` with thinker.local recipe
+- `containers/CHANGELOG.md` minor bump (backward-compat, additive only)
 - Tagged after merge
 
-### 3.9 Rationale for placing extension in Containers/
+### 3.9 Rationale for placing extension in containers/
 
 - HelixAgent benefits (can move off legacy `DB_HOST=thinker.local`)
 - Future consumers get GPU-aware distribution for free
@@ -501,7 +501,7 @@ Retention: existing `FileEvidenceStore.Sweep(RetentionPolicy)` from P4 closure (
 
 | Vector | Mitigation |
 |---|---|
-| CUDA sidecar runs with `--gpus=all` | Runs only on thinker.local (trusted host); container reuses canonical `Security/pkg/ssrf` guard on every outbound URL |
+| CUDA sidecar runs with `--gpus=all` | Runs only on thinker.local (trusted host); container reuses canonical `security/pkg/ssrf` guard on every outbound URL |
 | SSH to thinker uses agent-forwarded keys | No password ever stored; key presence probed at startup with actionable error |
 | LD_PRELOAD shim | Compiled per-target; installed to user path; never system dirs; never requires CAP_SYS_PTRACE |
 | plthook attack surface | Registrations allowlisted (hardcoded symbol list). Runtime additions require signed orchestrator config |
@@ -571,7 +571,7 @@ Each tag must have:
 
 ### 5.4 Program-wide roadmap doc
 
-Location: `HelixQA/docs/nexus/ocu-roadmap.md` (created during P0).
+Location: `helix_qa/docs/nexus/ocu-roadmap.md` (created during P0).
 
 Contents:
 - Wave/sub-project table (pending / in-progress / exit-gate-green / closed)

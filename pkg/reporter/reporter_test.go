@@ -20,6 +20,21 @@ import (
 
 // --- Constructor tests ---
 
+// TestNew_Defaults proves that zero-option construction produces the
+// documented defaults (outputDir="qa-results", reportFormat=Markdown,
+// auto-populated challengeReporter). Per CONST-035 anti-bluff — anchor
+// manifest gate (CAP-008) requires this test exists + passes; it's the
+// canonical "New() works without ceremony" canary.
+func TestNew_Defaults(t *testing.T) {
+	r := New()
+	assert.Equal(t, "qa-results", r.outputDir,
+		"default outputDir must be 'qa-results' per New() contract")
+	assert.Equal(t, config.ReportMarkdown, r.reportFormat,
+		"default reportFormat must be Markdown per New() contract")
+	assert.NotNil(t, r.challengeReporter,
+		"default challengeReporter must auto-populate so reports are generatable without explicit options")
+}
+
 func TestNew_WithOptions(t *testing.T) {
 	r := New(
 		WithOutputDir("/tmp/output"),

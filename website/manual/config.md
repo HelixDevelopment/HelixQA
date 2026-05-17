@@ -77,7 +77,7 @@ Set at least one. Multiple providers can be active simultaneously — HelixQA se
 
 | Variable | Purpose | Default |
 |----------|---------|---------|
-| `HELIX_MEMORY_DB` | Path to SQLite memory database | `HelixQA/data/memory.db` |
+| `HELIX_MEMORY_DB` | Path to SQLite memory database | `helix_qa/data/memory.db` |
 | `HELIX_OUTPUT_DIR` | Default output directory | `qa-results` |
 | `HELIX_ISSUES_DIR` | Directory for generated issue tickets | `docs/issues` |
 

@@ -33,7 +33,7 @@ services:
     volumes:
       - ./qa-results:/app/qa-results
       - ./docs/issues:/app/docs/issues
-      - ./HelixQA/data:/app/HelixQA/data
+      - ./helix_qa/data:/app/helix_qa/data
       - /dev/bus/usb:/dev/bus/usb   # ADB USB passthrough
     command: >
       autonomous
@@ -146,7 +146,7 @@ spec:
         - name: qa-results
           mountPath: /app/qa-results
         - name: memory
-          mountPath: /app/HelixQA/data
+          mountPath: /app/helix_qa/data
       volumes:
       - name: qa-results
         persistentVolumeClaim:

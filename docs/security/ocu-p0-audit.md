@@ -3,7 +3,7 @@
 | Item | Status | Note |
 |---|---|---|
 | No sudo/root requirements | OK | ProbeGPU + ProbeLocal use only read-only, user-level commands (`nvidia-smi`, `rocm-smi`, `clinfo`, `cat /proc/meminfo`). No shell indirection; `exec.CommandContext` called with hardcoded binary names and hardcoded arg lists. |
-| SSH uses known_hosts + key auth only | OK | Inherits Containers/pkg/remote policy; P0 introduces no new auth path. |
+| SSH uses known_hosts + key auth only | OK | Inherits containers/pkg/remote policy; P0 introduces no new auth path. |
 | No new third-party runtime deps | OK | Only stdlib + already-present testify + protobuf. |
 | govulncheck clean | OK | Verified at Group H final gate (run: `GOTOOLCHAIN=local govulncheck -mode source ./...`). |
 | Go vet clean | OK | Verified per-group. |

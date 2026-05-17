@@ -322,7 +322,7 @@ test_cases:
     platforms: [all]
     steps:
       - name: "Build HelixQA container"
-        action: "podman build -f HelixQA/Dockerfile HelixQA/"
+        action: "podman build -f helix_qa/Dockerfile helix_qa/"
         expected: "Image builds without errors"
     tags: [container, docker]
 

@@ -2,7 +2,7 @@
 
 **Date:** 2026-04-19
 **Author:** HelixQA platform team (Claude Opus 4.7 session, approved by operator)
-**Location:** `HelixQA/docs/openclawing/OpenClawing4-Handover.md`
+**Location:** `helix_qa/docs/openclawing/OpenClawing4-Handover.md`
 **Companion documents:**
 - `OpenClawing4.md` — the plan (what to build, per phase)
 - `OpenClawing4-Audit.md` — forensic audit of the prior documents
@@ -72,14 +72,14 @@ Upstream fan-out verified in each push log.
 
 | File | Kind | Purpose |
 |---|---|---|
-| `HelixQA/docs/openclawing/Starting_Point.md` | edit | RETRACTION banner inserted at top; 9/24 dead URLs called out with pointer to `OpenClawing4-Audit.md §D.1`. |
-| `HelixQA/docs/openclawing/OpenClawing2.md` | edit | RETRACTION banner at top; lists the 3 fabricated paths (`browser_use/browser/custom_browser.py`, `skyvern/agent/prompts.py`, `PlanEvaluate`), the TS→Go reframing, and retained validities. |
-| `HelixQA/docs/openclawing/OpenClawing3.md` | edit | Multi-item RETRACTION banner: src/... fabricated, sudo violates, compile-blockers listed, DXGI zero-copy claim wrong, benchmarks 3–7× optimistic, missing llama.cpp RPC mandate, 16-week plan replaced. Retained validity: the 19 tech repos are real. |
-| `HelixQA/scripts/hooks/no-sudo.sh` | **new** (exec) | Pre-commit hook. Rejects literal `sudo ` in committed content. Allow-listed: retraction docs (`OpenClaw*`, `Starting_Point`, `OpenClawing4*`), strike-through `~~sudo~~`, quoted `"sudo"`, this hook file itself, `.pre-commit-config.yaml`, the two fixes/audit banks (they reference the word to describe the retraction). |
-| `HelixQA/.pre-commit-config.yaml` | **new** | Wires the hook into `pre-commit run --all-files`; also enables the standard `pre-commit-hooks` set (trailing-whitespace, end-of-file-fixer, check-yaml, check-json, check-added-large-files, check-merge-conflict, detect-private-key). |
-| `HelixQA/banks/docs-audit.yaml` | **new** | 7 test cases (AUDIT-001..007). Mechanical checks: banners intact on 3 docs; no-sudo hook behaviour; OpenClawing4 cites real `pkg/...`; OpenClawing4 structural integrity (≥1000 + ≥500 lines, handover present); llama.cpp RPC primary declared. |
-| `HelixQA/banks/fixes-validation.yaml` | edit (+14) | FIX-OC2-001..003 and FIX-OC3-001..011 regression anchors. Total test_cases after Phase 0: 44. |
-| `HelixQA/challenges/config/helixqa-validation.yaml` | edit (+1) | HQA-DOCS-001 challenge: runs the bank, runs the hook against fixtures, counts test cases in the docs-audit bank. |
+| `helix_qa/docs/openclawing/Starting_Point.md` | edit | RETRACTION banner inserted at top; 9/24 dead URLs called out with pointer to `OpenClawing4-Audit.md §D.1`. |
+| `helix_qa/docs/openclawing/OpenClawing2.md` | edit | RETRACTION banner at top; lists the 3 fabricated paths (`browser_use/browser/custom_browser.py`, `skyvern/agent/prompts.py`, `PlanEvaluate`), the TS→Go reframing, and retained validities. |
+| `helix_qa/docs/openclawing/OpenClawing3.md` | edit | Multi-item RETRACTION banner: src/... fabricated, sudo violates, compile-blockers listed, DXGI zero-copy claim wrong, benchmarks 3–7× optimistic, missing llama.cpp RPC mandate, 16-week plan replaced. Retained validity: the 19 tech repos are real. |
+| `helix_qa/scripts/hooks/no-sudo.sh` | **new** (exec) | Pre-commit hook. Rejects literal `sudo ` in committed content. Allow-listed: retraction docs (`OpenClaw*`, `Starting_Point`, `OpenClawing4*`), strike-through `~~sudo~~`, quoted `"sudo"`, this hook file itself, `.pre-commit-config.yaml`, the two fixes/audit banks (they reference the word to describe the retraction). |
+| `helix_qa/.pre-commit-config.yaml` | **new** | Wires the hook into `pre-commit run --all-files`; also enables the standard `pre-commit-hooks` set (trailing-whitespace, end-of-file-fixer, check-yaml, check-json, check-added-large-files, check-merge-conflict, detect-private-key). |
+| `helix_qa/banks/docs-audit.yaml` | **new** | 7 test cases (AUDIT-001..007). Mechanical checks: banners intact on 3 docs; no-sudo hook behaviour; OpenClawing4 cites real `pkg/...`; OpenClawing4 structural integrity (≥1000 + ≥500 lines, handover present); llama.cpp RPC primary declared. |
+| `helix_qa/banks/fixes-validation.yaml` | edit (+14) | FIX-OC2-001..003 and FIX-OC3-001..011 regression anchors. Total test_cases after Phase 0: 44. |
+| `helix_qa/challenges/config/helixqa-validation.yaml` | edit (+1) | HQA-DOCS-001 challenge: runs the bank, runs the hook against fixtures, counts test cases in the docs-audit bank. |
 
 ### 2.3 Acceptance evidence
 
@@ -414,7 +414,7 @@ These are live blockers you will hit; log them against the existing OPEN_POINTS_
 | No macOS host in this session | Swift sidecars cannot be built/signed. | Phase 2 + Phase 6 deliver Go-side only; Swift sidecars deferred to a macOS-capable session. |
 | No Windows host in this session | C++/WinRT sidecars cannot be built. | Phase 6 deliverable on Linux is source only; binary built on Windows host. |
 | No GPU available to this session | TensorRT engines cannot be compiled and benchmarks cannot be measured. | Phase 4 deliverable is source + operator-runnable scripts; benchmarks recorded in a later session on the RTX 3060 host. |
-| Shell cwd drift caveat (observed in this session) | Earlier `cd X && ...` chain created a stray `HelixQA/HelixQA/.gitignore` + `data/memory.db` inside a nested path. Cleaned up; stay on absolute paths. | Future sessions: always use absolute paths for `Bash` commands. |
+| Shell cwd drift caveat (observed in this session) | Earlier `cd X && ...` chain created a stray `helix_qa/helix_qa/.gitignore` + `data/memory.db` inside a nested path. Cleaned up; stay on absolute paths. | Future sessions: always use absolute paths for `Bash` commands. |
 | `ocu-probe` (4.8 MB Go binary) is **gitignored** but still exists in working tree | Harmless. Do not commit. | Left alone; `.gitignore` updated in prior commit. |
 
 ### 4.2 Toolchain / dependency prerequisites
@@ -548,7 +548,7 @@ Per §1.2 of the Phase-0 scoping conversation, the following were flagged as out
 
 - **SQL schemas beyond the three `pkg/memory/store.go` tables in Phase 2.** HelixQA does not have a broader SQL schema; Catalogizer's `catalog-api` has its own migrations under `catalog-api/database/migrations/` — not touched by this plan.
 - **Video courses.** Cannot be produced from a text session. If the operator wants a "how to onboard a new developer" screencast, that is a separate project.
-- **Websites.** HelixQA has no website under its repo. Catalogizer has internal dashboards at `HelixQA/docs/website/challenges-dashboard/` and `HelixQA/docs/website/ticket-viewer/` — these may be extended in Phase 5 to surface OpenClawing4 artefacts, but that is Phase 5 scope.
+- **Websites.** HelixQA has no website under its repo. Catalogizer has internal dashboards at `helix_qa/docs/website/challenges-dashboard/` and `helix_qa/docs/website/ticket-viewer/` — these may be extended in Phase 5 to surface OpenClawing4 artefacts, but that is Phase 5 scope.
 - **iOS real-device broadcast-extension signing & distribution.** App-side deliverable; Phase 6 only provides the framework source.
 
 These items can be re-added to scope by the operator at any time; they are parked rather than forgotten.

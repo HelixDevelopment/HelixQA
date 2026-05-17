@@ -123,7 +123,7 @@ helixqa autonomous \
 
 ## Environment File
 
-For persistent configuration, create a `.env` file in the project root or in `HelixQA/`:
+For persistent configuration, create a `.env` file in the project root or in `helix_qa/`:
 
 ```env
 ANTHROPIC_API_KEY=sk-ant-...

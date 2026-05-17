@@ -71,7 +71,7 @@ type PipelineConfig struct {
 	// configuration error rather than silently no-op.
 	//
 	// Added 2026-04-29 for BLUFF-HELIXQA-BANKS-REWRITE-001 —
-	// see HelixQA/pkg/autonomous/http_executor.go.
+	// see helix_qa/pkg/autonomous/http_executor.go.
 	HTTPBaseURL string
 
 	// PlaywrightCDPURL is the Chrome DevTools Protocol

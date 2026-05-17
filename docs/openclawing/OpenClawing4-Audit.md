@@ -216,7 +216,7 @@ demands (exact algorithms, GitHub URLs, quantified winning) are unmet.
 
 ### B.3 Codebase references catalog (HelixQA-side & target-repo-side)
 
-**HelixQA/OpenClaw side** (the baseline file paths the document declares for
+**helix_qa/OpenClaw side** (the baseline file paths the document declares for
 "OpenClaw"):
 
 | Line | Path | Verdict |
@@ -225,7 +225,7 @@ demands (exact algorithms, GitHub URLs, quantified winning) are unmet.
 | 61 | `src/agents/bash-tools.exec.ts` | Same - unverifiable. Filename pattern `bash-tools.exec.ts` is not typical for any real TS project. |
 | 63-65 | `src/agents/pi-tools.ts`, `src/agents/openclaw-tools.ts` | Same. |
 
-Given HelixQA is a Go module (see `HelixQA/pkg/` listing in the codebase), these TS
+Given HelixQA is a Go module (see `helix_qa/pkg/` listing in the codebase), these TS
 paths cannot refer to HelixQA. The whole baseline section is therefore addressing a
 different project ("OpenClaw" as a TypeScript gateway) that nothing in Catalogizer
 actually builds on. **This is the single largest framing problem for OpenClawing4**:
@@ -645,7 +645,7 @@ workload.
   TRT matrix, etc. None of that is present. The doc jumps from `git clone` to
   `make -j` and assumes success.
 - **CR-9**: Zero mention of HelixQA's actual constraints from
-  `HelixQA/CLAUDE.md`: project-agnostic decoupling mandate, no CI, no sudo,
+  `helix_qa/CLAUDE.md`: project-agnostic decoupling mandate, no CI, no sudo,
   rootless podman, distributed llama.cpp RPC vision. OpenClawing3 recommends
   operations (CUDA driver install, `sudo apt-get install tensorrt` at line 3309)
   that directly violate the "no sudo" mandatory rule. `sudo dpkg -i` line 3306 is
@@ -772,7 +772,7 @@ From **OpenClawing3**:
 
 ### D.4 Priority list for OpenClawing4
 
-1. **Re-anchor on HelixQA.** Replace OpenClaw / `src/...` framing with `HelixQA/pkg/...`. Explicitly state what parts of HelixQA are being extended vs. replaced.
+1. **Re-anchor on HelixQA.** Replace OpenClaw / `src/...` framing with `helix_qa/pkg/...`. Explicitly state what parts of HelixQA are being extended vs. replaced.
 2. **Constitutional audit.** Before any tech is accepted, check against the HelixQA CLAUDE.md no-sudo / project-agnostic / LLM-driven / no-app-modification rules. For each violating tech, either (a) find the rootless equivalent, or (b) reject it.
 3. **Correct the bad citations.** OpenClawing2 has at least 3 fabricated or wrong target-repo paths (`custom_browser.py`, `agent/prompts.py`, `PlanEvaluate` class). OpenClawing4 must not propagate them.
 4. **Remove broken Starting_Point links.** 9 of 24 primary links in Starting_Point.md are 404. Do not carry the "25 OpenClaw alternatives" framing into OpenClawing4.
@@ -783,7 +783,7 @@ From **OpenClawing3**:
 9. **Write a real phase plan.** For each of the 47 technologies in Appendix C, mark: NEEDED / NICE / DROP. Order the NEEDED list by dependency chain. Don't time-box 47 techs into 16 weeks.
 10. **Add observability.** Every capture/encode/analyse node needs latency histograms (p50/p95/p99), drop counts, GPU memory usage. This is the layer OpenClawing3 completely omits.
 11. **Add a threat / permission model.** Explicitly say which capabilities need which Linux group / macOS TCC grant / Windows privilege, and how those are obtained WITHOUT sudo under HelixQA's rules.
-12. **Align with HelixQA's existing vision stack.** The file HelixQA/CLAUDE.md mandates llama.cpp RPC distributed inference. OpenClawing4 must explain how TensorRT / OpenCV / Vulkan additions are in addition to, not in place of, the distributed llama.cpp model.
+12. **Align with HelixQA's existing vision stack.** The file helix_qa/CLAUDE.md mandates llama.cpp RPC distributed inference. OpenClawing4 must explain how TensorRT / OpenCV / Vulkan additions are in addition to, not in place of, the distributed llama.cpp model.
 13. **Address the mobile + TV platforms explicitly.** HelixQA runs on Android TV primarily. OpenClawing3's scrcpy treatment is outdated (v1.x protocol); OpenClawing4 needs the current scrcpy 2.x/3.x wire format or a different mobile strategy (UIAutomator2 + MediaProjection capture over ADB).
 14. **Cover the glitch-detection gap.** HelixQA CLAUDE.md spells out frame stagnation, misaligned UI, clipped text, broken animations as bugs to report. Nothing in the three source docs addresses this. OpenClawing4 must introduce the detection algorithms (SSIM/pHash for stagnation, layout-tree diff for misalignment, OCR baseline comparison for text clipping) as first-class deliverables.
 15. **Cite everything.** Every real file path must have the repo's SHA or tag at time of reference. Every GitHub repo must have an SSH URL (per Catalogizer CLAUDE.md). Every numeric claim must have a source or a labelled "estimated".

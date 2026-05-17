@@ -109,7 +109,7 @@ See [LLM Providers](/providers) for the complete list of 40+ supported providers
 
 | Variable | Purpose | Default |
 |----------|---------|---------|
-| `HELIX_MEMORY_DB` | Path to SQLite memory database | `HelixQA/data/memory.db` |
+| `HELIX_MEMORY_DB` | Path to SQLite memory database | `helix_qa/data/memory.db` |
 | `HELIX_OUTPUT_DIR` | Default output directory | `qa-results` |
 | `HELIX_ISSUES_DIR` | Directory for generated issue tickets | `docs/issues` |
 
@@ -178,7 +178,7 @@ When using HelixQA as a library or configuring via YAML, the `AutonomousConfig` 
 
 | Field | Type | Default | Description |
 |-------|------|---------|-------------|
-| `memory_db_path` | `string` | `<project>/HelixQA/data/memory.db` | SQLite memory store path |
+| `memory_db_path` | `string` | `<project>/helix_qa/data/memory.db` | SQLite memory store path |
 | `issues_dir` | `string` | `docs/issues` | Issue ticket output directory |
 
 ---

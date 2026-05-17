@@ -1,0 +1,43 @@
+# helix-deps.yaml — HelixQA submodule Submodule-Dependency Manifest
+# Per HelixConstitution §11.4.31 (Submodule-Dependency-Manifest Mandate) /
+# CONST-054 (cascaded into this submodule's CONSTITUTION.md).
+#
+# HelixQA is a Go QA-orchestration framework (digital.vasic.helixqa) that
+# composes the Challenges framework (test execution + reporting) and the
+# Containers framework (rootless podman/docker orchestration for
+# emulator-based QA pipelines). README's "Prerequisites" enumerates the
+# sibling directories: `../Challenges` (digital.vasic.challenges) and
+# `../Containers` (digital.vasic.containers).
+#
+# Schema reference: <constitution-submodule>/Constitution.md §11.4.31.
+# Layout: flat — both deps land at <parent-project>/<dep-name>/ per
+# CONST-051(C) (e.g. Lava's existing layout: Submodules/Challenges +
+# Submodules/Containers, both already incorporated as peers).
+#
+# Last updated: 2026-05-16 (Phase 4-debt closure — added on PR to
+# HelixDevelopment/HelixQA upstream to close the Lava-side waiver list
+# in scripts/check-helix-deps-manifest.sh + check-canonical-root-and-
+# upstreams.sh).
+
+schema_version: 1
+
+deps:
+  - name: Challenges
+    ssh_url: git@github.com:vasic-digital/Challenges.git
+    ref: main
+    why: "Anti-bluff Challenge Test infrastructure (HelixQA's behavior-anchor + challenge runner foundation)"
+    layout: flat
+  - name: Containers
+    ssh_url: git@github.com:vasic-digital/Containers.git
+    ref: main
+    why: "Rootless podman/docker orchestration for HelixQA's emulator-based QA pipelines"
+    layout: flat
+
+transitive_handling:
+  recursive: true
+  conflict_resolution: operator-required
+
+# HelixQA is a Go module — language_specific_subtree is false because
+# the entire submodule is the Go subtree (no inner non-Go subtrees
+# requiring §11.4.29 / CONST-052 snake_case exemption).
+language_specific_subtree: false

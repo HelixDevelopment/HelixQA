@@ -93,19 +93,19 @@
       "steps": [
         {
           "name": "NewPlanner(hostMgr, []BuildComponent{{Name:'svc-api',HasGo:true}})",
-          "action": "Containers/internal/buildpkg.NewPlanner",
+          "action": "containers/internal/buildpkg.NewPlanner",
           "expected": "Planner exposes .Components() returning the same slice"
         },
         {
           "name": "planner.PlanAll(ctx)",
-          "action": "Containers/internal/buildpkg.Planner.PlanAll",
+          "action": "containers/internal/buildpkg.Planner.PlanAll",
           "expected": "Schedules only svc-api \u2014 no catalog-api leaked"
         }
       ],
       "expected_result": "Library no longer knows Catalogizer component names",
       "fix_reference": {
         "id": "decoupling-containers",
-        "file": "Containers/internal/buildpkg/planner.go"
+        "file": "containers/internal/buildpkg/planner.go"
       }
     },
     {
@@ -119,14 +119,14 @@
       "steps": [
         {
           "name": "userflow-runner --platform api (no --platform-groups)",
-          "action": "Challenges/cmd/userflow-runner",
+          "action": "challenges/cmd/userflow-runner",
           "expected": "Exits with 'invalid platform' error \u2014 no hardcoded default fell through"
         }
       ],
       "expected_result": "CLI forces caller to declare their topology",
       "fix_reference": {
         "id": "decoupling-challenges",
-        "file": "Challenges/cmd/userflow-runner/main.go"
+        "file": "challenges/cmd/userflow-runner/main.go"
       }
     },
     {

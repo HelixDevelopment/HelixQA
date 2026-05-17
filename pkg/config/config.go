@@ -245,7 +245,7 @@ type AutonomousConfig struct {
 	LLMModel string `yaml:"llm_model" json:"llm_model"`
 
 	// MemoryDBPath is the file path for the SQLite memory
-	// store. Defaults to <project-root>/HelixQA/data/memory.db.
+	// store. Defaults to <project-root>/helix_qa/data/memory.db.
 	MemoryDBPath string `yaml:"memory_db_path" json:"memory_db_path"`
 
 	// IssuesDir is the directory where generated issue

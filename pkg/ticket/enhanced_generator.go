@@ -1,6 +1,30 @@
 // SPDX-FileCopyrightText: 2026 Milos Vasic
 // SPDX-License-Identifier: Apache-2.0
 
+// EnhancedGenerator integrates with the digital.vasic.llmorchestrator
+// agent for LLM-driven ticket enrichment. The dependency on the
+// LLMOrchestrator submodule (HelixDevelopment/LLMOrchestrator) is heavy
+// (transitive ML runtimes, model files, etc.), so consumers who only
+// need the plain Generator (TicketWriter / RenderMarkdown / closure-log
+// generation) should NOT have to pull LLMOrchestrator into their
+// module graph.
+//
+// To allow plain-Generator consumers (e.g., lava-api-go's Phase 4-C-3
+// pkg/qa/ticket adapter under digital.vasic.lava.apigo) to consume
+// pkg/ticket WITHOUT the LLMOrchestrator dep, this file is gated
+// behind the `helixqa_enhanced_tickets` build tag.
+//
+// Consumers wanting EnhancedGenerator: build with
+//
+//   go build -tags=helixqa_enhanced_tickets ./...
+//
+// HelixQA's own full build / test loop SHOULD use the tag (the
+// EnhancedGenerator unit tests live in ticket_enhanced_test.go with
+// the same tag). HelixQA CI default builds include the tag; plain
+// downstream consumers (Lava) build without it.
+
+//go:build helixqa_enhanced_tickets
+
 package ticket
 
 import (

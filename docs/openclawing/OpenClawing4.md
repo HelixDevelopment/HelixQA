@@ -2,7 +2,7 @@
 
 **Author:** HelixQA platform team
 **Date:** 2026-04-19
-**Location:** `HelixQA/docs/openclawing/OpenClawing4.md`
+**Location:** `helix_qa/docs/openclawing/OpenClawing4.md`
 **Supersedes / refines:** `Starting_Point.md`, `OpenClawing2.md`, `OpenClawing3.md`
 **Companion audit:** `OpenClawing4-Audit.md` (forensic read of the three prior documents; cited throughout)
 
@@ -146,7 +146,7 @@ This section replaces OpenClawing3's invented `src/...` tree with the actual Hel
 ### 3.1 Top-level layout
 
 ```
-HelixQA/
+helix_qa/
 ├── cmd/                       # CLI entry points (helixqa, …)
 ├── pkg/                       # Core packages (50+ modules, all Go)
 ├── internal/                  # Private infrastructure (visionserver)
@@ -1115,7 +1115,7 @@ These are additions HelixQA needs that neither OpenClawing2 nor OpenClawing3 pro
 - `CLAUDE.md` — HelixQA mandatory constraints.
 - `CONSTITUTION.md` (Catalogizer root) — Article V, VI, VII.
 - `docs/OPEN_POINTS_CLOSURE.md` — operator-action source of truth.
-- `HelixQA/docs/openclawing/OpenClawing4-Audit.md` — forensic audit feeding this document.
+- `helix_qa/docs/openclawing/OpenClawing4-Audit.md` — forensic audit feeding this document.
 
 **Capture.**
 - [xdg-desktop-portal ScreenCast](https://flatpak.github.io/xdg-desktop-portal/docs/doc-org.freedesktop.portal.ScreenCast.html)
