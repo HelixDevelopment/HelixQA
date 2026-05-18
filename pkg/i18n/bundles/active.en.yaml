@@ -1,0 +1,27 @@
+# SPDX-FileCopyrightText: 2026 Milos Vasic
+# SPDX-License-Identifier: Apache-2.0
+#
+# HelixQA English message bundle for CONST-046 Phase 4 round 7
+# (round-112 §11.4 i18n kickoff). Every entry is the English
+# source-of-truth for a previously-hardcoded user-facing literal
+# in helix_qa/cmd/helixqa/main.go. The messageID is namespaced
+# `helixqa_` so it cannot collide with other submodules.
+#
+# Backends (LLM-driven generator, YAML-bundle loader) consume
+# this file as the en seed and produce the locale-specific
+# variants users actually see at runtime.
+
+helixqa_cli_banner:
+  other: "HelixQA — AI-driven QA orchestration"
+
+helixqa_cli_help_hint:
+  other: "Run 'helixqa <command> --help' for command details."
+
+helixqa_run_banks_flag_usage:
+  other: "Comma-separated test bank paths (files or directories)"
+
+helixqa_run_platform_flag_usage:
+  other: "Target platform: android|web|desktop|all"
+
+helixqa_run_speed_flag_usage:
+  other: "Speed mode: slow|normal|fast"

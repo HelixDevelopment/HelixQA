@@ -34,6 +34,7 @@ import (
 	"digital.vasic.helixqa/pkg/config"
 	"digital.vasic.helixqa/pkg/controller"
 	"digital.vasic.helixqa/pkg/helixqa"
+	"digital.vasic.helixqa/pkg/i18n"
 	qainfra "digital.vasic.helixqa/pkg/infra"
 	"digital.vasic.helixqa/pkg/llm"
 	"digital.vasic.helixqa/pkg/memory"
@@ -41,6 +42,24 @@ import (
 	"digital.vasic.helixqa/pkg/reporter"
 	"digital.vasic.helixqa/pkg/testbank"
 )
+
+// helixqaT is a thin convenience wrapper around the
+// package-level translator seam exposed by helix_qa/pkg/i18n.
+// It centralises the CONST-046 lookup pattern used by every
+// migrated call site in this binary so the call sites stay
+// readable. Callers pass the messageID (namespaced `helixqa_`)
+// and optional template data; the seam-installed backend (or
+// the NoopTranslator default) returns the localised string.
+// Errors from the backend are swallowed in favour of the
+// pre-migration English literal so a backend bug cannot silently
+// produce empty CLI output — see fallback handling below.
+func helixqaT(ctx context.Context, messageID, fallback string) string {
+	out, err := i18n.ActiveTranslator().T(ctx, messageID, nil)
+	if err != nil || out == "" {
+		return fallback
+	}
+	return out
+}
 
 const version = "0.2.0"
 
@@ -77,7 +96,8 @@ func main() {
 }
 
 func printUsage() {
-	fmt.Println("HelixQA — AI-driven QA orchestration")
+	ctx := context.Background()
+	fmt.Println(helixqaT(ctx, "helixqa_cli_banner", "HelixQA — AI-driven QA orchestration"))
 	fmt.Println()
 	fmt.Println("Usage:")
 	fmt.Println("  helixqa <command> [flags]")
@@ -92,22 +112,23 @@ func printUsage() {
 	fmt.Println("  version     Print version information")
 	fmt.Println("  help        Show this help")
 	fmt.Println()
-	fmt.Println("Run 'helixqa <command> --help' for command details.")
+	fmt.Println(helixqaT(ctx, "helixqa_cli_help_hint", "Run 'helixqa <command> --help' for command details."))
 }
 
 // cmdRun executes the full QA pipeline.
 func cmdRun(args []string) {
 	fs := flag.NewFlagSet("run", flag.ExitOnError)
+	flagCtx := context.Background()
 	banks := fs.String("banks", "",
-		"Comma-separated test bank paths (files or directories)")
+		helixqaT(flagCtx, "helixqa_run_banks_flag_usage", "Comma-separated test bank paths (files or directories)"))
 	platform := fs.String("platform", "all",
-		"Target platform: android|web|desktop|all")
+		helixqaT(flagCtx, "helixqa_run_platform_flag_usage", "Target platform: android|web|desktop|all"))
 	device := fs.String("device", "",
 		"Android device/emulator ID")
 	output := fs.String("output", "qa-results",
 		"Output directory for results and evidence")
 	speed := fs.String("speed", "normal",
-		"Speed mode: slow|normal|fast")
+		helixqaT(flagCtx, "helixqa_run_speed_flag_usage", "Speed mode: slow|normal|fast"))
 	reportFmt := fs.String("report", "markdown",
 		"Report format: markdown|html|json")
 	validate := fs.Bool("validate", true,
