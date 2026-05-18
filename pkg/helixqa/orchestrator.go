@@ -257,9 +257,16 @@ func (o *Orchestrator) runChallenges(ctx context.Context) (bool, []byte, error) 
 // (stdout/stderr from the failing `go test` subprocess + a structured
 // evidence manifest + an environment snapshot). The sentinel survives but
 // fires only when NONE of the capture paths produced an on-disk artefact.
-// Round-59 will extend with chromedp/playwright live-context screenshot
-// capture when HELIX_QA_BROWSER_URL is set; round-58 deliberately scopes
-// to subprocess output to keep blast radius contained.
+//
+// Round-61 (2026-05-18) closes the round-58 deferred item: extends the
+// pipeline with chromedp browser-screenshot capture when
+// HELIX_QA_BROWSER_URL is set + docker/podman container-log capture when
+// HELIX_QA_CONTAINER_ID is set. Both are best-effort, each surfaces a
+// dedicated sentinel on failure (ErrEvidenceCaptureScreenshotFailed +
+// ErrEvidenceCaptureContainerLogsFailed). The orchestrator still NEVER
+// fabricates a path — every returned artefact passes os.Stat in the same
+// call. See evidence_browser.go + evidence_container.go for the per-
+// capturer round-61 contracts.
 var ErrEvidenceCaptureNotWired = fmt.Errorf("helixqa orchestrator: no failure-evidence capture mechanism applicable for this test context — no subprocess stdout/stderr was captured by runType AND no live browser/container context is reachable. Caller MUST treat absence of captured artefacts as a §11.4 PASS-bluff and refuse to mark the QA run as 'evidence-captured' per Article XI §11.9 / CONST-035")
 
 // ErrEvidenceCaptureStdoutWriteFailed indicates the orchestrator attempted to
@@ -347,13 +354,23 @@ func (o *Orchestrator) captureFailureEvidence(tt TestType, runErr error, stdout 
 	var notes []string
 	var failed []string
 
+	// Round-61 extension: detect optional live-context capture sources
+	// (browser URL + container ID). When EITHER is present we have a
+	// capture path even if the subprocess produced no stdout AND no
+	// wrapping error — so the short-circuit below MUST take them into
+	// account. A request for browser/container capture is signalled by
+	// the env var being non-empty; the actual capturer call still
+	// honours round-58's honesty contract (no fabrication on failure).
+	hasBrowserContext := os.Getenv(EnvBrowserURL) != ""
+	hasContainerContext := os.Getenv(EnvContainerID) != ""
+
 	// If there is no subprocess output AND no other capture mechanism
 	// would fire, short-circuit to the round-29 sentinel BEFORE creating
 	// an empty directory. This preserves the round-29 contract for the
 	// genuinely-empty case.
 	hasStdoutBytes := len(stdout) > 0
 	hasOriginalError := runErr != nil
-	if !hasStdoutBytes && !hasOriginalError {
+	if !hasStdoutBytes && !hasOriginalError && !hasBrowserContext && !hasContainerContext {
 		return nil, ErrEvidenceCaptureNotWired
 	}
 
@@ -417,13 +434,53 @@ func (o *Orchestrator) captureFailureEvidence(tt TestType, runErr error, stdout 
 		}
 	}
 
-	// (4) Manifest — catalogue what we captured. Written LAST so it can
-	// reference the paths from (1)-(3). The manifest is also verified
+	// (4) Round-61: browser screenshot capture — only when the caller
+	// supplied a browser context via HELIX_QA_BROWSER_URL. Failures here
+	// are best-effort: they are collected into captureErrors and reported
+	// alongside whatever else succeeded. NO fabrication: the capturer
+	// returns a path ONLY after writing AND os.Stat-verifying the PNG.
+	if hasBrowserContext {
+		screenshotPath, ssErr := captureBrowserScreenshot(context.Background(), perTypeDir)
+		if ssErr != nil {
+			captureErrors = append(captureErrors, ssErr)
+			failed = append(failed, "screenshot.png")
+		} else if !pathExistsOnDisk(screenshotPath) {
+			// Defence in depth: the capturer already verifies, but the
+			// orchestrator-level backstop runs again to keep the round-29
+			// "no path returned without os.Stat in same call" property
+			// at the dispatcher layer too.
+			captureErrors = append(captureErrors, fmt.Errorf("%w: %s", ErrEvidenceCaptureStatVerificationFailed, screenshotPath))
+			failed = append(failed, "screenshot.png")
+		} else {
+			capturedPaths = append(capturedPaths, screenshotPath)
+			notes = append(notes, "captured browser screenshot via chromedp (round-61)")
+		}
+	}
+
+	// (5) Round-61: container-log capture — only when the caller supplied
+	// a container context via HELIX_QA_CONTAINER_ID. Same best-effort
+	// honesty contract as (4): no path returned without os.Stat.
+	if hasContainerContext {
+		containerLogPath, clErr := captureContainerLogs(context.Background(), perTypeDir)
+		if clErr != nil {
+			captureErrors = append(captureErrors, clErr)
+			failed = append(failed, "container.log")
+		} else if !pathExistsOnDisk(containerLogPath) {
+			captureErrors = append(captureErrors, fmt.Errorf("%w: %s", ErrEvidenceCaptureStatVerificationFailed, containerLogPath))
+			failed = append(failed, "container.log")
+		} else {
+			capturedPaths = append(capturedPaths, containerLogPath)
+			notes = append(notes, "captured container logs via docker/podman (round-61)")
+		}
+	}
+
+	// (6) Manifest — catalogue what we captured. Written LAST so it can
+	// reference the paths from (1)-(5). The manifest is also verified
 	// via os.Stat before being added to the returned paths slice.
 	manifest := EvidenceManifest{
 		TestType:      string(tt),
 		FailedAt:      time.Now().UTC(),
-		Capturer:      "helixqa.Orchestrator (round-58 wiring)",
+		Capturer:      "helixqa.Orchestrator (round-58 wiring + round-61 browser/container)",
 		Paths:         append([]string(nil), capturedPaths...),
 		CapturerNotes: notes,
 		CaptureFailed: failed,

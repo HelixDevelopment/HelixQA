@@ -223,11 +223,17 @@ func TestCaptureFailureEvidence_OnlyErrorPresent_StillCaptures(t *testing.T) {
 // environment variables are persisted to env.json when present, and that
 // non-whitelisted vars are NOT leaked into the snapshot (CONST-042
 // secret-leak prevention).
+//
+// Round-61 note: HELIX_QA_BROWSER_URL is intentionally NOT set here,
+// because round-61 wires that env var to active chromedp invocation —
+// setting it in this env-snapshot test would conflate two surfaces.
+// A separate explicit env-only marker is used instead. The dedicated
+// round-61 browser tests cover HELIX_QA_BROWSER_URL handling end-to-end.
 func TestCaptureFailureEvidence_EnvSnapshotCaptured(t *testing.T) {
 	o := newOrchestratorWithTempEvidenceDir(t)
 
 	t.Setenv("HELIX_QA_TEST_MARKER", "round-58-marker-value")
-	t.Setenv("HELIX_QA_BROWSER_URL", "http://localhost:9222")
+	t.Setenv("HELIX_QA_SCHEMA_VERSION", "round-58-env-snapshot")
 	// Non-whitelisted secret that MUST NOT appear in env.json.
 	t.Setenv("MY_SECRET_API_KEY", "secret-do-not-leak")
 
@@ -249,7 +255,7 @@ func TestCaptureFailureEvidence_EnvSnapshotCaptured(t *testing.T) {
 	envStr := string(raw)
 	assert.Contains(t, envStr, "HELIX_QA_TEST_MARKER")
 	assert.Contains(t, envStr, "round-58-marker-value")
-	assert.Contains(t, envStr, "HELIX_QA_BROWSER_URL")
+	assert.Contains(t, envStr, "HELIX_QA_SCHEMA_VERSION")
 	// Secret-leak guard.
 	assert.NotContains(t, envStr, "MY_SECRET_API_KEY", "env snapshot MUST NOT leak non-whitelisted env vars (CONST-042 / §11.4.10)")
 	assert.NotContains(t, envStr, "secret-do-not-leak", "env snapshot MUST NOT leak non-whitelisted secret values")
