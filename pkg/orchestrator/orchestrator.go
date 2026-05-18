@@ -137,6 +137,27 @@ func (o *Orchestrator) Run(
 	o.log("Loaded %d challenge definitions from %d sources",
 		len(definitions), len(o.bank.Sources()))
 
+	// 1.5. Auto-wire runner from bank if caller didn't supply one.
+	// Bridges each bank-loaded *Definition into a definitionChallenge
+	// wrapper + registers them into a fresh registry that the runner
+	// consults. Without this, the runner short-circuits with "not
+	// found in registry" and the per-definition dispatch loop in
+	// runPlatform never appends to ChallengeResults — producing the
+	// "PASS-bluff detected: 0 challenges actually executed" exit per
+	// cmd/helixqa/main.go. (close-out⁷⁵ wiring.)
+	if o.runner == nil {
+		reg := newDefinitionRegistry()
+		for _, def := range definitions {
+			if err := reg.Register(newDefinitionChallenge(def)); err != nil {
+				return nil, fmt.Errorf(
+					"register definition %s: %w", def.ID, err)
+			}
+		}
+		o.runner = runner.NewRunner(runner.WithRegistry(reg))
+		o.log("Auto-wired runner with %d bridged definitions (close-out⁷⁵)",
+			len(definitions))
+	}
+
 	// 2. Create output directory.
 	if err := os.MkdirAll(o.config.OutputDir, 0755); err != nil {
 		return nil, fmt.Errorf("create output dir: %w", err)
@@ -286,6 +307,23 @@ func (o *Orchestrator) runPlatform(
 					EndTime:       time.Now(),
 				}
 			}
+			// round-82 §11.4 anti-bluff fix: the close-out⁷⁵
+			// definitionChallenge wrapper returns Status=Skipped
+			// with a "skip-reason:" sentinel in RecordedActions —
+			// but the challenges-runner's executeChallenge merge
+			// logic only preserves Failed/TimedOut/Error from the
+			// inner Execute call. For Skipped+passing-assertions,
+			// the runner unconditionally overrides to Passed at
+			// runner.go:527, producing the canonical CONST-035 /
+			// Article XI §11.9 PASS-bluff: declarative-only
+			// definitions with NO real backend dispatch report
+			// success to the end user. The orchestrator owns the
+			// wrapper, so it owns the restoration: detect the
+			// "skip-reason:" sentinel and restore Skipped before
+			// the reporter aggregates pass/fail counts. The
+			// challenges submodule is decoupled (CONST-051(B)) —
+			// fix lives here, not there.
+			restoreSkippedFromDefinitionWrapper(challengeResult)
 			pr.ChallengeResults = append(
 				pr.ChallengeResults, challengeResult,
 			)

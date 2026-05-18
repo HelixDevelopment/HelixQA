@@ -50,11 +50,5 @@ func (e *TUIEngine) Capture(ctx context.Context, opts CaptureOptions) (*Result, 
 			}
 		}
 	}
-	return &Result{
-		Data:      []byte("placeholder-tui-buffer"),
-		Format:    "txt",
-		Platform:  config.PlatformTUI,
-		Timestamp: time.Now(),
-		Duration:  time.Since(start),
-	}, fmt.Errorf("no TUI screenshot tool available")
+	return nil, fmt.Errorf("no TUI screenshot tool available (tried gnome-screenshot, scrot, maim)")
 }

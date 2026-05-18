@@ -194,6 +194,7 @@ func TestSessionCoordinator_Run_WithAgents(t *testing.T) {
 
 	sc := NewSessionCoordinator(
 		cfg, pool, &testAnalyzer{}, fm, cov,
+		WithExecutorFactory(&NoopExecutorFactory{}),
 	)
 
 	result, err := sc.Run(context.Background())
@@ -217,6 +218,7 @@ func TestSessionCoordinator_Run_NoAgents(t *testing.T) {
 	sc := NewSessionCoordinator(
 		cfg, pool, &testAnalyzer{},
 		feature.NewFeatureMap(""), coverage.NewTracker(),
+		WithExecutorFactory(&NoopExecutorFactory{}),
 	)
 
 	_, err := sc.Run(context.Background())
@@ -231,6 +233,7 @@ func TestSessionCoordinator_Run_AlreadyRunning(t *testing.T) {
 	sc := NewSessionCoordinator(
 		cfg, agent.NewPool(), &testAnalyzer{},
 		feature.NewFeatureMap(""), coverage.NewTracker(),
+		WithExecutorFactory(&NoopExecutorFactory{}),
 	)
 
 	// Manually set status.
@@ -255,6 +258,7 @@ func TestSessionCoordinator_Run_SkipCuriosity(t *testing.T) {
 	sc := NewSessionCoordinator(
 		cfg, pool, &testAnalyzer{},
 		feature.NewFeatureMap(""), coverage.NewTracker(),
+		WithExecutorFactory(&NoopExecutorFactory{}),
 	)
 
 	result, err := sc.Run(context.Background())

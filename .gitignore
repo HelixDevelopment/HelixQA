@@ -70,3 +70,15 @@ data/memory.db-wal
 
 # Local probe binary (OpenClaw Ultimate)
 /ocu-probe
+
+# Root-level binaries built from cmd/<name>/ (CONST-053; close-out⁶⁷ mass scrub)
+# Matches helixqa, helixqa-*, ocu-*, qa-*, recording-analyzer — anything Go
+# build emits at the repo root.
+/helixqa
+/helixqa-*
+/ocu-*
+/qa-*
+/recording-analyzer
+
+# Mutation gate runtime output
+/report.json

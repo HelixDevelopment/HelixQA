@@ -53,12 +53,5 @@ func (e *CLIEngine) Capture(ctx context.Context, opts CaptureOptions) (*Result, 
 			}
 		}
 	}
-	// Fallback: capture terminal buffer via script/typescript
-	return &Result{
-		Data:      []byte("placeholder-cli-terminal-buffer"),
-		Format:    "txt",
-		Platform:  config.PlatformLinux,
-		Timestamp: time.Now(),
-		Duration:  time.Since(start),
-	}, fmt.Errorf("no CLI screenshot tool available")
+	return nil, fmt.Errorf("no CLI screenshot tool available (tried gnome-screenshot, scrot, maim)")
 }

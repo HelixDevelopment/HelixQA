@@ -3,6 +3,7 @@ package screenshot
 import (
 	"context"
 	"fmt"
+	"os"
 	"time"
 
 	"digital.vasic.helixqa/pkg/config"
@@ -39,12 +40,20 @@ func (e *IOSEngine) Capture(ctx context.Context, opts CaptureOptions) (*Result, 
 	if device == "" {
 		device = "booted"
 	}
-	args := []string{"simctl", "io", device, "screenshot", "/tmp/helixqa-ios-screenshot.png"}
+	path := "/tmp/helixqa-ios-screenshot.png"
+	args := []string{"simctl", "io", device, "screenshot", path}
 	if _, err := e.runner.Run(ctx, "xcrun", args...); err != nil {
 		return nil, fmt.Errorf("xcrun simctl screenshot failed: %w", err)
 	}
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil, fmt.Errorf("read captured iOS screenshot %s: %w", path, err)
+	}
+	if len(data) == 0 {
+		return nil, fmt.Errorf("captured iOS screenshot %s is empty (0 bytes) — xcrun reported success but produced no bytes", path)
+	}
 	return &Result{
-		Data:      []byte("placeholder-ios"),
+		Data:      data,
 		Format:    "png",
 		Platform:  config.PlatformIOS,
 		Timestamp: time.Now(),

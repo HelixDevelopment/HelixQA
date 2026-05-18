@@ -107,13 +107,8 @@ func (f *DefaultExecutorFactory) Create(
 	}
 }
 
-// NoopExecutorFactory always returns a noopExecutor. Useful
-// for testing or when no real platform interaction is needed.
-type NoopExecutorFactory struct{}
-
-// Create returns a noopExecutor regardless of platform.
-func (f *NoopExecutorFactory) Create(
-	_ string,
-) (navigator.ActionExecutor, error) {
-	return &noopExecutor{}, nil
-}
+// NoopExecutorFactory moved to noop_executor_test.go per §11.4 /
+// CONST-050(A) — test-only. Production callers must use
+// DefaultExecutorFactory; a stub that silently succeeds every UI
+// action without driving a real device is a PASS-bluff if reached
+// from a production binary.

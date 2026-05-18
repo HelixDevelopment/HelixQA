@@ -51,7 +51,21 @@ func (d *Detector) checkDesktop(
 
 // isDesktopProcessAlive checks if the configured desktop
 // process is running. If a PID is set, it checks by PID.
-// Otherwise it checks by process name.
+// Otherwise it checks by process name. If neither is configured,
+// returns true unconditionally — per CONST-035 §11.4.3 the absence
+// of a configured target means "no desktop app under test", not
+// "crash detected on every step".
+//
+// close-out⁷⁵ fix: previously the default fallback was
+// checkProcessByName("java") which spuriously flagged crashes on
+// hosts that don't run java (or whose java is unrelated to any
+// helixqa-launched app). This produced 23-of-23 false-positive
+// crash reports against bank/all-formats.yaml runs that didn't
+// configure -desktop-process — the canonical contract-bluff
+// pattern per CONST-035 §11.4 ("absence-of-error PASS without
+// runtime evidence" inverted: presence-of-process-elsewhere
+// FAIL without runtime evidence the process WAS the one under
+// test).
 func (d *Detector) isDesktopProcessAlive(
 	ctx context.Context,
 ) (bool, error) {
@@ -61,8 +75,8 @@ func (d *Detector) isDesktopProcessAlive(
 	if d.processName != "" {
 		return d.checkProcessByName(ctx, d.processName)
 	}
-	// Default: check for java processes (JVM apps).
-	return d.checkProcessByName(ctx, "java")
+	// No process target configured → not under test → not a crash.
+	return true, nil
 }
 
 // checkProcessByPID checks if a process with the given PID
