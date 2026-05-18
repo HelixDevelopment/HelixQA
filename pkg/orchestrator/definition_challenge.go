@@ -30,11 +30,56 @@ package orchestrator
 
 import (
 	"context"
+	"strings"
 	"time"
 
 	"digital.vasic.challenges/pkg/challenge"
 	"digital.vasic.challenges/pkg/registry"
 )
+
+// definitionWrapperSkipSentinel is the prefix written into
+// RecordedActions by definitionChallenge.Execute so the orchestrator
+// can detect, after the runner has merged the result, that the
+// original wrapper intended a Skipped status. See
+// restoreSkippedFromDefinitionWrapper for the round-82 anti-bluff
+// rationale.
+const definitionWrapperSkipSentinel = "skip-reason:"
+
+// restoreSkippedFromDefinitionWrapper restores Status=Skipped on a
+// challenge.Result produced by the definitionChallenge wrapper after
+// the challenges-runner's executeChallenge merge logic has overridden
+// the wrapper's intent. See round-82 commit body for the full
+// causal chain — the short version: the runner only preserves
+// Failed/TimedOut/Error from the inner Execute call; Skipped with a
+// passing assertion gets silently promoted to Passed, producing the
+// canonical CONST-035 / Article XI §11.9 PASS-bluff (declarative-only
+// definitions with no real backend dispatch report success to the
+// end user).
+//
+// The signal that triggers restoration is the
+// definitionWrapperSkipSentinel string at the start of any
+// RecordedAction entry — only the wrapper writes that exact prefix.
+// Non-wrapper results pass through untouched.
+//
+// Anti-bluff posture: this restores the HONEST skip, it does not
+// hide a real PASS. The wrapper itself is what produced the
+// sentinel; if a future per-Type real-backend dispatcher replaces
+// the wrapper for a given Category, the sentinel will not be emitted
+// and the runner's Passed status will stand.
+func restoreSkippedFromDefinitionWrapper(r *challenge.Result) {
+	if r == nil {
+		return
+	}
+	if r.Status != challenge.StatusPassed {
+		return
+	}
+	for _, action := range r.RecordedActions {
+		if strings.HasPrefix(action, definitionWrapperSkipSentinel) {
+			r.Status = challenge.StatusSkipped
+			return
+		}
+	}
+}
 
 // newDefinitionRegistry returns a fresh, non-shared registry that the
 // orchestrator can populate with definitionChallenge wrappers. Using a
@@ -121,7 +166,7 @@ func (d *definitionChallenge) Execute(ctx context.Context) (*challenge.Result, e
 		RecordedActions: []string{
 			"definition-loaded: id=" + string(d.def.ID),
 			"definition-loaded: category=" + d.def.Category,
-			"skip-reason: " + skipReason,
+			definitionWrapperSkipSentinel + " " + skipReason,
 		},
 		Assertions: []challenge.AssertionResult{{
 			Type:     "definition-loaded",

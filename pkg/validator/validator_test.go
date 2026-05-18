@@ -112,6 +112,14 @@ func TestValidateStep_Passed(t *testing.T) {
 }
 
 func TestValidateStep_Failed_Crash(t *testing.T) {
+	// round-82 §11.4 anti-bluff fix: post close-out⁷⁵ (commit b37d5c2),
+	// the detector no longer defaults to `pgrep -f java` when no
+	// processName is configured — it returns ProcessAlive=true (no
+	// target → no crash, per CONST-035). This test exercises the
+	// crash-detection branch of ValidateStep, so it MUST explicitly
+	// configure a process name to invoke the pgrep path the mock
+	// stubs out. Without WithProcessName, the detector short-circuits
+	// to alive=true and the test silently asserts the wrong branch.
 	mock := newMockRunner()
 	mock.On(
 		"pgrep",
@@ -122,6 +130,7 @@ func TestValidateStep_Failed_Crash(t *testing.T) {
 	det := detector.New(
 		config.PlatformDesktop,
 		detector.WithCommandRunner(mock),
+		detector.WithProcessName("test-app-under-validation"),
 	)
 	v := New(det)
 
@@ -237,10 +246,18 @@ func TestResults_AfterValidation(t *testing.T) {
 }
 
 func TestResults_MixedPassFail(t *testing.T) {
+	// round-82 §11.4 anti-bluff fix: post close-out⁷⁵ (commit b37d5c2),
+	// the detector returns ProcessAlive=true when no processName/PID
+	// is configured (per CONST-035 "no target → no crash"). This test
+	// exercises the mixed pass/fail behaviour through real pgrep
+	// invocations, so it MUST explicitly configure a process name —
+	// otherwise both ValidateStep calls short-circuit to alive=true
+	// and the FailedCount assertion silently breaks.
 	mock := newMockRunner()
 	det := detector.New(
 		config.PlatformDesktop,
 		detector.WithCommandRunner(mock),
+		detector.WithProcessName("test-app-under-validation"),
 	)
 	v := New(det)
 
