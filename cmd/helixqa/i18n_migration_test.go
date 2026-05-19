@@ -128,6 +128,61 @@ func TestHelixqaT_RoutesThroughActiveTranslator(t *testing.T) {
 			fallback: "Report generated: %s\n",
 			want:     "<TRANSLATED:helixqa_report_generated_fmt>",
 		},
+		// --- round-214 (extension, 10 entries) ---------------
+		// printUsage() Usage/Commands block — the literal block
+		// every operator sees on every `helixqa` / `helixqa --help`
+		// / unknown-command invocation. Highest-impact CONST-046
+		// surface remaining on the CLI binary.
+		{
+			id:       "helixqa_usage_header",
+			fallback: "Usage:",
+			want:     "<TRANSLATED:helixqa_usage_header>",
+		},
+		{
+			id:       "helixqa_usage_invocation",
+			fallback: "  helixqa <command> [flags]",
+			want:     "<TRANSLATED:helixqa_usage_invocation>",
+		},
+		{
+			id:       "helixqa_commands_header",
+			fallback: "Commands:",
+			want:     "<TRANSLATED:helixqa_commands_header>",
+		},
+		{
+			id:       "helixqa_cmd_run_desc",
+			fallback: "  run         Execute QA pipeline across platforms",
+			want:     "<TRANSLATED:helixqa_cmd_run_desc>",
+		},
+		{
+			id:       "helixqa_cmd_autonomous_desc",
+			fallback: "  autonomous  Run autonomous LLM-driven QA session",
+			want:     "<TRANSLATED:helixqa_cmd_autonomous_desc>",
+		},
+		{
+			id:       "helixqa_cmd_replay_desc",
+			fallback: "  replay      Replay a ticket's OCU action chain (dry-run by default)",
+			want:     "<TRANSLATED:helixqa_cmd_replay_desc>",
+		},
+		{
+			id:       "helixqa_cmd_list_desc",
+			fallback: "  list        List test cases from banks",
+			want:     "<TRANSLATED:helixqa_cmd_list_desc>",
+		},
+		{
+			id:       "helixqa_cmd_report_desc",
+			fallback: "  report      Generate report from existing results",
+			want:     "<TRANSLATED:helixqa_cmd_report_desc>",
+		},
+		{
+			id:       "helixqa_cmd_signoff_desc",
+			fallback: "  signoff     Run release gate (Constitution §6.7)",
+			want:     "<TRANSLATED:helixqa_cmd_signoff_desc>",
+		},
+		{
+			id:       "helixqa_cmd_version_desc",
+			fallback: "  version     Print version information",
+			want:     "<TRANSLATED:helixqa_cmd_version_desc>",
+		},
 	}
 
 	ctx := context.Background()
@@ -237,6 +292,114 @@ func TestMainGo_ReferencesAllRound205IDs(t *testing.T) {
 		t.Run(id, func(t *testing.T) {
 			if !strings.Contains(body, `"`+id+`"`) {
 				t.Fatalf("main.go missing messageID literal %q — call site was inlined / removed, bypassing the i18n seam (CONST-046 regression). Restore the helixqaT(ctx, %q, ...) call.", id, id)
+			}
+		})
+	}
+}
+
+// TestMainGo_ReferencesAllRound214IDs is the paired-mutation
+// sentinel for round-214 (printUsage Usage/Commands block). It
+// reads cmd/helixqa/main.go and asserts every round-214 messageID
+// literal appears in the source. If a future refactor removes a
+// helixqaT(ctx, "<id>", ...) call from printUsage and inlines the
+// English literal directly, the corresponding ID disappears from
+// main.go and this test FAILs.
+//
+// Composes with TestHelixqaT_RoutesThroughActiveTranslator (seam
+// sentinel) and TestPrintUsage_RoutesRound214SentinelsThroughSeam
+// (captured-stdout sentinel) — three independent assertion
+// surfaces => mutation has to defeat all three to ship.
+func TestMainGo_ReferencesAllRound214IDs(t *testing.T) {
+	src, err := os.ReadFile("main.go")
+	if err != nil {
+		t.Fatalf("read main.go: %v", err)
+	}
+	body := string(src)
+
+	round214IDs := []string{
+		"helixqa_usage_header",
+		"helixqa_usage_invocation",
+		"helixqa_commands_header",
+		"helixqa_cmd_run_desc",
+		"helixqa_cmd_autonomous_desc",
+		"helixqa_cmd_replay_desc",
+		"helixqa_cmd_list_desc",
+		"helixqa_cmd_report_desc",
+		"helixqa_cmd_signoff_desc",
+		"helixqa_cmd_version_desc",
+	}
+
+	for _, id := range round214IDs {
+		t.Run(id, func(t *testing.T) {
+			if !strings.Contains(body, `"`+id+`"`) {
+				t.Fatalf("main.go missing messageID literal %q — call site was inlined / removed, bypassing the i18n seam (CONST-046 regression). Restore the helixqaT(ctx, %q, ...) call.", id, id)
+			}
+		})
+	}
+}
+
+// TestPrintUsage_RoutesRound214SentinelsThroughSeam captures
+// stdout while invoking the actual printUsage call site, asserting
+// every round-214 sentinel appears (NOT the raw English literal).
+// This is the mutation-sensitive guarantee at the captured-output
+// layer: if a future change replaces any of the 10 helixqaT(...)
+// calls inside printUsage with the raw literal, the corresponding
+// sentinel will not appear in captured stdout and this test FAILs.
+//
+// Anti-bluff invariant per §11.4: a passing test MUST guarantee
+// the feature works for the end user. With the fakeTranslator
+// installed, the raw English literals MUST NOT leak to stdout —
+// if they do, the migrated call site is bypassing the seam and
+// non-English users will see English text regardless of locale.
+func TestPrintUsage_RoutesRound214SentinelsThroughSeam(t *testing.T) {
+	withFakeTranslator(t)
+
+	// Capture stdout.
+	origStdout := os.Stdout
+	r, w, err := os.Pipe()
+	if err != nil {
+		t.Fatalf("os.Pipe: %v", err)
+	}
+	os.Stdout = w
+
+	printUsage()
+
+	if cerr := w.Close(); cerr != nil {
+		os.Stdout = origStdout
+		t.Fatalf("close pipe writer: %v", cerr)
+	}
+	os.Stdout = origStdout
+
+	out, err := io.ReadAll(r)
+	if err != nil {
+		t.Fatalf("read captured stdout: %v", err)
+	}
+	captured := string(out)
+
+	round214Pairs := []struct {
+		sentinel string
+		rawLit   string
+	}{
+		{"<TRANSLATED:helixqa_usage_header>", "Usage:"},
+		{"<TRANSLATED:helixqa_usage_invocation>", "  helixqa <command> [flags]"},
+		{"<TRANSLATED:helixqa_commands_header>", "Commands:"},
+		{"<TRANSLATED:helixqa_cmd_run_desc>", "  run         Execute QA pipeline across platforms"},
+		{"<TRANSLATED:helixqa_cmd_autonomous_desc>", "  autonomous  Run autonomous LLM-driven QA session"},
+		{"<TRANSLATED:helixqa_cmd_replay_desc>", "  replay      Replay a ticket's OCU action chain (dry-run by default)"},
+		{"<TRANSLATED:helixqa_cmd_list_desc>", "  list        List test cases from banks"},
+		{"<TRANSLATED:helixqa_cmd_report_desc>", "  report      Generate report from existing results"},
+		{"<TRANSLATED:helixqa_cmd_signoff_desc>", "  signoff     Run release gate (Constitution §6.7)"},
+		{"<TRANSLATED:helixqa_cmd_version_desc>", "  version     Print version information"},
+	}
+
+	for _, p := range round214Pairs {
+		t.Run(p.sentinel, func(t *testing.T) {
+			if !strings.Contains(captured, p.sentinel) {
+				t.Fatalf("printUsage stdout missing sentinel %q.\nCaptured:\n%s\n\nThis FAIL indicates the call site is bypassing the i18n seam (CONST-046 regression).", p.sentinel, captured)
+			}
+			// Defensive: raw English literal MUST NOT appear with fake backend.
+			if strings.Contains(captured, p.rawLit) {
+				t.Fatalf("printUsage stdout contains raw English literal %q while fakeTranslator is installed — call site is bypassing the i18n seam (CONST-046 PASS-bluff regression).\nCaptured:\n%s", p.rawLit, captured)
 			}
 		})
 	}

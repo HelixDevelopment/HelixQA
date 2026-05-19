@@ -81,17 +81,25 @@ func printUsage() {
 	fmt.Println(helixqaT(ctx, "helixqa_cli_banner",
 		"HelixQA — AI-driven QA orchestration"))
 	fmt.Println()
-	fmt.Println("Usage:")
-	fmt.Println("  helixqa <command> [flags]")
+	fmt.Println(helixqaT(ctx, "helixqa_usage_header", "Usage:"))
+	fmt.Println(helixqaT(ctx, "helixqa_usage_invocation",
+		"  helixqa <command> [flags]"))
 	fmt.Println()
-	fmt.Println("Commands:")
-	fmt.Println("  run         Execute QA pipeline across platforms")
-	fmt.Println("  autonomous  Run autonomous LLM-driven QA session")
-	fmt.Println("  replay      Replay a ticket's OCU action chain (dry-run by default)")
-	fmt.Println("  list        List test cases from banks")
-	fmt.Println("  report      Generate report from existing results")
-	fmt.Println("  signoff     Run release gate (Constitution §6.7)")
-	fmt.Println("  version     Print version information")
+	fmt.Println(helixqaT(ctx, "helixqa_commands_header", "Commands:"))
+	fmt.Println(helixqaT(ctx, "helixqa_cmd_run_desc",
+		"  run         Execute QA pipeline across platforms"))
+	fmt.Println(helixqaT(ctx, "helixqa_cmd_autonomous_desc",
+		"  autonomous  Run autonomous LLM-driven QA session"))
+	fmt.Println(helixqaT(ctx, "helixqa_cmd_replay_desc",
+		"  replay      Replay a ticket's OCU action chain (dry-run by default)"))
+	fmt.Println(helixqaT(ctx, "helixqa_cmd_list_desc",
+		"  list        List test cases from banks"))
+	fmt.Println(helixqaT(ctx, "helixqa_cmd_report_desc",
+		"  report      Generate report from existing results"))
+	fmt.Println(helixqaT(ctx, "helixqa_cmd_signoff_desc",
+		"  signoff     Run release gate (Constitution §6.7)"))
+	fmt.Println(helixqaT(ctx, "helixqa_cmd_version_desc",
+		"  version     Print version information"))
 	fmt.Println("  help        Show this help")
 	fmt.Println()
 	fmt.Println(helixqaT(ctx, "helixqa_cli_help_hint",
