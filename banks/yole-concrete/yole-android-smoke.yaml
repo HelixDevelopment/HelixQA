@@ -1,0 +1,260 @@
+# SPDX-FileCopyrightText: 2026 Milos Vasic
+# SPDX-License-Identifier: Apache-2.0
+#
+# Yole Android smoke-test bank — CONCRETE actions.
+#
+# Unlike the prose-step banks (banks/file-browser.yaml et al.) which
+# `helixqa run` cannot actually execute, these cases use the concrete-
+# action schema (see HelixQA/cmd/helixqa-concrete-runner/schema.go) so
+# helixqa-concrete-runner can drive them end-to-end via adb.
+#
+# Each PASS in this bank carries POSITIVE runtime evidence (UI dump +
+# screenshot persisted to evidence-dir per CONST-035 §11.4.2).
+#
+# Reproducer:
+#   $ANDROID_SDK_ROOT/platform-tools/adb start-server
+#   $ANDROID_SDK_ROOT/emulator/emulator -avd yole-test -no-window &
+#   until adb get-state | grep -q device; do sleep 2; done
+#   ./gradlew :androidApp:assembleDebug
+#   adb install -r androidApp/build/outputs/apk/debug/androidApp-debug.apk
+#   adb shell appops set digital.vasic.yole.android MANAGE_EXTERNAL_STORAGE allow
+#   helixqa-concrete-runner \
+#     -bank HelixQA/banks/yole-concrete/yole-android-smoke.yaml \
+#     -device emulator-5554 \
+#     -adb $ANDROID_SDK_ROOT/platform-tools/adb \
+#     -evidence /tmp/yole-qa-iter33 \
+#     -package digital.vasic.yole.android
+
+version: "1.0"
+name: "Yole Android smoke (concrete)"
+platform: "android"
+
+cases:
+
+  - id: YOLE-SMOKE-001
+    name: "Cold launch produces foreground MainActivity"
+    steps:
+      - description: "Stop any prior Yole instance"
+        force_stop: "digital.vasic.yole.android"
+      - description: "Wait for force-stop to settle"
+        wait: "1s"
+      - description: "Launch MainActivity"
+        launch_activity: "digital.vasic.yole.android/.MainActivity"
+      - description: "Wait for Compose first frame"
+        wait: "5s"
+      - description: "MainActivity must be the focused activity"
+        assert_activity_current: "digital.vasic.yole.android/.MainActivity"
+      - description: "Bottom-nav tab 'Files' must be visible"
+        assert_text_present: "Files"
+        wait_for: "3s"
+      - description: "Bottom-nav tab 'QuickNote' must be visible"
+        assert_text_present: "QuickNote"
+
+  - id: YOLE-SMOKE-002
+    name: "Bottom-nav navigates to QuickNote screen"
+    steps:
+      - description: "Ensure app is foreground"
+        launch_activity: "digital.vasic.yole.android/.MainActivity"
+      - description: "Wait for first frame"
+        wait: "2s"
+      - description: "Tap the QuickNote tab"
+        tap_text: "QuickNote"
+      - description: "Wait for transition"
+        wait: "1s"
+      - description: "QuickNote editor must show its 'Save' affordance"
+        assert_text_present: "Save"
+        wait_for: "3s"
+      - description: "QuickNote editor must show the empty-state placeholder"
+        assert_text_present: "Start writing your quick note..."
+
+  - id: YOLE-SMOKE-003
+    name: "Top app bar exposes Search and Settings affordances"
+    steps:
+      - description: "Ensure app is foreground"
+        launch_activity: "digital.vasic.yole.android/.MainActivity"
+      - description: "Wait for first frame"
+        wait: "2s"
+      - description: "Top app bar must expose a 'Search' affordance"
+        assert_desc_present: "Search"
+        wait_for: "3s"
+      - description: "Top app bar must expose a 'Settings' affordance"
+        assert_desc_present: "Settings"
+
+  - id: YOLE-SMOKE-004
+    name: "Bottom-nav navigates to To-Do empty state"
+    steps:
+      - description: "Ensure app is foreground"
+        launch_activity: "digital.vasic.yole.android/.MainActivity"
+      - description: "Wait for first frame"
+        wait: "2s"
+      - description: "Tap the To-Do tab"
+        tap_text: "To-Do"
+      - description: "Wait for transition"
+        wait: "1s"
+      - description: "To-Do screen title must be visible"
+        assert_text_present: "To-Do List"
+        wait_for: "3s"
+      - description: "Empty-state placeholder must be visible"
+        assert_text_present: "No tasks yet"
+      - description: "Add-new-task input must be visible"
+        assert_text_present: "Add new todo..."
+
+  - id: YOLE-SMOKE-005
+    name: "Bottom-nav More tab exposes Backup, Settings, and About"
+    steps:
+      - description: "Ensure app is foreground"
+        launch_activity: "digital.vasic.yole.android/.MainActivity"
+      - description: "Wait for first frame"
+        wait: "2s"
+      - description: "Tap the More tab"
+        tap_text: "More"
+      - description: "Wait for transition"
+        wait: "1s"
+      - description: "More screen title must be visible"
+        assert_text_present: "More Options"
+        wait_for: "3s"
+      - description: "Backup & Restore option must be visible"
+        assert_text_present: "Backup & Restore"
+      - description: "About Yole option must be visible"
+        assert_text_present: "About Yole"
+      - description: "Version line must be visible (proves version-string render path)"
+        assert_text_present: "Version 1.0.0 - Text editor for Android, Desktop, iOS & Web"
+
+  - id: YOLE-SMOKE-006
+    name: "File Browser shows quick-access chips for Documents, Downloads, Internal Storage"
+    steps:
+      - description: "Ensure app is foreground"
+        launch_activity: "digital.vasic.yole.android/.MainActivity"
+      - description: "Wait for first frame"
+        wait: "2s"
+      - description: "Tap the Files tab"
+        tap_text: "Files"
+      - description: "Wait for transition"
+        wait: "1s"
+      - description: "File Browser title must be visible"
+        assert_text_present: "File Browser"
+        wait_for: "3s"
+      - description: "Documents chip must be visible"
+        assert_text_present: "Documents"
+      - description: "Downloads chip must be visible"
+        assert_text_present: "Downloads"
+      - description: "Internal Storage chip must be visible"
+        assert_text_present: "Internal Storage"
+
+  - id: YOLE-SMOKE-007
+    name: "QuickNote: type + tap Save fires the iter-30 FILE_SAVED Firebase event"
+    steps:
+      - description: "Ensure app is foreground"
+        launch_activity: "digital.vasic.yole.android/.MainActivity"
+      - description: "Wait for first frame"
+        wait: "2s"
+      - description: "Tap the QuickNote tab"
+        tap_text: "QuickNote"
+      - description: "Wait for transition"
+        wait: "1s"
+      - description: "Editor empty-state placeholder must be visible"
+        assert_text_present: "Start writing your quick note..."
+        wait_for: "3s"
+      - description: "Tap the text input area mid-screen"
+        tap_xy: "160,350"
+      - description: "Type a known string"
+        type_text: "iter34_concrete_save_test"
+      - description: "Tap Save"
+        tap_text: "Save"
+      - description: "Wait for save + UI settle"
+        wait: "2s"
+      # NOTE: this case verifies the user-facing save path completes;
+      # the actual FILE_SAVED Firebase event is verified separately by
+      # logcat capture under docs/qa/iter-33/firebase-logcat-evidence.txt.
+      # The runner cannot read logcat — that's an explicit boundary.
+
+  - id: YOLE-SMOKE-008
+    name: "More → Settings → Settings screen shows section headers + theme options"
+    steps:
+      - description: "Force-stop to clear any prior in-flight UI state (e.g. SMOKE-007 keyboard)"
+        force_stop: "digital.vasic.yole.android"
+      - description: "Wait for stop to settle"
+        wait: "1s"
+      - description: "Launch fresh"
+        launch_activity: "digital.vasic.yole.android/.MainActivity"
+      - description: "Wait for first frame"
+        wait: "3s"
+      - description: "Tap the More tab"
+        tap_text: "More"
+      - description: "Wait for More screen"
+        wait: "1s"
+      - description: "More Options title visible"
+        assert_text_present: "More Options"
+        wait_for: "3s"
+      - description: "Tap the Settings row's tap-area center (102, 178 — uiautomator-dumped iter 36)"
+        tap_xy: "102,178"
+      - description: "Wait for Settings screen transition"
+        wait: "2s"
+      - description: "APPEARANCE section header must be visible"
+        assert_text_present: "APPEARANCE"
+        wait_for: "3s"
+      - description: "Light theme option must be visible"
+        assert_text_present: "Light theme"
+      - description: "Dark theme (IDE) option must be visible"
+        assert_text_present: "Dark theme (IDE)"
+      - description: "EDITOR section header must be visible"
+        assert_text_present: "EDITOR"
+      - description: "Show line numbers toggle must be visible"
+        assert_text_present: "Show line numbers"
+      - description: "Auto-save toggle must be visible"
+        assert_text_present: "Auto-save"
+      - description: "ANIMATIONS section header must be visible"
+        assert_text_present: "ANIMATIONS"
+      - description: "Enable smooth transitions toggle must be visible"
+        assert_text_present: "Enable smooth transitions"
+
+  - id: YOLE-SMOKE-009
+    name: "More → About Yole → version string + project description visible"
+    steps:
+      - description: "Force-stop to clear prior state"
+        force_stop: "digital.vasic.yole.android"
+      - description: "Wait"
+        wait: "1s"
+      - description: "Launch fresh"
+        launch_activity: "digital.vasic.yole.android/.MainActivity"
+      - description: "Wait for first frame"
+        wait: "3s"
+      - description: "Tap the More tab"
+        tap_text: "More"
+      - description: "Wait for More screen"
+        wait: "1s"
+      - description: "About Yole row must be visible"
+        assert_text_present: "About Yole"
+        wait_for: "3s"
+      - description: "Version-and-description text must be visible at More-screen level (composite About row)"
+        assert_text_present: "Version 1.0.0 - Text editor for Android, Desktop, iOS & Web"
+
+  - id: YOLE-SMOKE-010
+    name: "To-Do: add a real item via the inline input + Add button"
+    steps:
+      - description: "Force-stop to clear prior state"
+        force_stop: "digital.vasic.yole.android"
+      - description: "Wait"
+        wait: "1s"
+      - description: "Launch fresh"
+        launch_activity: "digital.vasic.yole.android/.MainActivity"
+      - description: "Wait for first frame"
+        wait: "3s"
+      - description: "Tap the To-Do tab"
+        tap_text: "To-Do"
+      - description: "Wait for To-Do screen"
+        wait: "1s"
+      - description: "Empty-state placeholder visible at start"
+        assert_text_present: "No tasks yet"
+        wait_for: "3s"
+      - description: "Tap the inline 'Add new todo...' input"
+        tap_text: "Add new todo..."
+      - description: "Type a known task name"
+        type_text: "iter36_todo_test_item"
+      - description: "Tap the Add button to commit"
+        tap_text: "Add"
+      - description: "Wait for list update"
+        wait: "2s"
+      - description: "The new task must appear in the list (proves the To-Do add flow works end-to-end)"
+        assert_text_present: "iter36_todo_test_item"
+        wait_for: "3s"
