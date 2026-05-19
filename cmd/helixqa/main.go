@@ -77,7 +77,9 @@ func main() {
 }
 
 func printUsage() {
-	fmt.Println("HelixQA — AI-driven QA orchestration")
+	ctx := context.Background()
+	fmt.Println(helixqaT(ctx, "helixqa_cli_banner",
+		"HelixQA — AI-driven QA orchestration"))
 	fmt.Println()
 	fmt.Println("Usage:")
 	fmt.Println("  helixqa <command> [flags]")
@@ -92,7 +94,8 @@ func printUsage() {
 	fmt.Println("  version     Print version information")
 	fmt.Println("  help        Show this help")
 	fmt.Println()
-	fmt.Println("Run 'helixqa <command> --help' for command details.")
+	fmt.Println(helixqaT(ctx, "helixqa_cli_help_hint",
+		"Run 'helixqa <command> --help' for command details."))
 }
 
 // cmdRun executes the full QA pipeline.
@@ -184,7 +187,8 @@ func cmdRun(args []string) {
 		select {
 		case <-sigCh:
 			fmt.Fprintln(os.Stderr,
-				"\nReceived interrupt, shutting down...")
+				"\n"+helixqaT(ctx, "helixqa_run_interrupt_shutdown",
+					"Received interrupt, shutting down..."))
 			cancel()
 		case <-ctx.Done():
 		}
@@ -210,18 +214,26 @@ func cmdRun(args []string) {
 	}
 	switch {
 	case total == 0:
-		fmt.Println("OBSERVED - 0 challenges executed; crash-observation only.")
-		fmt.Println("           This is NOT a PASS. The bank's prose steps require")
-		fmt.Println("           an execution backend (autonomous LLM mode or a")
-		fmt.Println("           concrete-action runner like Appium/UiAutomator2).")
+		fmt.Println(helixqaT(ctx, "helixqa_run_summary_observed_line1",
+			"OBSERVED - 0 challenges executed; crash-observation only."))
+		fmt.Println(helixqaT(ctx, "helixqa_run_summary_observed_line2",
+			"           This is NOT a PASS. The bank's prose steps require"))
+		fmt.Println(helixqaT(ctx, "helixqa_run_summary_observed_line3",
+			"           an execution backend (autonomous LLM mode or a"))
+		fmt.Println(helixqaT(ctx, "helixqa_run_summary_observed_line4",
+			"           concrete-action runner like Appium/UiAutomator2)."))
 	case result.Success:
-		fmt.Printf("PASSED - All %d challenges passed, no crashes\n", total)
+		fmt.Printf(helixqaT(ctx, "helixqa_run_summary_passed_fmt",
+			"PASSED - All %d challenges passed, no crashes\n"), total)
 	default:
-		fmt.Printf("FAILED - %d/%d challenges failed or crashes detected\n",
+		fmt.Printf(helixqaT(ctx, "helixqa_run_summary_failed_fmt",
+			"FAILED - %d/%d challenges failed or crashes detected\n"),
 			result.Report.FailedChallenges, total)
 	}
-	fmt.Printf("Report: %s\n", result.ReportPath)
-	fmt.Printf("Duration: %v\n", result.Duration)
+	fmt.Printf(helixqaT(ctx, "helixqa_run_summary_report_fmt",
+		"Report: %s\n"), result.ReportPath)
+	fmt.Printf(helixqaT(ctx, "helixqa_run_summary_duration_fmt",
+		"Duration: %v\n"), result.Duration)
 
 	if *tickets && result.Report != nil {
 		fmt.Printf("Tickets: %s/tickets/\n", cfg.OutputDir)
@@ -374,7 +386,9 @@ func cmdReport(args []string) {
 		os.Exit(1)
 	}
 
-	fmt.Printf("Report generated: %s\n", path)
+	fmt.Printf(helixqaT(context.Background(),
+		"helixqa_report_generated_fmt",
+		"Report generated: %s\n"), path)
 }
 
 // cmdAutonomous runs an autonomous LLM-driven QA session.

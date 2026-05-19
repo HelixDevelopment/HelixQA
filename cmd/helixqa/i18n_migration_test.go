@@ -77,6 +77,57 @@ func TestHelixqaT_RoutesThroughActiveTranslator(t *testing.T) {
 			fallback: "Speed mode: slow|normal|fast",
 			want:     "<TRANSLATED:helixqa_run_speed_flag_usage>",
 		},
+		// --- round-205 (extension, 10 entries) ---------------
+		{
+			id:       "helixqa_run_interrupt_shutdown",
+			fallback: "Received interrupt, shutting down...",
+			want:     "<TRANSLATED:helixqa_run_interrupt_shutdown>",
+		},
+		{
+			id:       "helixqa_run_summary_observed_line1",
+			fallback: "OBSERVED - 0 challenges executed; crash-observation only.",
+			want:     "<TRANSLATED:helixqa_run_summary_observed_line1>",
+		},
+		{
+			id:       "helixqa_run_summary_observed_line2",
+			fallback: "           This is NOT a PASS. The bank's prose steps require",
+			want:     "<TRANSLATED:helixqa_run_summary_observed_line2>",
+		},
+		{
+			id:       "helixqa_run_summary_observed_line3",
+			fallback: "           an execution backend (autonomous LLM mode or a",
+			want:     "<TRANSLATED:helixqa_run_summary_observed_line3>",
+		},
+		{
+			id:       "helixqa_run_summary_observed_line4",
+			fallback: "           concrete-action runner like Appium/UiAutomator2).",
+			want:     "<TRANSLATED:helixqa_run_summary_observed_line4>",
+		},
+		{
+			id:       "helixqa_run_summary_passed_fmt",
+			fallback: "PASSED - All %d challenges passed, no crashes\n",
+			want:     "<TRANSLATED:helixqa_run_summary_passed_fmt>",
+		},
+		{
+			id:       "helixqa_run_summary_failed_fmt",
+			fallback: "FAILED - %d/%d challenges failed or crashes detected\n",
+			want:     "<TRANSLATED:helixqa_run_summary_failed_fmt>",
+		},
+		{
+			id:       "helixqa_run_summary_report_fmt",
+			fallback: "Report: %s\n",
+			want:     "<TRANSLATED:helixqa_run_summary_report_fmt>",
+		},
+		{
+			id:       "helixqa_run_summary_duration_fmt",
+			fallback: "Duration: %v\n",
+			want:     "<TRANSLATED:helixqa_run_summary_duration_fmt>",
+		},
+		{
+			id:       "helixqa_report_generated_fmt",
+			fallback: "Report generated: %s\n",
+			want:     "<TRANSLATED:helixqa_report_generated_fmt>",
+		},
 	}
 
 	ctx := context.Background()
@@ -146,6 +197,48 @@ func TestPrintUsage_RoutesBannerThroughSeam(t *testing.T) {
 	const rawBanner = "HelixQA — AI-driven QA orchestration"
 	if strings.Contains(captured, rawBanner) {
 		t.Fatalf("printUsage stdout contains raw English literal %q while fakeTranslator is installed — call site is bypassing the i18n seam (CONST-046 PASS-bluff regression).\nCaptured:\n%s", rawBanner, captured)
+	}
+}
+
+// TestMainGo_ReferencesAllRound205IDs is the paired-mutation
+// sentinel for round-205: it reads cmd/helixqa/main.go and asserts
+// every new messageID literal appears in the source. If a future
+// refactor removes a helixqaT(ctx, "<id>", ...) call and inlines
+// the English literal directly, the corresponding ID disappears
+// from main.go and this test FAILs — catching the regression at
+// the source layer before it can ship and silently break the
+// non-English UX.
+//
+// This complements TestHelixqaT_RoutesThroughActiveTranslator
+// (sentinel via the seam) and TestPrintUsage_RoutesBannerThroughSeam
+// (sentinel via captured stdout). Three independent assertion
+// surfaces => mutation has to defeat all three to ship.
+func TestMainGo_ReferencesAllRound205IDs(t *testing.T) {
+	src, err := os.ReadFile("main.go")
+	if err != nil {
+		t.Fatalf("read main.go: %v", err)
+	}
+	body := string(src)
+
+	round205IDs := []string{
+		"helixqa_run_interrupt_shutdown",
+		"helixqa_run_summary_observed_line1",
+		"helixqa_run_summary_observed_line2",
+		"helixqa_run_summary_observed_line3",
+		"helixqa_run_summary_observed_line4",
+		"helixqa_run_summary_passed_fmt",
+		"helixqa_run_summary_failed_fmt",
+		"helixqa_run_summary_report_fmt",
+		"helixqa_run_summary_duration_fmt",
+		"helixqa_report_generated_fmt",
+	}
+
+	for _, id := range round205IDs {
+		t.Run(id, func(t *testing.T) {
+			if !strings.Contains(body, `"`+id+`"`) {
+				t.Fatalf("main.go missing messageID literal %q — call site was inlined / removed, bypassing the i18n seam (CONST-046 regression). Restore the helixqaT(ctx, %q, ...) call.", id, id)
+			}
+		})
 	}
 }
 

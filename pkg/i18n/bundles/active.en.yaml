@@ -1,15 +1,17 @@
 # SPDX-FileCopyrightText: 2026 Milos Vasic
 # SPDX-License-Identifier: Apache-2.0
 #
-# HelixQA English message bundle for CONST-046 Phase 4 round 7
-# (round-112 §11.4 i18n kickoff). Every entry is the English
-# source-of-truth for a previously-hardcoded user-facing literal
-# in helix_qa/cmd/helixqa/main.go. The messageID is namespaced
-# `helixqa_` so it cannot collide with other submodules.
+# HelixQA English message bundle for CONST-046 Phase 4 round 7 / 88
+# (round-112 kickoff + round-205 extension). Every entry is the
+# English source-of-truth for a previously-hardcoded user-facing
+# literal in helix_qa/cmd/helixqa/main.go. The messageID is
+# namespaced `helixqa_` so it cannot collide with other submodules.
 #
 # Backends (LLM-driven generator, YAML-bundle loader) consume
 # this file as the en seed and produce the locale-specific
 # variants users actually see at runtime.
+
+# --- round-112 (kickoff, 5 entries) -----------------------------
 
 helixqa_cli_banner:
   other: "HelixQA — AI-driven QA orchestration"
@@ -25,3 +27,41 @@ helixqa_run_platform_flag_usage:
 
 helixqa_run_speed_flag_usage:
   other: "Speed mode: slow|normal|fast"
+
+# --- round-205 (extension, 10 entries) --------------------------
+#
+# High-impact user-facing strings from the run-summary block and
+# report-generated message in cmd/helixqa/main.go. These are the
+# strings every operator sees at the end of every `helixqa run`
+# invocation — they MUST adapt to the operator's language per
+# CONST-046.
+
+helixqa_run_interrupt_shutdown:
+  other: "Received interrupt, shutting down..."
+
+helixqa_run_summary_observed_line1:
+  other: "OBSERVED - 0 challenges executed; crash-observation only."
+
+helixqa_run_summary_observed_line2:
+  other: "           This is NOT a PASS. The bank's prose steps require"
+
+helixqa_run_summary_observed_line3:
+  other: "           an execution backend (autonomous LLM mode or a"
+
+helixqa_run_summary_observed_line4:
+  other: "           concrete-action runner like Appium/UiAutomator2)."
+
+helixqa_run_summary_passed_fmt:
+  other: "PASSED - All %d challenges passed, no crashes\n"
+
+helixqa_run_summary_failed_fmt:
+  other: "FAILED - %d/%d challenges failed or crashes detected\n"
+
+helixqa_run_summary_report_fmt:
+  other: "Report: %s\n"
+
+helixqa_run_summary_duration_fmt:
+  other: "Duration: %v\n"
+
+helixqa_report_generated_fmt:
+  other: "Report generated: %s\n"
