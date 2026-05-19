@@ -1686,3 +1686,41 @@ Every Markdown document inside the project that is NOT part of an application or
 Every committed shell script MUST be parseable by its target interpreter (`sh -n` for `/bin/sh`, `bash -n` for `/bin/bash`, etc.) AND MUST declare a shebang matching its actual syntax usage. Bash-only constructs (`>(...)`, `<(...)`, `[[ ]]`, `<<<`, arrays, `${var^^}`, etc.) used in scripts that may be invoked via `sh script.sh` MUST be wrapped in `eval` so the parser sees only a string (target shells like mksh parse the entire script before executing — runtime guards cannot save a parse-time rejection). Honest shebangs only: `#!/bin/bash` only if bash actually expected; `#!/bin/sh` requires POSIX-clean body. Fix at source per §11.4.1, never at callsites. Composes with §11.4.1 / §11.4.4 / §11.4.6 / §11.4.50 / §11.4.51. Pre-build gate `CM-SCRIPT-TARGET-SHELL-PARSEABLE` runs `sh -n` on every in-scope script. No escape hatch — no `--skip-parseability-check`, `--bash-only-script`, `--runtime-guard-suffices` flag.
 
 **Cascade requirement:** This anchor (verbatim or by `CONST-068` ID reference) MUST appear in every owned submodule's `CONSTITUTION.md`, `CLAUDE.md`, and `AGENTS.md`. See constitution submodule `Constitution.md` §11.4.67 for the full mandate.
+
+**§11.4.67 — Shell-script target-shell-parseability mandate (User mandate, 2026-05-19)**
+
+**Forensic anchor — direct user mandate (verbatim, 2026-05-19):** "any
+issue we spot must be fixed, bash scripts as well if they are broken!"
++ "Make sure that this is mandatory rule!"
+
+Every shell script that may be invoked under a target shell other than
+the one in its shebang MUST parse cleanly under that target shell.
+Forensic incident: `device/rockchip/rk3588/tests/test_all_fixes.sh:114`
+used bash-only `exec > >(tee -a "$f") 2>&1` on a `sh script.sh` callsite
+— Android mksh parses the whole script BEFORE executing, so the runtime
+`[ -n "${BASH_VERSION:-}" ]` guard could not save it. Fixed by wrapping
+in `eval 'exec > >(tee …) 2>&1'` so the parser sees only a string.
+
+Closed-set scope: every tracked `.sh` under `device/rockchip/rk3588/tests/`,
+`scripts/`, `scripts/testing/` (and equivalent paths in owned submodules).
+OUT of scope: `external/`, `prebuilts/`, `packages/modules/`, `kernel-5.10/`,
+`out/`, `build/`, `scripts/legacy/`. Mandatory invariants: (1) every
+in-scope script parses under `sh -n`; (2) bash-only constructs
+(`>(...)`, `<(...)`, `[[ ]]`, `<<<`, arrays, `${var^^}`, etc.) MUST be
+wrapped in `eval` OR guarded by bash-only loading; (3) shebangs honest
+— `#!/bin/bash` only if bash actually expected; (4) fix at source per
+§11.4.1, never at callsites. Composes with §11.4.1 / §11.4.4 / §11.4.6
+/ §11.4.50 / §11.4.51.
+
+Pre-build gate `CM-SCRIPT-TARGET-SHELL-PARSEABLE` runs `sh -n` on every
+in-scope script. Propagation gate `CM-COVENANT-114-67-PROPAGATION`
+enforces the anchor literal across the 44-file consumer fleet. Paired
+mutations: inject bash-only outside `eval` → parse gate FAILs; strip
+`11.4.67` literal → propagation gate FAILs. No escape hatch — no
+`--skip-parseability-check`, `--bash-only-script`, `--runtime-guard-suffices`
+flag.
+
+**Canonical authority:** constitution submodule
+[`Constitution.md`](constitution/Constitution.md) §11.4.67.
+
+Non-compliance is a release blocker regardless of context.
