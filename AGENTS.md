@@ -1,9 +1,37 @@
+## INHERITED FROM Helix Constitution
+
+> Base agent rules live in the Helix Constitution submodule at the
+> parent project's `constitution/AGENTS.md` and the universal
+> `constitution/Constitution.md` it references. **READ THOSE FIRST.**
+> The base file is authoritative for any topic not covered here.
+> Module-specific rules below extend them; they never weaken them.
+
+Critical universal rules every CLI agent (Claude Code, Cursor, Aider,
+Codex, Gemini CLI) MUST honour while working in this module:
+
+- **No bluffing.** Every PASS carries positive evidence. Constitution §11.4.
+- **Mutation-paired gates.** Every new gate has a paired mutation
+  proving it catches regressions. Constitution §1.1.
+- **No guessing language** (`likely`, `probably`, `maybe`, `seems`).
+  Constitution §11.4.6.
+- **Credentials never tracked.** `.env` patterns git-ignored; runtime-load
+  only. Constitution §11.4.10.
+- **Never force-push.** Force-push requires explicit per-session
+  authorization AND a green §9.1.5 post-op gate. Constitution §9.
+- **CONTINUATION.md kept in sync** in every non-trivial commit.
+  Constitution §12.10.
+- **60% RAM cap.** Heavy work wrapped in bounded execution scope.
+  Constitution §12.6.
+
+Canonical reference: <https://github.com/HelixDevelopment/HelixConstitution>
+
+---
+
 # AGENTS.md — HelixCode Authoritative Agent Guide
-> **Base agent rules:** `HelixConstitution/AGENTS.md` — READ IT FIRST.
-> All rules in `HelixConstitution/AGENTS.md` apply unconditionally.
-> Rules below extend them and MUST NOT weaken any inherited clause.
 
+## INHERITED FROM constitution/AGENTS.md
 
+All rules in `constitution/AGENTS.md` (and the `constitution/Constitution.md` it references) apply unconditionally. This file's rules below extend them — they MUST NOT weaken any inherited rule. See parent root `CLAUDE.md` §6.AD for the Lava-specific incorporation context (29th §6.L cycle, 2026-05-14) and §6.AD-debt for the implementation-gap inventory. Use `constitution/find_constitution.sh` from the parent project root to resolve the absolute path of the submodule from any nested location.
 
 ## HelixCode Agent Guidelines
 
@@ -66,7 +94,7 @@ HelixCode is an enterprise-grade distributed AI development platform built in Go
 
 ## Working Directory & Build System
 
-**CRITICAL**: All build and test commands must be run from the `HelixCode/` subdirectory, not the repository root.
+**CRITICAL**: All build and test commands must be run from the `helix_code/` subdirectory, not the repository root.
 
 ```bash
 cd HelixCode
@@ -143,7 +171,7 @@ cd tests/e2e/challenges && go run cmd/runner/main.go -challenge ascii-art-genera
 ## Architecture & Code Organization
 
 ```
-HelixCode/
+helix_code/
 ├── cmd/                          # Application entry points
 │   ├── server/main.go            # HTTP server entry point
 │   ├── cli/main.go               # Legacy flag-based CLI client
@@ -656,7 +684,7 @@ curl http://localhost/health
 - Build tags for integration/automation tests: `//go:build integration`
 
 ### Project Conventions
-- **Always work from `HelixCode/` subdirectory**
+- **Always work from `helix_code/` subdirectory**
 - **Generate logo assets before first build**: `make logo-assets`
 - **Database/Redis optional**: Disable by setting `database.host: ""`
 - **Environment variables override config file**
@@ -875,8 +903,8 @@ test, CLI suggestion, snippet, or example you emit.
 - **Gap Analysis**: `HELIXCODE_GAP_ANALYSIS.md`
 - **Zero-Bluff Plan**: `HELIXCODE_ZERO_BLUFF_PLAN.md`
 - **Testing Strategy**: `ANTI_BLUFF_TESTING_STRATEGY.md`
-- **OpenAPI Spec**: `HelixCode/api/openapi.yaml`
-- **Docker Guide**: `HelixCode/DOCKER_DEPLOYMENT.md`
+- **OpenAPI Spec**: `helix_code/api/openapi.yaml`
+- **Docker Guide**: `helix_code/DOCKER_DEPLOYMENT.md`
 
 ---
 
@@ -1357,76 +1385,524 @@ submodules + HelixQA dependencies.
 §11.4.6.
 
 Non-compliance is a release blocker regardless of context.
-<!-- BEGIN submodule-decoupling-and-reusability (parent-mirror) -->
 
-## Submodule Decoupling & Reusability — MANDATORY for ALL AI Agents
+**§11.4.7 — Demotion-evidence rule (Phase 38.X+2 amendment, 2026-05-11)**
 
-**Applies to ALL CLI agents (Codex, Cursor, Gemini CLI, Copilot CLI,
-Claude Code, etc.) working in this repository.**
+A demotion from any FAIL classification (`OPEN`, `POSSIBLE PRODUCT
+DEFECT`, `FAIL`) to a lower-severity classification (`INVESTIGATED`,
+`MITIGATED`, `RESOLVED`, `WORKING-AS-INTENDED`) requires positive
+evidence captured under the **same conditions** that originally
+exposed the defect — same device, same firmware, same cycle position,
+same load profile.
 
-This repository is **shared infrastructure** consumed by multiple
-independent consumer projects. The value of this repository depends
-on staying fully decoupled and reusable.
+"I cannot reproduce in isolation" is a HYPOTHESIS, not a finding. Per
+§11.4.6 it MUST be tagged `UNCONFIRMED:` until same-conditions retest
+produces positive evidence. The expanded forbidden-vocabulary list:
 
-**Hard rules:**
+| Forbidden phrase | Why it bluffs |
+|---|---|
+| "isolated re-run PASSes therefore X was a flake" | Strips the very environment that exposed the defect. |
+| "runtime drift" | Label for "we don't know what changed". |
+| "intermittent" / "transient" | Label for "we don't know how to reproduce". |
+| "pending stress retest" | Defers the actual investigation indefinitely. |
+| "correlates with X" | Hypothesis presented as causation. |
 
-- DO NOT hardcode any specific consumer project's name, platform
-  list, paths, version strings, or release-naming conventions.
-- DO NOT import / reference any consumer-project namespace.
-- DO NOT embed consumer-project-specific governance, branding, or
-  rule numbering in `CONSTITUTION.md` / `CLAUDE.md` / `AGENTS.md`.
-- DO assume N ≥ 2 unrelated consumer projects exist.
+Pre-build gate `CM-DEMOTION-EVIDENCE-RULE` scans Issues.md / Fixed.md
+/ CONTINUATION.md for these phrases outside explicit
+`UNCONFIRMED:` / `UNATTRIBUTED:` / `PENDING_CYCLE_RETEST:` blocks.
+Propagation gate `CM-COVENANT-114-7-PROPAGATION` enforces this anchor
+in every CLAUDE.md / AGENTS.md across parent + 10 owned submodules +
+HelixQA dependencies.
 
-Cross-project rules MUST be phrased generically ("every consuming
-project's full platform matrix"), never with a specific consumer's
-matrix hardcoded.
+**Canonical authority:** parent
+[`docs/guides/ATMOSPHERE_CONSTITUTION.md`](docs/guides/ATMOSPHERE_CONSTITUTION.md)
+§11.4.7.
 
-<!-- END submodule-decoupling-and-reusability (parent-mirror) -->
+Non-compliance is a release blocker regardless of context.
 
-<!-- BEGIN helix-constitution-inheritance + anti-bluff escalation -->
+**§11.4.8 — Deep-web-research-before-implementation mandate (User mandate, 2026-05-12)**
 
-## Anti-Bluff End-User Quality Guarantee (Escalated via HelixConstitution)
+Before designing a non-trivial fix, implementing a new feature, or declaring
+an architectural choice, perform deep web research to verify the chosen
+approach is informed by current state-of-the-art. Research surface:
+official documentation (Android/AOSP/Khronos/CEA-861/AES/IEEE/IETF/ITU),
+vendor technical guides (Rockchip, Sipeed, Audinate Dante, Synaptics,
+Realtek, Bluetooth SIG), open-source codebases (Linux kernel, ALSA, Bluez,
+ExoPlayer, libVLC, MPV, FFmpeg, AOSP forks), coding tutorials + technical
+articles (Stack Overflow, AOSP Code Lab, AES papers), issue trackers
+(Android bug tracker, AOSP gerrit, GitHub issues).
 
-**Canonical authority:** `HelixConstitution/Constitution.md` §7.1 + §11.4.
+A fix that re-invents a wheel — or reproduces a known-broken pattern —
+when the open-source community has already solved the problem is a §11.4
+violation by omission. Every non-trivial fix's commit / Issues.md / Fixed.md
+entry MUST cite at least one external source URL OR the literal "NO external
+solution found — original work".
 
-**Forensic anchor — verbatim operator mandate (2026-04-28):**
+Pre-build gate `CM-RESEARCH-CITATION-PRESENT` scans new fix-direction
+blocks for the pattern. Propagation gate `CM-COVENANT-114-8-PROPAGATION`
+enforces this anchor in every CLAUDE.md / AGENTS.md across parent + 10
+owned submodules + HelixQA dependencies.
 
-> "We had been in position that all tests do execute with success and all
-> Challenges as well, but in reality the most of the features does not work
-> and can't be used! This MUST NOT be the case and execution of tests and
-> Challenges MUST guarantee the quality, the completition and full usability
-> by end users of the product! This MUST BE part of Constitution of our
-> project, its CLAUDE.MD and AGENTS.MD if it is not there already, and to be
-> applied to all Submodules's Constitution, CLAUDE.MD and AGENTS.MD as well
-> (if not there already)!"
+Documentation continuity requirement: every fix landed under §11.4.8 also
+adds to `docs/guides/` a user-facing or developer-facing guide section
+where appropriate.
 
-Every PASS MUST carry positive runtime evidence. Consuming-project-specific
-requirements are defined by each consuming project's Constitution.
-This submodule's rules remain project-agnostic.
+**Canonical authority:** parent
+[`docs/guides/ATMOSPHERE_CONSTITUTION.md`](docs/guides/ATMOSPHERE_CONSTITUTION.md)
+§11.4.8.
 
-<!-- END helix-constitution-inheritance + anti-bluff escalation -->
+Non-compliance is a release blocker regardless of context.
+
+**§11.4.9 — Batch-source-fixes-before-rebuild mandate (User mandate, 2026-05-12)**
+
+When closing a multi-defect batch, all source-side fixes that DO NOT require
+runtime on-device validation to design MUST be landed BEFORE the next firmware
+rebuild. Anti-pattern eliminated: `Fix A → rebuild → flash → cycle → fix B → rebuild → ...`
+serializes 7-8 hours per fix instead of batching all into ONE build cycle.
+Operator time is the scarce resource.
+
+Exceptions documented in commit message as `REQUIRES_REBUILD: <reason>`:
+kernel-5.10/ changes, atmosphere-*.sh boot-script side-effects, hardware/rockchip/
+HAL behavior — each gates downstream state and requires firmware to validate.
+
+Before declaring a batch "ready for rebuild": pre-build GREEN + meta-test GREEN +
+existing-device validations performed where possible + Issues.md/Fixed.md/CONTINUATION.md
+in sync (+ HTML/PDF exported) + §11.4.8 research citations all logged.
+
+Propagation gate `CM-COVENANT-114-9-PROPAGATION` enforces this anchor in every
+CLAUDE.md / AGENTS.md across parent + 10 owned submodules + HelixQA dependencies.
+
+**Canonical authority:** parent
+[`docs/guides/ATMOSPHERE_CONSTITUTION.md`](docs/guides/ATMOSPHERE_CONSTITUTION.md)
+§11.4.9.
+
+Non-compliance is a release blocker regardless of context.
+
+**§11.4.10 — Credentials-handling mandate (User mandate, 2026-05-12)**
+
+All credentials, secrets, API tokens, passwords, phone numbers, OAuth tokens,
+signing keys MUST NEVER live in tracked files. Templates with placeholder values
+are allowed (`.example` suffix). Tests load credentials at runtime from
+`scripts/testing/secrets/` (or per-submodule equivalent); operator-populated
+files are `chmod 600`, directory is `chmod 700`. `.env`, `.env.*`, `*.env`
+patterns + `scripts/testing/secrets/*` (with `.example` + `README.md` exception)
+git-ignored project-wide.
+
+Test scripts MUST NEVER echo credentials to stdout/stderr/logcat. Screen-
+recording of sign-in flows MUST redact credential-bearing frames. Per-service
+file separation (`.netflix.env`, `.disney.env`, etc.) limits blast radius.
+
+Forensic-rotation policy: suspected leak → rotate at provider, update local
+`.env`, audit captured artifacts. Pre-build gate `CM-CREDENTIAL-LEAK-SCAN`
+greps tracked files for entropy-suspicious password strings + known API-token
+formats. Propagation gate `CM-COVENANT-114-10-PROPAGATION` enforces this
+anchor in every CLAUDE.md / AGENTS.md across parent + 10 owned submodules +
+HelixQA dependencies.
+
+**Canonical authority:** parent
+[`docs/guides/ATMOSPHERE_CONSTITUTION.md`](docs/guides/ATMOSPHERE_CONSTITUTION.md)
+§11.4.10.
+
+Non-compliance is a release blocker regardless of context.
+
+**§11.4.14 — Test playback cleanup mandate (User mandate, 2026-05-13)**
+
+Every test that issues `am start` / `cmd media_session play` /
+`MediaController.play` MUST issue matching `am force-stop` /
+`input keyevent KEYCODE_MEDIA_STOP` + register cleanup in `EXIT` trap.
+Verified via positive evidence (Arvus codec-state → `N.E.`,
+`dumpsys media_session` shows no PLAYING for test app).
+`test_all_fixes.sh` post-test sanity check FAILs the just-completed
+test if it left orphan playback. HelixQA Challenges bound equally.
+No grace period — "next test will clean it up" is §11.4 PASS-bluff.
+
+**Canonical authority:** parent
+[`docs/guides/ATMOSPHERE_CONSTITUTION.md`](docs/guides/ATMOSPHERE_CONSTITUTION.md)
+§11.4.14. Pre-build gates `CM-TEST-PLAYBACK-CLEANUP` +
+`CM-COVENANT-114-14-PROPAGATION`.
+
+Non-compliance is a release blocker regardless of context.
+
+**§11.4.15 — Item-status tracking mandate (User mandate, 2026-05-13)**
+
+Every active item in `docs/Issues.md` carries a `**Status:**` line with one of six values: `Queued`, `In progress`, `Ready for testing`, `In testing`, `Reopened`, `Fixed (→ Fixed.md)`. Status MUST be updated as the item progresses through its lifecycle. `Fixed` requires captured-evidence per §11.4.5 + migration to Fixed.md.
+
+The auto-generated `docs/Issues_Summary.md` includes the Status column. All three file types (`.md`, `.html`, `.pdf`) MUST be in sync at all times — enforced by `CM-DOCS-EXPORT-SYNC` (§11.4.12 + §11.4.15 amendment).
+
+**Canonical authority:** parent
+[`docs/guides/ATMOSPHERE_CONSTITUTION.md`](docs/guides/ATMOSPHERE_CONSTITUTION.md)
+§11.4.15. Pre-build gates `CM-ITEM-STATUS-TRACKING` + `CM-COVENANT-114-15-PROPAGATION`.
+
+Non-compliance is a release blocker regardless of context.
+
+**§11.4.16 — Item-type tracking mandate (User mandate, 2026-05-14)**
+
+Every active item in `docs/Issues.md` carries a `**Type:**` line with one of three values: `Bug` (product defect / regression / user-visible broken behaviour), `Feature` (new capability not previously offered to end users), `Task` (internal workstream — refactor, doc, infra, gate, audit; the lowest-stakes default when ambiguous). The vocabulary is CLOSED — no other value is permitted.
+
+The auto-generated `docs/Issues_Summary.md` includes the Type column. All three file types (`.md`, `.html`, `.pdf`) MUST be in sync at all times — enforced by `CM-DOCS-EXPORT-SYNC` (§11.4.12 + §11.4.15 + §11.4.16 amendment).
+
+**Canonical authority:** parent
+[`docs/guides/ATMOSPHERE_CONSTITUTION.md`](docs/guides/ATMOSPHERE_CONSTITUTION.md)
+§11.4.16. Pre-build gates `CM-ITEM-TYPE-TRACKING` + `CM-COVENANT-114-16-PROPAGATION`.
+
+Non-compliance is a release blocker regardless of context.
+
+**§11.4.13 — Out-of-band sink-side captured-evidence mandate (User mandate, 2026-05-13)**
+
+Whenever an HDMI sink with a network-accessible introspection API is
+present (current example: Arvus H2-4D-273 at `http://192.168.4.172/`),
+the test suite MUST consume the sink's report as captured-evidence for
+every audio test asserting a codec / channel-count / passthrough mode.
+On-SoC HAL telemetry ALONE is insufficient — that is the exact "tests
+pass but the feature doesn't work" pattern §11.4 forbids. Reference:
+`scripts/testing/lib/arvus_probe.sh`, `scripts/testing/arvus_probe.sh`,
+`docs/guides/ARVUS_HDMI_INTEGRATION.md`. Pre-build gate
+`CM-ARVUS-EVIDENCE-INTEGRATED` (7 invariants) + paired mutation. No
+hardcoding (env: `ARVUS_HOST` etc.). Topology dispatch per §11.4.3 —
+sink unreachable → SKIP, never FAIL. Identity verification (MAC match)
+before consuming codec-state. Anti-stickiness post-stop. HelixQA
+Challenges bound equally.
+
+**Canonical authority:** parent
+[`docs/guides/ATMOSPHERE_CONSTITUTION.md`](docs/guides/ATMOSPHERE_CONSTITUTION.md)
+§11.4.13. Integration reference: `docs/guides/ARVUS_HDMI_INTEGRATION.md`.
+
+Non-compliance is a release blocker regardless of context.
+
+**§11.4.11 — File-layout discipline (User mandate, 2026-05-12)**
+
+Files live in canonical directories per type:
+- Shell scripts → `scripts/` (legacy: `scripts/legacy/`)
+- Log files → `logs/` (legacy: `logs/legacy/`)
+- Release artifacts → `releases/<app>/<version>/`
+- Operator credentials → `scripts/testing/secrets/` (per §11.4.10, git-ignored)
+- Markdown docs → `docs/` + `docs/guides/` + `docs/research/` + `docs/superpowers/plans/`
+- Per-version changelogs → `docs/changelogs/`
+- Hardware ID photos → `docs/hardware/<device-slug>/`
+
+Repo root contains ONLY: AOSP-mandated top-level files (Android.bp, Makefile,
+bootstrap.bash, BUILD, kokoro, lk_inc.mk, OWNERS, version_defaults.mk),
+project metadata (README/CLAUDE/AGENTS/CONTRIBUTING/LICENSE/NOTICE/VERSION),
+dot-files (.gitignore/.gitmodules), and standard top-level dirs (build/,
+device/, external/, frameworks/, hardware/, kernel-5.10/, packages/, prebuilts/,
+scripts/, system/, tools/, vendor/, docs/, releases/, logs/).
+
+NO bash scripts in repo root except AOSP-mandated `bootstrap.bash`. NO log
+files in repo root. NO duplicate filenames between root and `scripts/`. NO
+release artifacts in root. Moves require triple-verification (audit all
+references + distinguish absolute vs subdir-local + confirm no AOSP build-
+system requirement). Pre-build gate `CM-FILE-LAYOUT-DISCIPLINE` enforces.
+Propagation gate `CM-COVENANT-114-11-PROPAGATION` enforces this anchor in
+every CLAUDE.md / AGENTS.md across parent + 10 owned submodules + HelixQA
+dependencies.
+
+**Canonical authority:** parent
+[`docs/guides/ATMOSPHERE_CONSTITUTION.md`](docs/guides/ATMOSPHERE_CONSTITUTION.md)
+§11.4.11.
+
+Non-compliance is a release blocker regardless of context.
+
+**§11.4.12 — Issues_Summary.md sync mandate (User mandate, 2026-05-12)**
+
+docs/Issues_Summary.md is the canonical short-form summary of all open
+items. MUST be regenerated + re-exported (HTML + PDF) whenever Issues.md
+changes. Generator: scripts/testing/generate_issues_summary.sh. Pre-build
+gates `CM-ISSUES-SUMMARY-SYNC` + `CM-COVENANT-114-12-PROPAGATION` enforce
+mechanically.
+
+**Sort order (User mandate refinement 2026-05-12):** severity DESC
+(C → M → L), then intra-group criticality DESC inside each group.
+Most critical row = #1, least critical = #N. Documented at the top
+of the generated file.
+
+**Auto-sync wrapper:** `scripts/testing/sync_issues_docs.sh` — runs
+generator + `export_progress_docs.sh` in one shot. MUST be invoked
+after any edit to Issues.md or Issues_Summary.md. HTML+PDF exports
+are NEVER manually invoked; they ALWAYS travel with the markdown.
+
+**Canonical authority:** parent
+[`docs/guides/ATMOSPHERE_CONSTITUTION.md`](docs/guides/ATMOSPHERE_CONSTITUTION.md)
+§11.4.12.
+
+Non-compliance is a release blocker regardless of context.
+
+---
+
+## CONST-047 — Recursive Submodule Application Mandate (cascaded from root CONSTITUTION.md)
+
+> Verbatim user mandate (2026-05-14): *"Make sure all work we do is applied ALWAYS to all Submodules we control under our organizations (vasic-digital and HelixDevelopment) fully recursively everywhere with full bluff-proofing and comprehensive documentation, user manuals and guides and full tests and Challenges coverage!"*
+
+Every engineering deliverable produced for the main project MUST be applied — fully and recursively — to every owned submodule under the `vasic-digital` and `HelixDevelopment` GitHub organizations. Each owned submodule (including this one) MUST receive in lockstep: (1) anti-bluff posture (CONST-035 / Article XI §11.9), (2) comprehensive documentation matching actual capabilities, (3) full tests + Challenges coverage with captured runtime evidence, (4) recursive propagation through nested submodules under the same orgs, (5) synchronized commits when meta-repo state advances this surface.
+
+See the root `CONSTITUTION.md` §CONST-047 for the full mandate. This anchor MUST remain in this submodule's CONSTITUTION.md, CLAUDE.md, and AGENTS.md.
+
+**§11.4.40 — Full-suite retest before release tag mandate (User mandate, 2026-05-17)**
+
+A release tag MUST NOT be created until a COMPLETE retest with ALL existing tests has been executed on a clean baseline AFTER every workable item in the batch is done, fixed, polished, and individually verified. Spot-check retests that run only the tests touched by the batch are FORBIDDEN — they miss interaction defects between the batch's fixes and previously-stable code.
+
+The complete retest comprises: (1) pre-build full sweep, (2) post-build full sweep, (3) on-device 4-phase cycle on EVERY owned device, (4) meta-test full mutation sweep, (5) Challenge bank full sweep, (6) Issues.md/Fixed.md state audit, (7) CONTINUATION.md sync check.
+
+Time is essential — complete retest is typically 12–48 hour elapsed effort. NOT optional, NOT abbreviated. Skipping is the exact "tests passed but feature broken" failure mode §11.4 specifically prohibits.
+
+Composes with §11.4.4 (per-fix retest) — §11.4.37 is the additional final integrity check at RELEASE granularity. Composes with §11.4.7 — full-suite retest is the authoritative baseline for closures in the batch. No escape hatch — no `--skip-full-retest` or `--quick-release` flag exists.
+
+Pre-build gate `CM-FULL-SUITE-RETEST-MANDATE` + paired mutation. Propagation gate `CM-COVENANT-114-40-PROPAGATION` enforces this anchor in every CLAUDE.md/AGENTS.md across parent + 10 owned submodules + HelixQA dependencies.
+
+**Canonical authority:** constitution submodule [`Constitution.md`](../../../constitution/Constitution.md) §11.4.37.
+
+Non-compliance is a release blocker regardless of context.
+
+**§11.4.41 — Pre-Force-Push Merge-First Mandate (User mandate, 2026-05-17)**
+
+Any force-push (`git push --force`, `git push --force-with-lease`, `git push +<ref>`, or equivalent history-rewriting operation on any remote) authorised under §9.2 / CONST-043 MUST be preceded by a mechanical 4-step merge-first pipeline that brings every remote-side commit into the local tree, resolves every conflict carefully, and verifies nothing is lost or corrupted on EITHER side BEFORE the overwriting push is executed.
+
+**The 4-step pipeline (mandatory, in order):** (1) `git fetch --all --prune --tags` against every configured remote — capture output. (2) Integrate every divergent commit locally via `git rebase` (local is strict superset), `git merge` (independent additions both deserve preservation), or operator-confirmed cherry-pick (remote subset already present locally). (3) Audit: no conflict markers (`grep -rn '^<<<<<<< \|^=======$\|^>>>>>>> '` returns empty), no silent file drops (`git diff --stat HEAD@{1} HEAD`), every previously-passing test still passes per §11.4.4 / §11.4.40 baseline, every captured-evidence artifact still validates. (4) `git push --force-with-lease <remote> <ref>` (NEVER `--force` without `--with-lease` unless §9.2 sub-clause 6 explicitly authorises it for a remote where lease semantics are unavailable). One force-push event per CONST-043 authorisation — no batch authorisation.
+
+**Two-gate composition with CONST-043** — §11.4.41 does NOT relax CONST-043's operator-approval requirement. Gate A (CONST-043): operator types explicit per-operation force-push authorisation. Gate B (§11.4.41): agent executes the 4-step merge-first pipeline, captures evidence of clean integration, presents evidence to operator BEFORE the force-push. Both gates required.
+
+**Verification artefact** — every §11.4.41-governed force-push emits a `docs/changelogs/<tag>.md` "Force-push merge-first audit" section containing 7 elements: (i) `git fetch` output, (ii) per-remote `HEAD..<remote>/<branch>` log before integration, (iii) integration strategy chosen per remote with rationale, (iv) post-integration conflict-marker scan output (must be empty), (v) post-integration test suite delta (must show only expected changes), (vi) `--force-with-lease` push output with lease SHA evidence, (vii) CONST-043 authorisation quote from the conversation.
+
+Composes with §9.2 (data-safety hardlinked backup), §11.4.4 (test-interrupt-on-discovery — broken integration triggers rollback), §11.4.6 (no-guessing — every step's outcome captured, not assumed), §11.4.26 (constitution-submodule update pipeline — per-submodule specialisation), §11.4.32 (post-pull validation — audit step's mechanical companion), §11.4.37 (fetch-before-edit — step 1 enforces it for force-push specifically), §11.4.40 (full-suite retest — step 3's test-evidence requirement).
+
+No escape hatch — the operator-pressure escape ("just force-push, we'll fix it later") is the exact failure mode this anchor closes. Pre-build gate `CM-COVENANT-114-41-PROPAGATION` enforces this anchor in every CLAUDE.md/AGENTS.md across parent + 10 owned submodules + nested submodules + HelixQA dependencies. Paired mutation strips the anchor literal → gate FAILs. Gate `CM-FORCE-PUSH-MERGE-FIRST` walks `docs/changelogs/<tag>.md` "Force-push" entries for the 7 audit elements; paired mutation strips any element and asserts gate FAILs.
+
+**Canonical authority:** constitution submodule `Constitution.md` §11.4.41.
+
+Non-compliance is a release blocker regardless of context.
+
+---
+
+## CONST-048: Full-Automation-Coverage Mandate (cascaded from constitution submodule §11.4.25)
+
+> Verbatim user mandate (2026-05-15): *"Make sure that every feature, every functionality, every flow, every use case, every edge case, every service or application, on every platform we support is covered with full automation tests which will confirm anti-bluff policy and provide the proof of fully working capabilities, working implementation as expected, no issues, no bugs, fully documented, tests covered! Nothing less than this does not give us a chance to deliver stable product! This is mandatory constraint which MUST BE respected without ignoring, skipping, slacking or forgetting it!"*
+
+No feature / functionality / flow / use case / edge case / service / application on any supported platform of this submodule is deliverable until covered by automation tests proving six invariants: (1) anti-bluff posture with captured runtime evidence (CONST-035); (2) proof of working capability end-to-end on target topology; (3) implementation matching documented promise; (4) no open issues/bugs surfaced; (5) full documentation in sync; (6) four-layer test floor (pre-build + post-build + runtime + paired mutation).
+
+**Cascade requirement:** This anchor (verbatim or by CONST-048 ID reference) MUST remain in this submodule's CONSTITUTION.md, CLAUDE.md, and AGENTS.md, and propagate recursively to any nested owned-by-us submodule. See parent project's `CONSTITUTION.md` §CONST-048 and constitution submodule `Constitution.md` §11.4.25 for the full mandate.
+## CONST-049: Constitution-Submodule Update Workflow Mandate (cascaded from constitution submodule §11.4.26)
+
+> Verbatim user mandate (2026-05-15): *"Every time we add something into our root (constitution Submodule) Constitution, CLAUDE.MD and AGENTS.MD we MUST FIRST fetch and pull all new changes / work from constitution Submodule first! All changes we apply MUST BE commited and pushed to all constitution Submodule upstreams! In case of conflict, IT MUST BE carefully resolved! Nothing can be broken, made faulty, corrupted or unusable! After merging full validation and verification MUST BE done!"*
+
+Before ANY modification to `constitution/{Constitution,CLAUDE,AGENTS}.md` in the parent project, the agent or operator MUST execute the 7-step pipeline: (1) fetch + pull first inside the constitution submodule worktree; (2) apply the change with §11.4.17 classification + verbatim mandate quote; (3) validate (meta-test + no merge-conflict markers + cross-file consistency); (4) commit + push to EVERY configured upstream of the constitution submodule (governance files only — never `git add -A`); (5) careful conflict resolution preserving union of governance content (force-push forbidden per CONST-043 / §9.2); (6) post-merge `git submodule update --remote --init` + re-run cascade verifier (CONST-047); (7) bump consuming project's `.gitmodules` pointer to the new constitution HEAD in the SAME commit as cascade work.
+
+**Cascade requirement:** This anchor (verbatim or by CONST-049 ID reference) MUST remain in this submodule's CONSTITUTION.md, CLAUDE.md, and AGENTS.md, and propagate recursively to any nested owned-by-us submodule. See parent project's `CONSTITUTION.md` §CONST-049 and constitution submodule `Constitution.md` §11.4.26 for the full mandate.
+## CONST-050: No-Fakes-Beyond-Unit-Tests + 100%-Test-Type-Coverage Mandate (cascaded from constitution submodule §11.4.27)
+
+> Verbatim user mandate (2026-05-15): *"Mocks, stubs, placeholders, TODOs or FIXMEs are allowed to exist ONLY in Unit tests! All other test types MUST interract with real fully implemented System! No fakes, empty implementations or bluffing is allowed of any kind! All codebase of the project MUST BE 100% covered with every supported test type: unit tests, integration tests, e2e tests, full automation tests, security tests, ddos tests, scaling tests, chaos tests, stress tests, performance tests, benchmarking tests, ui tests, ux tests, Challenges (fully incorporating our Challenges Submodule — https://github.com/vasic-digital/Challenges). EVERYTHING MUST BE tested using HelixQA (fully incorporating HelixQA Submodule — https://github.com/HelixDevelopment/HelixQA). HelixQA MUST BE used with all possible written tests suites (test banks) for every applications, service, platform, etc and execution of the full HelixQA QA autonomous sessions! All required dependency Submodules MUST BE added into the project as well (fully recursive!!!)."*
+
+Two cooperating invariants:
+
+**(A) No-fakes-beyond-unit-tests.** Mocks, stubs, fakes, placeholders, `TODO`, `FIXME`, "for now", "in production this would", or empty-implementation patterns are PERMITTED only in unit-test sources. Every other test type — integration, E2E, full automation, security, DDoS, scaling, chaos, stress, performance, benchmarking, UI, UX, Challenges, HelixQA — MUST exercise this submodule's real, fully implemented system against real infrastructure. Production code MUST NOT import mock paths.
+
+**(B) 100% test-type coverage.** Codebase MUST be covered by every supported test type the domain warrants: unit, integration, E2E, full-automation, security, DDoS, scaling, chaos, stress, performance, benchmarking, UI, UX, Challenges (vasic-digital/Challenges submodule fully incorporated), HelixQA (HelixDevelopment/HelixQA submodule fully incorporated, with full autonomous QA sessions executing every registered test bank with captured wire evidence).
+
+**Required dependency submodules** (recursive per CONST-047): Challenges + HelixQA + any other functionality submodules under vasic-digital/HelixDevelopment orgs this submodule depends on.
+
+**Cascade requirement:** This anchor (verbatim or by CONST-050 ID reference) MUST remain in this submodule's CONSTITUTION.md, CLAUDE.md, and AGENTS.md, and propagate recursively to any nested owned-by-us submodule. See parent project's `CONSTITUTION.md` §CONST-050 and constitution submodule `Constitution.md` §11.4.27 for the full mandate.
+## CONST-051: Submodules-As-Equal-Codebase + Decoupling + Dependency-Layout Mandate (cascaded from constitution submodule §11.4.28)
+
+> Verbatim user mandate (2026-05-15): *"All existing Submodules in the project that we are controlling and belong to some our organizations (vasic-digital, HelixDevelopment, red-elf, ATMOSphere1234321, Bear-Suite, BoatOS123456, Helix-Flow, Helix-Track, Server-Factory - we can ALWAYS check dynamically using GitHub and GitLab CLIs) are equal parts of the project's codebase! We MUST work on that code as much as we do with main project's codebase! All on equal basis! Equally important! ... We MUST NEVER modify Submodules to bring into them any project specific context since they all MUST BE ALWAYS fully decoupled, project not-aware, fully reusable and modular (by any other project(s)), completely testable! All Submodule dependencies that are used by Submodule MUST BE acessed from the root of the project! We MUST NOT have nested Submodule dependencies but accessing each from proper location from the root of the project - directly from project's root project_name/submodule_name or some more proper structure project_name/submodules/submodule_name!"*
+
+Three cooperating invariants apply to every owned-by-us submodule (orgs: vasic-digital, HelixDevelopment, red-elf, ATMOSphere1234321, Bear-Suite, BoatOS123456, Helix-Flow, Helix-Track, Server-Factory, plus any subsequently authorised org — discoverable via `gh org list` / `glab`):
+
+**(A) Equal-codebase.** This submodule is an EQUAL part of every consuming project's codebase. The consuming project's engineering practice — analysis, extension, test creation, gap-filling, bug-fix, documentation (user manuals, guides, diagrams, graphs, SQL definitions, website pages, all materials) — applies to this submodule on equal basis. Coverage ledgers (CONST-048) list this submodule as an in-scope target.
+
+**(B) Decoupling / reusability.** This submodule MUST remain fully decoupled from any specific consuming project. NEVER inject project-specific context (hardcoded paths, hostnames, asset names, naming schemes). Stay project-not-aware, reusable, modular, completely testable as a standalone repository. When parent-project info is needed, use configuration injection (env var, config file, constructor parameter) — never a hardcoded reach.
+
+**(C) Dependency-layout.** Any dependency this submodule consumes MUST be accessible from the consuming project's root at `<root>/<name>/` or `<root>/submodules/<name>/`. **Nested own-org submodule chains are FORBIDDEN** — this submodule MUST NOT have its own `.gitmodules` entries pulling in further owned-by-us repos. Third-party submodules are exempt.
+
+**Cascade requirement:** This anchor (verbatim or by CONST-051 ID reference) MUST remain in this submodule's CONSTITUTION.md, CLAUDE.md, and AGENTS.md, and propagate recursively to any nested owned-by-us submodule. See parent project's `CONSTITUTION.md` §CONST-051 and constitution submodule `Constitution.md` §11.4.28 for the full mandate.
+## CONST-052: Lowercase-Snake_Case-Naming Mandate (cascaded from constitution submodule §11.4.29)
+
+> Verbatim user mandate (2026-05-15): *"naming convention for Submodules and directories (applied deep into hierarchy recursively) - all directories and Submodules MSUT HAVE lowercase names with space separator between the words of '_' character (snake-case)! All existing Submodules and directories which are not following this rule MUST BE renamed! However, since this will most likely break some of the functionalities renaming we do MUST BE applied to all references to particular Submodule or directory! ... There MUST BE reasonable exceptions for this rules - source code for programming languages or Submodules which apply different naming convention - Android, Java, Kotlin and others. ... Upstreams directory which all of our projects and Submodules have MUST BE renamed to the lowercase letters too, however root project containing the install_upstreams system command (it is exported in out paths in our .bashrc or .zshrc) MUST BE updated to fully work with both Upstreams and upstreams directory. ... NOTE: Rules lowercase / snake-case do apply to all project files as well and references to it and from them!"*
+
+Every directory, submodule, and file in this submodule MUST use lowercase snake_case names. Existing non-compliant names MUST be renamed atomically with updates to every reference (configs, docs, source-code imports, governance files). Reference drift after rename = CONST-052 violation of equal severity to the rename itself.
+
+**Common-sense exceptions (technology-preserving):** language-mandated case for Java/Kotlin/Android/Apple/C#/Swift INSIDE language-roots; vendor/upstream third-party submodules keep upstream names; build artefacts (`node_modules`, `__pycache__`, `.git`, `target`, `build`, `bin`) keep tool-mandated names. The test "does renaming break the technology?" trumps the rule.
+
+**`Upstreams/` → `upstreams/` transition:** the constitution submodule's `install_upstreams.sh` (exported via `.bashrc`/`.zshrc`) supports BOTH directory layouts; lowercase wins when both present.
+
+**Test coverage of renames** (per CONST-050(B)): regression test for reference resolution + full test-type matrix run + anti-bluff wire-evidence captured.
+
+**Cascade requirement:** This anchor (verbatim or by CONST-052 ID reference) MUST remain in this submodule's CONSTITUTION.md, CLAUDE.md, and AGENTS.md, and propagate recursively to any nested owned-by-us submodule. See parent project's `CONSTITUTION.md` §CONST-052 and constitution submodule `Constitution.md` §11.4.29 for the full mandate.
 
 
-## CONST-062 — CONST-078: Round-191 cascade — anchors §11.4.42 through §11.4.58
+## CONST-053: .gitignore + No-Versioned-Build-Artifacts Mandate (cascaded from constitution submodule §11.4.30)
 
-The following anchors propagate from constitution submodule §11.4.42-58 (User mandates 2026-05-17 / 2026-05-18 / 2026-05-19) into this submodule's governance via short-form reference per CONST-049 step 6. Severity-equivalent to a §11.4 PASS-bluff at the respective enforcement layer. Cascade requirement: this block (verbatim or by ID reference) MUST appear in this submodule's CONSTITUTION.md, CLAUDE.md, AGENTS.md, and propagate to any nested owned-by-us submodule.
+> Verbatim user mandate (2026-05-15): *"every project module, every Submodule, every servcie and apolication MUST HAVE proper .gitignore file! We MUST NOT git version build artifacts, cache files, tmp files, main .env file(s) or any files containing sensitive data, API keys or token! Any build derivate which we can recreate by executing proper mechanism for generating MUST NOT be versioned! We MUST pay attention what is going to be commited every time we are preparing to execute commit! If any violetion is detected it MUST be fixed before commit is executed!"*
 
-- **CONST-062 / §11.4.42 — Iteration-discipline mandate.** Each fix cycle MUST run pre-build gate + post-build/post-flash test + paired §1.1 mutation + post-validation §11.4.40 retest. Truncating cycle to ship faster = violation. Subagents default to this path.
-- **CONST-063 / §11.4.43 — TDD-Fix-Discipline.** Every bug fix starts with a failing RED test reproducing the defect on the target topology. Fix lands only after RED → GREEN against real infrastructure. Skipping RED step = violation.
-- **CONST-064 / §11.4.44 — Document Revision Header.** Every governance/status/plan doc MUST carry `**Revision:** N` + `**Last modified:** YYYY-MM-DD` + `**Maintainer:**` directly below H1; bumped per content edit. Missing/stale header = violation.
-- **CONST-065 / §11.4.45 — Integration-Status-Doc Maintenance.** Every `Status.md` (integration, programme, sub-system) carries the §11.4.44 header and stays in sync with actual programme state at every commit advancing state. Out-of-sync = violation (CONST-044 severity).
-- **CONST-066 / §11.4.46 — Validate-recent-work before post-flash sweep.** Each recent-work item since previous sweep MUST have its §11.4.43 RED test run against the live device and report GREEN before post-flash full-test sweeps. Skipping = violation.
-- **CONST-067 / §11.4.47 — Firebase Data Review.** Every Firebase Crashlytics/Analytics finding triaged per §11.4.47 severity table, deduped against Issues.md; new stacktrace gets §11.4.43 RED test before fix. Untriaged past SLA = violation.
-- **CONST-068 / §11.4.48 — UI-Driven Video Testing.** Every supported app/service ships UI-driven traversal tests covering surfaces A-E; each run captures screen-recording as anti-bluff evidence. Missing driver or missing video = violation.
-- **CONST-069 / §11.4.49 — Dual-Approach Testing.** Every feature test ships in BOTH UI-driven (uiautomator) AND Intent-driven (programmatic API) variants. Both RED until fix lands, then both GREEN. Single-variant = violation.
-- **CONST-070 / §11.4.50 — Deterministic Consistency.** Every test runs N iterations with consistent results; flaky tests forbidden; intermittent FAIL must be diagnosed not retried. First-PASS-only reporting = violation.
-- **CONST-071 / §11.4.51 — Live-ADB-First Maximization.** Prefer live-ADB probes over post-flash sweeps wherever the fix surface allows (§11.4.43 step 2 maximised). Skipping live-probe when feasible = violation.
-- **CONST-072 / §11.4.52 — Autonomous-Validation.** Every test/feature/flow MUST have an autonomous execution path (instrumentation APK / headless driver) so subagent flows run unattended. Operator-attended-only = violation.
-- **CONST-073 / §11.4.53 — Fixed_Summary parity.** `Fixed_Summary.md` (+ HTML/PDF exports per §11.4.12/§11.4.44) regenerated on every Issues.md → Fixed.md migration. Stale exports = violation. HTML+PDF travel together with the `.md`.
-- **CONST-074 / §11.4.54 — ATM-NNN ticket identifier.** Every Issue/Feature/Task entry carries an `ATM-NNN` id (zero-padded, monotonically increasing per project); cross-references in governance/plans/changelogs use the ATM-NNN id. Missing/duplicate = violation.
-- **CONST-075 / §11.4.55 — Reopens-history + per-item Reopens.md.** Every Reopened item gets `docs/reopens/ATM-NNN.md` tracking each cycle (date, source AI/User, reason from CONST-058 vocabulary, evidence path). `Reopens_Summary.md` regenerated on every reopen. Missing per-item doc = violation.
-- **CONST-076 / §11.4.56 — Status_Summary parity + two-audience format.** `Status_Summary.md` (+ HTML/PDF exports) ships in operator-side + AI-side sections and stays in parity with underlying status docs at every commit advancing state. Drift/missing audience section = violation.
-- **CONST-077 / §11.4.57 — README.md doc-link section + revision metadata.** Every `README.md` carries (a) §11.4.44 revision header below H1, (b) Documentation link section listing canonical governance + status + plan docs. Missing section or stale links = violation.
-- **CONST-078 / §11.4.58 — Parallel-development methodology (PWU).** Project work proceeds through the Parallel Work Unit pipeline: Stage 1 DEVELOP (parallel, isolated worktrees) → Stage 2 MERGE (serial flock + §11.4.41 4-step) → Stage 3 REBUILD+FLASH → Stage 4 VALIDATE (parallel) → Stage 5 SWEEP. Four-layer lock hierarchy: L1 flock / L2 git / L3 contention-path advisory / L4 per-PWU worktree. Disjoint-scope PWUs run fully parallel; cross-scope overlap rejected to rebase. Conductor REFUSES merge of any PWU lacking captured evidence per §11.4.5/§11.4.52.
+Every project module, owned-by-us submodule, service, and application MUST ship a proper `.gitignore`. Forbidden-from-version-control classes:
 
-For full mandate text + verbatim user quotes + gates + paired mutations + composition tables, see constitution submodule `Constitution.md` §11.4.42-58 (canonical-root inheritance per CONST-059).
+1. **Build artefacts**: `/bin/`, `/build/`, `/dist/`, `/out/`, `target/`, `*.exe`, `*.dll`, `*.so`, `*.dylib`, `*.a`, `*.o`, `*.class`, `*.pyc`, generator-produced files when the generator is committed.
+2. **Cache files**: `__pycache__/`, `.pytest_cache/`, `.mypy_cache/`, `.ruff_cache/`, `node_modules/`, `.next/`, `.cache/`, `.gradle/`, `.terraform/`, language-server caches.
+3. **Temp files**: `*.tmp`, `*.swp`, `*~`, `.DS_Store`, `Thumbs.db`, `*.orig`, `*.rej`.
+4. **Sensitive-data files**: `.env`, `.env.*` (allow `.env.example` placeholder only — no real secrets even as examples), `*.pem`, `*.key`, `*.crt`, `id_rsa*`, `id_ed25519*`, `.netrc`, `secrets/`, `api_keys.sh`.
+5. **Generated reports/logs**: `*.log`, `coverage.out`, `htmlcov/`, runtime captures unless reference assets.
+6. **OS/IDE personal state**: `.idea/`, `.history/`, `.vscode/` (except shared settings).
+
+**Anti-bluff invariant**: `.gitignore` line alone is not sufficient — no file matching the forbidden patterns may be CURRENTLY TRACKED. A tracked `*.log` despite the ignore-line is a violation of equal severity to no ignore-line at all.
+
+**Pre-commit attention**: every commit author (human OR agent) MUST inspect `git diff --staged` + `git status` BEFORE executing the commit. Forbidden-class hits abort the commit until fixed (un-stage, add to `.gitignore`, scrub if already-tracked). Gate `CM-GITIGNORE-PRECOMMIT-AUDIT` + paired mutation.
+
+**Secret-leak intersection (CONST-042 / §11.4.10):** a `.env` leak is BOTH a CONST-053 and a CONST-042 violation; rotation + post-mortem required.
+
+**Recreatable-content test**: if a documented mechanism regenerates the file from sources, it is a build derivative and MUST be ignored. The committed sources MUST include the generator.
+
+**Cascade requirement:** This anchor (verbatim or by `CONST-053` ID reference) MUST appear in every owned submodule's `CONSTITUTION.md`, `CLAUDE.md`, and `AGENTS.md`. Severity-equivalent to a §11.4 PASS-bluff at the repository-hygiene layer. See constitution submodule `Constitution.md` §11.4.30 for the full mandate.
+
+
+## CONST-054: Submodule-Dependency-Manifest Mandate (cascaded from constitution submodule §11.4.31)
+
+> Verbatim user mandate (2026-05-15): *"We MUST HAVE mechanism for each Submodule to determine / know what are its Submodule dependencies so new projects or palces we are incorporate them can add these Submodules to the project root and make them available! Suggested idea is configuration file with expected Submodules Git ssh urls perhaps? New project can read it, and recursively add each Submodule to the root of the project and install / expose it to veryone."*
+
+Every owned-by-us submodule MUST ship `helix-deps.yaml` at its root declaring its own-org dependencies. Schema: `schema_version`, `deps: [{name, ssh_url, ref, why, layout: flat|grouped}]`, `transitive_handling.{recursive,conflict_resolution}`, `language_specific_subtree`. Tooling: `incorporate-submodule <ssh-url>` adds the submodule at the parent project's canonical path (CONST-051(C)), reads `helix-deps.yaml`, recurses for each declared dep, aborts on conflicting refs, emits `<root>/.helix-manifest.yaml` audit record.
+
+Anti-bluff guarantee: every manifest paired with a Challenge that bootstraps a throwaway consuming project, runs `incorporate-submodule`, asserts produced layout matches the manifest, runs the submodule's own tests against the bootstrapped layout, captures wire evidence per §11.4.2. A manifest without this proof is a CONST-054 violation.
+
+§11.4.31 / CONST-054 is the **operational complement** of CONST-051(C): nested own-org submodule chains are FORBIDDEN — manifests are the bridge that lets consumers reconstruct the dependency graph at the parent root.
+
+**Cascade requirement:** This anchor (verbatim or by `CONST-054` ID reference) MUST appear in every owned submodule's `CONSTITUTION.md`, `CLAUDE.md`, and `AGENTS.md`. Severity-equivalent to §11.4 PASS-bluff at the dependency-graph layer. See constitution submodule `Constitution.md` §11.4.31 for the full mandate.
+
+## CONST-055: Post-Constitution-Pull Validation Mandate (cascaded from constitution submodule §11.4.32)
+
+> Verbatim user mandate (2026-05-15): *"Every time we fetch and pull new changes on constitution Submodule we MUST process the whole project and all Submodule (deep recursively) for validation and verification taht every single rule or mandatory constraint is followed and respected! If it is not, IT MUST BE!"*
+
+Whenever a project's constitution submodule is fetched + pulled with any content change, the project MUST run `scripts/verify-all-constitution-rules.sh` BEFORE the new constitution HEAD is treated as canonical for any other work. The sweep re-runs the governance-cascade verifier AND every implementable rule gate (CONST-053 `.gitignore` audit, CONST-051(C) nested-own-org-chain audit, CONST-052 case audit, CONST-050(A) mock-from-production audit, CONST-035 anti-bluff smoke, etc.) against the post-pull tree. Failures populate the project's Issues tracker per §11.4.15 (Status: `Reopened`, Type: `Bug`); closure requires positive-evidence per §11.4.
+
+Pull-time invocation: `git submodule update --remote constitution` triggers the sweep automatically (post-update hook OR commit-wrapper invocation). Operator-explicit manual invocation also available.
+
+Anti-bluff: the sweep's own meta-test (paired mutation per §1.1) plants a known violation of each enforced gate and asserts the sweep reports FAIL for the planted gate. A sweep that exits PASS without running every implementable gate is a CONST-055 violation.
+
+CONST-055 is the **enforcement engine** for every other §11.4.x and CONST-NNN rule — without it, new rules cascade as anchors but never get enforced.
+
+**Cascade requirement:** This anchor (verbatim or by `CONST-055` ID reference) MUST appear in every owned submodule's `CONSTITUTION.md`, `CLAUDE.md`, and `AGENTS.md`. Severity-equivalent to §11.4 PASS-bluff at the constitutional-enforcement layer. See constitution submodule `Constitution.md` §11.4.32 for the full mandate.
+
+
+## CONST-056: Mandatory install_upstreams on clone/add Mandate (cascaded from constitution submodule §11.4.36)
+
+> Verbatim user mandate (2026-05-15): *"Every Submodule or Git repository we add or clone MUST BE upstreams installed using Upstreamable utility which MUST BE available through exported paths of the host system (in .bashrc or .zhrc) using install_upstreams command executed from the root of the cloned (added) repository - only if in it is Upstreams or upstreams directory present with bash script files (recipes) for all repository's upstreams!"*
+
+Every clone / add of a Git repository under HelixCode MUST be followed by `install_upstreams` invocation from the repository's root IF its tree contains `upstreams/` (or legacy `Upstreams/` per CONST-052 transition) populated with `*.sh` recipe files. The utility (installed on operator's `PATH` via `.bashrc`/`.zshrc`; implementation in the constitution submodule's `install_upstreams.sh` — already supports BOTH directory names since constitution commit `45d3678`) reads the recipe files, configures every declared upstream as a named git remote, and fans out `origin` push URLs.
+
+Skipping the invocation when `upstreams/` is present silently breaks §2.1 (multi-upstream push is the norm) — the next push lands on only one upstream. Gate `CM-INSTALL-UPSTREAMS-ON-CLONE` + paired mutation. Automation: the future `incorporate-submodule` per CONST-054 auto-invokes; manual invocation supported. Pre-commit check: `git remote -v | grep -c push` reports expected count.
+
+**Cascade requirement:** This anchor (verbatim or by `CONST-056` ID reference) MUST appear in every owned submodule's `CONSTITUTION.md`, `CLAUDE.md`, and `AGENTS.md`. See constitution submodule `Constitution.md` §11.4.36 for the full mandate.
+
+
+## CONST-057: Type-aware Closure-Status Vocabulary (cascaded from constitution submodule §11.4.33)
+
+Every project tracking work items by Type per §11.4.16 MUST close them with the Type-appropriate terminal `**Status:**` value, drawn from this 3-element closed map:
+
+| Item `**Type:**` | Closure `**Status:**` value     |
+|------------------|---------------------------------|
+| `Bug`            | `Fixed (→ Fixed.md)`            |
+| `Feature`        | `Implemented (→ Fixed.md)`      |
+| `Task`           | `Completed (→ Fixed.md)`        |
+
+The `(→ Fixed.md)` suffix is preserved across all three so the existing migration-discipline tooling (atomic Issues.md → Fixed.md move per §11.4.19) keeps working without per-Type branching. Generators (`generate_issues_summary.sh`, `generate_fixed_summary.sh`, the §11.4.23 colorizer) MUST treat the three terminal values as semantically equivalent (all "closed, positive evidence captured") while preserving the literal in the emitted document.
+
+Closing a `Feature` with `Fixed (→ Fixed.md)` or a `Task` with `Implemented (→ Fixed.md)` is a CONST-057 violation. Gate `CM-CLOSURE-VOCAB-TYPE-AWARE` walks every Fixed.md heading + every Issues.md heading whose `**Status:**` is one of the three terminal values and asserts the Status-Type match. Composes with §11.4.15 / §11.4.16 / §11.4.19 / §11.4.23.
+
+**Cascade requirement:** This anchor (verbatim or by `CONST-057` ID reference) MUST appear in every owned submodule's `CONSTITUTION.md`, `CLAUDE.md`, and `AGENTS.md`. See constitution submodule `Constitution.md` §11.4.33 for the full mandate.
+
+## CONST-058: Reopened-Source Attribution Mandate (cascaded from constitution submodule §11.4.34)
+
+Every Issues.md (or equivalent project tracker) heading whose `**Status:**` is `Reopened` MUST carry, within 8 non-blank lines of the heading, a `**Reopened-Details:**` line capturing four sub-facts:
+
+- **By:** `AI` or `User` (source-of-truth observer who flipped the status). `AI` covers in-loop reopens (test failure, gate regression, captured-evidence retrospect). `User` covers operator-side observations (manual testing, end-user report, design reconsideration).
+- **On:** ISO date (`YYYY-MM-DD`).
+- **Reason:** one-line cause classification — chosen from the closed vocabulary `{ test-failed | manual-testing-detected | captured-evidence-contradicts | end-user-report | cycle-re-discovered | design-reconsidered }`. Other values permitted with explicit `Reason: <free text>` annotation but the closed list MUST be tried first.
+- **Evidence:** path to or short description of the captured artefact justifying the reopen — log file, recording, gate failure ID, operator quote, etc. Reopens without evidence are §11.4.6 / §11.4.7 violations (demotion from Fixed requires captured evidence under the conditions that re-exposed the defect).
+
+The Issues_Summary.md Status column MUST distinguish the four `Reopened` sub-states by source so a sweep query for "reopens by AI in the last 30 days" is mechanically possible. Suggested column rendering: `Reopened (AI: test-failed)` vs `Reopened (User: manual-testing)`. Gate `CM-ITEM-REOPENED-DETAILS` mirrors `CM-ITEM-OPERATOR-BLOCKED-DETAILS` (§11.4.21 walk pattern). Composes with §11.4.6 / §11.4.7 / §11.4.15 / §11.4.21.
+
+**Cascade requirement:** This anchor (verbatim or by `CONST-058` ID reference) MUST appear in every owned submodule's `CONSTITUTION.md`, `CLAUDE.md`, and `AGENTS.md`. See constitution submodule `Constitution.md` §11.4.34 for the full mandate.
+
+## CONST-059: Canonical-Root Inheritance Clarity (cascaded from constitution submodule §11.4.35)
+
+The **constitution submodule's** three files (`constitution/Constitution.md`, `constitution/CLAUDE.md`, `constitution/AGENTS.md`) ARE the **canonical root** (also called the **parent** files). They contain only universal rules per §11.4.17.
+
+The consuming project's **repository-root files** (`<project-root>/CLAUDE.md`, `<project-root>/AGENTS.md`, optionally `<project-root>/Constitution.md`) are **consumer extensions**. They MUST start with the inheritance pointer (either the Claude-Code native `@constitution/CLAUDE.md` import or the portable `## INHERITED FROM constitution/CLAUDE.md` heading). They contain only project-specific rules per §11.4.17.
+
+**When in doubt about which file to edit:** universal rule → constitution submodule's file; project-specific rule → consumer's file. Default consumer-side when uncertain (§11.4.17 — narrower scope is cheap to widen).
+
+**Terminology:** "the parent CLAUDE.md" / "the root Constitution" → constitution-submodule file at `constitution/<filename>`; "the project CLAUDE.md" / "this project's AGENTS.md" → consumer-side file at `<project-root>/<filename>`.
+
+**No silent demotion or silent promotion.** Moving a rule between layers MUST be a visible commit — `git mv` of a section if it's a clean clone, or explicit `Lifted from <project> to constitution per §11.4.35` / `Demoted from constitution to <project> per §11.4.35` commit-message annotation.
+
+Gate `CM-CANONICAL-ROOT-CLARITY` verifies (a) consumer's `CLAUDE.md` opens with the inheritance pointer, (b) constitution submodule's three files are present at the expected path, (c) no `## INHERITED FROM` block in the constitution submodule's own files (those ARE the source-of-truth, not consumers). Composes with §11.4.17.
+
+**Cascade requirement:** This anchor (verbatim or by `CONST-059` ID reference) MUST appear in every owned submodule's `CONSTITUTION.md`, `CLAUDE.md`, and `AGENTS.md`. See constitution submodule `Constitution.md` §11.4.35 for the full mandate.
+
+## CONST-060: Fetch-before-edit Mandate (cascaded from constitution submodule §11.4.37)
+
+> Verbatim user mandate (2026-05-15): *"Make sure that feedback_fetch_before_edit memory rule is part of our constitution Submodule - the root Consitution, AGENTS.MD and CLAUDE.MD. Validate and verify that Proejct-Toolkit and all Submodules do inherit all of them! Follow the constitution Submodule documentation for details."*
+
+The FIRST git-touching action of every session, on every consuming project (owned or third-party), MUST be:
+
+```bash
+git fetch --all --prune
+git log --oneline HEAD..@{u}
+git submodule foreach --recursive 'git fetch --all --prune --quiet'
+```
+
+If `HEAD..@{u}` is non-empty, integrate the upstream changes BEFORE any local edit. Acting on stale local state produces three failure modes documented in the originating §11.4.37 incident (multi-agent / parallel-session work): (1) **redundant work** — the agent re-does what a parallel session already finished, (2) **false confidence** — completion reports for already-done work, (3) **divergent history** — duplicate sibling commits that double the conflict surface on next push.
+
+**Anti-bluff invariant**: the fetch+log check MUST produce captured evidence — the actual `HEAD..@{u}` output, even if empty. Skipping the check on the basis of "I just fetched" or "nothing could have changed in the last N minutes" is a §11.4.6 (no-guessing) violation: the remote state is not knowable without a fetch.
+
+**Cascade requirement**: This anchor (verbatim or by `CONST-060` ID reference) MUST appear in every owned submodule's `CONSTITUTION.md`, `CLAUDE.md`, and `AGENTS.md`. Severity-equivalent to §11.4 PASS-bluff at the parallel-session-coordination layer. See constitution submodule `Constitution.md` §11.4.37 for the full mandate.
+
+**§11.4.52 — Autonomous-Validation Mandate (User mandate, 2026-05-18)**
+
+**Forensic anchor — verbatim user mandate (2026-05-18):** "Make sure we have full automation tests which will do all this work in full automation! IMPORTANT: Make sure that all existing tests and Challenges do work in anti-bluff manner — they MUST confirm that all tested codebase really works as expected! execution of tests and Challenges MUST guarantee the quality, the completition and full usability by end users of the product! This MUST BE part of Constitution of our project, its CLAUDE.MD and AGENTS.MD if it is not there already, and to be applied to all Submodules's Constitution, CLAUDE.MD and AGENTS.MD as well."
+
+Every user-facing feature MUST have at least one autonomous validation path: end-to-end via `adb shell` + scripted automation, captured runtime evidence per §11.4.5, PASS/FAIL verdict WITHOUT human presence to drive UI, observe screen, or make decisions. Operator-attended tests are SUPPLEMENTARY, never PRIMARY. A feature whose ONLY validation path is operator-attended is a §11.4.52 violation — the path does not scale to CI, does not run on every commit, does not survive operator unavailability, and produces the exact "tests pass but feature doesn't work for users" failure mode §11.4 forbids.
+
+Acceptable autonomous paths: (a) programmatic instrumentation APK (SDK-API exercises like `MediaCodec.createDecoderByName` + structured JSON result file); (b) headless intent dispatch + state poll (`am start --es` / `am broadcast` + `dumpsys` / `/proc/<pid>/maps` / `media.metrics` polling); (c) ADB-driven uiautomator (ONLY if hierarchy has ≥1 clickable node — empty hierarchy demands fallback to APK/intent); (d) network-side sink probe per §11.4.13; (e) HelixQA autonomous QA session per §11.4.27.
+
+Coverage ledger (§11.4.25) classifies each feature as `AUTONOMOUS_VERIFIED` / `AUTONOMOUS_DESIGNED` / `OPERATOR_ATTENDED_ONLY` / `NOT_APPLICABLE`. `OPERATOR_ATTENDED_ONLY` blocks release until migrated; cite tracked work item per §11.4.15 + §11.4.16. Autonomous paths themselves MUST be anti-bluff: positive captured evidence + paired meta-test mutation per §1.1.
+
+Composes with §11.4.25 (full-automation coverage), §11.4.27 (no-fakes + 100% type coverage), §11.4.39 (per-feature on-device end-user validation), §11.4.43 (TDD RED-first), §11.4.48 (UI-driven — fallback to APK/intent when uiautomator hierarchy empty), §11.4.49 (dual-approach), §11.4.50 (deterministic consistency), §11.4.51 (live-ADB-first).
+
+Pre-build gates: `CM-COVENANT-114-52-PROPAGATION` + `CM-AF-AUTONOMOUS-PATH-PER-FEATURE`. Paired mutations. No escape hatch — no `--allow-operator-attended-only`, `--skip-autonomous-path`, `--manual-validation-suffices` flag.
+
+**Canonical authority:** constitution submodule Constitution.md §11.4.52.
+
+Non-compliance is a release blocker regardless of context.
+
+## CONST-061: Pre-Force-Push Merge-First Mandate (cascaded from constitution submodule §11.4.41)
+
+> Verbatim user mandate (2026-05-17): *"make sure we bring everything from branches to our side before forc push is done! Afer everything is safely and fully merged and all potential conflicts (if any) resolved, then do force push! make sure nothing isnlost, broken or corrupted on bith sides! add these rules in our root Constitution, CLAUDE.MD, AGENTS.MD (constitution Submodule) if itnis not added already! Extremely important rules and mandatory constraints we MUST HAVE and fully respect!"*
+
+Any force-push (`--force`, `--force-with-lease`, `+<ref>`, equivalent history-rewrite) authorised under CONST-043 MUST be preceded by a mechanical 4-step merge-first pipeline:
+
+1. **Fetch every remote** — `git fetch --all --prune --tags` against origin + every upstream; capture output.
+2. **Integrate every divergent commit locally** — rebase / merge / operator-confirmed cherry-pick per appropriate strategy for every non-empty `HEAD..<remote>/<branch>` range.
+3. **Audit the integrated tree** — no conflict markers anywhere (`grep -rn '^<<<<<<< \|^=======$\|^>>>>>>> '` returns empty in governance + source + test files); no file silently dropped; previously-passing tests still pass; captured-evidence artefacts still validate.
+4. **Force-push** — only after steps 1-3 produce clean integration evidence: `git push --force-with-lease` (NEVER `--force` alone unless authorised per §9.2 sub-clause 6).
+
+**Two-gate composition with CONST-043.** §11.4.41 does NOT relax CONST-043's operator-approval requirement — it adds a SECOND mechanical gate. CONST-043 alone authorises a push that loses remote work; §11.4.41 alone risks pushing without operator awareness. Both required.
+
+**Three failure modes prevented:** (a) remote-side content loss when parallel sessions land work between fetches; (b) stale-state acts when `--force-with-lease` reads stale local refs without prior fetch; (c) conflict-driven corruption when markers get committed verbatim (observed 2026-05-17 in helix_qa + containers governance files).
+
+**Verification artefact**: every governed force-push emits a `docs/changelogs/<tag>.md` "Force-push merge-first audit" section capturing fetch output, per-remote divergence log, integration strategy, conflict-marker scan, test delta, push output with lease SHA, + CONST-043 authorisation quote. Gate `CM-FORCE-PUSH-MERGE-FIRST` + paired mutation.
+
+**Cascade requirement:** This anchor (verbatim or by `CONST-061` ID reference) MUST appear in every owned submodule's `CONSTITUTION.md`, `CLAUDE.md`, and `AGENTS.md`. Severity-equivalent to a §11.4 PASS-bluff at the remote-data-integrity layer. See constitution submodule `Constitution.md` §11.4.41 for the full mandate.
+
+**§11.4.53 — Fixed_Summary parity mandate (User mandate, 2026-05-18)**
+
+**Forensic anchor — verbatim user mandate (2026-05-18T17:55Z):** "Note: Just like for Issues we have Issues_Summary, for Fixed we MUST HAVE Fixed_Summary - like all other docs: ALWAYS in sync and up to date and ALWAYS exported into the PDF and HTML! Add this mandatory rule / constraint into the root (constitution Submodule) Constitution, AGENTS.MD and CLAUDE.MD."
+
+`docs/Fixed_Summary.md` is the symmetric short-form summary of `docs/Fixed.md`. MUST be regenerated whenever `Fixed.md` changes. HTML + PDF exports MUST travel with the markdown (identical mtimes within `sync_issues_docs.sh` granularity). Stale exports are §11.4.53 violations regardless of whether the underlying `.md` is correct. Same discipline as §11.4.12 Issues_Summary applied to Fixed.md.
+
+Generator: `scripts/testing/generate_fixed_summary.sh` (canonical, executable, emits markdown table with `Status` + `Type` columns per §11.4.19 column-alignment). Auto-sync wrapper: `scripts/testing/sync_issues_docs.sh` regenerates BOTH summaries in one shot, exports HTML + PDF, colorizes per §11.4.23, re-renders PDFs. MUST be invoked after any edit to `Fixed.md`. No `--issues-only` flag exists, and §11.4.53 prohibits adding one.
+
+Sort order: closure date DESC (most-recent-Fixed first), §-letter / Fix-# secondary. Documented at the top of the generated file.
+
+Composes with §11.4.12 (Issues_Summary sibling — canonical pair), §11.4.19 (atomic Issues→Fixed migration trigger + column-alignment), §11.4.23 (colorizer post-processes both summaries), §11.4.33 (type-aware closure vocabulary — Fixed_Summary respects `Fixed (→ Fixed.md)` / `Implemented (→ Fixed.md)` / `Completed (→ Fixed.md)` terminal values), §11.4.44 (revision header applies to `Fixed_Summary.md`), §12.10 (CONTINUATION.md resumption guarantee).
+
+Pre-build gates: `CM-FIXED-SUMMARY-SYNC` (6 invariants — Fixed_Summary exists + HTML/PDF mtime ≥ md mtime + Fixed_Summary mtime ≥ Fixed mtime + generator + sync wrapper invokes generator) + `CM-COVENANT-114-53-PROPAGATION` (anchor literal across canonical files). Paired mutations strip the anchor literal AND move the generator aside AND backdate Fixed_Summary mtime. No escape hatch — no `--skip-fixed-summary-sync`, `--issues-only`, `--summary-not-applicable` flag.
+
+**Canonical authority:** constitution submodule Constitution.md §11.4.53.
+
+Non-compliance is a release blocker regardless of context.
