@@ -1631,3 +1631,28 @@ Non-compliance is a release blocker regardless of context.
 Eight documentation classes constitute the project's living state surface and MUST be in sync at all times across `.md` + `.html` + `.pdf` artefacts: (1) `docs/Issues.md`, (2) `docs/Issues_Summary.md`, (3) `docs/Fixed.md`, (4) `docs/Fixed_Summary.md`, (5) `docs/CONTINUATION.md`, (6) `README.md`, (7) every `docs/**/Status.md` (domain-scoped), (8) every `docs/**/Status_Summary.md` (domain-scoped). Per-class anchors §11.4.12 / §11.4.44 / §11.4.45 / §11.4.53 / §11.4.56 / §11.4.57 / §11.4.59 / §12.10 each govern individually; §11.4.60 binds them via single composite gate `CM-DOCS-COMPOSITE-SYNC` (pre-build) that FAILs the build if ANY single instance's `.html` or `.pdf` mtime is older than `.md` mtime. Walks `docs/` recursively for the Status fleet. Paired mutation backdates `docs/Issues.html` to year 2000 → gate FAILs. No escape hatch — no `--skip-composite-doc-sync`, `--allow-stale-html`, `--summary-not-applicable` flag exists.
 
 **Cascade requirement:** This anchor (verbatim or by `CONST-063` ID reference) MUST appear in every owned submodule's `CONSTITUTION.md`, `CLAUDE.md`, and `AGENTS.md`. See constitution submodule `Constitution.md` §11.4.60 for the full mandate.
+
+**§11.4.66 — Blocker-resolution interactive-clarification mandate (User mandate, 2026-05-19)**
+
+When any task is blocked (operator decision, hardware access,
+external authorization, ambiguous scope), the agent MUST: (1)
+research what's doable from the agent side without operator input;
+(2) calculate minimum-viable operator input; (3) construct 2–4
+mutually-exclusive options with one marked "Recommended" and each
+stating what the agent does after that answer; (4) present via the
+platform's interactive question mechanism (`AskUserQuestion` on
+Claude Code) — NEVER free-text "what would you like?" for closed-
+set decisions; (5) after the answer, resume work without follow-up
+round-trips. Composes with §11.4.6 / §11.4.7 / §11.4.40 / §11.4.41
+/ §11.4.42 / §11.4.52. No silent waiting; no bulk-text questions
+when interactive options would do.
+
+Pre-build gate `CM-COVENANT-114-66-PROPAGATION` enforces the
+anchor literal across the 42-file consumer fleet. Paired meta-
+test mutation strips the literal → gate FAILs. No escape hatch —
+no `--skip-ask`, `--silent-wait`, `--free-form-only` flag.
+
+**Canonical authority:** constitution submodule
+[`Constitution.md`](constitution/Constitution.md) §11.4.66.
+
+Non-compliance is a release blocker regardless of context.
