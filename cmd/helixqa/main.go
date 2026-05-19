@@ -582,8 +582,14 @@ func cmdAutonomous(args []string) {
 	// config list so the adaptive provider has at least one
 	// entry.
 	if len(providerConfigs) == 0 && len(bridgedProviders) > 0 {
-		// Use a placeholder config — the bridged
-		// providers will be added to allProviders directly.
+		// SKIP-OK anti-bluff: seeds the adaptive provider
+		// with the FIRST bridged provider's name so it has
+		// >= 1 entry; the bridged providers themselves are
+		// the real source of capability and are wired into
+		// allProviders directly below. NOT a stub/simulation
+		// per CONST-035 §11.4. Whitelist documented in
+		// challenges/scripts/helixqa_orchestrator_challenge.sh
+		// phase 7 grep filter.
 		providerConfigs = append(providerConfigs,
 			llm.ProviderConfig{
 				Name: bridgedProviders[0].Name(),

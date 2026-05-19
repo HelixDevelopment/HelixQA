@@ -1,8 +1,38 @@
 # HelixQA
 
-QA orchestration framework for cross-platform testing with real-time crash detection, step validation, evidence collection, and automated ticket generation.
+> **Status banner (round 219, 2026-05-19).** Governance baseline:
+> constitution submodule §11.4 covenant; CONST-035 anti-bluff;
+> CONST-048 full-automation coverage; CONST-050 no-fakes +
+> 100%-test-type coverage (15-row matrix in
+> [`docs/test-coverage.md`](docs/test-coverage.md)); CONST-051
+> submodules-as-equal-codebase + decoupling; CONST-054
+> dependency manifest ([`helix-deps.yaml`](helix-deps.yaml));
+> CONST-061 pre-force-push merge-first; CONST-062 + CONST-063
+> documentation always-sync. i18n migration rounds 112 / 205 / 214
+> landed (25 user-facing strings now LLM-/resource-loaded per
+> CONST-046). New this round:
+> [`challenges/scripts/helixqa_orchestrator_challenge.sh`](challenges/scripts/helixqa_orchestrator_challenge.sh)
+> — 8-phase orchestrator-surface validator with built-in §1.1
+> paired mutation.
 
-Built on [digital.vasic.challenges](../Challenges) and [digital.vasic.containers](../Containers).
+## What this submodule is
+
+HelixQA is an **anti-bluff QA orchestration framework** for
+cross-platform testing with real-time crash detection, step
+validation, evidence collection, and automated ticket generation.
+
+Built on [digital.vasic.challenges](../Challenges) and
+[digital.vasic.containers](../Containers) — both incorporated at the
+parent project's root per CONST-051(C) (nested own-org submodule
+chains forbidden; this submodule MUST NOT introduce its own
+`.gitmodules` entries for those repos).
+
+The orchestrator's design centre is the §11.4 Operative Rule: **the
+bar for shipping is not "tests pass" but "users can use the
+feature."** Every PASS HelixQA emits MUST carry positive runtime
+evidence captured during execution. A green summary line without
+that evidence is a critical defect of equal severity to a missing
+feature.
 
 ## Features
 
@@ -188,11 +218,66 @@ See [USER_GUIDE_AUTONOMOUS.md](USER_GUIDE_AUTONOMOUS.md) and [VIDEO_COURSE_AUTON
 ## Testing
 
 ```bash
-make test       # Run all tests (235 tests)
-make test-race  # With race detection
-make test-cover # With coverage report
-make vet        # Static analysis
+make test                 # Run all unit + integration tests
+make test-race            # With race detection
+make test-cover           # With coverage report (coverage.html)
+make vet                  # Static analysis
+make qa-all               # Full QA: every challenges/scripts/*.sh
+                          # + CONST-035 anti-bluff gates
+make anti-bluff           # Scan + behaviour-anchor manifest +
+                          # mutation ratchet (per CONST-035)
+
+# Round-219 addition — orchestrator-surface Challenge:
+bash challenges/scripts/helixqa_orchestrator_challenge.sh
 ```
+
+See **[`docs/test-coverage.md`](docs/test-coverage.md)** for the
+full 15-row CONST-050(B) test-type matrix (unit, integration, e2e,
+full-automation, security, ddos, scaling, chaos, stress,
+performance, benchmarking, ui, ux, Challenges,
+autonomous-QA-session) — each row tied to an executable asset
+under this submodule's tree, each PASS tied to a captured-evidence
+shape per §11.4.2.
+
+## Test-bank conventions
+
+Test banks under [`banks/`](banks/) are YAML (or JSON peer)
+documents describing platform-targeted test cases. Conventions:
+
+- **Filename = test-bank logical name** (kebab-case
+  `<purpose>-<scope>.yaml`). YAML and JSON peers share the base
+  name (`atmosphere.yaml` / `atmosphere.json`) so tooling can
+  auto-pair.
+- **Required top-level keys**: `version` (string, currently
+  `"1.0"`), `name` (human-readable), `test_cases` (array).
+- **Per-test-case keys**: `id` (`TC-XXX`), `name`, `category`
+  (`functional` / `performance` / `security` / `ux` / `chaos` /
+  ...), `priority` (`critical` / `high` / `medium` / `low`),
+  `platforms` (subset of `[android, android_tv, web, desktop,
+  ios, aurora_os, harmony_os]`), `steps[]` (each with `name`,
+  `action`, `expected`), `tags[]`, optional `documentation_refs[]`
+  for traceability into `docs/`.
+- **Bank inventory floor** (round 219): ≥ 30 YAML banks on disk.
+  Drops below the floor trigger phase 3 of the orchestrator
+  Challenge to FAIL.
+- **No hardcoded English user-facing strings in banks** per
+  CONST-046 — `name` / `expected` strings drive LLM-generated
+  question prompts at runtime; banks describe **structure**, not
+  prose.
+
+## Governance pointers
+
+| Document | Authority |
+|---|---|
+| [`CONSTITUTION.md`](CONSTITUTION.md) | Submodule-scoped constitutional anchors (CONST-035…063) inherited from the constitution submodule |
+| [`CLAUDE.md`](CLAUDE.md) / [`AGENTS.md`](AGENTS.md) | AI-agent operating manuals — cascade pointers + anti-bluff rules |
+| [`docs/test-coverage.md`](docs/test-coverage.md) | CONST-050(B) test-type coverage matrix — 15 rows, one per type |
+| [`helix-deps.yaml`](helix-deps.yaml) | CONST-054 dependency manifest (Challenges + Containers, both flat-layout) |
+| [`Upstreams/`](Upstreams/) | CONST-056 upstream-remote recipes — `install_upstreams` reads these on clone |
+| [`docs/ANTI_BLUFF.md`](docs/ANTI_BLUFF.md) | Anti-bluff posture details + baseline maintenance |
+| [`docs/behavior-anchors.md`](docs/behavior-anchors.md) | CONST-035 behaviour-anchor manifest (every advertised capability anchored to a test) |
+| [`docs/USER_MANUAL.md`](docs/USER_MANUAL.md) | End-user-facing operating manual |
+| [`USER_GUIDE_AUTONOMOUS.md`](USER_GUIDE_AUTONOMOUS.md) / [`VIDEO_COURSE_AUTONOMOUS.md`](VIDEO_COURSE_AUTONOMOUS.md) | Autonomous-QA-session tutorials |
 
 ## License
 
