@@ -1615,3 +1615,28 @@ Pre-build gates: `CM-FIXED-SUMMARY-SYNC` (6 invariants — Fixed_Summary exists 
 **Canonical authority:** constitution submodule Constitution.md §11.4.53.
 
 Non-compliance is a release blocker regardless of context.
+
+**§11.4.66 — Blocker-resolution interactive-clarification mandate (User mandate, 2026-05-19)**
+
+When any task is blocked (operator decision, hardware access,
+external authorization, ambiguous scope), the agent MUST: (1)
+research what's doable from the agent side without operator input;
+(2) calculate minimum-viable operator input; (3) construct 2–4
+mutually-exclusive options with one marked "Recommended" and each
+stating what the agent does after that answer; (4) present via the
+platform's interactive question mechanism (`AskUserQuestion` on
+Claude Code) — NEVER free-text "what would you like?" for closed-
+set decisions; (5) after the answer, resume work without follow-up
+round-trips. Composes with §11.4.6 / §11.4.7 / §11.4.40 / §11.4.41
+/ §11.4.42 / §11.4.52. No silent waiting; no bulk-text questions
+when interactive options would do.
+
+Pre-build gate `CM-COVENANT-114-66-PROPAGATION` enforces the
+anchor literal across the 42-file consumer fleet. Paired meta-
+test mutation strips the literal → gate FAILs. No escape hatch —
+no `--skip-ask`, `--silent-wait`, `--free-form-only` flag.
+
+**Canonical authority:** constitution submodule
+[`Constitution.md`](constitution/Constitution.md) §11.4.66.
+
+Non-compliance is a release blocker regardless of context.
