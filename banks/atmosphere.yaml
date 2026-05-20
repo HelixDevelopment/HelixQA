@@ -3471,3 +3471,201 @@ test_cases:
         path: "docs/guides/TMUX_OPTIMIZED_BUILD.md"
     estimated_duration: "5s"
     expected_result: "tmux server protected against OOM cascades — survives §12-class incidents"
+
+  # ==================== Phase 39.FQ Audio Recovery Plan Task 8 — Audio-Surface Challenges (7 entries) ====================
+  # Per docs/superpowers/plans/2026-05-19-audio-recovery-master-plan.md Task 8.
+  # Composes with §11.4.4(b) four-layer coverage (HelixQA layer) + §11.4.52 autonomous
+  # validation + §11.4.50 deterministic consistency (3-iter Challenges named *-3iter).
+  # Challenge IDs preserved as bank ids per task spec (dotted-path identifiers).
+
+  - id: audio.framework.hdmi-connect-retry-3iter
+    challenge_id: audio.framework.hdmi-connect-retry-3iter
+    name: "HDMI connect-retry boot logic — 3-iter deterministic consistency"
+    category: functional
+    priority: critical
+    platforms: [android]
+    dispatches_to: "device/rockchip/rk3588/tests/test_eu_hdmi_connect_boot_retry.sh"
+    domains: [audio, hdmi]
+    required_evidence: [logcat-retry-literal, dumpsys-hdmi-available]
+    steps:
+      - name: "Run HDMI connect-retry boot test"
+        action: "adb shell sh /data/local/tmp/tests/test_eu_hdmi_connect_boot_retry.sh"
+        expected: "Retry literal present in logcat AND dumpsys reports HDMI available"
+      - name: "Verify 3-iter consistency"
+        action: "Run test 3 times back-to-back; compare exit codes + evidence hashes"
+        expected: "All 3 iterations PASS with identical evidence per §11.4.50"
+    tags: [audio, hdmi, framework, connect-retry, phase-39-fq, audio-recovery-plan-task-8]
+    documentation_refs:
+      - type: plan
+        section: "Task 8"
+        path: "docs/superpowers/plans/2026-05-19-audio-recovery-master-plan.md"
+    estimated_duration: "45s"
+    expected_result: "HDMI connect-retry logic deterministic across 3 iterations; logcat + dumpsys evidence captured"
+
+  - id: audio.framework.aloge-which-path
+    challenge_id: audio.framework.aloge-which-path
+    name: "ALOGE which-path logcat probe — observability"
+    category: functional
+    priority: high
+    platforms: [android]
+    dispatches_to: "device/rockchip/rk3588/tests/test_eu_hdmi_connect_boot_retry.sh (logcat probe section)"
+    domains: [audio, hdmi, observability]
+    required_evidence: [logcat-aloge-which-path]
+    steps:
+      - name: "Trigger HDMI connect probe path"
+        action: "Run test_eu_hdmi_connect_boot_retry.sh and tail logcat for ALOGE which-path markers"
+        expected: "ALOGE which-path marker present in captured logcat"
+      - name: "Verify path observability"
+        action: "Confirm log line identifies which code path was executed"
+        expected: "Path identification literal captured per §11.4.5 evidence requirements"
+    tags: [audio, hdmi, observability, logcat, phase-39-fq, audio-recovery-plan-task-8]
+    documentation_refs:
+      - type: plan
+        section: "Task 8"
+        path: "docs/superpowers/plans/2026-05-19-audio-recovery-master-plan.md"
+    estimated_duration: "30s"
+    expected_result: "ALOGE which-path marker captured; HDMI connect code path observable from logcat"
+
+  - id: audio.framework.recover-hdmi-property
+    challenge_id: audio.framework.recover-hdmi-property
+    name: "HDMI recovery property toggle"
+    category: functional
+    priority: critical
+    platforms: [android]
+    dispatches_to: "device/rockchip/rk3588/tests/test_eu_recovery_property_toggle.sh"
+    domains: [audio, hdmi, recovery]
+    required_evidence: [getprop-recovery-state, audio-restored-after-toggle]
+    steps:
+      - name: "Capture pre-toggle state"
+        action: "adb shell getprop persist.atmosphere.audio.hdmi.recovery"
+        expected: "Initial property state captured"
+      - name: "Run recovery property toggle test"
+        action: "adb shell sh /data/local/tmp/tests/test_eu_recovery_property_toggle.sh"
+        expected: "Property toggle triggers HDMI audio recovery path"
+      - name: "Verify audio restored post-toggle"
+        action: "Verify dumpsys audio shows HDMI output available + active after recovery"
+        expected: "Audio routing restored to HDMI sink per §11.4.69 audio_output evidence"
+    tags: [audio, hdmi, recovery, property, phase-39-fq, audio-recovery-plan-task-8]
+    documentation_refs:
+      - type: plan
+        section: "Task 8"
+        path: "docs/superpowers/plans/2026-05-19-audio-recovery-master-plan.md"
+    estimated_duration: "60s"
+    expected_result: "HDMI recovery property toggle restores audio output; positive evidence captured"
+
+  - id: video.routing.vkvideo-secondary
+    challenge_id: video.routing.vkvideo-secondary
+    name: "VK Video plays on secondary HDMI display"
+    category: functional
+    priority: critical
+    platforms: [android]
+    dispatches_to: "device/rockchip/rk3588/tests/test_vk_video_secondary_display.sh"
+    domains: [video, secondary-display]
+    required_evidence: [vom-active-decoder, secondary-display-frame-capture]
+    steps:
+      - name: "Launch VK Video"
+        action: "adb shell am start -n com.vkontakte.android/.fragments.videos.VideoActivity"
+        expected: "VK Video activity foreground"
+      - name: "Trigger video playback"
+        action: "Play a video selected via UI traversal per §11.4.48"
+        expected: "MediaSession reports PLAYING; VideoOutputManager registers decoder"
+      - name: "Verify secondary-display routing"
+        action: "Run test_vk_video_secondary_display.sh and verify VOM activeDecoder + secondary display frame capture"
+        expected: "Video frame on HDMI-A-1 (TV) per Bug #13 anti-bluff pattern"
+    tags: [video, secondary-display, vk-video, routing, phase-39-fq, audio-recovery-plan-task-8]
+    documentation_refs:
+      - type: plan
+        section: "Task 8"
+        path: "docs/superpowers/plans/2026-05-19-audio-recovery-master-plan.md"
+      - type: architecture
+        section: "Fix #107"
+        path: "docs/guides/SYSTEM_ARCHITECTURE.md"
+    estimated_duration: "60s"
+    expected_result: "VK Video routes to secondary display with captured frame evidence per §11.4.5"
+
+  - id: arvus.discovery.hansong-mac
+    challenge_id: arvus.discovery.hansong-mac
+    name: "Arvus IP discovery via Hansong MAC OUI"
+    category: functional
+    priority: high
+    platforms: [android]
+    dispatches_to: "device/rockchip/rk3588/tests/test_arvus_discover_ip.sh"
+    domains: [audio, arvus, discovery]
+    required_evidence: [arp-table-mac-match, arvus-http-200]
+    steps:
+      - name: "Run Arvus IP discovery test"
+        action: "adb shell sh /data/local/tmp/tests/test_arvus_discover_ip.sh"
+        expected: "ARP table scan locates Hansong MAC OUI and returns Arvus IP"
+      - name: "Verify Arvus HTTP reachable"
+        action: "curl -s http://<discovered-ip>/ — expect HTTP 200"
+        expected: "Arvus sink HTTP endpoint reachable per §11.4.13 sink-side evidence"
+      - name: "Verify MAC OUI match"
+        action: "Confirm discovered MAC matches Hansong OUI prefix"
+        expected: "Identity verification per §11.4.13 — MAC match before consuming codec-state"
+    tags: [audio, arvus, discovery, hansong, mac-oui, phase-39-fq, audio-recovery-plan-task-8]
+    documentation_refs:
+      - type: plan
+        section: "Task 8"
+        path: "docs/superpowers/plans/2026-05-19-audio-recovery-master-plan.md"
+      - type: guide
+        section: "Arvus integration"
+        path: "docs/guides/ARVUS_HDMI_INTEGRATION.md"
+    estimated_duration: "30s"
+    expected_result: "Arvus IP discovered via Hansong MAC OUI; HTTP probe confirms sink reachable"
+
+  - id: audio.hifi.no-regression-3iter
+    challenge_id: audio.hifi.no-regression-3iter
+    name: "HiFi audio no-regression — 3-iter deterministic consistency"
+    category: regression
+    priority: critical
+    platforms: [android]
+    dispatches_to: "device/rockchip/rk3588/tests/test_hifi_no_regression.sh"
+    domains: [audio, hifi]
+    required_evidence: [tinycap-rms-amplitude, ffprobe-channel-count, no-xrun-census]
+    steps:
+      - name: "Run HiFi no-regression test"
+        action: "adb shell sh /data/local/tmp/tests/test_hifi_no_regression.sh"
+        expected: "HiFi audio path produces valid PCM with no XRUN regressions per §11.4.5"
+      - name: "Verify 3-iter consistency"
+        action: "Run test 3 times; compare exit codes + tinycap WAV evidence hashes"
+        expected: "All 3 iterations identical per §11.4.50 deterministic consistency mandate"
+      - name: "Verify positive evidence"
+        action: "Confirm tinycap RMS non-trivial + ffprobe channel-count matches + XRUN census within budget"
+        expected: "5-layer audio quality validation per §11.4.5 satisfied"
+    tags: [audio, hifi, regression, no-regression, 3-iter, phase-39-fq, audio-recovery-plan-task-8]
+    documentation_refs:
+      - type: plan
+        section: "Task 8"
+        path: "docs/superpowers/plans/2026-05-19-audio-recovery-master-plan.md"
+    estimated_duration: "90s"
+    expected_result: "HiFi audio path stable across 3 iterations; captured-evidence proves no regression"
+
+  - id: audio.ac3.no-regression-3iter
+    challenge_id: audio.ac3.no-regression-3iter
+    name: "AC3 / multichannel audio no-regression — 3-iter deterministic consistency"
+    category: regression
+    priority: critical
+    platforms: [android]
+    dispatches_to: "device/rockchip/rk3588/tests/test_ac3_no_regression.sh"
+    domains: [audio, ac3, multichannel]
+    required_evidence: [ffprobe-channels-5-1-or-7-1, audio-flinger-frames-written-advance, arvus-codec-in-use]
+    steps:
+      - name: "Run AC3 multichannel no-regression test"
+        action: "adb shell sh /data/local/tmp/tests/test_ac3_no_regression.sh"
+        expected: "AC3 / E-AC3 decode pipeline produces multichannel PCM (5.1 / 7.1) without regression"
+      - name: "Verify 3-iter consistency"
+        action: "Run test 3 times; compare exit codes + ffprobe channel-count + AudioFlinger frames-written"
+        expected: "All 3 iterations identical per §11.4.50 deterministic consistency mandate"
+      - name: "Verify sink-side evidence"
+        action: "Probe Arvus Codec-In-Use field — expect AC3 / E-AC3 / multichannel codec literal"
+        expected: "Arvus sink confirms codec per §11.4.13 + §11.4.69 audio_output evidence taxonomy"
+    tags: [audio, ac3, eac3, multichannel, regression, 3-iter, phase-39-fq, audio-recovery-plan-task-8]
+    documentation_refs:
+      - type: plan
+        section: "Task 8"
+        path: "docs/superpowers/plans/2026-05-19-audio-recovery-master-plan.md"
+      - type: architecture
+        section: "Fix #106 / Fix #112"
+        path: "docs/guides/SYSTEM_ARCHITECTURE.md"
+    estimated_duration: "90s"
+    expected_result: "AC3 / E-AC3 / multichannel pipeline stable across 3 iterations; sink-side evidence proves no regression"
