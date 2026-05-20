@@ -106,3 +106,71 @@ helixqa_cmd_signoff_desc:
 
 helixqa_cmd_version_desc:
   other: "  version     Print version information"
+
+# --- pkg/reporter/enhanced.go (round-447 §11.4 CONST-046 Phase 4) ---
+# Stakeholder-facing executive-summary / QA-report strings. Entries
+# with {{.Name}} placeholders are template-substituted by the
+# backend; the en source-of-truth keeps the pre-migration wording.
+
+helixqa_report_status_critical:
+  other: "Critical Issues Found"
+
+helixqa_report_status_at_risk:
+  other: "At Risk"
+
+helixqa_report_status_stable:
+  other: "Stable"
+
+helixqa_report_risk_high:
+  other: "High risk: {{.Crashes}} crashes, {{.ANRs}} ANRs detected"
+
+helixqa_report_risk_medium:
+  other: "Medium risk: {{.Failed}} of {{.Total}} challenges failed"
+
+helixqa_report_risk_low:
+  other: "Low risk: all checks passed"
+
+helixqa_report_issue_crashes:
+  other: "{{.Count}} crash(es) on {{.Platform}}"
+
+helixqa_report_issue_anrs:
+  other: "{{.Count}} ANR(s) on {{.Platform}}"
+
+helixqa_report_coverage_highlights:
+  other: "{{.Percent}}% pass rate ({{.Passed}}/{{.Total}} challenges) across {{.Platforms}} platform(s)"
+
+helixqa_report_coverage_none:
+  other: "No challenges executed"
+
+helixqa_report_rec_crashes:
+  other: "Investigate and fix crash root causes before release"
+
+helixqa_report_rec_anrs:
+  other: "Address ANR issues to improve responsiveness"
+
+helixqa_report_rec_failed:
+  other: "Fix {{.Failed}} failing challenge(s)"
+
+helixqa_report_rec_all_passed:
+  other: "All checks passed — ready for release consideration"
+
+helixqa_report_heading_executive_summary:
+  other: "Executive Summary"
+
+helixqa_report_heading_top_issues:
+  other: "Top Issues"
+
+helixqa_report_heading_recommendations:
+  other: "Recommendations"
+
+helixqa_report_heading_navigation_map:
+  other: "Navigation Map"
+
+helixqa_report_label_status:
+  other: "Status:"
+
+helixqa_report_label_risk:
+  other: "Risk:"
+
+helixqa_report_label_coverage:
+  other: "Coverage:"
