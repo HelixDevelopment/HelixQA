@@ -23,6 +23,7 @@ import (
 	"digital.vasic.helixqa/pkg/config"
 	"digital.vasic.helixqa/pkg/detector"
 	"digital.vasic.helixqa/pkg/reporter"
+	"digital.vasic.helixqa/pkg/testbank"
 	"digital.vasic.helixqa/pkg/validator"
 )
 
@@ -56,6 +57,17 @@ type Orchestrator struct {
 	logger   logging.Logger
 	runner   runner.Runner
 	bank     *bank.Bank
+
+	// executableCases indexes the executable bank cases (loaded via
+	// pkg/testbank, which — unlike the generic challenges/pkg/bank
+	// loader — preserves the `steps` array including each step's
+	// `action:`). The orchestrator bridges these into per-platform
+	// definitionChallenge wrappers so a desktop-platform bank case's
+	// `shell:` action is genuinely run. Closes HXC-011. Keyed by
+	// challenge ID. Empty when banks were supplied via WithBank or
+	// when re-parsing as testbank failed (the wrapper then honestly
+	// skips rather than bluffing a PASS).
+	executableCases map[challenge.ID]*testbank.TestCase
 }
 
 // Option configures an Orchestrator.
@@ -137,26 +149,15 @@ func (o *Orchestrator) Run(
 	o.log("Loaded %d challenge definitions from %d sources",
 		len(definitions), len(o.bank.Sources()))
 
-	// 1.5. Auto-wire runner from bank if caller didn't supply one.
-	// Bridges each bank-loaded *Definition into a definitionChallenge
-	// wrapper + registers them into a fresh registry that the runner
-	// consults. Without this, the runner short-circuits with "not
-	// found in registry" and the per-definition dispatch loop in
-	// runPlatform never appends to ChallengeResults — producing the
-	// "PASS-bluff detected: 0 challenges actually executed" exit per
-	// cmd/helixqa/main.go. (close-out⁷⁵ wiring.)
-	if o.runner == nil {
-		reg := newDefinitionRegistry()
-		for _, def := range definitions {
-			if err := reg.Register(newDefinitionChallenge(def)); err != nil {
-				return nil, fmt.Errorf(
-					"register definition %s: %w", def.ID, err)
-			}
-		}
-		o.runner = runner.NewRunner(runner.WithRegistry(reg))
-		o.log("Auto-wired runner with %d bridged definitions (close-out⁷⁵)",
-			len(definitions))
-	}
+	// 1.5. Load executable bank cases via pkg/testbank. The generic
+	// challenges/pkg/bank loader drops each case's `steps` array, so
+	// it cannot execute a case's `action:` command. pkg/testbank
+	// preserves the steps; the orchestrator indexes them so the
+	// per-platform definitionChallenge wrappers can genuinely run a
+	// desktop-platform `shell:` action (HXC-011 fix). A failure to
+	// re-parse a bank as testbank is non-fatal — the wrapper simply
+	// honestly skips that case rather than bluffing a PASS.
+	o.loadExecutableCases()
 
 	// 2. Create output directory.
 	if err := os.MkdirAll(o.config.OutputDir, 0755); err != nil {
@@ -269,6 +270,32 @@ func (o *Orchestrator) runPlatform(
 		)
 	}
 
+	// Build the per-platform runner. When the caller supplied a
+	// custom runner (WithRunner) it is used verbatim. Otherwise a
+	// fresh per-platform registry is populated with definitionChallenge
+	// wrappers that carry the executable bank case AND this platform —
+	// so a desktop-platform `shell:` action is genuinely run (HXC-011).
+	// A per-platform registry is required because the wrapper's
+	// execution behaviour depends on the target platform; a single
+	// shared registry could not distinguish desktop from android.
+	platformRunner := o.runner
+	if platformRunner == nil {
+		reg := newDefinitionRegistry()
+		for _, def := range definitions {
+			tc := o.executableCases[def.ID]
+			wrapper := newDefinitionChallengeForPlatform(def, tc, platform)
+			if err := reg.Register(wrapper); err != nil {
+				return nil, fmt.Errorf(
+					"register definition %s for platform %s: %w",
+					def.ID, platform, err)
+			}
+		}
+		platformRunner = runner.NewRunner(runner.WithRegistry(reg))
+		o.log("Platform %s: wired runner with %d bridged definitions "+
+			"(%d executable bank cases) — HXC-011",
+			platform, len(definitions), len(o.executableCases))
+	}
+
 	// Execute each challenge definition.
 	for _, def := range definitions {
 		select {
@@ -291,8 +318,8 @@ func (o *Orchestrator) runPlatform(
 		)
 
 		// Run challenge if runner is available.
-		if o.runner != nil {
-			challengeResult, err := o.runner.Run(
+		if platformRunner != nil {
+			challengeResult, err := platformRunner.Run(
 				ctx, def.ID, cfg,
 			)
 			if err != nil {
@@ -369,6 +396,59 @@ func (o *Orchestrator) runPlatform(
 	pr.EndTime = time.Now()
 	pr.Duration = pr.EndTime.Sub(pr.StartTime)
 	return pr, nil
+}
+
+// loadExecutableCases re-parses every configured bank file through
+// pkg/testbank — which preserves each case's `steps` array (including
+// every step's `action:`) — and indexes the cases by challenge ID.
+// The generic challenges/pkg/bank loader used by loadBanks drops the
+// steps, so without this second parse the orchestrator would have no
+// executable action data and definitionChallenge would only ever be
+// able to honestly skip (HXC-011 root cause).
+//
+// Non-fatal by design: a bank that fails to re-parse as testbank
+// (older JSON shape, etc.) simply contributes no executable cases —
+// its definitions then honestly skip rather than bluff a PASS. When
+// banks were supplied via WithBank there are no file paths to
+// re-parse, so the map stays empty and every wrapper honestly skips.
+func (o *Orchestrator) loadExecutableCases() {
+	o.executableCases = make(map[challenge.ID]*testbank.TestCase)
+	for _, path := range o.config.Banks {
+		info, err := os.Stat(path)
+		if err != nil {
+			continue
+		}
+		var files []string
+		if info.IsDir() {
+			entries, derr := os.ReadDir(path)
+			if derr != nil {
+				continue
+			}
+			for _, e := range entries {
+				if e.IsDir() {
+					continue
+				}
+				ext := filepath.Ext(e.Name())
+				if ext == ".yaml" || ext == ".yml" || ext == ".json" {
+					files = append(files, filepath.Join(path, e.Name()))
+				}
+			}
+		} else {
+			files = []string{path}
+		}
+		for _, f := range files {
+			bf, lerr := testbank.LoadFile(f)
+			if lerr != nil {
+				o.logError("HXC-011: bank %s not re-parsable as "+
+					"testbank (%v) — its cases will honestly skip", f, lerr)
+				continue
+			}
+			for i := range bf.TestCases {
+				tc := bf.TestCases[i]
+				o.executableCases[challenge.ID(tc.ID)] = &tc
+			}
+		}
+	}
 }
 
 // loadBanks loads test banks from configured paths.
