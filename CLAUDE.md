@@ -1259,7 +1259,7 @@ Non-compliance is a release blocker regardless of context.
 **§11.4.13 — Out-of-band sink-side captured-evidence mandate (User mandate, 2026-05-13)**
 
 Whenever an HDMI sink with a network-accessible introspection API is
-present (current example: Arvus H2-4D-273 at `http://192.168.4.172/`),
+present (current example: Arvus H2-4D-273 at `http://192.168.4.185/`),
 the test suite MUST consume the sink's report as captured-evidence for
 every audio test asserting a codec / channel-count / passthrough mode.
 On-SoC HAL telemetry ALONE is insufficient — that is the exact "tests

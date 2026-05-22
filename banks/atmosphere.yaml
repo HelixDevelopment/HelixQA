@@ -3669,3 +3669,83 @@ test_cases:
         path: "docs/guides/SYSTEM_ARCHITECTURE.md"
     estimated_duration: "90s"
     expected_result: "AC3 / E-AC3 / multichannel pipeline stable across 3 iterations; sink-side evidence proves no regression"
+
+  - id: video.mediacodec.rk_hw_decoder_secondary_display
+    challenge_id: video.mediacodec.rk_hw_decoder_secondary_display
+    name: "Phase 39.FV §FV — c2.rk.* HW decoder works on secondary display (Option A)"
+    description: |
+      Validates that the Rockchip C2 decoder interface declares C2StreamUsageTuning::output
+      and Codec2Client::Component::setOutputSurface() does NOT log
+      "failed to set consumer usage (BAD_INDEX)" when reconfiguring against the
+      secondary-display SurfaceView. Forensic anchor:
+      docs/research/RK3588_HW_Decoder_BAD_INDEX_Analysis.md Option A.
+    severity: high
+    priority: high
+    platforms: [android]
+    dispatches_to: "device/rockchip/rk3588/tests/test_rk3588_hw_decoder_secondary_display.sh"
+    domains: [video, mediacodec, hw-decoder, secondary-display, rk3588]
+    required_evidence: [hw_decoder_registered, no_bad_index, n3_consistency]
+    steps:
+      - name: "Run Option A on-device validation"
+        action: "adb shell sh /data/local/tmp/tests/test_rk3588_hw_decoder_secondary_display.sh"
+        expected: "HW c2.rk.* decoder registered (Section A), no BAD_INDEX rejection (Section C), N=3 deterministic consistency (Section E)"
+      - name: "Verify §11.4.69 sink-side positive evidence (video_display)"
+        action: "Inspect VideoOutputManager dumpsys for activeDecoder reporting c2.rk.* on secondary"
+        expected: "If feature flag persist.atmosphere.rk_hw_decoder_secondary=1 AND video playing, activeDecoder == c2.rk.* (HW path active)"
+      - name: "Verify deterministic consistency"
+        action: "Run test 3 times; compare exit codes and BAD_INDEX hit counts"
+        expected: "All 3 iterations identical per §11.4.50"
+    tags: [video, hw-decoder, secondary-display, rk3588, phase-39-fv, option-a, c2-stream-usage-tuning]
+    documentation_refs:
+      - type: research
+        section: "Option A"
+        path: "docs/research/RK3588_HW_Decoder_BAD_INDEX_Analysis.md"
+    estimated_duration: "30s"
+    expected_result: "Rockchip C2 decoder interface accepts C2StreamUsageTuning::output without C2_BAD_INDEX; HW path viable on secondary display once feature flag enabled"
+
+  # ==================== §11.4.74 Mechanical Enforcement (CME-xxx) ====================
+
+  - id: CME-001
+    name: "Constitution Mechanical Enforcement — Layer 1+2+3+4+5 all present"
+    category: governance
+    priority: critical
+    platforms: [host, android]
+    requires_root: false
+    dispatches_to: "device/rockchip/rk3588/tests/test_constitution_mechanical_enforcement.sh"
+    domains: [governance, constitution, anti-bluff, mechanical-enforcement, §11.4.74]
+    required_evidence: [hook_sources_present, install_script_present, ci_workflow_present, anchor_propagation_4of4, paired_mutations_present]
+    steps:
+      - name: "Verify hook sources Layer 1+3+4"
+        action: "scripts/git_hooks/{pre-commit,pre-push,post-commit,commit-msg} present + executable"
+        expected: "All four hooks present in tracked source, executable bit set"
+      - name: "Verify install_git_hooks.sh Layer deploy seam"
+        action: "scripts/install_git_hooks.sh present + executable + --verify passes"
+        expected: "Installer present, --verify reports ok=4 missing=0 drifted=0"
+      - name: "Verify commit_all.sh Layer 2 integration"
+        action: "grep _constitution_sibling_check scripts/commit_all.sh"
+        expected: "Function defined + called from do_commit() before git commit"
+      - name: "Verify CI workflow Layer 5"
+        action: "Read .github/workflows/constitution-compliance.yml + parse YAML + count required jobs"
+        expected: "4 jobs declared: sibling-check, reverse-orphan-check, hooks-install-script-present, bypass-audit-trail-check"
+      - name: "Verify §11.4.74 anchor propagation"
+        action: "grep §11.4.74 across constitution/{Constitution,CLAUDE,AGENTS,QWEN}.md"
+        expected: "All 4 canonical files carry §11.4.74 anchor"
+      - name: "Verify §1.1 paired mutations present"
+        action: "grep CM-COVENANT-114-74-PROPAGATION + CM-GIT-HOOKS-INSTALL-SCRIPT + CM-GIT-HOOKS-SOURCE-DIR + CM-COMMIT-ALL-SIBLING-CHECK + CM-CI-WORKFLOW-PRESENT in meta_test_false_positive_proof.sh"
+        expected: "At least 5 mutation literals present (count >= 5)"
+    tags: [governance, constitution, anti-bluff, §11.4.74, phase-39-fy, mechanical-enforcement]
+    documentation_refs:
+      - type: investigation
+        section: "01_root_cause_analysis.md"
+        path: "docs/issues/constitution/violations/01_root_cause_analysis.md"
+      - type: plan
+        section: "03_mechanical_enforcement_plan.md"
+        path: "docs/issues/constitution/violations/03_mechanical_enforcement_plan.md"
+      - type: amendment
+        section: "04_constitution_amendment_draft.md"
+        path: "docs/issues/constitution/violations/04_constitution_amendment_draft.md"
+      - type: constitution
+        section: "§11.4.74"
+        path: "constitution/Constitution.md"
+    estimated_duration: "20s"
+    expected_result: "All 7 sections (A-G) PASS in test_constitution_mechanical_enforcement.sh; mechanical enforcement layers 1-5 deployed + verifiable"
