@@ -48,7 +48,27 @@ func ProbeLocal(ctx context.Context) (*Report, error) {
 	return r, nil
 }
 
+// readLocalMemoryMB returns total host RAM in MB, or 0 if unknown.
+// Linux: parses /proc/meminfo `MemTotal:` line (kB → MB).
+// macOS: shells out to `sysctl -n hw.memsize` (bytes → MB).
+// Other:  returns 0. Callers MUST treat 0 as "unknown", not "no RAM".
+//
+// Fixed iter 31: original implementation was Linux-only, which made
+// TestProbeLocal_PopulatesHost + TestStress_ProbeLocal_Concurrent fail
+// on every macOS host. Adding the macOS branch removes the false
+// "MemoryTotalMB=0 on supported platform" report.
 func readLocalMemoryMB() uint64 {
+	switch runtime.GOOS {
+	case "linux":
+		return readLinuxMemoryMB()
+	case "darwin":
+		return readDarwinMemoryMB()
+	default:
+		return 0
+	}
+}
+
+func readLinuxMemoryMB() uint64 {
 	data, err := readFile("/proc/meminfo")
 	if err != nil {
 		return 0
@@ -64,6 +84,19 @@ func readLocalMemoryMB() uint64 {
 		}
 	}
 	return 0
+}
+
+func readDarwinMemoryMB() uint64 {
+	out, err := execOutput(context.Background(), "sysctl", "-n", "hw.memsize")
+	if err != nil {
+		return 0
+	}
+	bytes := parseUint(strings.TrimSpace(out))
+	if bytes == 0 {
+		return 0
+	}
+	// hw.memsize is in bytes; convert to MB (1 MB = 1024*1024).
+	return bytes / (1024 * 1024)
 }
 
 func runLocalNvidiaSmi(ctx context.Context) []remote.GPUDevice {

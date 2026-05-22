@@ -195,6 +195,39 @@ type PipelineConfig struct {
 	// empty, auto-detection will not start RPC workers.
 	LlamaCppRPCModelPath string
 
+	// VisionSSHKeyPath is the absolute path to the PEM-encoded
+	// SSH private key used to probe the distributed vision
+	// hosts in VisionHosts. Sourced from env / config — never
+	// hardcoded (CONST-042 no-secret-leak). Consumed when
+	// building visionremote.SSHConfig for ProbeHosts.
+	VisionSSHKeyPath string
+
+	// VisionSSHKnownHostsPath is the absolute path to the
+	// known_hosts file used to verify the remote vision
+	// hosts' host keys. Required by visionremote.ProbeHosts
+	// (CONST-035 anti-bluff: accepting unknown hosts is a
+	// silent security PASS-bluff).
+	VisionSSHKnownHostsPath string
+
+	// VisionSSHPort is the SSH port for the distributed
+	// vision hosts. Zero defaults to 22 inside
+	// visionremote.SSHConfig.
+	VisionSSHPort int
+
+	// VisionRPCMinGPUMemMB is the minimum GPU memory (MB) the
+	// distributed-RPC GGUF model in LlamaCppRPCModelPath
+	// requires per host. Drives the visionremote.ModelSpec
+	// catalogue fed to SelectStrongestModel / PlanDistribution.
+	// Zero falls back to a 1 MB floor so the planner treats
+	// the model as fitting any probed host.
+	VisionRPCMinGPUMemMB int
+
+	// VisionRPCMinRAMMB is the minimum system RAM (MB) the
+	// distributed-RPC GGUF model requires per host. Drives
+	// the visionremote.ModelSpec catalogue. Zero falls back
+	// to a 1 MB floor.
+	VisionRPCMinRAMMB int
+
 	// ChatProviders holds provider configs for the chat model
 	// used in Plan and Analyze phases. When non-empty, a
 	// separate AdaptiveProvider is built for chat tasks
@@ -649,148 +682,232 @@ func (sp *SessionPipeline) Run(
 				"for distributed vision\n",
 			len(sp.config.VisionHosts),
 		)
-		hwList := visionremote.ProbeHosts(
-			ctx, sp.config.VisionHosts, sshUser,
+
+		// Round-344: the VisionEngine remote API (post
+		// round-340 superset) takes a []visionremote.SSHConfig
+		// rather than (hosts []string, user string). Build the
+		// SSHConfig slice from the pipeline config — SSH key /
+		// known_hosts / port are config-injected per CONST-045
+		// / CONST-046, never hardcoded.
+		sshConfigs := make(
+			[]visionremote.SSHConfig, 0,
+			len(sp.config.VisionHosts),
 		)
+		for _, host := range sp.config.VisionHosts {
+			sshConfigs = append(sshConfigs, visionremote.SSHConfig{
+				Host:           host,
+				Port:           sp.config.VisionSSHPort,
+				User:           sshUser,
+				KeyPath:        sp.config.VisionSSHKeyPath,
+				KnownHostsPath: sp.config.VisionSSHKnownHostsPath,
+			})
+		}
+		hwList, probeErr := visionremote.ProbeHosts(
+			ctx, sshConfigs,
+		)
+		if probeErr != nil {
+			// ProbeHosts joins per-host probe failures; a
+			// non-nil error with a partially-populated hwList
+			// is normal (some hosts reachable, others not).
+			// Surface the failures but continue with whatever
+			// hosts succeeded.
+			fmt.Printf(
+				"[pipeline] warning: distributed vision "+
+					"host probe reported errors: %v\n",
+				probeErr,
+			)
+		}
 
 		if len(hwList) > 0 {
-			rec := visionremote.SelectStrongestModel(
-				hwList,
+			// Round-344: SelectStrongestModel / PlanDistribution
+			// now require a []visionremote.ModelSpec catalogue.
+			// Build a single-entry catalogue from the configured
+			// distributed-RPC GGUF model — its name is the file
+			// path, capacity floors come from config (CONST-046:
+			// no hardcoded model metadata).
+			minGPU := sp.config.VisionRPCMinGPUMemMB
+			if minGPU <= 0 {
+				minGPU = 1
+			}
+			minRAM := sp.config.VisionRPCMinRAMMB
+			if minRAM <= 0 {
+				minRAM = 1
+			}
+			modelCatalog := []visionremote.ModelSpec{{
+				Name:         sp.config.LlamaCppRPCModelPath,
+				Size:         sp.config.VisionModel,
+				Path:         sp.config.LlamaCppRPCModelPath,
+				MinGPUMemMB:  minGPU,
+				MinRAMMB:     minRAM,
+				QualityScore: 1,
+			}}
+			rec, selErr := visionremote.SelectStrongestModel(
+				hwList, modelCatalog,
 			)
-			fmt.Printf(
-				"[pipeline] Model selected: %s (%s) "+
-					"across %d hosts "+
-					"(GPU=%dMB, RAM=%dMB, "+
-					"distributed=%v)\n",
-				rec.ModelName, rec.ModelSize,
-				len(rec.AllHosts),
-				rec.TotalGPUMemMB,
-				rec.TotalRAMMB,
-				rec.NeedsDistribution,
-			)
-
-			// Override VisionModel with the auto-selected
-			// model so downstream phases use it.
-			sp.config.VisionModel = rec.ModelName
-
-			if rec.NeedsDistribution &&
-				sp.config.LlamaCppRPCModelPath != "" {
-				// Distributed RPC mode: start rpc-server on
-				// each host, then start master llama-server
-				// with --rpc flag.
-				distCfg := visionremote.PlanDistribution(
-					hwList,
-					sp.config.LlamaCppRPCModelPath,
-					8090,  // server port
-					50052, // RPC base port
+			if selErr != nil {
+				fmt.Printf(
+					"[pipeline] warning: distributed vision "+
+						"model selection failed: %v "+
+						"(falling back to single-host "+
+						"config)\n",
+					selErr,
 				)
-				if distCfg != nil {
-					fmt.Printf(
-						"[pipeline] Distributed RPC: "+
-							"master=%s, %d workers\n",
-						distCfg.MasterHost,
-						len(distCfg.RPCWorkers),
-					)
+				rec = nil
+			}
+			if rec != nil {
+				fmt.Printf(
+					"[pipeline] Model selected: %s (%s) "+
+						"across %d hosts "+
+						"(GPU=%dMB, RAM=%dMB, "+
+						"distributed=%v)\n",
+					rec.ModelName, rec.ModelSize,
+					len(rec.AllHosts),
+					rec.TotalGPUMemMB,
+					rec.TotalRAMMB,
+					rec.NeedsDistribution,
+				)
 
-					// Start RPC workers on each host.
-					rpcBasePort := 50052
-					for i, h := range hwList {
-						port := rpcBasePort + i
-						deployer := visionremote.NewLlamaCppDeployer(
+				// Override VisionModel with the auto-selected
+				// model so downstream phases use it.
+				sp.config.VisionModel = rec.ModelName
+
+				if rec.NeedsDistribution &&
+					sp.config.LlamaCppRPCModelPath != "" {
+					// Distributed RPC mode: start rpc-server on
+					// each host, then start master llama-server
+					// with --rpc flag.
+					//
+					// Round-344: PlanDistribution (post round-340
+					// superset) takes (hwList, []ModelSpec) and
+					// returns (*DistributionConfig, error). The
+					// GGUF model path and server port are no
+					// longer call arguments — they are set on the
+					// returned struct after bin-packing.
+					distCfg, planErr := visionremote.PlanDistribution(
+						hwList, modelCatalog,
+					)
+					if planErr != nil {
+						fmt.Printf(
+							"[pipeline] warning: distributed RPC "+
+								"planning failed: %v "+
+								"(falling back to single-host)\n",
+							planErr,
+						)
+						distCfg = nil
+					}
+					if distCfg != nil {
+						// PlanDistribution leaves ModelPath empty
+						// and ServerPort zero — wire them from
+						// config now.
+						distCfg.ModelPath = sp.config.LlamaCppRPCModelPath
+						distCfg.ServerPort = 8090
+						fmt.Printf(
+							"[pipeline] Distributed RPC: "+
+								"master=%s, %d workers\n",
+							distCfg.MasterHost,
+							len(distCfg.RPCWorkers),
+						)
+
+						// Start RPC workers on each host.
+						rpcBasePort := 50052
+						for i, h := range hwList {
+							port := rpcBasePort + i
+							deployer := visionremote.NewLlamaCppDeployer(
+								visionremote.LlamaCppConfig{
+									Host:    h.Host,
+									User:    sshUser,
+									RepoDir: h.LlamaCppDir,
+								},
+							)
+							if err := deployer.StartRPCServer(
+								ctx, port,
+							); err != nil {
+								fmt.Printf(
+									"[pipeline] warning: "+
+										"RPC server on %s:%d "+
+										"failed: %v\n",
+									h.Host, port, err,
+								)
+							} else {
+								fmt.Printf(
+									"[pipeline] RPC worker "+
+										"started on %s:%d\n",
+									h.Host, port,
+								)
+							}
+							distributedDeployers = append(
+								distributedDeployers, deployer,
+							)
+							distributedRPCPorts = append(
+								distributedRPCPorts, port,
+							)
+						}
+
+						// Start master llama-server with --rpc.
+						masterDeployer := visionremote.NewLlamaCppDeployer(
 							visionremote.LlamaCppConfig{
-								Host:    h.Host,
-								User:    sshUser,
-								RepoDir: h.LlamaCppDir,
+								Host:        distCfg.MasterHost,
+								User:        sshUser,
+								RepoDir:     distCfg.MasterDir,
+								ModelPath:   distCfg.ModelPath,
+								BasePort:    distCfg.ServerPort,
+								ContextSize: distCfg.ContextSize,
 							},
 						)
-						if err := deployer.StartRPCServer(
-							ctx, port,
+						if err := masterDeployer.StartWithRPC(
+							ctx,
+							distCfg.ModelPath,
+							distCfg.RPCWorkers,
+							distCfg.ServerPort,
 						); err != nil {
 							fmt.Printf(
 								"[pipeline] warning: "+
-									"RPC server on %s:%d "+
-									"failed: %v\n",
-								h.Host, port, err,
+									"distributed master "+
+									"failed: %v "+
+									"(falling back to "+
+									"single-host)\n",
+								err,
 							)
 						} else {
+							distributedMasterDeployer = masterDeployer
+							distributedMasterPort = distCfg.ServerPort
+							// Override VisionHost to point to
+							// the distributed master.
+							sp.config.VisionHost = distCfg.MasterHost
+							sp.config.UseLlamaCpp = false
+							// Use Ollama-compatible endpoint
+							// (llama-server serves OpenAI API).
 							fmt.Printf(
-								"[pipeline] RPC worker "+
-									"started on %s:%d\n",
-								h.Host, port,
+								"[pipeline] Distributed "+
+									"inference active at "+
+									"http://%s:%d\n",
+								distCfg.MasterHost,
+								distCfg.ServerPort,
 							)
 						}
-						distributedDeployers = append(
-							distributedDeployers, deployer,
-						)
-						distributedRPCPorts = append(
-							distributedRPCPorts, port,
-						)
 					}
-
-					// Start master llama-server with --rpc.
-					masterDeployer := visionremote.NewLlamaCppDeployer(
-						visionremote.LlamaCppConfig{
-							Host:        distCfg.MasterHost,
-							User:        sshUser,
-							RepoDir:     distCfg.MasterDir,
-							ModelPath:   distCfg.ModelPath,
-							BasePort:    distCfg.ServerPort,
-							ContextSize: distCfg.ContextSize,
-						},
+				} else if !rec.NeedsDistribution &&
+					len(rec.GPUHosts) > 0 {
+					// Single GPU host is sufficient — use Ollama
+					// on the strongest GPU host for simplicity.
+					sp.config.VisionHost = rec.GPUHosts[0]
+					fmt.Printf(
+						"[pipeline] Single-host vision: "+
+							"%s (%s on %s)\n",
+						rec.ModelName, rec.ModelSize,
+						rec.GPUHosts[0],
 					)
-					if err := masterDeployer.StartWithRPC(
-						ctx,
-						distCfg.ModelPath,
-						distCfg.RPCWorkers,
-						distCfg.ServerPort,
-					); err != nil {
-						fmt.Printf(
-							"[pipeline] warning: "+
-								"distributed master "+
-								"failed: %v "+
-								"(falling back to "+
-								"single-host)\n",
-							err,
-						)
-					} else {
-						distributedMasterDeployer = masterDeployer
-						distributedMasterPort = distCfg.ServerPort
-						// Override VisionHost to point to
-						// the distributed master.
-						sp.config.VisionHost = distCfg.MasterHost
-						sp.config.UseLlamaCpp = false
-						// Use Ollama-compatible endpoint
-						// (llama-server serves OpenAI API).
-						fmt.Printf(
-							"[pipeline] Distributed "+
-								"inference active at "+
-								"http://%s:%d\n",
-							distCfg.MasterHost,
-							distCfg.ServerPort,
-						)
-					}
+				} else if len(rec.AllHosts) > 0 {
+					// CPU-only or single host — use first
+					// reachable host.
+					sp.config.VisionHost = rec.AllHosts[0]
+					fmt.Printf(
+						"[pipeline] Single-host vision: "+
+							"%s (%s on %s)\n",
+						rec.ModelName, rec.ModelSize,
+						rec.AllHosts[0],
+					)
 				}
-			} else if !rec.NeedsDistribution &&
-				len(rec.GPUHosts) > 0 {
-				// Single GPU host is sufficient — use Ollama
-				// on the strongest GPU host for simplicity.
-				sp.config.VisionHost = rec.GPUHosts[0]
-				fmt.Printf(
-					"[pipeline] Single-host vision: "+
-						"%s (%s on %s)\n",
-					rec.ModelName, rec.ModelSize,
-					rec.GPUHosts[0],
-				)
-			} else if len(rec.AllHosts) > 0 {
-				// CPU-only or single host — use first
-				// reachable host.
-				sp.config.VisionHost = rec.AllHosts[0]
-				fmt.Printf(
-					"[pipeline] Single-host vision: "+
-						"%s (%s on %s)\n",
-					rec.ModelName, rec.ModelSize,
-					rec.AllHosts[0],
-				)
 			}
 		} else {
 			fmt.Println(

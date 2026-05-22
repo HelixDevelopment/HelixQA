@@ -1,15 +1,17 @@
 # SPDX-FileCopyrightText: 2026 Milos Vasic
 # SPDX-License-Identifier: Apache-2.0
 #
-# HelixQA English message bundle for CONST-046 Phase 4 round 7
-# (round-112 §11.4 i18n kickoff). Every entry is the English
-# source-of-truth for a previously-hardcoded user-facing literal
-# in helix_qa/cmd/helixqa/main.go. The messageID is namespaced
-# `helixqa_` so it cannot collide with other submodules.
+# HelixQA English message bundle for CONST-046 Phase 4 round 7 / 88
+# (round-112 kickoff + round-205 extension). Every entry is the
+# English source-of-truth for a previously-hardcoded user-facing
+# literal in helix_qa/cmd/helixqa/main.go. The messageID is
+# namespaced `helixqa_` so it cannot collide with other submodules.
 #
 # Backends (LLM-driven generator, YAML-bundle loader) consume
 # this file as the en seed and produce the locale-specific
 # variants users actually see at runtime.
+
+# --- round-112 (kickoff, 5 entries) -----------------------------
 
 helixqa_cli_banner:
   other: "HelixQA — AI-driven QA orchestration"
@@ -25,3 +27,150 @@ helixqa_run_platform_flag_usage:
 
 helixqa_run_speed_flag_usage:
   other: "Speed mode: slow|normal|fast"
+
+# --- round-205 (extension, 10 entries) --------------------------
+#
+# High-impact user-facing strings from the run-summary block and
+# report-generated message in cmd/helixqa/main.go. These are the
+# strings every operator sees at the end of every `helixqa run`
+# invocation — they MUST adapt to the operator's language per
+# CONST-046.
+
+helixqa_run_interrupt_shutdown:
+  other: "Received interrupt, shutting down..."
+
+helixqa_run_summary_observed_line1:
+  other: "OBSERVED - 0 challenges executed; crash-observation only."
+
+helixqa_run_summary_observed_line2:
+  other: "           This is NOT a PASS. The bank's prose steps require"
+
+helixqa_run_summary_observed_line3:
+  other: "           an execution backend (autonomous LLM mode or a"
+
+helixqa_run_summary_observed_line4:
+  other: "           concrete-action runner like Appium/UiAutomator2)."
+
+helixqa_run_summary_passed_fmt:
+  other: "PASSED - All %d challenges passed, no crashes\n"
+
+helixqa_run_summary_failed_fmt:
+  other: "FAILED - %d/%d challenges failed or crashes detected\n"
+
+helixqa_run_summary_report_fmt:
+  other: "Report: %s\n"
+
+helixqa_run_summary_duration_fmt:
+  other: "Duration: %v\n"
+
+helixqa_report_generated_fmt:
+  other: "Report generated: %s\n"
+
+# --- round-214 (extension, 10 entries) --------------------------
+#
+# `printUsage()` body — the literal block every operator sees when
+# they invoke `helixqa`, `helixqa --help`, or any unknown command.
+# This is the highest-impact CONST-046 surface remaining on the CLI
+# binary: every English-speaking-only operator sees it identically
+# today regardless of their locale, producing the exact
+# "incoherent UX for non-English users" failure mode CONST-046
+# forbids. Round 214 routes all 10 lines through the i18n seam so
+# the LLM-driven backend (or YAML-bundle loader) can adapt them.
+
+helixqa_usage_header:
+  other: "Usage:"
+
+helixqa_usage_invocation:
+  other: "  helixqa <command> [flags]"
+
+helixqa_commands_header:
+  other: "Commands:"
+
+helixqa_cmd_run_desc:
+  other: "  run         Execute QA pipeline across platforms"
+
+helixqa_cmd_autonomous_desc:
+  other: "  autonomous  Run autonomous LLM-driven QA session"
+
+helixqa_cmd_replay_desc:
+  other: "  replay      Replay a ticket's OCU action chain (dry-run by default)"
+
+helixqa_cmd_list_desc:
+  other: "  list        List test cases from banks"
+
+helixqa_cmd_report_desc:
+  other: "  report      Generate report from existing results"
+
+helixqa_cmd_signoff_desc:
+  other: "  signoff     Run release gate (Constitution §6.7)"
+
+helixqa_cmd_version_desc:
+  other: "  version     Print version information"
+
+# --- pkg/reporter/enhanced.go (round-447 §11.4 CONST-046 Phase 4) ---
+# Stakeholder-facing executive-summary / QA-report strings. Entries
+# with {{.Name}} placeholders are template-substituted by the
+# backend; the en source-of-truth keeps the pre-migration wording.
+
+helixqa_report_status_critical:
+  other: "Critical Issues Found"
+
+helixqa_report_status_at_risk:
+  other: "At Risk"
+
+helixqa_report_status_stable:
+  other: "Stable"
+
+helixqa_report_risk_high:
+  other: "High risk: {{.Crashes}} crashes, {{.ANRs}} ANRs detected"
+
+helixqa_report_risk_medium:
+  other: "Medium risk: {{.Failed}} of {{.Total}} challenges failed"
+
+helixqa_report_risk_low:
+  other: "Low risk: all checks passed"
+
+helixqa_report_issue_crashes:
+  other: "{{.Count}} crash(es) on {{.Platform}}"
+
+helixqa_report_issue_anrs:
+  other: "{{.Count}} ANR(s) on {{.Platform}}"
+
+helixqa_report_coverage_highlights:
+  other: "{{.Percent}}% pass rate ({{.Passed}}/{{.Total}} challenges) across {{.Platforms}} platform(s)"
+
+helixqa_report_coverage_none:
+  other: "No challenges executed"
+
+helixqa_report_rec_crashes:
+  other: "Investigate and fix crash root causes before release"
+
+helixqa_report_rec_anrs:
+  other: "Address ANR issues to improve responsiveness"
+
+helixqa_report_rec_failed:
+  other: "Fix {{.Failed}} failing challenge(s)"
+
+helixqa_report_rec_all_passed:
+  other: "All checks passed — ready for release consideration"
+
+helixqa_report_heading_executive_summary:
+  other: "Executive Summary"
+
+helixqa_report_heading_top_issues:
+  other: "Top Issues"
+
+helixqa_report_heading_recommendations:
+  other: "Recommendations"
+
+helixqa_report_heading_navigation_map:
+  other: "Navigation Map"
+
+helixqa_report_label_status:
+  other: "Status:"
+
+helixqa_report_label_risk:
+  other: "Risk:"
+
+helixqa_report_label_coverage:
+  other: "Coverage:"
