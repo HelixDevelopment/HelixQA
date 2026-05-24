@@ -3749,3 +3749,66 @@ test_cases:
         path: "constitution/Constitution.md"
     estimated_duration: "20s"
     expected_result: "All 7 sections (A-G) PASS in test_constitution_mechanical_enforcement.sh; mechanical enforcement layers 1-5 deployed + verifiable"
+
+  # ==================== §11.4.69 llm_completion (CME-LLM-xxx) ====================
+  # Phase 39.IZ §IZ §IU follow-up #1 — HelixQA Challenge coverage for
+  # the LLM bridge feature class. The bridge produces non-deterministic
+  # completion text (the LLM picks the words) — so the Challenge MUST
+  # NOT assert on completion CONTENT. Instead it asserts on bridge
+  # INFRASTRUCTURE: structured JSON shape, evidence-dir layout,
+  # closed-set error categories, no-bluff fallback contract. Per
+  # §11.4.52, SKIP-with-reason is acceptable when .env carries only
+  # placeholder values (geo-restriction analog for LLM keys).
+
+  - id: CME-LLM-COMPLETION-001
+    name: "LLM Bridge — llm_completion feature class infrastructure validation (anti-bluff)"
+    category: governance
+    priority: critical
+    platforms: [host]
+    requires_root: false
+    dispatches_to: "scripts/llm/test_bridge.sh"
+    feature_class: "llm_completion"
+    domains: [llm, bridge, governance, anti-bluff, §11.4.69, §11.4.52]
+    required_evidence:
+      - evidence_dir_layout_4_files
+      - metadata_json_exit_code_integer
+      - health_check_json_status_field
+      - structured_error_category_closed_set
+    steps:
+      - name: "Run scripts/llm/test_bridge.sh Section A (health-check JSON shape)"
+        action: "bash scripts/llm/test_bridge.sh — exercise Section A health-check JSON emission"
+        expected: "PASS: A1 health-check JSON shape (status + provider keys present) OR SKIP-with-reason=feature_disabled_by_config when .env carries placeholder keys"
+      - name: "Run Section A.deterministic 3-iter consistency"
+        action: "test_bridge.sh runs --health-check three times back-to-back per §11.4.50"
+        expected: "PASS: A.det 3-iter key-set stability (identical key set across iterations) — non-deterministic completion BODY excluded by design"
+      - name: "Run Section B (--prompt returns completion OR structured error category)"
+        action: "Invoke bridge with --prompt 'Reply with the literal string OK'"
+        expected: "PASS: B1 --prompt completion returned (any non-empty content) OR PASS: B1 --prompt structured error category=<closed-set>"
+      - name: "Run Section C (evidence dir mandatory files)"
+        action: "Verify qa-results/llm_bridge/<UTC-ISO>_<uuid>/ contains request.json + response.json + stderr.log + metadata.json"
+        expected: "PASS: C1 evidence dir contains 4 mandatory files [evidence: <dir path>]"
+      - name: "Run Section D (missing .env returns configuration category)"
+        action: "Invoke bridge with --env-file <nonexistent> + assert exit 3 + JSON error.category=configuration"
+        expected: "PASS: D1 missing .env returns configuration category"
+      - name: "Run Section E (anti-bluff probe — no silent OK fallback on error)"
+        action: "Assert bridge never emits BOTH error JSON AND completion 'OK' simultaneously"
+        expected: "PASS: E1 anti-bluff (error path emitted no completion key OR success path emitted real completion)"
+      - name: "Verify metadata.json exit_code field is integer"
+        action: "jq -r .exit_code <evidence-dir>/metadata.json — non-deterministic content is acceptable; STRUCTURE is mandatory"
+        expected: "Field present, type integer (0 success / 3 config / 4 auth / 5 rate / 6 network / 7 upstream / 8 health-unhealthy)"
+      - name: "Verify metadata.json circuit_breaker telemetry present"
+        action: "jq -r .circuit_breaker.state <evidence-dir>/metadata.json — Phase 39.IZ §IZ telemetry"
+        expected: "Field present with closed-set value: closed | open | half_open"
+    tags: [llm, bridge, governance, anti-bluff, §11.4.69, §11.4.52, phase-39-iz, llm_completion]
+    documentation_refs:
+      - type: guide
+        section: "LLM Bridge Integration Guide"
+        path: "docs/guides/LLM_BRIDGE_INTEGRATION.md"
+      - type: constitution
+        section: "§11.4.69 sink-side captured-evidence taxonomy (feature class llm_completion)"
+        path: "constitution/Constitution.md"
+      - type: constitution
+        section: "§11.4.52 autonomous-validation mandate"
+        path: "constitution/Constitution.md"
+    estimated_duration: "30s"
+    expected_result: "test_bridge.sh exits 0; PASS lines for A1/A.det/B1/C1/D1/E1; non-deterministic LLM content explicitly NOT asserted; INFRASTRUCTURE working IS the Challenge"
