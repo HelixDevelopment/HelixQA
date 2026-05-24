@@ -3812,3 +3812,68 @@ test_cases:
         path: "constitution/Constitution.md"
     estimated_duration: "30s"
     expected_result: "test_bridge.sh exits 0; PASS lines for A1/A.det/B1/C1/D1/E1; non-deterministic LLM content explicitly NOT asserted; INFRASTRUCTURE working IS the Challenge"
+
+  # Phase 39.IM §JB — Firebase data review helper Challenge (symmetric to
+  # CME-LLM-COMPLETION-001). Dispatches to scripts/firebase/review_round.sh
+  # for the §11.4.47 cadence helper. Pre-§J1 unblock: SKIP-with-reason
+  # `feature_disabled_by_config` is the §11.4.69-acceptable verdict (the
+  # helper's `pending_j1_unblock` placeholder branch is the §11.4.52-
+  # acceptable autonomous-validation path during the operator-blocked
+  # window). Post-§J1 unblock: real Firebase REST API responses populate
+  # the evidence dir and the Challenge transitions to PASS.
+
+  - id: CME-FIREBASE-REVIEW-001
+    name: "Firebase Data Review — firebase_review feature class infrastructure validation (anti-bluff)"
+    category: governance
+    priority: critical
+    platforms: [host]
+    requires_root: false
+    dispatches_to: "scripts/firebase/review_round.sh"
+    feature_class: "firebase_review"
+    domains: [firebase, observability, governance, anti-bluff, §11.4.47, §11.4.69, §11.4.52]
+    required_evidence:
+      - evidence_dir_layout_with_verdict
+      - health_check_json_status_closed_set
+      - exit_txt_markers_present
+      - skip_with_reason_when_credentials_absent
+    steps:
+      - name: "Run scripts/firebase/review_round.sh --health-check (Section A health-check JSON shape)"
+        action: "bash scripts/firebase/review_round.sh --health-check — exercise health-check JSON emission"
+        expected: "PASS: A1 health-check JSON shape (schema=atm.firebase_review.health.v1 + status closed-set {healthy|degraded|unhealthy} + credentials_configured + env_file + freshness_seconds_since_last keys present) OR SKIP-with-reason=feature_disabled_by_config when Firebase Service Account JSON / .env carry placeholders (pre-§J1 unblock state)"
+      - name: "Run Section B (--report mode produces VERDICT.md)"
+        action: "When credentials configured: bash scripts/firebase/review_round.sh produces qa-results/firebase_review_<UTC-ISO>/ with crashlytics_raw.json + analytics_raw.json + performance_raw.json + dedup_report.md + new_issues_draft.md + metadata.json + .ok marker; emit VERDICT.md summarising findings"
+        expected: "PASS: B1 evidence dir contains 6+ mandatory files + VERDICT.md non-empty [evidence: <dir path>] — OR SKIP-with-reason=feature_disabled_by_config (pre-§J1 unblock — pending_j1_unblock placeholder markers present)"
+      - name: "Run Section C (exit-txt markers present per §JA pattern)"
+        action: "Verify qa-results/firebase_review_<UTC-ISO>/*.exit.txt markers exist for crashlytics + analytics + performance source queries"
+        expected: "PASS: C1 exit-txt markers present (3 of 3) [evidence: <dir path>]"
+      - name: "Run Section D (placeholder credentials → SKIP-with-reason, not bluff PASS)"
+        action: "With placeholder Firebase Service Account JSON, invoke helper; assert NOT a bluff PASS (no false 'healthy' verdict when credentials absent)"
+        expected: "PASS: D1 helper emits status=degraded OR status=unhealthy + credentials_configured=false when Service Account JSON path missing/placeholder — never silent OK fallback per §11.4.52 anti-bluff"
+      - name: "Run Section E (anti-bluff probe — no silent OK fallback on missing credentials)"
+        action: "Assert helper never emits BOTH error JSON AND completion 'healthy' simultaneously"
+        expected: "PASS: E1 anti-bluff (error path emitted status≠healthy OR success path emitted credentials_configured=true)"
+      - name: "Verify metadata.json schema field"
+        action: "jq -r .schema <evidence-dir>/metadata.json — closed-set schema literal"
+        expected: "Field present, value=atm.firebase_review.metadata.v1 — non-deterministic finding-count is acceptable; STRUCTURE is mandatory"
+      - name: "Verify §11.4.10 credential redaction in all outputs"
+        action: "grep recursively in evidence dir for any literal Service Account private_key or client_email content"
+        expected: "PASS: zero credential leakage — path-only references per §11.4.10"
+    tags: [firebase, observability, governance, anti-bluff, §11.4.47, §11.4.69, §11.4.52, phase-39-jb, firebase_review]
+    documentation_refs:
+      - type: guide
+        section: "Firebase Data Review Cadence (§11.4.47)"
+        path: "scripts/firebase/review_round.sh"
+      - type: constitution
+        section: "§11.4.47 Firebase data review mandate"
+        path: "constitution/Constitution.md"
+      - type: constitution
+        section: "§11.4.69 sink-side captured-evidence taxonomy (feature class firebase_review)"
+        path: "constitution/Constitution.md"
+      - type: constitution
+        section: "§11.4.52 autonomous-validation mandate"
+        path: "constitution/Constitution.md"
+      - type: issues
+        section: "§J1 Firebase project setup + Service Account JSON provisioning (Operator-blocked)"
+        path: "docs/Issues.md"
+    estimated_duration: "20s"
+    expected_result: "review_round.sh --health-check exits 0; A1 PASS or SKIP-with-reason=feature_disabled_by_config (pre-§J1); evidence dir layout when credentials configured; INFRASTRUCTURE working IS the Challenge — real-data branch validates downstream once §J1 unblocks operator-side credential provisioning"
