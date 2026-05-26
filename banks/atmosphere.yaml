@@ -3877,3 +3877,63 @@ test_cases:
         path: "docs/Issues.md"
     estimated_duration: "20s"
     expected_result: "review_round.sh --health-check exits 0; A1 PASS or SKIP-with-reason=feature_disabled_by_config (pre-§J1); evidence dir layout when credentials configured; INFRASTRUCTURE working IS the Challenge — real-data branch validates downstream once §J1 unblocks operator-side credential provisioning"
+
+  - id: CME-KA-AUDIO-MATRIX-001
+    title: "§KA Audio Quality Matrix — HDMI/jack/USB/BT × multichannel/HiFi (matrix dispatch)"
+    suite: atmosphere.audio
+    category: audio
+    priority: critical
+    description: |
+      §KA audio quality matrix Challenge (User mandate 2026-05-26 verbatim:
+      "Multi-channel audio MUST work properly without exception, properly,
+      across HDMI, jack output, USB connection, Bluetooth as well as
+      multi-channel HiFi level... no bluff is allowed"). Dispatches the
+      6×12 cell matrix (HDMI0, HDMI1, ES8388 jack, USB UAC2 DAC, BT A2DP
+      soundbar, BT A2DP headphones) × (stereo 16-bit, stereo 24-bit,
+      5.1 PCM, 7.1 PCM, AC3 PT, EAC3 PT, DTS, TrueHD, MLP/Atmos, FLAC,
+      ALAC, DSD-DoP) via test_audio_quality_matrix.sh. Cells where hardware
+      is not present (no USB DAC, no BT headphones paired, codec-ceiling
+      hardware) classify as ab_skip_with_reason per §11.4.69 closed-set.
+      Every PASS cites a captured-evidence artefact (hw_params /
+      stream0 / BT codec dumpsys / sink-side Arvus probe).
+    setup:
+      - "Push tests/ to /data/local/tmp on D3 + D4"
+      - "Verify both devices reachable via ADB"
+    steps:
+      - name: "Dispatch matrix (6 outputs × 12 columns = 72 cells)"
+        action: "adb shell sh /data/local/tmp/tests/test_audio_quality_matrix.sh"
+        expected: "Test produces N=72 cell results; every PASS uses ab_pass_with_evidence; every SKIP uses ab_skip_with_reason per §11.4.69 closed-set"
+      - name: "Verify §KA-1 USB feasibility verdict captured"
+        action: "Inspect docs/research/audio/KA_audio_quality_matrix.md §1 forensic anchors"
+        expected: "USB UAC HAL multichannel support cited at AOSP audio_hal.c:171,180,182,186 — verdict 'USB multichannel IS supported in shipped software stack'"
+      - name: "Verify §KA-3 fix cross-walk completeness"
+        action: "Inspect §3 cross-walk table — 16 fix rows × 6 output columns"
+        expected: "Cross-walk classifies every audio fix as universal/HDMI-only/JACK-only/BT-only/PARTIAL; gaps §KA-3a..§KA-3g surfaced for follow-up"
+      - name: "Anti-bluff guard — no PASS without evidence path"
+        action: "grep -c 'ab_pass_with_evidence' device/rockchip/rk3588/tests/test_audio_quality_matrix.sh — must be ≥1 per PASS in dispatcher"
+        expected: "Every PASS function ends in ab_pass_with_evidence + captured-evidence path; zero bare ab_pass calls per §11.4.69"
+    tags: [audio, multichannel, hdmi, jack, usb, bt-a2dp, §KA, §11.4.5, §11.4.13, §11.4.69, §11.4.72, phase-39-io, audio_output]
+    documentation_refs:
+      - type: research
+        section: "§KA Audio Quality Matrix"
+        path: "docs/research/audio/KA_audio_quality_matrix.md"
+      - type: test
+        section: "test_audio_quality_matrix.sh"
+        path: "device/rockchip/rk3588/tests/test_audio_quality_matrix.sh"
+      - type: constitution
+        section: "§11.4.5 audio + video quality analysis comprehensiveness"
+        path: "constitution/Constitution.md"
+      - type: constitution
+        section: "§11.4.13 out-of-band sink-side captured-evidence"
+        path: "constitution/Constitution.md"
+      - type: constitution
+        section: "§11.4.69 universal sink-side positive-evidence taxonomy"
+        path: "constitution/Constitution.md"
+      - type: constitution
+        section: "§11.4.72 audio top-priority mandate"
+        path: "constitution/Constitution.md"
+      - type: issues
+        section: "§KA Multi-channel audio quality across ALL output devices"
+        path: "docs/Issues.md"
+    estimated_duration: "60s (current topology) + operator-attended cells deferred"
+    expected_result: "Matrix dispatch surfaces 13 GREEN / 12 UNCONFIRMED-pending-N3-execution / 35 RED-or-SKIP (with documented reason). Anti-bluff posture upheld: NO cell PASSes without captured evidence."
