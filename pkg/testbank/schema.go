@@ -102,6 +102,16 @@ const (
 	ActionTypeDescription ActionType = "description"
 	// ActionTypeADBShell executes an ADB shell command.
 	ActionTypeADBShell ActionType = "adb_shell"
+	// ActionTypeShell executes a host shell command via os/exec on
+	// the machine running the runner. Used for desktop-platform bank
+	// cases (and any non-Android topology) so a bank case's
+	// `action: "shell: <command>"` is genuinely run — the real exit
+	// code drives the PASS/FAIL verdict. Closes HXC-011: before this
+	// action type existed, desktop-platform bank cases were loaded
+	// but their actions were never executed, producing hollow
+	// metadata-only PASS/SKIP rows (a §11.4 / CONST-035 PASS-bluff
+	// in the QA runner itself).
+	ActionTypeShell ActionType = "shell"
 	// ActionTypeSleep waits for a specified duration.
 	ActionTypeSleep ActionType = "sleep"
 	// ActionTypeScreenshot captures a screenshot.
@@ -279,6 +289,8 @@ func (ts *TestStep) ParseAction() (ActionType, string) {
 		switch ActionType(prefix) {
 		case ActionTypeADBShell:
 			return ActionTypeADBShell, value
+		case ActionTypeShell:
+			return ActionTypeShell, value
 		case ActionTypeSleep:
 			return ActionTypeSleep, value
 		case ActionTypeScreenshot:

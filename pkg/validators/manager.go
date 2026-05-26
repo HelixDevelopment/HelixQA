@@ -68,11 +68,13 @@ func (m *Manager) ValidateDirectory(dirPath string, recursive bool) ([]*Validati
 	var files []string
 
 	if recursive {
-		err := filepath.Walk(dirPath, func(path string, info os.FileInfo, err error) error {
+		// WalkDir reuses the fs.DirEntry from the directory read,
+		// avoiding a per-entry os.Lstat on large directory trees.
+		err := filepath.WalkDir(dirPath, func(path string, d os.DirEntry, err error) error {
 			if err != nil {
 				return err
 			}
-			if !info.IsDir() {
+			if !d.IsDir() {
 				files = append(files, path)
 			}
 			return nil

@@ -181,9 +181,10 @@ func (s *FileEvidenceStore) Sweep(policy RetentionPolicy) (SweepResult, error) {
 	}
 
 	// Prune empty directories left behind by the sweep (except the
-	// root itself). Walk depth-first.
-	_ = filepath.Walk(s.Root, func(path string, info os.FileInfo, walkErr error) error {
-		if walkErr != nil || info == nil || !info.IsDir() || path == s.Root {
+	// root itself). WalkDir reuses the fs.DirEntry from the directory
+	// read instead of issuing a per-entry os.Lstat.
+	_ = filepath.WalkDir(s.Root, func(path string, d os.DirEntry, walkErr error) error {
+		if walkErr != nil || d == nil || !d.IsDir() || path == s.Root {
 			return nil
 		}
 		entries, _ := os.ReadDir(path)
