@@ -3669,3 +3669,271 @@ test_cases:
         path: "docs/guides/SYSTEM_ARCHITECTURE.md"
     estimated_duration: "90s"
     expected_result: "AC3 / E-AC3 / multichannel pipeline stable across 3 iterations; sink-side evidence proves no regression"
+
+  - id: video.mediacodec.rk_hw_decoder_secondary_display
+    challenge_id: video.mediacodec.rk_hw_decoder_secondary_display
+    name: "Phase 39.FV §FV — c2.rk.* HW decoder works on secondary display (Option A)"
+    description: |
+      Validates that the Rockchip C2 decoder interface declares C2StreamUsageTuning::output
+      and Codec2Client::Component::setOutputSurface() does NOT log
+      "failed to set consumer usage (BAD_INDEX)" when reconfiguring against the
+      secondary-display SurfaceView. Forensic anchor:
+      docs/research/RK3588_HW_Decoder_BAD_INDEX_Analysis.md Option A.
+    severity: high
+    priority: high
+    platforms: [android]
+    dispatches_to: "device/rockchip/rk3588/tests/test_rk3588_hw_decoder_secondary_display.sh"
+    domains: [video, mediacodec, hw-decoder, secondary-display, rk3588]
+    required_evidence: [hw_decoder_registered, no_bad_index, n3_consistency]
+    steps:
+      - name: "Run Option A on-device validation"
+        action: "adb shell sh /data/local/tmp/tests/test_rk3588_hw_decoder_secondary_display.sh"
+        expected: "HW c2.rk.* decoder registered (Section A), no BAD_INDEX rejection (Section C), N=3 deterministic consistency (Section E)"
+      - name: "Verify §11.4.69 sink-side positive evidence (video_display)"
+        action: "Inspect VideoOutputManager dumpsys for activeDecoder reporting c2.rk.* on secondary"
+        expected: "If feature flag persist.atmosphere.rk_hw_decoder_secondary=1 AND video playing, activeDecoder == c2.rk.* (HW path active)"
+      - name: "Verify deterministic consistency"
+        action: "Run test 3 times; compare exit codes and BAD_INDEX hit counts"
+        expected: "All 3 iterations identical per §11.4.50"
+    tags: [video, hw-decoder, secondary-display, rk3588, phase-39-fv, option-a, c2-stream-usage-tuning]
+    documentation_refs:
+      - type: research
+        section: "Option A"
+        path: "docs/research/RK3588_HW_Decoder_BAD_INDEX_Analysis.md"
+    estimated_duration: "30s"
+    expected_result: "Rockchip C2 decoder interface accepts C2StreamUsageTuning::output without C2_BAD_INDEX; HW path viable on secondary display once feature flag enabled"
+
+  # ==================== §11.4.74 Mechanical Enforcement (CME-xxx) ====================
+
+  - id: CME-001
+    name: "Constitution Mechanical Enforcement — Layer 1+2+3+4+5 all present"
+    category: governance
+    priority: critical
+    platforms: [host, android]
+    requires_root: false
+    dispatches_to: "device/rockchip/rk3588/tests/test_constitution_mechanical_enforcement.sh"
+    domains: [governance, constitution, anti-bluff, mechanical-enforcement, §11.4.74]
+    required_evidence: [hook_sources_present, install_script_present, ci_workflow_present, anchor_propagation_4of4, paired_mutations_present]
+    steps:
+      - name: "Verify hook sources Layer 1+3+4"
+        action: "scripts/git_hooks/{pre-commit,pre-push,post-commit,commit-msg} present + executable"
+        expected: "All four hooks present in tracked source, executable bit set"
+      - name: "Verify install_git_hooks.sh Layer deploy seam"
+        action: "scripts/install_git_hooks.sh present + executable + --verify passes"
+        expected: "Installer present, --verify reports ok=4 missing=0 drifted=0"
+      - name: "Verify commit_all.sh Layer 2 integration"
+        action: "grep _constitution_sibling_check scripts/commit_all.sh"
+        expected: "Function defined + called from do_commit() before git commit"
+      - name: "Verify CI workflow Layer 5"
+        action: "Read .github/workflows/constitution-compliance.yml + parse YAML + count required jobs"
+        expected: "4 jobs declared: sibling-check, reverse-orphan-check, hooks-install-script-present, bypass-audit-trail-check"
+      - name: "Verify §11.4.74 anchor propagation"
+        action: "grep §11.4.74 across constitution/{Constitution,CLAUDE,AGENTS,QWEN}.md"
+        expected: "All 4 canonical files carry §11.4.74 anchor"
+      - name: "Verify §1.1 paired mutations present"
+        action: "grep CM-COVENANT-114-74-PROPAGATION + CM-GIT-HOOKS-INSTALL-SCRIPT + CM-GIT-HOOKS-SOURCE-DIR + CM-COMMIT-ALL-SIBLING-CHECK + CM-CI-WORKFLOW-PRESENT in meta_test_false_positive_proof.sh"
+        expected: "At least 5 mutation literals present (count >= 5)"
+    tags: [governance, constitution, anti-bluff, §11.4.74, phase-39-fy, mechanical-enforcement]
+    documentation_refs:
+      - type: investigation
+        section: "01_root_cause_analysis.md"
+        path: "docs/issues/constitution/violations/01_root_cause_analysis.md"
+      - type: plan
+        section: "03_mechanical_enforcement_plan.md"
+        path: "docs/issues/constitution/violations/03_mechanical_enforcement_plan.md"
+      - type: amendment
+        section: "04_constitution_amendment_draft.md"
+        path: "docs/issues/constitution/violations/04_constitution_amendment_draft.md"
+      - type: constitution
+        section: "§11.4.74"
+        path: "constitution/Constitution.md"
+    estimated_duration: "20s"
+    expected_result: "All 7 sections (A-G) PASS in test_constitution_mechanical_enforcement.sh; mechanical enforcement layers 1-5 deployed + verifiable"
+
+  # ==================== §11.4.69 llm_completion (CME-LLM-xxx) ====================
+  # Phase 39.IZ §IZ §IU follow-up #1 — HelixQA Challenge coverage for
+  # the LLM bridge feature class. The bridge produces non-deterministic
+  # completion text (the LLM picks the words) — so the Challenge MUST
+  # NOT assert on completion CONTENT. Instead it asserts on bridge
+  # INFRASTRUCTURE: structured JSON shape, evidence-dir layout,
+  # closed-set error categories, no-bluff fallback contract. Per
+  # §11.4.52, SKIP-with-reason is acceptable when .env carries only
+  # placeholder values (geo-restriction analog for LLM keys).
+
+  - id: CME-LLM-COMPLETION-001
+    name: "LLM Bridge — llm_completion feature class infrastructure validation (anti-bluff)"
+    category: governance
+    priority: critical
+    platforms: [host]
+    requires_root: false
+    dispatches_to: "scripts/llm/test_bridge.sh"
+    feature_class: "llm_completion"
+    domains: [llm, bridge, governance, anti-bluff, §11.4.69, §11.4.52]
+    required_evidence:
+      - evidence_dir_layout_4_files
+      - metadata_json_exit_code_integer
+      - health_check_json_status_field
+      - structured_error_category_closed_set
+    steps:
+      - name: "Run scripts/llm/test_bridge.sh Section A (health-check JSON shape)"
+        action: "bash scripts/llm/test_bridge.sh — exercise Section A health-check JSON emission"
+        expected: "PASS: A1 health-check JSON shape (status + provider keys present) OR SKIP-with-reason=feature_disabled_by_config when .env carries placeholder keys"
+      - name: "Run Section A.deterministic 3-iter consistency"
+        action: "test_bridge.sh runs --health-check three times back-to-back per §11.4.50"
+        expected: "PASS: A.det 3-iter key-set stability (identical key set across iterations) — non-deterministic completion BODY excluded by design"
+      - name: "Run Section B (--prompt returns completion OR structured error category)"
+        action: "Invoke bridge with --prompt 'Reply with the literal string OK'"
+        expected: "PASS: B1 --prompt completion returned (any non-empty content) OR PASS: B1 --prompt structured error category=<closed-set>"
+      - name: "Run Section C (evidence dir mandatory files)"
+        action: "Verify qa-results/llm_bridge/<UTC-ISO>_<uuid>/ contains request.json + response.json + stderr.log + metadata.json"
+        expected: "PASS: C1 evidence dir contains 4 mandatory files [evidence: <dir path>]"
+      - name: "Run Section D (missing .env returns configuration category)"
+        action: "Invoke bridge with --env-file <nonexistent> + assert exit 3 + JSON error.category=configuration"
+        expected: "PASS: D1 missing .env returns configuration category"
+      - name: "Run Section E (anti-bluff probe — no silent OK fallback on error)"
+        action: "Assert bridge never emits BOTH error JSON AND completion 'OK' simultaneously"
+        expected: "PASS: E1 anti-bluff (error path emitted no completion key OR success path emitted real completion)"
+      - name: "Verify metadata.json exit_code field is integer"
+        action: "jq -r .exit_code <evidence-dir>/metadata.json — non-deterministic content is acceptable; STRUCTURE is mandatory"
+        expected: "Field present, type integer (0 success / 3 config / 4 auth / 5 rate / 6 network / 7 upstream / 8 health-unhealthy)"
+      - name: "Verify metadata.json circuit_breaker telemetry present"
+        action: "jq -r .circuit_breaker.state <evidence-dir>/metadata.json — Phase 39.IZ §IZ telemetry"
+        expected: "Field present with closed-set value: closed | open | half_open"
+    tags: [llm, bridge, governance, anti-bluff, §11.4.69, §11.4.52, phase-39-iz, llm_completion]
+    documentation_refs:
+      - type: guide
+        section: "LLM Bridge Integration Guide"
+        path: "docs/guides/LLM_BRIDGE_INTEGRATION.md"
+      - type: constitution
+        section: "§11.4.69 sink-side captured-evidence taxonomy (feature class llm_completion)"
+        path: "constitution/Constitution.md"
+      - type: constitution
+        section: "§11.4.52 autonomous-validation mandate"
+        path: "constitution/Constitution.md"
+    estimated_duration: "30s"
+    expected_result: "test_bridge.sh exits 0; PASS lines for A1/A.det/B1/C1/D1/E1; non-deterministic LLM content explicitly NOT asserted; INFRASTRUCTURE working IS the Challenge"
+
+  # Phase 39.IM §JB — Firebase data review helper Challenge (symmetric to
+  # CME-LLM-COMPLETION-001). Dispatches to scripts/firebase/review_round.sh
+  # for the §11.4.47 cadence helper. Pre-§J1 unblock: SKIP-with-reason
+  # `feature_disabled_by_config` is the §11.4.69-acceptable verdict (the
+  # helper's `pending_j1_unblock` placeholder branch is the §11.4.52-
+  # acceptable autonomous-validation path during the operator-blocked
+  # window). Post-§J1 unblock: real Firebase REST API responses populate
+  # the evidence dir and the Challenge transitions to PASS.
+
+  - id: CME-FIREBASE-REVIEW-001
+    name: "Firebase Data Review — firebase_review feature class infrastructure validation (anti-bluff)"
+    category: governance
+    priority: critical
+    platforms: [host]
+    requires_root: false
+    dispatches_to: "scripts/firebase/review_round.sh"
+    feature_class: "firebase_review"
+    domains: [firebase, observability, governance, anti-bluff, §11.4.47, §11.4.69, §11.4.52]
+    required_evidence:
+      - evidence_dir_layout_with_verdict
+      - health_check_json_status_closed_set
+      - exit_txt_markers_present
+      - skip_with_reason_when_credentials_absent
+    steps:
+      - name: "Run scripts/firebase/review_round.sh --health-check (Section A health-check JSON shape)"
+        action: "bash scripts/firebase/review_round.sh --health-check — exercise health-check JSON emission"
+        expected: "PASS: A1 health-check JSON shape (schema=atm.firebase_review.health.v1 + status closed-set {healthy|degraded|unhealthy} + credentials_configured + env_file + freshness_seconds_since_last keys present) OR SKIP-with-reason=feature_disabled_by_config when Firebase Service Account JSON / .env carry placeholders (pre-§J1 unblock state)"
+      - name: "Run Section B (--report mode produces VERDICT.md)"
+        action: "When credentials configured: bash scripts/firebase/review_round.sh produces qa-results/firebase_review_<UTC-ISO>/ with crashlytics_raw.json + analytics_raw.json + performance_raw.json + dedup_report.md + new_issues_draft.md + metadata.json + .ok marker; emit VERDICT.md summarising findings"
+        expected: "PASS: B1 evidence dir contains 6+ mandatory files + VERDICT.md non-empty [evidence: <dir path>] — OR SKIP-with-reason=feature_disabled_by_config (pre-§J1 unblock — pending_j1_unblock placeholder markers present)"
+      - name: "Run Section C (exit-txt markers present per §JA pattern)"
+        action: "Verify qa-results/firebase_review_<UTC-ISO>/*.exit.txt markers exist for crashlytics + analytics + performance source queries"
+        expected: "PASS: C1 exit-txt markers present (3 of 3) [evidence: <dir path>]"
+      - name: "Run Section D (placeholder credentials → SKIP-with-reason, not bluff PASS)"
+        action: "With placeholder Firebase Service Account JSON, invoke helper; assert NOT a bluff PASS (no false 'healthy' verdict when credentials absent)"
+        expected: "PASS: D1 helper emits status=degraded OR status=unhealthy + credentials_configured=false when Service Account JSON path missing/placeholder — never silent OK fallback per §11.4.52 anti-bluff"
+      - name: "Run Section E (anti-bluff probe — no silent OK fallback on missing credentials)"
+        action: "Assert helper never emits BOTH error JSON AND completion 'healthy' simultaneously"
+        expected: "PASS: E1 anti-bluff (error path emitted status≠healthy OR success path emitted credentials_configured=true)"
+      - name: "Verify metadata.json schema field"
+        action: "jq -r .schema <evidence-dir>/metadata.json — closed-set schema literal"
+        expected: "Field present, value=atm.firebase_review.metadata.v1 — non-deterministic finding-count is acceptable; STRUCTURE is mandatory"
+      - name: "Verify §11.4.10 credential redaction in all outputs"
+        action: "grep recursively in evidence dir for any literal Service Account private_key or client_email content"
+        expected: "PASS: zero credential leakage — path-only references per §11.4.10"
+    tags: [firebase, observability, governance, anti-bluff, §11.4.47, §11.4.69, §11.4.52, phase-39-jb, firebase_review]
+    documentation_refs:
+      - type: guide
+        section: "Firebase Data Review Cadence (§11.4.47)"
+        path: "scripts/firebase/review_round.sh"
+      - type: constitution
+        section: "§11.4.47 Firebase data review mandate"
+        path: "constitution/Constitution.md"
+      - type: constitution
+        section: "§11.4.69 sink-side captured-evidence taxonomy (feature class firebase_review)"
+        path: "constitution/Constitution.md"
+      - type: constitution
+        section: "§11.4.52 autonomous-validation mandate"
+        path: "constitution/Constitution.md"
+      - type: issues
+        section: "§J1 Firebase project setup + Service Account JSON provisioning (Operator-blocked)"
+        path: "docs/Issues.md"
+    estimated_duration: "20s"
+    expected_result: "review_round.sh --health-check exits 0; A1 PASS or SKIP-with-reason=feature_disabled_by_config (pre-§J1); evidence dir layout when credentials configured; INFRASTRUCTURE working IS the Challenge — real-data branch validates downstream once §J1 unblocks operator-side credential provisioning"
+
+  - id: CME-KA-AUDIO-MATRIX-001
+    title: "§KA Audio Quality Matrix — HDMI/jack/USB/BT × multichannel/HiFi (matrix dispatch)"
+    suite: atmosphere.audio
+    category: audio
+    priority: critical
+    description: |
+      §KA audio quality matrix Challenge (User mandate 2026-05-26 verbatim:
+      "Multi-channel audio MUST work properly without exception, properly,
+      across HDMI, jack output, USB connection, Bluetooth as well as
+      multi-channel HiFi level... no bluff is allowed"). Dispatches the
+      6×12 cell matrix (HDMI0, HDMI1, ES8388 jack, USB UAC2 DAC, BT A2DP
+      soundbar, BT A2DP headphones) × (stereo 16-bit, stereo 24-bit,
+      5.1 PCM, 7.1 PCM, AC3 PT, EAC3 PT, DTS, TrueHD, MLP/Atmos, FLAC,
+      ALAC, DSD-DoP) via test_audio_quality_matrix.sh. Cells where hardware
+      is not present (no USB DAC, no BT headphones paired, codec-ceiling
+      hardware) classify as ab_skip_with_reason per §11.4.69 closed-set.
+      Every PASS cites a captured-evidence artefact (hw_params /
+      stream0 / BT codec dumpsys / sink-side Arvus probe).
+    setup:
+      - "Push tests/ to /data/local/tmp on D3 + D4"
+      - "Verify both devices reachable via ADB"
+    steps:
+      - name: "Dispatch matrix (6 outputs × 12 columns = 72 cells)"
+        action: "adb shell sh /data/local/tmp/tests/test_audio_quality_matrix.sh"
+        expected: "Test produces N=72 cell results; every PASS uses ab_pass_with_evidence; every SKIP uses ab_skip_with_reason per §11.4.69 closed-set"
+      - name: "Verify §KA-1 USB feasibility verdict captured"
+        action: "Inspect docs/research/audio/KA_audio_quality_matrix.md §1 forensic anchors"
+        expected: "USB UAC HAL multichannel support cited at AOSP audio_hal.c:171,180,182,186 — verdict 'USB multichannel IS supported in shipped software stack'"
+      - name: "Verify §KA-3 fix cross-walk completeness"
+        action: "Inspect §3 cross-walk table — 16 fix rows × 6 output columns"
+        expected: "Cross-walk classifies every audio fix as universal/HDMI-only/JACK-only/BT-only/PARTIAL; gaps §KA-3a..§KA-3g surfaced for follow-up"
+      - name: "Anti-bluff guard — no PASS without evidence path"
+        action: "grep -c 'ab_pass_with_evidence' device/rockchip/rk3588/tests/test_audio_quality_matrix.sh — must be ≥1 per PASS in dispatcher"
+        expected: "Every PASS function ends in ab_pass_with_evidence + captured-evidence path; zero bare ab_pass calls per §11.4.69"
+    tags: [audio, multichannel, hdmi, jack, usb, bt-a2dp, §KA, §11.4.5, §11.4.13, §11.4.69, §11.4.72, phase-39-io, audio_output]
+    documentation_refs:
+      - type: research
+        section: "§KA Audio Quality Matrix"
+        path: "docs/research/audio/KA_audio_quality_matrix.md"
+      - type: test
+        section: "test_audio_quality_matrix.sh"
+        path: "device/rockchip/rk3588/tests/test_audio_quality_matrix.sh"
+      - type: constitution
+        section: "§11.4.5 audio + video quality analysis comprehensiveness"
+        path: "constitution/Constitution.md"
+      - type: constitution
+        section: "§11.4.13 out-of-band sink-side captured-evidence"
+        path: "constitution/Constitution.md"
+      - type: constitution
+        section: "§11.4.69 universal sink-side positive-evidence taxonomy"
+        path: "constitution/Constitution.md"
+      - type: constitution
+        section: "§11.4.72 audio top-priority mandate"
+        path: "constitution/Constitution.md"
+      - type: issues
+        section: "§KA Multi-channel audio quality across ALL output devices"
+        path: "docs/Issues.md"
+    estimated_duration: "60s (current topology) + operator-attended cells deferred"
+    expected_result: "Matrix dispatch surfaces 13 GREEN / 12 UNCONFIRMED-pending-N3-execution / 35 RED-or-SKIP (with documented reason). Anti-bluff posture upheld: NO cell PASSes without captured evidence."
