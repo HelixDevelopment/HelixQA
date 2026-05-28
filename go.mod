@@ -121,14 +121,14 @@ require (
 )
 
 replace (
-	digital.vasic.challenges => ../challenges
-	digital.vasic.containers => ../containers
-	digital.vasic.docprocessor => ../dependencies/HelixDevelopment/DocProcessor
-	digital.vasic.llmorchestrator => ../dependencies/HelixDevelopment/LLMOrchestrator
+	digital.vasic.challenges => ../Challenges
+	digital.vasic.containers => ../Containers
+	digital.vasic.docprocessor => ../DocProcessor
+	digital.vasic.llmorchestrator => ../LLMOrchestrator
 	digital.vasic.llmprovider => ../LLMProvider
 	digital.vasic.llmsverifier => ../dependencies/HelixDevelopment/LLMsVerifier/llm-verifier
 	digital.vasic.security => ../security
-	digital.vasic.visionengine => ../dependencies/HelixDevelopment/VisionEngine
+	digital.vasic.visionengine => ../VisionEngine
 )
 
 require (
