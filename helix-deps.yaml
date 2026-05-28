@@ -3,21 +3,21 @@
 # CONST-054 (cascaded into this submodule's CONSTITUTION.md).
 #
 # HelixQA is a Go QA-orchestration framework (digital.vasic.helixqa) that
-# composes the Challenges framework (test execution + reporting) and the
-# Containers framework (rootless podman/docker orchestration for
-# emulator-based QA pipelines). README's "Prerequisites" enumerates the
-# sibling directories: `../Challenges` (digital.vasic.challenges) and
-# `../Containers` (digital.vasic.containers).
+# composes eight own-org Go modules via the go.mod `replace` block. The
+# manifest below enumerates ALL EIGHT to match that block:
+#   Challenges, Containers, DocProcessor, LLMOrchestrator, LLMProvider,
+#   LLMsVerifier, security, VisionEngine.
+# ssh_url + org per dep derived from the consuming project's .gitmodules
+# (authoritative source): Challenges / Containers / security / LLMsVerifier
+# are under vasic-digital; DocProcessor / LLMOrchestrator / LLMProvider /
+# VisionEngine are under HelixDevelopment.
 #
 # Schema reference: <constitution-submodule>/Constitution.md §11.4.31.
-# Layout: flat — both deps land at <parent-project>/<dep-name>/ per
-# CONST-051(C) (e.g. Lava's existing layout: Submodules/Challenges +
-# Submodules/Containers, both already incorporated as peers).
+# Layout: flat — each dep lands at <parent-project>/<dep-name>/ per
+# CONST-051(C).
 #
-# Last updated: 2026-05-16 (Phase 4-debt closure — added on PR to
-# HelixDevelopment/HelixQA upstream to close the Lava-side waiver list
-# in scripts/check-helix-deps-manifest.sh + check-canonical-root-and-
-# upstreams.sh).
+# Last updated: 2026-05-28 (§11.4.31 staleness closure — refreshed deps
+# list from 2 → 8 to match the current go.mod `replace` block).
 
 schema_version: 1
 
@@ -25,12 +25,42 @@ deps:
   - name: Challenges
     ssh_url: git@github.com:vasic-digital/Challenges.git
     ref: main
-    why: "Anti-bluff Challenge Test infrastructure (HelixQA's behavior-anchor + challenge runner foundation)"
+    why: "Anti-bluff Challenge Test infrastructure (HelixQA's behavior-anchor + challenge runner foundation) — go.mod replace digital.vasic.challenges => ../Challenges"
     layout: flat
   - name: Containers
     ssh_url: git@github.com:vasic-digital/Containers.git
     ref: main
-    why: "Rootless podman/docker orchestration for HelixQA's emulator-based QA pipelines"
+    why: "Rootless podman/docker orchestration for HelixQA's emulator-based QA pipelines — go.mod replace digital.vasic.containers => ../Containers"
+    layout: flat
+  - name: DocProcessor
+    ssh_url: git@github.com:HelixDevelopment/DocProcessor.git
+    ref: main
+    why: "Document-processing dependency — go.mod replace digital.vasic.docprocessor => ../DocProcessor"
+    layout: flat
+  - name: LLMOrchestrator
+    ssh_url: git@github.com:HelixDevelopment/LLMOrchestrator.git
+    ref: main
+    why: "LLM orchestration layer for HelixQA QA sessions — go.mod replace digital.vasic.llmorchestrator => ../LLMOrchestrator"
+    layout: flat
+  - name: LLMProvider
+    ssh_url: git@github.com:HelixDevelopment/LLMProvider.git
+    ref: main
+    why: "LLM provider abstraction — go.mod replace digital.vasic.llmprovider => ../LLMProvider"
+    layout: flat
+  - name: LLMsVerifier
+    ssh_url: git@github.com:vasic-digital/LLMsVerifier.git
+    ref: main
+    why: "LLM model/provider verification source of truth — go.mod replace digital.vasic.llmsverifier => ../dependencies/HelixDevelopment/LLMsVerifier/llm-verifier (Go module lives in the llm-verifier subdir of this submodule)"
+    layout: flat
+  - name: security
+    ssh_url: git@github.com:vasic-digital/security.git
+    ref: main
+    why: "Security tooling dependency — go.mod replace digital.vasic.security => ../security"
+    layout: flat
+  - name: VisionEngine
+    ssh_url: git@github.com:HelixDevelopment/VisionEngine.git
+    ref: main
+    why: "Vision/OCR analysis engine for video-evidence validation — go.mod replace digital.vasic.visionengine => ../VisionEngine"
     layout: flat
 
 transitive_handling:
