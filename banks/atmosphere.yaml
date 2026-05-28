@@ -3937,3 +3937,69 @@ test_cases:
         path: "docs/Issues.md"
     estimated_duration: "60s (current topology) + operator-attended cells deferred"
     expected_result: "Matrix dispatch surfaces 13 GREEN / 12 UNCONFIRMED-pending-N3-execution / 35 RED-or-SKIP (with documented reason). Anti-bluff posture upheld: NO cell PASSes without captured evidence."
+
+  # ==================== §11.4.69 network_connectivity (CME-API-PROXY-xxx) ====================
+  # §GP — containerized MITM API-intercept proxy. The Challenge dispatches to
+  # Test A (the pipeline proof) and scores PASS only on a captured mitmproxy
+  # flow — never on container-up-only / config-only (that would be the exact
+  # §11.4.69 PASS-bluff this proxy exists to expose in OTHER features).
+  - id: CME-API-PROXY-001
+    title: "§GP MITM API-intercept proxy captures an unpinned HTTP flow end-to-end (Netflix-login diagnostic infra)"
+    suite: atmosphere.network
+    category: network
+    priority: medium
+    description: |
+      §GP API-intercept proxy Challenge. The containerized mitmproxy
+      (docker/docker-compose.api-proxy.yml + scripts/api_proxy_start.sh)
+      lets D3/D4 + the System be pointed through a TLS-decrypting host proxy
+      so app/System API calls (status codes + bodies) are captured for
+      analysis — primarily to turn opaque login/playback failures (canonical:
+      Netflix sign-in §GL/§AN "Something went wrong") into the actual HTTP
+      status + error body the backend returned. This Challenge dispatches to
+      device/rockchip/rk3588/tests/test_api_proxy_pipeline.sh (Test A) which
+      brings the proxy up, drives a known UNPINNED cleartext request
+      (http://www.gstatic.com/generate_204) through it, and asserts the flow
+      appears in the mitmproxy capture with the correct status. PASS is scored
+      ONLY on the captured-flow evidence file (mitmdump_stdout.log containing
+      the GET ... << 204 line) — container-up-only / config-only does NOT
+      qualify (§11.4.69). The device-route leg topology-SKIPs when the device
+      has no LAN route to the host; the host-through-proxy leg always proves
+      the interception MECHANISM autonomously (§11.4.52). Validated on D4
+      2026-05-28: 3/3 iterations captured the flow (qa-results/
+      api_proxy_integration_*). The Netflix-login pinning verdict is produced
+      by the companion Test B census (test_api_proxy_pinning_census.sh).
+    setup:
+      - "Host has podman or docker + the mitmproxy/mitmproxy:11.0.0 image (pulled on first run)"
+      - "scripts/testing/lib/api_capture.sh present (apicap_* contract)"
+    steps:
+      - name: "Dispatch Test A — pipeline proof"
+        action: "bash device/rockchip/rk3588/tests/test_api_proxy_pipeline.sh"
+        expected: "Exit 0; SUMMARY shows FAIL=0; ≥1 PASS line carries an evidence path to a mitmdump_stdout.log containing the captured GET http://www.gstatic.com/generate_204 << 204 flow"
+      - name: "Verify captured-flow evidence (anti-bluff)"
+        action: "grep -E 'generate_204|204 No Content' qa-results/api_proxy_pipeline_*/api_capture/hostB_1/mitmdump_stdout.log"
+        expected: "The captured mitmproxy stdout contains the forwarded request line — positive sink-side network_connectivity evidence per §11.4.69; NO PASS without it"
+      - name: "Verify device left as found (§11.4.14)"
+        action: "adb -s 66ff9c4f51f00ee7 shell settings get global http_proxy"
+        expected: "Returns null or :0 (the EXIT-trap cleanup unrouted the device); proxy container removed"
+    tags: [network, api-proxy, mitm, netflix, §GP, §11.4.69, §11.4.13, §11.4.52, network_connectivity, phase-39-io]
+    documentation_refs:
+      - type: research
+        section: "§GP MITM API-Intercept Proxy Plan"
+        path: "docs/research/api_proxy/MITM_API_Intercept_Proxy_Plan_20260528.md"
+      - type: guide
+        section: "API Proxy Integration"
+        path: "docs/guides/API_PROXY_INTEGRATION.md"
+      - type: test
+        section: "test_api_proxy_pipeline.sh (Test A)"
+        path: "device/rockchip/rk3588/tests/test_api_proxy_pipeline.sh"
+      - type: test
+        section: "test_api_proxy_pinning_census.sh (Test B)"
+        path: "device/rockchip/rk3588/tests/test_api_proxy_pinning_census.sh"
+      - type: constitution
+        section: "§11.4.69 universal sink-side positive-evidence taxonomy"
+        path: "constitution/Constitution.md"
+      - type: constitution
+        section: "§11.4.76 containers-submodule mandate"
+        path: "constitution/Constitution.md"
+    estimated_duration: "30s (host-through-proxy leg) + device-route leg when device has LAN route"
+    expected_result: "PASS with captured-flow evidence: the mitmproxy capture contains the forwarded gstatic generate_204 request, proving the API-intercept pipeline works end-to-end. Device + host left clean."
