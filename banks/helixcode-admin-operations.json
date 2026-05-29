@@ -1,0 +1,361 @@
+{
+  "version": "1.0",
+  "name": "HelixCode Admin Operations - API",
+  "description": "Self-driving (§11.4.98) HelixQA bank exercising HelixCode's REAL administrative/operational HTTP surface at the configured base URL: public operational telemetry (server/info, metrics) and the auth-gated admin endpoints (system stats/status, QA-session orchestration, screenshot engines, worker fleet, project workflow triggers). Every executable step is a real http:+assert request: public admin telemetry must return 200 with the documented JSON shape; privileged admin operations without auth must be rejected (401); CORS preflight 204; unknown admin routes 404. The original admin-operations.json drove Catalogizer scan-status-polling + backup-file checks, which have no HelixCode equivalent route — those are honest _skip, never fabricated PASS. Read-only / negative paths only — self-cleaning.",
+  "metadata": {
+    "author": "vasic-digital",
+    "app": "HelixCode",
+    "version": "1.0.0",
+    "tracked_item": "HXC-029",
+    "covenant": "§11.4.98 full-automation anti-bluff",
+    "target_server": "HelixCode HTTP server (cmd/server) — real PostgreSQL + Redis backed",
+    "origin_note": "Authored for HXC-029. The original helix_qa/banks/admin-operations.json (metadata.app=Catalogizer) polls /scans status and asserts backup-file existence — neither route exists on HelixCode (internal/server/server.go has no /scans or /backup). This bank targets HelixCode's real admin surface discovered by live probing; the scan/backup admin operations are honest _skip."
+  },
+  "test_cases": [
+    {
+      "id": "HXC-ADM-001",
+      "name": "Server info operational endpoint returns DB-backed info",
+      "category": "functional",
+      "priority": "critical",
+      "platforms": ["api"],
+      "steps": [
+        {
+          "name": "GET /api/v1/server/info",
+          "action": "http: GET /api/v1/server/info",
+          "expected": "200 with server info JSON incl. database section",
+          "expect_status": 200,
+          "expect_json_path": "$.info.database"
+        }
+      ],
+      "tags": ["admin", "telemetry", "public"],
+      "estimated_duration": "5s",
+      "expected_result": "Operational server-info endpoint returns 200 with a database info section"
+    },
+    {
+      "id": "HXC-ADM-002",
+      "name": "Operational metrics endpoint returns metrics payload",
+      "category": "functional",
+      "priority": "high",
+      "platforms": ["api"],
+      "steps": [
+        {
+          "name": "GET /api/v1/metrics",
+          "action": "http: GET /api/v1/metrics",
+          "expected": "200 with metrics JSON",
+          "expect_status": 200,
+          "expect_json_path": "$.metrics"
+        }
+      ],
+      "tags": ["admin", "metrics", "public"],
+      "estimated_duration": "5s",
+      "expected_result": "Operational metrics endpoint returns 200 with a metrics object"
+    },
+    {
+      "id": "HXC-ADM-003",
+      "name": "Privileged system stats requires auth",
+      "category": "functional",
+      "priority": "critical",
+      "platforms": ["api"],
+      "steps": [
+        {
+          "name": "GET /api/v1/system/stats no auth",
+          "action": "http: GET /api/v1/system/stats",
+          "expected": "401 Authorization header required",
+          "expect_status": 401,
+          "expect_body_contains": "Authorization header required"
+        }
+      ],
+      "tags": ["admin", "system", "authz"],
+      "estimated_duration": "5s",
+      "expected_result": "Privileged system stats is auth-gated"
+    },
+    {
+      "id": "HXC-ADM-004",
+      "name": "Privileged system status requires auth",
+      "category": "functional",
+      "priority": "critical",
+      "platforms": ["api"],
+      "steps": [
+        {
+          "name": "GET /api/v1/system/status no auth",
+          "action": "http: GET /api/v1/system/status",
+          "expected": "401",
+          "expect_status": 401,
+          "expect_json_path": "$.status"
+        }
+      ],
+      "tags": ["admin", "system", "authz"],
+      "estimated_duration": "5s",
+      "expected_result": "Privileged system status is auth-gated"
+    },
+    {
+      "id": "HXC-ADM-005",
+      "name": "QA-session admin orchestration requires auth (start/list)",
+      "category": "functional",
+      "priority": "high",
+      "platforms": ["api"],
+      "steps": [
+        {
+          "name": "POST /api/v1/qa/session no auth",
+          "action": "http: POST /api/v1/qa/session",
+          "body": {"app": "HelixCode", "platform": "api"},
+          "expected": "401 — starting a QA session is admin-gated",
+          "expect_status": 401
+        },
+        {
+          "name": "GET /api/v1/qa/sessions no auth",
+          "action": "http: GET /api/v1/qa/sessions",
+          "expected": "401",
+          "expect_status": 401
+        }
+      ],
+      "tags": ["admin", "qa", "authz"],
+      "estimated_duration": "8s",
+      "expected_result": "QA-session start + list are auth-gated"
+    },
+    {
+      "id": "HXC-ADM-006",
+      "name": "QA-session admin sub-resources require auth (status/report/cancel)",
+      "category": "functional",
+      "priority": "high",
+      "platforms": ["api"],
+      "steps": [
+        {
+          "name": "GET /api/v1/qa/session/:id/status no auth",
+          "action": "http: GET /api/v1/qa/session/00000000-0000-0000-0000-000000000000/status",
+          "expected": "401",
+          "expect_status": 401
+        },
+        {
+          "name": "GET /api/v1/qa/session/:id/report no auth",
+          "action": "http: GET /api/v1/qa/session/00000000-0000-0000-0000-000000000000/report",
+          "expected": "401",
+          "expect_status": 401
+        },
+        {
+          "name": "DELETE /api/v1/qa/session/:id no auth",
+          "action": "http: DELETE /api/v1/qa/session/00000000-0000-0000-0000-000000000000",
+          "expected": "401",
+          "expect_status": 401
+        }
+      ],
+      "tags": ["admin", "qa", "authz", "lifecycle"],
+      "estimated_duration": "10s",
+      "expected_result": "QA-session status/report/cancel are all auth-gated"
+    },
+    {
+      "id": "HXC-ADM-007",
+      "name": "Screenshot-engine admin endpoints require auth",
+      "category": "functional",
+      "priority": "high",
+      "platforms": ["api"],
+      "steps": [
+        {
+          "name": "GET /api/v1/screenshot/engines no auth",
+          "action": "http: GET /api/v1/screenshot/engines",
+          "expected": "401",
+          "expect_status": 401
+        },
+        {
+          "name": "GET /api/v1/screenshot/:platform no auth",
+          "action": "http: GET /api/v1/screenshot/linux",
+          "expected": "401",
+          "expect_status": 401
+        }
+      ],
+      "tags": ["admin", "screenshot", "authz"],
+      "estimated_duration": "8s",
+      "expected_result": "Screenshot engine listing + capture are auth-gated"
+    },
+    {
+      "id": "HXC-ADM-008",
+      "name": "Worker-fleet admin operations require auth",
+      "category": "functional",
+      "priority": "high",
+      "platforms": ["api"],
+      "steps": [
+        {
+          "name": "GET /api/v1/workers no auth",
+          "action": "http: GET /api/v1/workers",
+          "expected": "401",
+          "expect_status": 401
+        },
+        {
+          "name": "POST /api/v1/workers no auth (enroll worker)",
+          "action": "http: POST /api/v1/workers",
+          "body": {"hostname": "hxc029-admin-worker"},
+          "expected": "401",
+          "expect_status": 401
+        },
+        {
+          "name": "DELETE /api/v1/workers/:id no auth (decommission)",
+          "action": "http: DELETE /api/v1/workers/00000000-0000-0000-0000-000000000000",
+          "expected": "401",
+          "expect_status": 401
+        }
+      ],
+      "tags": ["admin", "workers", "authz", "fleet"],
+      "estimated_duration": "10s",
+      "expected_result": "Worker enroll/list/decommission are auth-gated admin ops"
+    },
+    {
+      "id": "HXC-ADM-009",
+      "name": "Project workflow-trigger admin operations require auth",
+      "category": "functional",
+      "priority": "high",
+      "platforms": ["api"],
+      "steps": [
+        {
+          "name": "POST .../workflows/planning no auth",
+          "action": "http: POST /api/v1/projects/00000000-0000-0000-0000-000000000000/workflows/planning",
+          "body": {},
+          "expected": "401",
+          "expect_status": 401
+        },
+        {
+          "name": "POST .../workflows/building no auth",
+          "action": "http: POST /api/v1/projects/00000000-0000-0000-0000-000000000000/workflows/building",
+          "body": {},
+          "expected": "401",
+          "expect_status": 401
+        },
+        {
+          "name": "POST .../workflows/testing no auth",
+          "action": "http: POST /api/v1/projects/00000000-0000-0000-0000-000000000000/workflows/testing",
+          "body": {},
+          "expected": "401",
+          "expect_status": 401
+        },
+        {
+          "name": "POST .../workflows/refactoring no auth",
+          "action": "http: POST /api/v1/projects/00000000-0000-0000-0000-000000000000/workflows/refactoring",
+          "body": {},
+          "expected": "401",
+          "expect_status": 401
+        }
+      ],
+      "tags": ["admin", "workflow", "authz"],
+      "estimated_duration": "12s",
+      "expected_result": "All four project workflow triggers are auth-gated"
+    },
+    {
+      "id": "HXC-ADM-010",
+      "name": "Admin endpoints reject a garbage bearer token (not just missing header)",
+      "category": "negative",
+      "priority": "high",
+      "platforms": ["api"],
+      "steps": [
+        {
+          "name": "GET system/stats with garbage bearer",
+          "action": "http: GET /api/v1/system/stats",
+          "auth": "raw:garbage.token.xyz",
+          "expected": "401 invalid token",
+          "expect_status": 401,
+          "expect_body_contains": "Invalid or expired token"
+        }
+      ],
+      "tags": ["admin", "system", "authz", "negative"],
+      "estimated_duration": "5s",
+      "expected_result": "Admin endpoint rejects a structurally-invalid bearer token with 401"
+    },
+    {
+      "id": "HXC-ADM-011",
+      "name": "CORS preflight on admin endpoints returns 204",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": ["api"],
+      "steps": [
+        {
+          "name": "OPTIONS /api/v1/system/stats",
+          "action": "http: OPTIONS /api/v1/system/stats",
+          "expected": "204",
+          "expect_status": 204
+        },
+        {
+          "name": "OPTIONS /api/v1/qa/sessions",
+          "action": "http: OPTIONS /api/v1/qa/sessions",
+          "expected": "204",
+          "expect_status": 204
+        }
+      ],
+      "tags": ["admin", "cors", "preflight"],
+      "estimated_duration": "6s",
+      "expected_result": "CORS preflight on admin endpoints returns 204"
+    },
+    {
+      "id": "HXC-ADM-012",
+      "name": "Unknown admin route returns 404",
+      "category": "negative",
+      "priority": "medium",
+      "platforms": ["api"],
+      "steps": [
+        {
+          "name": "GET unknown admin route",
+          "action": "http: GET /api/v1/admin/this_admin_route_does_not_exist_hxc029",
+          "expected": "404",
+          "expect_status": 404
+        }
+      ],
+      "tags": ["admin", "negative", "routing"],
+      "estimated_duration": "5s",
+      "expected_result": "Unregistered admin route returns 404"
+    },
+    {
+      "id": "HXC-ADM-013",
+      "name": "Catalogizer scan-status polling admin operation",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": ["api"],
+      "steps": [
+        {
+          "name": "Poll scan status until complete",
+          "action": "http: GET /api/v1/scans",
+          "expected": "Trigger a scan and poll /scans/:id status until complete",
+          "_skip": true,
+          "_skip_reason": "#HXC-029-NO-SCAN-ROUTE — HelixCode's internal/server route table registers no /api/v1/scans endpoint (probed -> 404 page not found). Scan-status polling is a Catalogizer admin operation, not a HelixCode capability; honest SKIP per Article XI §11.2.2 / §11.4.98 rather than a fabricated PASS. The absence is itself asserted by HXC-ENT-014's 404 negative path."
+        }
+      ],
+      "tags": ["admin", "scan", "skip", "catalogizer"],
+      "estimated_duration": "0s",
+      "expected_result": "Skipped honestly: HelixCode exposes no scan-management admin route"
+    },
+    {
+      "id": "HXC-ADM-014",
+      "name": "Catalogizer backup-file admin operation",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": ["api"],
+      "steps": [
+        {
+          "name": "Check backup file exists and has non-zero size",
+          "action": "http: POST /api/v1/backup",
+          "expected": "Trigger backup, confirm backup artefact exists with non-zero size",
+          "_skip": true,
+          "_skip_reason": "#HXC-029-NO-BACKUP-ROUTE — HelixCode's internal/server route table registers no /api/v1/backup endpoint and the HelixQA http: action type cannot inspect server-side filesystem artefacts. Backup-file verification is a Catalogizer admin operation with no HelixCode HTTP equivalent; honest SKIP per Article XI §11.2.2 / §11.4.98 rather than a fabricated PASS."
+        }
+      ],
+      "tags": ["admin", "backup", "skip", "catalogizer"],
+      "estimated_duration": "0s",
+      "expected_result": "Skipped honestly: HelixCode exposes no backup admin route over HTTP"
+    },
+    {
+      "id": "HXC-ADM-015",
+      "name": "Authenticated admin read (system stats with a valid token)",
+      "category": "functional",
+      "priority": "high",
+      "platforms": ["api"],
+      "steps": [
+        {
+          "name": "GET system/stats authenticated -> 200",
+          "action": "http: GET /api/v1/system/stats",
+          "expected": "200 with system stats JSON when bearing a valid admin token",
+          "_skip": true,
+          "_skip_reason": "#HXC-029-REGISTER-BROKEN — POST /api/v1/auth/register returns 400 internal_auth_failed_create_user on this live DB and there is no seeded credential, so no valid JWT can be minted in-test to drive the authenticated-200 admin read path. Honest SKIP per Article XI §11.2.2 / §11.4.98 rather than a fabricated PASS; same live register defect HXC-API-029 records. The auth-gating itself is positively proven by HXC-ADM-003/004/010."
+        }
+      ],
+      "tags": ["admin", "system", "authenticated", "skip"],
+      "estimated_duration": "0s",
+      "expected_result": "Skipped honestly: no in-test credential path to mint a valid admin JWT"
+    }
+  ]
+}
