@@ -1,0 +1,331 @@
+{
+  "version": "1.0",
+  "name": "HelixCode Security Validation - API",
+  "description": "Self-driving (§11.4.98) HelixQA bank exercising HelixCode's REAL authentication/authorization security surface at the configured base URL. Every executable step is a real http:+assert request that drives a negative security path and asserts the server rejects it with the correct status + error shape: missing Authorization header, malformed (non-Bearer) header, empty bearer, invalid-segment-count token, three-segment garbage token, SQL-injection string in the token slot, bad-credential login, malformed-JSON login body, cross-group forged-token rejection. Token-class probes forge tokens in-test (no server-side cooperation needed). NOTE: the forged tokens deliberately use NON-base64 segment placeholders so no real JWT literal is embedded in the bank (CWE-321 hygiene); the server's authMiddleware rejects them identically. Two classes the stdlib http:+assert runner cannot drive (response-header inspection, valid-token positive path) are honest _skip with reasons, never a fabricated PASS. Read-only / negative paths only — self-cleaning.",
+  "metadata": {
+    "author": "vasic-digital",
+    "app": "HelixCode",
+    "version": "1.0.0",
+    "tracked_item": "HXC-029",
+    "covenant": "§11.4.98 full-automation anti-bluff",
+    "target_server": "HelixCode HTTP server (cmd/server) — real PostgreSQL + Redis backed",
+    "origin_note": "Authored for HXC-029. The original helix_qa/banks/security-validation.json prose described JWT-exp-in-past + different-secret-key signing against a Catalogizer session_token login. This bank drives HelixCode's real golang-jwt-backed authMiddleware (internal/server/server.go VerifyJWTWithDB) discovered by live probing: malformed-segment-count + non-base64 + SQLi tokens are all rejected 401 'Invalid or expired token' with distinct error detail."
+  },
+  "test_cases": [
+    {
+      "id": "HXC-SEC-001",
+      "name": "Protected route with no Authorization header is rejected",
+      "category": "security",
+      "priority": "critical",
+      "platforms": ["api"],
+      "steps": [
+        {
+          "name": "GET /api/v1/tasks no header",
+          "action": "http: GET /api/v1/tasks",
+          "expected": "401 Authorization header required",
+          "expect_status": 401,
+          "expect_body_contains": "Authorization header required"
+        }
+      ],
+      "tags": ["security", "authz", "missing-header"],
+      "estimated_duration": "5s",
+      "expected_result": "Missing Authorization header yields 401 with the documented message"
+    },
+    {
+      "id": "HXC-SEC-002",
+      "name": "Malformed (non-Bearer) Authorization header is rejected",
+      "category": "security",
+      "priority": "critical",
+      "platforms": ["api"],
+      "steps": [
+        {
+          "name": "GET /api/v1/tasks with non-Bearer scheme",
+          "action": "http: GET /api/v1/tasks",
+          "headers": {"Authorization": "Basic dXNlcjpwYXNz"},
+          "expected": "401 Invalid authorization header format",
+          "expect_status": 401,
+          "expect_body_contains": "Invalid authorization header format"
+        }
+      ],
+      "tags": ["security", "authz", "header-format"],
+      "estimated_duration": "5s",
+      "expected_result": "Non-Bearer auth scheme is rejected with 'Invalid authorization header format'"
+    },
+    {
+      "id": "HXC-SEC-003",
+      "name": "Empty bearer token is rejected as malformed header",
+      "category": "security",
+      "priority": "high",
+      "platforms": ["api"],
+      "steps": [
+        {
+          "name": "GET /api/v1/tasks with 'Bearer ' empty",
+          "action": "http: GET /api/v1/tasks",
+          "headers": {"Authorization": "Bearer "},
+          "expected": "401 Invalid authorization header format (len <= prefix)",
+          "expect_status": 401,
+          "expect_body_contains": "Invalid authorization header format"
+        }
+      ],
+      "tags": ["security", "authz", "empty-token"],
+      "estimated_duration": "5s",
+      "expected_result": "An empty bearer token is treated as a malformed header (401)"
+    },
+    {
+      "id": "HXC-SEC-004",
+      "name": "Single-segment token (wrong segment count) is rejected",
+      "category": "security",
+      "priority": "critical",
+      "platforms": ["api"],
+      "steps": [
+        {
+          "name": "GET /api/v1/tasks with single-segment token",
+          "action": "http: GET /api/v1/tasks",
+          "headers": {"Authorization": "Bearer not-a-real-jwt"},
+          "expected": "401 invalid number of segments",
+          "expect_status": 401,
+          "expect_body_contains": "Invalid or expired token"
+        }
+      ],
+      "tags": ["security", "jwt", "malformed"],
+      "estimated_duration": "5s",
+      "expected_result": "A token without 3 JWT segments is rejected (Invalid or expired token)"
+    },
+    {
+      "id": "HXC-SEC-005",
+      "name": "Three-segment non-base64 token is rejected (forged content)",
+      "category": "security",
+      "priority": "critical",
+      "platforms": ["api"],
+      "steps": [
+        {
+          "name": "GET /api/v1/tasks with a forged 3-segment token",
+          "action": "http: GET /api/v1/tasks",
+          "headers": {"Authorization": "Bearer forgedheader.forgedpayload.forgedsig"},
+          "expected": "401 — non-base64 segments fail decode, token rejected",
+          "expect_status": 401,
+          "expect_body_contains": "Invalid or expired token"
+        }
+      ],
+      "tags": ["security", "jwt", "forged"],
+      "estimated_duration": "5s",
+      "expected_result": "A 3-segment token with non-base64 content is rejected with 'Invalid or expired token'"
+    },
+    {
+      "id": "HXC-SEC-006",
+      "name": "Two-segment token is rejected (invalid number of segments)",
+      "category": "security",
+      "priority": "high",
+      "platforms": ["api"],
+      "steps": [
+        {
+          "name": "GET /api/v1/tasks with a 2-segment token",
+          "action": "http: GET /api/v1/tasks",
+          "headers": {"Authorization": "Bearer twoseg.onlytwo"},
+          "expected": "401 token contains an invalid number of segments",
+          "expect_status": 401,
+          "expect_body_contains": "Invalid or expired token"
+        }
+      ],
+      "tags": ["security", "jwt", "segments"],
+      "estimated_duration": "5s",
+      "expected_result": "A 2-segment token is rejected with 'Invalid or expired token'"
+    },
+    {
+      "id": "HXC-SEC-007",
+      "name": "SQL-injection string in the token slot is rejected, not interpreted",
+      "category": "security",
+      "priority": "critical",
+      "platforms": ["api"],
+      "steps": [
+        {
+          "name": "GET /api/v1/tasks with SQLi as bearer token",
+          "action": "http: GET /api/v1/tasks",
+          "headers": {"Authorization": "Bearer ' OR '1'='1"},
+          "expected": "401 invalid number of segments — token never reaches SQL",
+          "expect_status": 401,
+          "expect_body_contains": "Invalid or expired token"
+        }
+      ],
+      "tags": ["security", "jwt", "sql-injection"],
+      "estimated_duration": "5s",
+      "expected_result": "A SQL-injection payload in the token slot fails JWT parse (401) and never reaches the DB"
+    },
+    {
+      "id": "HXC-SEC-008",
+      "name": "Login with bad credentials is rejected (no user enumeration leak)",
+      "category": "security",
+      "priority": "high",
+      "platforms": ["api"],
+      "steps": [
+        {
+          "name": "POST /api/v1/auth/login wrong creds",
+          "action": "http: POST /api/v1/auth/login",
+          "body": {"username": "nonexistent_hxc029_user", "password": "wrong-password"},
+          "expected": "401 invalid credentials",
+          "expect_status": 401,
+          "expect_body_contains": "invalid credentials"
+        }
+      ],
+      "tags": ["security", "auth", "login"],
+      "estimated_duration": "5s",
+      "expected_result": "Bad-credential login returns a generic 401 'invalid credentials'"
+    },
+    {
+      "id": "HXC-SEC-009",
+      "name": "Login with empty body fails validation (400, not 500)",
+      "category": "security",
+      "priority": "high",
+      "platforms": ["api"],
+      "steps": [
+        {
+          "name": "POST /api/v1/auth/login empty body",
+          "action": "http: POST /api/v1/auth/login",
+          "body": {},
+          "expected": "400 validation error",
+          "expect_status": 400,
+          "expect_json_path": "$.status"
+        }
+      ],
+      "tags": ["security", "auth", "validation"],
+      "estimated_duration": "5s",
+      "expected_result": "Empty login body is rejected with 400 validation, not a 500"
+    },
+    {
+      "id": "HXC-SEC-010",
+      "name": "Malformed-JSON login body fails parse (400, not 500)",
+      "category": "security",
+      "priority": "medium",
+      "platforms": ["api"],
+      "steps": [
+        {
+          "name": "POST /api/v1/auth/login non-JSON body",
+          "action": "http: POST /api/v1/auth/login",
+          "headers": {"Content-Type": "application/json"},
+          "body": "not json{",
+          "expected": "400 invalid request",
+          "expect_status": 400,
+          "expect_body_contains": "invalid_request"
+        }
+      ],
+      "tags": ["security", "auth", "malformed-json"],
+      "estimated_duration": "5s",
+      "expected_result": "Malformed JSON login body is rejected with 400 invalid_request"
+    },
+    {
+      "id": "HXC-SEC-011",
+      "name": "Logout without auth header does not succeed",
+      "category": "security",
+      "priority": "medium",
+      "platforms": ["api"],
+      "steps": [
+        {
+          "name": "POST /api/v1/auth/logout no header",
+          "action": "http: POST /api/v1/auth/logout",
+          "expected": "400 (cannot logout without a token)",
+          "expect_status": 400
+        }
+      ],
+      "tags": ["security", "auth", "logout"],
+      "estimated_duration": "5s",
+      "expected_result": "Logout without a token does not succeed"
+    },
+    {
+      "id": "HXC-SEC-012",
+      "name": "Refresh without auth header is rejected",
+      "category": "security",
+      "priority": "medium",
+      "platforms": ["api"],
+      "steps": [
+        {
+          "name": "POST /api/v1/auth/refresh no header",
+          "action": "http: POST /api/v1/auth/refresh",
+          "expected": "401 (cannot refresh without a token)",
+          "expect_status": 401
+        }
+      ],
+      "tags": ["security", "auth", "refresh"],
+      "estimated_duration": "5s",
+      "expected_result": "Token refresh without a token is rejected 401"
+    },
+    {
+      "id": "HXC-SEC-013",
+      "name": "Every privileged group rejects a forged token (cross-group authz)",
+      "category": "security",
+      "priority": "high",
+      "platforms": ["api"],
+      "steps": [
+        {
+          "name": "GET /api/v1/projects forged token",
+          "action": "http: GET /api/v1/projects",
+          "headers": {"Authorization": "Bearer forged.cross.group"},
+          "expected": "401",
+          "expect_status": 401,
+          "expect_body_contains": "Invalid or expired token"
+        },
+        {
+          "name": "GET /api/v1/sessions forged token",
+          "action": "http: GET /api/v1/sessions",
+          "headers": {"Authorization": "Bearer forged.cross.group"},
+          "expected": "401",
+          "expect_status": 401
+        },
+        {
+          "name": "GET /api/v1/system/stats forged token",
+          "action": "http: GET /api/v1/system/stats",
+          "headers": {"Authorization": "Bearer forged.cross.group"},
+          "expected": "401",
+          "expect_status": 401
+        },
+        {
+          "name": "GET /api/v1/users/me forged token",
+          "action": "http: GET /api/v1/users/me",
+          "headers": {"Authorization": "Bearer forged.cross.group"},
+          "expected": "401",
+          "expect_status": 401
+        }
+      ],
+      "tags": ["security", "jwt", "authz", "cross-group"],
+      "estimated_duration": "12s",
+      "expected_result": "A forged token is rejected uniformly across every privileged route group"
+    },
+    {
+      "id": "HXC-SEC-014",
+      "name": "Security response headers present on every response",
+      "category": "security",
+      "priority": "high",
+      "platforms": ["api"],
+      "steps": [
+        {
+          "name": "Assert X-Content-Type-Options / X-Frame-Options / HSTS headers",
+          "action": "http: GET /health",
+          "expected": "Response carries X-Content-Type-Options=nosniff, X-Frame-Options=DENY, X-XSS-Protection, Strict-Transport-Security",
+          "_skip": true,
+          "_skip_reason": "#HXC-029-NO-HEADER-ASSERT — the stdlib HelixQA http:+assert runner (mirroring helix_qa/pkg/autonomous/http_executor.go) supports expect_status/expect_json_path/expect_body_contains but NOT response-header assertion, so the SecurityMiddleware headers cannot be asserted by this bank. Honest SKIP per Article XI §11.2.2 / §11.4.98 rather than a fabricated PASS; the headers ARE present (captured by raw curl in endpoint-probes.txt) and asserting them needs an expect_header extension to the executor."
+        }
+      ],
+      "tags": ["security", "headers", "skip"],
+      "estimated_duration": "0s",
+      "expected_result": "Skipped honestly: runner has no expect_header capability (headers proven present via raw curl evidence)"
+    },
+    {
+      "id": "HXC-SEC-015",
+      "name": "Valid-token positive authorization path (token accepted -> 200)",
+      "category": "security",
+      "priority": "high",
+      "platforms": ["api"],
+      "steps": [
+        {
+          "name": "GET /api/v1/users/me with a freshly-minted valid token -> 200",
+          "action": "http: GET /api/v1/users/me",
+          "expected": "200 with the authenticated user when bearing a valid token",
+          "_skip": true,
+          "_skip_reason": "#HXC-029-REGISTER-BROKEN — POST /api/v1/auth/register returns 400 internal_auth_failed_create_user on this live DB and there is no seeded credential, so no valid token can be minted in-test to prove the positive accepted path. Honest SKIP per Article XI §11.2.2 / §11.4.98 rather than a fabricated PASS; same live register defect HXC-API-029 records. The negative rejection paths are fully proven by HXC-SEC-001..013."
+        }
+      ],
+      "tags": ["security", "jwt", "positive-path", "skip"],
+      "estimated_duration": "0s",
+      "expected_result": "Skipped honestly: no in-test credential path to mint a valid token for the accepted-token assertion"
+    }
+  ]
+}
