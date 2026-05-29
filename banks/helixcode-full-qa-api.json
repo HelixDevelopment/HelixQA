@@ -1,0 +1,808 @@
+{
+  "version": "1.0",
+  "name": "HelixCode Full QA - API",
+  "description": "Self-driving (\u00a711.4.98) HelixQA bank exercising the REAL HelixCode HTTP API at the configured base URL. Every step is a real http: request with real status/JSON/body assertions; no manual-review prose, no human action after startup, self-cleaning (read-only / negative paths only). Two genuinely-undrivable classes (JWT-mint, WebSocket) are honest _skip with reasons, never fabricated PASS.",
+  "metadata": {
+    "author": "vasic-digital",
+    "app": "HelixCode",
+    "version": "1.0.0",
+    "tracked_item": "HXC-029",
+    "covenant": "\u00a711.4.98 full-automation anti-bluff",
+    "target_server": "HelixCode HTTP server (cmd/server) \u2014 real PostgreSQL + Redis backed",
+    "origin_note": "Authored for HXC-029 because helix_qa/banks/full-qa-api.json targets the Catalogizer catalog-api (metadata.app=Catalogizer), whose endpoints (/api/v1/entities, /api/v1/collections, session_token login) do NOT exist on HelixCode. This bank targets HelixCode's real route table (internal/server/server.go)."
+  },
+  "test_cases": [
+    {
+      "id": "HXC-API-001",
+      "name": "Root health endpoint returns healthy",
+      "category": "functional",
+      "priority": "critical",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "GET /health",
+          "action": "http: GET /health",
+          "expected": "200 OK with status=healthy",
+          "expect_status": 200,
+          "expect_json_path": "$.status",
+          "expect_body_contains": "healthy"
+        }
+      ],
+      "tags": [
+        "health",
+        "public",
+        "smoke"
+      ],
+      "estimated_duration": "5s",
+      "expected_result": "Root /health responds 200 with healthy status JSON"
+    },
+    {
+      "id": "HXC-API-002",
+      "name": "Versioned health endpoint returns healthy",
+      "category": "functional",
+      "priority": "critical",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "GET /api/v1/health",
+          "action": "http: GET /api/v1/health",
+          "expected": "200 OK with status=healthy",
+          "expect_status": 200,
+          "expect_json_path": "$.status",
+          "expect_body_contains": "healthy"
+        }
+      ],
+      "tags": [
+        "health",
+        "public"
+      ],
+      "estimated_duration": "5s",
+      "expected_result": "Versioned /api/v1/health responds 200 with healthy status JSON"
+    },
+    {
+      "id": "HXC-API-003",
+      "name": "Health response carries a version field",
+      "category": "functional",
+      "priority": "high",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "GET /health",
+          "action": "http: GET /health",
+          "expected": "200 OK with a version field present",
+          "expect_status": 200,
+          "expect_json_path": "$.version"
+        }
+      ],
+      "tags": [
+        "health",
+        "public",
+        "metadata"
+      ],
+      "estimated_duration": "5s",
+      "expected_result": "Health payload includes a version field"
+    },
+    {
+      "id": "HXC-API-004",
+      "name": "Server info reports database connected",
+      "category": "functional",
+      "priority": "high",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "GET /api/v1/server/info",
+          "action": "http: GET /api/v1/server/info",
+          "expected": "200 OK with info.database object",
+          "expect_status": 200,
+          "expect_json_path": "$.info",
+          "expect_body_contains": "database"
+        }
+      ],
+      "tags": [
+        "server-info",
+        "public"
+      ],
+      "estimated_duration": "5s",
+      "expected_result": "Server info endpoint returns runtime info including database block"
+    },
+    {
+      "id": "HXC-API-005",
+      "name": "Metrics endpoint returns metrics object",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "GET /api/v1/metrics",
+          "action": "http: GET /api/v1/metrics",
+          "expected": "200 OK with metrics object",
+          "expect_status": 200,
+          "expect_json_path": "$.metrics",
+          "expect_body_contains": "requests"
+        }
+      ],
+      "tags": [
+        "metrics",
+        "public"
+      ],
+      "estimated_duration": "5s",
+      "expected_result": "Metrics endpoint returns a metrics object with request counters"
+    },
+    {
+      "id": "HXC-API-006",
+      "name": "List LLM providers returns a non-empty count",
+      "category": "functional",
+      "priority": "critical",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "GET /api/v1/llm/providers",
+          "action": "http: GET /api/v1/llm/providers",
+          "expected": "200 OK with providers array and count",
+          "expect_status": 200,
+          "expect_json_path": "$.providers",
+          "expect_body_contains": "\"count\""
+        }
+      ],
+      "tags": [
+        "llm",
+        "providers",
+        "public"
+      ],
+      "estimated_duration": "5s",
+      "expected_result": "LLM providers list responds 200 with a providers array"
+    },
+    {
+      "id": "HXC-API-007",
+      "name": "List LLM models returns a models array",
+      "category": "functional",
+      "priority": "critical",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "GET /api/v1/llm/models",
+          "action": "http: GET /api/v1/llm/models",
+          "expected": "200 OK with models array",
+          "expect_status": 200,
+          "expect_json_path": "$.models",
+          "expect_body_contains": "\"count\""
+        }
+      ],
+      "tags": [
+        "llm",
+        "models",
+        "public"
+      ],
+      "estimated_duration": "5s",
+      "expected_result": "LLM models list responds 200 with a models array"
+    },
+    {
+      "id": "HXC-API-008",
+      "name": "Get a known LLM provider by id",
+      "category": "functional",
+      "priority": "high",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "GET /api/v1/llm/providers/ollama",
+          "action": "http: GET /api/v1/llm/providers/ollama",
+          "expected": "200 OK with provider object",
+          "expect_status": 200,
+          "expect_json_path": "$.provider",
+          "expect_body_contains": "ollama"
+        }
+      ],
+      "tags": [
+        "llm",
+        "providers",
+        "public"
+      ],
+      "estimated_duration": "5s",
+      "expected_result": "Known provider id resolves to a provider object"
+    },
+    {
+      "id": "HXC-API-009",
+      "name": "Unknown LLM provider id returns 404",
+      "category": "negative",
+      "priority": "high",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "GET unknown provider",
+          "action": "http: GET /api/v1/llm/providers/nonexistent_provider_xyz",
+          "expected": "404 Not Found with error",
+          "expect_status": 404,
+          "expect_body_contains": "unknown LLM provider"
+        }
+      ],
+      "tags": [
+        "llm",
+        "providers",
+        "negative"
+      ],
+      "estimated_duration": "5s",
+      "expected_result": "Unknown provider id is rejected with 404, not a fabricated 200"
+    },
+    {
+      "id": "HXC-API-010",
+      "name": "List memory systems returns systems array",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "GET /api/v1/memory/systems",
+          "action": "http: GET /api/v1/memory/systems",
+          "expected": "200 OK with systems array",
+          "expect_status": 200,
+          "expect_json_path": "$.systems",
+          "expect_body_contains": "\"count\""
+        }
+      ],
+      "tags": [
+        "memory",
+        "public"
+      ],
+      "estimated_duration": "5s",
+      "expected_result": "Memory systems list responds 200 with a systems array"
+    },
+    {
+      "id": "HXC-API-011",
+      "name": "Memory stats returns stats object",
+      "category": "functional",
+      "priority": "medium",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "GET /api/v1/memory/stats",
+          "action": "http: GET /api/v1/memory/stats",
+          "expected": "200 OK with stats object",
+          "expect_status": 200,
+          "expect_json_path": "$.stats",
+          "expect_body_contains": "total_memories"
+        }
+      ],
+      "tags": [
+        "memory",
+        "public"
+      ],
+      "estimated_duration": "5s",
+      "expected_result": "Memory stats responds 200 with a stats object"
+    },
+    {
+      "id": "HXC-API-012",
+      "name": "Login with missing fields returns 400",
+      "category": "negative",
+      "priority": "high",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "POST login empty body",
+          "action": "http: POST /api/v1/auth/login",
+          "expected": "400 Bad Request validation error",
+          "body": {},
+          "expect_status": 400,
+          "expect_body_contains": "required"
+        }
+      ],
+      "tags": [
+        "auth",
+        "login",
+        "negative",
+        "validation"
+      ],
+      "estimated_duration": "5s",
+      "expected_result": "Empty login body fails request-body validation with 400"
+    },
+    {
+      "id": "HXC-API-013",
+      "name": "Login with invalid credentials returns 401",
+      "category": "negative",
+      "priority": "critical",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "POST login wrong password",
+          "action": "http: POST /api/v1/auth/login",
+          "expected": "401 Unauthorized invalid credentials",
+          "body": {
+            "username": "definitely_not_a_user_hxc029",
+            "password": "wrong_password_value"
+          },
+          "expect_status": 401,
+          "expect_body_contains": "invalid credentials"
+        }
+      ],
+      "tags": [
+        "auth",
+        "login",
+        "negative"
+      ],
+      "estimated_duration": "5s",
+      "expected_result": "Invalid credentials are rejected with 401, never a fabricated session"
+    },
+    {
+      "id": "HXC-API-014",
+      "name": "Logout without auth header returns 400",
+      "category": "negative",
+      "priority": "medium",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "POST logout no header",
+          "action": "http: POST /api/v1/auth/logout",
+          "expected": "400 Bad Request missing authorization",
+          "expect_status": 400,
+          "expect_body_contains": "authorization"
+        }
+      ],
+      "tags": [
+        "auth",
+        "logout",
+        "negative"
+      ],
+      "estimated_duration": "5s",
+      "expected_result": "Logout without bearer token is rejected with 400"
+    },
+    {
+      "id": "HXC-API-015",
+      "name": "Token refresh without auth header returns 401",
+      "category": "negative",
+      "priority": "medium",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "POST refresh no header",
+          "action": "http: POST /api/v1/auth/refresh",
+          "expected": "401 Unauthorized missing authorization",
+          "expect_status": 401,
+          "expect_body_contains": "authorization"
+        }
+      ],
+      "tags": [
+        "auth",
+        "refresh",
+        "negative"
+      ],
+      "estimated_duration": "5s",
+      "expected_result": "Refresh without bearer token is rejected with 401"
+    },
+    {
+      "id": "HXC-API-016",
+      "name": "Protected endpoint /api/v1/tasks requires auth",
+      "category": "security",
+      "priority": "critical",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "GET /api/v1/tasks without auth",
+          "action": "http: GET /api/v1/tasks",
+          "expected": "401 Unauthorized authorization required",
+          "expect_status": 401,
+          "expect_body_contains": "uthorization"
+        }
+      ],
+      "tags": [
+        "auth",
+        "security",
+        "protected"
+      ],
+      "estimated_duration": "5s",
+      "expected_result": "Unauthenticated access to /api/v1/tasks is rejected with 401"
+    },
+    {
+      "id": "HXC-API-017",
+      "name": "Protected endpoint /api/v1/projects requires auth",
+      "category": "security",
+      "priority": "critical",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "GET /api/v1/projects without auth",
+          "action": "http: GET /api/v1/projects",
+          "expected": "401 Unauthorized authorization required",
+          "expect_status": 401,
+          "expect_body_contains": "uthorization"
+        }
+      ],
+      "tags": [
+        "auth",
+        "security",
+        "protected"
+      ],
+      "estimated_duration": "5s",
+      "expected_result": "Unauthenticated access to /api/v1/projects is rejected with 401"
+    },
+    {
+      "id": "HXC-API-018",
+      "name": "Protected endpoint /api/v1/workers requires auth",
+      "category": "security",
+      "priority": "critical",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "GET /api/v1/workers without auth",
+          "action": "http: GET /api/v1/workers",
+          "expected": "401 Unauthorized authorization required",
+          "expect_status": 401,
+          "expect_body_contains": "uthorization"
+        }
+      ],
+      "tags": [
+        "auth",
+        "security",
+        "protected"
+      ],
+      "estimated_duration": "5s",
+      "expected_result": "Unauthenticated access to /api/v1/workers is rejected with 401"
+    },
+    {
+      "id": "HXC-API-019",
+      "name": "Protected endpoint /api/v1/sessions requires auth",
+      "category": "security",
+      "priority": "critical",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "GET /api/v1/sessions without auth",
+          "action": "http: GET /api/v1/sessions",
+          "expected": "401 Unauthorized authorization required",
+          "expect_status": 401,
+          "expect_body_contains": "uthorization"
+        }
+      ],
+      "tags": [
+        "auth",
+        "security",
+        "protected"
+      ],
+      "estimated_duration": "5s",
+      "expected_result": "Unauthenticated access to /api/v1/sessions is rejected with 401"
+    },
+    {
+      "id": "HXC-API-020",
+      "name": "Protected endpoint /api/v1/users/me requires auth",
+      "category": "security",
+      "priority": "critical",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "GET /api/v1/users/me without auth",
+          "action": "http: GET /api/v1/users/me",
+          "expected": "401 Unauthorized authorization required",
+          "expect_status": 401,
+          "expect_body_contains": "uthorization"
+        }
+      ],
+      "tags": [
+        "auth",
+        "security",
+        "protected"
+      ],
+      "estimated_duration": "5s",
+      "expected_result": "Unauthenticated access to /api/v1/users/me is rejected with 401"
+    },
+    {
+      "id": "HXC-API-021",
+      "name": "Protected endpoint /api/v1/system/stats requires auth",
+      "category": "security",
+      "priority": "critical",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "GET /api/v1/system/stats without auth",
+          "action": "http: GET /api/v1/system/stats",
+          "expected": "401 Unauthorized authorization required",
+          "expect_status": 401,
+          "expect_body_contains": "uthorization"
+        }
+      ],
+      "tags": [
+        "auth",
+        "security",
+        "protected"
+      ],
+      "estimated_duration": "5s",
+      "expected_result": "Unauthenticated access to /api/v1/system/stats is rejected with 401"
+    },
+    {
+      "id": "HXC-API-022",
+      "name": "Protected endpoint /api/v1/system/status requires auth",
+      "category": "security",
+      "priority": "critical",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "GET /api/v1/system/status without auth",
+          "action": "http: GET /api/v1/system/status",
+          "expected": "401 Unauthorized authorization required",
+          "expect_status": 401,
+          "expect_body_contains": "uthorization"
+        }
+      ],
+      "tags": [
+        "auth",
+        "security",
+        "protected"
+      ],
+      "estimated_duration": "5s",
+      "expected_result": "Unauthenticated access to /api/v1/system/status is rejected with 401"
+    },
+    {
+      "id": "HXC-API-023",
+      "name": "Protected endpoint /api/v1/qa/sessions requires auth",
+      "category": "security",
+      "priority": "critical",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "GET /api/v1/qa/sessions without auth",
+          "action": "http: GET /api/v1/qa/sessions",
+          "expected": "401 Unauthorized authorization required",
+          "expect_status": 401,
+          "expect_body_contains": "uthorization"
+        }
+      ],
+      "tags": [
+        "auth",
+        "security",
+        "protected"
+      ],
+      "estimated_duration": "5s",
+      "expected_result": "Unauthenticated access to /api/v1/qa/sessions is rejected with 401"
+    },
+    {
+      "id": "HXC-API-024",
+      "name": "Protected endpoint /api/v1/screenshot/engines requires auth",
+      "category": "security",
+      "priority": "critical",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "GET /api/v1/screenshot/engines without auth",
+          "action": "http: GET /api/v1/screenshot/engines",
+          "expected": "401 Unauthorized authorization required",
+          "expect_status": 401,
+          "expect_body_contains": "uthorization"
+        }
+      ],
+      "tags": [
+        "auth",
+        "security",
+        "protected"
+      ],
+      "estimated_duration": "5s",
+      "expected_result": "Unauthenticated access to /api/v1/screenshot/engines is rejected with 401"
+    },
+    {
+      "id": "HXC-API-025",
+      "name": "Garbage bearer token is rejected",
+      "category": "security",
+      "priority": "high",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "GET tasks with garbage token",
+          "action": "http: GET /api/v1/tasks",
+          "expected": "401 Unauthorized invalid token",
+          "auth": "raw:not-a-real-jwt-token",
+          "expect_status": 401,
+          "expect_body_contains": "token"
+        }
+      ],
+      "tags": [
+        "auth",
+        "security",
+        "jwt",
+        "negative"
+      ],
+      "estimated_duration": "5s",
+      "expected_result": "A malformed bearer token yields 401 invalid token, not access"
+    },
+    {
+      "id": "HXC-API-026",
+      "name": "Unknown route returns 404",
+      "category": "negative",
+      "priority": "medium",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "GET unknown route",
+          "action": "http: GET /api/v1/this_route_does_not_exist_hxc029",
+          "expected": "404 Not Found",
+          "expect_status": 404
+        }
+      ],
+      "tags": [
+        "routing",
+        "negative"
+      ],
+      "estimated_duration": "5s",
+      "expected_result": "Unknown API route returns 404 page not found"
+    },
+    {
+      "id": "HXC-API-027",
+      "name": "OPTIONS preflight on protected route",
+      "category": "functional",
+      "priority": "low",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "OPTIONS /api/v1/tasks",
+          "action": "http: OPTIONS /api/v1/tasks",
+          "expected": "204 No Content CORS preflight",
+          "headers": {
+            "Origin": "http://localhost:3000",
+            "Access-Control-Request-Method": "GET"
+          },
+          "expect_status": 204
+        }
+      ],
+      "tags": [
+        "cors",
+        "preflight",
+        "public"
+      ],
+      "estimated_duration": "5s",
+      "expected_result": "CORS preflight (OPTIONS) is answered with 204 No Content"
+    },
+    {
+      "id": "HXC-API-028",
+      "name": "Repeated health requests all succeed (load smoke)",
+      "category": "performance",
+      "priority": "high",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "GET /health #1",
+          "action": "http: GET /health",
+          "expected": "200 OK",
+          "expect_status": 200,
+          "expect_body_contains": "healthy"
+        },
+        {
+          "name": "GET /health #2",
+          "action": "http: GET /health",
+          "expected": "200 OK",
+          "expect_status": 200,
+          "expect_body_contains": "healthy"
+        },
+        {
+          "name": "GET /health #3",
+          "action": "http: GET /health",
+          "expected": "200 OK",
+          "expect_status": 200,
+          "expect_body_contains": "healthy"
+        },
+        {
+          "name": "GET /health #4",
+          "action": "http: GET /health",
+          "expected": "200 OK",
+          "expect_status": 200,
+          "expect_body_contains": "healthy"
+        },
+        {
+          "name": "GET /health #5",
+          "action": "http: GET /health",
+          "expected": "200 OK",
+          "expect_status": 200,
+          "expect_body_contains": "healthy"
+        }
+      ],
+      "tags": [
+        "health",
+        "load",
+        "performance"
+      ],
+      "estimated_duration": "5s",
+      "expected_result": "Five sequential health probes all return 200 healthy (no flakiness)"
+    },
+    {
+      "id": "HXC-API-029",
+      "name": "JWT claim inspection on issued token",
+      "category": "security",
+      "priority": "medium",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "Mint + decode JWT",
+          "action": "Decode an issued JWT and inspect header/payload claims",
+          "expected": "Three base64 segments, HS256 alg, username+role claims",
+          "_skip": true,
+          "_skip_reason": "#HXC-029-REGISTER-BROKEN \u2014 /api/v1/auth/register returns 400 internal_auth_failed_create_user on this live DB, so no JWT can be minted in-test to decode; honest SKIP per Article XI \u00a711.2.2 rather than a fabricated PASS",
+          "_conversion_note": "converted-from-manual-review: was Catalogizer FQA-API-001 JWT-decode prose"
+        }
+      ],
+      "tags": [
+        "auth",
+        "jwt",
+        "skip"
+      ],
+      "estimated_duration": "5s",
+      "expected_result": "JWT claim inspection requires a mintable token; skipped honestly until register is fixed"
+    },
+    {
+      "id": "HXC-API-030",
+      "name": "WebSocket event stream behaviours",
+      "category": "functional",
+      "priority": "low",
+      "platforms": [
+        "api"
+      ],
+      "steps": [
+        {
+          "name": "WebSocket lifecycle",
+          "action": "Establish WebSocket connection and exchange event frames",
+          "expected": "Connected, receives event frames, clean close",
+          "_skip": true,
+          "_skip_reason": "#HXC-029-NO-WS-DRIVER \u2014 the HelixQA http: action type drives HTTP only; HelixCode internal/server registers no WebSocket upgrade route (verified against server.go route table). WebSocket coverage needs a dedicated ws: driver; honest SKIP rather than a fabricated PASS",
+          "_conversion_note": "converted-from-manual-review: collapses Catalogizer FQA-API-233..240 WebSocket prose"
+        }
+      ],
+      "tags": [
+        "websocket",
+        "skip"
+      ],
+      "estimated_duration": "5s",
+      "expected_result": "WebSocket coverage requires a ws: driver not present; skipped honestly"
+    }
+  ]
+}
