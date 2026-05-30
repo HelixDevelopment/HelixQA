@@ -351,7 +351,7 @@ test_cases:
     platforms: [android]
     steps:
       - name: "Run automated video test"
-        action: "Execute test_video_playback_apps.sh on device"
+        action: "adb_shell: sh /data/local/tmp/tests/test_video_playback_apps.sh"
         expected: "Test script starts iterating through all video apps"
       - name: "Verify app coverage"
         action: "Check test output for pass/fail per app"
@@ -1968,7 +1968,7 @@ test_cases:
         action: "Run adb shell pm list packages | wc -l"
         expected: "Total package count includes all 60+ prebuilt apps"
       - name: "Run prebuilt apps test"
-        action: "Execute test_prebuilt_apps.sh on device"
+        action: "adb_shell: sh /data/local/tmp/tests/test_prebuilt_apps.sh"
         expected: "All prebuilt apps detected as installed"
       - name: "Check for missing apps"
         action: "Review test output for any FAIL entries"
@@ -2056,7 +2056,7 @@ test_cases:
         action: "Run adb shell am start -n com.android.vending/.AssetBrowserActivity"
         expected: "Play Store opens (may need Google account)"
       - name: "Run Google Apps test"
-        action: "Execute test_google_apps.sh on device"
+        action: "adb_shell: sh /data/local/tmp/tests/test_google_apps.sh"
         expected: "All Google Apps checks pass"
     tags: [apps, gapps, play-store, play-services, google]
     documentation_refs:
@@ -2264,7 +2264,7 @@ test_cases:
         action: "Verify Widevine L3 security level"
         expected: "Security Level: L3"
       - name: "Run Widevine test"
-        action: "Execute test_widevine_drm.sh on device"
+        action: "adb_shell: sh /data/local/tmp/tests/test_widevine_drm.sh"
         expected: "All Widevine checks pass, no crash-loop"
     tags: [drm, widevine, l3, streaming, security]
     documentation_refs:
@@ -3489,7 +3489,7 @@ test_cases:
     required_evidence: [logcat-retry-literal, dumpsys-hdmi-available]
     steps:
       - name: "Run HDMI connect-retry boot test"
-        action: "adb shell sh /data/local/tmp/tests/test_eu_hdmi_connect_boot_retry.sh"
+        action: "adb_shell: sh /data/local/tmp/tests/test_eu_hdmi_connect_boot_retry.sh"
         expected: "Retry literal present in logcat AND dumpsys reports HDMI available"
       - name: "Verify 3-iter consistency"
         action: "Run test 3 times back-to-back; compare exit codes + evidence hashes"
@@ -3540,7 +3540,7 @@ test_cases:
         action: "adb shell getprop persist.atmosphere.audio.hdmi.recovery"
         expected: "Initial property state captured"
       - name: "Run recovery property toggle test"
-        action: "adb shell sh /data/local/tmp/tests/test_eu_recovery_property_toggle.sh"
+        action: "adb_shell: sh /data/local/tmp/tests/test_eu_recovery_property_toggle.sh"
         expected: "Property toggle triggers HDMI audio recovery path"
       - name: "Verify audio restored post-toggle"
         action: "Verify dumpsys audio shows HDMI output available + active after recovery"
@@ -3594,7 +3594,7 @@ test_cases:
     required_evidence: [arp-table-mac-match, arvus-http-200]
     steps:
       - name: "Run Arvus IP discovery test"
-        action: "adb shell sh /data/local/tmp/tests/test_arvus_discover_ip.sh"
+        action: "adb_shell: sh /data/local/tmp/tests/test_arvus_discover_ip.sh"
         expected: "ARP table scan locates Hansong MAC OUI and returns Arvus IP"
       - name: "Verify Arvus HTTP reachable"
         action: "curl -s http://<discovered-ip>/ — expect HTTP 200"
@@ -3624,7 +3624,7 @@ test_cases:
     required_evidence: [tinycap-rms-amplitude, ffprobe-channel-count, no-xrun-census]
     steps:
       - name: "Run HiFi no-regression test"
-        action: "adb shell sh /data/local/tmp/tests/test_hifi_no_regression.sh"
+        action: "adb_shell: sh /data/local/tmp/tests/test_hifi_no_regression.sh"
         expected: "HiFi audio path produces valid PCM with no XRUN regressions per §11.4.5"
       - name: "Verify 3-iter consistency"
         action: "Run test 3 times; compare exit codes + tinycap WAV evidence hashes"
@@ -3651,7 +3651,7 @@ test_cases:
     required_evidence: [ffprobe-channels-5-1-or-7-1, audio-flinger-frames-written-advance, arvus-codec-in-use]
     steps:
       - name: "Run AC3 multichannel no-regression test"
-        action: "adb shell sh /data/local/tmp/tests/test_ac3_no_regression.sh"
+        action: "adb_shell: sh /data/local/tmp/tests/test_ac3_no_regression.sh"
         expected: "AC3 / E-AC3 decode pipeline produces multichannel PCM (5.1 / 7.1) without regression"
       - name: "Verify 3-iter consistency"
         action: "Run test 3 times; compare exit codes + ffprobe channel-count + AudioFlinger frames-written"
@@ -3687,7 +3687,7 @@ test_cases:
     required_evidence: [hw_decoder_registered, no_bad_index, n3_consistency]
     steps:
       - name: "Run Option A on-device validation"
-        action: "adb shell sh /data/local/tmp/tests/test_rk3588_hw_decoder_secondary_display.sh"
+        action: "adb_shell: sh /data/local/tmp/tests/test_rk3588_hw_decoder_secondary_display.sh"
         expected: "HW c2.rk.* decoder registered (Section A), no BAD_INDEX rejection (Section C), N=3 deterministic consistency (Section E)"
       - name: "Verify §11.4.69 sink-side positive evidence (video_display)"
         action: "Inspect VideoOutputManager dumpsys for activeDecoder reporting c2.rk.* on secondary"
@@ -3776,7 +3776,7 @@ test_cases:
       - structured_error_category_closed_set
     steps:
       - name: "Run scripts/llm/test_bridge.sh Section A (health-check JSON shape)"
-        action: "bash scripts/llm/test_bridge.sh — exercise Section A health-check JSON emission"
+        action: "shell: bash scripts/llm/test_bridge.sh --health-check"
         expected: "PASS: A1 health-check JSON shape (status + provider keys present) OR SKIP-with-reason=feature_disabled_by_config when .env carries placeholder keys"
       - name: "Run Section A.deterministic 3-iter consistency"
         action: "test_bridge.sh runs --health-check three times back-to-back per §11.4.50"
@@ -3838,7 +3838,7 @@ test_cases:
       - skip_with_reason_when_credentials_absent
     steps:
       - name: "Run scripts/firebase/review_round.sh --health-check (Section A health-check JSON shape)"
-        action: "bash scripts/firebase/review_round.sh --health-check — exercise health-check JSON emission"
+        action: "shell: bash scripts/firebase/review_round.sh --health-check"
         expected: "PASS: A1 health-check JSON shape (schema=atm.firebase_review.health.v1 + status closed-set {healthy|degraded|unhealthy} + credentials_configured + env_file + freshness_seconds_since_last keys present) OR SKIP-with-reason=feature_disabled_by_config when Firebase Service Account JSON / .env carry placeholders (pre-§J1 unblock state)"
       - name: "Run Section B (--report mode produces VERDICT.md)"
         action: "When credentials configured: bash scripts/firebase/review_round.sh produces qa-results/firebase_review_<UTC-ISO>/ with crashlytics_raw.json + analytics_raw.json + performance_raw.json + dedup_report.md + new_issues_draft.md + metadata.json + .ok marker; emit VERDICT.md summarising findings"
@@ -3901,7 +3901,7 @@ test_cases:
       - "Verify both devices reachable via ADB"
     steps:
       - name: "Dispatch matrix (6 outputs × 12 columns = 72 cells)"
-        action: "adb shell sh /data/local/tmp/tests/test_audio_quality_matrix.sh"
+        action: "adb_shell: sh /data/local/tmp/tests/test_audio_quality_matrix.sh"
         expected: "Test produces N=72 cell results; every PASS uses ab_pass_with_evidence; every SKIP uses ab_skip_with_reason per §11.4.69 closed-set"
       - name: "Verify §KA-1 USB feasibility verdict captured"
         action: "Inspect docs/research/audio/KA_audio_quality_matrix.md §1 forensic anchors"
@@ -3973,7 +3973,7 @@ test_cases:
       - "scripts/testing/lib/api_capture.sh present (apicap_* contract)"
     steps:
       - name: "Dispatch Test A — pipeline proof"
-        action: "bash device/rockchip/rk3588/tests/test_api_proxy_pipeline.sh"
+        action: "shell: bash device/rockchip/rk3588/tests/test_api_proxy_pipeline.sh"
         expected: "Exit 0; SUMMARY shows FAIL=0; ≥1 PASS line carries an evidence path to a mitmdump_stdout.log containing the captured GET http://www.gstatic.com/generate_204 << 204 flow"
       - name: "Verify captured-flow evidence (anti-bluff)"
         action: "grep -E 'generate_204|204 No Content' qa-results/api_proxy_pipeline_*/api_capture/hostB_1/mitmdump_stdout.log"
@@ -4003,3 +4003,348 @@ test_cases:
         path: "constitution/Constitution.md"
     estimated_duration: "30s (host-through-proxy leg) + device-route leg when device has LAN route"
     expected_result: "PASS with captured-flow evidence: the mitmproxy capture contains the forwarded gstatic generate_204 request, proving the API-intercept pipeline works end-to-end. Device + host left clean."
+
+  # ==================== Phase-39 §11.4.4(b) layer-4 Challenges (CME-§GR/§HF/§GZ/§11.4.98) ====================
+  # Four §11.4.4(b) layer-4 Challenge entries for the just-landed fixes. Each
+  # dispatches to the fix's REAL on-device test, is §11.4.3 topology-aware
+  # (SKIP-with-reason when the required topology/weak-link is absent, NEVER
+  # PASS-by-default), and scores PASS ONLY on the test's ab_pass_with_evidence
+  # captured artefact per §11.4.5 + §11.4.69 — never metadata-only/config-only.
+
+  - id: CME-GR-STREAM-CONTINUITY-001
+    title: "§GR (#41) sustained network stream survives a >3s mid-rebuffer with secondary-display routing intact (no forceUnregister full-teardown)"
+    suite: atmosphere.video
+    category: video
+    priority: critical
+    description: |
+      §GR (#41 — "video stream stops after 1-2 min, does not continue")
+      Challenge. Dispatches to device/rockchip/rk3588/tests/test_gr_stream_continuity.sh,
+      the §11.4.43 RED-first on-device test for the proven Rank-1 first-party
+      mechanism (Presenter VideoPlaybackDetector treating media3
+      STATE_BUFFERING as "not playing" → a mid-stream rebuffer >3000 ms
+      STOP_DEBOUNCE fires onVideoPlaybackStopped() →
+      VideoOutputClient.forceUnregister() →
+      VideoOutputManagerService.forceUnregisterActiveDecoder() whose
+      setOutputSurface(PRIMARY) FAILs BAD_INDEX on RK3588 Codec2, nulling
+      mActiveDecoder + tearing down the secondary surface → video dead-on-TV).
+      The test drives a sustained network stream to the secondary (EXTERNAL)
+      display, captures the §GR forensic logcat over a >=60s window, and
+      asserts (Section C) that NO BUFFERING event drove a "forceUnregister
+      ActiveDecoder: clearing" full-teardown AND (Section D) the active
+      decoder package on the secondary display is unchanged across the
+      rebuffer window. PASS is scored ONLY on the test's ab_pass_with_evidence
+      with the captured forensic logcat as the evidence artefact (feature
+      class video_display); the §GR defect chain in the logcat is ab_fail.
+      §11.4.3 topology dispatch: no secondary display OR no mid-stream
+      rebuffer in-window (pristine link, the D3 case) → ab_skip_with_reason,
+      NEVER a fake PASS. The fix is REQUIRES_REBUILD; this Challenge is RED
+      on a weak-link secondary-display device until the rebuild lands Fix 1
+      (VPD treats STATE_BUFFERING as still-playing) + Fix 2 (recoverable
+      forceUnregister keep-alive while the decoder process is still running).
+    setup:
+      - "Push tests/ to /data/local/tmp on a device WITH a secondary (EXTERNAL) display (D1/D3)"
+      - "Verify the device is reachable via ADB and a streaming app can reach its content servers"
+    steps:
+      - name: "Dispatch §GR continuity proof"
+        action: "adb_shell: sh /data/local/tmp/tests/test_gr_stream_continuity.sh"
+        expected: "Exit 0; SUMMARY FAIL=0; Section C+D each ab_pass_with_evidence cite the captured forensic-logcat artefact when a rebuffer occurred in-window"
+      - name: "Verify routing-survival evidence (anti-bluff, §11.4.69)"
+        action: "Inspect the PASS evidence logcat: across the >=60s window, no BUFFERING event is followed by a Presenter VPD 'Video playback stopped' + framework 'forceUnregisterActiveDecoder: clearing' chain, and the VOM active package is unchanged"
+        expected: "Positive captured evidence (video_display): the rebuffer was tolerated and the secondary-display decoder routing survived; NO PASS without the captured logcat path"
+      - name: "Verify topology / no-rebuffer SKIP honesty (§11.4.3)"
+        action: "On a 0-external device, or a pristine link where STATE_BUFFERING never fires in-window, confirm ab_skip_with_reason=topology_unsupported"
+        expected: "SKIP-with-reason (never PASS-by-default, never FAIL-for-topology); the §GR trigger could not be exercised on this link"
+      - name: "Verify device left quiescent (§11.4.14)"
+        action: "After the run, confirm the streamer app is force-stopped and no media session is PLAYING for the test app"
+        expected: "EXIT trap force-stopped the streamer + issued media stop; device quiescent"
+    tags: [video, video-routing, secondary-display, stream-continuity, rebuffer, §GR, ATM-41, §11.4.3, §11.4.5, §11.4.43, §11.4.69, phase-39, video_display, mediacodec_decode]
+    documentation_refs:
+      - type: test
+        section: "test_gr_stream_continuity.sh (§GR RED-first continuity proof)"
+        path: "device/rockchip/rk3588/tests/test_gr_stream_continuity.sh"
+      - type: research
+        section: "§GR ROOT_CAUSE (Rank-1 proven first-party mechanism)"
+        path: "docs/research/gr_stream_stops/ROOT_CAUSE.md"
+      - type: constitution
+        section: "§11.4.5 audio + video quality analysis comprehensiveness"
+        path: "constitution/Constitution.md"
+      - type: constitution
+        section: "§11.4.69 universal sink-side positive-evidence taxonomy"
+        path: "constitution/Constitution.md"
+      - type: issues
+        section: "§GR (#41) video stream stops after 1-2 min, does not continue"
+        path: "docs/Issues.md"
+    estimated_duration: "75s (>=60s sustain window + topology probe + logcat scan)"
+    expected_result: "On a weak-link secondary-display device post-rebuild: a mid-stream rebuffer is tolerated, no forceUnregister full-teardown chain appears, and the secondary-display decoder routing survives — ab_pass_with_evidence cites the captured forensic logcat. Pre-rebuild (RED) the defect chain reproduces (FAIL); no secondary display / no in-window rebuffer → SKIP-with-reason."
+
+  - id: CME-HF-OVERLAY-NO-SECONDARY-001
+    title: "§HF [ATM-246] no 'playing on TV' VideoControlOverlay band on displayId=0 of a 0-external-display device"
+    suite: atmosphere.display
+    category: display
+    priority: critical
+    description: |
+      §HF [ATM-246] Challenge. Dispatches to
+      device/rockchip/rk3588/tests/test_hf_overlay_no_secondary.sh, the
+      §11.4.43 RED-first test for the Presenter overlay-guard fix (RC-1:
+      PresenterService.handleIntegratedVideoStart() showed the
+      VideoControlOverlay "playing on TV" band unconditionally on the
+      STATE_VIDEO_START broadcast; Fix A early-returns + clears
+      activeVideoPackage when !secondaryDisplayFound; Fix B gates the VLC
+      fork's VIDEO_START broadcast on hasSecondary). On a device with 0
+      EXTERNAL displays (D4 topology) the band MUST NOT appear on the primary
+      display (displayId=0), and a stale band MUST NOT leak past the source
+      app's death (RC-2). PASS is scored ONLY on the test's
+      ab_pass_with_evidence — a dumpsys-window snapshot proving the band is
+      ABSENT on displayId=0 after the RC-1 trigger (the inverse of the
+      ROOT_CAUSE artefact where the band is present on displayId=0) — never
+      metadata-only. A spurious band present on displayId=0 is ab_fail.
+      §11.4.3 topology dispatch: on a device WITH a secondary display the
+      0-external assertion is not exercisable → ab_skip_with_reason=
+      topology_unsupported (NEVER FAIL). The fix is REQUIRES_REBUILD
+      (Presenter + VLC rebuilt + re-signed at image assembly); this Challenge
+      is RED on a pre-§HF 0-external firmware (band appears) and PASSes
+      post-§HF.
+    setup:
+      - "Push tests/ to /data/local/tmp on a 0-external-display device (D4 topology)"
+      - "Verify the device is reachable via ADB and the Presenter app is installed"
+    steps:
+      - name: "Dispatch §HF overlay-guard proof"
+        action: "adb_shell: sh /data/local/tmp/tests/test_hf_overlay_no_secondary.sh"
+        expected: "Exit 0; SUMMARY FAIL=0; RC-1 + RC-2 each ab_pass_with_evidence cite a dumpsys-window snapshot when the device reports 0 EXTERNAL displays"
+      - name: "Verify overlay-ABSENT evidence (anti-bluff, §11.4.69)"
+        action: "Inspect the PASS evidence snapshot: after STATE_VIDEO_START(atmosphere.videolan.vlc), no Presenter SYSTEM_ALERT_WINDOW VideoControlOverlay band line exists on displayId=0"
+        expected: "Positive captured evidence (display_topology): the band is provably absent on the primary display of a 0-external device; NO PASS without the dumpsys-window snapshot path"
+      - name: "Verify topology SKIP honesty (§11.4.3)"
+        action: "On a device that DOES report a secondary/EXTERNAL display, confirm ab_skip_with_reason=topology_unsupported"
+        expected: "SKIP-with-reason (the 0-external assertion is not exercisable here); never PASS-by-default, never FAIL-for-topology"
+      - name: "Verify device left quiescent (§11.4.14)"
+        action: "After the run, confirm the VLC trigger app is force-stopped and a clean VIDEO_STOP was emitted"
+        expected: "EXIT trap force-stopped the trigger app + dismissed any band the test produced; device quiescent"
+    tags: [display, presenter, overlay, video-control-overlay, topology, §HF, ATM-246, §11.4.3, §11.4.5, §11.4.43, §11.4.69, phase-39, display_topology]
+    documentation_refs:
+      - type: test
+        section: "test_hf_overlay_no_secondary.sh (§HF RED-first overlay guard)"
+        path: "device/rockchip/rk3588/tests/test_hf_overlay_no_secondary.sh"
+      - type: research
+        section: "§HF ROOT_CAUSE (D4 Presenter overlay leak)"
+        path: "docs/research/d4_presenter_overlay/ROOT_CAUSE.md"
+      - type: constitution
+        section: "§11.4.3 per-environment-topology test dispatch"
+        path: "constitution/Constitution.md"
+      - type: constitution
+        section: "§11.4.69 universal sink-side positive-evidence taxonomy"
+        path: "constitution/Constitution.md"
+      - type: issues
+        section: "§HF [ATM-246] spurious 'playing on TV' overlay on 0-external device"
+        path: "docs/Issues.md"
+    estimated_duration: "20s (broadcast trigger + dumpsys-window snapshots)"
+    expected_result: "On a 0-external-display device post-rebuild: no VideoControlOverlay band on displayId=0 after STATE_VIDEO_START and no stale band after the trigger app dies — ab_pass_with_evidence cites the dumpsys-window snapshot. Pre-rebuild (RED) the band appears on displayId=0 (FAIL); a device with a secondary display → SKIP-with-reason."
+
+  - id: CME-GZ-RECENTS-001
+    title: "§GZ [ATM-240] 3-button-nav Recents opens Overview deterministically post-boot (10/10 presses, queue drains, mRecentTasks non-null)"
+    suite: atmosphere.input
+    category: functional
+    priority: critical
+    description: |
+      §GZ [ATM-240] Challenge. Dispatches to
+      device/rockchip/rk3588/tests/test_gz_recents.sh, the §11.4.43 RED-first
+      test for the boot-time SysUI↔Launcher proxy self-heal (root cause: the
+      boot handshake delivers an all-null SystemUiProxy bundle,
+      startRecentsAnimation aborts on "null mRecentTasks",
+      OverviewCommandHelper saturates at MAX_QUEUE_SIZE=3, and every later
+      Recents press is silently dropped; Fix B OverviewProxyService retry +
+      Fix A TouchInteractionService re-init guard + Fix C
+      OverviewCommandHelper fail-fast make the handshake self-healing). The
+      test drives N=10 user-equivalent 3-button Recents presses (§11.4.48 +
+      §11.4.49 dual-approach: keyevent + nav-bar Recents-region touch) and
+      asserts that Overview opened on every press, the command queue never
+      pinned at 3, and the launcher-side SystemUiProxy holds a NON-null
+      mRecentTasks. PASS is scored ONLY on the test's ab_pass_with_evidence
+      with the verdict.json (opened/presses, queue_max_seen, mRecentTasks_null)
+      + screencap as the evidence artefact (feature class touch_input) — never
+      metadata-only. Any dropped press / queue pinned at 3 / null mRecentTasks
+      is ab_fail. §11.4.3 topology dispatch: not 3-button nav (navigation_mode
+      != 0) → ab_skip_with_reason=topology_unsupported (NEVER FAIL). §11.4.50
+      determinism is enforced via the orchestrator's ab_run_n_times. The fix
+      is REQUIRES_REBUILD; this Challenge is RED on un-fixed firmware
+      (opened=0, queue stuck at 3, mRecentTasks=null).
+    setup:
+      - "Push tests/ to /data/local/tmp on a 3-button-nav device (navigation_mode=0) freshly booted"
+      - "Verify the device is reachable via ADB and the launcher TouchInteractionService is resolvable"
+    steps:
+      - name: "Dispatch §GZ Recents/Overview proof"
+        action: "adb_shell: sh /data/local/tmp/tests/test_gz_recents.sh"
+        expected: "Exit 0; SUMMARY FAIL=0; ab_pass_with_evidence cites verdict.json with opened==presses, queue_max_seen<3, mRecentTasks_null=false"
+      - name: "Verify Overview-opened evidence (anti-bluff, §11.4.69)"
+        action: "Inspect the PASS evidence verdict.json + screencap: all 10 presses opened the launcher Overview/recents surface, the OverviewCommandHelper queue never reached 3, and mRecentTasks is non-null"
+        expected: "Positive captured evidence (touch_input): the Recents surface actually opened on every press and the proxy handshake self-healed; NO PASS without the verdict.json path"
+      - name: "Verify topology SKIP honesty (§11.4.3)"
+        action: "On a device NOT in 3-button nav (navigation_mode != 0), confirm ab_skip_with_reason=topology_unsupported"
+        expected: "SKIP-with-reason (3-button Recents not exercisable under gesture nav); never PASS-by-default, never FAIL-for-topology"
+      - name: "Verify device left quiescent (§11.4.14)"
+        action: "After the run, confirm the device returned HOME and the probe app (com.android.settings) is force-stopped"
+        expected: "EXIT trap pressed HOME + force-stopped the probe app; device quiescent"
+    tags: [input, touch, recents, overview, 3-button-nav, boot-service, systemuiproxy, §GZ, ATM-240, §11.4.3, §11.4.5, §11.4.43, §11.4.48, §11.4.49, §11.4.50, §11.4.69, phase-39, touch_input, boot_service]
+    documentation_refs:
+      - type: test
+        section: "test_gz_recents.sh (§GZ RED-first Recents/Overview proof)"
+        path: "device/rockchip/rk3588/tests/test_gz_recents.sh"
+      - type: research
+        section: "§GZ ROOT_CAUSE (boot SysUI↔Launcher proxy handshake)"
+        path: "docs/research/gz_recents/ROOT_CAUSE.md"
+      - type: constitution
+        section: "§11.4.48 UI-driven video/feature testing mandate"
+        path: "constitution/Constitution.md"
+      - type: constitution
+        section: "§11.4.69 universal sink-side positive-evidence taxonomy"
+        path: "constitution/Constitution.md"
+      - type: issues
+        section: "§GZ [ATM-240] 3-button Recents button does not open Overview post-boot"
+        path: "docs/Issues.md"
+    estimated_duration: "45s (10 presses + before/after SystemUiProxy capture + screencap)"
+    expected_result: "On a 3-button-nav device post-rebuild: Overview opens on all 10 presses, the command queue never pins at 3, and mRecentTasks is non-null — ab_pass_with_evidence cites verdict.json + screencap. Pre-rebuild (RED) opened=0 / queue stuck at 3 / mRecentTasks=null (FAIL); a gesture-nav device → SKIP-with-reason."
+
+  - id: CME-AF-RECENTS-CLEAR-ALL-001
+    title: "§AF/§GZ Presenter Clear-All Recents FAB is user-visible on display#0 and a REAL tap clears all recents (no backend-broadcast bluff)"
+    suite: atmosphere.input
+    category: functional
+    priority: critical
+    description: |
+      §AF/§GZ [Clear-All Recents] Challenge. Dispatches to
+      device/rockchip/rk3588/tests/test_recents_clear_all.sh, the §11.4.43
+      RED-first test for the user-visible Clear-All affordance: a
+      Presenter-owned TYPE_APPLICATION_OVERLAY 56dp FAB
+      (RecentsClearAllOverlay.kt) anchored bottom-right of display#0 (the
+      primary touch screen) with contentDescription "ATMOSphere Clear All
+      Recents", shown ONLY while the Lawnchair launcher (app.lawnchair.play
+      / app.lawnchair) is foreground (i.e. while the user is on the Recents
+      / overview surface). On a USER TAP it fires
+      Intent("com.atmosphere.action.CLEAR_RECENTS") which
+      RecentsHelper.clearAllRecents() consumes (reflective
+      removeAllVisibleRecentTasks). This Challenge REPLACES the prior
+      backend-only bluff (which fired the broadcast directly via
+      `am broadcast` and PASSed on the backend alone — never proving the
+      FAB exists, is visible, or that a real tap on it clears recents). Per
+      §11.4.48 the Clear-All is exercised by a REAL `input tap` at the FAB's
+      resolved uiautomator bounds (NOT a broadcast shortcut) and the
+      single-card dismiss by a REAL `input swipe` UP (NOT
+      `am stack remove-task`). PASS is scored ONLY on the test's
+      ab_pass_with_evidence captured artefacts (feature class touch_input):
+      dumpsys overview snapshot (C1), uiautomator ui.xml + screencap png
+      proving the content-desc FAB node with non-zero bounds (C2),
+      before/after recents dump proving AFTER==0 + launched apps absent
+      (C3), and a before/after dump proving exactly ONE card removed (C4) —
+      never metadata-only/backend-only. §11.4.3 topology: Recents/overview
+      and the FAB live on display#0 regardless of secondary-display
+      presence, so the assertion is topology-independent (A2 annotates which
+      topology was seen); when Recents cannot be populated to >=3 tasks the
+      test honestly ab_skip_with_reason=topology_unsupported, NEVER a fake
+      PASS. §11.4.50 N=3 determinism on the OPEN->VISIBLE chain (Section D).
+      The fix is REQUIRES_REBUILD — the FAB lives in the platform-signed
+      Presenter APK not yet in the flashed firmware; this Challenge is RED on
+      current firmware (Section C2 FAILs honestly: the content-desc node is
+      absent so C3/C4 also FAIL — no FAB to tap) and PASSes only once the
+      §AF+§GZ build + flash makes the user-visible button genuinely work.
+    setup:
+      - "Push tests/ to /data/local/tmp on the primary touch-screen device; the FAB lives on display#0 (topology-independent)"
+      - "Verify the device is reachable via ADB, PresenterService is live, and >= 3 launchable apps exist to populate Recents"
+    steps:
+      - name: "Dispatch §AF/§GZ Clear-All Recents proof"
+        action: "adb_shell: sh /data/local/tmp/tests/test_recents_clear_all.sh"
+        expected: "Exit 0; SUMMARY FAIL=0; C1 (overview opens) + C2 (FAB visible) + C3 (tap clears all) + C4 (swipe dismisses one) each ab_pass_with_evidence cite their captured artefact"
+      - name: "Verify FAB-visible + tap-clears evidence (anti-bluff, §11.4.69)"
+        action: "Inspect the PASS evidence: the uiautomator ui.xml + screencap show the 'ATMOSphere Clear All Recents' content-desc node with non-zero bounds, and the before/after recents dump shows AFTER==0 with the launched apps absent following a REAL input tap at the FAB bounds"
+        expected: "Positive captured evidence (touch_input): the user-visible Clear-All button exists, is visible on the overview surface, and a real tap on it clears recents; NO PASS without the ui.xml + before/after-dump paths"
+      - name: "Verify Recents-populated SKIP honesty (§11.4.3)"
+        action: "On a device where Recents cannot be populated to >= 3 tasks (no launchable apps), confirm ab_skip_with_reason=topology_unsupported"
+        expected: "SKIP-with-reason (the Clear-All / single-swipe assertions are not exercisable without a populated overview); never PASS-by-default, never FAIL-for-topology"
+      - name: "Verify device left quiescent (§11.4.14)"
+        action: "After the run, confirm every launched probe app is force-stopped and the device returned HOME"
+        expected: "EXIT trap force-stopped TOUCHED_PACKAGES + issued media-stop + HOME; device quiescent"
+    tags: [input, touch, recents, clear-all, presenter, overlay, fab, §AF, §GZ, §11.4.3, §11.4.5, §11.4.43, §11.4.48, §11.4.50, §11.4.69, phase-39, touch_input]
+    documentation_refs:
+      - type: test
+        section: "test_recents_clear_all.sh (§AF/§GZ RED-first Clear-All user-visible proof)"
+        path: "device/rockchip/rk3588/tests/test_recents_clear_all.sh"
+      - type: constitution
+        section: "§11.4.48 UI-driven video/feature testing mandate (REAL input tap, not broadcast)"
+        path: "constitution/Constitution.md"
+      - type: constitution
+        section: "§11.4.69 universal sink-side positive-evidence taxonomy (feature class touch_input)"
+        path: "constitution/Constitution.md"
+      - type: issues
+        section: "§AF/§GZ Recents Clear-All affordance"
+        path: "docs/Issues.md"
+    estimated_duration: "60s (populate >=3 apps + overview open + FAB resolve + tap-clear + single-swipe + N=3 open->visible)"
+    expected_result: "Post-rebuild: the 'ATMOSphere Clear All Recents' FAB is visible on display#0's overview surface, a real tap clears all recents, and a real swipe-up dismisses exactly one card — ab_pass_with_evidence cites the ui.xml + screencap + before/after recents dumps. Pre-rebuild (RED) the content-desc FAB node is absent so C2/C3/C4 FAIL honestly; an un-populatable Recents surface → SKIP-with-reason."
+
+  - id: CME-VIDEO-COLOR-FIDELITY-001
+    title: "§11.4.98 (#48) source-vs-rendered video color fidelity within tolerance (ΔE2000 + histogram + no-pale + sharpness + aspect + continuity), golden/bad self-validation proven"
+    suite: atmosphere.video
+    category: video
+    priority: critical
+    description: |
+      §11.4.98 (#48) video color/visual-quality fidelity Challenge. Dispatches
+      to device/rockchip/rk3588/tests/test_video_color_fidelity.sh, the
+      autonomous, re-runnable, anti-bluff test that proves WITH REAL CAPTURED
+      PIXELS that video frames rendered on the device are COLOR-FAITHFUL to
+      the source. The ground-truth discriminator: for each player + clip the
+      SOURCE reference frame is extracted ON THE HOST with ffmpeg at the same
+      scene timestamp the device seeks to, the device-RENDERED frame is
+      captured via screencap, and scripts/testing/video_color_analyze.py
+      compares the pair across ΔE2000, HSV histogram correlation, saturation
+      (no-pale / no-oversaturation — catches the BT.601/709/2020
+      full-vs-limited-range washed-out failure), sharpness (Laplacian
+      variance), aspect ratio, and SSIM continuity/no-freeze + OCR obstruction
+      census. Before any device capture the test runs the §11.4.100 /
+      §11.4.43 HARNESS SELF-VALIDATION: a known-good GOLDEN pair MUST PASS and
+      a deliberately-DESATURATED known-bad pair MUST FAIL on no_pale — a
+      golden→FAIL (false negative) or bad→PASS (false positive, the worst
+      defect) FAILs the whole test before any device verdict is fabricated.
+      PASS is scored ONLY on the test's ab_pass_with_evidence with the
+      per-clip verdict.json + source-vs-rendered frame artefacts (feature
+      class video_display) — never metadata-only. §11.4.3 topology + capture
+      honesty: FLAG_SECURE secondary HDMI (D1/D3) → 0-byte screencap →
+      ab_skip_with_reason=topology_unsupported; DRM-protected apps
+      (Netflix/Disney+) → black framebuffer → ab_skip_with_reason=
+      operator_attended (needs an HDMI capture card); geo-restricted streams
+      → ab_skip_with_reason=geo_restricted — NEVER a faked PASS, NEVER a
+      FAIL-for-topology. §11.4.50 N=3; §11.4.98 zero manual intervention.
+    setup:
+      - "Push tests/ to /data/local/tmp; host has ffmpeg + python3 + opencv/numpy for video_color_analyze.py"
+      - "Verify the device is reachable via ADB and a non-DRM player can render the bundled test clip on the primary display"
+    steps:
+      - name: "Dispatch §11.4.98 color-fidelity proof (harness self-validation + device capture)"
+        action: "shell: bash device/rockchip/rk3588/tests/test_video_color_fidelity.sh"
+        expected: "Exit 0; SUMMARY FAIL=0; harness self-validation GOLDEN→PASS + BAD→FAIL-on-no_pale, then each player+clip row ab_pass_with_evidence cites verdict.json"
+      - name: "Verify golden/bad self-validation (anti-bluff harness proof, §11.4.1)"
+        action: "Inspect selfval-golden + selfval-bad artefacts: the faithful golden pair is certified faithful (PASS) and the desaturated bad pair is rejected specifically on no_pale (FAIL)"
+        expected: "The comparison harness is proven free of false negatives (golden) AND false positives (bad) BEFORE any device verdict — the §11.4.43 RED(bad)→GREEN(golden) embodiment"
+      - name: "Verify source-vs-rendered fidelity evidence (§11.4.69)"
+        action: "Inspect a passing row's verdict.json + frame pair: ΔE2000, histogram correlation, no_pale/no_oversaturation, sharpness, aspect ratio, and continuity SSIM are all within tolerance vs the host-extracted source frame"
+        expected: "Positive captured evidence (video_display): rendered pixels match the source within tolerance; NO PASS without the verdict.json + source-vs-rendered frame artefact path"
+      - name: "Verify capture-honesty SKIPs (§11.4.3 / §11.4.6)"
+        action: "Confirm FLAG_SECURE secondary HDMI → topology_unsupported SKIP, DRM apps → operator_attended SKIP, geo-restricted streams → geo_restricted SKIP"
+        expected: "SKIP-with-reason for unreachable capture paths (never PASS-by-default, never FAIL-for-topology/DRM/geo)"
+      - name: "Verify device left quiescent (§11.4.14)"
+        action: "After the run, confirm the player app is force-stopped and no media session is PLAYING for the test app"
+        expected: "EXIT trap force-stopped the player; device quiescent"
+    tags: [video, color-fidelity, delta-e2000, histogram, no-pale, sharpness, aspect-ratio, continuity, ssim, golden-bad-self-validation, §11.4.98, ATM-48, §11.4.3, §11.4.5, §11.4.50, §11.4.69, §11.4.100, phase-39, video_display]
+    documentation_refs:
+      - type: test
+        section: "test_video_color_fidelity.sh (§11.4.98 autonomous color-fidelity proof)"
+        path: "device/rockchip/rk3588/tests/test_video_color_fidelity.sh"
+      - type: research
+        section: "Video color fidelity IMPL_SPEC (analyzer + tolerance thresholds)"
+        path: "docs/research/video_color_fidelity/IMPL_SPEC.md"
+      - type: constitution
+        section: "§11.4.98 full-automation anti-bluff mandate"
+        path: "constitution/Constitution.md"
+      - type: constitution
+        section: "§11.4.69 universal sink-side positive-evidence taxonomy"
+        path: "constitution/Constitution.md"
+      - type: issues
+        section: "§11.4.98 (#48) video color/visual-quality fidelity validation"
+        path: "docs/Issues.md"
+    estimated_duration: "90s (harness self-validation + per-player N=3 capture + analyze)"
+    expected_result: "Harness self-validation GOLDEN→PASS + BAD→FAIL-on-no_pale, then each non-DRM/non-secure/non-geo player+clip row renders color-faithful frames within tolerance vs the host-extracted source — ab_pass_with_evidence cites the per-clip verdict.json + source-vs-rendered frame pair. A degraded/pale render is FAIL; FLAG_SECURE/DRM/geo capture paths → SKIP-with-reason."
