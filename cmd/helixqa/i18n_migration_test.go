@@ -5,6 +5,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"os"
 	"strings"
@@ -406,20 +407,71 @@ func TestPrintUsage_RoutesRound214SentinelsThroughSeam(t *testing.T) {
 }
 
 // TestHelixqaT_FallbackOnNoop asserts that with the default
-// NoopTranslator installed, helixqaT returns the messageID
-// verbatim (matching the NoopTranslator T contract). This locks
-// the pre-migration backward-compat behaviour for downstream
-// consumers that have not yet wired a real backend.
+// NoopTranslator installed, helixqaT returns the operator's
+// English fallback — NOT the raw messageID.
+//
+// This is the anti-bluff fix for the §107 reporting bluff: the
+// NoopTranslator echoes the messageID verbatim, so the previous
+// helixqaT contract (return whatever the translator returns)
+// leaked the raw key to every call site. For the run-summary
+// `*_fmt` keys that key carries no format verbs, so a downstream
+// fmt.Printf(helixqaT(ctx, "helixqa_run_summary_failed_fmt", …),
+// failed, total) printed the literal key + `%!(EXTRA int=…)`
+// instead of "FAILED - N/M …". A translator returning the
+// messageID unchanged means "no translation available", so the
+// operator-authored English fallback (which DOES carry the
+// verbs) must win.
 func TestHelixqaT_FallbackOnNoop(t *testing.T) {
 	t.Cleanup(i18n.ResetForTest)
 	i18n.ResetForTest() // ensure Noop default
 	const id = "helixqa_cli_banner"
 	const fallback = "HelixQA — AI-driven QA orchestration"
 	got := helixqaT(context.Background(), id, fallback)
-	// With NoopTranslator, T(id) returns id verbatim (non-empty),
-	// so helixqaT returns id (NOT fallback). Operators who want
-	// the English literal must install a YAML-bundle backend.
-	if got != id {
-		t.Fatalf("with NoopTranslator, helixqaT(%q) = %q, want messageID %q (Noop returns the id verbatim per its contract)", id, got, id)
+	if got != fallback {
+		t.Fatalf("with NoopTranslator, helixqaT(%q) = %q, want fallback %q (Noop echoes the id => no real translation => fallback must win, NOT the raw key)", id, got, fallback)
+	}
+	// Hard anti-bluff guarantee: the raw messageID MUST NOT leak.
+	if got == id {
+		t.Fatalf("helixqaT leaked raw messageID %q to the call site — this is the reporting-bluff regression (raw key has no %%-verbs, so fmt.Printf emits %%!(EXTRA …))", id)
+	}
+}
+
+// TestHelixqaT_FormatKeyRendersRealValuesOnNoop is the direct
+// regression test for the broken run-summary line. It feeds the
+// real run-summary format keys through helixqaT under the default
+// NoopTranslator and renders them with fmt.Sprintf exactly as
+// main.go does, asserting the output contains the real values and
+// NEVER the Go "extra arguments" sentinel `%!(EXTRA`.
+func TestHelixqaT_FormatKeyRendersRealValuesOnNoop(t *testing.T) {
+	t.Cleanup(i18n.ResetForTest)
+	i18n.ResetForTest() // ensure Noop default
+	ctx := context.Background()
+
+	failedFmt := helixqaT(ctx, "helixqa_run_summary_failed_fmt",
+		"FAILED - %d/%d challenges failed or crashes detected\n")
+	failedLine := fmt.Sprintf(failedFmt, 2, 7)
+	assertRenders(t, "failed", failedLine, "2/7")
+
+	passedFmt := helixqaT(ctx, "helixqa_run_summary_passed_fmt",
+		"PASSED - All %d challenges passed, no crashes\n")
+	passedLine := fmt.Sprintf(passedFmt, 7)
+	assertRenders(t, "passed", passedLine, "All 7")
+
+	reportFmt := helixqaT(ctx, "helixqa_run_summary_report_fmt",
+		"Report: %s\n")
+	reportLine := fmt.Sprintf(reportFmt, "/tmp/hqfix/qa-report.md")
+	assertRenders(t, "report", reportLine, "/tmp/hqfix/qa-report.md")
+}
+
+func assertRenders(t *testing.T, label, got, want string) {
+	t.Helper()
+	if strings.Contains(got, "%!(EXTRA") {
+		t.Fatalf("%s summary line still emits the Go extra-args sentinel: %q — the format key was not resolved before Sprintf (reporting bluff)", label, got)
+	}
+	if strings.Contains(got, "helixqa_run_summary_") {
+		t.Fatalf("%s summary line leaked the raw i18n key: %q", label, got)
+	}
+	if !strings.Contains(got, want) {
+		t.Fatalf("%s summary line %q missing expected value %q", label, got, want)
 	}
 }

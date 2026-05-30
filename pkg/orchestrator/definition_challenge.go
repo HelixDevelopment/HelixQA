@@ -49,6 +49,7 @@ import (
 
 	"digital.vasic.helixqa/pkg/config"
 	"digital.vasic.helixqa/pkg/testbank"
+	"digital.vasic.helixqa/pkg/validator"
 )
 
 // definitionWrapperSkipSentinel is the prefix written into
@@ -93,6 +94,103 @@ func restoreSkippedFromDefinitionWrapper(r *challenge.Result) {
 			return
 		}
 	}
+}
+
+// testCasePlatformMatches reports whether tc targets the given run
+// platform. A nil case, an empty Platforms list, or a list containing
+// config.PlatformAll matches every platform. This is the standalone
+// twin of (*definitionChallenge).platformMatches for the orchestrator
+// aggregation call site, where the wrapper itself is no longer in
+// scope (only the TestCase + platform are).
+func testCasePlatformMatches(tc *testbank.TestCase, platform config.Platform) bool {
+	if tc == nil || len(tc.Platforms) == 0 {
+		return true
+	}
+	for _, p := range tc.Platforms {
+		if p == config.PlatformAll || p == platform {
+			return true
+		}
+	}
+	return false
+}
+
+// promoteSkippedToPassed upgrades a SKIPPED challenge result to PASSED
+// when (and only when) all of the following hold:
+//
+//   - the challenge result is non-nil and currently StatusSkipped;
+//   - the wrapper skipped because it had no directly-executable
+//     `shell:` step (the definitionWrapperSkipSentinel is present) —
+//     i.e. the steps ran through the step-validation / LLM-bridge path
+//     instead of the wrapper's os/exec path;
+//   - the bank case targets the platform being run
+//     (testCasePlatformMatches) — a case pinned to a non-matching
+//     platform stays SKIPPED and is never promoted;
+//   - the corresponding step-validation result PASSED.
+//
+// This closes the §107 reporting bluff where every challenge reported
+// SKIPPED (and the summary read "0/N passed") even though every step
+// in the "### Step Validation" table PASSED. A challenge whose steps
+// all passed on a matching platform IS a pass, and the aggregation
+// must reflect that.
+//
+// Anti-bluff posture: promotion requires a genuinely-passing step
+// result. A SKIPPED challenge with no step result, a FAILED/ERROR step
+// result, or a platform mismatch is left SKIPPED untouched — the
+// function never invents a pass. As a hard guard, the desktop platform
+// is NEVER promoted: desktop has no persistent app, so the step
+// validator only proves crash-absence, which is not evidence a CLI
+// command ran correctly — desktop cases must earn PASSED via real
+// `shell:` execution. Promotion therefore serves only UI/app platforms
+// (android/androidtv/web) where post-action crash-absence is the
+// intended validation signal.
+func promoteSkippedToPassed(
+	cr *challenge.Result,
+	sr *validator.StepResult,
+	tc *testbank.TestCase,
+	platform config.Platform,
+) {
+	if cr == nil || cr.Status != challenge.StatusSkipped {
+		return
+	}
+	// Only promote wrapper-emitted honest skips, never some other
+	// component's deliberate skip.
+	if !hasSkipSentinel(cr) {
+		return
+	}
+	// §107 anti-bluff hard guard: the desktop platform has NO persistent
+	// application, so the step validator's signal is pure crash-absence
+	// (det.CheckApp finds nothing running → StepPassed). Promoting a desktop
+	// SKIP to PASSED on that vacuous signal would manufacture a PASS that no
+	// command ever earned — exactly the metadata-only/absence-of-error
+	// PASS-bluff the covenant forbids. Desktop cases MUST earn PASSED through
+	// real `shell:` execution (executeDesktopShellSteps captures the real exit
+	// code + output); a desktop case with only prose steps stays honestly
+	// SKIPPED with the "convert prose steps to `action: \"shell: <cmd>\"`"
+	// reason. Never promote on desktop.
+	if platform == config.PlatformDesktop {
+		return
+	}
+	if !testCasePlatformMatches(tc, platform) {
+		return
+	}
+	if sr == nil || sr.Status != validator.StepPassed {
+		return
+	}
+	cr.Status = challenge.StatusPassed
+}
+
+// hasSkipSentinel reports whether the result carries the
+// definitionChallenge wrapper's skip sentinel in its RecordedActions.
+func hasSkipSentinel(r *challenge.Result) bool {
+	if r == nil {
+		return false
+	}
+	for _, action := range r.RecordedActions {
+		if strings.HasPrefix(action, definitionWrapperSkipSentinel) {
+			return true
+		}
+	}
+	return false
 }
 
 // newDefinitionRegistry returns a fresh, non-shared registry that the
@@ -145,6 +243,31 @@ func newDefinitionChallengeForPlatform(
 		testCase: tc,
 		platform: platform,
 	}
+}
+
+// platformMatches reports whether this wrapper's bank case targets
+// the platform the wrapper is running against. A case with no
+// declared platforms (or with config.PlatformAll) matches every
+// platform; otherwise the run platform must appear in the case's
+// Platforms list.
+//
+// When no executable bank case is available (testCase == nil) the
+// definition is declarative-only and not pinned to any platform, so
+// it is treated as matching — the skip in that situation is "no
+// backend dispatcher", not "wrong platform".
+func (d *definitionChallenge) platformMatches() bool {
+	if d.testCase == nil {
+		return true
+	}
+	if len(d.testCase.Platforms) == 0 {
+		return true
+	}
+	for _, p := range d.testCase.Platforms {
+		if p == config.PlatformAll || p == d.platform {
+			return true
+		}
+	}
+	return false
 }
 
 // ID returns the definition ID verbatim.
