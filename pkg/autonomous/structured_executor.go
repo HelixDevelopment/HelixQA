@@ -411,6 +411,46 @@ func (ste *StructuredTestExecutor) performAction(
 		}
 		return ActionResult{Success: true, Message: fmt.Sprintf("Executed: %s", actionValue)}
 
+	case testbank.ActionTypeShell:
+		// Execute a host shell command via os/exec — the SAME real-execution
+		// semantics the bank-driven runner uses
+		// (orchestrator.executeDesktopShellSteps): run `sh -c <cmd>`, capture
+		// the real exit code + combined output, score Success ONLY on exit 0.
+		// Without this case the autonomous executor returned "Unknown action
+		// type: shell" for every `shell:` step and filed FALSE-NEGATIVE
+		// tickets even though the command passes under `helixqa run` — a §107
+		// anti-bluff defect (a report claiming failure for a command it never
+		// ran). The command itself encodes the assertion (e.g. piping stdout
+		// through grep), so exit 0 == the asserted output was present.
+		fmt.Printf("      [action] shell: %s\n", actionValue)
+		shCtx := ctx
+		if step.Timeout > 0 {
+			var cancel context.CancelFunc
+			shCtx, cancel = context.WithTimeout(
+				ctx, time.Duration(step.Timeout)*time.Second,
+			)
+			defer cancel()
+		}
+		shCmd := osexec.CommandContext(shCtx, "sh", "-c", actionValue)
+		shOut, shErr := shCmd.CombinedOutput()
+		exitCode := 0
+		if shCmd.ProcessState != nil {
+			exitCode = shCmd.ProcessState.ExitCode()
+		}
+		if exitCode != 0 {
+			return ActionResult{Success: false, Message: fmt.Sprintf(
+				"shell exited %d: %s", exitCode,
+				truncateOutput(shOut, 200))}
+		}
+		if shErr != nil {
+			// Spawn/timeout error with no non-zero exit code recorded.
+			return ActionResult{Success: false, Message: fmt.Sprintf(
+				"shell error: %v (out: %s)", shErr,
+				truncateOutput(shOut, 200))}
+		}
+		return ActionResult{Success: true, Message: fmt.Sprintf(
+			"shell exit=0: %s", truncateOutput(shOut, 200))}
+
 	case testbank.ActionTypeSleep:
 		// Sleep for specified milliseconds
 		ms := 0
