@@ -33,6 +33,16 @@ feature is broken is a bluff test and is forbidden. CI green is necessary,
 never sufficient. See this module's CLAUDE.md, AGENTS.md, and CONSTITUTION.md
 for the full Sixth/Seventh Law and section 6.J / 6.L mandate.
 
+
+## Anti-bluff-manner clause (verbatim operator mandate — HRD-158 covenant cascade)
+
+**Forensic anchor — verbatim operator mandate:**
+
+> "IMPORTANT: Make sure that all existing tests and Challenges do work in anti-bluff manner — they MUST confirm that all tested codebase really works as expected! execution of tests and Challenges MUST guarantee the quality, the completition and full usability by end users of the product! This MUST BE part of Constitution of our project, its CLAUDE.MD and AGENTS.MD if it is not there already, and to be applied to all Submodules's Constitution, CLAUDE.MD and AGENTS.MD as well."
+
+This clause is the leading verbatim operator anti-bluff mandate, restated here for cross-file consistency with this module's CLAUDE.md / AGENTS.md / CONSTITUTION.md. It does NOT weaken any inherited rule. Canonical authority: constitution submodule `Constitution.md` §11.4. Tests AND HelixQA Challenges are bound equally.
+
+
 ## Anti-Bluff Forensic Anchor (Article XI §11.9 — cascaded from this module's CLAUDE.md / CONSTITUTION.md)
 
 > Verbatim user mandate: *"We had been in position that all tests do execute with success and all Challenges as well, but in reality the most of the features does not work and can't be used! This MUST NOT be the case and execution of tests and Challenges MUST guarantee the quality, the completion and full usability by end users of the product!"*
