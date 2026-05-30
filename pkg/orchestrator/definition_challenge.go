@@ -173,10 +173,56 @@ func promoteSkippedToPassed(
 	if !testCasePlatformMatches(tc, platform) {
 		return
 	}
+	// §107 anti-bluff wider guard (parity-audit 2026-05-30): the bank-runner
+	// path executes ONLY `shell:` steps (executableShellSteps filters to
+	// ActionTypeShell). The step validator that gates this promotion only
+	// proves crash-absence — it NEVER runs a case's `http:` / `assert:` /
+	// `tap:` / `adb_shell:` / … asserting steps. So promoting a SKIP whose
+	// case carries any such asserting step would manufacture a PASS for
+	// assertions that never executed — the same bluff the desktop guard
+	// closes, but on every UI platform. Only cases whose steps are PURELY
+	// observational (description / screenshot / sleep — where post-action
+	// crash-absence IS the intended signal) may be promoted; a case with a
+	// real asserting step stays honestly SKIPPED.
+	if caseHasUnrunAssertingStep(tc) {
+		return
+	}
 	if sr == nil || sr.Status != validator.StepPassed {
 		return
 	}
 	cr.Status = challenge.StatusPassed
+}
+
+// caseHasUnrunAssertingStep reports whether the test case carries any step
+// whose action genuinely asserts something the bank-runner path does NOT
+// execute (everything except the observational set description/screenshot/
+// sleep, and `shell:` which the bank runner DOES run — so a sentinel-SKIPPED
+// case never has shell steps anyway). If true, crash-absence is not evidence
+// the case passed and it must not be promoted. A nil/empty case is treated as
+// having no asserting step (nothing to run → safe to promote on the prior
+// guards).
+func caseHasUnrunAssertingStep(tc *testbank.TestCase) bool {
+	if tc == nil {
+		return false
+	}
+	for i := range tc.Steps {
+		step := tc.Steps[i]
+		at, _ := step.ParseAction()
+		switch at {
+		case testbank.ActionTypeDescription,
+			testbank.ActionTypeScreenshot,
+			testbank.ActionTypeSleep,
+			testbank.ActionTypeShell:
+			// observational, or shell (run by the bank runner) — not a bluff
+			continue
+		default:
+			// http / assert / tap / swipe / keypress / text / adb_shell /
+			// playback_check / frame_diff / playwright — a real asserting
+			// action the bank runner never executed.
+			return true
+		}
+	}
+	return false
 }
 
 // hasSkipSentinel reports whether the result carries the

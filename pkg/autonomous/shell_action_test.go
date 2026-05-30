@@ -56,3 +56,28 @@ func TestPerformAction_Shell(t *testing.T) {
 	})
 	require.False(t, res.Success)
 }
+
+// TestPerformAction_Swipe is the parity-audit regression: `swipe:` was a
+// schema-recognized action with NO case in the switch → it fell through to
+// "Unknown action type: swipe" (a false-negative). It now routes to the
+// executor's Swipe like tap routes to Click.
+func TestPerformAction_Swipe(t *testing.T) {
+	ste := &StructuredTestExecutor{}
+	res := ste.performAction(context.Background(), &noopExecutor{},
+		testbank.TestStep{Action: "swipe: 0,0,10,10"})
+	require.True(t, res.Success, res.Message)
+	require.NotContains(t, res.Message, "Unknown action type")
+}
+
+// TestPerformAction_DescriptionSkips: a plain prose description is not
+// executable; the autonomous executor must SKIP it (matching the bank-runner
+// path) rather than FAIL it (the prior divergent false-negative verdict).
+func TestPerformAction_DescriptionSkips(t *testing.T) {
+	ste := &StructuredTestExecutor{}
+	res := ste.performAction(context.Background(), &noopExecutor{},
+		testbank.TestStep{Action: "This is a prose description of expected behaviour"})
+	if res.Success || !res.Skipped {
+		t.Fatalf("plain description should SKIP (parity with bank runner), got Success=%v Skipped=%v msg=%q",
+			res.Success, res.Skipped, res.Message)
+	}
+}

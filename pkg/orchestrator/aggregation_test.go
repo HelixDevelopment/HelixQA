@@ -167,3 +167,39 @@ func TestPromote_RealPassUntouched(t *testing.T) {
 		t.Fatalf("real-pass challenge = %q, want PASSED", cr.Status)
 	}
 }
+
+// TestPromote_AssertingStepCaseNotPromoted is the §107 wider-guard
+// regression (parity-audit 2026-05-30): the bank-runner path only executes
+// `shell:` steps, so a case with an `http:`/`assert:`/`tap:`/… asserting step
+// had that assertion NEVER run — promoting its SKIP to PASSED on crash-absence
+// would manufacture a pass for an assertion that never executed. Such a case
+// must stay SKIPPED on every platform.
+func TestPromote_AssertingStepCaseNotPromoted(t *testing.T) {
+	cr := skippedWrapperResult("UI-HTTP-1")
+	tc := &testbank.TestCase{
+		ID:        "UI-HTTP-1",
+		Platforms: []config.Platform{config.PlatformWeb},
+		Steps:     []testbank.TestStep{{Action: "http: GET /v1/health", ExpectStatus: 200}},
+	}
+	promoteSkippedToPassed(cr, passedStep("UI-HTTP-1"), tc, config.PlatformWeb)
+	if cr.Status != challenge.StatusSkipped {
+		t.Fatalf("case with an http: asserting step = %q, want SKIPPED (the assertion never ran — crash-absence is not evidence)", cr.Status)
+	}
+}
+
+// TestPromote_ObservationalStepCasePromoted: a case whose steps are PURELY
+// observational (screenshot/sleep/description) on a UI platform — where
+// post-action crash-absence IS the intended validation — may still be
+// promoted (no asserting step was skipped).
+func TestPromote_ObservationalStepCasePromoted(t *testing.T) {
+	cr := skippedWrapperResult("UI-OBS-1")
+	tc := &testbank.TestCase{
+		ID:        "UI-OBS-1",
+		Platforms: []config.Platform{config.PlatformWeb},
+		Steps:     []testbank.TestStep{{Action: "screenshot"}, {Action: "sleep: 500"}},
+	}
+	promoteSkippedToPassed(cr, passedStep("UI-OBS-1"), tc, config.PlatformWeb)
+	if cr.Status != challenge.StatusPassed {
+		t.Fatalf("purely-observational UI case = %q, want PASSED", cr.Status)
+	}
+}
