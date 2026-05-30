@@ -4348,3 +4348,82 @@ test_cases:
         path: "docs/Issues.md"
     estimated_duration: "90s (harness self-validation + per-player N=3 capture + analyze)"
     expected_result: "Harness self-validation GOLDEN→PASS + BAD→FAIL-on-no_pale, then each non-DRM/non-secure/non-geo player+clip row renders color-faithful frames within tolerance vs the host-extracted source — ab_pass_with_evidence cites the per-clip verdict.json + source-vs-rendered frame pair. A degraded/pale render is FAIL; FLAG_SECURE/DRM/geo capture paths → SKIP-with-reason."
+
+  # ==================== UI-driven scenario suites (§11.4.48 / §11.4.49) ====================
+
+  - id: VSCN-UI-001
+    challenge_id: video.ui-scenarios.all-players-secondary
+    name: "UI-driven video scenarios on every player route to secondary with frames>0"
+    category: functional
+    priority: critical
+    platforms: [android]
+    dispatches_to: "device/rockchip/rk3588/tests/test_video_scenarios_ui.sh"
+    feature_class: video_display
+    domains: [video, secondary-display, ui-driven]
+    required_evidence: [vom-active-decoder, arvus-codec-in-use, ffprobe-count-frames]
+    steps:
+      - name: "Launch every player via the launcher icon (§11.4.48 Surface A)"
+        action: "Host orchestrator drives generic_video_app_scenarios.sh per player — real launcher-icon tap + tile-tap PLAY, NEVER an `am start -a VIEW` Intent shortcut"
+        expected: "Each installed player reaches foreground and begins playback; geo-restricted/uninstalled players SKIP-with-reason (never PASS-by-default)"
+      - name: "Assert secondary-display routing (VOM / Arvus / screenrecord)"
+        action: "vsc_assert_secondary_routing checks VOM activeDecoder names the package OR Arvus Codec-In-Use is non-empty, then captures a secondary-display screenrecord mp4"
+        expected: "At least one non-screencap routing evidence present; primary frames>0 is REJECTED as secondary evidence per §GR/Bug #13"
+      - name: "Exercise pause/resume/seek + sustained + app-switch + stop"
+        action: "Scenarios G..N drive in-app transport + 30s/120s sustained (§GR coverage) + app-switch-and-back + stop-via-back quiescence (§11.4.14)"
+        expected: "Position-proxy assertions PASS where readable; SKIP-with-reason where the app exposes no MediaSession position; device left quiescent after stop"
+      - name: "Host ffprobe asserts frames>0 on every captured mp4 (§11.4.5)"
+        action: "Orchestrator runs `ffprobe -count_frames` on every pulled mp4 — frames>0 is the load-bearing decoded-content evidence; 0-byte FLAG_SECURE secondary mp4 → PENDING_FORENSICS, never faked"
+        expected: "ab_pass_with_evidence cites the per-player routing.txt + the captured mp4; a captured-but-empty mp4 (decoded 0 frames, not 0-byte) is FAIL"
+    tags: [video, secondary-display, ui-driven, all-players, ffprobe-frames, §11.4.48, §11.4.49, §11.4.5, §11.4.69, video_display]
+    documentation_refs:
+      - type: test
+        section: "test_video_scenarios_ui.sh (§11.4.48 autonomous UI-driven video scenario orchestrator)"
+        path: "device/rockchip/rk3588/tests/test_video_scenarios_ui.sh"
+      - type: constitution
+        section: "§11.4.48 UI-driven testing mandate"
+        path: "constitution/Constitution.md"
+      - type: constitution
+        section: "§11.4.69 universal sink-side positive-evidence taxonomy"
+        path: "constitution/Constitution.md"
+    estimated_duration: "per-player ~120s (smoke --quick) to ~600s (--long); full roster backgrounded per §11.4.89"
+    expected_result: "Every installed player launches via its launcher icon, routes video to the secondary display (VOM/Arvus/screenrecord evidence), and the host ffprobe -count_frames asserts frames>0 on the captured mp4 — ab_pass_with_evidence cites the routing.txt + mp4. Geo/uninstalled players SKIP-with-reason; a degraded/empty capture is FAIL. PASS only on captured frames>0, never on metadata."
+
+  - id: ASCN-UI-001
+    challenge_id: audio.ui-scenarios.arvus-codec-in-use-transition
+    name: "UI-driven audio scenarios prove Arvus Codec-In-Use stereo↔multichannel transition"
+    category: functional
+    priority: critical
+    platforms: [android]
+    dispatches_to: "device/rockchip/rk3588/tests/test_audio_scenarios_ui.sh"
+    feature_class: audio_output
+    domains: [audio, arvus, sink-side, ui-driven]
+    required_evidence: [arvus-codec-in-use, arvus-codec-in-use-transition, hal-frames-written]
+    steps:
+      - name: "Drive every audio + video player through the real UI (§11.4.48)"
+        action: "Host orchestrator runs audio_scenarios_device.sh roster — real launcher tap + in-app play/pause/resume/seek + the operator-mandated STEREO→MULTICHANNEL track switch"
+        expected: "Each installed player plays; HAL frames-written advances during playback; uninstalled/geo players SKIP-with-reason"
+      - name: "Authoritative Arvus Codec-In-Use capture (§11.4.13 / §11.4.68)"
+        action: "For each emitted ARVUS_EXPECT (stereo / multichannel / quiescent) the host curls the live Arvus Codec-In-Use field via arvus_probe_codec_state and matches the expected regex"
+        expected: "STEREO matches PCM/2.0; MULTICHANNEL matches a 5.1/7.1 codec; QUIESCENT returns to N.E. after stop — empty Codec-In-Use is FAIL, Arvus unreachable is OPERATOR-BLOCKED (never fake-PASS, never silent SKIP)"
+      - name: "Assert the stereo↔multichannel TRANSITION (operator-mandated proof)"
+        action: "The orchestrator asserts the captured Codec-In-Use VALUE actually changed between the stereo and multichannel windows ([ \"$_CS_STEREO\" != \"$_CS_MULTI\" ])"
+        expected: "ab_pass cites the Codec-In-Use CHANGED 'PCM/2.0' → '5.1 codec'; if the field did not change, the in-app track switch did not reach the sink → FAIL (§11.4.68 audio-bluff caught)"
+      - name: "Verify quiescence after stop (§11.4.14 anti-stickiness)"
+        action: "After STOP, the host re-captures Arvus Codec-In-Use and asserts it returned to N.E."
+        expected: "Sink Codec-In-Use returns to N.E. — sticky sink state is FAIL"
+    tags: [audio, arvus, sink-side, ui-driven, codec-in-use, stereo-multichannel-transition, §11.4.48, §11.4.13, §11.4.68, §11.4.69, audio_output]
+    documentation_refs:
+      - type: test
+        section: "test_audio_scenarios_ui.sh (§11.4.48 UI-driven audio orchestrator + authoritative Arvus codec-in-use)"
+        path: "device/rockchip/rk3588/tests/test_audio_scenarios_ui.sh"
+      - type: guide
+        section: "Arvus HDMI integration (Codec-In-Use sink-side evidence)"
+        path: "docs/guides/ARVUS_HDMI_INTEGRATION.md"
+      - type: constitution
+        section: "§11.4.68 positive sink-side / downstream evidence mandate"
+        path: "constitution/Constitution.md"
+      - type: constitution
+        section: "§11.4.69 universal sink-side positive-evidence taxonomy"
+        path: "constitution/Constitution.md"
+    estimated_duration: "per-app ~60-90s + live transition capture; full roster backgrounded per §11.4.89"
+    expected_result: "Every installed audio/video player drives the real UI through play→pause→resume→seek→stereo↔multichannel switch→stop; the host curls the authoritative Arvus Codec-In-Use for each window and proves it CHANGED value at the stereo→multichannel transition and returned to N.E. after stop. PASS only on the live sink-side Codec-In-Use capture (ab_pass_with_evidence cites the arvus_*.txt evidence files); empty Codec-In-Use is FAIL; Arvus unreachable is OPERATOR-BLOCKED, never fake-PASS."
