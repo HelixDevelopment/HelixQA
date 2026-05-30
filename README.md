@@ -21,8 +21,8 @@ HelixQA is an **anti-bluff QA orchestration framework** for
 cross-platform testing with real-time crash detection, step
 validation, evidence collection, and automated ticket generation.
 
-Built on [digital.vasic.challenges](../Challenges) and
-[digital.vasic.containers](../Containers) — both incorporated at the
+Built on [digital.vasic.challenges](../challenges) and
+[digital.vasic.containers](../containers) — both incorporated at the
 parent project's root per CONST-051(C) (nested own-org submodule
 chains forbidden; this submodule MUST NOT introduce its own
 `.gitmodules` entries for those repos).
@@ -51,8 +51,8 @@ feature.
 
 - Go 1.24+
 - Sibling directories:
-  - `../Challenges` (digital.vasic.challenges)
-  - `../Containers` (digital.vasic.containers)
+  - `../challenges` (digital.vasic.challenges)
+  - `../containers` (digital.vasic.containers)
 
 ## Installation
 

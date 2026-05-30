@@ -25,27 +25,27 @@ deps:
   - name: Challenges
     ssh_url: git@github.com:vasic-digital/Challenges.git
     ref: main
-    why: "Anti-bluff Challenge Test infrastructure (HelixQA's behavior-anchor + challenge runner foundation) — go.mod replace digital.vasic.challenges => ../Challenges"
+    why: "Anti-bluff Challenge Test infrastructure (HelixQA's behavior-anchor + challenge runner foundation) — go.mod replace digital.vasic.challenges => ../challenges"
     layout: flat
   - name: Containers
     ssh_url: git@github.com:vasic-digital/Containers.git
     ref: main
-    why: "Rootless podman/docker orchestration for HelixQA's emulator-based QA pipelines — go.mod replace digital.vasic.containers => ../Containers"
+    why: "Rootless podman/docker orchestration for HelixQA's emulator-based QA pipelines — go.mod replace digital.vasic.containers => ../containers"
     layout: flat
   - name: DocProcessor
     ssh_url: git@github.com:HelixDevelopment/DocProcessor.git
     ref: main
-    why: "Document-processing dependency — go.mod replace digital.vasic.docprocessor => ../DocProcessor"
+    why: "Document-processing dependency — go.mod replace digital.vasic.docprocessor => ../doc_processor"
     layout: flat
   - name: LLMOrchestrator
     ssh_url: git@github.com:HelixDevelopment/LLMOrchestrator.git
     ref: main
-    why: "LLM orchestration layer for HelixQA QA sessions — go.mod replace digital.vasic.llmorchestrator => ../LLMOrchestrator"
+    why: "LLM orchestration layer for HelixQA QA sessions — go.mod replace digital.vasic.llmorchestrator => ../llm_orchestrator"
     layout: flat
   - name: LLMProvider
     ssh_url: git@github.com:HelixDevelopment/LLMProvider.git
     ref: main
-    why: "LLM provider abstraction — go.mod replace digital.vasic.llmprovider => ../LLMProvider"
+    why: "LLM provider abstraction — go.mod replace digital.vasic.llmprovider => ../llm_provider"
     layout: flat
   - name: LLMsVerifier
     ssh_url: git@github.com:vasic-digital/LLMsVerifier.git
@@ -60,7 +60,7 @@ deps:
   - name: VisionEngine
     ssh_url: git@github.com:HelixDevelopment/VisionEngine.git
     ref: main
-    why: "Vision/OCR analysis engine for video-evidence validation — go.mod replace digital.vasic.visionengine => ../VisionEngine"
+    why: "Vision/OCR analysis engine for video-evidence validation — go.mod replace digital.vasic.visionengine => ../vision_engine"
     layout: flat
 
 transitive_handling:

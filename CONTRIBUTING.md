@@ -7,8 +7,8 @@ Thank you for your interest in contributing to HelixQA.
 1. Clone the repository
 2. Ensure Go 1.24+ is installed
 3. Ensure sibling modules exist:
-   - `../Challenges` (digital.vasic.challenges)
-   - `../Containers` (digital.vasic.containers)
+   - `../challenges` (digital.vasic.challenges)
+   - `../containers` (digital.vasic.containers)
 4. Run `go build ./...` to verify the setup
 5. Run `go test ./... -race -count=1` to verify tests pass
 
