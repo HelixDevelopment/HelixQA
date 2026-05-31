@@ -7,8 +7,28 @@
 package detector
 
 import (
+	"os"
 	"os/exec"
 )
+
+// isPIDAlive reports whether a process with the given PID is
+// currently alive on Windows.
+//
+// Windows has no syscall.Kill / signal-0 probe. os.FindProcess on
+// Windows actually opens a handle to the process and fails when no
+// such process exists, so a non-nil error from FindProcess (or a
+// nil process) means the PID is dead. This avoids shelling out to
+// any external binary, matching the LVA-8 fix rationale on POSIX.
+func isPIDAlive(pid int) bool {
+	if pid <= 0 {
+		return false
+	}
+	proc, err := os.FindProcess(pid)
+	if err != nil || proc == nil {
+		return false
+	}
+	return true
+}
 
 // setProcessGroup is a no-op on Windows.
 func setProcessGroup(cmd *exec.Cmd) {

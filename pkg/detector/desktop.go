@@ -80,21 +80,27 @@ func (d *Detector) isDesktopProcessAlive(
 }
 
 // checkProcessByPID checks if a process with the given PID
-// exists.
+// exists. It uses the POSIX signal-0 liveness probe directly via
+// syscall.Kill (see isPIDAlive in exec_unix.go / exec_windows.go)
+// rather than shelling out to the platform `kill` binary.
+//
+// LVA-8 fix: the previous implementation ran
+// d.cmdRunner.Run(ctx, "kill", "-0", pid) and treated a non-nil
+// error as "dead". On macOS the /bin/kill BINARY exits 0 for an
+// absent out-of-range PID, so a dead process read as alive →
+// HasCrash=false → the validator reported a crashed step as
+// passed. Using syscall.Kill removes the platform-binary
+// dependency entirely and yields reliable cross-platform errno
+// semantics (ESRCH for absent PIDs).
+//
+// The ctx parameter is retained for interface symmetry with the
+// by-name path; the signal-0 probe is synchronous and does not
+// block, so no timeout is required.
 func (d *Detector) checkProcessByPID(
-	ctx context.Context,
+	_ context.Context,
 	pid int,
 ) (bool, error) {
-	output, err := d.cmdRunner.Run(
-		ctx, "kill", "-0",
-		fmt.Sprintf("%d", pid),
-	)
-	if err != nil {
-		// kill -0 returns non-zero if process doesn't exist.
-		_ = output
-		return false, nil
-	}
-	return true, nil
+	return isPIDAlive(pid), nil
 }
 
 // checkProcessByName checks if a process with the given name
