@@ -323,6 +323,15 @@ func (r *Reporter) writePlatformSection(
 				cr.Duration,
 			)
 		}
+
+		// §107.x anti-bluff evidence: persist the REAL captured runtime
+		// output (RecordedActions — e.g. each `shell:` step's exit code +
+		// combined stdout/stderr) and the assertion ledger for every
+		// challenge that carries any. Without this, a PASS line is an
+		// unauditable claim; with it, the report itself proves the command
+		// actually ran and emitted the asserted bytes. Rendered for ALL
+		// statuses (a FAILED challenge's captured output is the diagnosis).
+		writeChallengeEvidence(buf, pr.ChallengeResults)
 	}
 
 	if len(pr.StepResults) > 0 {
@@ -361,6 +370,85 @@ func (r *Reporter) writePlatformSection(
 				sr.Duration,
 				errMsg,
 			)
+		}
+	}
+}
+
+// writeChallengeEvidence renders, per challenge that carries any, the REAL
+// captured runtime output (RecordedActions — e.g. each `shell:` step's
+// command + exit code + combined stdout/stderr) and the assertion ledger
+// (Expected vs Actual per assertion). This is the §107.x anti-bluff
+// evidence anchor: it turns a bare "PASSED" row into an auditable artefact
+// that proves the command actually executed and emitted the asserted bytes.
+// Emitted for every status — a FAILED challenge's captured output is the
+// diagnosis, and a PASSED challenge's output is the proof it was not a
+// metadata-only bluff.
+func writeChallengeEvidence(
+	buf *bytes.Buffer,
+	results []*challenge.Result,
+) {
+	hasAny := false
+	for _, cr := range results {
+		if len(cr.RecordedActions) > 0 ||
+			len(cr.Assertions) > 0 || cr.Error != "" {
+			hasAny = true
+			break
+		}
+	}
+	if !hasAny {
+		return
+	}
+
+	fmt.Fprintln(buf)
+	fmt.Fprintln(buf, "### Recorded evidence")
+	fmt.Fprintln(buf)
+	fmt.Fprintln(
+		buf,
+		"Real captured runtime output + assertion ledger per challenge "+
+			"(§107.x anti-bluff: the report itself is the auditable proof "+
+			"the command ran and emitted the asserted output).",
+	)
+
+	for _, cr := range results {
+		if len(cr.RecordedActions) == 0 &&
+			len(cr.Assertions) == 0 && cr.Error == "" {
+			continue
+		}
+		fmt.Fprintf(
+			buf, "\n#### %s — %s\n",
+			cr.ChallengeName, strings.ToUpper(cr.Status),
+		)
+		if cr.Error != "" {
+			fmt.Fprintf(buf, "\n- **Error:** %s\n", cr.Error)
+		}
+		if len(cr.RecordedActions) > 0 {
+			fmt.Fprintln(buf)
+			fmt.Fprintln(buf, "```")
+			for _, a := range cr.RecordedActions {
+				fmt.Fprintln(buf, a)
+			}
+			fmt.Fprintln(buf, "```")
+		}
+		if len(cr.Assertions) > 0 {
+			fmt.Fprintln(buf)
+			fmt.Fprintln(
+				buf,
+				"| Assertion | Target | Expected | Actual | Result |",
+			)
+			fmt.Fprintln(
+				buf,
+				"|-----------|--------|----------|--------|--------|",
+			)
+			for _, as := range cr.Assertions {
+				res := "PASS"
+				if !as.Passed {
+					res = "FAIL"
+				}
+				fmt.Fprintf(
+					buf, "| %s | %s | %s | %s | %s |\n",
+					as.Type, as.Target, as.Expected, as.Actual, res,
+				)
+			}
 		}
 	}
 }

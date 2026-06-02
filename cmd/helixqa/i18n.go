@@ -42,7 +42,19 @@ import (
 func helixqaT(ctx context.Context, messageID, fallback string) string {
 	tr := i18n.ActiveTranslator()
 	got, err := tr.T(ctx, messageID, nil)
-	if err != nil || got == "" {
+	// A translator that returns the messageID verbatim has NOT
+	// actually translated anything — that is the NoopTranslator
+	// default (and the common "key-miss echo" behaviour of real
+	// backends). Treat it identically to an empty/error response and
+	// fall back to the operator's English fallback. Returning the raw
+	// messageID to the call site is a reporting bluff: the *_fmt keys
+	// (e.g. "helixqa_run_summary_failed_fmt") carry no `%d`/`%s`/`%v`
+	// verbs, so a downstream fmt.Printf(helixqaT(...), args...) emits
+	// the literal key followed by `%!(EXTRA …)` instead of the real
+	// counts. The fallback string is the operator-authored format
+	// string that DOES carry the verbs, so it must win whenever no
+	// genuine translation is available.
+	if err != nil || got == "" || got == messageID {
 		return fallback
 	}
 	return got

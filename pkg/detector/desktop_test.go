@@ -6,6 +6,8 @@ package detector
 import (
 	"context"
 	"fmt"
+	"os"
+	"os/exec"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -79,63 +81,107 @@ func TestCheckDesktop_ByProcessName(t *testing.T) {
 	assert.True(t, result.ProcessAlive)
 }
 
-func TestCheckDesktop_ByPID_Alive(t *testing.T) {
-	mock := newMockRunner()
-	mock.On(
-		"kill -0 12345",
-		[]byte(""),
-		nil,
-	)
+// guaranteedAbsentPID returns a PID that is guaranteed not to map
+// to any live process. The classic value 2147483647 (math.MaxInt32)
+// is out of any real PID range. This is the exact fixture that
+// exposed the LVA-8 bluff: the old `exec kill -0 <pid>` path
+// reported this PID as alive on macOS (the /bin/kill binary exits 0
+// for it) while syscall.Kill correctly returns ESRCH.
+const guaranteedAbsentPID = 2147483647
 
+// TestCheckDesktop_ByPID_Alive exercises the real liveness probe
+// against the test process's OWN PID, which is by definition alive.
+// LVA-8: the by-PID path now calls syscall.Kill(pid, 0) directly —
+// no command runner is involved, so the detector is created without
+// a mock and the probe hits the real kernel.
+func TestCheckDesktop_ByPID_Alive(t *testing.T) {
 	d := New(
 		config.PlatformDesktop,
-		WithCommandRunner(mock),
-		WithProcessPID(12345),
+		WithProcessPID(os.Getpid()),
 	)
 
 	result, err := d.checkDesktop(context.Background())
 	require.NoError(t, err)
-	assert.True(t, result.ProcessAlive)
+	assert.True(t, result.ProcessAlive,
+		"the running test process must read as alive")
+	assert.False(t, result.HasCrash)
 }
 
+// TestCheckDesktop_ByPID_Dead is the LVA-8 regression test. A
+// guaranteed-absent PID MUST read as dead → ProcessAlive=false →
+// HasCrash=true. With the OLD `exec kill -0 <pid>` logic this test
+// FAILED on macOS (the /bin/kill binary exits 0 for the absent PID,
+// so ProcessAlive came back true and HasCrash false — the validator
+// then reported a crashed step as passed). With the syscall.Kill
+// fix it correctly reports the process dead.
+//
+// FALSIFIABILITY REHEARSAL: reverting checkProcessByPID to
+// `d.cmdRunner.Run(ctx, "kill", "-0", pid)` (the historical bug)
+// makes this test FAIL on macOS with:
+//
+//	Error: Should be false / Error: Should be true
+//	Test: TestCheckDesktop_ByPID_Dead
+//	ProcessAlive was true for a guaranteed-absent PID
+//
+// because the macOS /bin/kill binary exits 0 for PID 2147483647.
 func TestCheckDesktop_ByPID_Dead(t *testing.T) {
-	mock := newMockRunner()
-	mock.On(
-		"kill -0 12345",
-		[]byte(""),
-		fmt.Errorf("no such process"),
-	)
-
 	d := New(
 		config.PlatformDesktop,
-		WithCommandRunner(mock),
-		WithProcessPID(12345),
+		WithProcessPID(guaranteedAbsentPID),
 	)
 
 	result, err := d.checkDesktop(context.Background())
 	require.NoError(t, err)
-	assert.False(t, result.ProcessAlive)
+	assert.False(t, result.ProcessAlive,
+		"a guaranteed-absent PID must read as dead (LVA-8 regression)")
+	assert.True(t, result.HasCrash,
+		"a dead target process must flag a crash (LVA-8 regression)")
+}
+
+// TestCheckDesktop_ByPID_DeadOfReapedChild reinforces the regression
+// with a process that was genuinely alive and then exited+reaped, so
+// its PID is no longer live. This proves the probe distinguishes
+// alive from dead for a PID that actually existed (not just an
+// out-of-range sentinel).
+func TestCheckDesktop_ByPID_DeadOfReapedChild(t *testing.T) {
+	cmd := exec.Command("true")
+	require.NoError(t, cmd.Start())
+	pid := cmd.Process.Pid
+	require.NoError(t, cmd.Wait()) // process exits and is reaped here
+
+	d := New(
+		config.PlatformDesktop,
+		WithProcessPID(pid),
+	)
+
+	result, err := d.checkDesktop(context.Background())
+	require.NoError(t, err)
+	assert.False(t, result.ProcessAlive,
+		"a reaped child PID must read as dead")
 	assert.True(t, result.HasCrash)
 }
 
 func TestCheckDesktop_PIDTakesPrecedence(t *testing.T) {
+	// PID is set to the live test process and a process name that, if
+	// consulted, would hit the mock with NO canned response (the mock
+	// returns an error for unknown commands). Because the by-PID path
+	// takes precedence and uses syscall.Kill directly, the name path
+	// (and its mock) must never be invoked — so ProcessAlive must be
+	// true even though the mock would error on "pgrep -f should-not-use".
 	mock := newMockRunner()
-	mock.On(
-		"kill -0 99",
-		[]byte(""),
-		nil,
-	)
 
 	d := New(
 		config.PlatformDesktop,
 		WithCommandRunner(mock),
 		WithProcessName("should-not-use"),
-		WithProcessPID(99),
+		WithProcessPID(os.Getpid()),
 	)
 
 	result, err := d.checkDesktop(context.Background())
 	require.NoError(t, err)
-	assert.True(t, result.ProcessAlive)
+	assert.True(t, result.ProcessAlive,
+		"by-PID path must short-circuit before the (unmockable) name path")
+	assert.False(t, result.HasCrash)
 }
 
 // TestCheckDesktop_DefaultBehavior documents that the close-out⁷⁵
@@ -173,23 +219,16 @@ func TestCheckDesktop_PlatformIsDesktop(t *testing.T) {
 }
 
 func TestCheckDesktop_CrashMessageContainsPID(t *testing.T) {
-	mock := newMockRunner()
-	mock.On(
-		"kill -0 42",
-		[]byte(""),
-		fmt.Errorf("no such process"),
-	)
-
 	d := New(
 		config.PlatformDesktop,
-		WithCommandRunner(mock),
-		WithProcessPID(42),
+		WithProcessPID(guaranteedAbsentPID),
 	)
 
 	result, err := d.checkDesktop(context.Background())
 	require.NoError(t, err)
 	assert.True(t, result.HasCrash)
-	assert.Contains(t, result.LogEntries[0], "PID 42")
+	assert.Contains(t, result.LogEntries[0],
+		fmt.Sprintf("PID %d", guaranteedAbsentPID))
 }
 
 func TestCheckDesktop_CrashMessageContainsName(t *testing.T) {

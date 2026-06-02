@@ -411,6 +411,46 @@ func (ste *StructuredTestExecutor) performAction(
 		}
 		return ActionResult{Success: true, Message: fmt.Sprintf("Executed: %s", actionValue)}
 
+	case testbank.ActionTypeShell:
+		// Execute a host shell command via os/exec — the SAME real-execution
+		// semantics the bank-driven runner uses
+		// (orchestrator.executeDesktopShellSteps): run `sh -c <cmd>`, capture
+		// the real exit code + combined output, score Success ONLY on exit 0.
+		// Without this case the autonomous executor returned "Unknown action
+		// type: shell" for every `shell:` step and filed FALSE-NEGATIVE
+		// tickets even though the command passes under `helixqa run` — a §107
+		// anti-bluff defect (a report claiming failure for a command it never
+		// ran). The command itself encodes the assertion (e.g. piping stdout
+		// through grep), so exit 0 == the asserted output was present.
+		fmt.Printf("      [action] shell: %s\n", actionValue)
+		shCtx := ctx
+		if step.Timeout > 0 {
+			var cancel context.CancelFunc
+			shCtx, cancel = context.WithTimeout(
+				ctx, time.Duration(step.Timeout)*time.Second,
+			)
+			defer cancel()
+		}
+		shCmd := osexec.CommandContext(shCtx, "sh", "-c", actionValue)
+		shOut, shErr := shCmd.CombinedOutput()
+		exitCode := 0
+		if shCmd.ProcessState != nil {
+			exitCode = shCmd.ProcessState.ExitCode()
+		}
+		if exitCode != 0 {
+			return ActionResult{Success: false, Message: fmt.Sprintf(
+				"shell exited %d: %s", exitCode,
+				truncateOutput(shOut, 200))}
+		}
+		if shErr != nil {
+			// Spawn/timeout error with no non-zero exit code recorded.
+			return ActionResult{Success: false, Message: fmt.Sprintf(
+				"shell error: %v (out: %s)", shErr,
+				truncateOutput(shOut, 200))}
+		}
+		return ActionResult{Success: true, Message: fmt.Sprintf(
+			"shell exit=0: %s", truncateOutput(shOut, 200))}
+
 	case testbank.ActionTypeSleep:
 		// Sleep for specified milliseconds
 		ms := 0
@@ -583,8 +623,31 @@ func (ste *StructuredTestExecutor) performAction(
 			fmt.Printf("      [SKIP] Placeholder action (bank incomplete): %s\n", actionValue)
 			return ActionResult{Skipped: true, Message: "Bank placeholder — convert to adb_shell:/sleep:/key:/text:/tap: action"}
 		}
-		fmt.Printf("      [WARNING] Text-only action (not executable): %s\n", actionValue)
-		return ActionResult{Success: false, Message: "Text-only action - not executable! Use adb_shell:, sleep:, http:, etc."}
+		// §107 parity alignment (parity-audit 2026-05-30): a plain prose
+		// description is not executable — the bank-runner path SKIPs such a
+		// case rather than FAILing it. Mirror that here so the SAME bank entry
+		// gets the SAME verdict in both executors (was Success:false → a
+		// false-negative finding that diverged from `helixqa run`'s honest
+		// SKIP and drowned real issues in noise).
+		fmt.Printf("      [SKIP] Text-only action (not executable): %s\n", actionValue)
+		return ActionResult{Skipped: true, Message: "Text-only/description action - not executable (use adb_shell:/shell:/http:/sleep:/tap: etc.)"}
+
+	case testbank.ActionTypeSwipe:
+		// Swipe from (x1,y1) to (x2,y2). Mirrors the tap path with the
+		// 4-coordinate gesture. Previously UNHANDLED → fell through to the
+		// default "Unknown action type: swipe" FALSE-NEGATIVE for a
+		// legitimate, schema-recognized action (parity-audit 2026-05-30).
+		fmt.Printf("      [action] swipe: %s\n", actionValue)
+		var sx1, sy1, sx2, sy2 int
+		fmt.Sscanf(actionValue, "%d,%d,%d,%d", &sx1, &sy1, &sx2, &sy2)
+		if swipeExecutor, ok := executor.(interface {
+			Swipe(context.Context, int, int, int, int) error
+		}); ok {
+			if err := swipeExecutor.Swipe(ctx, sx1, sy1, sx2, sy2); err != nil {
+				return ActionResult{Success: false, Message: fmt.Sprintf("Swipe failed: %v", err)}
+			}
+		}
+		return ActionResult{Success: true, Message: fmt.Sprintf("Swiped: %d,%d->%d,%d", sx1, sy1, sx2, sy2)}
 
 	default:
 		return ActionResult{Success: false, Message: fmt.Sprintf("Unknown action type: %s", actionType)}

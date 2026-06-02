@@ -318,14 +318,15 @@ func (o *Orchestrator) runPlatform(
 		)
 
 		// Run challenge if runner is available.
+		var challengeResult *challenge.Result
 		if platformRunner != nil {
-			challengeResult, err := platformRunner.Run(
+			cr, err := platformRunner.Run(
 				ctx, def.ID, cfg,
 			)
 			if err != nil {
 				o.logError("Challenge %s failed: %v",
 					def.ID, err)
-				challengeResult = &challenge.Result{
+				cr = &challenge.Result{
 					ChallengeID:   def.ID,
 					ChallengeName: def.Name,
 					Status:        challenge.StatusError,
@@ -350,15 +351,14 @@ func (o *Orchestrator) runPlatform(
 			// the reporter aggregates pass/fail counts. The
 			// challenges submodule is decoupled (CONST-051(B)) —
 			// fix lives here, not there.
-			restoreSkippedFromDefinitionWrapper(challengeResult)
-			pr.ChallengeResults = append(
-				pr.ChallengeResults, challengeResult,
-			)
+			restoreSkippedFromDefinitionWrapper(cr)
+			challengeResult = cr
 		}
 
 		// Validate step if enabled.
+		var stepResult *validator.StepResult
 		if val != nil {
-			stepResult, err := val.ValidateStep(
+			sr, err := val.ValidateStep(
 				ctx,
 				string(def.ID),
 				platform,
@@ -367,19 +367,45 @@ func (o *Orchestrator) runPlatform(
 				o.logError("Validation failed for %s: %v",
 					def.ID, err)
 			}
-			if stepResult != nil {
+			if sr != nil {
+				stepResult = sr
 				pr.StepResults = append(
-					pr.StepResults, stepResult,
+					pr.StepResults, sr,
 				)
-				if stepResult.Detection != nil {
-					if stepResult.Detection.HasCrash {
+				if sr.Detection != nil {
+					if sr.Detection.HasCrash {
 						pr.CrashCount++
 					}
-					if stepResult.Detection.HasANR {
+					if sr.Detection.HasANR {
 						pr.ANRCount++
 					}
 				}
 			}
+		}
+
+		// Reporting-aggregation fix: a challenge whose bank case
+		// targets the platform being run AND whose step validation
+		// PASSED must aggregate to PASSED — not SKIPPED. The wrapper
+		// honestly skips a matching-platform case that has no
+		// `shell:` step it can execute directly (the case's steps run
+		// through the step-validation / LLM-bridge path instead), but
+		// leaving that as SKIPPED while every step PASSED is itself a
+		// §107 reporting bluff: the report claims 0/N passed even
+		// though the steps executed and passed. promoteSkippedToPassed
+		// performs that promotion ONLY when the platform genuinely
+		// matches and step validation passed; a case pinned to a
+		// non-matching platform stays SKIPPED (and is never counted as
+		// a failure). See promoteSkippedToPassed for the full guard.
+		if challengeResult != nil {
+			promoteSkippedToPassed(
+				challengeResult,
+				stepResult,
+				o.executableCases[def.ID],
+				platform,
+			)
+			pr.ChallengeResults = append(
+				pr.ChallengeResults, challengeResult,
+			)
 		}
 
 		// Apply step delay based on speed mode.
