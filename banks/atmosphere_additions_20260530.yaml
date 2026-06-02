@@ -1,0 +1,673 @@
+# SPDX-FileCopyrightText: 2026 Milos Vasic
+# SPDX-License-Identifier: Apache-2.0
+#
+# HelixQA Test Bank ADDITIONS — ATMOSphere Android 15 Firmware
+# Drafted 2026-05-30 by the §11.4.4(b) layer-4 HelixQA-coverage-gap background stream.
+#
+# PURPOSE: §11.4.4(b) layer-4 (HelixQA Challenge) coverage for the cohort-c
+#   post-flash-closeable items + recently-hardened audio/video tests that LACK a
+#   Challenge entry in banks/atmosphere.yaml. A bank entry without Challenge
+#   coverage is a §11.4 PASS-bluff; these entries close that gap.
+#
+# DO NOT MERGE BY EDITING THIS FILE INTO atmosphere.yaml MANUALLY here — the
+#   conductor merges these `test_cases:` list items serially into the live bank's
+#   `test_cases:` sequence to avoid §11.4.58 cross-PWU contention. This file is a
+#   staging draft ONLY.
+#
+# SCHEMA: matches the newer richer entries in atmosphere.yaml (challenge_id +
+#   dispatches_to + domains + required_evidence + §11.4.69 taxonomy tags), NOT the
+#   legacy VR-xxx `steps`-only style. Every dispatches_to was verified to EXIST in
+#   device/rockchip/rk3588/tests/ on 2026-05-30. Every required_evidence cites the
+#   §11.4.69 sink-side captured-evidence taxonomy (audio_output / video_display /
+#   display_topology / subtitle_render / cast / touch_input). PASS only on positive
+#   captured evidence per §11.4.5 / §11.4.13 / §11.4.68 / §11.4.69; sink-unreachable
+#   → SKIP topology_unsupported (never FAIL); geo-blocked → SKIP geo_restricted.
+#
+# ANTI-BLUFF NOTE (§11.4.6): items marked CAF in the playbooks are CLOSEABLE-after-
+#   flash. The multichannel trio (§GN/§GT/§AV) PASS requires a NON-STEREO fixture +
+#   Arvus awake — a multichannel PASS against a stereo fixture is the keystone bluff.
+#   These Challenges encode that requirement in their required_evidence + steps.
+
+test_cases:
+
+  # ==================== AUDIO (§11.4.72 top-priority) ====================
+
+  # --- §GN / §GT / §AV multichannel HDMI trio (one E2E run closes all three) ---
+
+  - id: audio.multichannel.5-1-hdmi-end-to-end
+    challenge_id: audio.multichannel.5-1-hdmi-end-to-end
+    name: "5.1/7.1 multichannel HDMI end-to-end — §GN/§GT/§AV trio, non-stereo fixture + Arvus sink"
+    category: functional
+    priority: critical
+    platforms: [android]
+    dispatches_to: "device/rockchip/rk3588/tests/test_5_1_multichannel_hdmi_end_to_end.sh"
+    domains: [audio, multichannel, hdmi, arvus]
+    required_evidence: [hw-params-channels-6-or-8, ffprobe-channels-5-1-or-7-1, audio-flinger-frames-written-advance, arvus-codec-in-use-non-stereo, no-xrun-census]
+    steps:
+      - name: "Verify NON-STEREO multichannel fixture present"
+        action: "Confirm device/rockchip/rk3588/tests/assets/audio/ holds a 6-/8-channel WAV (NOT the stereo A3 fixture) before trusting any 5.1 PASS"
+        expected: "Multichannel fixture present — a multichannel PASS against a stereo fixture is the §GN/§GT/§AV keystone bluff (§11.4.6)"
+      - name: "Run multichannel HDMI end-to-end test"
+        action: "adb_shell: sh /data/local/tmp/tests/test_5_1_multichannel_hdmi_end_to_end.sh"
+        expected: "5.1/7.1 content decodes to multichannel LPCM and reaches the HDMI sink (Fix #112 §EM LPCM path)"
+      - name: "Verify on-SoC channel-count evidence"
+        action: "Read /proc/asound/card0/pcm0p/sub0/hw_params DURING playback — expect channels: 6 (or 8), NOT 2; confirm dumpsys media.audio_policy HDMI Port masks 0x003f (5.1) / 0x063f (7.1)"
+        expected: "HAL direct-output reports 6/8 channels; AudioFlinger frames-written advancing; zero XRUN per §11.4.5"
+      - name: "Verify Arvus sink-side codec (§11.4.13 / §11.4.68)"
+        action: "Probe Arvus Codec-In-Use — expect a NON-stereo value (Multi-CH PCM / PCM6 / 5.1 / 7.1)"
+        expected: "Arvus Codec-In-Use is non-stereo per §11.4.69 audio_output taxonomy — empty / PCM2 is a §11.4 PASS-bluff; Arvus unreachable → SKIP topology_unsupported"
+    tags: [audio, multichannel, hdmi, "5.1", "7.1", arvus, "§GN", "§GT", "§AV", "§11.4.5", "§11.4.13", "§11.4.68", "§11.4.69", "§11.4.72", audio_output, cohort-c-caf]
+    documentation_refs:
+      - type: plan
+        section: "Audio burn-down §GN/§GT/§AV multichannel cluster"
+        path: "docs/research/issues_triage_2026_05_30/audio_burndown_playbook.md"
+      - type: architecture
+        section: "Fix #112 / Fix #136 §EM"
+        path: "docs/guides/MULTICHANNEL_AUDIO_ARCHITECTURE.md"
+      - type: guide
+        section: "Arvus Codec-In-Use sink-side evidence"
+        path: "docs/guides/ARVUS_HDMI_INTEGRATION.md"
+    estimated_duration: "120s"
+    expected_result: "5.1/7.1 content reaches the HDMI sink as multichannel LPCM: hw_params channels 6/8, AudioFlinger frames-written advancing, zero XRUN, and Arvus Codec-In-Use shows a non-stereo codec. Closes §GN + §GT + §AV in one run. PASS only on the non-stereo sink-side capture; stereo Codec-In-Use is FAIL; Arvus unreachable is SKIP topology_unsupported."
+
+  - id: audio.multichannel.5-1-arvus-autonomous
+    challenge_id: audio.multichannel.5-1-arvus-autonomous
+    name: "5.1 multichannel Arvus autonomous E2E — sink-side codec ground truth (§GN/§GT/§AV)"
+    category: functional
+    priority: critical
+    platforms: [android]
+    dispatches_to: "device/rockchip/rk3588/tests/test_5_1_arvus_e2e_autonomous.sh"
+    domains: [audio, multichannel, arvus, sink-side]
+    required_evidence: [arvus-codec-in-use-non-stereo, arvus-codec-in-use-transition, hal-frames-written, no-xrun-census]
+    steps:
+      - name: "Verify Arvus reachable + identity-matched (§11.4.13)"
+        action: "Host arvus_probe.sh — Arvus AVR awake + MAC OUI match before consuming codec-state"
+        expected: "Arvus reachable + identity verified; unreachable → SKIP topology_unsupported (never FAIL per §11.4.13 / §FW)"
+      - name: "Run autonomous 5.1 Arvus E2E test"
+        action: "adb_shell: sh /data/local/tmp/tests/test_5_1_arvus_e2e_autonomous.sh"
+        expected: "Autonomous 5.1 playback drives the HDMI sink; no human present to observe (§11.4.52)"
+      - name: "Assert sink-side codec transitioned to multichannel"
+        action: "Capture Arvus Codec-In-Use during 5.1 window — expect non-stereo; assert value CHANGED from the quiescent / stereo baseline"
+        expected: "Codec-In-Use non-stereo during playback per §11.4.68; empty Codec-In-Use is FAIL"
+      - name: "Anti-stickiness post-stop"
+        action: "After STOP re-probe Arvus Codec-In-Use — assert it returned to N.E."
+        expected: "Codec-In-Use returns to N.E. per §11.4.13 anti-stickiness; §11.4.14 cleanup verified"
+    tags: [audio, multichannel, arvus, sink-side, autonomous, "§GN", "§GT", "§AV", "§11.4.13", "§11.4.52", "§11.4.68", "§11.4.69", "§11.4.72", audio_output, cohort-c-caf]
+    documentation_refs:
+      - type: plan
+        section: "Audio burn-down §GN/§GT/§AV — Top-3 #1 multichannel HDMI E2E"
+        path: "docs/research/issues_triage_2026_05_30/audio_burndown_playbook.md"
+      - type: guide
+        section: "Arvus Codec-In-Use sink-side evidence"
+        path: "docs/guides/ARVUS_HDMI_INTEGRATION.md"
+    estimated_duration: "120s"
+    expected_result: "Autonomous 5.1 playback drives the Arvus sink to a non-stereo Codec-In-Use that CHANGED from baseline and returned to N.E. after stop. PASS only on the live non-stereo sink-side capture; empty Codec-In-Use is FAIL; Arvus unreachable is SKIP topology_unsupported."
+
+  # --- §AE AC3 / E-AC3 decoder validation via Arvus HTTP probe ---
+
+  - id: audio.ac3.decode-arvus-probe
+    challenge_id: audio.ac3.decode-arvus-probe
+    name: "AC3 / E-AC3 decode validation via Arvus HTTP probe — §AE (Fix #106/#112 LPCM path)"
+    category: functional
+    priority: high
+    platforms: [android]
+    dispatches_to: "device/rockchip/rk3588/tests/test_ac3_decode.sh"
+    domains: [audio, ac3, eac3, arvus]
+    required_evidence: [ffprobe-decoded-channel-count, arvus-codec-in-use, no-ac3-tombstone]
+    steps:
+      - name: "Run AC3 / E-AC3 decode test"
+        action: "adb_shell: sh /data/local/tmp/tests/test_ac3_decode.sh"
+        expected: "c2.ffmpeg.ac3.decoder / c2.ffmpeg.eac3.decoder decode AC3/E-AC3 to PCM (Fix #106 server-side LPCM path)"
+      - name: "Verify decoded channel count"
+        action: "ffprobe captured loopback — confirm decoded PCM channel count matches content"
+        expected: "Decoded LPCM channel count matches per §11.4.5; sink receives decoded LPCM (not bitstream — the §M.M3 distinction)"
+      - name: "Verify Arvus sink + no AC3 crash"
+        action: "Probe Arvus Codec-In-Use reflects the played content; confirm no AC3 tombstone (§H4 scope)"
+        expected: "Arvus Codec-In-Use non-empty per §11.4.69 audio_output; no AC3 crash; Arvus unreachable → SKIP topology_unsupported"
+    tags: [audio, ac3, eac3, arvus, "§AE", "§11.4.5", "§11.4.13", "§11.4.69", "§11.4.72", audio_output, cohort-c-caf]
+    documentation_refs:
+      - type: plan
+        section: "Audio burn-down §AE AC3/E-AC3 decoder validation"
+        path: "docs/research/issues_triage_2026_05_30/audio_burndown_playbook.md"
+      - type: architecture
+        section: "Fix #106 / Fix #112"
+        path: "docs/guides/SYSTEM_ARCHITECTURE.md"
+    estimated_duration: "90s"
+    expected_result: "AC3/E-AC3 decode to PCM confirmed by ffprobe channel count + Arvus Codec-In-Use reflecting the content + no AC3 tombstone. PASS only on the decoded-channel + sink-side capture; Arvus unreachable is SKIP topology_unsupported."
+
+  # --- §GQ audio routing + display matrix (most sub-issues User-confirmed RESOLVED) ---
+
+  - id: audio.routing.full-matrix-arvus
+    challenge_id: audio.routing.full-matrix-arvus
+    name: "Audio full output matrix with Arvus sink — §GQ re-confirm (HDMI/jack/USB/BT × outputs)"
+    category: functional
+    priority: high
+    platforms: [android]
+    dispatches_to: "device/rockchip/rk3588/tests/test_audio_full_matrix_arvus.sh"
+    domains: [audio, routing, arvus, matrix]
+    required_evidence: [arvus-codec-in-use, hal-frames-written, dumpsys-audio-policy-routed-device]
+    steps:
+      - name: "Run full audio output matrix test"
+        action: "adb_shell: sh /data/local/tmp/tests/test_audio_full_matrix_arvus.sh"
+        expected: "Each output (HDMI / 3.5mm jack / USB / BT) routes audio with positive evidence per §11.4.5"
+      - name: "Verify per-output routing + Arvus sink"
+        action: "For HDMI: probe Arvus Codec-In-Use; for jack/USB/BT: confirm HAL frames-written advance + dumpsys media.audio_policy routed device"
+        expected: "Each present output produces sink-side / HAL positive evidence per §11.4.69; absent hardware → SKIP hardware_not_present"
+      - name: "Re-confirm §GQ.3/4/5/6/7 sub-issues resolved"
+        action: "Cross-reference the 5 User-confirmed-RESOLVED §GQ sub-issues against the matrix result on the NEW build"
+        expected: "§GQ sub-issues stay resolved on the new flash per §11.4.7 same-conditions evidence (§GQ.2 tracked under §GT/§GN)"
+    tags: [audio, routing, arvus, matrix, hdmi, jack, usb, bt-a2dp, "§GQ", "§11.4.5", "§11.4.13", "§11.4.69", "§11.4.72", audio_output, cohort-c-caf]
+    documentation_refs:
+      - type: plan
+        section: "Audio burn-down §GQ 7 audio routing + display issues"
+        path: "docs/research/issues_triage_2026_05_30/audio_burndown_playbook.md"
+    estimated_duration: "150s"
+    expected_result: "Every present audio output routes with sink-side (Arvus) or HAL frames-written positive evidence, re-confirming §GQ.3/4/5/6/7 resolved on the new build. PASS only on captured per-output evidence; absent hardware is SKIP hardware_not_present; Arvus unreachable is SKIP topology_unsupported."
+
+  # --- §M.M3 IEC61937 HDMI passthrough (ships INERT default=never; opt-in force path) ---
+
+  - id: audio.passthrough.m-m3-iec61937-force
+    challenge_id: audio.passthrough.m-m3-iec61937-force
+    name: "§M.M3 IEC61937 HDMI passthrough opt-in (force) — Arvus compressed-codec proof, default stays never"
+    category: functional
+    priority: medium
+    platforms: [android]
+    dispatches_to: "device/rockchip/rk3588/tests/test_ac3_decode.sh"
+    domains: [audio, passthrough, iec61937, hdmi, arvus]
+    required_evidence: [getprop-passthrough-default-never, arvus-codec-in-use-compressed, arvus-codec-in-use-revert-never]
+    steps:
+      - name: "Verify shipped default is never (Fix #137 INERT)"
+        action: "getprop persist.atmosphere.audio.passthrough — expect empty / never (Fix #112 §EM LPCM path is the active default)"
+        expected: "Default never per docs/audio/m_m3_passthrough_decision.md — passthrough is opt-in ONLY; default-on would be a zero-regression violation"
+      - name: "Opt into forced passthrough + play compressed content"
+        action: "setprop persist.atmosphere.audio.passthrough force; play AC3/E-AC3/DTS; probe Arvus Codec-In-Use"
+        expected: "Arvus Codec-In-Use shows DD / DD+ / DTS (compressed codec, NOT PCM) per §11.4.13 / §11.4.68"
+      - name: "Revert to never + cleanup (§11.4.14)"
+        action: "setprop persist.atmosphere.audio.passthrough never; stop playback; re-probe Arvus Codec-In-Use"
+        expected: "Default never restored; Codec-In-Use returns to N.E.; device left quiescent per §11.4.14"
+    tags: [audio, passthrough, iec61937, hdmi, arvus, "§M.M3", "fix-137", "§11.4.13", "§11.4.14", "§11.4.68", "§11.4.69", "§11.4.72", audio_output]
+    documentation_refs:
+      - type: plan
+        section: "Audio burn-down §M.M3 IEC61937 passthrough (ship-inert)"
+        path: "docs/research/issues_triage_2026_05_30/audio_burndown_playbook.md"
+      - type: design
+        section: "M.M3 passthrough decision (default flipped auto→never)"
+        path: "docs/audio/m_m3_passthrough_decision.md"
+    estimated_duration: "120s"
+    expected_result: "Shipped default is never (LPCM path active); on opt-in force, Arvus Codec-In-Use shows a compressed codec (DD/DD+/DTS), then reverts to never with Codec-In-Use back to N.E. PASS only on the compressed-codec sink-side capture during force; Arvus unreachable is SKIP topology_unsupported."
+
+  # --- Dolby player matrix (server-side LPCM decode — Fix #106/#112) ---
+
+  - id: audio.dolby.video-kodi
+    challenge_id: audio.dolby.video-kodi
+    name: "Dolby (AC3/E-AC3) audio in Kodi video playback — server-side LPCM decode"
+    category: functional
+    priority: high
+    platforms: [android]
+    dispatches_to: "device/rockchip/rk3588/tests/test_dolby_video_kodi.sh"
+    domains: [audio, dolby, video, kodi]
+    required_evidence: [ffprobe-channel-count, arvus-codec-in-use, no-xrun-census]
+    steps:
+      - name: "Run Dolby Kodi video test"
+        action: "adb_shell: sh /data/local/tmp/tests/test_dolby_video_kodi.sh"
+        expected: "Kodi plays Dolby content; AC3/E-AC3 decodes to multichannel PCM per §11.4.5"
+      - name: "Verify 5-layer audio quality"
+        action: "Confirm ffprobe channel count + sample-rate/bit-depth + XRUN census within budget"
+        expected: "5-layer audio quality validation per §11.4.5 satisfied"
+      - name: "Verify Arvus sink-side codec"
+        action: "Probe Arvus Codec-In-Use during Kodi Dolby playback"
+        expected: "Arvus Codec-In-Use non-empty per §11.4.69 audio_output; geo-restricted content → SKIP geo_restricted; Arvus unreachable → SKIP topology_unsupported"
+    tags: [audio, dolby, ac3, eac3, video, kodi, "§11.4.5", "§11.4.13", "§11.4.69", "§11.4.72", audio_output]
+    documentation_refs:
+      - type: plan
+        section: "Audio burn-down Dolby player matrix"
+        path: "docs/research/issues_triage_2026_05_30/audio_burndown_playbook.md"
+    estimated_duration: "90s"
+    expected_result: "Kodi Dolby playback produces multichannel PCM (ffprobe channel count) with Arvus Codec-In-Use confirming the content. PASS only on captured audio quality + sink evidence; geo/unreachable is SKIP-with-reason."
+
+  - id: audio.dolby.video-mpv
+    challenge_id: audio.dolby.video-mpv
+    name: "Dolby (AC3/E-AC3) audio in MPV video playback — server-side LPCM decode"
+    category: functional
+    priority: high
+    platforms: [android]
+    dispatches_to: "device/rockchip/rk3588/tests/test_dolby_video_mpv.sh"
+    domains: [audio, dolby, video, mpv]
+    required_evidence: [ffprobe-channel-count, arvus-codec-in-use, no-xrun-census]
+    steps:
+      - name: "Run Dolby MPV video test"
+        action: "adb_shell: sh /data/local/tmp/tests/test_dolby_video_mpv.sh"
+        expected: "MPV (libmpv) plays Dolby content; AC3/E-AC3 decodes to multichannel PCM per §11.4.5"
+      - name: "Verify 5-layer audio quality + Arvus sink"
+        action: "Confirm ffprobe channel count + XRUN census; probe Arvus Codec-In-Use during MPV Dolby playback"
+        expected: "5-layer audio quality per §11.4.5 + Arvus Codec-In-Use non-empty per §11.4.69; geo/unreachable → SKIP-with-reason"
+    tags: [audio, dolby, ac3, eac3, video, mpv, "§11.4.5", "§11.4.13", "§11.4.69", "§11.4.72", audio_output]
+    documentation_refs:
+      - type: plan
+        section: "Audio burn-down Dolby player matrix"
+        path: "docs/research/issues_triage_2026_05_30/audio_burndown_playbook.md"
+    estimated_duration: "90s"
+    expected_result: "MPV Dolby playback produces multichannel PCM with Arvus Codec-In-Use confirming the content. PASS only on captured audio quality + sink evidence; geo/unreachable is SKIP-with-reason."
+
+  - id: audio.dolby.video-nova
+    challenge_id: audio.dolby.video-nova
+    name: "Dolby (AC3/E-AC3) audio in Nova Player video playback — server-side LPCM decode"
+    category: functional
+    priority: high
+    platforms: [android]
+    dispatches_to: "device/rockchip/rk3588/tests/test_dolby_video_nova.sh"
+    domains: [audio, dolby, video, nova]
+    required_evidence: [ffprobe-channel-count, arvus-codec-in-use, no-xrun-census]
+    steps:
+      - name: "Run Dolby Nova video test"
+        action: "adb_shell: sh /data/local/tmp/tests/test_dolby_video_nova.sh"
+        expected: "Nova Player (FFmpeg avos) plays Dolby content; AC3/E-AC3 decodes to multichannel PCM per §11.4.5"
+      - name: "Verify 5-layer audio quality + Arvus sink"
+        action: "Confirm ffprobe channel count + XRUN census; probe Arvus Codec-In-Use during Nova Dolby playback"
+        expected: "5-layer audio quality per §11.4.5 + Arvus Codec-In-Use non-empty per §11.4.69; geo/unreachable → SKIP-with-reason"
+    tags: [audio, dolby, ac3, eac3, video, nova, "§11.4.5", "§11.4.13", "§11.4.69", "§11.4.72", audio_output]
+    documentation_refs:
+      - type: plan
+        section: "Audio burn-down Dolby player matrix"
+        path: "docs/research/issues_triage_2026_05_30/audio_burndown_playbook.md"
+    estimated_duration: "90s"
+    expected_result: "Nova Player Dolby playback produces multichannel PCM with Arvus Codec-In-Use confirming the content. PASS only on captured audio quality + sink evidence; geo/unreachable is SKIP-with-reason."
+
+  - id: audio.dolby.video-vlc
+    challenge_id: audio.dolby.video-vlc
+    name: "Dolby (AC3/E-AC3) audio in ATMOSphere VLC video playback — server-side LPCM decode"
+    category: functional
+    priority: high
+    platforms: [android]
+    dispatches_to: "device/rockchip/rk3588/tests/test_dolby_video_vlc.sh"
+    domains: [audio, dolby, video, vlc]
+    required_evidence: [ffprobe-channel-count, arvus-codec-in-use, no-xrun-census]
+    steps:
+      - name: "Run Dolby VLC video test"
+        action: "adb_shell: sh /data/local/tmp/tests/test_dolby_video_vlc.sh"
+        expected: "ATMOSphere VLC plays Dolby content; AC3/E-AC3 decodes to multichannel PCM per §11.4.5"
+      - name: "Verify 5-layer audio quality + Arvus sink"
+        action: "Confirm ffprobe channel count + XRUN census; probe Arvus Codec-In-Use during VLC Dolby playback"
+        expected: "5-layer audio quality per §11.4.5 + Arvus Codec-In-Use non-empty per §11.4.69; geo/unreachable → SKIP-with-reason"
+    tags: [audio, dolby, ac3, eac3, video, vlc, "§11.4.5", "§11.4.13", "§11.4.69", "§11.4.72", audio_output]
+    documentation_refs:
+      - type: plan
+        section: "Audio burn-down Dolby player matrix"
+        path: "docs/research/issues_triage_2026_05_30/audio_burndown_playbook.md"
+    estimated_duration: "90s"
+    expected_result: "ATMOSphere VLC Dolby playback produces multichannel PCM with Arvus Codec-In-Use confirming the content. PASS only on captured audio quality + sink evidence; geo/unreachable is SKIP-with-reason."
+
+  - id: audio.dolby.audio-aimp
+    challenge_id: audio.dolby.audio-aimp
+    name: "Dolby (AC3/E-AC3) audio-only playback in AIMP — server-side LPCM decode"
+    category: functional
+    priority: medium
+    platforms: [android]
+    dispatches_to: "device/rockchip/rk3588/tests/test_dolby_audio_aimp.sh"
+    domains: [audio, dolby, aimp]
+    required_evidence: [ffprobe-channel-count, arvus-codec-in-use, no-xrun-census]
+    steps:
+      - name: "Run Dolby AIMP audio test"
+        action: "adb_shell: sh /data/local/tmp/tests/test_dolby_audio_aimp.sh"
+        expected: "AIMP plays Dolby audio-only content; AC3/E-AC3 decodes to multichannel PCM per §11.4.5"
+      - name: "Verify 5-layer audio quality + Arvus sink"
+        action: "Confirm ffprobe channel count + XRUN census; probe Arvus Codec-In-Use during AIMP Dolby playback"
+        expected: "5-layer audio quality per §11.4.5 + Arvus Codec-In-Use non-empty per §11.4.69; Arvus unreachable → SKIP topology_unsupported"
+    tags: [audio, dolby, ac3, eac3, aimp, "§11.4.5", "§11.4.13", "§11.4.69", "§11.4.72", audio_output]
+    documentation_refs:
+      - type: plan
+        section: "Audio burn-down Dolby player matrix"
+        path: "docs/research/issues_triage_2026_05_30/audio_burndown_playbook.md"
+    estimated_duration: "90s"
+    expected_result: "AIMP Dolby audio-only playback produces multichannel PCM with Arvus Codec-In-Use confirming the content. PASS only on captured audio quality + sink evidence; Arvus unreachable is SKIP topology_unsupported."
+
+  - id: audio.dolby.audio-winamp
+    challenge_id: audio.dolby.audio-winamp
+    name: "Dolby (AC3/E-AC3) audio-only playback in Winamp — server-side LPCM decode"
+    category: functional
+    priority: medium
+    platforms: [android]
+    dispatches_to: "device/rockchip/rk3588/tests/test_dolby_audio_winamp.sh"
+    domains: [audio, dolby, winamp]
+    required_evidence: [ffprobe-channel-count, arvus-codec-in-use, no-xrun-census]
+    steps:
+      - name: "Run Dolby Winamp audio test"
+        action: "adb_shell: sh /data/local/tmp/tests/test_dolby_audio_winamp.sh"
+        expected: "Winamp plays Dolby audio-only content; AC3/E-AC3 decodes to multichannel PCM per §11.4.5"
+      - name: "Verify 5-layer audio quality + Arvus sink"
+        action: "Confirm ffprobe channel count + XRUN census; probe Arvus Codec-In-Use during Winamp Dolby playback"
+        expected: "5-layer audio quality per §11.4.5 + Arvus Codec-In-Use non-empty per §11.4.69; Arvus unreachable → SKIP topology_unsupported"
+    tags: [audio, dolby, ac3, eac3, winamp, "§11.4.5", "§11.4.13", "§11.4.69", "§11.4.72", audio_output]
+    documentation_refs:
+      - type: plan
+        section: "Audio burn-down Dolby player matrix"
+        path: "docs/research/issues_triage_2026_05_30/audio_burndown_playbook.md"
+    estimated_duration: "90s"
+    expected_result: "Winamp Dolby audio-only playback produces multichannel PCM with Arvus Codec-In-Use confirming the content. PASS only on captured audio quality + sink evidence; Arvus unreachable is SKIP topology_unsupported."
+
+  # ==================== VIDEO / SECONDARY-DISPLAY ====================
+
+  # --- §GW HDMI CEC wake-on-play (Feature → Implemented; 3 RED FAILs flip GREEN) ---
+
+  - id: video.cec.wake-on-play
+    challenge_id: video.cec.wake-on-play
+    name: "HDMI CEC wake-on-play — §GW sink powers standby→on when content starts (D3+D4 dispatch)"
+    category: functional
+    priority: high
+    platforms: [android]
+    dispatches_to: "device/rockchip/rk3588/tests/test_gw_cec_wake_on_play.sh"
+    domains: [video, cec, hdmi, arvus, cast]
+    required_evidence: [arvus-power-state-standby-to-on, cec-wake-trace, dumpsys-display-secondary-present]
+    steps:
+      - name: "Verify Arvus CEC sink present (D3-vs-D4 dispatch)"
+        action: "Detect topology via dumpsys display; D3 dual-display has the Arvus secondary on CEC, D4 single-display variant"
+        expected: "Topology dispatched per §11.4.3; Arvus offline → SKIP topology_unsupported (never FAIL)"
+      - name: "Run CEC wake-on-play test"
+        action: "adb_shell: sh /data/local/tmp/tests/test_gw_cec_wake_on_play.sh"
+        expected: "Content start emits a CEC wake; the 3 pre-rebuild RED FAILs convert GREEN post-flash (§GW source LANDED Phase 39.IY)"
+      - name: "Verify sink power-state transition (§11.4.69 cast)"
+        action: "Capture Arvus power state — assert it transitions standby→on when playback starts"
+        expected: "Arvus standby→on captured per §11.4.69 cast taxonomy — the sink-side proof; standby-stays-standby is FAIL"
+    tags: [video, cec, hdmi, wake-on-play, arvus, cast, "§GW", "§11.4.3", "§11.4.13", "§11.4.69", cohort-c-caf]
+    documentation_refs:
+      - type: plan
+        section: "Audio/video burn-down §GW + §JT CEC wake-on-play (Top-3 #3 flash-flip)"
+        path: "docs/research/issues_triage_2026_05_30/audio_burndown_playbook.md"
+      - type: plan
+        section: "Post-flash plan §GW (EXISTS but not orchestrator-wired — run standalone)"
+        path: "docs/research/issues_triage_2026_05_30/postflash_validation_plan.md"
+    estimated_duration: "60s"
+    expected_result: "Content start drives the Arvus sink standby→on via CEC, captured as the sink-side power-state transition. §GW migrates as Implemented. PASS only on the captured standby→on transition; Arvus offline is SKIP topology_unsupported."
+
+  # --- §EW SmartTube video→video frozen-frame-on-primary ---
+
+  - id: video.secondary.ew-smarttube-no-frozen-frame
+    challenge_id: video.secondary.ew-smarttube-no-frozen-frame
+    name: "SmartTube video→video switch leaves no frozen frame on primary — §EW"
+    category: functional
+    priority: critical
+    platforms: [android]
+    dispatches_to: "device/rockchip/rk3588/tests/test_ew_smarttube_video_switch_no_frozen_frame.sh"
+    domains: [video, secondary-display, smarttube]
+    required_evidence: [ffprobe-count-frames-secondary, no-frozen-frame-primary, vom-active-decoder]
+    steps:
+      - name: "Verify secondary HDMI present + SmartTube installed"
+        action: "dumpsys display confirms secondary; pm list packages confirms the SmartTube fork"
+        expected: "Topology + app preconditions met per §11.4.3; no secondary → SKIP topology_unsupported"
+      - name: "Run SmartTube video-switch test"
+        action: "adb_shell: sh /data/local/tmp/tests/test_ew_smarttube_video_switch_no_frozen_frame.sh"
+        expected: "After a video→video switch, primary shows NO frozen frame; secondary plays the new video"
+      - name: "Verify secondary frames advance + primary clean"
+        action: "ffprobe -count_frames on secondary capture (>0); assert primary has no stale/frozen frame; VOM activeDecoder names the package"
+        expected: "Secondary frames>0 per §11.4.69 video_display; primary frozen-frame absent; PASS only on captured frames"
+    tags: [video, secondary-display, smarttube, frozen-frame, "§EW", "§11.4.5", "§11.4.69", video_display, cohort-c-caf]
+    documentation_refs:
+      - type: plan
+        section: "Post-flash plan §EW SmartTube video→video frozen-frame-on-primary"
+        path: "docs/research/issues_triage_2026_05_30/postflash_validation_plan.md"
+    estimated_duration: "90s"
+    expected_result: "A SmartTube video→video switch leaves no frozen frame on primary and the new video plays on secondary (ffprobe frames>0). PASS only on captured frames + clean primary; no secondary is SKIP topology_unsupported."
+
+  # --- §N TikTok force-redirect to secondary (UI-driven §11.4.48) ---
+
+  - id: video.secondary.n-tiktok-redirect
+    challenge_id: video.secondary.n-tiktok-redirect
+    name: "TikTok force-redirect to secondary display — §N (UI-driven §11.4.48)"
+    category: functional
+    priority: high
+    platforms: [android]
+    dispatches_to: "device/rockchip/rk3588/tests/test_tiktok_redirect.sh"
+    domains: [video, secondary-display, tiktok, ui-driven]
+    required_evidence: [vom-active-decoder, ffprobe-count-frames-secondary]
+    steps:
+      - name: "Verify secondary HDMI present + TikTok installed"
+        action: "dumpsys display confirms secondary; pm list packages confirms TikTok"
+        expected: "Topology + app preconditions met per §11.4.3; no secondary → SKIP topology_unsupported"
+      - name: "Run TikTok redirect test (UI-driven)"
+        action: "adb_shell: sh /data/local/tmp/tests/test_tiktok_redirect.sh"
+        expected: "TikTok video force-redirects to the secondary display via the user-equivalent UI path (§11.4.48)"
+      - name: "Verify secondary routing evidence"
+        action: "VOM activeDecoder names TikTok; ffprobe -count_frames on the secondary capture (>0)"
+        expected: "Secondary frames>0 + VOM activeDecoder per §11.4.69 video_display; PASS only on captured frames"
+    tags: [video, secondary-display, tiktok, ui-driven, "§N", "§11.4.48", "§11.4.69", video_display, cohort-c-caf]
+    documentation_refs:
+      - type: plan
+        section: "Post-flash plan §N TikTok force-redirect to secondary"
+        path: "docs/research/issues_triage_2026_05_30/postflash_validation_plan.md"
+    estimated_duration: "90s"
+    expected_result: "TikTok video force-redirects to the secondary display (VOM activeDecoder + ffprobe frames>0 on the secondary capture). PASS only on captured frames; no secondary is SKIP topology_unsupported."
+
+  # --- §AH apps not stranded on display#6 (secondary-display app contract) ---
+
+  - id: video.secondary.ah-app-contract-no-strand
+    challenge_id: video.secondary.ah-app-contract-no-strand
+    name: "Apps return to primary on stop, not stranded on display#6 — §AH secondary-display contract"
+    category: functional
+    priority: high
+    platforms: [android]
+    dispatches_to: "device/rockchip/rk3588/tests/test_secondary_display_app_contract.sh"
+    domains: [video, secondary-display, display-topology]
+    required_evidence: [dumpsys-display-app-returns-primary, no-strand-on-secondary]
+    steps:
+      - name: "Verify secondary HDMI present"
+        action: "dumpsys display confirms secondary present"
+        expected: "Topology met per §11.4.3; no secondary → SKIP topology_unsupported"
+      - name: "Run secondary-display app-contract test"
+        action: "adb_shell: sh /data/local/tmp/tests/test_secondary_display_app_contract.sh"
+        expected: "App routes video to secondary during playback, then returns its task to primary on stop"
+      - name: "Verify app not stranded on display#6"
+        action: "dumpsys window/activity confirms the app's task returned to the primary display after stop"
+        expected: "No strand on the secondary display per §11.4.69 display_topology; stranded app is FAIL"
+    tags: [video, secondary-display, app-contract, display-topology, "§AH", "§11.4.69", display_topology, cohort-c-caf]
+    documentation_refs:
+      - type: plan
+        section: "Post-flash plan §AH apps not stranded on display#6"
+        path: "docs/research/issues_triage_2026_05_30/postflash_validation_plan.md"
+    estimated_duration: "60s"
+    expected_result: "After playback stops, the app's task returns to the primary display (dumpsys evidence) and is not stranded on the secondary. PASS only on the captured return-to-primary state; no secondary is SKIP topology_unsupported."
+
+  # --- §HF spurious overlay on 0-external-display (D4 primary-only = the test condition) ---
+
+  - id: video.topology.hf-overlay-no-secondary
+    challenge_id: video.topology.hf-overlay-no-secondary
+    name: "No spurious VideoControlOverlay when 0 external displays — §HF (D4 primary-only)"
+    category: functional
+    priority: high
+    platforms: [android]
+    dispatches_to: "device/rockchip/rk3588/tests/test_hf_overlay_no_secondary.sh"
+    domains: [video, display-topology, overlay]
+    required_evidence: [dumpsys-window-overlay-absent-no-secondary]
+    steps:
+      - name: "Verify primary-only topology (D4 condition)"
+        action: "dumpsys display confirms ZERO external displays — this is the §HF test condition (§11.4.3 dispatch)"
+        expected: "Primary-only topology; the overlay MUST be absent when there is no secondary (RED was overlay-present)"
+      - name: "Run no-secondary overlay test"
+        action: "adb_shell: sh /data/local/tmp/tests/test_hf_overlay_no_secondary.sh"
+        expected: "VLC VIDEO_START gated on hasSecondary; no spurious overlay on the primary-only device"
+      - name: "Verify overlay absent"
+        action: "dumpsys window shows the VideoControlOverlay ABSENT when 0 external displays"
+        expected: "Overlay absent per §11.4.69 display_topology; overlay-present on primary-only is FAIL"
+    tags: [video, display-topology, overlay, "§HF", "atm-246", "§11.4.3", "§11.4.69", display_topology, cohort-c-caf]
+    documentation_refs:
+      - type: plan
+        section: "Post-flash plan §HF [ATM-246] spurious overlay on 0-external display"
+        path: "docs/research/issues_triage_2026_05_30/postflash_validation_plan.md"
+    estimated_duration: "45s"
+    expected_result: "On a primary-only device (0 external displays) the VideoControlOverlay is absent (dumpsys window). PASS only on the captured overlay-absent state under the no-secondary topology; this variant FAILs if overlay is present."
+
+  # --- §GZ 3-button Recents opens Overview + OverviewProxy reconnect ---
+
+  - id: ui.recents.gz-overview-opens
+    challenge_id: ui.recents.gz-overview-opens
+    name: "3-button Recents opens Overview (+ OverviewProxy reconnect self-heal) — §GZ Recents leg"
+    category: functional
+    priority: high
+    platforms: [android]
+    dispatches_to: "device/rockchip/rk3588/tests/test_gz_recents.sh"
+    domains: [ui, recents, navigation, touch-input]
+    required_evidence: [uiautomator-overview-frame-present, recents-keyevent-trace]
+    steps:
+      - name: "Run Recents test"
+        action: "adb_shell: sh /data/local/tmp/tests/test_gz_recents.sh"
+        expected: "Recents keyevent opens the Overview frame (Recents leg of §GZ; Home-button leg is ATM-240-HOME DFX, stays open)"
+      - name: "Verify Overview frame present"
+        action: "uiautomator dump after the recents keyevent shows the Overview frame"
+        expected: "Overview frame present per §11.4.69 touch_input UI evidence; empty hierarchy → fallback per §11.4.52"
+      - name: "Verify OverviewProxy reconnect (companion leg)"
+        action: "Companion test_gz_recents_proxy.sh injects a SysUI-restart fault and asserts the proxy reconnects (self-heal)"
+        expected: "OverviewProxy reconnect trace captured; Recents works again after SysUI restart"
+    tags: [ui, recents, navigation, overview, touch-input, "§GZ", "atm-240", "§11.4.69", touch_input, cohort-c-caf]
+    documentation_refs:
+      - type: plan
+        section: "Post-flash plan §GZ [ATM-240] 3-button Recents opens Overview"
+        path: "docs/research/issues_triage_2026_05_30/postflash_validation_plan.md"
+    estimated_duration: "60s"
+    expected_result: "A 3-button Recents keyevent opens the Overview frame (uiautomator evidence) and the OverviewProxy self-heals after a SysUI-restart fault. PASS only on the captured Overview frame + reconnect trace. Covers the §GZ Recents leg only; the Home-button leg (ATM-240-HOME) stays open."
+
+  # --- §HA deeper-dim + video auto-un-dim (idle-dim daemon video-aware guard) ---
+
+  - id: video.dim.ha-video-undim
+    challenge_id: video.dim.ha-video-undim
+    name: "Idle-dim daemon does NOT dim during video playback — §HA video-aware un-dim guard"
+    category: functional
+    priority: high
+    platforms: [android]
+    dispatches_to: "device/rockchip/rk3588/tests/test_ha_video_undim.sh"
+    domains: [video, dim, idle-dim-daemon, boot-service]
+    required_evidence: [backlight-stays-bright-during-video, idle-dim-daemon-running]
+    steps:
+      - name: "Verify idle-dim daemon running (Fix #132)"
+        action: "Confirm atmosphere_idle_dim service is running (the §132 daemon polling last-user-activity)"
+        expected: "Idle-dim daemon running per §11.4.69 boot_service; daemon absent → FAIL (the un-dim guard cannot apply)"
+      - name: "Run video un-dim test"
+        action: "adb_shell: sh /data/local/tmp/tests/test_ha_video_undim.sh"
+        expected: "Starting video keeps the backlight bright (NOT dimmed) — the video-aware un-dim guard fires"
+      - name: "Verify backlight stays bright during video"
+        action: "Read /sys/class/backlight/*/brightness delta during video — assert it stays bright (does NOT dim to 10)"
+        expected: "Backlight stays bright during video per §11.4.69 video_display; dim-during-video is FAIL"
+    tags: [video, dim, idle-dim-daemon, boot-service, "§HA", "atm-241", "fix-132", "§11.4.69", video_display, cohort-c-caf]
+    documentation_refs:
+      - type: plan
+        section: "Post-flash plan §HA [ATM-241] deeper-dim + video auto-un-dim"
+        path: "docs/research/issues_triage_2026_05_30/postflash_validation_plan.md"
+    estimated_duration: "90s"
+    expected_result: "With the idle-dim daemon running, starting video keeps the backlight bright (sysfs brightness does not drop to 10). PASS only on the captured backlight-stays-bright delta during video; dim-during-video is FAIL."
+
+  # --- §GM AppleTV/Prime subtitles off-primary (autonomous off-primary half) ---
+
+  - id: video.subtitle.gm-subtitles-off-primary
+    challenge_id: video.subtitle.gm-subtitles-off-primary
+    name: "Streaming-app subtitles routed off the primary display — §GM [ATM-239] (off-primary half)"
+    category: functional
+    priority: high
+    platforms: [android]
+    dispatches_to: "device/rockchip/rk3588/tests/test_subtitles_secondary.sh"
+    domains: [video, subtitle, secondary-display]
+    required_evidence: [subtitle-off-primary-marker, dumpsys-display-secondary-present]
+    steps:
+      - name: "Verify secondary HDMI present"
+        action: "dumpsys display confirms secondary present"
+        expected: "Topology met per §11.4.3; no secondary → SKIP topology_unsupported"
+      - name: "Run subtitles-secondary test"
+        action: "adb_shell: sh /data/local/tmp/tests/test_subtitles_secondary.sh"
+        expected: "AppleTV/Prime subtitle strip is blanked on the primary display (§GM off-primary routing)"
+      - name: "Verify subtitle off-primary marker"
+        action: "Confirm the off-primary marker — primary subtitle strip blanked at decoder-register time (Fix #115 layer)"
+        expected: "Subtitle off-primary per §11.4.69 subtitle_render; secondary RENDER half is operator-attended (FLAG_SECURE) — autonomous off-primary half only"
+    tags: [video, subtitle, secondary-display, "§GM", "atm-239", "§11.4.69", subtitle_render, cohort-c-caf]
+    documentation_refs:
+      - type: plan
+        section: "Post-flash plan §GM [ATM-239] AppleTV/Prime subtitles off-primary"
+        path: "docs/research/issues_triage_2026_05_30/postflash_validation_plan.md"
+    estimated_duration: "60s"
+    expected_result: "AppleTV/Prime subtitles are routed off the primary display (off-primary marker present). PASS only on the captured off-primary marker; the secondary RENDER half is operator-attended (FLAG_SECURE) and out of autonomous scope; no secondary is SKIP topology_unsupported."
+
+  # --- §AC subtitles below frame / within letterbox (geometry discriminator) ---
+
+  - id: video.subtitle.ac-within-letterbox
+    challenge_id: video.subtitle.ac-within-letterbox
+    name: "Subtitles render within the letterbox / below the frame — §AC geometry discriminator"
+    category: functional
+    priority: medium
+    platforms: [android]
+    dispatches_to: "device/rockchip/rk3588/tests/test_ac_subtitle_within_letterbox.sh"
+    domains: [video, subtitle, secondary-display, geometry]
+    required_evidence: [subtitle-geometry-bottom-third-bounds, dumpsys-display-secondary-present]
+    steps:
+      - name: "Verify secondary HDMI present + subtitle content"
+        action: "dumpsys display confirms secondary; subtitle-bearing stream selected"
+        expected: "Topology + content met per §11.4.3; no secondary → SKIP topology_unsupported"
+      - name: "Run subtitle-within-letterbox test"
+        action: "adb_shell: sh /data/local/tmp/tests/test_ac_subtitle_within_letterbox.sh"
+        expected: "Subtitles render within the letterbox / below the frame (not clipped or off-screen)"
+      - name: "Verify subtitle geometry"
+        action: "Assert the subtitle bounds fall in the bottom-third / within the letterbox region (geometry discriminator)"
+        expected: "Subtitle geometry within bounds per §11.4.69 subtitle_render; out-of-bounds / clipped is FAIL"
+    tags: [video, subtitle, secondary-display, letterbox, geometry, "§AC", "§11.4.69", subtitle_render, cohort-c-caf]
+    documentation_refs:
+      - type: plan
+        section: "Post-flash plan §AC subtitles below frame / within letterbox"
+        path: "docs/research/issues_triage_2026_05_30/postflash_validation_plan.md"
+    estimated_duration: "60s"
+    expected_result: "Subtitles render within the letterbox / below the frame, with bounds in the bottom-third region (geometry discriminator). PASS only on the captured in-bounds geometry; out-of-bounds / clipped is FAIL; no secondary is SKIP topology_unsupported."
+
+  # --- §GR stream continuity (stops 1-2 min; VPD STATE_BUFFERING + VOM recoverable teardown) ---
+
+  - id: video.continuity.gr-stream-recoverable
+    challenge_id: video.continuity.gr-stream-recoverable
+    name: "Stream continuity — buffering treated as playing + recoverable VOM teardown — §GR (#41)"
+    category: functional
+    priority: high
+    platforms: [android]
+    dispatches_to: "device/rockchip/rk3588/tests/test_gr_stream_continuity.sh"
+    domains: [video, secondary-display, continuity]
+    required_evidence: [ffprobe-count-frames-sustained, vom-active-decoder, recoverable-teardown-trace]
+    steps:
+      - name: "Verify secondary HDMI present"
+        action: "dumpsys display confirms secondary present"
+        expected: "Topology met per §11.4.3; no secondary → SKIP topology_unsupported"
+      - name: "Run stream-continuity test (autonomous local-file repro)"
+        action: "adb_shell: sh /data/local/tmp/tests/test_gr_stream_continuity.sh"
+        expected: "VPD treats STATE_BUFFERING as playing + VOM pingBinder recovers — video does NOT stop at 1-2 min (autonomous local-file repro; the operator's stalling network stream is not reproducible agent-side)"
+      - name: "Verify sustained frames + recoverable teardown"
+        action: "ffprobe -count_frames over a sustained window (>0, continuous); VOM activeDecoder present; recoverable-teardown trace captured"
+        expected: "Sustained frames per §11.4.69 video_display + recoverable teardown; a stop at 1-2 min is FAIL"
+    tags: [video, secondary-display, continuity, stream, "§GR", "bug-41", "§11.4.5", "§11.4.69", video_display, cohort-c-caf]
+    documentation_refs:
+      - type: plan
+        section: "Post-flash plan §GR (#41) stream stops 1-2 min — VPD STATE_BUFFERING + VOM recoverable"
+        path: "docs/research/issues_triage_2026_05_30/postflash_validation_plan.md"
+    estimated_duration: "150s"
+    expected_result: "A secondary-display stream plays continuously past 1-2 min (sustained ffprobe frames>0) with VPD treating buffering as playing and VOM recovering teardown. PASS only on the captured sustained-frames + recoverable-teardown evidence (autonomous local-file repro); the operator's network-stall tail stays open; no secondary is SKIP topology_unsupported."
+
+  # --- §VF video color-fidelity harness (host-side; device-player roster sweep) ---
+
+  - id: video.fidelity.vf-color-harness
+    challenge_id: video.fidelity.vf-color-harness
+    name: "Video color-fidelity host harness — §VF [ATM-247] source-vs-rendered ΔE2000 roster sweep"
+    category: functional
+    priority: high
+    platforms: [android]
+    dispatches_to: "device/rockchip/rk3588/tests/test_video_color_fidelity.sh"
+    domains: [video, color-fidelity, secondary-display]
+    required_evidence: [delta-e2000-json, histogram-correlation-json, sharpness-metrics-json, aspect-ratio-json, fps-speed-json, continuity-ssim-json, source-vs-rendered-frame-pair-png]
+    steps:
+      - name: "Verify golden+bad-pair self-validation"
+        action: "Confirm the harness validates itself against a known-good golden pair AND a known-bad (deliberately desaturated) pair before sweeping"
+        expected: "Harness self-validated (no false positive / no false negative) per §11.4.100; an un-self-validated harness is a §11.4 bluff"
+      - name: "Run color-fidelity roster sweep"
+        action: "run_host_test: device/rockchip/rk3588/tests/test_video_color_fidelity.sh — sweeps installed device players"
+        expected: "Per player + content: host extracts the source reference frame, captures the rendered frame, aligns temporally, compares (§11.4.100)"
+      - name: "Verify per-frame fidelity metrics"
+        action: "Assert ΔE2000 ≤ threshold + RGB/HSV histogram correlation ≥ threshold + no pale/over-saturation + sharpness within tolerance + correct AR/FPS + no freeze (SSIM)"
+        expected: "Color + sharpness + AR + FPS + continuity within tolerance per §11.4.69 video_display + §11.4.100; degradation is FAIL; geo-blocked → SKIP geo_restricted"
+    tags: [video, color-fidelity, secondary-display, "delta-e2000", "§VF", "atm-247", "§11.4.5", "§11.4.69", "§11.4.100", video_display, cohort-c-caf]
+    documentation_refs:
+      - type: plan
+        section: "Post-flash plan §VF / ATM-247 video color-fidelity harness"
+        path: "docs/research/issues_triage_2026_05_30/postflash_validation_plan.md"
+      - type: research
+        section: "Video color fidelity"
+        path: "docs/research/video_color_fidelity/"
+    estimated_duration: "300s"
+    expected_result: "The host harness self-validates against golden + bad pairs, then sweeps device players comparing source-vs-rendered frames: ΔE2000 + histogram correlation + sharpness + aspect ratio + FPS + SSIM continuity all within tolerance. PASS only on the captured per-frame fidelity artefacts (JSON + frame-pair PNG); degradation is FAIL; geo-blocked players SKIP geo_restricted. Closure word Completed (Type=Task)."

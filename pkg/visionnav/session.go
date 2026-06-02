@@ -134,7 +134,11 @@ func (s *Session) Run(ctx context.Context) (*SessionResult, error) {
 		}
 		prevShot = shot
 
-		obs := Observation{StepNumber: step}
+		// Feed the just-captured screen frame to the Provider so a
+		// vision-driven Provider (e.g. LLMProvider) can actually SEE the
+		// screen it is deciding about. Without this the Provider is blind
+		// — the C6 wiring defect this field closes.
+		obs := Observation{StepNumber: step, LastImageBytes: shot}
 		if len(res.Evidence) > 0 {
 			obs.LastEvidence = res.Evidence[len(res.Evidence)-1]
 		}

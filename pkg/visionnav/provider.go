@@ -83,8 +83,13 @@ type Provider interface {
 type Observation struct {
 	// StepNumber is 1-based; useful for max-step caps.
 	StepNumber int
-	// LastImagePath is the path to the most recent screen frame.
-	// May be empty on step 1.
+	// LastImageBytes is the most recent screen frame as raw image
+	// bytes (the form the Session captures it in — no disk round-trip).
+	// A vision-capable Provider should prefer this over LastImagePath.
+	// May be nil on step 1 before the first screenshot is observed.
+	LastImageBytes []byte
+	// LastImagePath is the path to the most recent screen frame, for
+	// callers that capture to disk. May be empty (use LastImageBytes).
 	LastImagePath string
 	// LastAudioPath is the path to the most recent audio clip.
 	// May be empty on step 1 or when the explorer disables audio.

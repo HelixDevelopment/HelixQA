@@ -1,0 +1,341 @@
+# SPDX-FileCopyrightText: 2026 Milos Vasic
+# SPDX-License-Identifier: Apache-2.0
+#
+# HelixQA Test Bank ADDITIONS — ATMOSphere Android 15 Firmware 1.1.8
+# Drafted 2026-06-01 by the §11.4.4(b) layer-4 HelixQA-coverage-gap background stream.
+#
+# PURPOSE: §11.4.4(b) layer-4 (HelixQA Challenge) coverage for the 1.1.8 fixes that
+#   lack a Challenge entry in banks/atmosphere.yaml or banks/atmosphere_additions_20260530.yaml.
+#   A bank entry without Challenge coverage is a §11.4 PASS-bluff; these entries close that gap.
+#
+# FIXES COVERED (all dispatched to EXISTING on-device tests verified on 2026-06-01):
+#   - §GZ-Home keyguard leg            → test_gz_home.sh
+#   - C1 / §Y per-port HDMI picker     → test_audio_per_port_picker.sh
+#   - §GH VOM single-source invariant  → test_gh_active_pkg_divergence.sh
+#   - §JX / §L2 / M7 BT HAL cpuset    → test_bt_cpuset_deepdive.sh
+#   - §K / §L1 / M12 WiFi 5GHz scoring → test_wifi_scoring_deepdive.sh
+#   - §KA-4 audio quality matrix       → test_audio_quality_matrix.sh
+#   - §M.M1 ALSA-layer audio leak      → test_audio_leak_alsa_layer.sh
+#   - §D8 / Issue #16 idle-dim audio   → test_audio_idle_dim_continuity.sh
+#   - §M.M2 / §45 EDID capability      → test_audio_edid_capability.sh
+#
+# NOTE on §GZ Recents leg:
+#   The §GZ Recents test (test_gz_recents.sh) is ALREADY covered by Challenge id
+#   `ui.recents.gz-overview-opens` in atmosphere_additions_20260530.yaml.
+#   That Challenge dispatches to test_gz_recents.sh + test_gz_recents_proxy.sh (companion
+#   test that also exists). Only the §GZ Home keyguard leg (test_gz_home.sh) is NEW here.
+#
+# DO NOT MERGE BY EDITING THIS FILE INTO atmosphere.yaml MANUALLY here — the
+#   conductor merges these `test_cases:` list items serially into the live bank's
+#   `test_cases:` sequence to avoid §11.4.58 cross-PWU contention. This file is a
+#   staging draft ONLY.
+#
+# SCHEMA: matches the richer entries in atmosphere_additions_20260530.yaml
+#   (challenge_id + dispatches_to + domains + required_evidence + §11.4.69 taxonomy tags).
+#   Every dispatches_to was verified to EXIST in device/rockchip/rk3588/tests/ on 2026-06-01.
+#   Every required_evidence cites the §11.4.69 sink-side captured-evidence taxonomy.
+#   PASS only on positive captured evidence per §11.4.5 / §11.4.13 / §11.4.68 / §11.4.69;
+#   sink-unreachable → SKIP topology_unsupported (never FAIL);
+#   geo-blocked → SKIP geo_restricted; no topology → SKIP topology_unsupported.
+#
+# ANTI-BLUFF NOTE (§11.4.6): every Challenge dispatches to a REAL existing test and
+#   scores on REAL evidence — no placeholder / fake Challenges. All IDs are unique
+#   across both the atmosphere.yaml and atmosphere_additions_20260530.yaml files.
+
+test_cases:
+
+  # ==================== UI / NAVIGATION (§11.4.72 audio-first, then UI) ====================
+
+  # --- §GZ Home keyguard leg (complement to ui.recents.gz-overview-opens in 20260530) ---
+
+  - id: ui.home.gz-home-keyguard-no-steal
+    challenge_id: ui.home.gz-home-keyguard-no-steal
+    name: "HOME button reliably returns to launcher with keyguard suppressed — §GZ Home leg [ATM-240-HOME]"
+    category: functional
+    priority: high
+    platforms: [android]
+    dispatches_to: "device/rockchip/rk3588/tests/test_gz_home.sh"
+    domains: [ui, navigation, home, keyguard, touch-input]
+    required_evidence: [uiautomator-launcher-foreground-n3, keyguard-state-captured, focus-state-captured]
+    steps:
+      - name: "Verify 3-button navigation active (§11.4.3 topology dispatch)"
+        action: "Read navigation_mode and hasNavigationBar from dumpsys window — 3-button nav only; other nav modes SKIP topology_unsupported"
+        expected: "3-button navigation confirmed; other modes are SKIP-with-reason per §11.4.3"
+      - name: "Run HOME keyguard leg test (§11.4.50 N=3)"
+        action: "adb_shell: sh /data/local/tmp/tests/test_gz_home.sh"
+        expected: "HOME button from a foreground app returns to the launcher on N=3 consecutive iterations (§11.4.50 determinism); keyguard-focus-steal state captured if any failure occurs"
+      - name: "Verify launcher foreground on all 3 iterations"
+        action: "uiautomator dump confirms the launcher (Lawnchair/ATMOSphere) is in the foreground after each HOME keyevent; keyguard / NotificationShade occlusion MUST NOT be present"
+        expected: "Launcher foreground confirmed per §11.4.69 touch_input N=3; keyguard-steal state captured per §11.4.6 (FACT not guess); HOME-dead on any iteration is FAIL"
+    tags: [ui, navigation, home, keyguard, "§GZ", "atm-240-home", "fix-d", "§11.4.3", "§11.4.48", "§11.4.50", "§11.4.69", touch_input]
+    documentation_refs:
+      - type: fix
+        section: "§GZ [ATM-240-HOME] HOME button keyguard-focus-steal root cause"
+        path: "device/rockchip/rk3588/tests/test_gz_home.sh"
+      - type: plan
+        section: "1.1.8 batch — §GZ recents + home"
+        path: "docs/research/burndown_audio_1_1_8_2026_05_31.md"
+    estimated_duration: "45s"
+    expected_result: "HOME button returns to the launcher on all 3 iterations with no keyguard occlusion (N=3 positive uiautomator evidence). keyguard/focus state captured if any failure to distinguish keyguard-steal from nav-dead. PASS only on the N=3 captured evidence; keyguard-still-present on any iteration is FAIL."
+
+  # ==================== AUDIO (§11.4.72 top-priority) ====================
+
+  # --- C1 / §Y per-port HDMI audio picker ---
+
+  - id: audio.picker.c1-per-port-hdmi-addressable
+    challenge_id: audio.picker.c1-per-port-hdmi-addressable
+    name: "Both HDMI audio ports individually addressable in the output picker — C1 / §Y"
+    category: functional
+    priority: critical
+    platforms: [android]
+    dispatches_to: "device/rockchip/rk3588/tests/test_audio_per_port_picker.sh"
+    domains: [audio, picker, hdmi, multi-sink]
+    required_evidence: [dumpsys-audio-both-hdmi-ports-addressed, proc-asound-two-hdmi-cards, evidence-dir-non-empty]
+    steps:
+      - name: "Verify BOTH HDMI ALSA cards present (§11.4.3 topology dispatch)"
+        action: "Check /proc/asound/cards for rockchiphdmi0 AND rockchiphdmi1; single-HDMI devices SKIP topology_unsupported"
+        expected: "Both HDMI ALSA cards present (dual-HDMI topology per Fix #80); single-HDMI → SKIP topology_unsupported"
+      - name: "Run per-port picker test"
+        action: "adb_shell: sh /data/local/tmp/tests/test_audio_per_port_picker.sh"
+        expected: "dumpsys audio shows BOTH HDMI ports registered with distinct non-empty addresses in AudioDeviceInfo — each port is individually picker-addressable (C1 / §Y fix verified)"
+      - name: "Verify both ports have non-empty addresses"
+        action: "Assert at least 2 HDMI entries in dumpsys audio with distinct non-empty ALSA addresses; collapsed-to-one with empty address is the RED pre-fix state"
+        expected: "Two individually-addressed HDMI entries per §11.4.69 audio_output; single-entry collapse with empty address is FAIL (the C1 defect)"
+    tags: [audio, picker, hdmi, multi-sink, "C1", "§Y", "§11.4.3", "§11.4.69", "§11.4.72", audio_output]
+    documentation_refs:
+      - type: fix
+        section: "C1 / §Y per-port HDMI picker — two addressed HDMI sinks"
+        path: "device/rockchip/rk3588/tests/test_audio_per_port_picker.sh"
+      - type: plan
+        section: "1.1.8 batch — C1 / §Y per-port HDMI audio picker"
+        path: "docs/research/burndown_audio_1_1_8_2026_05_31.md"
+    estimated_duration: "30s"
+    expected_result: "Both HDMI ALSA cards (rockchiphdmi0 + rockchiphdmi1) register as individually addressable AudioDeviceInfo entries with non-empty addresses (dumpsys audio evidence). PASS only on the captured two-address evidence; single collapsed entry is FAIL; single-HDMI device is SKIP topology_unsupported."
+
+  # --- §KA-4 audio quality matrix ---
+
+  - id: audio.quality.ka4-matrix-all-outputs
+    challenge_id: audio.quality.ka4-matrix-all-outputs
+    name: "5-layer audio quality matrix for all ATMOSphere output paths — §KA-4 (HDMI/jack/USB/BT × presence/channels/format/glitch/coex)"
+    category: functional
+    priority: critical
+    platforms: [android]
+    dispatches_to: "device/rockchip/rk3588/tests/test_audio_quality_matrix.sh"
+    domains: [audio, quality, matrix, hdmi, jack, usb, bt-a2dp]
+    required_evidence: [hw-params-per-output, hw-ptr-delta-per-output, xrun-census-per-output, bt-coex-census, arvus-codec-in-use-hdmi]
+    steps:
+      - name: "Dispatch per-topology (§11.4.3 — each absent output cell is SKIP hardware_not_present)"
+        action: "The test matrix detects which outputs are present (HDMI0/HDMI1/ES8388/USB/BT) and dispatches PASS or SKIP-hardware_not_present per absent cell"
+        expected: "Present outputs dispatch to full 5-layer quality; absent outputs SKIP hardware_not_present per §11.4.3 (never FAIL for absent hardware)"
+      - name: "Run audio quality matrix test"
+        action: "adb_shell: sh /data/local/tmp/tests/test_audio_quality_matrix.sh"
+        expected: "Each present output passes 5 quality layers: (1) hw_ptr delta > 0 (presence), (2) hw_params channels match claimed, (3) hw_params sample-rate + bit-depth match, (4) XRUN census within budget, (5) BT/WiFi coexistence artifacts within tolerance"
+      - name: "Verify Arvus sink-side codec for HDMI outputs (§11.4.13 / §11.4.68)"
+        action: "For present HDMI outputs: probe Arvus Codec-In-Use during matrix playback window; empty codec is FAIL per §11.4.68"
+        expected: "Arvus Codec-In-Use non-empty for HDMI outputs per §11.4.69 audio_output; Arvus unreachable → SKIP topology_unsupported (never FAIL)"
+    tags: [audio, quality, matrix, hdmi, jack, usb, bt-a2dp, "§KA-4", "§11.4.5", "§11.4.13", "§11.4.68", "§11.4.69", "§11.4.72", audio_output]
+    documentation_refs:
+      - type: fix
+        section: "§KA-4 audio quality matrix — 5-layer evidence per output path"
+        path: "device/rockchip/rk3588/tests/test_audio_quality_matrix.sh"
+      - type: plan
+        section: "1.1.8 batch — §KA-4 audio quality matrix"
+        path: "docs/research/burndown_audio_1_1_8_2026_05_31.md"
+    estimated_duration: "180s"
+    expected_result: "Every present ATMOSphere audio output path passes 5-layer quality (hw_ptr delta > 0, channels match, sample-rate/bit-depth match, XRUN within budget, coex artifacts within tolerance) with Arvus sink-side Codec-In-Use confirmation for HDMI outputs. PASS only on per-output captured hw_params + hw_ptr + XRUN + Arvus evidence; absent hardware is SKIP; Arvus unreachable is SKIP topology_unsupported."
+
+  # --- §M.M1 ALSA-layer audio leak ---
+
+  - id: audio.isolation.m-m1-alsa-no-cross-port-leak
+    challenge_id: audio.isolation.m-m1-alsa-no-cross-port-leak
+    name: "ALSA-layer: tinyplay to one HDMI port does NOT leak to the other — §M.M1 audio isolation"
+    category: functional
+    priority: critical
+    platforms: [android]
+    dispatches_to: "device/rockchip/rk3588/tests/test_audio_leak_alsa_layer.sh"
+    domains: [audio, isolation, hdmi, alsa]
+    required_evidence: [selected-hdmi-hw-ptr-delta-positive, other-hdmi-card-closed, evidence-dir-non-empty]
+    steps:
+      - name: "Verify both HDMI ALSA cards present (§11.4.3 topology dispatch)"
+        action: "Check /proc/asound/cards for rockchiphdmi0 AND rockchiphdmi1 by name (never hardcoded index — D3 card numbers shift); single-HDMI SKIP topology_unsupported"
+        expected: "Both HDMI cards found; topology confirmed per §11.4.3; single-HDMI → SKIP topology_unsupported"
+      - name: "Run ALSA-layer cross-port leak test (privileged tinyplay)"
+        action: "adb_shell: sh /data/local/tmp/tests/test_audio_leak_alsa_layer.sh"
+        expected: "tinyplay to rockchiphdmi0 card: selected card hw_ptr advances > 0 (presence); other card stays closed (no leak). Repeat for rockchiphdmi1."
+      - name: "Assert no cross-port leak"
+        action: "After tinyplay to card N: /proc/asound/cardM/pcm.../status = CLOSED (other card closed). Verify per §11.4.68 positive hw_ptr evidence NOT config-only"
+        expected: "Selected card hw_ptr delta > 0 per §11.4.69 audio_output; other card closed per §11.4.68 anti-leak guarantee; hw_ptr-stays-zero on selected is FAIL; other-card-open is FAIL"
+    tags: [audio, isolation, hdmi, alsa, "§M.M1", "§11.4.3", "§11.4.5", "§11.4.6", "§11.4.68", "§11.4.69", "§11.4.72", audio_output]
+    documentation_refs:
+      - type: fix
+        section: "§M.M1 ALSA-layer cross-port audio isolation proof"
+        path: "device/rockchip/rk3588/tests/test_audio_leak_alsa_layer.sh"
+      - type: plan
+        section: "1.1.8 batch — §M.M1 ALSA audio leak proof"
+        path: "docs/research/burndown_audio_1_1_8_2026_05_31.md"
+    estimated_duration: "60s"
+    expected_result: "tinyplay to a named HDMI ALSA card produces hw_ptr delta > 0 on that card and CLOSED status on the other (no cross-port leak). PASS only on the captured per-card hw_ptr delta evidence; cross-port open is FAIL; single-HDMI is SKIP topology_unsupported. Provides the ALSA-ground-truth evidence the §M.M1 HAL gate relies on."
+
+  # --- §D8 / Issue #16 idle-dim audio continuity ---
+
+  - id: audio.continuity.d8-idle-dim-no-audio-silence
+    challenge_id: audio.continuity.d8-idle-dim-no-audio-silence
+    name: "Audio continues uninterrupted across a backlight idle-dim cycle — §D8 / Issue #16"
+    category: functional
+    priority: critical
+    platforms: [android]
+    dispatches_to: "device/rockchip/rk3588/tests/test_audio_idle_dim_continuity.sh"
+    domains: [audio, idle-dim, hdmi, alsa, backlight]
+    required_evidence: [hw-ptr-delta-during-dim, hw-ptr-delta-after-restore, backlight-node-path, no-audio-silence-across-dim]
+    steps:
+      - name: "Verify HDMI ALSA card + backlight node present (§11.4.3 topology dispatch)"
+        action: "Check for at least one HDMI ALSA card (by name rockchiphdmi0/hdmi1) AND /sys/class/backlight/.../brightness node; either absent → SKIP topology_unsupported"
+        expected: "HDMI card + backlight node found; absent → SKIP topology_unsupported per §11.4.3"
+      - name: "Run idle-dim audio continuity test"
+        action: "adb_shell: sh /data/local/tmp/tests/test_audio_idle_dim_continuity.sh — the test replicates the EXACT backlight writes the Fix #132 daemon makes (dim=10, restore=original)"
+        expected: "hw_ptr advances during baseline (bright), during dim (backlight=10), and after restore (backlight original) — proving no audio silence on the backlight transition (the §D8 / Issue #16 causal mechanism)"
+      - name: "Assert hw_ptr keeps advancing across all three windows"
+        action: "Assert: baseline_delta > 0 AND during_dim_delta > 0 AND after_restore_delta > 0 (each per §11.4.68 positive hw_ptr evidence)"
+        expected: "Three-window hw_ptr evidence per §11.4.69 audio_output; hw_ptr-zero in any window = audio silence = FAIL (Issue #16 reproduced at unit level); a single event (no double-tap needed) proves §D8 MECHANISM is audio-safe"
+    tags: [audio, idle-dim, hdmi, alsa, backlight, "§D8", "issue-16", "fix-132", "§11.4.3", "§11.4.5", "§11.4.6", "§11.4.68", "§11.4.69", "§11.4.72", audio_output]
+    documentation_refs:
+      - type: fix
+        section: "§D8 / Issue #16 idle-dim audio-continuity — Fix #132 backlight mechanism audio-safe proof"
+        path: "device/rockchip/rk3588/tests/test_audio_idle_dim_continuity.sh"
+      - type: plan
+        section: "1.1.8 batch — §D8 idle-dim audio continuity"
+        path: "docs/research/burndown_audio_1_1_8_2026_05_31.md"
+    estimated_duration: "90s"
+    expected_result: "hw_ptr advances in all three windows (baseline/during-dim/after-restore), confirming the Fix #132 backlight sysfs dim mechanism does NOT silence audio. PASS only on three-window hw_ptr evidence; zero in any window is FAIL (Issue #16 reproduction); HDMI absent or no backlight node is SKIP topology_unsupported."
+
+  # --- §M.M2 / §45 EDID channel capability ---
+
+  - id: audio.capability.m-m2-edid-channel-detection
+    challenge_id: audio.capability.m-m2-edid-channel-detection
+    name: "HDMI EDID CEA Audio Data Block decoded + ELD gap captured — §M.M2 / §45"
+    category: functional
+    priority: high
+    platforms: [android]
+    dispatches_to: "device/rockchip/rk3588/tests/test_audio_edid_capability.sh"
+    domains: [audio, edid, hdmi, capability, eld]
+    required_evidence: [edid-raw-bytes-captured, cea-adb-decoded-max-lpcm-channels, eld-presence-verdict, evidence-dir-non-empty]
+    steps:
+      - name: "Verify at least one connected HDMI with non-empty EDID (§11.4.3 topology dispatch)"
+        action: "Check sysfs EDID node for a connected HDMI port; empty/no EDID → SKIP topology_unsupported (valid topology absent)"
+        expected: "At least one HDMI EDID present + non-zero bytes; no EDID → SKIP topology_unsupported per §11.4.3"
+      - name: "Run EDID capability detection test"
+        action: "adb_shell: sh /data/local/tmp/tests/test_audio_edid_capability.sh"
+        expected: "Three-layer forensic probe: (A) EDID present+valid per connected port; (B) ELD presence verdict (ELD absent on D3 = ROOT-CAUSE gap for §45, captured as FACT not FAIL); (C) CEA Audio Data Block decoded → max LPCM channel count extracted (Arvus advertises 8ch)"
+      - name: "Assert EDID decoded + gap evidence captured"
+        action: "Verify: EDID raw bytes present (Layer A PASS); CEA Audio Data Block decoded with max_lpcm_ch > 0 (Layer C PASS with channel count evidence); ELD verdict recorded as FACT (present or absent per §11.4.6 — absent is a FACT capture, NOT a FAIL)"
+        expected: "EDID present + CEA decoded per §11.4.69 audio_output; max_lpcm_ch evidence is the capability ground-truth for §45; ELD-absent is a FACT per §11.4.6 and does NOT fail the test — it IS the §M.M2 root-cause finding"
+    tags: [audio, edid, hdmi, capability, eld, "§M.M2", "§45", "§11.4.3", "§11.4.5", "§11.4.6", "§11.4.69", "§11.4.72", audio_output]
+    documentation_refs:
+      - type: fix
+        section: "§M.M2 / §45 EDID CEA Audio Data Block + ELD-absence root-cause capture"
+        path: "device/rockchip/rk3588/tests/test_audio_edid_capability.sh"
+      - type: plan
+        section: "1.1.8 batch — §M.M2 EDID capability detection"
+        path: "docs/research/burndown_audio_1_1_8_2026_05_31.md"
+    estimated_duration: "30s"
+    expected_result: "EDID bytes captured + validated (checksum) + CEA Audio Data Block decoded with max LPCM channel count > 0 (the capability ground-truth for §45 wiring). ELD-presence verdict captured as FACT. PASS only on the captured decoded-EDID + channel-count evidence; EDID absent / checksum failure is FAIL; no HDMI connected is SKIP topology_unsupported. ELD-absent is captured as evidence, NOT a FAIL (it IS the §M.M2 root-cause finding for the follow-on REQUIRES_REBUILD fix)."
+
+  # ==================== VIDEO / VOM ====================
+
+  # --- §GH VOM single-source invariant ---
+
+  - id: video.vom.gh-active-pkg-single-source-truth
+    challenge_id: video.vom.gh-active-pkg-single-source-truth
+    name: "VOM activeVideoPackage single-source-of-truth invariant holds — §GH ACTIVE_PKG_INVARIANT OK"
+    category: functional
+    priority: critical
+    platforms: [android]
+    dispatches_to: "device/rockchip/rk3588/tests/test_gh_active_pkg_divergence.sh"
+    domains: [video, vom, secondary-display, invariant]
+    required_evidence: [dumpsys-video-output-active-pkg-invariant-ok, register-unregister-cycle-evidence]
+    steps:
+      - name: "Verify VideoOutputManagerService dump present post-fix (§11.4.43 RED indicator)"
+        action: "Check that `dumpsys video_output` outputs an ACTIVE_PKG_INVARIANT: line — absent line is the RED pre-fix state (no dump() override before the fix)"
+        expected: "ACTIVE_PKG_INVARIANT: line present; absent means the §GH clearActiveDecoder() fix is not yet in the running firmware (RED pre-fix state — FAIL)"
+      - name: "Run VOM single-source invariant test (§11.4.50 N=3)"
+        action: "adb_shell: sh /data/local/tmp/tests/test_gh_active_pkg_divergence.sh"
+        expected: "dumpsys video_output reports ACTIVE_PKG_INVARIANT: OK in idle state AND after a register→unregister cycle; DIVERGENT is the pre-fix defect pattern (G1/G2/G3 shadow drift)"
+      - name: "Assert invariant OK + optional cycle evidence"
+        action: "Assert idle-state ACTIVE_PKG_INVARIANT: OK; if secondary HDMI present: assert cycle (register + force-unregister) also returns ACTIVE_PKG_INVARIANT: OK after cleanup"
+        expected: "ACTIVE_PKG_INVARIANT: OK per §11.4.69 video_display; DIVERGENT after cycle is FAIL (§GH not fully fixed); no secondary HDMI: cycle SKIP topology_unsupported but idle-state assertion still PASS"
+    tags: [video, vom, secondary-display, invariant, "§GH", "§11.4.3", "§11.4.5", "§11.4.6", "§11.4.50", "§11.4.69", video_display]
+    documentation_refs:
+      - type: fix
+        section: "§GH VOM activeVideoPackage shadow-divergence root cause (G1/G2/G3) + clearActiveDecoder() fix"
+        path: "device/rockchip/rk3588/tests/test_gh_active_pkg_divergence.sh"
+      - type: plan
+        section: "1.1.8 batch — §GH VOM single-source invariant"
+        path: "docs/research/burndown_audio_1_1_8_2026_05_31.md"
+    estimated_duration: "60s"
+    expected_result: "dumpsys video_output shows ACTIVE_PKG_INVARIANT: OK in idle state (and after a register→unregister cycle on dual-HDMI topology). PASS only on the captured ACTIVE_PKG_INVARIANT: OK evidence; DIVERGENT is FAIL (§GH G1/G2/G3 shadow drift still present); ACTIVE_PKG_INVARIANT: line absent = RED pre-fix state = FAIL."
+
+  # ==================== SYSTEM / BT / WIFI ====================
+
+  # --- §JX / §L2 / M7 BT HAL cpuset isolation ---
+
+  - id: system.bt.jx-hal-cpuset-not-root
+    challenge_id: system.bt.jx-hal-cpuset-not-root
+    name: "BT HAL process NOT in root cpuset — CPU2 audio-exclusive preserved — §JX / §L2 / M7"
+    category: functional
+    priority: critical
+    platforms: [android]
+    dispatches_to: "device/rockchip/rk3588/tests/test_bt_cpuset_deepdive.sh"
+    domains: [system, bluetooth, cpuset, audio-isolation]
+    required_evidence: [bt-hal-pid-cpuset-not-root, bt-a2dp-source-thread-cpuset-audio, bt-app-cpuset-foreground, evidence-dir-non-empty]
+    steps:
+      - name: "Verify BT HAL service running (§11.4.3 topology dispatch)"
+        action: "pgrep android.hardware.bluetooth@1.0-service; absent → SKIP hardware_not_present (BT not running)"
+        expected: "BT HAL PID found; absent → SKIP hardware_not_present"
+      - name: "Run BT HAL cpuset deep-dive test"
+        action: "adb_shell: sh /data/local/tmp/tests/test_bt_cpuset_deepdive.sh"
+        expected: "android.hardware.bluetooth@1.0-service cpuset MUST NOT be '/' (root); com.android.bluetooth in /foreground; bt_a2dp_source_ thread in /audio (Fix #9 preserved)"
+      - name: "Assert CPU2 audio-exclusive: BT HAL not in root cpuset"
+        action: "Read /proc/<bt-hal-pid>/cpuset — assert value is NOT '/' (root); bt_a2dp_source_ thread cpuset = /audio; any HCI thread in root cpuset can preempt audioserver on CPU2"
+        expected: "BT HAL cpuset NOT '/' per §11.4.69 bluetooth_a2dp (CPU2 exclusive preserved); '/' cpuset = CPU2 preemption risk = FAIL (§JX defect); bt_a2dp_source_ in /audio = PASS"
+    tags: [system, bluetooth, cpuset, audio-isolation, "§JX", "§L2", "M7", "fix-9", "§11.4.69", bluetooth_a2dp]
+    documentation_refs:
+      - type: fix
+        section: "§JX / §L2 / M7 BT HAL cpuset isolation — CPU2 audio-exclusive preservation (Fix #9)"
+        path: "device/rockchip/rk3588/tests/test_bt_cpuset_deepdive.sh"
+      - type: plan
+        section: "1.1.8 batch — §JX BT HAL cpuset deep-dive"
+        path: "docs/research/burndown_audio_1_1_8_2026_05_31.md"
+    estimated_duration: "30s"
+    expected_result: "BT HAL service (android.hardware.bluetooth@1.0-service) cpuset is NOT '/' (root), preserving CPU2 as audio-exclusive for audioserver (Fix #9 invariant). bt_a2dp_source_ thread in /audio confirmed. PASS only on captured /proc cpuset evidence; '/' for BT HAL is FAIL (§JX defect — CPU2 preemption risk); BT not running is SKIP hardware_not_present."
+
+  # --- §K / §L1 / M12 WiFi 5GHz scoring deep-dive ---
+
+  - id: system.wifi.k-5ghz-scoring-active
+    challenge_id: system.wifi.k-5ghz-scoring-active
+    name: "WiFi connected on 5GHz with RSSI scoring thresholds active — §K / §L1 / M12"
+    category: functional
+    priority: high
+    platforms: [android]
+    dispatches_to: "device/rockchip/rk3588/tests/test_wifi_scoring_deepdive.sh"
+    domains: [system, wifi, scoring, band-steering]
+    required_evidence: [wifi-freq-5ghz-band, wifi-daemon-running-heartbeat-recent, rssi-scoring-overlay-active, zero-tx-retry-packets]
+    steps:
+      - name: "Verify WiFi enabled + connected (§11.4.3 topology dispatch)"
+        action: "Check settings get global wifi_on and ip addr show wlan0; WiFi off → SKIP feature_disabled_by_config"
+        expected: "WiFi enabled and connected; off → SKIP feature_disabled_by_config"
+      - name: "Run WiFi 5GHz scoring deep-dive test"
+        action: "adb_shell: sh /data/local/tmp/tests/test_wifi_scoring_deepdive.sh"
+        expected: "5GHz band confirmed (freq > 5000 MHz); WiFi daemon running + heartbeat timestamp recent; RSSI scoring overlay thresholds live in the framework (5GHz entry=-82dBm, 2.4GHz entry=-75dBm per Fix #59/77); TX retry and lost packet counts within budget"
+      - name: "Assert 5GHz + scoring active + clean link"
+        action: "wlan0 frequency > 5000 MHz; wifi_roaming_monitor.sh PID and last-heartbeat recent; dumpsys wifi or config shows scoring overlay active; TX retry/lost within threshold"
+        expected: "5GHz connection + scoring overlay per §11.4.69 wifi_link; 2.4GHz stuck = FAIL (§K regression present); scoring overlay absent = WARN (not FAIL — thresholds may be in framework but not surfaced in dumpsys)"
+    tags: [system, wifi, scoring, band-steering, "§K", "§L1", "M12", "fix-59", "fix-77", "§11.4.69", wifi_link]
+    documentation_refs:
+      - type: fix
+        section: "§K / §L1 / M12 WiFi 5GHz RSSI scoring deep-dive (Fix #59 / #77 thresholds)"
+        path: "device/rockchip/rk3588/tests/test_wifi_scoring_deepdive.sh"
+      - type: plan
+        section: "1.1.8 batch — §K WiFi 5GHz scoring verification"
+        path: "docs/research/burndown_audio_1_1_8_2026_05_31.md"
+    estimated_duration: "45s"
+    expected_result: "wlan0 operating on 5GHz (freq > 5000 MHz), WiFi daemon running with recent heartbeat, RSSI scoring overlay thresholds active, and TX retry/lost packets within budget. PASS only on captured freq + daemon + scoring evidence; 2.4GHz stuck is FAIL (§K regression); WiFi off is SKIP feature_disabled_by_config."
