@@ -5,7 +5,6 @@ package navigator
 
 import (
 	"context"
-	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -72,25 +71,9 @@ func TestX11Executor_Home(t *testing.T) {
 	assert.Contains(t, c.args, "super")
 }
 
-func TestX11Executor_Screenshot(t *testing.T) {
-	runner := newMockRunner()
-	runner.response = []byte("X11-SCREENSHOT")
-	exec := NewX11Executor(":0", runner)
-
-	data, err := exec.Screenshot(context.Background())
-	require.NoError(t, err)
-	assert.Equal(t, []byte("X11-SCREENSHOT"), data)
-}
-
-func TestX11Executor_Screenshot_Error(t *testing.T) {
-	runner := newMockRunner()
-	runner.failOn["import"] = fmt.Errorf("no display")
-	exec := NewX11Executor(":0", runner)
-
-	_, err := exec.Screenshot(context.Background())
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "x11 screenshot")
-}
+// TestX11Executor_Screenshot* moved to desktop_screenshot_linux_test.go
+// (linux `import` path) + desktop_screenshot_darwin_test.go (macOS
+// `screencapture` integration) per the §11.4.81 cross-platform split.
 
 func TestX11Executor_LongPress(t *testing.T) {
 	runner := newMockRunner()
