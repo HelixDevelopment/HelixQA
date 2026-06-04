@@ -199,7 +199,7 @@ test_cases:
     expected_result: "Multi-agent workflows via HelixAgent work"
 
   # ==================== CODEX: Agent Mode Testing ====================
-  - id: CLI-CODEX-001
+  - id: CLI-CODEX-HELIXAGENT-001
     name: "Codex validates HelixAgent agent mode capabilities"
     category: system_validation
     priority: critical
