@@ -4427,3 +4427,111 @@ test_cases:
         path: "constitution/Constitution.md"
     estimated_duration: "per-app ~60-90s + live transition capture; full roster backgrounded per §11.4.89"
     expected_result: "Every installed audio/video player drives the real UI through play→pause→resume→seek→stereo↔multichannel switch→stop; the host curls the authoritative Arvus Codec-In-Use for each window and proves it CHANGED value at the stereo→multichannel transition and returned to N.E. after stop. PASS only on the live sink-side Codec-In-Use capture (ab_pass_with_evidence cites the arvus_*.txt evidence files); empty Codec-In-Use is FAIL; Arvus unreachable is OPERATOR-BLOCKED, never fake-PASS."
+
+  # ==================== 1.1.8-dev critical batch (2026-06-02) ====================
+
+  - id: ATM-ISSUE-11-YT-MULTI-CLIP
+    challenge_id: video.routing.yt-every-clip-secondary
+    name: "Every YouTube clip routes to the secondary HDMI display (no reset-timeout fallback to primary) + frame-advance liveness"
+    category: functional
+    priority: critical
+    platforms: [android]
+    dispatches_to: "device/rockchip/rk3588/tests/test_youtube_multi_clip_secondary.sh"
+    feature_class: video_display
+    domains: [video, routing, secondary-display, liveness]
+    required_evidence: [vom-active-decoder, redirect-log-per-clip, frame-advance-counter]
+    steps:
+      - name: "Drive N cold YouTube clip launches (Issue #11 repro path)"
+        action: "adb shell sh test_youtube_multi_clip_secondary.sh 10 — each a fresh MediaCodec.configure → registerVideoDecoder cold-relaunch"
+        expected: "EVERY non-DRM clip's VOM mActiveDecoder == com.google.android.youtube + 'Redirecting … to surface' fired; 0 'Surface reset timed out' fallbacks to primary"
+      - name: "Per-clip frame-advance liveness (#3 — FLAG_SECURE-safe oracle)"
+        action: "avq_liveness_frame_advance asserts the routed clip's SurfaceFlinger/media.metrics frame counter is ADVANCING (not a stuck/frozen decoder)"
+        expected: "delta>0 over the window; a routed-but-frozen clip is a per-clip FAIL"
+    tags: [video, routing, secondary-display, liveness, issue-11, §11.4.69, video_display]
+    documentation_refs:
+      - type: test
+        section: "test_youtube_multi_clip_secondary.sh (Issue #11 cold-relaunch routing guard)"
+        path: "device/rockchip/rk3588/tests/test_youtube_multi_clip_secondary.sh"
+    estimated_duration: "~10 cold clips × ~9s + per-clip liveness ~3s"
+    expected_result: "All N cold YouTube clips route to the secondary display (0 reset-timeout fallbacks) AND each routed clip's decoder frame-advance counter advances. PASS cites the summary.txt + per-clip frame_advance.json. Geo-restricted → SKIP geo_restricted (RuTube substitute). No secondary → SKIP topology_unsupported."
+
+  - id: ATM-SS1-STREAMING-SUBTITLE
+    challenge_id: video.subtitle.streaming-on-correct-display
+    name: "Streaming/player video + subtitle on the correct (video) display across the whole roster"
+    category: functional
+    priority: critical
+    platforms: [android]
+    dispatches_to: "device/rockchip/rk3588/tests/test_streaming_subtitle_secondary.sh"
+    feature_class: subtitle_render
+    domains: [video, subtitle, secondary-display, roster, sink-side]
+    required_evidence: [ffprobe-frame-count, vom-active-decoder, arvus-codec-in-use, ocr-subtitle-location, frame-advance-counter]
+    steps:
+      - name: "For each streaming/player in the roster: video on the EXPECTED display"
+        action: "Launch app; capture the expected display (DRM→primary, non-DRM→secondary); ffprobe frame-count>0 + VOM activeDecoder + Arvus sink codec-in-use + decoder frame-advance liveness"
+        expected: "Video present + advancing on the runtime-determined expected display; regime probed at runtime, never hardcoded"
+      - name: "Subtitle follows the video, never split"
+        action: "screencap both displays, OCR lower-third; subtitle text on the VIDEO display AND NOT the other"
+        expected: "Subtitle on the same display as the video; a split (video here / subtitle there) FAILs as the §RR1 bug class"
+    tags: [video, subtitle, roster, sink-side, §11.4.13, §11.4.69, subtitle_render, video_display]
+    documentation_refs:
+      - type: test
+        section: "test_streaming_subtitle_secondary.sh (roster video + subtitle-on-correct-display)"
+        path: "device/rockchip/rk3588/tests/test_streaming_subtitle_secondary.sh"
+    estimated_duration: "per-app ~30-60s; full roster backgrounded per §11.4.89"
+    expected_result: "Every shipped streaming/player shows video on the expected display (advancing) and subtitles on the same display (no split). Geo apps SKIP geo_restricted; TV-Compose UI gaps SKIP operator_attended (flagged, never fake-PASS); on-device ffprobe/tesseract absent → PENDING host re-verify."
+
+  - id: ATM-VDE-DEEP-EXERCISE
+    challenge_id: video.deep-exercise.av-quality-liveness
+    name: "Deep app-exercise AV-quality battery + 4+1 video-liveness on secondary HDMI (no frozen/stale frame can pass as live)"
+    category: functional
+    priority: critical
+    platforms: [android]
+    dispatches_to: "device/rockchip/rk3588/tests/test_video_app_deep_exercise.sh"
+    feature_class: video_display
+    domains: [video, audio, subtitle, secondary-display, liveness, stress-chaos]
+    required_evidence: [ffprobe-frame-count, freeze-detect, not-stale-xcheck, frame-advance-counter, no-primary-flash, continuity-picture, audio-loudness]
+    steps:
+      - name: "Realistic per-app exercise (play / skip ad / switch ≥4 videos / subtitles on)"
+        action: "exercise_app drives each video player + streaming app through the realistic sequence; the 7 base AV-quality checks run at every step"
+        expected: "ALWAYS a picture on the 2nd display across transitions; subtitles VISIBLE on the video display; audio glitch-clean"
+      - name: "4+1 video-liveness — a single frame is NOT proof of live playback"
+        action: "avq_video_liveness runs #1 temporal-motion (freezedetect/pHash/byte-cmp), #2 not-stale-from-previous, #3 decoder frame-advance, #4 FPS, #5 no-video-on-primary-during-transition + loading-aware playback-start"
+        expected: "Every video-on-secondary PASS proves LIVE advancing frames; a frozen/stale frame, a stuck decoder, or a primary flash → FAIL"
+      - name: "Rapid-switch stress/chaos burst (§11.4.85)"
+        action: "≥10-switch burst with per-iteration crash + black-frame census (BURST_CRASH / BURST_BLACK)"
+        expected: "No app crash, no black gap across the burst"
+    tags: [video, audio, subtitle, liveness, stress-chaos, §11.4.85, §11.4.69, video_display, subtitle_render, audio_output]
+    documentation_refs:
+      - type: test
+        section: "test_video_app_deep_exercise.sh + lib/av_quality_battery.sh (7 base checks + 4+1 liveness) + lib/av_quality_self_validate.sh (golden-bad oracle)"
+        path: "device/rockchip/rk3588/tests/test_video_app_deep_exercise.sh"
+      - type: research
+        section: "Anti-bluff AV validation techniques (freezedetect / pHash / SurfaceFlinger --latency / media.metrics / metamorphic / VMAF / mutation-the-gate)"
+        path: "qa-results/anti_bluff_research_20260602/RECOMMENDATIONS.md"
+    estimated_duration: "per-app realistic exercise ~3-5 min; full roster backgrounded per §11.4.89"
+    expected_result: "For every video player + streaming app the secondary-HDMI experience is proven flawless: live advancing video (not frozen/stale), subtitles on the video display, always a picture, no audio glitch, stress-burst clean. Each liveness analyzer is self-validated against golden-good/golden-bad ffmpeg fixtures (oracle's oracle). Host-only analysis (ffprobe/tesseract/ΔE2000) PENDING host re-verify; TV-Compose UI gaps SKIP operator_attended."
+
+  - id: ATM-HG-SECONDARY-VIDEO-ONLY
+    challenge_id: display.presenter.secondary-video-only
+    name: "2nd display is STRICTLY video-only — no app UI on TV, TV never mirrors the primary"
+    category: functional
+    priority: critical
+    platforms: [android]
+    dispatches_to: "device/rockchip/rk3588/tests/test_presenter_secondary_video_only.sh"
+    feature_class: display_topology
+    domains: [display, presenter, secondary-display, mirror-guard]
+    required_evidence: [mirror-count-zero, no-app-window-on-secondary, presenter-owns-secondary]
+    steps:
+      - name: "Baseline + app churn: no app UI reaches the secondary, no mirror"
+        action: "Churn launcher/settings/players; assert mirror_count=0 + no stray app window on the secondary after every launch"
+        expected: "Only the Presenter-owned Presentation owns the secondary; allow_task_move forbidden by default"
+      - name: "Mirror repro + recovery (§HE mirror-guard)"
+        action: "Force-stop Presenter → TV mirrors primary; restart → §HE watchdog re-asserts the Presentation, mirror heals to 0"
+        expected: "Mirror never persists; the mirror-guard watchdog re-owns the secondary within ~2s"
+    tags: [display, presenter, secondary-display, mirror-guard, §HG, §HE, §11.4.69, display_topology]
+    documentation_refs:
+      - type: test
+        section: "test_presenter_secondary_video_only.sh (§HG video-only + §HE mirror-guard contract)"
+        path: "device/rockchip/rk3588/tests/test_presenter_secondary_video_only.sh"
+    estimated_duration: "~5-10 min (churn + mirror repro/recovery + chaos)"
+    expected_result: "The secondary display only ever shows Tier-1 video via the Presenter Presentation; no app task moves there; the §HE mirror-guard prevents the TV from ever mirroring the primary. PASS cites the per-iteration mirror_count=0 + no-stray-app evidence. No secondary → SKIP topology_unsupported."

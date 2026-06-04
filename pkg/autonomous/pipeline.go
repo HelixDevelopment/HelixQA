@@ -20,6 +20,7 @@ import (
 	"time"
 
 	"digital.vasic.helixqa/pkg/analysis"
+	"digital.vasic.helixqa/pkg/conduit"
 	"digital.vasic.helixqa/pkg/config"
 	"digital.vasic.helixqa/pkg/controller"
 	"digital.vasic.helixqa/pkg/detector"
@@ -313,6 +314,12 @@ type SessionPipeline struct {
 	// stuck steps. When non-nil, the curiosity loop
 	// registers steps and sends heartbeats.
 	processController *controller.Controller
+
+	// eventSink, when non-nil, receives structured real-time
+	// events (session/phase/evidence/llm/vision/verdict) so an
+	// external conductor can stay in sync with the session. Always
+	// accessed through sink() which returns a no-op when nil.
+	eventSink conduit.Sink
 }
 
 // NewSessionPipeline creates a SessionPipeline with the
@@ -376,6 +383,27 @@ func (sp *SessionPipeline) WithPhaseSelector(
 ) *SessionPipeline {
 	sp.phaseSelector = sel
 	return sp
+}
+
+// WithEventSink attaches a real-time conductor event sink. When set,
+// the pipeline emits structured events (session start/end, phase
+// transitions, LLM/vision bridge calls, evidence captured, verdicts)
+// so an external conductor can stay in sync without parsing stdout.
+// Pass conduit.NopSink() or leave unset to disable.
+func (sp *SessionPipeline) WithEventSink(
+	sink conduit.Sink,
+) *SessionPipeline {
+	sp.eventSink = sink
+	return sp
+}
+
+// sink returns the configured event sink, or a no-op sink when none
+// is set, so call sites never need a nil check.
+func (sp *SessionPipeline) sink() conduit.Sink {
+	if sp.eventSink == nil {
+		return conduit.NopSink()
+	}
+	return sp.eventSink
 }
 
 // WithController attaches a QA Process Controller that
@@ -586,6 +614,14 @@ func (sp *SessionPipeline) Run(
 		)
 	}
 
+	// Announce the session on the real-time conductor channel so an
+	// external orchestrator can begin tracking immediately.
+	conduit.SessionStart(sp.sink(), sessionID, map[string]any{
+		"platforms":   sp.config.Platforms,
+		"pass_number": sp.config.PassNumber,
+		"output_dir":  sp.config.OutputDir,
+	})
+
 	// Apply timeout if configured.
 	if sp.config.Timeout > 0 {
 		var cancel context.CancelFunc
@@ -599,6 +635,19 @@ func (sp *SessionPipeline) Run(
 		SessionID: sessionID,
 		Status:    StatusRunning,
 	}
+
+	// Emit a terminal session_end on every exit path (success,
+	// failure, or panic-free early return). Using a defer guarantees
+	// the conductor always sees the closing event exactly once,
+	// regardless of which return statement fires.
+	defer func() {
+		v := conduit.VerdictPass
+		if result.Status == StatusFailed {
+			v = conduit.VerdictFail
+		}
+		conduit.SessionEnd(sp.sink(), sessionID, v,
+			fmt.Sprintf("status=%s", result.Status))
+	}()
 
 	// ── Pre-flight network/VPN check ────────────────────
 	// Fail fast with a clear message if Mullvad or another
@@ -1128,6 +1177,7 @@ func (sp *SessionPipeline) Run(
 	sp.setPhase("learn")
 	phaseStart := time.Now()
 	fmt.Println("[pipeline] Phase 1/4: Learn")
+	conduit.PhaseStart(sp.sink(), "learn", "")
 	kb, err := learning.BuildKnowledgeBase(
 		sp.config.ProjectRoot, sp.store,
 	)
@@ -1216,7 +1266,9 @@ func (sp *SessionPipeline) Run(
 	// ── Phase 2: Plan ───────────────────────────────────
 	sp.setPhase("plan")
 	phaseStart = time.Now()
+	conduit.PhaseComplete(sp.sink(), "learn", 0)
 	fmt.Println("[pipeline] Phase 2/4: Plan")
+	conduit.PhaseStart(sp.sink(), "plan", "")
 	gen := planning.NewTestPlanGenerator(sp.selectProviderForPhase("plan"))
 	plan, err := gen.Generate(
 		ctx, kb, sp.config.Platforms,
@@ -1255,7 +1307,9 @@ func (sp *SessionPipeline) Run(
 	// ── Phase 3: Execute ────────────────────────────────
 	sp.setPhase("execute")
 	phaseStart = time.Now()
+	conduit.PhaseComplete(sp.sink(), "plan", 0)
 	fmt.Println("[pipeline] Phase 3/4: Execute")
+	conduit.PhaseStart(sp.sink(), "execute", "")
 
 	// Create executor factory from config.
 	// Fall back to the first auto-detected device if AndroidDevice
@@ -2801,7 +2855,9 @@ func (sp *SessionPipeline) Run(
 	// ── Phase 4: Analyze ────────────────────────────────
 	sp.setPhase("analyze")
 	phaseStart = time.Now()
+	conduit.PhaseComplete(sp.sink(), "execute", 0)
 	fmt.Println("[pipeline] Phase 4/4: Analyze")
+	conduit.PhaseStart(sp.sink(), "analyze", "")
 
 	// Analyze screenshots with LLM vision — bounded to
 	// maxVisionScreenshots to prevent timeout. We select
@@ -3122,6 +3178,7 @@ func (sp *SessionPipeline) Run(
 	}
 
 	// ── Finalize ────────────────────────────────────────
+	conduit.PhaseComplete(sp.sink(), "analyze", 0)
 	result.Status = StatusComplete
 	result.Duration = time.Since(start)
 
