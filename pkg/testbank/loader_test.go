@@ -126,3 +126,71 @@ func TestLoadFile_S1B_RealAtmosphereBankLoads(t *testing.T) {
 		}
 	}
 }
+
+// TestLoadDir_W6A_RealBanksDirLoadsCleanly is the W6A regression
+// guard: the entire real banks/ directory MUST load via LoadDir
+// without ANY duplicate-id collision or YAML/JSON parse error, so
+// `helixqa list --banks banks` exits 0 fully green.
+//
+// Before W6A this directory carried three independent defects that
+// each aborted the load (LoadDir reports only the first, in
+// directory order, so they masked one another):
+//   - full-qa-androidtv-challenges.json was a stale full clone of
+//     full-qa-androidtv.yaml/.json (same bank name + all 260 ids
+//     FQA-ATV-001..260, older "challenges"-keyed export without
+//     steps); removed because content proved it stale, not a
+//     coexisting variant.
+//   - helixagent-cli-agent-tests.yaml line 33 had a malformed
+//     double-quoted action scalar (unescaped inner quotes) that
+//     failed YAML parsing; rewritten as a single-quoted scalar.
+//   - validation-androidtv-focus.json (a distinct 6-test curated
+//     "Channels + Deep Links" bank) reused 6 ids from
+//     full-qa-androidtv.yaml; re-IDed with the descriptive
+//     FQA-ATV-FOCUS-NNN suffix per the prior-wave re-ID convention.
+//
+// This guard ties to LoadDir(real banks/) deliberately — the S1B
+// guard above could only target a single FILE because the directory
+// carried unresolved cross-bank dups at that time. Those are now
+// resolved, so the directory-level invariant is enforceable.
+func TestLoadDir_W6A_RealBanksDirLoadsCleanly(t *testing.T) {
+	dir := filepath.Join("..", "..", "banks")
+	if _, err := os.Stat(dir); err != nil {
+		t.Skipf("SKIP-OK: banks/ dir not present at %s: %v", dir, err)
+	}
+	banks, err := LoadDir(dir)
+	if err != nil {
+		t.Fatalf("real banks/ dir must load cleanly (no dup id / parse error): %v", err)
+	}
+	if len(banks) == 0 {
+		t.Fatal("loaded 0 banks from real banks/ dir")
+	}
+
+	// Cross-check there is genuinely no duplicate id across the whole
+	// directory (LoadDir already enforces this, but assert explicitly
+	// so the guard fails loudly if that enforcement ever regresses).
+	seen := map[string]string{}
+	total := 0
+	for _, bf := range banks {
+		for _, tc := range bf.TestCases {
+			total++
+			if tc.ID == "" {
+				continue
+			}
+			if prev, dup := seen[tc.ID]; dup {
+				t.Errorf("duplicate id %q across banks (bank %q and %q)",
+					tc.ID, prev, bf.Name)
+				continue
+			}
+			seen[tc.ID] = bf.Name
+		}
+	}
+	if total == 0 {
+		t.Fatal("loaded 0 test cases from real banks/ dir")
+	}
+
+	// The W6A re-ID must be present (focus bank kept coexisting) and
+	// the stale-clone id-space must NOT have re-collided.
+	if _, ok := seen["FQA-ATV-FOCUS-141"]; !ok {
+		t.Error("expected re-IDed FQA-ATV-FOCUS-141 from validation-androidtv-focus.json")
+	}
+}
