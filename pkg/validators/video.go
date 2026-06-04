@@ -2,6 +2,7 @@
 package validators
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"os/exec"
@@ -142,49 +143,74 @@ func (v *VideoValidator) runFFprobe(path string) (map[string]map[string]string, 
 		return nil, fmt.Errorf("ffprobe execution failed: %v", err)
 	}
 
-	// Parse the JSON output
-	// This is a simplified parser - in production, use encoding/json
+	// Parse the JSON output with encoding/json. ffprobe emits all scalar values
+	// (including numeric width/height/channels) typed; json.Number preserves them
+	// so they render identically to the original textual extraction.
+	var probe ffprobeOutput
+	if err := json.Unmarshal(output, &probe); err != nil {
+		return nil, fmt.Errorf("parsing ffprobe JSON: %w", err)
+	}
+
 	result := make(map[string]map[string]string)
 	result["video"] = make(map[string]string)
 	result["audio"] = make(map[string]string)
 	result["format"] = make(map[string]string)
 
-	outputStr := string(output)
+	result["format"]["format_name"] = probe.Format.FormatName
+	result["format"]["format_long_name"] = probe.Format.FormatLongName
+	result["format"]["duration"] = probe.Format.Duration
+	result["format"]["bit_rate"] = probe.Format.BitRate
 
-	// Extract format info
-	if idx := strings.Index(outputStr, "\"format\":"); idx != -1 {
-		formatSection := outputStr[idx:]
-		result["format"]["format_name"] = extractJSONString(formatSection, "format_name")
-		result["format"]["format_long_name"] = extractJSONString(formatSection, "format_long_name")
-		result["format"]["duration"] = extractJSONString(formatSection, "duration")
-		result["format"]["bit_rate"] = extractJSONString(formatSection, "bit_rate")
-	}
-
-	// Extract stream info
-	if idx := strings.Index(outputStr, "\"streams\":"); idx != -1 {
-		streamsSection := outputStr[idx:]
-
-		// Find video stream
-		if vidx := strings.Index(streamsSection, "\"codec_type\": \"video\""); vidx != -1 {
-			videoSection := streamsSection[vidx:]
-			result["video"]["codec_name"] = extractJSONString(videoSection, "codec_name")
-			result["video"]["width"] = extractJSONString(videoSection, "width")
-			result["video"]["height"] = extractJSONString(videoSection, "height")
-			result["video"]["duration"] = extractJSONString(videoSection, "duration")
-			result["video"]["bit_rate"] = extractJSONString(videoSection, "bit_rate")
-			result["video"]["r_frame_rate"] = extractJSONString(videoSection, "r_frame_rate")
-		}
-
-		// Find audio stream
-		if aidx := strings.Index(streamsSection, "\"codec_type\": \"audio\""); aidx != -1 {
-			audioSection := streamsSection[aidx:]
-			result["audio"]["codec_name"] = extractJSONString(audioSection, "codec_name")
-			result["audio"]["channels"] = extractJSONString(audioSection, "channels")
-			result["audio"]["sample_rate"] = extractJSONString(audioSection, "sample_rate")
+	for _, s := range probe.Streams {
+		switch s.CodecType {
+		case "video":
+			if len(result["video"]) != 0 {
+				continue // keep the first video stream
+			}
+			result["video"]["codec_name"] = s.CodecName
+			result["video"]["width"] = numToString(s.Width)
+			result["video"]["height"] = numToString(s.Height)
+			result["video"]["duration"] = s.Duration
+			result["video"]["bit_rate"] = s.BitRate
+			result["video"]["r_frame_rate"] = s.RFrameRate
+		case "audio":
+			if len(result["audio"]) != 0 {
+				continue // keep the first audio stream
+			}
+			result["audio"]["codec_name"] = s.CodecName
+			result["audio"]["channels"] = numToString(s.Channels)
+			result["audio"]["sample_rate"] = s.SampleRate
 		}
 	}
 
 	return result, nil
+}
+
+// ffprobeOutput models the subset of ffprobe -print_format json we consume.
+type ffprobeOutput struct {
+	Streams []struct {
+		CodecType  string      `json:"codec_type"`
+		CodecName  string      `json:"codec_name"`
+		Width      json.Number `json:"width"`
+		Height     json.Number `json:"height"`
+		Duration   string      `json:"duration"`
+		BitRate    string      `json:"bit_rate"`
+		RFrameRate string      `json:"r_frame_rate"`
+		Channels   json.Number `json:"channels"`
+		SampleRate string      `json:"sample_rate"`
+	} `json:"streams"`
+	Format struct {
+		FormatName     string `json:"format_name"`
+		FormatLongName string `json:"format_long_name"`
+		Duration       string `json:"duration"`
+		BitRate        string `json:"bit_rate"`
+	} `json:"format"`
+}
+
+// numToString renders a json.Number, returning "" for an absent/empty field so
+// downstream strconv parsing behaves the same as the previous textual path.
+func numToString(n json.Number) string {
+	return n.String()
 }
 
 func extractJSONString(data, key string) string {
