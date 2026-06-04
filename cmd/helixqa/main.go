@@ -32,6 +32,7 @@ import (
 
 	"digital.vasic.helixqa/pkg/autonomous"
 	"digital.vasic.helixqa/pkg/config"
+	"digital.vasic.helixqa/pkg/conduit"
 	"digital.vasic.helixqa/pkg/controller"
 	"digital.vasic.helixqa/pkg/helixqa"
 	qainfra "digital.vasic.helixqa/pkg/infra"
@@ -767,6 +768,26 @@ func cmdAutonomous(args []string) {
 	ctrl := controller.New(controller.DefaultConfig())
 	pipeline.WithController(ctrl)
 	fmt.Println("Process ctrl:     enabled (90s stale threshold)")
+
+	// ── Real-time conductor channel ─────────────────────────────
+	// Emit a structured JSONL event stream + status snapshot into
+	// the output dir so an external conductor (operator or another
+	// orchestrating agent) can tail the session live and stay in
+	// sync. Disabled with HELIXQA_CONDUIT=0.
+	if os.Getenv("HELIXQA_CONDUIT") != "0" {
+		if cw, cerr := conduit.NewWriter(conduit.Config{
+			Session: fmt.Sprintf("helixqa-%d", time.Now().Unix()),
+			Dir:     cfg.OutputDir,
+		}); cerr != nil {
+			fmt.Fprintf(os.Stderr,
+				"warning: conduit channel disabled: %v\n", cerr)
+		} else {
+			pipeline.WithEventSink(cw)
+			defer cw.Close()
+			fmt.Printf("Conduit stream:   %s\n", cw.StreamPath())
+			fmt.Printf("Conduit status:   %s\n", cw.StatusPath())
+		}
+	}
 
 	// ── QA Infrastructure boot ──────────────────────────────────
 	// When HELIX_INFRA_HOST is set, use the Containers module

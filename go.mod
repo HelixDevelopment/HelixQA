@@ -7,6 +7,7 @@ require (
 	digital.vasic.containers v0.0.0-00010101000000-000000000000
 	digital.vasic.docprocessor v0.0.0-00010101000000-000000000000
 	digital.vasic.llmorchestrator v0.0.0-00010101000000-000000000000
+	digital.vasic.llmprovider v0.0.0-00010101000000-000000000000
 	digital.vasic.security v0.0.0-00010101000000-000000000000
 	digital.vasic.visionengine v0.0.0-00010101000000-000000000000
 	github.com/mattn/go-sqlite3 v1.14.37
@@ -121,14 +122,14 @@ require (
 )
 
 replace (
-	digital.vasic.challenges => ../challenges
-	digital.vasic.containers => ../containers
-	digital.vasic.docprocessor => ../doc_processor
-	digital.vasic.llmorchestrator => ../llm_orchestrator
-	digital.vasic.llmprovider => ../llm_provider
-	digital.vasic.llmsverifier => ../llms_verifier/llm-verifier
+	digital.vasic.challenges => ../Challenges
+	digital.vasic.containers => ../Containers
+	digital.vasic.docprocessor => ../DocProcessor
+	digital.vasic.llmorchestrator => ../LLMOrchestrator
+	digital.vasic.llmprovider => ../LLMProvider
+	digital.vasic.llmsverifier => ../dependencies/HelixDevelopment/LLMsVerifier/llm-verifier
 	digital.vasic.security => ../security
-	digital.vasic.visionengine => ../vision_engine
+	digital.vasic.visionengine => ../VisionEngine
 )
 
 require (

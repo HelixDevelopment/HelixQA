@@ -1,0 +1,69 @@
+# SPDX-FileCopyrightText: 2026 Milos Vasic
+# SPDX-License-Identifier: Apache-2.0
+#
+# HelixQA Test Bank — ATMOSphere 4K local video playback (1.1.9-dev)
+#
+# PURPOSE: §11.4.4(b) layer-4 (HelixQA Challenge) coverage for ATM-312 —
+#   MPV 4K HEVC10 still software-decodes on shipped image feb49ae1
+#   (3-6 fps of 24 fps, 75-87% frame loss), §C/ATM-259 interop fix absent
+#   at the ARTIFACT layer (§11.4.108). The Challenge dispatches to the
+#   EXISTING on-device test test_mpv_4k_smoothness.sh.
+#
+# FORENSIC ANCHOR (captured LIVE on D3 998fd36615e99484, image feb49ae1,
+#   2026-06-04, operator playing Mortal.Kombat.2021.2160p.4K HEVC Main10):
+#   - decode threads av:hevc:df0..df3 (4 SW threads), NO /dev/mpp_service fd,
+#     GPU 0% @ 300MHz idle, mpv CPU 403% — pure software decode
+#   - MPV [vo/gpu-next/libplacebo] Estimated source FPS 23.9 / display FPS
+#     3.094-5.988 (5/7 samples) = 75-87% frame loss + 18 audio underruns
+#   - deployed libmpv.so has 0 drm_prime/dmabuf interop symbols
+#     (no hwdec_drmprime.c / dmabuf_interop_gl.c compiled; no rkmpp hwdec)
+#   Evidence: qa-results/mpv_4k_glitch_20260604T042434Z/
+#     (13_LIVE_PROOF.txt, 14_mpv_decisive_log.txt, 05g_hwdec_compiled_definitive.txt)
+#
+# ANTI-BLUFF (§11.4.5 / §11.4.6 / §11.4.69 / §11.4.107): the Challenge scores
+#   PASS only on positive captured runtime evidence that 4K HEVC10 actually
+#   plays SMOOTHLY (decode-path == HW rkmpp, frame-advance ~= source fps,
+#   audio underruns ~0). RED on feb49ae1 (decode-path == SW); GREEN once the
+#   libmpv drm_prime interop lands at the ARTIFACT layer. SKIP-with-reason on
+#   topology gaps (no secondary HDMI / no Arvus) — never FAIL-for-topology.
+#
+# DO NOT MERGE BY EDITING THIS FILE INTO atmosphere.yaml MANUALLY — the
+#   conductor merges these test_cases list items serially into the live bank
+#   to avoid §11.4.58 cross-PWU contention. This file is a staging draft ONLY.
+
+test_cases:
+  - id: video.local.mpv-4k-hevc10-hw-decode-smooth
+    challenge_id: video.local.mpv-4k-hevc10-hw-decode-smooth
+    name: "MPV 4K HEVC10 (10-bit) local playback decodes in HARDWARE and renders smoothly (no SW-fallback judder) — ATM-312 / §C"
+    category: functional
+    priority: critical
+    platforms: [android]
+    dispatches_to: "device/rockchip/rk3588/tests/test_mpv_4k_smoothness.sh"
+    domains: [video, mpv, local-playback, hardware-decode, 4k, hevc]
+    required_evidence:
+      - mpv-decode-path-hardware-not-software
+      - mpv-display-fps-matches-source-fps
+      - audio-underrun-census-under-budget
+      - shipped-libmpv-has-drmprime-interop-symbol
+    steps:
+      - name: "Verify the deployed libmpv ships the drm_prime dmabuf interop (§11.4.108 ARTIFACT layer)"
+        action: "strings /system/app/is.xyz.mpv/lib/arm64/libmpv.so | grep -E 'dmabuf_interop_gl|hwdec_drmprime|ra_hwdec_drmprime' — the ARTIFACT-layer assertion the source-only gate lacked"
+        expected: ">=1 interop symbol present. ZERO symbols == the §C/ATM-259 fix did NOT reach this image (RED — feb49ae1 state); MPV cannot import the rkmpp HW surface → SW fallback → judder"
+      - name: "Play a 4K HEVC Main10 file via the user-equivalent MPV path (§11.4.48; §11.4.52 intent fallback)"
+        action: "adb_shell: sh /data/local/tmp/tests/test_mpv_4k_smoothness.sh"
+        expected: "MPV opens the 3840x2160 HEVC Main10 stream; track-list confirms hevc [Main 10] 3840x2160"
+      - name: "Assert HARDWARE decode-path (the load-bearing assertion — SW == the defect)"
+        action: "Read /proc/<mpv-pid> decode threads + /dev/mpp_service fd: HW path == rkmpp session on /dev/mpp_service; SW path == av:hevc:df0..df3 libavcodec threads + no mpp_service fd + GPU idle"
+        expected: "decode-path == HARDWARE (rkmpp on /dev/mpp_service). av:hevc:df* SW threads + 403% CPU + 0 mpp_service == the ATM-312 defect (FAIL)"
+      - name: "Assert frame-advance ~= source fps + audio underruns under budget (§11.4.107 liveness + §11.4.5)"
+        action: "Parse MPV [vo/gpu-next/libplacebo] 'Estimated source FPS / display FPS' + 'Audio device underrun' census from logcat"
+        expected: "display FPS >= 0.9 x source FPS (smooth); underruns ~0. display FPS 3-6 of 24 (75-87% loss) + tens of underruns == the ATM-312 SW-decode judder signature (FAIL) per §11.4.69 video_display"
+      - name: "Sink-side cross-check on D3 (Arvus) / SKIP on panel-only D4 (§11.4.3 / §11.4.13)"
+        action: "If secondary HDMI + Arvus reachable: assert Arvus reports the played-back stream; else SKIP topology_unsupported"
+        expected: "Arvus codec-state non-empty during playback (D3) OR SKIP topology_unsupported (no secondary HDMI). Never FAIL-for-topology"
+    tags: [video, mpv, local-playback, hardware-decode, 4k, hevc, "ATM-312", "§C", "§11.4.3", "§11.4.5", "§11.4.6", "§11.4.50", "§11.4.69", "§11.4.107", "§11.4.108", video_display, mediacodec_decode]
+    documentation_refs:
+      - "docs/Issues.md ATM-312"
+      - "docs/Issues.md §C / ATM-259"
+      - "qa-results/mpv_4k_glitch_20260604T042434Z/"
+      - "qa-results/issue_c_mpv_4k_20260602T000000Z/ROOT_CAUSE.md"
