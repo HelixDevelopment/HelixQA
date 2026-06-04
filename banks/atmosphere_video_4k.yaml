@@ -63,7 +63,15 @@ test_cases:
         expected: "Arvus codec-state non-empty during playback (D3) OR SKIP topology_unsupported (no secondary HDMI). Never FAIL-for-topology"
     tags: [video, mpv, local-playback, hardware-decode, 4k, hevc, "ATM-312", "§C", "§11.4.3", "§11.4.5", "§11.4.6", "§11.4.50", "§11.4.69", "§11.4.107", "§11.4.108", video_display, mediacodec_decode]
     documentation_refs:
-      - "docs/Issues.md ATM-312"
-      - "docs/Issues.md §C / ATM-259"
-      - "qa-results/mpv_4k_glitch_20260604T042434Z/"
-      - "qa-results/issue_c_mpv_4k_20260602T000000Z/ROOT_CAUSE.md"
+      - type: issue
+        section: "ATM-312"
+        path: "docs/Issues.md"
+      - type: issue
+        section: "§C / ATM-259"
+        path: "docs/Issues.md"
+      - type: evidence
+        section: "MPV 4K glitch capture"
+        path: "qa-results/mpv_4k_glitch_20260604T042434Z/"
+      - type: root_cause
+        section: "§C / ATM-259 root cause"
+        path: "qa-results/issue_c_mpv_4k_20260602T000000Z/ROOT_CAUSE.md"
