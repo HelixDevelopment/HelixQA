@@ -451,7 +451,7 @@ test_cases:
     expected_result: "AIChat leverages HelixAgent bash tools"
 
   # ==================== Performance Tests ====================
-  - id: PERF-001
+  - id: AICHAT-PERF-001
     name: "Tool execution performance"
     category: performance
     priority: medium
@@ -469,7 +469,7 @@ test_cases:
     estimated_duration: "60s"
     expected_result: "Tools execute within performance budget"
 
-  - id: PERF-002
+  - id: AICHAT-PERF-002
     name: "Concurrent tool execution"
     category: performance
     priority: medium
@@ -485,7 +485,7 @@ test_cases:
     expected_result: "Concurrent execution works"
 
   # ==================== Security Tests ====================
-  - id: SEC-001
+  - id: AICHAT-SEC-001
     name: "Dangerous command blocking"
     category: security
     priority: critical
@@ -503,7 +503,7 @@ test_cases:
     estimated_duration: "15s"
     expected_result: "Dangerous operations blocked"
 
-  - id: SEC-002
+  - id: AICHAT-SEC-002
     name: "Environment variable protection"
     category: security
     priority: high
