@@ -3879,7 +3879,7 @@ test_cases:
     expected_result: "review_round.sh --health-check exits 0; A1 PASS or SKIP-with-reason=feature_disabled_by_config (pre-§J1); evidence dir layout when credentials configured; INFRASTRUCTURE working IS the Challenge — real-data branch validates downstream once §J1 unblocks operator-side credential provisioning"
 
   - id: CME-KA-AUDIO-MATRIX-001
-    title: "§KA Audio Quality Matrix — HDMI/jack/USB/BT × multichannel/HiFi (matrix dispatch)"
+    name: "§KA Audio Quality Matrix — HDMI/jack/USB/BT × multichannel/HiFi (matrix dispatch)"
     suite: atmosphere.audio
     category: audio
     priority: critical
@@ -3944,7 +3944,7 @@ test_cases:
   # flow — never on container-up-only / config-only (that would be the exact
   # §11.4.69 PASS-bluff this proxy exists to expose in OTHER features).
   - id: CME-API-PROXY-001
-    title: "§GP MITM API-intercept proxy captures an unpinned HTTP flow end-to-end (Netflix-login diagnostic infra)"
+    name: "§GP MITM API-intercept proxy captures an unpinned HTTP flow end-to-end (Netflix-login diagnostic infra)"
     suite: atmosphere.network
     category: network
     priority: medium
@@ -4012,7 +4012,7 @@ test_cases:
   # captured artefact per §11.4.5 + §11.4.69 — never metadata-only/config-only.
 
   - id: CME-GR-STREAM-CONTINUITY-001
-    title: "§GR (#41) sustained network stream survives a >3s mid-rebuffer with secondary-display routing intact (no forceUnregister full-teardown)"
+    name: "§GR (#41) sustained network stream survives a >3s mid-rebuffer with secondary-display routing intact (no forceUnregister full-teardown)"
     suite: atmosphere.video
     category: video
     priority: critical
@@ -4078,7 +4078,7 @@ test_cases:
     expected_result: "On a weak-link secondary-display device post-rebuild: a mid-stream rebuffer is tolerated, no forceUnregister full-teardown chain appears, and the secondary-display decoder routing survives — ab_pass_with_evidence cites the captured forensic logcat. Pre-rebuild (RED) the defect chain reproduces (FAIL); no secondary display / no in-window rebuffer → SKIP-with-reason."
 
   - id: CME-HF-OVERLAY-NO-SECONDARY-001
-    title: "§HF [ATM-246] no 'playing on TV' VideoControlOverlay band on displayId=0 of a 0-external-display device"
+    name: "§HF [ATM-246] no 'playing on TV' VideoControlOverlay band on displayId=0 of a 0-external-display device"
     suite: atmosphere.display
     category: display
     priority: critical
@@ -4141,7 +4141,7 @@ test_cases:
     expected_result: "On a 0-external-display device post-rebuild: no VideoControlOverlay band on displayId=0 after STATE_VIDEO_START and no stale band after the trigger app dies — ab_pass_with_evidence cites the dumpsys-window snapshot. Pre-rebuild (RED) the band appears on displayId=0 (FAIL); a device with a secondary display → SKIP-with-reason."
 
   - id: CME-GZ-RECENTS-001
-    title: "§GZ [ATM-240] 3-button-nav Recents opens Overview deterministically post-boot (10/10 presses, queue drains, mRecentTasks non-null)"
+    name: "§GZ [ATM-240] 3-button-nav Recents opens Overview deterministically post-boot (10/10 presses, queue drains, mRecentTasks non-null)"
     suite: atmosphere.input
     category: functional
     priority: critical
@@ -4205,7 +4205,7 @@ test_cases:
     expected_result: "On a 3-button-nav device post-rebuild: Overview opens on all 10 presses, the command queue never pins at 3, and mRecentTasks is non-null — ab_pass_with_evidence cites verdict.json + screencap. Pre-rebuild (RED) opened=0 / queue stuck at 3 / mRecentTasks=null (FAIL); a gesture-nav device → SKIP-with-reason."
 
   - id: CME-AF-RECENTS-CLEAR-ALL-001
-    title: "§AF/§GZ Presenter Clear-All Recents FAB is user-visible on display#0 and a REAL tap clears all recents (no backend-broadcast bluff)"
+    name: "§AF/§GZ Presenter Clear-All Recents FAB is user-visible on display#0 and a REAL tap clears all recents (no backend-broadcast bluff)"
     suite: atmosphere.input
     category: functional
     priority: critical
@@ -4279,7 +4279,7 @@ test_cases:
     expected_result: "Post-rebuild: the 'ATMOSphere Clear All Recents' FAB is visible on display#0's overview surface, a real tap clears all recents, and a real swipe-up dismisses exactly one card — ab_pass_with_evidence cites the ui.xml + screencap + before/after recents dumps. Pre-rebuild (RED) the content-desc FAB node is absent so C2/C3/C4 FAIL honestly; an un-populatable Recents surface → SKIP-with-reason."
 
   - id: CME-VIDEO-COLOR-FIDELITY-001
-    title: "§11.4.98 (#48) source-vs-rendered video color fidelity within tolerance (ΔE2000 + histogram + no-pale + sharpness + aspect + continuity), golden/bad self-validation proven"
+    name: "§11.4.98 (#48) source-vs-rendered video color fidelity within tolerance (ΔE2000 + histogram + no-pale + sharpness + aspect + continuity), golden/bad self-validation proven"
     suite: atmosphere.video
     category: video
     priority: critical
