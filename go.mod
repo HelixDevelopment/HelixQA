@@ -123,12 +123,12 @@ require (
 replace (
 	digital.vasic.challenges => ../challenges
 	digital.vasic.containers => ../containers
-	digital.vasic.docprocessor => ../doc_processor
-	digital.vasic.llmorchestrator => ../llm_orchestrator
-	digital.vasic.llmprovider => ../llm_provider
-	digital.vasic.llmsverifier => ../llms_verifier/llm-verifier
+	digital.vasic.docprocessor => ../DocProcessor
+	digital.vasic.llmorchestrator => ../LLMOrchestrator
+	digital.vasic.llmprovider => ../LLMProvider
+	digital.vasic.llmsverifier => ../LLMsVerifier/llm-verifier
 	digital.vasic.security => ../security
-	digital.vasic.visionengine => ../vision_engine
+	digital.vasic.visionengine => ../VisionEngine
 )
 
 require (
