@@ -308,11 +308,23 @@ func TestBridgedCLIProvider_Vision_Success(t *testing.T) {
 	assert.Contains(t, runner.lastArgs, "--allowedTools")
 	assert.Contains(t, runner.lastArgs, "Read")
 
-	// The prompt (last arg) MUST embed an absolute path to
+	// The prompt MUST be the value immediately after --print
+	// (NOT a trailing positional — the variadic --allowedTools
+	// would otherwise consume it). It embeds an absolute path to
 	// the temp screenshot AND the original user prompt, so
 	// Claude Code's Read tool ingests the image.
 	require.NotEmpty(t, runner.lastArgs)
-	promptArg := runner.lastArgs[len(runner.lastArgs)-1]
+	printIdx := -1
+	for i, a := range runner.lastArgs {
+		if a == "--print" {
+			printIdx = i
+			break
+		}
+	}
+	require.NotEqual(t, -1, printIdx, "--print must be present")
+	require.Less(t, printIdx+1, len(runner.lastArgs),
+		"the prompt must immediately follow --print")
+	promptArg := runner.lastArgs[printIdx+1]
 	assert.Contains(t, promptArg, "describe what you see",
 		"original prompt must be preserved verbatim")
 	assert.Contains(t, promptArg, "helixqa-vision",

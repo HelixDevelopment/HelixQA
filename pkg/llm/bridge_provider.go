@@ -289,7 +289,17 @@ func (p *BridgedCLIProvider) buildArgs(
 	// structured output via --output-format json. The
 	// obsolete --json flag is rejected with
 	// "unknown option '--json'".
-	args := []string{"--print", "--output-format", "json"}
+	//
+	// The prompt MUST be passed as the value immediately after
+	// --print, NOT as a trailing positional. --allowedTools is
+	// VARIADIC: if the prompt trails it, commander.js consumes
+	// the prompt as another tool name, leaving claude with no
+	// prompt ("Input must be provided either through stdin or as
+	// a prompt argument when using --print"). Verified on the
+	// host: `claude --print --output-format json --allowedTools
+	// Read "<prompt>"` FAILS; `claude --print "<prompt>"
+	// --output-format json --allowedTools Read` succeeds.
+	args := []string{"--print", prompt, "--output-format", "json"}
 	if imagePath != "" {
 		// Vision: Claude Code reads the in-prompt image path
 		// with its Read tool. The current CLI has NO --image
@@ -301,7 +311,6 @@ func (p *BridgedCLIProvider) buildArgs(
 	if p.model != "" {
 		args = append(args, "--model", p.model)
 	}
-	args = append(args, prompt)
 	return args
 }
 
