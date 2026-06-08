@@ -24,23 +24,28 @@ import (
 	osexec "os/exec"
 	"os/signal"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"syscall"
 	"time"
 
 	"digital.vasic.challenges/pkg/logging"
 
+	"digital.vasic.helixqa/pkg/audio"
 	"digital.vasic.helixqa/pkg/autonomous"
 	"digital.vasic.helixqa/pkg/config"
 	"digital.vasic.helixqa/pkg/conduit"
 	"digital.vasic.helixqa/pkg/controller"
+	"digital.vasic.helixqa/pkg/detector"
 	"digital.vasic.helixqa/pkg/helixqa"
 	qainfra "digital.vasic.helixqa/pkg/infra"
 	"digital.vasic.helixqa/pkg/llm"
 	"digital.vasic.helixqa/pkg/memory"
+	"digital.vasic.helixqa/pkg/navigator"
 	"digital.vasic.helixqa/pkg/orchestrator"
 	"digital.vasic.helixqa/pkg/reporter"
 	"digital.vasic.helixqa/pkg/testbank"
+	"digital.vasic.helixqa/pkg/visionnav"
 )
 
 const version = "0.2.0"
@@ -180,10 +185,29 @@ func cmdRun(args []string) {
 	logger := logging.NewConsoleLogger(*verbose)
 	defer logger.Close()
 
-	orch := orchestrator.New(
-		cfg,
+	orchOpts := []orchestrator.Option{
 		orchestrator.WithLogger(logger),
-	)
+	}
+
+	// Android vision backend: when an android device serial is supplied
+	// AND a vision-capable LLM bridge + an OCR (Tesseract) host are
+	// available, wire the vision-nav context so android bank cases DRIVE
+	// the real device through the pkg/visionnav loop instead of honestly
+	// skipping. When any prerequisite is absent, the context stays nil and
+	// android cases honestly skip (never a fake PASS) — exactly the prior
+	// behaviour, preserved for desktop/CI runs.
+	if *device != "" {
+		actx, why := buildAndroidVisionContext(*device, *output)
+		if actx != nil {
+			orchOpts = append(orchOpts, orchestrator.WithAndroidContext(actx))
+			fmt.Printf("Android vision backend: ENABLED (serial=%s)\n", *device)
+		} else {
+			fmt.Printf("Android vision backend: disabled (%s) — "+
+				"android cases will honestly SKIP\n", why)
+		}
+	}
+
+	orch := orchestrator.New(cfg, orchOpts...)
 
 	ctx, cancel := context.WithTimeout(
 		context.Background(), cfg.Timeout,
@@ -251,6 +275,95 @@ func cmdRun(args []string) {
 	if !result.Success {
 		os.Exit(1)
 	}
+}
+
+// buildAndroidVisionContext assembles the vision-nav collaborators that
+// let android bank cases DRIVE the real device through pkg/visionnav.
+// Returns a wired context, or (nil, reason) when a prerequisite is
+// missing — in which case the caller leaves the orchestrator's android
+// context unset and android cases honestly SKIP (never a fake PASS).
+//
+// Prerequisites (all required):
+//   - a `claude` CLI on PATH (the only vision-capable bridge today),
+//   - a Tesseract OCR host (HELIX_TESSERACT_URL) so captured Evidence
+//     carries the OCRSnapshot the §11.4.52 goal-match reads,
+//   - an evidence directory (the run's --output) for the FileSink.
+//
+// Decoupling (CONST-051(B)): the cmd layer builds the ADBActor over a
+// real navigator.ADBExecutor here; pkg/visionnav never imports
+// pkg/navigator. No project literals — the device serial is operator
+// data, the OCR host is env config.
+func buildAndroidVisionContext(serial, outputDir string) (*orchestrator.AndroidVisionContext, string) {
+	// 1. Vision-capable LLM bridge (claude only today).
+	cliPath, lookErr := osexec.LookPath("claude")
+	if lookErr != nil {
+		return nil, "no `claude` CLI on PATH (vision bridge unavailable)"
+	}
+	bridge := llm.NewBridgedCLIProvider(cliPath, "claude", "")
+	if !bridge.SupportsVision() {
+		return nil, "discovered bridge does not support vision"
+	}
+
+	// 2. OCR host so captured Evidence carries an OCRSnapshot the
+	//    §11.4.52 goal-match reads. Without OCR the loop could never
+	//    honestly reach PASS, so we honestly disable instead.
+	tessURL := strings.TrimSpace(os.Getenv("HELIX_TESSERACT_URL"))
+	if tessURL == "" {
+		return nil, "HELIX_TESSERACT_URL is unset (no OCR host for goal matching)"
+	}
+	tess := audio.NewTesseractClient(tessURL)
+
+	// Optional Whisper host for audio transcript evidence (not required
+	// for goal matching).
+	var whisper *audio.WhisperClient
+	if wURL := strings.TrimSpace(os.Getenv("HELIX_WHISPER_URL")); wURL != "" {
+		whisper = audio.NewWhisperClient(wURL)
+	}
+
+	// 3. Evidence sink + explorer.
+	sink, sinkErr := visionnav.NewFileSink(filepath.Join(outputDir, "vision-evidence", serial))
+	if sinkErr != nil {
+		return nil, fmt.Sprintf("evidence sink: %v", sinkErr)
+	}
+	explorer, exErr := visionnav.NewDefaultExplorer("helixqa-android-vision", whisper, tess, sink)
+	if exErr != nil {
+		return nil, fmt.Sprintf("explorer: %v", exErr)
+	}
+
+	// 4. Provider over the vision bridge. The goal text here is advisory
+	//    prompt context — the per-case verdict is driven by each bank
+	//    case's own derived Target.ScreenGoals inside the orchestrator.
+	provider, pErr := visionnav.NewLLMProvider(
+		bridge,
+		[]string{"the screen described by the test case's expected result"},
+		"grammar: tap <x> <y> | key <KEYCODE> | back | home | text <s> | launch <cmd> | shell <cmd> | noop",
+	)
+	if pErr != nil {
+		return nil, fmt.Sprintf("vision provider: %v", pErr)
+	}
+
+	// 5. Real device actor: ADBExecutor → ADBActor (the one-line adapter
+	//    session.go documents).
+	adb := navigator.NewADBExecutor(serial, detector.NewExecRunner())
+	actor, aErr := visionnav.NewADBActor(adb)
+	if aErr != nil {
+		return nil, fmt.Sprintf("adb actor: %v", aErr)
+	}
+
+	maxSteps := 12
+	if v := strings.TrimSpace(os.Getenv("HELIX_VISION_MAX_STEPS")); v != "" {
+		if n, err := strconv.Atoi(v); err == nil && n >= 1 {
+			maxSteps = n
+		}
+	}
+
+	return &orchestrator.AndroidVisionContext{
+		Provider: provider,
+		Actor:    actor,
+		Explorer: explorer,
+		MaxSteps: maxSteps,
+		Serial:   serial,
+	}, ""
 }
 
 // cmdList lists test cases from banks with optional filtering.

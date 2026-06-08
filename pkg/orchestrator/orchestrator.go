@@ -68,6 +68,14 @@ type Orchestrator struct {
 	// when re-parsing as testbank failed (the wrapper then honestly
 	// skips rather than bluffing a PASS).
 	executableCases map[challenge.ID]*testbank.TestCase
+
+	// androidCtx, when non-nil + valid, lets the android-platform
+	// definitionChallenge wrappers DRIVE a real device through the
+	// pkg/visionnav loop (launch → screenshot → LLM decide → dispatch →
+	// capture evidence) instead of honestly skipping. nil for desktop/web
+	// runs and for android runs where no device serial + vision Provider
+	// was configured. Set via WithAndroidContext by cmd/helixqa.
+	androidCtx *AndroidVisionContext
 }
 
 // Option configures an Orchestrator.
@@ -112,6 +120,18 @@ func WithReporter(r *reporter.Reporter) Option {
 func WithBank(b *bank.Bank) Option {
 	return func(o *Orchestrator) {
 		o.bank = b
+	}
+}
+
+// WithAndroidContext wires the vision-nav collaborators (Provider,
+// Actor, Explorer) that let android-platform bank cases DRIVE a real
+// device through the pkg/visionnav loop. OPTIONAL: when not set (or set
+// to a nil/partially-wired context), android cases honestly skip rather
+// than bluffing a PASS. cmd/helixqa builds the context from a device
+// serial + a discovered vision Provider; tests inject a fake context.
+func WithAndroidContext(actx *AndroidVisionContext) Option {
+	return func(o *Orchestrator) {
+		o.androidCtx = actx
 	}
 }
 
@@ -283,7 +303,17 @@ func (o *Orchestrator) runPlatform(
 		reg := newDefinitionRegistry()
 		for _, def := range definitions {
 			tc := o.executableCases[def.ID]
-			wrapper := newDefinitionChallengeForPlatform(def, tc, platform)
+			var wrapper *definitionChallenge
+			// On the android platform, when a vision-nav context is wired,
+			// build a wrapper that DRIVES the real device through the
+			// pkg/visionnav loop. Otherwise (any other platform, or android
+			// with no context) build the standard wrapper, which executes
+			// desktop shell steps or honestly skips.
+			if platform == config.PlatformAndroid && o.androidCtx.valid() {
+				wrapper = newDefinitionChallengeForAndroid(def, tc, o.androidCtx)
+			} else {
+				wrapper = newDefinitionChallengeForPlatform(def, tc, platform)
+			}
 			if err := reg.Register(wrapper); err != nil {
 				return nil, fmt.Errorf(
 					"register definition %s for platform %s: %w",

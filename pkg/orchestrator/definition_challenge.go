@@ -50,7 +50,60 @@ import (
 	"digital.vasic.helixqa/pkg/config"
 	"digital.vasic.helixqa/pkg/testbank"
 	"digital.vasic.helixqa/pkg/validator"
+	"digital.vasic.helixqa/pkg/visionnav"
 )
+
+// AndroidVisionContext carries the collaborators a definitionChallenge
+// needs to DRIVE a real Android device through the existing vision-nav
+// loop (pkg/visionnav.Session) for a bank case on the `android`
+// platform. It is OPTIONAL: when nil (no device serial OR no vision
+// Provider was configured for the run), the wrapper falls back to the
+// honest Skipped path exactly as before — never a fake PASS.
+//
+// Decoupling (CONST-051(B) / §11.4.27): the orchestrator MAY import
+// both pkg/visionnav and pkg/navigator and build the actor adapter,
+// because the orchestrator is HelixQA-internal glue. pkg/visionnav
+// itself never imports pkg/navigator — the ScreenActor passed in here
+// is built by the caller (cmd/helixqa or a test fake).
+type AndroidVisionContext struct {
+	// Provider decides the next action each step (e.g. a
+	// pkg/llm.BridgedCLIProvider wrapped via visionnav.NewLLMProvider,
+	// or a test fake). Required for the Android branch to run.
+	Provider visionnav.Provider
+
+	// Actor performs screenshots + dispatches actions against the real
+	// device (e.g. visionnav.NewADBActor over a pkg/navigator.ADBExecutor,
+	// or a test fake). Required.
+	Actor visionnav.ScreenActor
+
+	// Explorer turns each step into validated, persisted Evidence whose
+	// OCRSnapshot the Session matches against the bank case's success
+	// criterion. Required — without it no Evidence is captured and the
+	// run could never honestly reach PASS.
+	Explorer visionnav.Explorer
+
+	// MaxSteps caps the vision loop per bank case. Must be ≥ 1; the
+	// caller supplies a sane default (the orchestrator uses a small
+	// constant) when unset.
+	MaxSteps int
+
+	// Serial is the ADB device serial the Actor targets. Recorded into
+	// RecordedActions for forensic traceability; not used to drive the
+	// loop (the Actor already holds it).
+	Serial string
+}
+
+// valid reports whether the context carries everything the Android
+// branch needs. A partially-wired context (e.g. a Provider but no
+// Actor) means the run was misconfigured — the wrapper treats that as
+// "not wired" and honestly skips rather than half-running.
+func (a *AndroidVisionContext) valid() bool {
+	return a != nil &&
+		a.Provider != nil &&
+		a.Actor != nil &&
+		a.Explorer != nil &&
+		a.MaxSteps >= 1
+}
 
 // definitionWrapperSkipSentinel is the prefix written into
 // RecordedActions by definitionChallenge.Execute so the orchestrator
@@ -268,6 +321,12 @@ type definitionChallenge struct {
 	// platform is the target platform this wrapper executes against.
 	// Set by the orchestrator per runPlatform iteration.
 	platform config.Platform
+
+	// androidCtx, when non-nil and valid(), lets Execute DRIVE a real
+	// Android device through the pkg/visionnav loop for this bank case.
+	// nil for desktop/web runs and for android runs where no device +
+	// vision Provider was configured (Execute then honestly skips).
+	androidCtx *AndroidVisionContext
 }
 
 // newDefinitionChallenge constructs a wrapper with no executable
@@ -288,6 +347,23 @@ func newDefinitionChallengeForPlatform(
 		def:      def,
 		testCase: tc,
 		platform: platform,
+	}
+}
+
+// newDefinitionChallengeForAndroid constructs an android-platform
+// wrapper carrying the executable bank case AND the vision-nav context
+// so Execute drives the real device. A nil/invalid androidCtx is
+// preserved verbatim — Execute then falls through to the honest skip.
+func newDefinitionChallengeForAndroid(
+	def *challenge.Definition,
+	tc *testbank.TestCase,
+	androidCtx *AndroidVisionContext,
+) *definitionChallenge {
+	return &definitionChallenge{
+		def:        def,
+		testCase:   tc,
+		platform:   config.PlatformAndroid,
+		androidCtx: androidCtx,
 	}
 }
 
@@ -397,8 +473,260 @@ func (d *definitionChallenge) Execute(ctx context.Context) (*challenge.Result, e
 		}
 	}
 
+	// Real execution path: android platform + a wired vision-nav context.
+	// The vision loop DRIVES the device (launch → screenshot → LLM decide
+	// → dispatch → capture evidence) and scores on the §11.4.52
+	// goal-reached-AND-screen-changed verdict — never a fake PASS. When
+	// the context is absent or partially-wired, fall through to the honest
+	// skip below (NOT a PASS).
+	if d.platform == config.PlatformAndroid &&
+		d.testCase != nil &&
+		d.platformMatches() &&
+		d.androidCtx.valid() {
+		return d.executeAndroidVisionSteps(ctx, start), nil
+	}
+
 	// Honest-skip path: nothing this platform/wrapper can execute.
 	return d.skippedResult(start), nil
+}
+
+// deriveScreenGoals builds the vision-nav success criterion for this
+// bank case from the case's own fields, in priority order:
+//
+//	1. RequiredEvidence entries (each is a consumer-authored success
+//	   token — the §11.4.69 evidence-ledger vocabulary),
+//	2. the case's ExpectedResult string (the "what should the user see"
+//	   field authors write),
+//	3. as a last resort, the case Name (so a target always has at least
+//	   one goal — Target.Validate rejects an empty ScreenGoals list).
+//
+// Only non-empty tokens are returned. Project-agnostic: every token is
+// consumer data lifted off the bank case, never a HelixQA literal.
+func (d *definitionChallenge) deriveScreenGoals() []string {
+	var goals []string
+	if d.testCase != nil {
+		for _, e := range d.testCase.RequiredEvidence {
+			if strings.TrimSpace(e) != "" {
+				goals = append(goals, e)
+			}
+		}
+		if er := strings.TrimSpace(d.testCase.ExpectedResult); er != "" {
+			goals = append(goals, er)
+		}
+		if len(goals) == 0 {
+			if n := strings.TrimSpace(d.testCase.Name); n != "" {
+				goals = append(goals, n)
+			}
+		}
+	}
+	return goals
+}
+
+// deriveLaunchAction returns the first action the Session dispatches to
+// bring the target on-screen, in the executor's action grammar
+// (pkg/visionnav/adb_actor.go). It prefers the bank case's first
+// executable `adb_shell:` / `shell:` step (the case author's explicit
+// launch command), expressed as a `shell <cmd>` grammar action. When no
+// such step exists, it falls back to a generic `launch monkey -p
+// <package> 1` form using the consumer-supplied package name carried on
+// the bank case via DispatchesTo — or, absent that, an honest empty
+// string which Target.Validate rejects (so the caller learns the case is
+// not launchable rather than silently no-op'ing).
+func (d *definitionChallenge) deriveLaunchAction() string {
+	if d.testCase == nil {
+		return ""
+	}
+	for _, step := range d.testCase.Steps {
+		if step.Skip {
+			continue
+		}
+		at, val := step.ParseAction()
+		switch at {
+		case testbank.ActionTypeShell, testbank.ActionTypeADBShell:
+			if strings.TrimSpace(val) != "" {
+				return "shell " + val
+			}
+		}
+	}
+	// No explicit launch step. DispatchesTo, when set, is a
+	// consumer-resolved command line — run it verbatim via `shell`.
+	if dt := strings.TrimSpace(d.testCase.DispatchesTo); dt != "" {
+		return "shell " + dt
+	}
+	return ""
+}
+
+// executeAndroidVisionSteps drives the real device through the existing
+// pkg/visionnav.Session loop for this bank case. It builds a Target from
+// the case (launch action + derived ScreenGoals), runs the Session for
+// MaxSteps, and maps the §11.4.52 verdict onto a challenge.Result:
+//
+//   - SessionResult.Passed (goal reached AND screen changed) → StatusPassed
+//   - otherwise                                              → StatusFailed
+//
+// It NEVER returns Skipped (the caller already proved the context is
+// wired + the case matches the platform), and it NEVER manufactures a
+// PASS — the verdict comes straight from the real run's captured
+// Evidence. An infrastructure failure (screenshot/dispatch/provider
+// error mid-loop) scores StatusError with the real error text.
+//
+// The captured per-step Evidence (RecordedActions + Assertions) is the
+// §11.4.83 transcript: the action dispatched per step, the Provider's
+// rationale, and the OCR snapshot that did (or did not) match the goal.
+func (d *definitionChallenge) executeAndroidVisionSteps(
+	ctx context.Context,
+	start time.Time,
+) *challenge.Result {
+	goals := d.deriveScreenGoals()
+	launch := d.deriveLaunchAction()
+
+	target := visionnav.Target{
+		Name:         d.bankCaseName(),
+		LaunchAction: launch,
+		ScreenGoals:  goals,
+	}
+	if err := target.Validate(); err != nil {
+		// The case cannot be expressed as a drivable target (no launch
+		// action OR no goal). This is an honest FAIL — the case claims to
+		// be an android UI case but carries nothing to drive/verify, so we
+		// surface it loudly rather than skip it silently.
+		return d.androidResult(start, challenge.StatusFailed, nil, nil,
+			fmt.Sprintf("android bank case is not drivable: %v", err))
+	}
+
+	sess, err := visionnav.NewSession(visionnav.SessionConfig{
+		Provider: d.androidCtx.Provider,
+		Actor:    d.androidCtx.Actor,
+		Explorer: d.androidCtx.Explorer,
+		Target:   target,
+		MaxSteps: d.androidCtx.MaxSteps,
+	})
+	if err != nil {
+		return d.androidResult(start, challenge.StatusError, nil, nil,
+			fmt.Sprintf("android vision session construction failed: %v", err))
+	}
+
+	res, runErr := sess.Run(ctx)
+	if runErr != nil {
+		// Infrastructure failure aborted the loop (real screenshot /
+		// dispatch / provider / explorer error). Report StatusError with
+		// the real cause + whatever evidence accumulated before the abort.
+		recorded, assertions := d.visionEvidence(res, target)
+		return d.androidResult(start, challenge.StatusError,
+			recorded, assertions,
+			fmt.Sprintf("android vision run aborted: %v", runErr))
+	}
+
+	recorded, assertions := d.visionEvidence(res, target)
+	if res.Passed {
+		return d.androidResult(start, challenge.StatusPassed,
+			recorded, assertions, "")
+	}
+	return d.androidResult(start, challenge.StatusFailed,
+		recorded, assertions, res.Reason)
+}
+
+// bankCaseName returns a stable, non-empty name for the target. The case
+// ID is used (Target.Name must be non-empty + unique); falls back to the
+// definition ID when the case ID is empty.
+func (d *definitionChallenge) bankCaseName() string {
+	if d.testCase != nil && strings.TrimSpace(d.testCase.ID) != "" {
+		return d.testCase.ID
+	}
+	return string(d.def.ID)
+}
+
+// visionEvidence turns a SessionResult into the RecordedActions +
+// Assertions that back the challenge.Result. Every dispatched action,
+// the Provider rationale, the OCR snapshot, and the final §11.4.52
+// verdict become forensic lines — a hollow PASS is impossible because
+// these are lifted from the real run's captured Evidence (Duration is
+// real wall-clock; the screen-delta + goal-match booleans are the
+// Session's own computed verdict).
+func (d *definitionChallenge) visionEvidence(
+	res *visionnav.SessionResult,
+	target visionnav.Target,
+) ([]string, []challenge.AssertionResult) {
+	recorded := []string{
+		"android-vision: serial=" + d.androidCtx.Serial,
+		"android-vision: launch=" + target.LaunchAction,
+	}
+	if res == nil {
+		return recorded, nil
+	}
+	for i, ev := range res.Evidence {
+		if ev == nil {
+			continue
+		}
+		recorded = append(recorded,
+			fmt.Sprintf("android-vision: step[%d] desc=%q verdict=%q",
+				i, ev.Description, ev.Verdict))
+		if ev.OCRSnapshot != "" {
+			recorded = append(recorded,
+				fmt.Sprintf("android-vision: step[%d] ocr=%q",
+					i, truncateForRecord(ev.OCRSnapshot)))
+		}
+		if ev.Notes != "" {
+			recorded = append(recorded,
+				fmt.Sprintf("android-vision: step[%d] rationale=%q",
+					i, truncateForRecord(ev.Notes)))
+		}
+	}
+	recorded = append(recorded,
+		fmt.Sprintf("android-vision: verdict reason=%q", res.Reason))
+
+	assertions := []challenge.AssertionResult{
+		{
+			Type:     "vision-goal-reached",
+			Target:   "session.GoalReached",
+			Expected: "true",
+			Actual:   fmt.Sprintf("%t", res.GoalReached),
+			Passed:   res.GoalReached,
+			Message: fmt.Sprintf(
+				"vision loop reached a registered ScreenGoal within %d steps",
+				res.Steps),
+		},
+		{
+			Type:     "vision-screen-changed",
+			Target:   "session.ScreenChanged",
+			Expected: "true",
+			Actual:   fmt.Sprintf("%t", res.ScreenChanged),
+			Passed:   res.ScreenChanged,
+			Message: "actions produced observable screen change " +
+				"(§11.4.52 zero-delta auto-FAIL guard)",
+		},
+	}
+	return recorded, assertions
+}
+
+// androidResult assembles the challenge.Result for an Android vision run
+// with a real wall-clock duration. status is the caller-computed verdict;
+// errMsg is non-empty only for FAIL/ERROR. The Android results NEVER
+// carry the skip sentinel, so restoreSkippedFromDefinitionWrapper +
+// promoteSkippedToPassed leave them untouched — a real PASS stands, a
+// real FAIL stands.
+func (d *definitionChallenge) androidResult(
+	start time.Time,
+	status string,
+	recorded []string,
+	assertions []challenge.AssertionResult,
+	errMsg string,
+) *challenge.Result {
+	now := time.Now()
+	r := &challenge.Result{
+		ChallengeID:     d.def.ID,
+		ChallengeName:   d.def.Name,
+		Status:          status,
+		StartTime:       start,
+		EndTime:         now,
+		Duration:        now.Sub(start),
+		RecordedActions: recorded,
+		Assertions:      assertions,
+	}
+	if status != challenge.StatusPassed {
+		r.Error = errMsg
+	}
+	return r
 }
 
 // executeDesktopShellSteps runs every `shell:` step of the bank case
