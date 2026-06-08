@@ -129,8 +129,10 @@ func (p *BridgedCLIProvider) Name() string {
 }
 
 // SupportsVision reports whether the CLI tool supports
-// image inputs. Currently only the Claude CLI supports
-// the --image flag.
+// image inputs. Only the Claude CLI (Claude Code) supports
+// vision, and it ingests images via an in-prompt absolute
+// file path read by its built-in Read tool — NOT via a CLI
+// flag (the current CLI has no --image/--attach option).
 func (p *BridgedCLIProvider) SupportsVision() bool {
 	return p.cliName == "claude"
 }
@@ -180,9 +182,11 @@ func (p *BridgedCLIProvider) Chat(
 }
 
 // Vision sends a screenshot with a text prompt to the CLI
-// tool. The image is written to a temporary file and
-// passed via --image. Only supported when
-// SupportsVision() is true.
+// tool. The image is written to a temporary file and its
+// ABSOLUTE path is injected into the prompt text, where
+// Claude Code's built-in Read tool reads + analyses it (the
+// current Claude CLI has no --image flag). Only supported
+// when SupportsVision() is true.
 func (p *BridgedCLIProvider) Vision(
 	ctx context.Context,
 	image []byte,
@@ -222,8 +226,33 @@ func (p *BridgedCLIProvider) Vision(
 	}
 	tmpFile.Close()
 
-	args := p.buildArgs(prompt, tmpPath)
+	// Claude Code ingests an image by reading the file path
+	// referenced in the prompt text via its built-in Read
+	// tool. The path MUST be absolute — os.CreateTemp already
+	// returns an absolute path, but absolutize defensively in
+	// case the temp dir is ever relative.
+	absPath := tmpPath
+	if !filepath.IsAbs(absPath) {
+		if abs, aerr := filepath.Abs(absPath); aerr == nil {
+			absPath = abs
+		}
+	}
+
+	visionPrompt := buildVisionPrompt(absPath, prompt)
+	args := p.buildArgs(visionPrompt, absPath)
 	return p.invoke(ctx, args)
+}
+
+// buildVisionPrompt prepends a directive instructing the
+// model to read + analyse the screenshot at the given
+// absolute path. The original prompt is preserved verbatim
+// so the bridge's downstream JSON parsing is unaffected.
+func buildVisionPrompt(imagePath, prompt string) string {
+	return fmt.Sprintf(
+		"Here is the current screen. Read the screenshot "+
+			"image at %s and analyse it. %s",
+		imagePath, prompt,
+	)
 }
 
 // buildPrompt concatenates messages into a single prompt
@@ -249,7 +278,9 @@ func (p *BridgedCLIProvider) buildPrompt(
 }
 
 // buildArgs constructs the CLI argument list. imagePath
-// is empty for chat-only calls.
+// is empty for chat-only calls; when non-empty it signals a
+// vision call whose image path is already embedded in the
+// prompt (see buildVisionPrompt).
 func (p *BridgedCLIProvider) buildArgs(
 	prompt, imagePath string,
 ) []string {
@@ -258,13 +289,19 @@ func (p *BridgedCLIProvider) buildArgs(
 	// structured output via --output-format json. The
 	// obsolete --json flag is rejected with
 	// "unknown option '--json'".
-	args := []string{"--print", "--output-format", "json", prompt}
+	args := []string{"--print", "--output-format", "json"}
+	if imagePath != "" {
+		// Vision: Claude Code reads the in-prompt image path
+		// with its Read tool. The current CLI has NO --image
+		// flag ("unknown option '--image'"). Explicitly allow
+		// the Read tool so the image is read regardless of the
+		// host's default tool-permission configuration.
+		args = append(args, "--allowedTools", "Read")
+	}
 	if p.model != "" {
 		args = append(args, "--model", p.model)
 	}
-	if imagePath != "" {
-		args = append(args, "--image", imagePath)
-	}
+	args = append(args, prompt)
 	return args
 }
 

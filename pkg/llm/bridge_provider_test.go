@@ -7,6 +7,8 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -276,7 +278,10 @@ func TestBridgedCLIProvider_Vision_EmptyImage(
 }
 
 // TestBridgedCLIProvider_Vision_Success verifies that
-// vision calls pass --image to the CLI.
+// vision calls inject the screenshot's absolute path into
+// the prompt (Claude Code's Read tool ingests it) and do
+// NOT pass the obsolete --image flag, which the current
+// Claude CLI rejects with "unknown option '--image'".
 func TestBridgedCLIProvider_Vision_Success(t *testing.T) {
 	data := []byte(`{"result":"I see a login screen"}`)
 	runner := &mockCmdRunner{output: data}
@@ -292,20 +297,41 @@ func TestBridgedCLIProvider_Vision_Success(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, "I see a login screen", result.Content)
 
-	// Verify --image flag was passed.
-	assert.Contains(t, runner.lastArgs, "--image")
-	// The image path should be a temp file.
-	imageIdx := -1
-	for i, a := range runner.lastArgs {
-		if a == "--image" && i+1 < len(runner.lastArgs) {
-			imageIdx = i + 1
-			break
-		}
+	// The obsolete --image flag MUST NOT be passed — the
+	// current Claude CLI has no such option.
+	assert.NotContains(t, runner.lastArgs, "--image",
+		"--image is rejected by the current Claude CLI")
+
+	// The Read tool MUST be allowed so Claude Code can read
+	// the in-prompt image path under any host permission
+	// config.
+	assert.Contains(t, runner.lastArgs, "--allowedTools")
+	assert.Contains(t, runner.lastArgs, "Read")
+
+	// The prompt (last arg) MUST embed an absolute path to
+	// the temp screenshot AND the original user prompt, so
+	// Claude Code's Read tool ingests the image.
+	require.NotEmpty(t, runner.lastArgs)
+	promptArg := runner.lastArgs[len(runner.lastArgs)-1]
+	assert.Contains(t, promptArg, "describe what you see",
+		"original prompt must be preserved verbatim")
+	assert.Contains(t, promptArg, "helixqa-vision",
+		"prompt must reference the temp screenshot path")
+	assert.Contains(t, promptArg, "Read the screenshot",
+		"prompt must direct the model to read the image")
+
+	// Extract the embedded path and confirm it is absolute.
+	idx := strings.Index(promptArg, string(os.PathSeparator))
+	require.NotEqual(t, -1, idx,
+		"prompt must contain a filesystem path")
+	embeddedPath := promptArg[idx:]
+	pathEnd := strings.IndexByte(embeddedPath, ' ')
+	if pathEnd != -1 {
+		embeddedPath = embeddedPath[:pathEnd]
 	}
-	require.NotEqual(t, -1, imageIdx,
-		"--image flag should have a path argument")
-	assert.Contains(t, runner.lastArgs[imageIdx],
-		"helixqa-vision")
+	assert.True(t, filepath.IsAbs(embeddedPath),
+		"embedded screenshot path must be absolute, got %q",
+		embeddedPath)
 }
 
 // TestBridgedCLIProvider_WithTimeout verifies custom
