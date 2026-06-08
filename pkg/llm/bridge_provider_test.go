@@ -110,12 +110,39 @@ func TestBridgedCLIProvider_Chat_JSONResponse(t *testing.T) {
 	assert.Equal(t, 15, result.InputTokens)
 	assert.Equal(t, 42, result.OutputTokens)
 
-	// Verify CLI was invoked correctly.
+	// Verify CLI was invoked correctly. The current Claude
+	// CLI requires --print + --output-format json; the
+	// obsolete --json flag is rejected by the binary.
 	assert.Equal(t, "/usr/bin/claude", runner.lastName)
-	assert.Contains(t, runner.lastArgs, "--json")
+	assert.NotContains(t, runner.lastArgs, "--json")
 	assert.Contains(t, runner.lastArgs, "--print")
+	assertOrderedFlagValue(
+		t, runner.lastArgs, "--output-format", "json",
+	)
 	assert.Contains(t, runner.lastArgs, "--model")
 	assert.Contains(t, runner.lastArgs, "sonnet")
+}
+
+// assertOrderedFlagValue asserts that flag appears in args
+// immediately followed by value (the os/exec convention
+// for "--flag value" pairs).
+func assertOrderedFlagValue(
+	t *testing.T, args []string, flag, value string,
+) {
+	t.Helper()
+	for i, a := range args {
+		if a == flag {
+			if i+1 < len(args) && args[i+1] == value {
+				return
+			}
+			t.Fatalf(
+				"%s present but not followed by %q "+
+					"(args: %v)", flag, value, args,
+			)
+		}
+	}
+	t.Fatalf("%s %q not found in args: %v",
+		flag, value, args)
 }
 
 // TestBridgedCLIProvider_Chat_ContentField verifies
@@ -348,8 +375,9 @@ func TestBridgedCLIProvider_BuildArgs_NoModel(
 				"when model is empty")
 		}
 	}
-	assert.Contains(t, args, "--json")
+	assert.NotContains(t, args, "--json")
 	assert.Contains(t, args, "--print")
+	assertOrderedFlagValue(t, args, "--output-format", "json")
 	assert.Contains(t, args, "hello")
 }
 
