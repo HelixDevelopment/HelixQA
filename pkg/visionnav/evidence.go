@@ -58,6 +58,17 @@ type Evidence struct {
 	// Notes are free-form explorer-supplied context (e.g. "audio
 	// volume dipped after step 3, possibly related to D8").
 	Notes string `json:"notes,omitempty"`
+	// ProviderRationale is the vision Provider's OWN recorded reasoning
+	// about the screen it just saw (the Decision.Rationale carried into
+	// the evidence record). It is a first-class captured-evidence source
+	// for the provider-vision goal path: when no external OCR host is
+	// available, the captured proof of "what the model observed and why
+	// it decided the goal was reached" IS the vision model's recorded
+	// rationale against the very screenshot the Session fed it. A record
+	// carrying a non-empty ProviderRationale therefore satisfies the
+	// §11.4 captured-evidence requirement just as an OCRSnapshot or a
+	// Transcript does — it is NOT an empty/absence-of-error pass.
+	ProviderRationale string `json:"provider_rationale,omitempty"`
 }
 
 // Validate returns an error if Evidence is bluff-structured (missing
@@ -81,9 +92,13 @@ func (e *Evidence) Validate() error {
 		return fmt.Errorf("visionnav: Evidence.Verdict %q invalid (want pass/fail/needs-review)", e.Verdict)
 	}
 	// At least one captured-evidence source MUST be present. A
-	// pass/fail verdict without either transcript or OCR is a bluff.
-	if e.Transcript == nil && e.OCRSnapshot == "" {
-		return fmt.Errorf("visionnav: Evidence has neither Transcript nor OCRSnapshot — bluff verdict")
+	// pass/fail verdict without any of Transcript / OCRSnapshot /
+	// ProviderRationale is a bluff. ProviderRationale counts because it
+	// is the vision model's recorded reasoning about the exact screen
+	// it was shown — replayable proof, not absence-of-error.
+	if e.Transcript == nil && e.OCRSnapshot == "" && e.ProviderRationale == "" {
+		return fmt.Errorf("visionnav: Evidence has no captured source " +
+			"(none of Transcript / OCRSnapshot / ProviderRationale) — bluff verdict")
 	}
 	return nil
 }

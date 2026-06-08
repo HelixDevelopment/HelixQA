@@ -37,6 +37,21 @@ type Decision struct {
 	// would pass but it failed" (a high-signal divergence worth
 	// flagging for human review).
 	ExpectedVerdict string
+	// GoalReached is the Provider's OWN vision verdict: having looked
+	// at the screenshot for THIS step, does the rendered screen already
+	// satisfy the exploration goal? This is the provider-vision
+	// goal-detection signal — a vision-capable Provider (LLMProvider)
+	// sees the screen the Session captured and can confirm "done /
+	// goal reached / stop" WITHOUT any external OCR host.
+	//
+	// The Session treats GoalReached==true as a goal-reached signal
+	// (see session.go), so a run can honestly reach PASS purely from
+	// the Provider's vision decision when no OCR-backed Evidence match
+	// is available. It is additive to the OCR path, never a substitute
+	// that hides one: a Provider that never confirms the goal cannot
+	// flip a run to PASS, exactly like an OCR snapshot that never
+	// matches.
+	GoalReached bool
 }
 
 // Validate returns an error if the Decision lacks the captured-

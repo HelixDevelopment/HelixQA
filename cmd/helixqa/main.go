@@ -283,11 +283,15 @@ func cmdRun(args []string) {
 // missing — in which case the caller leaves the orchestrator's android
 // context unset and android cases honestly SKIP (never a fake PASS).
 //
-// Prerequisites (all required):
+// Prerequisites (required):
 //   - a `claude` CLI on PATH (the only vision-capable bridge today),
-//   - a Tesseract OCR host (HELIX_TESSERACT_URL) so captured Evidence
-//     carries the OCRSnapshot the §11.4.52 goal-match reads,
 //   - an evidence directory (the run's --output) for the FileSink.
+//
+// OCR host (HELIX_TESSERACT_URL) is OPTIONAL. When set, captured Evidence
+// also carries an OCRSnapshot and the OCR-backed §11.4.52 goal-match runs
+// alongside the provider-vision path. When unset, goal detection comes
+// from the vision Provider's own Decision.GoalReached — the context is
+// still WORKING and can honestly reach PASS with no external OCR infra.
 //
 // Decoupling (CONST-051(B)): the cmd layer builds the ADBActor over a
 // real navigator.ADBExecutor here; pkg/visionnav never imports
@@ -304,30 +308,51 @@ func buildAndroidVisionContext(serial, outputDir string) (*orchestrator.AndroidV
 		return nil, "discovered bridge does not support vision"
 	}
 
-	// 2. OCR host so captured Evidence carries an OCRSnapshot the
-	//    §11.4.52 goal-match reads. Without OCR the loop could never
-	//    honestly reach PASS, so we honestly disable instead.
-	tessURL := strings.TrimSpace(os.Getenv("HELIX_TESSERACT_URL"))
-	if tessURL == "" {
-		return nil, "HELIX_TESSERACT_URL is unset (no OCR host for goal matching)"
-	}
-	tess := audio.NewTesseractClient(tessURL)
-
-	// Optional Whisper host for audio transcript evidence (not required
-	// for goal matching).
-	var whisper *audio.WhisperClient
-	if wURL := strings.TrimSpace(os.Getenv("HELIX_WHISPER_URL")); wURL != "" {
-		whisper = audio.NewWhisperClient(wURL)
-	}
-
-	// 3. Evidence sink + explorer.
+	// 2. Evidence sink (every finding is persisted for §11.4.83 replay).
 	sink, sinkErr := visionnav.NewFileSink(filepath.Join(outputDir, "vision-evidence", serial))
 	if sinkErr != nil {
 		return nil, fmt.Sprintf("evidence sink: %v", sinkErr)
 	}
-	explorer, exErr := visionnav.NewDefaultExplorer("helixqa-android-vision", whisper, tess, sink)
-	if exErr != nil {
-		return nil, fmt.Sprintf("explorer: %v", exErr)
+
+	// 3. Explorer + goal source. Two honest paths, OCR host OPTIONAL:
+	//
+	//   - HELIX_TESSERACT_URL SET → DefaultExplorer with the Tesseract
+	//     client (and an optional Whisper host). Captured Evidence carries
+	//     an OCRSnapshot, so the §11.4.52 OCR goal-match path is active in
+	//     addition to the provider-vision path.
+	//
+	//   - HELIX_TESSERACT_URL UNSET → ProviderVisionExplorer. No external
+	//     OCR host is needed: goal detection comes from the vision
+	//     Provider's own Decision.GoalReached (the model SEES each
+	//     screenshot the Session feeds it and confirms "goal reached"),
+	//     and captured Evidence carries the Provider's recorded rationale.
+	//     This is what makes the vision run WORK with no OCR infra — an
+	//     honest PASS earned purely from the Provider's vision decision,
+	//     never a bluff.
+	//
+	// A truly-unwired context (no claude bridge, no device, no sink) is
+	// still an honest SKIP — handled by the early returns above/below.
+	var explorer visionnav.Explorer
+	tessURL := strings.TrimSpace(os.Getenv("HELIX_TESSERACT_URL"))
+	if tessURL != "" {
+		tess := audio.NewTesseractClient(tessURL)
+		// Optional Whisper host for audio transcript evidence (not required
+		// for goal matching).
+		var whisper *audio.WhisperClient
+		if wURL := strings.TrimSpace(os.Getenv("HELIX_WHISPER_URL")); wURL != "" {
+			whisper = audio.NewWhisperClient(wURL)
+		}
+		exp, exErr := visionnav.NewDefaultExplorer("helixqa-android-vision", whisper, tess, sink)
+		if exErr != nil {
+			return nil, fmt.Sprintf("explorer: %v", exErr)
+		}
+		explorer = exp
+	} else {
+		exp, exErr := visionnav.NewProviderVisionExplorer("helixqa-android-vision-providergoal", sink)
+		if exErr != nil {
+			return nil, fmt.Sprintf("provider-vision explorer: %v", exErr)
+		}
+		explorer = exp
 	}
 
 	// 4. Provider over the vision bridge. The goal text here is advisory

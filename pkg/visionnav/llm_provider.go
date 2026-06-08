@@ -189,9 +189,12 @@ func (p *LLMProvider) buildPrompt(obs Observation) string {
 		b.WriteString(obs.LastEvidence.Description)
 		b.WriteString("\n")
 	}
+	b.WriteString("\nFirst decide whether the CURRENT screenshot ALREADY shows the goal. ")
+	b.WriteString("If it does, set GOAL_REACHED: yes and you may use ACTION: noop.\n")
 	b.WriteString("\nReply EXACTLY in this format, one field per line:\n")
+	b.WriteString("GOAL_REACHED: <yes|no — does the current screen already satisfy the goal?>\n")
 	b.WriteString("ACTION: <one action in the grammar above>\n")
-	b.WriteString("RATIONALE: <one sentence: why this action makes progress>\n")
+	b.WriteString("RATIONALE: <one sentence: why this action makes progress, or why the goal is reached>\n")
 	b.WriteString("EXPECT: <pass|fail|needs-review or leave blank if unsure>\n")
 	return b.String()
 }
@@ -202,10 +205,14 @@ func (p *LLMProvider) buildPrompt(obs Observation) string {
 // missing either is rejected (caught later by Decision.Validate too, but
 // rejecting here gives a precise error).
 func parseDecision(content string) (*Decision, error) {
-	var action, rationale, expect string
+	var action, rationale, expect, goal string
 	for _, raw := range strings.Split(content, "\n") {
 		line := strings.TrimSpace(raw)
 		switch {
+		// GOAL_REACHED is matched before ACTION/RATIONALE because none of
+		// their prefixes collide; the explicit case keeps intent obvious.
+		case hasPrefixFold(line, "GOAL_REACHED:"):
+			goal = strings.ToLower(strings.TrimSpace(line[len("GOAL_REACHED:"):]))
 		case hasPrefixFold(line, "ACTION:"):
 			action = strings.TrimSpace(line[len("ACTION:"):])
 		case hasPrefixFold(line, "RATIONALE:"):
@@ -228,7 +235,16 @@ func parseDecision(content string) (*Decision, error) {
 		// Decision treats "" as "model honestly does not know".
 		expect = ""
 	}
-	return &Decision{Action: action, Rationale: rationale, ExpectedVerdict: expect}, nil
+	// GOAL_REACHED is true only on an explicit affirmative. Any other value
+	// (missing, "no", or an unparseable token) is false — the model must
+	// affirmatively confirm the goal; ambiguity is never treated as reached.
+	goalReached := goal == "yes" || goal == "true" || goal == "reached"
+	return &Decision{
+		Action:          action,
+		Rationale:       rationale,
+		ExpectedVerdict: expect,
+		GoalReached:     goalReached,
+	}, nil
 }
 
 // hasPrefixFold reports whether s starts with prefix, case-insensitively

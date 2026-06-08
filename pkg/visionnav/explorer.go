@@ -62,6 +62,12 @@ type FindingOptions struct {
 	ImageOpts audio.OCROptions
 	// Notes are free-form context (e.g. "audio dipped at step 3").
 	Notes string
+	// ProviderRationale is the vision Provider's recorded reasoning about
+	// the screen for this finding (carried from Decision.Rationale). The
+	// ProviderVisionExplorer uses it as the captured-evidence source when
+	// no OCR/audio host is present; DefaultExplorer ignores it (it has
+	// real OCR/transcript sources).
+	ProviderRationale string
 }
 
 // DefaultExplorer is the standard implementation of Explorer that
@@ -145,3 +151,69 @@ func (e *DefaultExplorer) CaptureFinding(ctx context.Context, opts FindingOption
 	}
 	return ev, nil
 }
+
+// ProviderVisionExplorer is the OCR-host-free Explorer for the
+// provider-vision goal path. It captures each finding as §11.4-valid
+// Evidence WITHOUT calling any external Tesseract/Whisper host: the
+// captured-evidence source is the vision Provider's own recorded
+// rationale (FindingOptions.ProviderRationale), which is the model's
+// reasoning about the exact screenshot the Session fed it.
+//
+// Goal detection for runs driven by this Explorer comes from the
+// Provider's Decision.GoalReached (see session.go), NOT from an
+// OCRSnapshot — so a working vision context can be constructed with no
+// HELIX_TESSERACT_URL. The DefaultExplorer remains the choice whenever an
+// OCR host IS available (richer evidence + an independent OCR goal path).
+//
+// Anti-bluff posture (§11.4 / §11.4.27): this Explorer NEVER fabricates a
+// goal match. It records evidence only; the goal verdict is the Provider's
+// vision decision, falsifiable exactly like the OCR path — a Provider that
+// never confirms the goal yields a FAIL run.
+type ProviderVisionExplorer struct {
+	name string
+	sink EvidenceSink
+}
+
+// NewProviderVisionExplorer wires a named OCR-host-free Explorer to an
+// EvidenceSink. No Whisper/Tesseract client is required: the captured
+// source is the Provider's rationale. sink is required (every finding is
+// still persisted for §11.4.83 transcript replay).
+func NewProviderVisionExplorer(name string, sink EvidenceSink) (*ProviderVisionExplorer, error) {
+	if name == "" {
+		return nil, fmt.Errorf("visionnav: provider-vision explorer name is required")
+	}
+	if sink == nil {
+		return nil, fmt.Errorf("visionnav: EvidenceSink is required")
+	}
+	return &ProviderVisionExplorer{name: name, sink: sink}, nil
+}
+
+// Name returns the explorer's identifier.
+func (e *ProviderVisionExplorer) Name() string { return e.name }
+
+// CaptureFinding records a finding whose captured-evidence source is the
+// Provider's rationale. It performs NO network OCR/transcription. The
+// Evidence is Validate()d (via the sink) so a finding carrying neither a
+// rationale nor any other source is rejected exactly as a bluff would be.
+func (e *ProviderVisionExplorer) CaptureFinding(ctx context.Context, opts FindingOptions) (*Evidence, error) {
+	rationale := opts.ProviderRationale
+	if rationale == "" {
+		// Fall back to Notes (the Session also routes the rationale there)
+		// so a caller that only populated Notes still produces valid evidence.
+		rationale = opts.Notes
+	}
+	ev := &Evidence{
+		Timestamp:         time.Now().UTC(),
+		Description:       opts.Description,
+		Verdict:           opts.Verdict,
+		Notes:             opts.Notes,
+		ProviderRationale: rationale,
+	}
+	if err := e.sink.Record(ctx, ev); err != nil {
+		return nil, fmt.Errorf("visionnav: %s: sink record failed: %w", e.name, err)
+	}
+	return ev, nil
+}
+
+// Compile-time assertion that ProviderVisionExplorer satisfies Explorer.
+var _ Explorer = (*ProviderVisionExplorer)(nil)

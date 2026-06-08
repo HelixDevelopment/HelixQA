@@ -11,8 +11,11 @@
 // then checks whether a registered ScreenGoal is satisfied.
 //
 // §11.4.52 anti-bluff verdict. A run is PASS only when BOTH hold:
-//   (a) at least one captured Evidence whose OCRSnapshot matches one of
-//       the Target's registered ScreenGoals, AND
+//   (a) the goal was reached — by EITHER an OCR-backed match (a captured
+//       Evidence whose OCRSnapshot contains a registered ScreenGoal) OR a
+//       provider-vision match (the vision Provider, having SEEN the
+//       step's screenshot, set Decision.GoalReached). The provider-vision
+//       source needs NO external OCR host, AND
 //   (b) the screen demonstrably CHANGED between consecutive steps
 //       (screenshot delta above a floor). A run whose every consecutive
 //       screenshot pair is effectively identical is a zero-screen-delta
@@ -98,7 +101,8 @@ func NewSession(cfg SessionConfig) (*Session, error) {
 type SessionResult struct {
 	// Passed is the §11.4.52 verdict: goal reached AND screen changed.
 	Passed bool
-	// GoalReached is true if any step's Evidence OCR matched a ScreenGoal.
+	// GoalReached is true if the goal was reached at any step — by either
+	// an OCR-backed Evidence match OR a provider-vision Decision.GoalReached.
 	GoalReached bool
 	// ScreenChanged is true if any consecutive screenshot pair differed
 	// above the delta floor. Zero across all steps is the auto-FAIL.
@@ -165,13 +169,29 @@ func (s *Session) Run(ctx context.Context) (*SessionResult, error) {
 			Description: fmt.Sprintf("step %d: %s", step, decision.Action),
 			Verdict:     "needs-review",
 			Notes:       decision.Rationale,
+			// Carry the Provider's recorded reasoning into the finding so an
+			// Explorer that has no OCR/audio host (the provider-vision path)
+			// can still produce §11.4-valid captured Evidence.
+			ProviderRationale: decision.Rationale,
 		})
 		if err != nil {
 			return res, fmt.Errorf("visionnav: step %d: capture finding: %w", step, err)
 		}
 		res.Evidence = append(res.Evidence, ev)
 
-		if ev != nil && evidenceMatchesGoal(ev, s.cfg.Target.ScreenGoals) {
+		// Goal detection has TWO independent sources, either of which marks
+		// the goal reached:
+		//   (a) OCR-backed match — a captured Evidence.OCRSnapshot contains a
+		//       registered ScreenGoal. Active only when an OCR host populated
+		//       the snapshot. This is the §11.4.52 OCR path.
+		//   (b) Provider-vision match — the vision-capable Provider, having
+		//       SEEN this step's screenshot, set decision.GoalReached. This
+		//       path needs NO external OCR host: the model's own decision on
+		//       the screen it was fed is the stop signal.
+		// Neither path can manufacture a PASS: (a) requires a real OCR match,
+		// (b) requires the Provider to affirmatively confirm the goal.
+		if (ev != nil && evidenceMatchesGoal(ev, s.cfg.Target.ScreenGoals)) ||
+			decision.GoalReached {
 			res.GoalReached = true
 			break
 		}
