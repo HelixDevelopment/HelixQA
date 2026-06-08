@@ -111,7 +111,12 @@ func TestADBActor_Dispatch_Grammar(t *testing.T) {
 		{"text multiword", "text hello world", "type:hello world", false},
 		{"text empty", "text", "", true},
 		{"shell", "shell am force-stop x", "shell:am force-stop x", false},
-		{"launch", "launch monkey -p x 1", "shell:monkey -p x 1", false},
+		{"launch passthrough", "launch monkey -p x 1", "shell:monkey -p x 1", false},
+		// LVA-009 regression: a bare package name (what vision models emit)
+		// must be turned into a launcher-intent invocation, NOT exec'd as a
+		// device-shell command (which returns exit 127, "not found").
+		{"launch bare package", "launch digital.vasic.lava.client.dev",
+			"shell:monkey -p digital.vasic.lava.client.dev -c android.intent.category.LAUNCHER 1", false},
 		{"shell empty", "shell", "", true},
 		{"unknown verb", "frobnicate now", "", true},
 	}

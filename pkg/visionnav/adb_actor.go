@@ -130,7 +130,27 @@ func (a *ADBActor) Dispatch(ctx context.Context, action string) error {
 		}
 		return a.exec.Type(ctx, strings.Join(args, " "))
 
-	case "launch", "shell":
+	case "launch":
+		if len(args) == 0 {
+			return fmt.Errorf("visionnav: %q action needs a payload", verb)
+		}
+		// Vision models emit `launch <package>` (a bare Android package
+		// name) — NOT a full shell command. Passing that straight to
+		// Shell runs `adb shell digital.vasic.lava.client.dev`, which the
+		// device shell rejects with exit 127 ("not found"). When the
+		// payload is a single bare package token (dotted, no spaces or
+		// flags) build the standard launcher-intent invocation. A
+		// multi-token payload (e.g. a caller-supplied `monkey -p … 1`) is
+		// passed through verbatim for backward compatibility.
+		payload := strings.Join(args, " ")
+		if len(args) == 1 && looksLikePackage(args[0]) {
+			payload = "monkey -p " + args[0] +
+				" -c android.intent.category.LAUNCHER 1"
+		}
+		_, err := a.exec.Shell(ctx, payload)
+		return err
+
+	case "shell":
 		if len(args) == 0 {
 			return fmt.Errorf("visionnav: %q action needs a command payload", verb)
 		}
@@ -141,4 +161,24 @@ func (a *ADBActor) Dispatch(ctx context.Context, action string) error {
 		return fmt.Errorf("visionnav: unknown action verb %q "+
 			"(grammar: tap|key|back|home|text|launch|shell|noop)", verb)
 	}
+}
+
+// looksLikePackage reports whether tok is a bare Android package name
+// (e.g. "digital.vasic.lava.client.dev") rather than a shell command
+// payload like "monkey -p … 1". A package name contains at least one
+// dot and no whitespace, slash, or leading dash. This is what lets the
+// `launch <package>` verb build a launcher-intent invocation instead of
+// trying to exec the package name as a device-shell command (the LVA-009
+// exit-127 bug).
+func looksLikePackage(tok string) bool {
+	if !strings.Contains(tok, ".") {
+		return false
+	}
+	if strings.ContainsAny(tok, " \t/") {
+		return false
+	}
+	if strings.HasPrefix(tok, "-") {
+		return false
+	}
+	return true
 }
