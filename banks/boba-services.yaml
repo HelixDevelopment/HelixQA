@@ -1,0 +1,347 @@
+# SPDX-FileCopyrightText: 2026 Milos Vasic
+# SPDX-License-Identifier: Apache-2.0
+#
+# HelixQA Test Bank: Boba Backend Services
+# Validates health, merge search, Jackett credential/indexer management,
+# autoconfiguration, encryption-at-rest, file permissions, tracker-type
+# support, scheduling, and SSE streaming for the Boba qBittorrent
+# enhancement suite.
+#
+# Services covered:
+#   - Merge Search Service (FastAPI on :7187)
+#   - Download Proxy (Python on :7186)
+#   - boba-jackett (Go on :7189)
+#   - WebUI Bridge (Python on :7188)
+
+version: "1.0"
+name: "Boba Backend Services Validation Suite"
+description: "End-to-end validation of all Boba backend services: health probes, multi-tracker merge search with SSE streaming, Jackett credential/indexer management with encrypted-at-rest storage, autoconfiguration flow, credential round-trip atomicity, file permission security, all supported tracker types (RuTracker, Kinozal, NNMClub, IPTorrents, RuTor), search scheduling, and SSE stream token enforcement."
+metadata:
+  author: "vasic-digital"
+  app: "Boba"
+  version: "1.0.0"
+
+test_cases:
+
+  - id: BOBA-SRV-001
+    name: "Merge service health endpoint returns healthy"
+    category: functional
+    priority: critical
+    platforms: [api]
+    steps:
+      - name: "GET /health on merge service port"
+        action: "curl -s http://localhost:7187/health"
+        expected: "Response is JSON with status=healthy, service=merge-search, version=1.0.0"
+      - name: "Verify HTTP status code"
+        action: "curl -s -o /dev/null -w '%{http_code}' http://localhost:7187/health"
+        expected: "HTTP 200"
+      - name: "Verify response body fields"
+        action: "curl -s http://localhost:7187/health | jq -e '.status == \"healthy\" and .service == \"merge-search\"'"
+        expected: "exit 0 (true)"
+    tags: [boba, services, health, merge-service]
+    estimated_duration: "5s"
+    expected_result: "Merge search service returns HTTP 200 with JSON body {status:healthy, service:merge-search, version:1.0.0}"
+    fix_reference:
+      bug_id: "BOBA-SRV-HEALTH-001"
+      description: "Health endpoint must always return 200 when the service is running"
+      fix_file: "download-proxy/src/api/__init__.py"
+
+  - id: BOBA-SRV-002
+    name: "boba-jackett health endpoint reports subsystems status"
+    category: functional
+    priority: critical
+    platforms: [api]
+    steps:
+      - name: "GET /healthz on boba-jackett port"
+        action: "curl -s http://localhost:7189/healthz"
+        expected: "Response is JSON with status, db_ok, jackett_ok, version, uptime_s fields"
+      - name: "Verify status mapping when both subsystems up"
+        action: "curl -s http://localhost:7189/healthz | jq -e '.status == \"ok\" and .db_ok == true and .jackett_ok == true'"
+        expected: "Both DB and Jackett report healthy; status is ok"
+      - name: "Verify HTTP status is always 200 even on degradation"
+        action: "curl -s -o /dev/null -w '%{http_code}' http://localhost:7189/healthz"
+        expected: "HTTP 200 — never flaps"
+    tags: [boba, services, health, boba-jackett, go]
+    estimated_duration: "5s"
+    expected_result: "boba-jackett returns HTTP 200 with JSON body reporting status (ok/degraded/unhealthy), db_ok, jackett_ok, version, and uptime_s"
+    fix_reference:
+      bug_id: "BOBA-SRV-HEALTH-002"
+      description: "boba-jackett health endpoint must probe DB ping + Jackett catalog and never return non-200"
+      fix_file: "qBitTorrent-go/internal/jackettapi/health.go"
+
+  - id: BOBA-SRV-003
+    name: "Merge search API returns search results with SSE stream token"
+    category: functional
+    priority: critical
+    platforms: [api]
+    steps:
+      - name: "POST /api/v1/search with valid query"
+        action: "curl -s -X POST http://localhost:7187/api/v1/search -H 'Content-Type: application/json' -d '{\"query\":\"ubuntu\",\"limit\":10}'"
+        expected: "Response is JSON with search_id, status=running, stream_token present, tracker_stats array"
+      - name: "Verify response has stream_token for SSE"
+        action: "curl -s -X POST ... | jq -e '.stream_token | length > 0'"
+        expected: "stream_token is a non-empty string"
+      - name: "Verify search completes via polling"
+        action: "SID=$(curl -s -X POST ... | jq -r '.search_id'); sleep 15; curl -s http://localhost:7187/api/v1/search/$SID | jq -e '.status == \"completed\" or .status == \"no_results\"'"
+        expected: "Search eventually completes (either has results or properly reports no_results)"
+    tags: [boba, services, search, sse, streaming]
+    estimated_duration: "30s"
+    expected_result: "Search returns immediately with running status and stream_token; background fan-out completes asynchronously; GET /search/{id} eventually returns completed status"
+    fix_reference:
+      bug_id: "BOBA-SRV-SEARCH-001"
+      description: "Search endpoint must return immediately with stream_token and complete asynchronously"
+      fix_file: "download-proxy/src/api/routes.py"
+      fix_commit: "pending"
+
+  - id: BOBA-SRV-004
+    name: "Jackett credential CRUD with encryption at rest"
+    category: functional
+    priority: critical
+    platforms: [api]
+    steps:
+      - name: "POST /api/v1/jackett/credentials with username/password"
+        action: "curl -s -X POST http://localhost:7189/api/v1/jackett/credentials -H 'Content-Type: application/json' -d '{\"name\":\"TESTTRACKER\",\"username\":\"testuser\",\"password\":\"testpass\"}'"
+        expected: "HTTP 200 with JSON body containing name, kind=userpass, has_username=true, has_password=true — no plaintext values"
+      - name: "GET /api/v1/jackett/credentials and verify no plaintext leak"
+        action: "curl -s http://localhost:7189/api/v1/jackett/credentials | jq -e '.[] | select(.name == \"TESTTRACKER\") | (.has_username == true and .has_password == true and .has_cookies == false)'"
+        expected: "GET returns metadata only — plaintext username/password/cookies NEVER appear in API response"
+      - name: "DELETE credential"
+        action: "curl -s -o /dev/null -w '%{http_code}' -X DELETE http://localhost:7189/api/v1/jackett/credentials/TESTTRACKER"
+        expected: "HTTP 204 No Content"
+    tags: [boba, services, jackett, credentials, encryption, security]
+    estimated_duration: "10s"
+    expected_result: "Credentials are upserted to encrypted DB + mirrored to .env; GET returns metadata-only DTO with no plaintext; DELETE returns 204"
+    fix_reference:
+      bug_id: "BOBA-SRV-JACKETT-CRED-001"
+      description: "Jackett credentials API must store encrypted in DB, mirror to .env, and never leak plaintext in GET responses"
+      fix_file: "qBitTorrent-go/internal/jackettapi/credentials.go"
+
+  - id: BOBA-SRV-005
+    name: "Jackett indexer management with credential linking"
+    category: functional
+    priority: high
+    platforms: [api]
+    steps:
+      - name: "GET /api/v1/jackett/indexers lists available indexers"
+        action: "curl -s http://localhost:7189/api/v1/jackett/indexers"
+        expected: "HTTP 200 with JSON array of indexer objects with id, name, site, configured, required_fields"
+      - name: "POST /api/v1/jackett/indexers/{id} with credential_name"
+        action: "curl -s -X POST http://localhost:7189/api/v1/jackett/indexers/some-id -H 'Content-Type: application/json' -d '{\"credential_name\":\"TESTTRACKER\"}'"
+        expected: "HTTP 200 with indexer details showing linked credential"
+      - name: "DELETE indexer configuration"
+        action: "curl -s -o /dev/null -w '%{http_code}' -X DELETE http://localhost:7189/api/v1/jackett/indexers/some-id"
+        expected: "HTTP 204 No Content"
+    tags: [boba, services, jackett, indexers, configuration]
+    estimated_duration: "10s"
+    expected_result: "Indexers can be listed, configured with linked credentials, and deleted; Jackett-side indexer is removed on credential cascade"
+    fix_reference:
+      bug_id: "BOBA-SRV-JACKETT-IDX-001"
+      description: "Indexer management must support CRUD with credential linking and cascade delete"
+      fix_file: "qBitTorrent-go/internal/jackettapi/indexers.go"
+
+  - id: BOBA-SRV-006
+    name: "Jackett autoconfiguration flow runs and persists"
+    category: functional
+    priority: high
+    platforms: [api]
+    steps:
+      - name: "POST /api/v1/jackett/autoconfig/run triggers autoconfig"
+        action: "curl -s -X POST http://localhost:7189/api/v1/jackett/autoconfig/run"
+        expected: "HTTP 200 with JSON body containing run_id, status=running"
+      - name: "GET /api/v1/jackett/autoconfig/runs lists completed runs"
+        action: "curl -s http://localhost:7189/api/v1/jackett/autoconfig/runs"
+        expected: "HTTP 200 with JSON array of runs; latest entry status=completed with run stats"
+      - name: "GET /api/v1/jackett/autoconfig/runs/{id} returns detailed run"
+        action: "RUN_ID=$(curl -s http://localhost:7189/api/v1/jackett/autoconfig/runs | jq -r '.[0].id'); curl -s http://localhost:7189/api/v1/jackett/autoconfig/runs/$RUN_ID"
+        expected: "JSON with run_id, status, discovered_count, configured_now, already_present, errors array, timestamps"
+    tags: [boba, services, jackett, autoconfiguration]
+    estimated_duration: "30s"
+    expected_result: "Autoconfig trigger starts a run; list endpoint shows completed runs; detail endpoint returns discovered/configured/already_present/error counts"
+    fix_reference:
+      bug_id: "BOBA-SRV-JACKETT-AUTOCONF-001"
+      description: "Autoconfig must be triggerable via POST, runs listable via GET, with detailed per-run stats"
+      fix_file: "qBitTorrent-go/internal/jackettapi/runs.go"
+
+  - id: BOBA-SRV-007
+    name: "File permission security for database and env files"
+    category: security
+    priority: critical
+    platforms: [api]
+    steps:
+      - name: "Check boba.db file permissions"
+        action: "stat -c '%a' /config/boba.db"
+        expected: "600 (only owner read/write)"
+      - name: "Check .env file permissions"
+        action: "stat -c '%a' /config/.env"
+        expected: "600 (only owner read/write)"
+      - name: "Verify no world-readable credential files"
+        action: "find /config -name '*.db' -o -name '.env' | xargs -I{} sh -c 'perm=$(stat -c \"%a\" \"{}\"); if [ \"$perm\" != \"600\" ]; then echo \"FAIL: {} is $perm\"; fi'"
+        expected: "No output — all credential files are 0600"
+    tags: [boba, services, security, file-permissions, encryption]
+    estimated_duration: "5s"
+    expected_result: "boba.db and .env are both mode 0600 (owner read/write only), preventing credential leakage through world-readable files"
+    fix_reference:
+      bug_id: "BOBA-SRV-FILEPERM-001"
+      description: "Credential-bearing files must be 0600 at all times to prevent unauthorized access"
+      fix_file: "scripts/start.sh"
+
+  - id: BOBA-SRV-008
+    name: "Credential round-trip with encryption verification"
+    category: security
+    priority: critical
+    platforms: [api]
+    steps:
+      - name: "POST credential and verify GET returns metadata only"
+        action: "curl -s -X POST http://localhost:7189/api/v1/jackett/credentials -H 'Content-Type: application/json' -d '{\"name\":\"ROUNDTRIP\",\"username\":\"plainuser\",\"password\":\"plainpass\"}'; curl -s http://localhost:7189/api/v1/jackett/credentials | jq '.[] | select(.name == \"ROUNDTRIP\")'"
+        expected: "GET returns has_username=true, has_password=true — no username or password fields in response"
+      - name: "Verify .env has plaintext values mirror"
+        action: "grep -q 'ROUNDTRIP_USERNAME=plainuser' /config/.env && grep -q 'ROUNDTRIP_PASSWORD=plainpass' /config/.env"
+        expected: "Both env vars present with plaintext values"
+      - name: "Verify DB has encrypted values (not plaintext)"
+        action: "sqlite3 /config/boba.db \"SELECT hex(username) FROM credentials WHERE name='ROUNDTRIP';\" | grep -v '706c61696e75736572'"
+        expected: "Hex representation of username does NOT equal hex of 'plainuser' (value is encrypted)"
+    tags: [boba, services, security, credentials, encryption, round-trip]
+    estimated_duration: "10s"
+    expected_result: "Credential POST succeeds; GET returns metadata-only without plaintext; .env mirror has plaintext; DB stores encrypted (not plaintext)"
+    fix_reference:
+      bug_id: "BOBA-SRV-CREDROUNDTRIP-001"
+      description: "Credential round-trip must: DB encrypted at rest -> .env plaintext mirror -> GET metadata-only -> no plaintext leak in API"
+      fix_file: "qBitTorrent-go/internal/jackettapi/credentials.go"
+
+  - id: BOBA-SRV-009
+    name: "All tracker types authenticate and search correctly"
+    category: functional
+    priority: high
+    platforms: [api]
+    steps:
+      - name: "RuTracker cookie-authenticated search"
+        action: "curl -s -X POST http://localhost:7187/api/v1/search -H 'Content-Type: application/json' -d '{\"query\":\"test\",\"category\":\"all\",\"limit\":5}' | jq -e '.trackers_searched | any(. == \"rutracker\")'"
+        expected: "rutracker appears in trackers_searched list"
+      - name: "RuTor public (no-auth) search"
+        action: "curl -s -X POST http://localhost:7187/api/v1/search -H 'Content-Type: application/json' -d '{\"query\":\"linux\",\"category\":\"all\",\"limit\":5}' | jq -e '.trackers_searched | any(. == \"rutor\")'"
+        expected: "rutor appears in trackers_searched (no authentication needed)"
+      - name: "Kinozal search uses IPTorrents fallback credentials"
+        action: "curl -s -X POST http://localhost:7187/api/v1/search -H 'Content-Type: application/json' -d '{\"query\":\"test\",\"category\":\"all\",\"limit\":5}' | jq -e '.trackers_searched | any(. == \"kinozal\")'"
+        expected: "kinozal appears in trackers_searched (uses IPTORRENTS_USERNAME/PASSWORD as fallback)"
+      - name: "IPTorrents freeleech-only constraint enforced"
+        action: "curl -s http://localhost:7187/api/v1/search/{search_id} | jq '[.results[] | select(.tracker == \"iptorrents\")] | all(.freeleech == true)'"
+        expected: "Every IPTorrents result has freeleech=true (non-freeleech results never merged)"
+    tags: [boba, services, search, trackers, rutracker, kinozal, nnmclub, iptorrents, rutor]
+    estimated_duration: "60s"
+    expected_result: "All tracker types are searchable: RuTracker with cookies, RuTor without auth, Kinozal with fallback credentials, IPTorrents with freeleech-only enforcement"
+    fix_reference:
+      bug_id: "BOBA-SRV-ALLTRACKERS-001"
+      description: "All supported tracker types must authenticate and search correctly: private-tracker cookie auth, public no-auth, credential fallback chain, freeleech filter"
+      fix_file: "download-proxy/src/merge_service/search.py"
+
+  - id: BOBA-SRV-010
+    name: "Search scheduling API with CRUD operations"
+    category: functional
+    priority: medium
+    platforms: [api]
+    steps:
+      - name: "POST /api/v1/schedules creates a new schedule"
+        action: "curl -s -X POST http://localhost:7187/api/v1/schedules -H 'Content-Type: application/json' -d '{\"name\":\"hourly-test\",\"query\":\"ubuntu\",\"interval_minutes\":60}'"
+        expected: "HTTP 200 with JSON body containing id, name=hourly-test, interval_minutes=60"
+      - name: "GET /api/v1/schedules lists created schedules"
+        action: "curl -s http://localhost:7187/api/v1/schedules | jq -e '.schedules[] | select(.name == \"hourly-test\") | length > 0'"
+        expected: "hourly-test schedule appears in the list"
+      - name: "DELETE /api/v1/schedules/{id} removes schedule"
+        action: "SCHED_ID=$(curl -s http://localhost:7187/api/v1/schedules | jq -r '.schedules[] | select(.name == \"hourly-test\") | .id'); curl -s -o /dev/null -w '%{http_code}' -X DELETE http://localhost:7187/api/v1/schedules/$SCHED_ID"
+        expected: "HTTP 200 and schedule is removed from list"
+    tags: [boba, services, scheduler, api]
+    estimated_duration: "10s"
+    expected_result: "Schedules can be created (POST), listed (GET), and deleted (DELETE); interval_minutes sets recurrence; scheduler triggers search callback"
+    fix_reference:
+      bug_id: "BOBA-SRV-SCHEDULER-001"
+      description: "Search scheduling must support full CRUD and trigger the search callback on interval"
+      fix_file: "download-proxy/src/api/scheduler.py"
+
+  - id: BOBA-SRV-011
+    name: "SSE streaming delivers real-time search results"
+    category: functional
+    priority: high
+    platforms: [api]
+    steps:
+      - name: "POST search and connect to SSE stream"
+        action: "SEARCH_RESP=$(curl -s -X POST http://localhost:7187/api/v1/search -H 'Content-Type: application/json' -d '{\"query\":\"debian\",\"limit\":20}'); SID=$(echo $SEARCH_RESP | jq -r '.search_id'); TOKEN=$(echo $SEARCH_RESP | jq -r '.stream_token'); timeout 20 curl -s -N http://localhost:7187/api/v1/search/stream/$SID?token=$TOKEN > /tmp/sse_output.txt &"
+        expected: "SSE stream starts with event: search_start"
+      - name: "Verify at least one event was received"
+        action: "sleep 15; grep -q 'event: result_found' /tmp/sse_output.txt || grep -q 'event: search_complete' /tmp/sse_output.txt"
+        expected: "At least one SSE event (result_found or search_complete) received within 15 seconds"
+      - name: "Verify stream ends with search_complete event"
+        action: "grep -q 'event: search_complete' /tmp/sse_output.txt"
+        expected: "search_complete event terminates the SSE stream"
+    tags: [boba, services, sse, streaming, real-time]
+    estimated_duration: "25s"
+    expected_result: "SSE stream delivers search_start -> zero or more result_found -> search_complete events with partial results arriving in real time"
+    fix_reference:
+      bug_id: "BOBA-SRV-SSE-001"
+      description: "SSE streaming must deliver real-time search results with proper event sequence and stream termination"
+      fix_file: "download-proxy/src/api/streaming.py"
+
+  - id: BOBA-SRV-012
+    name: "SSE token enforcement blocks unauthenticated streams"
+    category: security
+    priority: high
+    platforms: [api]
+    steps:
+      - name: "Request SSE stream without token with SSE_REQUIRE_TOKEN=1"
+        action: "SEARCH_RESP=$(curl -s -X POST http://localhost:7187/api/v1/search -H 'Content-Type: application/json' -d '{\"query\":\"test\",\"limit\":5}'); SID=$(echo $SEARCH_RESP | jq -r '.search_id'); curl -s -o /dev/null -w '%{http_code}' http://localhost:7187/api/v1/search/stream/$SID"
+        expected: "HTTP 403 when SSE_REQUIRE_TOKEN is enabled and no token provided"
+      - name: "Request SSE stream with valid token succeeds"
+        action: "SEARCH_RESP=$(curl -s -X POST http://localhost:7187/api/v1/search -H 'Content-Type: application/json' -d '{\"query\":\"test\",\"limit\":5}'); SID=$(echo $SEARCH_RESP | jq -r '.search_id'); TOKEN=$(echo $SEARCH_RESP | jq -r '.stream_token'); curl -s -o /dev/null -w '%{http_code}' http://localhost:7187/api/v1/search/stream/$SID?token=$TOKEN"
+        expected: "HTTP 200 with SSE content-type when valid token provided"
+      - name: "Request SSE stream with bad token"
+        action: "SID=$(curl -s -X POST ... | jq -r '.search_id'); curl -s -o /dev/null -w '%{http_code}' http://localhost:7187/api/v1/search/stream/$SID?token=invalid"
+        expected: "HTTP 403 with invalid token"
+    tags: [boba, services, security, sse, token, authorization]
+    estimated_duration: "10s"
+    expected_result: "SSE streams require valid per-search bearer token when SSE_REQUIRE_TOKEN is enabled; invalid/missing tokens return 403"
+    fix_reference:
+      bug_id: "BOBA-SRV-SSE-AUTH-001"
+      description: "SSE stream endpoint must require valid per-search token when SSE_REQUIRE_TOKEN is enabled"
+      fix_file: "download-proxy/src/api/routes.py"
+
+  - id: BOBA-SRV-013
+    name: "CORS allowlist restricts cross-origin access"
+    category: security
+    priority: high
+    platforms: [api]
+    steps:
+      - name: "Request from allowed origin succeeds"
+        action: "curl -s -o /dev/null -w '%{http_code}' -H 'Origin: http://localhost:4200' -H 'Access-Control-Request-Method: GET' -X OPTIONS http://localhost:7187/health"
+        expected: "HTTP 204 with Access-Control-Allow-Origin header"
+      - name: "Request from disallowed origin is blocked"
+        action: "curl -s -D- -H 'Origin: https://evil.com' -H 'Access-Control-Request-Method: GET' -X OPTIONS http://localhost:7187/health | head -n 10"
+        expected: "Access-Control-Allow-Origin header absent or does not contain evil.com"
+      - name: "Verify default allowlist includes only localhost"
+        action: "curl -s -D- -H 'Origin: http://localhost:7187' -H 'Access-Control-Request-Method: POST' -X OPTIONS http://localhost:7187/api/v1/search | grep -i 'access-control-allow-origin'"
+        expected: "Access-Control-Allow-Origin: http://localhost:7187 or mirror of origin"
+    tags: [boba, services, security, cors, middleware]
+    estimated_duration: "5s"
+    expected_result: "CORS middleware blocks disallowed origins and allows explicitly configured localhost origins; default allowlist is restrictive"
+    fix_reference:
+      bug_id: "BOBA-SRV-CORS-001"
+      description: "CORS allowlist must default to localhost origins only and block cross-origin requests from unauthorized domains"
+      fix_file: "download-proxy/src/api/__init__.py"
+
+  - id: BOBA-SRV-014
+    name: "Queue full returns 429 when concurrent search limit reached"
+    category: performance
+    priority: medium
+    platforms: [api]
+    steps:
+      - name: "Trigger MAX_CONCURRENT_SEARCHES concurrent searches"
+        action: "for i in $(seq 1 10); do curl -s -X POST http://localhost:7187/api/v1/search -H 'Content-Type: application/json' -d '{\"query\":\"test\"}' & done; wait"
+        expected: "Some searches succeed (202/running), some return 429 when queue is saturated"
+      - name: "Verify 429 response body"
+        action: "curl -s -X POST http://localhost:7187/api/v1/search -H 'Content-Type: application/json' -d '{\"query\":\"flood\"}' | jq -e '.detail | contains(\"MAX_CONCURRENT_SEARCHES\")'"
+        expected: "429 response body explains the merge service has reached MAX_CONCURRENT_SEARCHES"
+    tags: [boba, services, performance, rate-limit, concurrency]
+    estimated_duration: "15s"
+    expected_result: "When MAX_CONCURRENT_SEARCHES is reached, the API returns HTTP 429 with a descriptive error message instead of crashing or hanging"
+    fix_reference:
+      bug_id: "BOBA-SRV-QUEUEFULL-001"
+      description: "Search must return 429 with descriptive message when concurrent search limit is exceeded"
+      fix_file: "download-proxy/src/api/routes.py"
