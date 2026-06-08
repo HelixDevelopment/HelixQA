@@ -1,0 +1,319 @@
+# SPDX-FileCopyrightText: 2026 Milos Vasic
+# SPDX-License-Identifier: Apache-2.0
+#
+# HelixQA Test Bank: ATMOSphere Subtitle Routing to Secondary Display
+# Per-app subtitle Challenges + full-automation tests reproducing the live
+# operator-reported defects (ATM-309/310/311) captured on D3 998fd36615e99484
+# (build Wed Jun 3 22:40 UTC 2026, commit feb49ae1) and validating the future fix.
+#
+# GROUND-TRUTH ORACLE (works under FLAG_SECURE where screencap is black):
+#   persist.atmosphere.subdebug=1 → PresenterAccessibilityService logs
+#   "candidate CHOSEN/REJECTED/CLEARED" + routeSubtitleCue to logcat tag
+#   ATMOSphere::SubObs.subdebug. The subdebug channel is the authoritative
+#   "what reached the secondary" evidence (§11.4.52 autonomous, §11.4.117).
+#
+# Captured root-cause class (FACT): non-fork third-party players render captions
+# on a Canvas/Compose surface with no a11y text AND FLAG_SECURE-blanked pixels,
+# so the accessibility-scrape mechanism forwards CHROME (settings/nav labels whose
+# view-id ends in a subtitle stem) and never the real caption.
+
+version: "1.0"
+name: "ATMOSphere Subtitle Routing Test Bank"
+description: "Per-app subtitle-to-secondary-display Challenges (ATM-309/310/311, captured D3 2026-06-04)"
+metadata:
+  author: "ATMOSphere"
+  app: "ATMOSphere Android 15"
+  version: "1.1.9-dev"
+  evidence_dir: "qa-results/subtitle_deepdive_20260604T042154Z"
+
+test_cases:
+
+  # ==================== SUB-CHROME — wrong cue (ATM-309) ====================
+
+  - id: SUB-CHROME-001
+    name: "Kinopoisk: NO chrome/control-label forwarded as a subtitle to the secondary"
+    category: functional
+    priority: critical
+    platforms: [android]
+    feature_class: subtitle_render
+    related_issue: ATM-309
+    on_device_test: "device/rockchip/rk3588/tests/test_sub_kino_no_subtitle_red.sh"
+    steps:
+      - name: "Enable subdebug oracle"
+        action: "Confirm persist.atmosphere.subdebug=1 (diagnostic flag, no behaviour change)"
+        expected: "Property is 1"
+      - name: "Play a subtitled Kinopoisk title, open then close the control panel"
+        action: "Operator/autonomous: route Kinopoisk video to the secondary, open the player control panel (exposes the 'Аудио и субтитры' button), then resume fullscreen"
+        expected: "Video routes to secondary (VOM mActiveDecoder.packageName=ru.kinopoisk activated)"
+      - name: "Assert no chrome cue forwarded"
+        action: "Scan logcat tag ATMOSphere::SubObs.subdebug for 'candidate CHOSEN' lines whose text is a control label ('Аудио и субтитры' / settings / nav)"
+        expected: "ZERO chrome CHOSEN lines (post-fix). RED on the current image: 'Аудио и субтитры' is CHOSEN 60+ times."
+    captured_evidence:
+      - "qa-results/subtitle_deepdive_20260604T042154Z/logcat_full_live.log"
+      - "qa-results/subtitle_deepdive_20260604T042154Z/FINDING_kinopoisk.md"
+    tags: [subtitle, secondary-display, kinopoisk, chrome-misforward, atm-309]
+    estimated_duration: "60s"
+    expected_result: "Secondary display NEVER shows the 'Аудио и субтитры' settings-button label as a subtitle"
+
+  - id: SUB-CHROME-002
+    name: "Apple TV: NO nav/shelf label forwarded as a subtitle"
+    category: functional
+    priority: critical
+    platforms: [android]
+    feature_class: subtitle_render
+    related_issue: ATM-309
+    on_device_test: "device/rockchip/rk3588/tests/test_appletv_subtitle_nav_misfire.sh"
+    steps:
+      - name: "Play an Apple TV title routed to the secondary"
+        action: "Operator/autonomous: route Apple TV content to the secondary"
+        expected: "VOM decoder registered for com.apple.atve.androidtv.appletv"
+      - name: "Assert no nav/shelf chrome cue"
+        action: "Scan subdebug for CHOSEN lines = 'Downloads' / 'Continue Watching' / nav-tab labels"
+        expected: "ZERO chrome CHOSEN (RED: 1170× 'Downloads' historically)"
+    captured_evidence:
+      - "qa-results/appletv_subtitle_nav_20260602/issue1_subtitle_evidence.txt"
+    tags: [subtitle, appletv, chrome-misforward, atm-309]
+    estimated_duration: "60s"
+    expected_result: "Apple TV nav labels never appear as subtitles on the secondary"
+
+  # ==================== SUB-REAL — real caption presence (ATM-310) ====================
+
+  - id: SUB-REAL-001
+    name: "Kinopoisk: a real movie caption reaches the secondary OR honest suppress-only"
+    category: functional
+    priority: critical
+    platforms: [android]
+    feature_class: subtitle_render
+    related_issue: ATM-310
+    on_device_test: "device/rockchip/rk3588/tests/test_sub_kino_no_subtitle_red.sh"
+    steps:
+      - name: "Classify caption renderer"
+        action: "uiautomator dump the Kinopoisk player; locate ru.kinopoisk:id/exo_subtitles and check for a11y text"
+        expected: "exo_subtitles FrameLayout has text='' (canvas SubtitleView — caption NOT in a11y tree)"
+      - name: "Assert real caption OR clean suppress-only"
+        action: "During a subtitled scene, scan subdebug: either a prose caption is forwarded (Tier-3 OCR fix), OR nothing is forwarded AND the app's own caption stays on primary"
+        expected: "EITHER a prose (non-chrome) cue on the secondary, OR zero cues + primary caption preserved. NEVER a chrome cue. (Current image: 0 real captions.)"
+    captured_evidence:
+      - "qa-results/subtitle_deepdive_20260604T042154Z/kinopoisk_live_20260604T042347Z/a11y_tree.xml"
+    notes: >
+      Tier-3 OCR pixel-oracle is PENDING_FORENSICS: display 0 is FLAG_SECURE on this
+      build → screencap -d 0 of DRM playback is BLACK. Device is Widevine L3 (non-secure
+      surface) so a window-level PixelCopy of the app's own window MIGHT bypass the display
+      FLAG_SECURE — must be probed before claiming real-caption support. If infeasible →
+      Won't-fix: structurally-impossible (§11.4.112) + suppress-only.
+    tags: [subtitle, kinopoisk, canvas-blank-tree, ocr-pixel-oracle, atm-310]
+    estimated_duration: "90s"
+    expected_result: "No false claim that Kinopoisk real captions render on the secondary unless captured-evidence proves it"
+
+  - id: SUB-REAL-002
+    name: "Amazon Prime: real caption reaches the secondary OR honest suppress-only (Compose blank-tree)"
+    category: functional
+    priority: high
+    platforms: [android]
+    feature_class: subtitle_render
+    related_issue: ATM-310
+    on_device_test: "device/rockchip/rk3588/tests/test_streaming_subtitle_secondary.sh"
+    steps:
+      - name: "Confirm Compose blank-tree"
+        action: "uiautomator dump Prime player during a visible caption"
+        expected: "1 node, 0 text= (Compose canvas, no a11y caption text)"
+      - name: "Assert no chrome + honest behaviour"
+        action: "Scan subdebug: zero chrome cues; primary caption preserved OR Tier-3 prose cue"
+        expected: "No chrome on secondary; never a fake caption"
+    captured_evidence:
+      - "qa-results/subtitle_prime_d3_20260603T194342Z/a11y_tree_during_caption.xml"
+    tags: [subtitle, prime, compose-blank-tree, atm-310]
+    estimated_duration: "90s"
+    expected_result: "Prime captions either correctly routed or honestly left on primary — never chrome"
+
+  # ==================== SUB-FORK — Tier-1 robust path (regression guard) ====================
+
+  - id: SUB-FORK-001
+    name: "VLC/MPV/SmartTube fork players: real caption reaches secondary via routeSubtitleCue (Tier-1)"
+    category: functional
+    priority: high
+    platforms: [android]
+    feature_class: subtitle_render
+    on_device_test: "device/rockchip/rk3588/tests/test_gm_subtitle_secondary_render.sh"
+    steps:
+      - name: "Play a subtitled local video in a fork player"
+        action: "Route VLC/MPV/SmartTube subtitled content to the secondary"
+        expected: "In-app cue callback (AtmosphereSubtitleForwarder) calls IVideoOutputManager.routeSubtitleCue"
+      - name: "Assert real caption on secondary"
+        action: "Scan subdebug/VOM for routeSubtitleCue with the actual caption text; secondary overlay shows it"
+        expected: "Real caption (prose, advancing) on the secondary — the proven robust path"
+    tags: [subtitle, vlc, mpv, smarttube, tier1, regression-guard]
+    estimated_duration: "60s"
+    expected_result: "Fork-player subtitles render correctly on the secondary (must not regress)"
+
+  # ==================== SUB-GATE — RED-test polarity (ATM-311) ====================
+
+  - id: SUB-GATE-001
+    name: "RED tests reproduce the CAPTURED mechanism (chrome forwarded), not the stale isImmersive premise"
+    category: regression
+    priority: medium
+    platforms: [android]
+    feature_class: subtitle_render
+    related_issue: ATM-311
+    on_device_test: "device/rockchip/rk3588/tests/test_sub_kino_no_subtitle_red.sh"
+    steps:
+      - name: "Run kino RED test on the current image"
+        action: "RED_MODE=1: assert the forwarded cue IS the chrome label 'Аудио и субтитры'"
+        expected: "RED reproduces the defect on the broken artifact (§11.4.115)"
+      - name: "Post-fix GREEN guard"
+        action: "RED_MODE=0: assert NO chrome cue forwarded"
+        expected: "GREEN after Tier-2a content-filter lands"
+    tags: [subtitle, red-test, polarity-switch, atm-311]
+    estimated_duration: "60s"
+    expected_result: "RED test mechanically reproduces the captured chrome-misforward, flips to GREEN after fix"
+
+  # ============ SVL — Subtitle + Video-Liveness tier-dispatcher ============
+  # docs/research/subtitle_video_validation_20260604/DESIGN.md §7 coverage
+  # matrix. Each Challenge dispatches to the on-device tier-dispatcher
+  # (test_subtitle_video_liveness.sh <slug>) which selects the strongest tier
+  # the (render_class × FLAG_SECURE × topology) permits and scores PASS only on
+  # captured-evidence (§11.4.107 liveness oracles / §11.4.117 ROI-OCR /
+  # §11.4.13 sink / §11.4.112 Tier-D operator-attended).
+
+  # ---- Tier A: fork players (exact in-app cue, works under FLAG_SECURE) ----
+  - id: SVL-FORK-VLC
+    name: "VLC (fork): real prose cue via routeSubtitleCue + video LIVE, 0 chrome (Tier A)"
+    category: functional
+    priority: high
+    platforms: [android]
+    feature_class: subtitle_render
+    on_device_test: "device/rockchip/rk3588/tests/test_subtitle_video_liveness.sh vlc"
+    steps:
+      - name: "Dispatch Tier A for VLC"
+        action: "Launch VLC, play subtitled content, read subdebug candidate CHOSEN + run liveness oracle bundle"
+        expected: ">=1 prose cue forwarded, 0 chrome cue, video LIVE on target display (captured evidence: chosen_cues.txt + liveness/)"
+    tags: [subtitle, video-liveness, vlc, tier-a, fork]
+    estimated_duration: "60s"
+    expected_result: "Fork-player exact cue + advancing frames proven; regression of this path is a release blocker"
+
+  - id: SVL-FORK-MPV
+    name: "MPV (fork): real prose cue + video LIVE, 0 chrome (Tier A)"
+    category: functional
+    priority: high
+    platforms: [android]
+    feature_class: subtitle_render
+    on_device_test: "device/rockchip/rk3588/tests/test_subtitle_video_liveness.sh mpv"
+    steps:
+      - name: "Dispatch Tier A for MPV"
+        action: "libmpv forwarder routes cue; liveness oracle bundle confirms advancing frames"
+        expected: ">=1 prose cue, 0 chrome, video LIVE"
+    tags: [subtitle, video-liveness, mpv, tier-a, fork]
+    estimated_duration: "60s"
+    expected_result: "MPV subtitle + liveness proven on the routed display"
+
+  - id: SVL-FORK-SMARTTUBE
+    name: "SmartTube (fork ExoPlayer): real cue + video LIVE, 0 chrome (Tier A)"
+    category: functional
+    priority: high
+    platforms: [android]
+    feature_class: subtitle_render
+    on_device_test: "device/rockchip/rk3588/tests/test_subtitle_video_liveness.sh smarttube"
+    steps:
+      - name: "Dispatch Tier A for SmartTube"
+        action: "ExoPlayer cue forwarder + liveness oracle bundle"
+        expected: ">=1 prose cue, 0 chrome, video LIVE (geo-gated → SKIP geo_restricted if YouTube backend unreachable)"
+    tags: [subtitle, video-liveness, smarttube, tier-a, fork, ru-geo]
+    estimated_duration: "60s"
+    expected_result: "SmartTube subtitle + liveness proven, or honest geo SKIP"
+
+  # ---- Tier B: non-DRM capturable surface → ROI-OCR + liveness ------------
+  - id: SVL-ROI-RUTUBE
+    name: "RuTube (non-secure): video LIVE + ROI-OCR subtitle on capturable surface (Tier B)"
+    category: functional
+    priority: medium
+    platforms: [android]
+    feature_class: video_display
+    on_device_test: "device/rockchip/rk3588/tests/test_subtitle_video_liveness.sh rutube"
+    steps:
+      - name: "Black-probe → confirm capturable surface"
+        action: "vl_not_black on the target display; if BLACK fall through to Tier C"
+        expected: "Capturable (non-secure) → frame burst captured for host ROI-OCR (video_color_analyze --mode subtitle-roi)"
+      - name: "Liveness on capturable surface"
+        action: "SSIM-freeze + not-stale + frame-advance oracle"
+        expected: "video LIVE (no freeze, frames advancing); subtitle ROI-OCR verdict completed host-side (geo SKIP if unreachable)"
+    tags: [subtitle, video-liveness, rutube, tier-b, roi-ocr, ru-geo]
+    estimated_duration: "90s"
+    expected_result: "Non-DRM playback liveness proven + ROI-OCR subtitle verdict, or honest geo SKIP"
+
+  # ---- Tier C: FLAG_SECURE DRM → liveness + anti-chrome (pixels blocked) ---
+  - id: SVL-LIVE-KINOPOISK
+    name: "Kinopoisk (FLAG_SECURE): video LIVE on secondary + 0 chrome cue (Tier C); positive caption operator-attended (Tier D)"
+    category: functional
+    priority: critical
+    platforms: [android]
+    feature_class: video_display
+    related_issue: ATM-309
+    on_device_test: "device/rockchip/rk3588/tests/test_subtitle_video_liveness.sh kinopoisk"
+    steps:
+      - name: "Black-probe confirms FLAG_SECURE"
+        action: "vl_not_black returns BLACK (DRM surface) → Tier C; pixel-OCR INFEASIBLE (§11.4.112)"
+        expected: "Black-probe PNG is the §11.4.112 structurally-impossible evidence"
+      - name: "Liveness oracle bundle (pixels blocked)"
+        action: "frame-advance + timestats + codec framesOutput + VOM routing-target on the secondary"
+        expected: "video LIVE even though pixels unreadable (captured: liveness/liveness_oracles.txt)"
+      - name: "Anti-chrome guard (ATM-309 regression seam)"
+        action: "Scan subdebug: ZERO chrome cue (time-counter/numeric/settings-label) forwarded to secondary"
+        expected: "0 chrome cue forwarded; discriminator rejection census captured"
+      - name: "Positive rendered-caption = Tier D"
+        action: "FLAG_SECURE makes screencap of the caption BLACK → autonomous positive-caption SKIP operator_attended"
+        expected: "SKIP operator_attended (tracked migration: HDMI capture card → Tier B). NEVER faked PASS."
+    captured_evidence:
+      - "qa-results/subtitle_deepdive_20260604T042154Z/FINDING_kinopoisk.md"
+    tags: [subtitle, video-liveness, kinopoisk, tier-c, tier-d, flag-secure, anti-chrome, atm-309]
+    estimated_duration: "120s"
+    expected_result: "Kinopoisk video liveness + zero-chrome proven autonomously; positive caption honestly operator-attended"
+
+  - id: SVL-LIVE-NETFLIX
+    name: "Netflix (FLAG_SECURE): video LIVE + 0 chrome (Tier C); positive caption Tier D"
+    category: functional
+    priority: high
+    platforms: [android]
+    feature_class: video_display
+    on_device_test: "device/rockchip/rk3588/tests/test_subtitle_video_liveness.sh netflix"
+    steps:
+      - name: "Tier C liveness + anti-chrome"
+        action: "Liveness oracle bundle + subdebug chrome census on FLAG_SECURE surface"
+        expected: "video LIVE + 0 chrome (geo SKIP geo_restricted if Netflix unreachable in RU)"
+    tags: [subtitle, video-liveness, netflix, tier-c, tier-d, flag-secure, ru-geo]
+    estimated_duration: "120s"
+    expected_result: "Netflix liveness + zero-chrome proven, or honest geo SKIP; positive caption operator-attended"
+
+  - id: SVL-LIVE-APPLETV
+    name: "Apple TV (FLAG_SECURE): video LIVE + 0 nav-label chrome (Tier C, ATM-309 1170× Downloads guard)"
+    category: regression
+    priority: high
+    platforms: [android]
+    feature_class: video_display
+    related_issue: ATM-309
+    on_device_test: "device/rockchip/rk3588/tests/test_subtitle_video_liveness.sh appletv"
+    steps:
+      - name: "Anti-chrome guard for nav labels"
+        action: "Scan subdebug: ZERO 'Downloads'/'Continue Watching'/nav-tab chrome forwarded"
+        expected: "0 chrome cue (RED historically: 1170× 'Downloads'); video LIVE if reachable"
+    tags: [subtitle, video-liveness, appletv, tier-c, anti-chrome, atm-309]
+    estimated_duration: "120s"
+    expected_result: "Apple TV nav labels never reach the secondary as subtitles; video liveness proven"
+
+  # ---- Self-validation: the analyzer itself is anti-bluff (§11.4.107(10)) --
+  - id: SVL-ANALYZER-SELFVALIDATION
+    name: "Subtitle+liveness analyzer self-validation: golden-good PASS, golden-bad(chrome/empty/frozen/stale) FAIL"
+    category: regression
+    priority: critical
+    platforms: [linux]
+    feature_class: subtitle_render
+    on_device_test: "scripts/testing/test_video_color_analyze_selftest.sh"
+    steps:
+      - name: "Golden-good caption frame PASSes"
+        action: "Run the selftest's chrome-discriminator + cadence + ROI-OCR (when engine present) + liveness layers"
+        expected: "golden-good (2 distinct prose cues / moving frames) → PASS"
+      - name: "Golden-bad frame FAILs"
+        action: "chrome-only (time-counter + static settings label) / no-caption / frozen / stale fixtures"
+        expected: "every golden-bad → FAIL/INCONCLUSIVE, NEVER a false PASS (the analyzer cannot bluff)"
+    tags: [subtitle, video-liveness, self-validation, anti-bluff, golden-good, golden-bad]
+    estimated_duration: "30s"
+    expected_result: "Analyzer is proven non-bluff before any app verdict is trusted; an analyzer that PASSes its golden-bad fixture is itself the bluff"

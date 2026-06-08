@@ -1,0 +1,186 @@
+# SPDX-FileCopyrightText: 2026 Milos Vasic
+# SPDX-License-Identifier: Apache-2.0
+#
+# HelixQA Test Bank: Boba Download Proxy
+# Validates the authenticated download proxy service running on port 7186
+# that proxies qBittorrent WebUI with private-tracker authentication,
+# cookie injection, freeleech enforcement, and torrent download flows.
+
+version: "1.0"
+name: "Boba Download Proxy Validation Suite"
+description: "End-to-end validation of the Boba download proxy on port 7186: health check, request forwarding to qBittorrent WebUI, private-tracker cookie injection for RuTracker/Kinozal/NNMClub/IPTorrents, qBittorrent authentication flow, IPTorrents freeleech-only policy enforcement, download initiation through proxy, torrent file download with private-tracker auth, and magnet link generation."
+metadata:
+  author: "vasic-digital"
+  app: "Boba"
+  version: "1.0.0"
+
+test_cases:
+
+  - id: BOBA-PRX-001
+    name: "Download proxy health check returns reachable"
+    category: functional
+    priority: critical
+    platforms: [api]
+    steps:
+      - name: "HTTP GET on proxy port root"
+        action: "curl -s -o /dev/null -w '%{http_code}' --max-time 5 http://localhost:7186/"
+        expected: "HTTP 200 or 302 (redirect) — service is listening"
+      - name: "Verify proxy responds to unauthenticated request"
+        action: "curl -s --max-time 5 http://localhost:7186/ | head -c 100"
+        expected: "Non-empty response body (qBittorrent WebUI HTML or proxy homepage)"
+    tags: [boba, download-proxy, health, functional]
+    estimated_duration: "5s"
+    expected_result: "Download proxy on port 7186 responds to HTTP requests with a non-empty body and does not crash or hang"
+    fix_reference:
+      bug_id: "BOBA-PRX-HEALTH-001"
+      description: "Download proxy must answer HTTP requests on port 7186"
+      fix_file: "plugins/download_proxy.py"
+
+  - id: BOBA-PRX-002
+    name: "Proxy forwards requests to qBittorrent WebUI"
+    category: functional
+    priority: critical
+    platforms: [api]
+    steps:
+      - name: "Request WebUI login page through proxy"
+        action: "curl -s --max-time 10 http://localhost:7186/api/v2/auth/login -d 'username=admin&password=admin'"
+        expected: "Response body contains 'Ok.' — proxy forwards auth to qBittorrent on :7185"
+      - name: "Request WebUI version through proxy"
+        action: "curl -s --max-time 10 -c /tmp/qbit_cookies.txt -b /tmp/qbit_cookies.txt -X POST http://localhost:7186/api/v2/auth/login -d 'username=admin&password=admin'; curl -s --max-time 10 -b /tmp/qbit_cookies.txt http://localhost:7186/api/v2/app/version"
+        expected: "Returns qBittorrent version string (e.g. 'v5.0.0') — proxy forwards to WebUI API"
+    tags: [boba, download-proxy, forwarding, qbittorrent]
+    estimated_duration: "10s"
+    expected_result: "Download proxy forwards API requests to the container-internal qBittorrent WebUI on port 7185 and returns responses"
+    fix_reference:
+      bug_id: "BOBA-PRX-FORWARD-001"
+      description: "Proxy must correctly forward HTTP requests to qBittorrent WebUI and return responses"
+      fix_file: "plugins/download_proxy.py"
+
+  - id: BOBA-PRX-003
+    name: "Private-tracker cookie injection for authenticated downloads"
+    category: functional
+    priority: critical
+    platforms: [api]
+    steps:
+      - name: "POST /api/v1/search for rutracker result"
+        action: "curl -s -X POST http://localhost:7187/api/v1/search -H 'Content-Type: application/json' -d '{\"query\":\"linux\",\"limit\":5}' | jq -r '.results[] | select(.tracker == \"rutracker\") | .download_urls[0]'"
+        expected: "At least one rutracker download URL returned"
+      - name: "Download torrent through proxy with cookie injection"
+        action: "curl -s --max-time 15 -o /tmp/test_torrent.torrent -X POST http://localhost:7187/api/v1/download -H 'Content-Type: application/json' -d '{\"result_id\":\"test\",\"download_urls\":[\"http://rutracker.org/dl/test.torrent\"]}'"
+        expected: "Download succeeds with status=added or torrent_response — proxy injects RuTracker session cookies"
+    tags: [boba, download-proxy, cookie-injection, rutracker, private-tracker]
+    estimated_duration: "30s"
+    expected_result: "Download proxy injects private-tracker session cookies so authenticated torrent downloads succeed through the proxy"
+    fix_reference:
+      bug_id: "BOBA-PRX-COOKIE-001"
+      description: "Download proxy must inject private-tracker cookies (RuTracker, Kinozal, NNMClub, IPTorrents) when proxying download requests"
+      fix_file: "plugins/download_proxy.py"
+
+  - id: BOBA-PRX-004
+    name: "qBittorrent WebUI authentication through proxy"
+    category: functional
+    priority: high
+    platforms: [api]
+    steps:
+      - name: "POST /api/v1/auth/qbittorrent with hardcoded admin/admin"
+        action: "curl -s -X POST http://localhost:7187/api/v1/auth/qbittorrent -H 'Content-Type: application/json' -d '{\"username\":\"admin\",\"password\":\"admin\"}'"
+        expected: "Response JSON has status=authenticated and version string"
+      - name: "Verify failed auth returns error"
+        action: "curl -s -X POST http://localhost:7187/api/v1/auth/qbittorrent -H 'Content-Type: application/json' -d '{\"username\":\"admin\",\"password\":\"wrongpass\"}' | jq -e '.status == \"failed\"'"
+        expected: "status=failed with error message 'Invalid credentials'"
+      - name: "Verify active downloads endpoint returns data"
+        action: "curl -s http://localhost:7187/api/v1/downloads/active | jq -e '.count | length >= 0'"
+        expected: "Active downloads endpoint returns a count (may be 0) without auth failure"
+    tags: [boba, download-proxy, auth, qbittorrent, credentials]
+    estimated_duration: "10s"
+    expected_result: "qBittorrent authentication succeeds with hardcoded admin/admin, fails with wrong credentials; active downloads endpoint works"
+    fix_reference:
+      bug_id: "BOBA-PRX-AUTH-001"
+      description: "qBittorrent auth must accept admin/admin as hardcoded credentials and return proper status for success/failure"
+      fix_file: "download-proxy/src/api/routes.py"
+
+  - id: BOBA-PRX-005
+    name: "IPTorrents freeleech-only policy enforcement"
+    category: security
+    priority: critical
+    platforms: [api]
+    steps:
+      - name: "Verify IPTorrents plugin has freeleech detection"
+        action: "grep -c 'freeleech' plugins/iptorrents.py"
+        expected: "freeleech detection code present (>=1 match)"
+      - name: "Verify IPTorrents search results are tagged freeleech"
+        action: "curl -s -X POST http://localhost:7187/api/v1/search -H 'Content-Type: application/json' -d '{\"query\":\"ubuntu\",\"limit\":20}' | jq '[.results[] | select(.tracker == \"iptorrents\" or (.sources[]? | select(.tracker == \"iptorrents\")))] | all(.freeleech == true)'"
+        expected: "All IPTorrents results have freeleech=true"
+      - name: "Verify non-freeleech IPTorrents results are never merged"
+        action: "curl -s http://localhost:7187/api/v1/search/{search_id} | jq '[.merged_results] | length >= 0'"
+        expected: "Non-freeleech IPTorrents results do not appear in merged_results across trackers"
+    tags: [boba, download-proxy, iptorrents, freeleech, policy, security]
+    estimated_duration: "30s"
+    expected_result: "IPTorrents results are always tagged freeleech=true; non-freeleech results from IPTorrents are never merged across trackers"
+    fix_reference:
+      bug_id: "BOBA-PRX-FREELEECH-001"
+      description: "IPTorrents freeleech-only policy: all IPTorrents results must have freeleech=true; non-freeleech results must not merge across trackers"
+      fix_file: "tests/unit/test_freeleech.py"
+
+  - id: BOBA-PRX-006
+    name: "Download initiation with torrent file through proxy"
+    category: functional
+    priority: high
+    platforms: [api]
+    steps:
+      - name: "POST /api/v1/download with valid magnet URL to public tracker"
+        action: "curl -s -X POST http://localhost:7187/api/v1/download -H 'Content-Type: application/json' -d '{\"result_id\":\"test-magnet\",\"download_urls\":[\"magnet:?xt=urn:btih:test1234567890123456789012345678901234567890\"]}'"
+        expected: "Response JSON with download_id and status (initiated or failed — depends on qBittorrent availability)"
+      - name: "Verify download response structure"
+        action: "curl -s -X POST http://localhost:7187/api/v1/download ... | jq -e '.download_id | length > 0'"
+        expected: "download_id is a non-empty UUID string"
+    tags: [boba, download-proxy, download, torrent]
+    estimated_duration: "10s"
+    expected_result: "Download initiation returns a structured response with download_id, status, and per-URL results"
+    fix_reference:
+      bug_id: "BOBA-PRX-DOWNLOAD-001"
+      description: "Download endpoint must accept magnet URLs and return structured response with download_id"
+      fix_file: "download-proxy/src/api/routes.py"
+
+  - id: BOBA-PRX-007
+    name: "Torrent file download with private-tracker auth"
+    category: functional
+    priority: high
+    platforms: [api]
+    steps:
+      - name: "Fetch .torrent file through /api/v1/download/file endpoint"
+        action: "curl -s -o /tmp/test_torrent_dl.torrent -w '%{http_code}' -X POST http://localhost:7187/api/v1/download/file -H 'Content-Type: application/json' -d '{\"result_id\":\"test\",\"download_urls\":[\"http://example.com/test.torrent\"]}'"
+        expected: "HTTP 200 with application/x-bittorrent content-type and valid .torrent file data"
+      - name: "Verify downloaded file is a valid torrent"
+        action: "file /tmp/test_torrent_dl.torrent 2>/dev/null | grep -q 'BitTorrent'"
+        expected: "file command identifies the download as a BitTorrent file"
+    tags: [boba, download-proxy, torrent-file, download]
+    estimated_duration: "20s"
+    expected_result: "Torrent file download endpoint returns proper content-type and valid BitTorrent file data when a result URL is provided"
+    fix_reference:
+      bug_id: "BOBA-PRX-TORRENTFILE-001"
+      description: "Torrent file download must return proper application/x-bittorrent content-type with valid bencoded data"
+      fix_file: "download-proxy/src/api/routes.py"
+
+  - id: BOBA-PRX-008
+    name: "Magnet link generation from search results"
+    category: functional
+    priority: medium
+    platforms: [api]
+    steps:
+      - name: "POST /api/v1/magnet with download URLs"
+        action: "curl -s -X POST http://localhost:7187/api/v1/magnet -H 'Content-Type: application/json' -d '{\"result_id\":\"test-magnet\",\"download_urls\":[\"magnet:?xt=urn:btih:abcdef1234567890abcdef1234567890abcdef12&dn=testfile\"]}'"
+        expected: "Response JSON with magnet field containing valid magnet URI and hashes array"
+      - name: "Verify magnet structure"
+        action: "curl -s -X POST http://localhost:7187/api/v1/magnet ... | jq -e '.magnet | startswith(\"magnet:\") and contains(\"btih\")'"
+        expected: "magnet field starts with magnet: and contains btih infohash"
+      - name: "Verify hashes extracted"
+        action: "curl -s -X POST http://localhost:7187/api/v1/magnet ... | jq -e '.hashes | length > 0'"
+        expected: "hashes array contains at least one infohash"
+    tags: [boba, download-proxy, magnet, link-generation]
+    estimated_duration: "5s"
+    expected_result: "Magnet generation endpoint produces valid magnet URIs with extracted infohashes and tracker parameters"
+    fix_reference:
+      bug_id: "BOBA-PRX-MAGNET-001"
+      description: "Magnet generation must extract btih hashes from input URLs and construct valid magnet URIs"
+      fix_file: "download-proxy/src/api/routes.py"

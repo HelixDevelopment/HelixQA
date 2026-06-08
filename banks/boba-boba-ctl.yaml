@@ -1,0 +1,230 @@
+# SPDX-FileCopyrightText: 2026 Milos Vasic
+# SPDX-License-Identifier: Apache-2.0
+#
+# HelixQA Test Bank: boba-ctl CLI Tool
+# Validates the boba-ctl container management CLI built with the
+# containers library (digital.vasic.containers) at cmd/boba-ctl/.
+# Tests compile, help output, status, list, health, version, and
+# the scripts/boba-ctl.sh wrapper.
+
+version: "1.0"
+name: "Boba boba-ctl CLI Validation Suite"
+description: "End-to-end validation of the boba-ctl CLI tool: compile from source, help output with all subcommands, status output format, service listing from compose file, health endpoint check logic, version subcommand (if present), and the wrapper script integration."
+metadata:
+  author: "vasic-digital"
+  app: "Boba"
+  version: "1.0.0"
+
+test_cases:
+
+  - id: BOBA-CTL-001
+    name: "boba-ctl compiles from source"
+    category: functional
+    priority: critical
+    platforms: [cli]
+    steps:
+      - name: "Build boba-ctl binary"
+        action: >
+          cd /Volumes/T7/Projects/Boba/cmd/boba-ctl && go build -o /tmp/boba-ctl-test . 2>&1
+        expected: "Go build exits 0 with no errors; binary is created at /tmp/boba-ctl-test"
+      - name: "Verify binary is executable"
+        action: >
+          test -x /tmp/boba-ctl-test && file /tmp/boba-ctl-test
+        expected: "Binary is executable and identified as an ELF/Mach-O executable"
+      - name: "Verify binary help output"
+        action: >
+          /tmp/boba-ctl-test 2>&1; echo EXIT_CODE=$?
+        expected: "Output contains Usage line and lists up/down/status/health/list commands; exit code 1 (expected for no args)"
+      - name: "Cleanup test binary"
+        action: "rm -f /tmp/boba-ctl-test"
+        expected: "Binary removed without error"
+    tags: [boba, boba-ctl, compile, build, cli]
+    estimated_duration: "30s"
+    expected_result: "boba-ctl binary compiles from Go source with no errors; binary is executable and shows usage with all subcommands"
+    fix_reference:
+      bug_id: "BOBA-CTL-COMPILE-001"
+      description: "boba-ctl must compile from source via go build with no errors"
+      fix_file: "cmd/boba-ctl/main.go"
+
+  - id: BOBA-CTL-002
+    name: "boba-ctl help shows all subcommands"
+    category: functional
+    priority: critical
+    platforms: [cli]
+    steps:
+      - name: "Build binary for testing"
+        action: >
+          cd /Volumes/T7/Projects/Boba/cmd/boba-ctl && go build -o /tmp/boba-ctl-help . 2>&1
+        expected: "Build succeeds"
+      - name: "Run with no arguments to show usage"
+        action: >
+          /tmp/boba-ctl-help 2>&1; EC=$?; echo '---'; echo EXIT_CODE=$EC
+        expected: "Output contains 'Usage:' line and lists commands: up, down, status, health, list"
+      - name: "Verify all core subcommands present in output"
+        action: |
+          /tmp/boba-ctl-help 2>&1 | grep -cE '^\s+(up|down|status|health|list)\s'
+        expected: "At least 5 lines matching subcommand names (up, down, status, health, list)"
+      - name: "Cleanup"
+        action: "rm -f /tmp/boba-ctl-help"
+        expected: "Clean"
+    tags: [boba, boba-ctl, help, cli, subcommands]
+    estimated_duration: "30s"
+    expected_result: "boba-ctl --help or no-arg invocation prints usage with all five subcommands (up, down, status, health, list)"
+    fix_reference:
+      bug_id: "BOBA-CTL-HELP-001"
+      description: "boba-ctl help must list all available subcommands"
+      fix_file: "cmd/boba-ctl/main.go"
+
+  - id: BOBA-CTL-003
+    name: "boba-ctl status returns clean output"
+    category: functional
+    priority: high
+    platforms: [cli]
+    steps:
+      - name: "Build binary"
+        action: >
+          cd /Volumes/T7/Projects/Boba/cmd/boba-ctl && go build -o /tmp/boba-ctl-status . 2>&1
+        expected: "Build succeeds"
+      - name: "Run status (containers may or may not be running)"
+        action: >
+          /tmp/boba-ctl-status status 2>&1; EC=$?; echo '---'; echo EXIT_CODE=$EC
+        expected: "Output is either a table header with NAME/STATE/HEALTH/PORTS columns, or 'No services found'. Exit code 0."
+      - name: "Verify output has expected format"
+        action: >
+          /tmp/boba-ctl-status status 2>&1 | head -1
+        expected: "First line starts with 'NAME' (column header) or is 'No services found'"
+      - name: "Cleanup"
+        action: "rm -f /tmp/boba-ctl-status"
+        expected: "Clean"
+    tags: [boba, boba-ctl, status, cli]
+    estimated_duration: "30s"
+    expected_result: "boba-ctl status returns a formatted table with NAME/STATE/HEALTH/PORTS columns (or 'No services found') and exits 0"
+    fix_reference:
+      bug_id: "BOBA-CTL-STATUS-001"
+      description: "boba-ctl status must return clean formatted output and exit 0"
+      fix_file: "cmd/boba-ctl/main.go"
+
+  - id: BOBA-CTL-004
+    name: "boba-ctl list shows services from compose file"
+    category: functional
+    priority: high
+    platforms: [cli]
+    steps:
+      - name: "Build binary"
+        action: >
+          cd /Volumes/T7/Projects/Boba/cmd/boba-ctl && go build -o /tmp/boba-ctl-list . 2>&1
+        expected: "Build succeeds"
+      - name: "Run list to enumerate services"
+        action: >
+          /tmp/boba-ctl-list list 2>&1; EC=$?; echo '---'; echo EXIT_CODE=$EC
+        expected: "Output contains 'Default services:' and 'Profiles:' sections. Exit code 0."
+      - name: "Verify at least one default service listed"
+        action: |
+          /tmp/boba-ctl-list list 2>&1 | grep -E '^\s+- qbittorrent|^\s+- jackett|^\s+- qbittorrent-proxy'
+        expected: "At least one known service (qbittorrent, jackett, or qbittorrent-proxy) appears in the default services list"
+      - name: "Verify runtime detection"
+        action: >
+          /tmp/boba-ctl-list list 2>&1 | grep -E 'Runtime:'
+        expected: "Output includes a 'Runtime:' line (may be 'not detected' if no container runtime available)"
+      - name: "Cleanup"
+        action: "rm -f /tmp/boba-ctl-list"
+        expected: "Clean"
+    tags: [boba, boba-ctl, list, compose, cli]
+    estimated_duration: "30s"
+    expected_result: "boba-ctl list reads docker-compose.yml, displays default services and profiles, and reports detected container runtime"
+    fix_reference:
+      bug_id: "BOBA-CTL-LIST-001"
+      description: "boba-ctl list must enumerate services from compose file and detect container runtime"
+      fix_file: "cmd/boba-ctl/main.go"
+
+  - id: BOBA-CTL-005
+    name: "boba-ctl health checks endpoint reachability"
+    category: functional
+    priority: high
+    platforms: [cli]
+    steps:
+      - name: "Build binary"
+        action: >
+          cd /Volumes/T7/Projects/Boba/cmd/boba-ctl && go build -o /tmp/boba-ctl-health . 2>&1
+        expected: "Build succeeds"
+      - name: "Run health check"
+        action: >
+          /tmp/boba-ctl-health health 2>&1; EC=$?; echo '---'; echo EXIT_CODE=$EC
+        expected: "Output is either a table with SERVICE/STATUS/DETAIL columns, or 'No services running'. Exit code 0."
+      - name: "Verify output format"
+        action: >
+          /tmp/boba-ctl-health health 2>&1 | head -1
+        expected: "First line starts with 'SERVICE' or equals 'No services running'"
+      - name: "Verify health shows per-service details"
+        action: |
+          /tmp/boba-ctl-health health 2>&1 | grep -cE '^\s+\S+\s+(OK|FAIL|STOPPED)\s+' || echo 'Skipped: no services running'
+        expected: "Health output categorises each service as OK/FAIL/STOPPED with reachability details"
+      - name: "Cleanup"
+        action: "rm -f /tmp/boba-ctl-health"
+        expected: "Clean"
+    tags: [boba, boba-ctl, health, cli, monitoring]
+    estimated_duration: "30s"
+    expected_result: "boba-ctl health checks each service's port reachability and reports OK/FAIL per service with detail strings"
+    fix_reference:
+      bug_id: "BOBA-CTL-HEALTH-001"
+      description: "boba-ctl health must check TCP port reachability for each running service and report status"
+      fix_file: "cmd/boba-ctl/main.go"
+
+  - id: BOBA-CTL-006
+    name: "boba-ctl version subcommand (if present)"
+    category: functional
+    priority: medium
+    platforms: [cli]
+    steps:
+      - name: "Build binary"
+        action: >
+          cd /Volumes/T7/Projects/Boba/cmd/boba-ctl && go build -o /tmp/boba-ctl-ver . 2>&1
+        expected: "Build succeeds"
+      - name: "Check if version subcommand exists"
+        action: >
+          /tmp/boba-ctl-ver version 2>&1; EC=$?; echo '---'; echo EXIT_CODE=$EC
+        expected: "Either prints version info (exit 0) or shows 'Unknown command: version' (exit 1). Both are acceptable."
+      - name: "Verify version output format if exists"
+        action: >
+          /tmp/boba-ctl-ver version 2>&1 | grep -E '[0-9]+\.[0-9]+\.[0-9]+|version' || echo 'Version subcommand not present -- acceptable'
+        expected: "If version subcommand exists, output contains a semver string or the word 'version'"
+      - name: "Cleanup"
+        action: "rm -f /tmp/boba-ctl-ver"
+        expected: "Clean"
+    tags: [boba, boba-ctl, version, cli]
+    estimated_duration: "30s"
+    expected_result: "Version subcommand either returns version info (exit 0) or reports unknown command (exit 1) -- both are valid states"
+    fix_reference:
+      bug_id: "BOBA-CTL-VERSION-001"
+      description: "If version subcommand is implemented, it must return a valid version string"
+      fix_file: "cmd/boba-ctl/main.go"
+
+  - id: BOBA-CTL-007
+    name: "scripts/boba-ctl.sh wrapper script works"
+    category: functional
+    priority: high
+    platforms: [cli]
+    steps:
+      - name: "Verify wrapper script exists"
+        action: >
+          test -f /Volumes/T7/Projects/Boba/scripts/boba-ctl.sh && file /Volumes/T7/Projects/Boba/scripts/boba-ctl.sh
+        expected: "Wrapper script exists and is a regular file or script"
+      - name: "Check wrapper script syntax"
+        action: >
+          bash -n /Volumes/T7/Projects/Boba/scripts/boba-ctl.sh 2>&1
+        expected: "No syntax errors -- bash -n exits 0"
+      - name: "Run wrapper with help-like invocation"
+        action: >
+          bash /Volumes/T7/Projects/Boba/scripts/boba-ctl.sh --help 2>&1; EC=$?; echo '---'; echo EXIT_CODE=$EC
+        expected: "Wrapper forwards to boba-ctl binary; output shows Usage: and subcommands"
+      - name: "Verify wrapper can list config"
+        action: >
+          bash /Volumes/T7/Projects/Boba/scripts/boba-ctl.sh config 2>&1; EC=$?; echo '---'; echo EXIT_CODE=$EC
+        expected: "config subcommand exits 0 (docker-compose.yml exists)"
+    tags: [boba, boba-ctl, wrapper, script, cli]
+    estimated_duration: "15s"
+    expected_result: "Wrapper script has valid syntax, forwards commands to boba-ctl binary, and supports config subcommand"
+    fix_reference:
+      bug_id: "BOBA-CTL-WRAPPER-001"
+      description: "boba-ctl.sh wrapper must have valid syntax and properly forward to the compiled binary"
+      fix_file: "scripts/boba-ctl.sh"

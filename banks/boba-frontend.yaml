@@ -1,0 +1,255 @@
+# SPDX-FileCopyrightText: 2026 Milos Vasic
+# SPDX-License-Identifier: Apache-2.0
+#
+# HelixQA Test Bank: Boba Angular Frontend Dashboard
+# Validates the Angular 21 standalone SPA served from the merge service
+# on port 7187, including dashboard loading, health status display,
+# multi-tracker search interface, Jackett credential/indexer
+# configuration UI, theme picker with dark mode, real-time SSE result
+# streaming display, download interactions, and schedule management.
+
+version: "1.0"
+name: "Boba Angular Frontend Validation Suite"
+description: "End-to-end validation of the Angular 21 dashboard served from the merge service: dashboard loads at /, health and bridge status display, real-time multi-tracker search with SSE streaming, Jackett credential and indexer configuration UI, theme picker with dark/light mode toggle and palette selection, per-tracker stat chips with error display, download dialogs, qBittorrent login, schedule management, and hook management."
+metadata:
+  author: "vasic-digital"
+  app: "Boba"
+  version: "1.0.0"
+
+test_cases:
+
+  - id: BOBA-FE-001
+    name: "Dashboard loads successfully at root URL"
+    category: functional
+    priority: critical
+    platforms: [web]
+    steps:
+      - name: "GET / returns the Angular SPA"
+        action: "curl -s http://localhost:7187/ | head -c 500"
+        expected: "Response contains '<!doctype html' and references to Angular app (e.g. 'main.js', 'polyfills', or 'ng-version')"
+      - name: "Verify dashboard page renders"
+        action: "Playwright: page.goto('http://localhost:7187/'); page.waitForLoadState('networkidle'); title = page.title(); body = page.textContent('body')"
+        expected: "Dashboard title contains 'Boba' or 'Search' and the main search interface is visible (search input, tracker chips, results table)"
+      - name: "Verify no console errors on load"
+        action: "Playwright: page.goto('http://localhost:7187/'); page.waitForLoadState('networkidle'); console_errors = page.evaluate(() => window.__consoleErrors || [])"
+        expected: "Zero JavaScript console errors or uncaught exceptions on initial load"
+    tags: [boba, frontend, dashboard, angular, load]
+    estimated_duration: "15s"
+    expected_result: "Angular SPA loads at / without console errors; search interface and header are visible"
+    fix_reference:
+      bug_id: "BOBA-FE-DASHLOAD-001"
+      description: "Angular dashboard must serve at / with no console errors on initial load"
+      fix_file: "frontend/src/app/components/dashboard/dashboard.component.ts"
+
+  - id: BOBA-FE-002
+    name: "Health status display shows service state"
+    category: functional
+    priority: high
+    platforms: [web]
+    steps:
+      - name: "Open dashboard and check health indicator"
+        action: "Playwright: page.goto('http://localhost:7187/'); page.waitForLoadState('networkidle'); healthEl = page.waitForSelector('[data-testid=health-status]')"
+        expected: "Health status element is present on the dashboard"
+      - name: "Verify health probe fires to /api/v1/stats"
+        action: "Playwright: page.goto('http://localhost:7187/'); page.waitForResponse(r => r.url().includes('/api/v1/stats') && r.status() === 200)"
+        expected: "GET /api/v1/stats is called and returns 200 (proves the frontend probes service health)"
+      - name: "Verify WebUI Bridge health probe fires"
+        action: "Playwright: page.goto('http://localhost:7187/'); page.waitForResponse(r => r.url().includes('/api/v1/bridge/health'), { timeout: 10000 })"
+        expected: "GET /api/v1/bridge/health is called; bridge status indicator renders correctly"
+    tags: [boba, frontend, health, status, bridge]
+    estimated_duration: "15s"
+    expected_result: "Dashboard probes /api/v1/stats and /api/v1/bridge/health on load; health indicators render without errors"
+    fix_reference:
+      bug_id: "BOBA-FE-HEALTH-001"
+      description: "Dashboard must display health status for merge service, qBittorrent, and WebUI bridge"
+      fix_file: "frontend/src/app/components/dashboard/dashboard.component.ts"
+
+  - id: BOBA-FE-003
+    name: "Search interface executes and displays results"
+    category: functional
+    priority: critical
+    platforms: [web]
+    steps:
+      - name: "Type query in search input and submit"
+        action: "Playwright: page.goto('http://localhost:7187/'); page.fill('input[placeholder*=\"search\" i]', 'ubuntu'); page.press('input[placeholder*=\"search\" i]', 'Enter')"
+        expected: "Search input accepts text and submit triggers POST /api/v1/search"
+      - name: "Verify search response renders results table"
+        action: "Playwright: page.waitForResponse(r => r.url().includes('/api/v1/search') && r.request().method() === 'POST'); page.waitForSelector('table') or page.waitForSelector('[data-testid=results-table]')"
+        expected: "Results table renders with columns: Name, Size, Seeds, Leechers, Quality, Tracker"
+      - name: "Verify result rows have data"
+        action: "Playwright: page.waitForSelector('table tbody tr'); rowCount = page.locator('table tbody tr').count()"
+        expected: "At least one result row is rendered"
+    tags: [boba, frontend, search, results, table]
+    estimated_duration: "30s"
+    expected_result: "Search query is submitted via POST /api/v1/search; results table renders with at least one row showing name, size, seeds, tracker"
+    fix_reference:
+      bug_id: "BOBA-FE-SEARCH-001"
+      description: "Search form must submit query and render results in a sortable table"
+      fix_file: "frontend/src/app/components/dashboard/dashboard.component.ts"
+
+  - id: BOBA-FE-004
+    name: "Jackett credential and indexer configuration UI"
+    category: functional
+    priority: high
+    platforms: [web]
+    steps:
+      - name: "Navigate to Jackett configuration page"
+        action: "Playwright: page.goto('http://localhost:7187/jackett'); page.waitForLoadState('networkidle')"
+        expected: "Jackett management page loads with credentials section and indexers section"
+      - name: "List existing credentials"
+        action: "Playwright: page.waitForResponse(r => r.url().includes('/api/v1/jackett/credentials') && r.request().method() === 'GET', { timeout: 10000 })"
+        expected: "GET /api/v1/jackett/credentials returns credential list; credentials are displayed as cards or table rows"
+      - name: "Open add credential dialog"
+        action: "Playwright: page.click('button:has-text(\"Add Credential\")'); page.waitForSelector('input[name=\"credentialName\"]')"
+        expected: "Add credential dialog opens with name, username, password fields"
+      - name: "Verify credential form has required fields"
+        action: "Playwright: credentialNameInput = page.locator('input[name=\"credentialName\"]'); usernameInput = page.locator('input[name=\"username\"]'); passwordInput = page.locator('input[type=\"password\"]')"
+        expected: "All three input fields are visible and interactable"
+    tags: [boba, frontend, jackett, credentials, configuration, ui]
+    estimated_duration: "15s"
+    expected_result: "Jackett configuration UI loads at /jackett; credentials and indexers sections render; add credential dialog has form fields"
+    fix_reference:
+      bug_id: "BOBA-FE-JACKETT-001"
+      description: "Jackett configuration UI must render credentials list and add credential dialog with form fields"
+      fix_file: "frontend/src/app/jackett/credentials/credentials.component.ts"
+
+  - id: BOBA-FE-005
+    name: "Theme picker toggles dark/light mode and palettes"
+    category: functional
+    priority: medium
+    platforms: [web]
+    steps:
+      - name: "Click theme toggle button"
+        action: "Playwright: page.goto('http://localhost:7187/'); page.waitForLoadState('networkidle'); page.click('[data-testid=theme-toggle]') or page.click('button:has-text(\"Theme\")')"
+        expected: "Theme picker dropdown or palette selector opens"
+      - name: "Toggle dark/light mode"
+        action: "Playwright: page.click('[data-testid=mode-toggle]') or page.click('button:has-text(\"Dark\")')"
+        expected: "CSS custom properties update; data-mode attribute on html element flips between 'dark' and 'light'"
+      - name: "Select a different palette"
+        action: "Playwright: page.click('[data-testid=palette-option]:first-child') or page.click('button:has-text(\"Forest\")')"
+        expected: "data-palette attribute on html element updates to selected palette id; CSS custom properties reflect new palette colors"
+      - name: "Verify theme syncs to server"
+        action: "Playwright: page.waitForResponse(r => r.url().includes('/api/v1/theme') && r.request().method() === 'PUT', { timeout: 10000 })"
+        expected: "PUT /api/v1/theme fires with paletteId and mode in request body"
+    tags: [boba, frontend, theme, dark-mode, palette, ui]
+    estimated_duration: "15s"
+    expected_result: "Theme picker allows palette selection and dark/light mode toggle; changes sync to server via PUT /api/v1/theme"
+    fix_reference:
+      bug_id: "BOBA-FE-THEME-001"
+      description: "Theme picker must support palette selection, dark/light toggle, and sync state to server"
+      fix_file: "frontend/src/app/components/theme-picker/theme-picker.component.ts"
+
+  - id: BOBA-FE-006
+    name: "Real-time SSE streaming updates displayed live"
+    category: functional
+    priority: high
+    platforms: [web]
+    steps:
+      - name: "Submit search and observe SSE stream connection"
+        action: "Playwright: page.goto('http://localhost:7187/'); page.fill('input[placeholder*=\"search\" i]', 'test'); page.press('input[placeholder*=\"search\" i]', 'Enter'); page.waitForResponse(r => r.url().includes('/api/v1/search') && r.request().method() === 'POST')"
+        expected: "Search starts; dashboard shows 'Searching...' status"
+      - name: "Verify results table updates live during search"
+        action: "Playwright: page.locator('table tbody tr').first().waitFor({ timeout: 30000 })"
+        expected: "Results appear in the table before the search completes (partial results streamed via SSE)"
+      - name: "Verify search completes with final status"
+        action: "Playwright: page.waitForFunction(() => document.querySelector('[data-testid=search-status]')?.textContent?.includes('Found'))"
+        expected: "Search status updates to 'Found X results' or 'Search complete' when finished"
+    tags: [boba, frontend, sse, streaming, real-time, search]
+    estimated_duration: "35s"
+    expected_result: "SSE events from /api/v1/search/stream/{searchId} update the results table in real time; final search status displays merged count"
+    fix_reference:
+      bug_id: "BOBA-FE-SSE-001"
+      description: "Dashboard must connect to SSE stream on search start and display results incrementally as they arrive"
+      fix_file: "frontend/src/app/services/sse.service.ts"
+
+  - id: BOBA-FE-007
+    name: "Per-tracker stat chips show search progress"
+    category: functional
+    priority: medium
+    platforms: [web]
+    steps:
+      - name: "Submit search and observe tracker chips"
+        action: "Playwright: page.goto('http://localhost:7187/'); page.fill('input[placeholder*=\"search\" i]', 'linux'); page.press('input[placeholder*=\"search\" i]', 'Enter')"
+        expected: "Tracker stat chips appear showing per-tracker status (running/success/empty/error)"
+      - name: "Expand tracker chip to see details"
+        action: "Playwright: page.click('[data-testid=tracker-chip]:first-child')"
+        expected: "Expanded chip shows trackers in that status group with result counts"
+      - name: "Verify error chips show error details"
+        action: "Playwright: page.locator('[data-testid=tracker-chip].error').first().click(); page.waitForSelector('[data-testid=tracker-error-detail]', { timeout: 5000 })"
+        expected: "Error chips expand to show error details (HTTP status, timeout, auth failure, etc.)"
+    tags: [boba, frontend, trackers, stats, chips, search]
+    estimated_duration: "30s"
+    expected_result: "Per-tracker stat chips update in real time during search; chips expand to show detailed status or error information"
+    fix_reference:
+      bug_id: "BOBA-FE-TRACKERCHIPS-001"
+      description: "Tracker stat chips must show per-tracker search status with expandable detail"
+      fix_file: "frontend/src/app/components/dashboard/dashboard.component.ts"
+
+  - id: BOBA-FE-008
+    name: "Download and magnet interactions from results"
+    category: functional
+    priority: high
+    platforms: [web]
+    steps:
+      - name: "Click download button on a result row"
+        action: "Playwright: page.goto('http://localhost:7187/'); page.fill('input[placeholder*=\"search\" i]', 'ubuntu'); page.press('input[placeholder*=\"search\" i]', 'Enter'); page.waitForSelector('table tbody tr'); page.click('[data-testid=download-btn]:first-child')"
+        expected: "Download dialog or toast notification appears showing download progress"
+      - name: "Click magnet link button on a result"
+        action: "Playwright: page.click('[data-testid=magnet-btn]:first-child')"
+        expected: "Magnet dialog opens displaying the magnet URI with copy-to-clipboard option"
+      - name: "Verify magnet URI is valid"
+        action: "Playwright: magnetText = page.locator('[data-testid=magnet-uri]').textContent(); expect(magnetText).toContain('magnet:?xt=urn:btih:')"
+        expected: "Magnet URI displayed in dialog is a valid magnet link"
+    tags: [boba, frontend, download, magnet, interactions]
+    estimated_duration: "30s"
+    expected_result: "Download button triggers POST /api/v1/download; magnet button shows dialog with valid magnet URI and copy option"
+    fix_reference:
+      bug_id: "BOBA-FE-DOWNLOAD-001"
+      description: "Download and magnet buttons on result rows must trigger backend calls and show dialogs"
+      fix_file: "frontend/src/app/components/dashboard/dashboard.component.ts"
+
+  - id: BOBA-FE-009
+    name: "qBittorrent login dialog from dashboard"
+    category: functional
+    priority: medium
+    platforms: [web]
+    steps:
+      - name: "Open qBittorrent login dialog"
+        action: "Playwright: page.goto('http://localhost:7187/'); page.waitForLoadState('networkidle'); page.click('[data-testid=qbit-login-btn]') or page.click('button:has-text(\"Login to qBittorrent\")')"
+        expected: "Login dialog opens with username, password fields and Remember Me checkbox"
+      - name: "Submit hardcoded admin/admin credentials"
+        action: "Playwright: page.fill('input[type=\"text\"]', 'admin'); page.fill('input[type=\"password\"]', 'admin'); page.click('button:has-text(\"Login\")'); page.waitForResponse(r => r.url().includes('/api/v1/auth/qbittorrent') && r.request().method() === 'POST')"
+        expected: "POST /api/v1/auth/qbittorrent fires with username=admin, password=admin; toast shows success or error"
+      - name: "Verify login success indicator"
+        action: "Playwright: page.waitForSelector('[data-testid=qbit-authenticated]', { timeout: 5000 })"
+        expected: "qBittorrent authenticated indicator appears on the dashboard"
+    tags: [boba, frontend, qbittorrent, login, auth, dialog]
+    estimated_duration: "15s"
+    expected_result: "qBittorrent login dialog opens, accepts admin/admin credentials, and shows authenticated state on success"
+    fix_reference:
+      bug_id: "BOBA-FE-QBITLOGIN-001"
+      description: "qBittorrent login dialog must submit credentials to /api/v1/auth/qbittorrent and show authenticated state"
+      fix_file: "frontend/src/app/components/qbit-login-dialog/qbit-login-dialog.component.ts"
+
+  - id: BOBA-FE-010
+    name: "Schedule management from dashboard"
+    category: functional
+    priority: medium
+    platforms: [web]
+    steps:
+      - name: "View existing schedules"
+        action: "Playwright: page.goto('http://localhost:7187/'); page.waitForLoadState('networkidle'); page.waitForResponse(r => r.url().includes('/api/v1/schedules') && r.request().method() === 'GET', { timeout: 10000 })"
+        expected: "GET /api/v1/schedules fires and returns schedule list (possibly empty)"
+      - name: "Create a new schedule"
+        action: "Playwright: page.click('button:has-text(\"Add Schedule\")'); page.fill('input[name=\"schedule-name\"]', 'Test Every Hour'); page.fill('input[name=\"schedule-query\"]', 'ubuntu'); page.fill('input[name=\"schedule-interval\"]', '60'); page.click('button:has-text(\"Save\")'); page.waitForResponse(r => r.url().includes('/api/v1/schedules') && r.request().method() === 'POST', { timeout: 5000 })"
+        expected: "POST /api/v1/schedules fires with name, query, interval_minutes; schedule appears in list"
+      - name: "Delete created schedule"
+        action: "Playwright: page.click('[data-testid=delete-schedule]:first-child'); page.waitForResponse(r => r.url().includes('/api/v1/schedules') && r.request().method() === 'DELETE', { timeout: 5000 })"
+        expected: "DELETE /api/v1/schedules/{id} fires; schedule is removed from list"
+    tags: [boba, frontend, scheduler, schedules, management]
+    estimated_duration: "15s"
+    expected_result: "Schedules can be viewed, created with name/query/interval, and deleted from the dashboard UI"
+    fix_reference:
+      bug_id: "BOBA-FE-SCHEDULER-001"
+      description: "Schedule management UI must support CRUD operations via the schedules API"
+      fix_file: "frontend/src/app/components/dashboard/dashboard.component.ts"

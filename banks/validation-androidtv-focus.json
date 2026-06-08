@@ -9,7 +9,7 @@
   },
   "test_cases": [
     {
-      "id": "FQA-ATV-141",
+      "id": "FQA-ATV-FOCUS-141",
       "name": "Catalogizer Picks channel appears on TV home",
       "category": "functional",
       "priority": "critical",
@@ -38,7 +38,7 @@
       "expected_result": "Catalogizer Picks default channel appears on the Android TV home screen"
     },
     {
-      "id": "FQA-ATV-142",
+      "id": "FQA-ATV-FOCUS-142",
       "name": "Default channel has program content",
       "category": "functional",
       "priority": "critical",
@@ -67,7 +67,7 @@
       "expected_result": "Catalogizer Picks channel contains program cards with media content"
     },
     {
-      "id": "FQA-ATV-151",
+      "id": "FQA-ATV-FOCUS-151",
       "name": "Deep link opens correct media detail",
       "category": "functional",
       "priority": "critical",
@@ -96,7 +96,7 @@
       "expected_result": "Deep link with media ID routes to the correct detail screen"
     },
     {
-      "id": "FQA-ATV-161",
+      "id": "FQA-ATV-FOCUS-161",
       "name": "Channels cleaned up on logout",
       "category": "functional",
       "priority": "critical",
@@ -130,7 +130,7 @@
       "expected_result": "Logout removes all channels, Watch Next entries, and cancels sync worker"
     },
     {
-      "id": "FQA-ATV-166",
+      "id": "FQA-ATV-FOCUS-166",
       "name": "Deep link without auth redirects to login",
       "category": "functional",
       "priority": "high",
@@ -164,7 +164,7 @@
       "expected_result": "Deep link without authentication redirects to login with pending link"
     },
     {
-      "id": "FQA-ATV-259",
+      "id": "FQA-ATV-FOCUS-259",
       "name": "Deep link while app is in background",
       "category": "edge-case",
       "priority": "medium",

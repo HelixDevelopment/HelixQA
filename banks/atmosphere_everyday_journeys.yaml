@@ -1,0 +1,252 @@
+# SPDX-FileCopyrightText: 2026 Milos Vasic
+# SPDX-License-Identifier: Apache-2.0
+#
+# HelixQA Test Bank ADDITIONS — ATMOSphere Android 15 — EVERYDAY-USER JOURNEYS (J1–J7)
+# Drafted 2026-06-03 by the everyday-user full-automation test-infrastructure stream.
+#
+# PURPOSE: §11.4.4(b) layer-4 (HelixQA Challenge) coverage for the everyday-user
+#   journeys J1–J7 that replace human manual testers. Each Challenge dispatches to
+#   the corresponding on-device journey script under
+#   device/rockchip/rk3588/tests/everyday/ and scores PASS ONLY on the positive
+#   captured evidence the journey writes (§11.4.5 / §11.4.13 / §11.4.68 / §11.4.69).
+#   A bank entry without Challenge coverage is a §11.4 PASS-bluff; these close the
+#   gap for the manual-equivalent journeys.
+#
+# RHYTHM: every journey runs in REGULAR and STRESS rhythm (RHYTHM env). The
+#   STRESS rhythm runs the §11.4.85 storm slice (rapid reconfigure / switch /
+#   seek). Both rhythms produce identical evidence shape; the Challenge dispatches
+#   both via the host orchestrator scripts/testing/run_everyday_user_suite.sh.
+#
+# ANTI-BLUFF (§11.4.6): every Challenge dispatches to a REAL existing journey
+#   script and scores on REAL evidence — no placeholder / fake Challenges. Apps
+#   not installed / geo-blocked / no-secondary → SKIP-with-reason (never FAIL,
+#   never fake-PASS). Native-player video that does not register a VOM decoder is
+#   a captured RED finding (the framework reports it honestly), not a bluff.
+#
+# DO NOT MERGE BY EDITING THIS FILE INTO atmosphere.yaml MANUALLY — the conductor
+#   merges these `test_cases:` items serially into the live bank's `test_cases:`
+#   sequence to avoid §11.4.58 cross-PWU contention. This file is a staging draft.
+#
+# SCHEMA: matches atmosphere_additions_1_1_8.yaml / atmosphere_additions_20260530.yaml.
+
+test_cases:
+
+  # ==================== J1 YouTube everyday journey ====================
+  - id: everyday.j1.youtube-browse-play-ad-cc-quality-rebuffer
+    challenge_id: everyday.j1.youtube-browse-play-ad-cc-quality-rebuffer
+    name: "YouTube everyday journey: browse → play → ad → CC → quality → switch → rebuffer with NO display flip, NO frozen frame, NO stuck cue [J1]"
+    category: functional
+    priority: critical
+    platforms: [android]
+    dispatches_to: "device/rockchip/rk3588/tests/everyday/j1_youtube.sh"
+    domains: [video, subtitle, audio, secondary-display, youtube]
+    required_evidence: [liveness-frame-advance-n3, not-stale-cross-check, no-primary-flash, subdebug-cc-candidate, arvus-codec-state, evidence-dir-non-empty]
+    steps:
+      - name: "Topology + geo + install gate (§11.4.3)"
+        action: "Secondary HDMI present + YouTube installed + content server reachable; else SKIP-with-reason"
+        expected: "Gates pass; missing secondary → SKIP topology_unsupported; geo-blocked → SKIP geo_restricted; absent app → SKIP hardware_not_present"
+      - name: "Run J1 in REGULAR + STRESS rhythm (§11.4.50 N=3 regular)"
+        action: "host: bash scripts/testing/run_everyday_user_suite.sh --journeys j1_youtube --rhythm both"
+        expected: "Each step asserts §11.4.107 liveness (advancing frames on the routing display, not-stale-from-previous, no flash on the wrong display) + §11.4.69 audio sink + subtitle on the video display, not a stuck cue"
+      - name: "Assert no display flip / no frozen frame across ad→content, quality, switch, rebuffer"
+        action: "Liveness battery re-runs after every transition; STRESS storm repeats CC/quality/seek ×20"
+        expected: "Video stays on its routing display through every transition; PASS only on captured liveness evidence; any flip-to-wrong-display or frozen frame is FAIL"
+    tags: [video, subtitle, audio, secondary-display, youtube, "J1", "§11.4.5", "§11.4.69", "§11.4.85", "§11.4.107", video_display, subtitle_render, audio_output]
+    documentation_refs:
+      - type: test
+        section: "J1 YouTube everyday journey"
+        path: "device/rockchip/rk3588/tests/everyday/j1_youtube.sh"
+      - type: plan
+        section: "Phase G — full autonomous manual-equivalent testing (J1)"
+        path: "qa-results/REMEDIATION_1.1.8_live_defects_20260603.md"
+    estimated_duration: "5m"
+    expected_result: "Video stays on its routing display through browse/play/ad/CC/quality/switch/rebuffer with advancing frames, no stuck caption, primary clean — captured §11.4.107 liveness + subdebug + Arvus evidence. PASS only on the captured evidence; flip/freeze/stuck-cue is FAIL; geo/topology/absent → SKIP."
+
+  # ==================== J2 Kinopoisk 5.1 multichannel + subtitle ====================
+  - id: everyday.j2.kinopoisk-5-1-multichannel-subtitle
+    challenge_id: everyday.j2.kinopoisk-5-1-multichannel-subtitle
+    name: "Kinopoisk 5.1 everyday journey: play movie → Arvus Multi-CH PCM 5.1 (NOT stereo collapse) + subtitle on 2nd display [J2]"
+    category: functional
+    priority: critical
+    platforms: [android]
+    dispatches_to: "device/rockchip/rk3588/tests/everyday/j2_kinopoisk.sh"
+    domains: [audio, multichannel, subtitle, video, kinopoisk]
+    required_evidence: [arvus-multich-codec-state, alsa-hw-params-channels, subdebug-cc-candidate, liveness-frame-advance, evidence-dir-non-empty]
+    steps:
+      - name: "Topology + geo + install gate (§11.4.3)"
+        action: "Secondary HDMI present + Kinopoisk installed + kinopoisk.ru reachable; else SKIP"
+        expected: "Gates pass or SKIP-with-reason; login-gated content degrades the asserts that need active routed video to operator-attended SKIP (never fake-PASS)"
+      - name: "Run J2 — play a 5.1 movie (§11.4.50 N=3)"
+        action: "host: bash scripts/testing/run_everyday_user_suite.sh --journeys j2_kinopoisk --rhythm both"
+        expected: "Arvus host-side probe reports Multi-CH PCM / surround (NOT PCM2/0) — the AUD-MC regression signal; ALSA hw_params reports >2 channels"
+      - name: "Enable subtitles → render on the 2nd display"
+        action: "CC toggle; subdebug CHOSEN candidate ground-truth captured"
+        expected: "Subtitle renders on the video display (Cyrillic, not empty); PASS only on Arvus surround + subdebug evidence; stereo collapse or empty subtitle is FAIL"
+    tags: [audio, multichannel, subtitle, video, kinopoisk, "J2", "AUD-MC", "SUB-KINO", "§11.4.13", "§11.4.69", "§11.4.72", "§11.4.107", audio_output, subtitle_render, video_display]
+    documentation_refs:
+      - type: test
+        section: "J2 Kinopoisk 5.1 multichannel journey"
+        path: "device/rockchip/rk3588/tests/everyday/j2_kinopoisk.sh"
+      - type: plan
+        section: "Phase G — J2 Kinopoisk 5.1"
+        path: "qa-results/REMEDIATION_1.1.8_live_defects_20260603.md"
+    estimated_duration: "4m"
+    expected_result: "5.1 movie reaches Arvus as Multi-CH PCM (NOT PCM2/0 stereo collapse) AND subtitle renders on the 2nd display — captured Arvus host-side + ALSA channel + subdebug evidence. PASS only on captured surround + subtitle evidence; stereo collapse is the AUD-MC FAIL; login-gated → operator-attended SKIP."
+
+  # ==================== J3 Offline 4K player (seek-to-primary defect) ====================
+  - id: everyday.j3.offline-player-4k-seek-stays-secondary
+    challenge_id: everyday.j3.offline-player-4k-seek-stays-secondary
+    name: "Offline 4K player everyday journey (MPV/VLC/Nova/Kodi): play → seek/rewind STAYS on 2nd display, no frozen frame [J3]"
+    category: functional
+    priority: critical
+    platforms: [android]
+    dispatches_to: "device/rockchip/rk3588/tests/everyday/j3_offline_player.sh"
+    domains: [video, secondary-display, offline, mpv, vlc, nova, kodi]
+    required_evidence: [liveness-frame-advance-n3, not-stale-cross-check, no-primary-flash, vom-active-decoder, evidence-dir-non-empty]
+    steps:
+      - name: "Topology + player + corpus gate (§11.4.3 / §11.4.6)"
+        action: "Secondary HDMI present + a non-DRM player installed + a local movie under /sdcard/Movies; else SKIP-with-reason"
+        expected: "Gates pass or SKIP hardware_not_present; never fake-PASS on missing corpus"
+      - name: "For each installed non-DRM player: open 4K movie → assert LIVE on 2nd"
+        action: "host: bash scripts/testing/run_everyday_user_suite.sh --journeys j3_offline_player --rhythm both"
+        expected: "Non-DRM video routes to the SECONDARY display with advancing frames (§11.4.107); VOM active decoder reflects the routed package"
+      - name: "Seek/rewind (the historical defect path) → assert STAYS on 2nd"
+        action: "Fast-forward + rewind; STRESS storm repeats seek ×20"
+        expected: "Video stays on the secondary through seek/rewind with no flip-to-primary, no frozen frame; PASS only on captured liveness; flip/freeze is FAIL"
+    tags: [video, secondary-display, offline, mpv, vlc, nova, kodi, "J3", "VID-FLIP", "VID-FROZEN", "§11.4.69", "§11.4.85", "§11.4.107", video_display]
+    documentation_refs:
+      - type: test
+        section: "J3 offline 4K player journey"
+        path: "device/rockchip/rk3588/tests/everyday/j3_offline_player.sh"
+      - type: plan
+        section: "Phase G — J3 offline 4K rewind"
+        path: "qa-results/REMEDIATION_1.1.8_live_defects_20260603.md"
+    estimated_duration: "8m"
+    expected_result: "Each installed non-DRM player keeps 4K video on the secondary display through play + seek + rewind with advancing frames and no frozen frame — captured §11.4.107 liveness + VOM active-decoder evidence. PASS only on captured evidence; flip-to-primary or freeze is the VID-FLIP/VID-FROZEN FAIL; no player/corpus → SKIP hardware_not_present."
+
+  # ==================== J4 Apple TV (subtitle-on-2nd) ====================
+  - id: everyday.j4.appletv-video-subtitle-secondary
+    challenge_id: everyday.j4.appletv-video-subtitle-secondary
+    name: "Apple TV everyday journey: play → enable subtitles → subtitle on the VIDEO display, NOT primary, not stuck [J4]"
+    category: functional
+    priority: high
+    platforms: [android]
+    dispatches_to: "device/rockchip/rk3588/tests/everyday/j4_appletv.sh"
+    domains: [video, subtitle, secondary-display, appletv, drm]
+    required_evidence: [subdebug-cc-candidate, liveness-frame-advance, arvus-codec-state, evidence-dir-non-empty]
+    steps:
+      - name: "Topology + geo + install gate (§11.4.3)"
+        action: "Secondary HDMI present + Apple TV installed + tv.apple.com reachable; else SKIP"
+        expected: "Gates pass or SKIP; login-gated content → operator-attended SKIP for asserts needing active routed video"
+      - name: "Run J4 — play content → assert routing regime (§11.4.50 N=3)"
+        action: "host: bash scripts/testing/run_everyday_user_suite.sh --journeys j4_appletv --rhythm both"
+        expected: "DRM regime probed at runtime (FLAG_SECURE → stays-on-primary); §11.4.107 liveness on the routing display"
+      - name: "Enable subtitles → subtitle on the VIDEO display, not primary, not stuck"
+        action: "CC toggle; subdebug CHOSEN ground-truth captured (works even where screencap -d 2 is blocked for FLAG_SECURE)"
+        expected: "Subtitle on the video display, not split to primary, not a stuck cue; PASS only on subdebug evidence; SUB-PRIMARY landing on the primary is FAIL"
+    tags: [video, subtitle, secondary-display, appletv, drm, "J4", "SUB-PRIMARY", "§11.4.13", "§11.4.69", "§11.4.107", subtitle_render, video_display, audio_output]
+    documentation_refs:
+      - type: test
+        section: "J4 Apple TV journey"
+        path: "device/rockchip/rk3588/tests/everyday/j4_appletv.sh"
+      - type: plan
+        section: "Phase G — J4 Apple TV"
+        path: "qa-results/REMEDIATION_1.1.8_live_defects_20260603.md"
+    estimated_duration: "4m"
+    expected_result: "Apple TV subtitle renders on the video display (not primary, not stuck) with video live on its routing display — captured subdebug CHOSEN + liveness evidence. PASS only on captured evidence; subtitle on primary is the SUB-PRIMARY FAIL; login-gated → operator-attended SKIP."
+
+  # ==================== J5 Prime Video (subtitle-on-2nd) ====================
+  - id: everyday.j5.prime-video-subtitle-secondary
+    challenge_id: everyday.j5.prime-video-subtitle-secondary
+    name: "Prime Video everyday journey: play → enable subtitles → subtitle on the VIDEO display, NOT primary, not stuck [J5]"
+    category: functional
+    priority: high
+    platforms: [android]
+    dispatches_to: "device/rockchip/rk3588/tests/everyday/j5_prime.sh"
+    domains: [video, subtitle, secondary-display, prime, drm]
+    required_evidence: [subdebug-cc-candidate, liveness-frame-advance, arvus-codec-state, evidence-dir-non-empty]
+    steps:
+      - name: "Topology + geo + install gate (§11.4.3)"
+        action: "Secondary HDMI present + a Prime package installed + primevideo.com reachable; else SKIP"
+        expected: "Gates pass or SKIP; geo-blocked in RU → SKIP geo_restricted"
+      - name: "Run J5 — play content → assert routing regime (§11.4.50 N=3)"
+        action: "host: bash scripts/testing/run_everyday_user_suite.sh --journeys j5_prime --rhythm both"
+        expected: "DRM regime probed at runtime; §11.4.107 liveness on the routing display"
+      - name: "Enable subtitles → subtitle on the VIDEO display, not primary, not stuck"
+        action: "CC toggle; subdebug CHOSEN ground-truth captured"
+        expected: "Subtitle on the video display; PASS only on subdebug evidence; SUB-PRIMARY is FAIL"
+    tags: [video, subtitle, secondary-display, prime, drm, "J5", "SUB-PRIMARY", "§11.4.69", "§11.4.107", subtitle_render, video_display, audio_output]
+    documentation_refs:
+      - type: test
+        section: "J5 Prime Video journey"
+        path: "device/rockchip/rk3588/tests/everyday/j5_prime.sh"
+      - type: plan
+        section: "Phase G — J5 Prime Video"
+        path: "qa-results/REMEDIATION_1.1.8_live_defects_20260603.md"
+    estimated_duration: "4m"
+    expected_result: "Prime Video subtitle renders on the video display (not primary, not stuck) with video live on its routing display — captured subdebug + liveness evidence. PASS only on captured evidence; subtitle on primary is the SUB-PRIMARY FAIL; geo-blocked → SKIP geo_restricted."
+
+  # ==================== J6 Audio output switching matrix (label↔sink + no-silence) ====================
+  - id: everyday.j6.audio-output-switch-matrix
+    challenge_id: everyday.j6.audio-output-switch-matrix
+    name: "Audio output switching matrix everyday journey: switch each sink → label matches REAL hardware + sound flows (no silence) + rapid-switch chaos [J6]"
+    category: functional
+    priority: critical
+    platforms: [android]
+    dispatches_to: "device/rockchip/rk3588/tests/everyday/j6_audio_switch.sh"
+    domains: [audio, output-switch, hdmi, jack, usb, bt, label]
+    required_evidence: [hw-ptr-delta-positive-per-sink, dumpsys-audio-device-labels, arvus-codec-state, no-crash-census, evidence-dir-non-empty]
+    steps:
+      - name: "Player + corpus gate (§11.4.6)"
+        action: "A player + a local movie present to drive a real stream; else SKIP hardware_not_present"
+        expected: "Gates pass or SKIP; never fake-PASS without a real stream"
+      - name: "Switch each output sink → assert sound flows (no silence)"
+        action: "host: bash scripts/testing/run_everyday_user_suite.sh --journeys j6_audio_switch --rhythm both"
+        expected: "For each sink: /proc/asound/cardN hw_ptr delta > 0 proves sound flowing; Arvus host-side codec-state cross-check for HDMI sinks; silence (delta 0) is the AUD-SW FAIL"
+      - name: "Assert label matches REAL hardware sink (§11.4.111)"
+        action: "Capture dumpsys-audio device labels; host re-verifies against EDID monitor-name / iProduct (no static literal)"
+        expected: "Picker label derived from real hardware metadata (not a static string bound to a card index); label↔card drift is the AUD-LBL FAIL"
+      - name: "Rapid-switch chaos storm → assert no silence / no crash (§11.4.85)"
+        action: "Rapid HDMI-target switch ×20; audioserver crash census"
+        expected: "Sound restored after the storm + no audioserver crash; PASS only on captured hw_ptr-delta + no-crash evidence"
+    tags: [audio, output-switch, hdmi, jack, usb, bt, "J6", "AUD-LBL", "AUD-SW", "§11.4.69", "§11.4.72", "§11.4.85", "§11.4.111", audio_output]
+    documentation_refs:
+      - type: test
+        section: "J6 audio output switching matrix"
+        path: "device/rockchip/rk3588/tests/everyday/j6_audio_switch.sh"
+      - type: plan
+        section: "Phase G — J6 audio output switching"
+        path: "qa-results/REMEDIATION_1.1.8_live_defects_20260603.md"
+    estimated_duration: "5m"
+    expected_result: "Each audio sink switch flows sound (hw_ptr delta > 0) with the picker label matching the real hardware sink, and the rapid-switch chaos storm leaves no silence and no crash — captured per-sink hw_ptr-delta + label + no-crash evidence. PASS only on captured evidence; silence is the AUD-SW FAIL, label drift is the AUD-LBL FAIL; no stream → SKIP."
+
+  # ==================== J7 Multichannel matrix (5.1/7.1/stereo/AC3/EAC3/DTS) ====================
+  - id: everyday.j7.multichannel-matrix-all-layouts
+    challenge_id: everyday.j7.multichannel-matrix-all-layouts
+    name: "Multichannel matrix everyday journey: 5.1→Multi-CH, 7.1→7.1, stereo→stereo, AC3/EAC3/DTS→decoded surround to Arvus [J7]"
+    category: functional
+    priority: critical
+    platforms: [android]
+    dispatches_to: "device/rockchip/rk3588/tests/everyday/j7_multichannel_matrix.sh"
+    domains: [audio, multichannel, ac3, eac3, dts, hdmi, arvus]
+    required_evidence: [arvus-codec-state-per-row, alsa-hw-params-channels-per-row, evidence-dir-non-empty]
+    steps:
+      - name: "Player + asset corpus gate (§11.4.6)"
+        action: "MPV installed + reference assets in the multichannel corpus; rows whose asset is absent → SKIP hardware_not_present"
+        expected: "Each matrix row gated independently; absent asset → SKIP (never fake-PASS)"
+      - name: "Run the matrix: 5.1 / 7.1 / stereo / AC3 / EAC3 / DTS"
+        action: "host: bash scripts/testing/run_everyday_user_suite.sh --journeys j7_multichannel_matrix --rhythm both"
+        expected: "Each row plays its asset → Arvus host-side codec-state matches the expected layout + ALSA hw_params reports the expected channel count"
+      - name: "Assert no multichannel collapse on any row"
+        action: "5.1/7.1 rows must report >2 ALSA channels + surround Arvus codec-state"
+        expected: "Surround reaches Arvus per row; PASS only on captured Arvus + ALSA channel evidence; collapse to stereo on a surround row is FAIL"
+    tags: [audio, multichannel, ac3, eac3, dts, hdmi, arvus, "J7", "§FY", "§EM", "§11.4.13", "§11.4.69", "§11.4.72", audio_output]
+    documentation_refs:
+      - type: test
+        section: "J7 multichannel matrix"
+        path: "device/rockchip/rk3588/tests/everyday/j7_multichannel_matrix.sh"
+      - type: plan
+        section: "Phase G — J7 multichannel matrix"
+        path: "qa-results/REMEDIATION_1.1.8_live_defects_20260603.md"
+    estimated_duration: "6m"
+    expected_result: "Each multichannel matrix row reaches Arvus with the expected layout (5.1→Multi-CH, 7.1→7.1, stereo→stereo, AC3/EAC3/DTS→decoded surround) and the expected ALSA channel count — captured Arvus host-side + ALSA channel evidence per row. PASS only on captured evidence; surround collapse to stereo is FAIL; absent asset → SKIP hardware_not_present."

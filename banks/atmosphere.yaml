@@ -3879,7 +3879,7 @@ test_cases:
     expected_result: "review_round.sh --health-check exits 0; A1 PASS or SKIP-with-reason=feature_disabled_by_config (pre-§J1); evidence dir layout when credentials configured; INFRASTRUCTURE working IS the Challenge — real-data branch validates downstream once §J1 unblocks operator-side credential provisioning"
 
   - id: CME-KA-AUDIO-MATRIX-001
-    title: "§KA Audio Quality Matrix — HDMI/jack/USB/BT × multichannel/HiFi (matrix dispatch)"
+    name: "§KA Audio Quality Matrix — HDMI/jack/USB/BT × multichannel/HiFi (matrix dispatch)"
     suite: atmosphere.audio
     category: audio
     priority: critical
@@ -3944,7 +3944,7 @@ test_cases:
   # flow — never on container-up-only / config-only (that would be the exact
   # §11.4.69 PASS-bluff this proxy exists to expose in OTHER features).
   - id: CME-API-PROXY-001
-    title: "§GP MITM API-intercept proxy captures an unpinned HTTP flow end-to-end (Netflix-login diagnostic infra)"
+    name: "§GP MITM API-intercept proxy captures an unpinned HTTP flow end-to-end (Netflix-login diagnostic infra)"
     suite: atmosphere.network
     category: network
     priority: medium
@@ -4012,7 +4012,7 @@ test_cases:
   # captured artefact per §11.4.5 + §11.4.69 — never metadata-only/config-only.
 
   - id: CME-GR-STREAM-CONTINUITY-001
-    title: "§GR (#41) sustained network stream survives a >3s mid-rebuffer with secondary-display routing intact (no forceUnregister full-teardown)"
+    name: "§GR (#41) sustained network stream survives a >3s mid-rebuffer with secondary-display routing intact (no forceUnregister full-teardown)"
     suite: atmosphere.video
     category: video
     priority: critical
@@ -4078,7 +4078,7 @@ test_cases:
     expected_result: "On a weak-link secondary-display device post-rebuild: a mid-stream rebuffer is tolerated, no forceUnregister full-teardown chain appears, and the secondary-display decoder routing survives — ab_pass_with_evidence cites the captured forensic logcat. Pre-rebuild (RED) the defect chain reproduces (FAIL); no secondary display / no in-window rebuffer → SKIP-with-reason."
 
   - id: CME-HF-OVERLAY-NO-SECONDARY-001
-    title: "§HF [ATM-246] no 'playing on TV' VideoControlOverlay band on displayId=0 of a 0-external-display device"
+    name: "§HF [ATM-246] no 'playing on TV' VideoControlOverlay band on displayId=0 of a 0-external-display device"
     suite: atmosphere.display
     category: display
     priority: critical
@@ -4141,7 +4141,7 @@ test_cases:
     expected_result: "On a 0-external-display device post-rebuild: no VideoControlOverlay band on displayId=0 after STATE_VIDEO_START and no stale band after the trigger app dies — ab_pass_with_evidence cites the dumpsys-window snapshot. Pre-rebuild (RED) the band appears on displayId=0 (FAIL); a device with a secondary display → SKIP-with-reason."
 
   - id: CME-GZ-RECENTS-001
-    title: "§GZ [ATM-240] 3-button-nav Recents opens Overview deterministically post-boot (10/10 presses, queue drains, mRecentTasks non-null)"
+    name: "§GZ [ATM-240] 3-button-nav Recents opens Overview deterministically post-boot (10/10 presses, queue drains, mRecentTasks non-null)"
     suite: atmosphere.input
     category: functional
     priority: critical
@@ -4205,7 +4205,7 @@ test_cases:
     expected_result: "On a 3-button-nav device post-rebuild: Overview opens on all 10 presses, the command queue never pins at 3, and mRecentTasks is non-null — ab_pass_with_evidence cites verdict.json + screencap. Pre-rebuild (RED) opened=0 / queue stuck at 3 / mRecentTasks=null (FAIL); a gesture-nav device → SKIP-with-reason."
 
   - id: CME-AF-RECENTS-CLEAR-ALL-001
-    title: "§AF/§GZ Presenter Clear-All Recents FAB is user-visible on display#0 and a REAL tap clears all recents (no backend-broadcast bluff)"
+    name: "§AF/§GZ Presenter Clear-All Recents FAB is user-visible on display#0 and a REAL tap clears all recents (no backend-broadcast bluff)"
     suite: atmosphere.input
     category: functional
     priority: critical
@@ -4279,7 +4279,7 @@ test_cases:
     expected_result: "Post-rebuild: the 'ATMOSphere Clear All Recents' FAB is visible on display#0's overview surface, a real tap clears all recents, and a real swipe-up dismisses exactly one card — ab_pass_with_evidence cites the ui.xml + screencap + before/after recents dumps. Pre-rebuild (RED) the content-desc FAB node is absent so C2/C3/C4 FAIL honestly; an un-populatable Recents surface → SKIP-with-reason."
 
   - id: CME-VIDEO-COLOR-FIDELITY-001
-    title: "§11.4.98 (#48) source-vs-rendered video color fidelity within tolerance (ΔE2000 + histogram + no-pale + sharpness + aspect + continuity), golden/bad self-validation proven"
+    name: "§11.4.98 (#48) source-vs-rendered video color fidelity within tolerance (ΔE2000 + histogram + no-pale + sharpness + aspect + continuity), golden/bad self-validation proven"
     suite: atmosphere.video
     category: video
     priority: critical
@@ -4348,3 +4348,190 @@ test_cases:
         path: "docs/Issues.md"
     estimated_duration: "90s (harness self-validation + per-player N=3 capture + analyze)"
     expected_result: "Harness self-validation GOLDEN→PASS + BAD→FAIL-on-no_pale, then each non-DRM/non-secure/non-geo player+clip row renders color-faithful frames within tolerance vs the host-extracted source — ab_pass_with_evidence cites the per-clip verdict.json + source-vs-rendered frame pair. A degraded/pale render is FAIL; FLAG_SECURE/DRM/geo capture paths → SKIP-with-reason."
+
+  # ==================== UI-driven scenario suites (§11.4.48 / §11.4.49) ====================
+
+  - id: VSCN-UI-001
+    challenge_id: video.ui-scenarios.all-players-secondary
+    name: "UI-driven video scenarios on every player route to secondary with frames>0"
+    category: functional
+    priority: critical
+    platforms: [android]
+    dispatches_to: "device/rockchip/rk3588/tests/test_video_scenarios_ui.sh"
+    feature_class: video_display
+    domains: [video, secondary-display, ui-driven]
+    required_evidence: [vom-active-decoder, arvus-codec-in-use, ffprobe-count-frames]
+    steps:
+      - name: "Launch every player via the launcher icon (§11.4.48 Surface A)"
+        action: "Host orchestrator drives generic_video_app_scenarios.sh per player — real launcher-icon tap + tile-tap PLAY, NEVER an `am start -a VIEW` Intent shortcut"
+        expected: "Each installed player reaches foreground and begins playback; geo-restricted/uninstalled players SKIP-with-reason (never PASS-by-default)"
+      - name: "Assert secondary-display routing (VOM / Arvus / screenrecord)"
+        action: "vsc_assert_secondary_routing checks VOM activeDecoder names the package OR Arvus Codec-In-Use is non-empty, then captures a secondary-display screenrecord mp4"
+        expected: "At least one non-screencap routing evidence present; primary frames>0 is REJECTED as secondary evidence per §GR/Bug #13"
+      - name: "Exercise pause/resume/seek + sustained + app-switch + stop"
+        action: "Scenarios G..N drive in-app transport + 30s/120s sustained (§GR coverage) + app-switch-and-back + stop-via-back quiescence (§11.4.14)"
+        expected: "Position-proxy assertions PASS where readable; SKIP-with-reason where the app exposes no MediaSession position; device left quiescent after stop"
+      - name: "Host ffprobe asserts frames>0 on every captured mp4 (§11.4.5)"
+        action: "Orchestrator runs `ffprobe -count_frames` on every pulled mp4 — frames>0 is the load-bearing decoded-content evidence; 0-byte FLAG_SECURE secondary mp4 → PENDING_FORENSICS, never faked"
+        expected: "ab_pass_with_evidence cites the per-player routing.txt + the captured mp4; a captured-but-empty mp4 (decoded 0 frames, not 0-byte) is FAIL"
+    tags: [video, secondary-display, ui-driven, all-players, ffprobe-frames, §11.4.48, §11.4.49, §11.4.5, §11.4.69, video_display]
+    documentation_refs:
+      - type: test
+        section: "test_video_scenarios_ui.sh (§11.4.48 autonomous UI-driven video scenario orchestrator)"
+        path: "device/rockchip/rk3588/tests/test_video_scenarios_ui.sh"
+      - type: constitution
+        section: "§11.4.48 UI-driven testing mandate"
+        path: "constitution/Constitution.md"
+      - type: constitution
+        section: "§11.4.69 universal sink-side positive-evidence taxonomy"
+        path: "constitution/Constitution.md"
+    estimated_duration: "per-player ~120s (smoke --quick) to ~600s (--long); full roster backgrounded per §11.4.89"
+    expected_result: "Every installed player launches via its launcher icon, routes video to the secondary display (VOM/Arvus/screenrecord evidence), and the host ffprobe -count_frames asserts frames>0 on the captured mp4 — ab_pass_with_evidence cites the routing.txt + mp4. Geo/uninstalled players SKIP-with-reason; a degraded/empty capture is FAIL. PASS only on captured frames>0, never on metadata."
+
+  - id: ASCN-UI-001
+    challenge_id: audio.ui-scenarios.arvus-codec-in-use-transition
+    name: "UI-driven audio scenarios prove Arvus Codec-In-Use stereo↔multichannel transition"
+    category: functional
+    priority: critical
+    platforms: [android]
+    dispatches_to: "device/rockchip/rk3588/tests/test_audio_scenarios_ui.sh"
+    feature_class: audio_output
+    domains: [audio, arvus, sink-side, ui-driven]
+    required_evidence: [arvus-codec-in-use, arvus-codec-in-use-transition, hal-frames-written]
+    steps:
+      - name: "Drive every audio + video player through the real UI (§11.4.48)"
+        action: "Host orchestrator runs audio_scenarios_device.sh roster — real launcher tap + in-app play/pause/resume/seek + the operator-mandated STEREO→MULTICHANNEL track switch"
+        expected: "Each installed player plays; HAL frames-written advances during playback; uninstalled/geo players SKIP-with-reason"
+      - name: "Authoritative Arvus Codec-In-Use capture (§11.4.13 / §11.4.68)"
+        action: "For each emitted ARVUS_EXPECT (stereo / multichannel / quiescent) the host curls the live Arvus Codec-In-Use field via arvus_probe_codec_state and matches the expected regex"
+        expected: "STEREO matches PCM/2.0; MULTICHANNEL matches a 5.1/7.1 codec; QUIESCENT returns to N.E. after stop — empty Codec-In-Use is FAIL, Arvus unreachable is OPERATOR-BLOCKED (never fake-PASS, never silent SKIP)"
+      - name: "Assert the stereo↔multichannel TRANSITION (operator-mandated proof)"
+        action: "The orchestrator asserts the captured Codec-In-Use VALUE actually changed between the stereo and multichannel windows ([ \"$_CS_STEREO\" != \"$_CS_MULTI\" ])"
+        expected: "ab_pass cites the Codec-In-Use CHANGED 'PCM/2.0' → '5.1 codec'; if the field did not change, the in-app track switch did not reach the sink → FAIL (§11.4.68 audio-bluff caught)"
+      - name: "Verify quiescence after stop (§11.4.14 anti-stickiness)"
+        action: "After STOP, the host re-captures Arvus Codec-In-Use and asserts it returned to N.E."
+        expected: "Sink Codec-In-Use returns to N.E. — sticky sink state is FAIL"
+    tags: [audio, arvus, sink-side, ui-driven, codec-in-use, stereo-multichannel-transition, §11.4.48, §11.4.13, §11.4.68, §11.4.69, audio_output]
+    documentation_refs:
+      - type: test
+        section: "test_audio_scenarios_ui.sh (§11.4.48 UI-driven audio orchestrator + authoritative Arvus codec-in-use)"
+        path: "device/rockchip/rk3588/tests/test_audio_scenarios_ui.sh"
+      - type: guide
+        section: "Arvus HDMI integration (Codec-In-Use sink-side evidence)"
+        path: "docs/guides/ARVUS_HDMI_INTEGRATION.md"
+      - type: constitution
+        section: "§11.4.68 positive sink-side / downstream evidence mandate"
+        path: "constitution/Constitution.md"
+      - type: constitution
+        section: "§11.4.69 universal sink-side positive-evidence taxonomy"
+        path: "constitution/Constitution.md"
+    estimated_duration: "per-app ~60-90s + live transition capture; full roster backgrounded per §11.4.89"
+    expected_result: "Every installed audio/video player drives the real UI through play→pause→resume→seek→stereo↔multichannel switch→stop; the host curls the authoritative Arvus Codec-In-Use for each window and proves it CHANGED value at the stereo→multichannel transition and returned to N.E. after stop. PASS only on the live sink-side Codec-In-Use capture (ab_pass_with_evidence cites the arvus_*.txt evidence files); empty Codec-In-Use is FAIL; Arvus unreachable is OPERATOR-BLOCKED, never fake-PASS."
+
+  # ==================== 1.1.8-dev critical batch (2026-06-02) ====================
+
+  - id: ATM-ISSUE-11-YT-MULTI-CLIP
+    challenge_id: video.routing.yt-every-clip-secondary
+    name: "Every YouTube clip routes to the secondary HDMI display (no reset-timeout fallback to primary) + frame-advance liveness"
+    category: functional
+    priority: critical
+    platforms: [android]
+    dispatches_to: "device/rockchip/rk3588/tests/test_youtube_multi_clip_secondary.sh"
+    feature_class: video_display
+    domains: [video, routing, secondary-display, liveness]
+    required_evidence: [vom-active-decoder, redirect-log-per-clip, frame-advance-counter]
+    steps:
+      - name: "Drive N cold YouTube clip launches (Issue #11 repro path)"
+        action: "adb shell sh test_youtube_multi_clip_secondary.sh 10 — each a fresh MediaCodec.configure → registerVideoDecoder cold-relaunch"
+        expected: "EVERY non-DRM clip's VOM mActiveDecoder == com.google.android.youtube + 'Redirecting … to surface' fired; 0 'Surface reset timed out' fallbacks to primary"
+      - name: "Per-clip frame-advance liveness (#3 — FLAG_SECURE-safe oracle)"
+        action: "avq_liveness_frame_advance asserts the routed clip's SurfaceFlinger/media.metrics frame counter is ADVANCING (not a stuck/frozen decoder)"
+        expected: "delta>0 over the window; a routed-but-frozen clip is a per-clip FAIL"
+    tags: [video, routing, secondary-display, liveness, issue-11, §11.4.69, video_display]
+    documentation_refs:
+      - type: test
+        section: "test_youtube_multi_clip_secondary.sh (Issue #11 cold-relaunch routing guard)"
+        path: "device/rockchip/rk3588/tests/test_youtube_multi_clip_secondary.sh"
+    estimated_duration: "~10 cold clips × ~9s + per-clip liveness ~3s"
+    expected_result: "All N cold YouTube clips route to the secondary display (0 reset-timeout fallbacks) AND each routed clip's decoder frame-advance counter advances. PASS cites the summary.txt + per-clip frame_advance.json. Geo-restricted → SKIP geo_restricted (RuTube substitute). No secondary → SKIP topology_unsupported."
+
+  - id: ATM-SS1-STREAMING-SUBTITLE
+    challenge_id: video.subtitle.streaming-on-correct-display
+    name: "Streaming/player video + subtitle on the correct (video) display across the whole roster"
+    category: functional
+    priority: critical
+    platforms: [android]
+    dispatches_to: "device/rockchip/rk3588/tests/test_streaming_subtitle_secondary.sh"
+    feature_class: subtitle_render
+    domains: [video, subtitle, secondary-display, roster, sink-side]
+    required_evidence: [ffprobe-frame-count, vom-active-decoder, arvus-codec-in-use, ocr-subtitle-location, frame-advance-counter]
+    steps:
+      - name: "For each streaming/player in the roster: video on the EXPECTED display"
+        action: "Launch app; capture the expected display (DRM→primary, non-DRM→secondary); ffprobe frame-count>0 + VOM activeDecoder + Arvus sink codec-in-use + decoder frame-advance liveness"
+        expected: "Video present + advancing on the runtime-determined expected display; regime probed at runtime, never hardcoded"
+      - name: "Subtitle follows the video, never split"
+        action: "screencap both displays, OCR lower-third; subtitle text on the VIDEO display AND NOT the other"
+        expected: "Subtitle on the same display as the video; a split (video here / subtitle there) FAILs as the §RR1 bug class"
+    tags: [video, subtitle, roster, sink-side, §11.4.13, §11.4.69, subtitle_render, video_display]
+    documentation_refs:
+      - type: test
+        section: "test_streaming_subtitle_secondary.sh (roster video + subtitle-on-correct-display)"
+        path: "device/rockchip/rk3588/tests/test_streaming_subtitle_secondary.sh"
+    estimated_duration: "per-app ~30-60s; full roster backgrounded per §11.4.89"
+    expected_result: "Every shipped streaming/player shows video on the expected display (advancing) and subtitles on the same display (no split). Geo apps SKIP geo_restricted; TV-Compose UI gaps SKIP operator_attended (flagged, never fake-PASS); on-device ffprobe/tesseract absent → PENDING host re-verify."
+
+  - id: ATM-VDE-DEEP-EXERCISE
+    challenge_id: video.deep-exercise.av-quality-liveness
+    name: "Deep app-exercise AV-quality battery + 4+1 video-liveness on secondary HDMI (no frozen/stale frame can pass as live)"
+    category: functional
+    priority: critical
+    platforms: [android]
+    dispatches_to: "device/rockchip/rk3588/tests/test_video_app_deep_exercise.sh"
+    feature_class: video_display
+    domains: [video, audio, subtitle, secondary-display, liveness, stress-chaos]
+    required_evidence: [ffprobe-frame-count, freeze-detect, not-stale-xcheck, frame-advance-counter, no-primary-flash, continuity-picture, audio-loudness]
+    steps:
+      - name: "Realistic per-app exercise (play / skip ad / switch ≥4 videos / subtitles on)"
+        action: "exercise_app drives each video player + streaming app through the realistic sequence; the 7 base AV-quality checks run at every step"
+        expected: "ALWAYS a picture on the 2nd display across transitions; subtitles VISIBLE on the video display; audio glitch-clean"
+      - name: "4+1 video-liveness — a single frame is NOT proof of live playback"
+        action: "avq_video_liveness runs #1 temporal-motion (freezedetect/pHash/byte-cmp), #2 not-stale-from-previous, #3 decoder frame-advance, #4 FPS, #5 no-video-on-primary-during-transition + loading-aware playback-start"
+        expected: "Every video-on-secondary PASS proves LIVE advancing frames; a frozen/stale frame, a stuck decoder, or a primary flash → FAIL"
+      - name: "Rapid-switch stress/chaos burst (§11.4.85)"
+        action: "≥10-switch burst with per-iteration crash + black-frame census (BURST_CRASH / BURST_BLACK)"
+        expected: "No app crash, no black gap across the burst"
+    tags: [video, audio, subtitle, liveness, stress-chaos, §11.4.85, §11.4.69, video_display, subtitle_render, audio_output]
+    documentation_refs:
+      - type: test
+        section: "test_video_app_deep_exercise.sh + lib/av_quality_battery.sh (7 base checks + 4+1 liveness) + lib/av_quality_self_validate.sh (golden-bad oracle)"
+        path: "device/rockchip/rk3588/tests/test_video_app_deep_exercise.sh"
+      - type: research
+        section: "Anti-bluff AV validation techniques (freezedetect / pHash / SurfaceFlinger --latency / media.metrics / metamorphic / VMAF / mutation-the-gate)"
+        path: "qa-results/anti_bluff_research_20260602/RECOMMENDATIONS.md"
+    estimated_duration: "per-app realistic exercise ~3-5 min; full roster backgrounded per §11.4.89"
+    expected_result: "For every video player + streaming app the secondary-HDMI experience is proven flawless: live advancing video (not frozen/stale), subtitles on the video display, always a picture, no audio glitch, stress-burst clean. Each liveness analyzer is self-validated against golden-good/golden-bad ffmpeg fixtures (oracle's oracle). Host-only analysis (ffprobe/tesseract/ΔE2000) PENDING host re-verify; TV-Compose UI gaps SKIP operator_attended."
+
+  - id: ATM-HG-SECONDARY-VIDEO-ONLY
+    challenge_id: display.presenter.secondary-video-only
+    name: "2nd display is STRICTLY video-only — no app UI on TV, TV never mirrors the primary"
+    category: functional
+    priority: critical
+    platforms: [android]
+    dispatches_to: "device/rockchip/rk3588/tests/test_presenter_secondary_video_only.sh"
+    feature_class: display_topology
+    domains: [display, presenter, secondary-display, mirror-guard]
+    required_evidence: [mirror-count-zero, no-app-window-on-secondary, presenter-owns-secondary]
+    steps:
+      - name: "Baseline + app churn: no app UI reaches the secondary, no mirror"
+        action: "Churn launcher/settings/players; assert mirror_count=0 + no stray app window on the secondary after every launch"
+        expected: "Only the Presenter-owned Presentation owns the secondary; allow_task_move forbidden by default"
+      - name: "Mirror repro + recovery (§HE mirror-guard)"
+        action: "Force-stop Presenter → TV mirrors primary; restart → §HE watchdog re-asserts the Presentation, mirror heals to 0"
+        expected: "Mirror never persists; the mirror-guard watchdog re-owns the secondary within ~2s"
+    tags: [display, presenter, secondary-display, mirror-guard, §HG, §HE, §11.4.69, display_topology]
+    documentation_refs:
+      - type: test
+        section: "test_presenter_secondary_video_only.sh (§HG video-only + §HE mirror-guard contract)"
+        path: "device/rockchip/rk3588/tests/test_presenter_secondary_video_only.sh"
+    estimated_duration: "~5-10 min (churn + mirror repro/recovery + chaos)"
+    expected_result: "The secondary display only ever shows Tier-1 video via the Presenter Presentation; no app task moves there; the §HE mirror-guard prevents the TV from ever mirroring the primary. PASS cites the per-iteration mirror_count=0 + no-stray-app evidence. No secondary → SKIP topology_unsupported."

@@ -116,6 +116,23 @@ type Flags struct {
 	HealthTO     time.Duration
 	FFmpegTO     time.Duration
 	OCRTO        time.Duration
+
+	// --- §11.4.107 post-hoc liveness correlator inputs ---
+	// When PostAnalyze is set, run() dispatches to runPostAnalyze instead
+	// of the OCR/timeline correlator. The post-hoc correlator answers a
+	// different question: did a user-visible feature appear, LIVE (not a
+	// frozen/stale frame), on the INTENDED display — using ffprobe-style
+	// frame analysis (§11.4.107 freeze/SSIM + not-stale-vs-previous).
+	PostAnalyze     bool
+	Recording       string // mp4 to analyze (the intended-display capture)
+	PrevRecording   string // optional: previous content's mp4 (not-stale cross-check)
+	ExpectedDisplay int    // display id the recording was captured from (informational)
+	ExpectedCodec   string // optional codec the timeline claims (informational)
+	FFprobe         string // path to ffprobe binary (or 'ffprobe' to use $PATH)
+	FreezeSSIM      float64 // adjacent-frame similarity ≥ this for ≥FreezeWindow ⇒ frozen
+	FreezeWindowS   float64 // sustained-freeze window in seconds
+	NotStaleSSIM    float64 // first-frame vs prev-last-frame ≥ this ⇒ stale (failed)
+	MinFrames       int     // decoded-frame-count floor for a live PASS
 }
 
 // FrameExtractor extracts frames from a video at a fixed interval.
@@ -244,6 +261,10 @@ func run(ctx context.Context, argv []string, out, errOut io.Writer) int {
 		return runHealthCheck(ctx, flags, out, errOut)
 	}
 
+	if flags.PostAnalyze {
+		return runPostAnalyze(ctx, flags, out, errOut)
+	}
+
 	if flags.TestName == "" {
 		fmt.Fprintln(errOut, "recording-analyzer: --test-name is required (or use --health-check)")
 		return 2
@@ -346,6 +367,29 @@ func parseFlags(argv []string, errOut io.Writer) (Flags, int) {
 	ocrTO := fs.Duration("ocr-timeout", 30*time.Second,
 		"Per-frame OCR HTTP timeout.")
 
+	// --- §11.4.107 post-hoc liveness correlator flags ---
+	postAnalyze := fs.Bool("post-analyze", false,
+		"Run the §11.4.107 post-hoc liveness correlator instead of the OCR/timeline correlator. "+
+			"Requires --recording; correlates frame-advance + freeze + not-stale against --timeline-file.")
+	recording := fs.String("recording", "",
+		"Post-analyze: path to the intended-display mp4 to analyze (required with --post-analyze).")
+	prevRecording := fs.String("prev-recording", "",
+		"Post-analyze (optional): previous content's mp4 — first frame of --recording must differ from this file's last frame (not-stale §11.4.107 cross-check).")
+	expectedDisplay := fs.Int("expected-display", -1,
+		"Post-analyze (informational): display id the --recording was captured from.")
+	expectedCodec := fs.String("expected-codec", "",
+		"Post-analyze (informational): codec the timeline claims for the content.")
+	ffprobeBin := fs.String("ffprobe", "ffprobe",
+		"Post-analyze: path to ffprobe binary (or 'ffprobe' to use $PATH). Absent ⇒ honest SKIP, never fake PASS (§11.4.3).")
+	freezeSSIM := fs.Float64("freeze-ssim", 0.999,
+		"Post-analyze: adjacent-frame similarity ≥ this for the freeze window ⇒ frozen (§11.4.107).")
+	freezeWindowS := fs.Float64("freeze-window-s", 1.0,
+		"Post-analyze: sustained-freeze window in seconds.")
+	notStaleSSIM := fs.Float64("not-stale-ssim", 0.999,
+		"Post-analyze: --recording first frame vs --prev-recording last frame ≥ this ⇒ stale (FAIL).")
+	minFrames := fs.Int("min-frames", 2,
+		"Post-analyze: decoded-frame-count floor for a live PASS (0-frame mp4 = Bug #24 PASS-bluff).")
+
 	if err := fs.Parse(argv); err != nil {
 		return Flags{}, 2
 	}
@@ -367,6 +411,17 @@ func parseFlags(argv []string, errOut io.Writer) (Flags, int) {
 		HealthTO:     *healthTO,
 		FFmpegTO:     *ffmpegTO,
 		OCRTO:        *ocrTO,
+
+		PostAnalyze:     *postAnalyze,
+		Recording:       *recording,
+		PrevRecording:   *prevRecording,
+		ExpectedDisplay: *expectedDisplay,
+		ExpectedCodec:   *expectedCodec,
+		FFprobe:         *ffprobeBin,
+		FreezeSSIM:      *freezeSSIM,
+		FreezeWindowS:   *freezeWindowS,
+		NotStaleSSIM:    *notStaleSSIM,
+		MinFrames:       *minFrames,
 	}, 0
 }
 

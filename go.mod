@@ -7,6 +7,7 @@ require (
 	digital.vasic.containers v0.0.0-00010101000000-000000000000
 	digital.vasic.docprocessor v0.0.0-00010101000000-000000000000
 	digital.vasic.llmorchestrator v0.0.0-00010101000000-000000000000
+	digital.vasic.llmprovider v0.0.0-00010101000000-000000000000
 	digital.vasic.security v0.0.0-00010101000000-000000000000
 	digital.vasic.visionengine v0.0.0-00010101000000-000000000000
 	github.com/mattn/go-sqlite3 v1.14.37

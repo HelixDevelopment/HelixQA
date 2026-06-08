@@ -92,6 +92,58 @@ type TestCase struct {
 	// the corresponding hardware is available. Lab installs without
 	// the hardware see honest SKIP-OK results — anti-bluff compliant.
 	RequiresEnv []string `yaml:"requires_env,omitempty" json:"requires_env,omitempty"`
+
+	// ChallengeID is a stable Challenge identifier the consuming
+	// project assigns so a bank case can be cross-referenced from a
+	// HelixQA Challenge run, a tracker ticket, or a conduit verdict
+	// without relying on the (mutable) Name. When empty, ID is used.
+	// Project-agnostic: the value is consumer data (any string).
+	ChallengeID string `yaml:"challenge_id,omitempty" json:"challenge_id,omitempty"`
+
+	// DispatchesTo names a consumer-owned on-device / host test
+	// script (or any executable command line) that IS the body of
+	// this Challenge. When set, the dispatch executor runs it via the
+	// consumer-injected DeviceExec hook; its real exit code drives the
+	// PASS/FAIL verdict (extends ActionTypeShell to the case level).
+	// Project-agnostic: HelixQA never interprets the path — the
+	// consumer supplies and resolves it (e.g. a `test_*.sh` path).
+	DispatchesTo string `yaml:"dispatches_to,omitempty" json:"dispatches_to,omitempty"`
+
+	// Domains tags this case with one or more area labels (e.g.
+	// "audio", "video", "display") so a domain-scoped runner can
+	// filter and a single-resource-owner session can partition work.
+	// Project-agnostic: the labels are opaque strings to HelixQA.
+	Domains []string `yaml:"domains,omitempty" json:"domains,omitempty"`
+
+	// RequiredEvidence lists evidence-artefact globs/keys that MUST
+	// each resolve to a real, non-empty artefact before this case may
+	// score PASS (the §11.4.69 evidence-ledger gate). A glob may match
+	// a captured file, or a key may name a conduit evidence_captured
+	// event that carried a non-empty EvidencePath. Missing evidence →
+	// FAIL with the missing list. Project-agnostic: the token
+	// vocabulary is entirely consumer data.
+	RequiredEvidence []string `yaml:"required_evidence,omitempty" json:"required_evidence,omitempty"`
+}
+
+// EffectiveChallengeID returns ChallengeID when set, otherwise the
+// case ID — so conduit verdicts and tracker cross-references always
+// have a stable handle.
+func (tc *TestCase) EffectiveChallengeID() string {
+	if tc.ChallengeID != "" {
+		return tc.ChallengeID
+	}
+	return tc.ID
+}
+
+// HasDomain reports whether this case is tagged with the given domain
+// label (case-insensitive). Used by domain-scoped dispatch.
+func (tc *TestCase) HasDomain(domain string) bool {
+	for _, d := range tc.Domains {
+		if strings.EqualFold(d, domain) {
+			return true
+		}
+	}
+	return false
 }
 
 // ActionType identifies the type of action to execute.

@@ -154,15 +154,12 @@ func (x *X11Executor) Home(ctx context.Context) error {
 	return x.KeyPress(ctx, "super")
 }
 
-// Screenshot captures via import (ImageMagick).
+// Screenshot captures the full desktop. The capture mechanism is
+// platform-specific (§11.4.81): Linux/X11 uses ImageMagick `import`, macOS
+// uses native `screencapture`, other platforms return an honest-gap error.
+// See desktop_screenshot_{linux,darwin,other}.go.
 func (x *X11Executor) Screenshot(
 	ctx context.Context,
 ) ([]byte, error) {
-	data, err := x.cmdRunner.Run(ctx,
-		"import", "-window", "root", "png:-",
-	)
-	if err != nil {
-		return nil, fmt.Errorf("x11 screenshot: %w", err)
-	}
-	return data, nil
+	return captureDesktopScreenshot(ctx, x.cmdRunner)
 }
