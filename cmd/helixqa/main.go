@@ -31,8 +31,8 @@ import (
 	"digital.vasic.challenges/pkg/logging"
 
 	"digital.vasic.helixqa/pkg/autonomous"
-	"digital.vasic.helixqa/pkg/config"
 	"digital.vasic.helixqa/pkg/conduit"
+	"digital.vasic.helixqa/pkg/config"
 	"digital.vasic.helixqa/pkg/controller"
 	"digital.vasic.helixqa/pkg/helixqa"
 	qainfra "digital.vasic.helixqa/pkg/infra"
@@ -61,6 +61,8 @@ func main() {
 		cmdReport(os.Args[2:])
 	case "autonomous":
 		cmdAutonomous(os.Args[2:])
+	case "http":
+		cmdHTTP(os.Args[2:])
 	case "replay":
 		os.Exit(runReplay(os.Args[2:]))
 	case "signoff":
@@ -91,6 +93,8 @@ func printUsage() {
 		"  run         Execute QA pipeline across platforms"))
 	fmt.Println(helixqaT(ctx, "helixqa_cmd_autonomous_desc",
 		"  autonomous  Run autonomous LLM-driven QA session"))
+	fmt.Println(helixqaT(ctx, "helixqa_cmd_http_desc",
+		"  http        Run a bank's http: cases against a live server (no browser/LLM)"))
 	fmt.Println(helixqaT(ctx, "helixqa_cmd_replay_desc",
 		"  replay      Replay a ticket's OCU action chain (dry-run by default)"))
 	fmt.Println(helixqaT(ctx, "helixqa_cmd_list_desc",
