@@ -1,0 +1,107 @@
+version: "1.0"
+name: "HelixCode MCP Surface"
+description: >-
+  Self-driving (§11.4.98) HelixQA bank exercising HelixCode's MCP-related
+  surface that is reachable over plain HTTP. IMPORTANT: HelixCode serves the
+  Model Context Protocol over the WebSocket route /ws (handleWebSocket →
+  mcp.MCPServer.HandleWebSocket), NOT a plain http: route — verified against
+  helix_code/internal/server/server.go. The HelixQA http: action drives HTTP
+  only, so the full MCP protocol exchange is an honest _skip pending a ws:
+  driver; what IS machine-checkable over HTTP is covered: the mcp_enabled
+  feature flag (server info) and the /ws non-upgrade-request 400 behaviour
+  (gorilla/websocket rejects a GET that lacks Upgrade headers).
+metadata:
+  author: vasic-digital
+  app: HelixCode
+  target_server: "HelixCode HTTP server (cmd/server)"
+  covenant: "§11.4.98 full-automation anti-bluff"
+  route_source: "helix_code/internal/server/server.go /ws + getServerInfo features.mcp_enabled"
+  coverage_gap: "Full MCP JSON-RPC protocol exchange needs a ws: driver — tracked as honest SKIP, not fabricated PASS"
+test_cases:
+  - id: HXC-MCP-001
+    name: "Server info advertises an mcp_enabled feature flag"
+    category: functional
+    priority: high
+    platforms: [api]
+    steps:
+      - name: "GET /api/v1/server/info mcp_enabled"
+        action: "http: GET /api/v1/server/info"
+        expected: "200 OK with features.mcp_enabled present"
+        expect_status: 200
+        expect_json_path: "$.info"
+        expect_body_contains: "mcp_enabled"
+    tags: [mcp, server-info, features]
+    estimated_duration: "5s"
+    expected_result: "Server info advertises the mcp_enabled feature flag"
+
+  - id: HXC-MCP-002
+    name: "MCP WebSocket route /ws rejects a non-upgrade GET with 400"
+    category: functional
+    priority: high
+    platforms: [api]
+    steps:
+      - name: "GET /ws without Upgrade headers"
+        action: "http: GET /ws"
+        expected: "400 Bad Request (gorilla rejects non-upgrade request)"
+        expect_status: 400
+    tags: [mcp, websocket, routing]
+    estimated_duration: "5s"
+    expected_result: "The /ws MCP route exists and returns 400 to a plain (non-upgrade) GET"
+
+  - id: HXC-MCP-003
+    name: "MCP route is mounted (not a 404)"
+    category: functional
+    priority: medium
+    platforms: [api]
+    steps:
+      - name: "GET /ws is a registered route"
+        action: "http: GET /ws"
+        expected: "Not 404 — the route is registered (400 for non-upgrade)"
+        expect_status: 400
+    tags: [mcp, websocket, routing]
+    estimated_duration: "5s"
+    expected_result: "GET /ws is a registered route (400 on non-upgrade), distinct from an unknown-route 404"
+
+  - id: HXC-MCP-004
+    name: "Unknown websocket-style route still 404s (route table is honest)"
+    category: negative
+    priority: low
+    platforms: [api]
+    steps:
+      - name: "GET /ws_does_not_exist"
+        action: "http: GET /wsnonexistent_mcp_route"
+        expected: "404 Not Found"
+        expect_status: 404
+    tags: [mcp, routing, negative]
+    estimated_duration: "5s"
+    expected_result: "A bogus ws-like path returns 404, proving /ws's 400 is route-specific not blanket"
+
+  - id: HXC-MCP-005
+    name: "Full MCP JSON-RPC protocol handshake over WebSocket"
+    category: e2e
+    priority: high
+    platforms: [api]
+    steps:
+      - name: "Open /ws, send initialize, list tools, call a tool"
+        action: "Establish a WebSocket to /ws, perform MCP initialize handshake, list tools and invoke one, asserting JSON-RPC responses"
+        expected: "Connected; initialize ack; tools/list returns tools; tools/call returns a result"
+        _skip: true
+        _skip_reason: "#HXC-MCP-NO-WS-DRIVER — the HelixQA http: action type drives HTTP only; the MCP protocol runs over the /ws WebSocket (mcp.MCPServer.HandleWebSocket). A dedicated ws: driver is required to drive the JSON-RPC handshake. Honest SKIP per Article XI §11.2.2 rather than a fabricated PASS; HXC-MCP-001..004 cover everything reachable over HTTP today."
+    tags: [mcp, websocket, jsonrpc, e2e, skip]
+    estimated_duration: "5s"
+    expected_result: "Full MCP handshake requires a ws: driver not present; skipped honestly"
+
+  - id: HXC-MCP-006
+    name: "MCP tool invocation produces a real tool result (not simulated)"
+    category: e2e
+    priority: medium
+    platforms: [api]
+    steps:
+      - name: "Invoke an MCP tool and assert non-simulated output"
+        action: "Over /ws, call a registered MCP tool and assert the result is genuine (anti-BLUFF-001/003)"
+        expected: "Tool result reflects real execution, not a simulated/placeholder string"
+        _skip: true
+        _skip_reason: "#HXC-MCP-NO-WS-DRIVER — depends on the same /ws WebSocket driver as HXC-MCP-005. Honest SKIP until a ws: driver lands; covering it requires driving the JSON-RPC tools/call frame the http: action cannot send."
+    tags: [mcp, websocket, tools, e2e, skip]
+    estimated_duration: "5s"
+    expected_result: "Real MCP tool-result assertion requires a ws: driver; skipped honestly"

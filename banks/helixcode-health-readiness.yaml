@@ -1,0 +1,221 @@
+version: "1.0"
+name: "HelixCode Health & Readiness"
+description: >-
+  Self-driving (§11.4.98) HelixQA bank exercising HelixCode's public
+  health, server-info and metrics surface at the configured base URL.
+  Every step is a real http: request with machine-checkable status / JSON-path /
+  body-substring assertions; no manual review, no human action after startup,
+  self-cleaning (read-only public routes only). Routes verified against the real
+  HelixCode route table (helix_code/internal/server/server.go).
+metadata:
+  author: vasic-digital
+  app: HelixCode
+  target_server: "HelixCode HTTP server (cmd/server) — real PostgreSQL + Redis backed"
+  covenant: "§11.4.98 full-automation anti-bluff"
+  route_source: "helix_code/internal/server/server.go healthCheck/getServerInfo/getMetrics"
+test_cases:
+  - id: HXC-HEALTH-001
+    name: "Root health endpoint returns healthy"
+    category: functional
+    priority: critical
+    platforms: [api]
+    steps:
+      - name: "GET /health"
+        action: "http: GET /health"
+        expected: "200 OK with status=healthy"
+        expect_status: 200
+        expect_json_path: "$.status"
+        expect_body_contains: "healthy"
+    tags: [health, public, smoke]
+    estimated_duration: "5s"
+    expected_result: "Root /health responds 200 with healthy status JSON"
+
+  - id: HXC-HEALTH-002
+    name: "Versioned health endpoint returns healthy"
+    category: functional
+    priority: critical
+    platforms: [api]
+    steps:
+      - name: "GET /api/v1/health"
+        action: "http: GET /api/v1/health"
+        expected: "200 OK with status=healthy"
+        expect_status: 200
+        expect_json_path: "$.status"
+        expect_body_contains: "healthy"
+    tags: [health, public]
+    estimated_duration: "5s"
+    expected_result: "Versioned /api/v1/health responds 200 with healthy status JSON"
+
+  - id: HXC-HEALTH-003
+    name: "Health payload carries a version field"
+    category: functional
+    priority: high
+    platforms: [api]
+    steps:
+      - name: "GET /health version"
+        action: "http: GET /health"
+        expected: "200 OK with a version field"
+        expect_status: 200
+        expect_json_path: "$.version"
+    tags: [health, public, metadata]
+    estimated_duration: "5s"
+    expected_result: "Health payload includes a version field"
+
+  - id: HXC-HEALTH-004
+    name: "Health payload carries a timestamp field"
+    category: functional
+    priority: medium
+    platforms: [api]
+    steps:
+      - name: "GET /health timestamp"
+        action: "http: GET /health"
+        expected: "200 OK with a timestamp field"
+        expect_status: 200
+        expect_json_path: "$.timestamp"
+    tags: [health, public, metadata]
+    estimated_duration: "5s"
+    expected_result: "Health payload includes a timestamp field"
+
+  - id: HXC-HEALTH-005
+    name: "Server info reports a database block"
+    category: functional
+    priority: high
+    platforms: [api]
+    steps:
+      - name: "GET /api/v1/server/info"
+        action: "http: GET /api/v1/server/info"
+        expected: "200 OK with info.database object"
+        expect_status: 200
+        expect_json_path: "$.info"
+        expect_body_contains: "database"
+    tags: [server-info, public]
+    estimated_duration: "5s"
+    expected_result: "Server info endpoint returns runtime info including database block"
+
+  - id: HXC-HEALTH-006
+    name: "Server info reports a redis block"
+    category: functional
+    priority: medium
+    platforms: [api]
+    steps:
+      - name: "GET /api/v1/server/info redis"
+        action: "http: GET /api/v1/server/info"
+        expected: "200 OK with info.redis object"
+        expect_status: 200
+        expect_json_path: "$.info"
+        expect_body_contains: "redis"
+    tags: [server-info, public, redis]
+    estimated_duration: "5s"
+    expected_result: "Server info includes a redis connectivity block"
+
+  - id: HXC-HEALTH-007
+    name: "Server info reports a features block"
+    category: functional
+    priority: medium
+    platforms: [api]
+    steps:
+      - name: "GET /api/v1/server/info features"
+        action: "http: GET /api/v1/server/info"
+        expected: "200 OK with info.features object"
+        expect_status: 200
+        expect_json_path: "$.info"
+        expect_body_contains: "features"
+    tags: [server-info, public, features]
+    estimated_duration: "5s"
+    expected_result: "Server info includes a features capability block"
+
+  - id: HXC-HEALTH-008
+    name: "Metrics endpoint returns a metrics object with request counters"
+    category: functional
+    priority: medium
+    platforms: [api]
+    steps:
+      - name: "GET /api/v1/metrics"
+        action: "http: GET /api/v1/metrics"
+        expected: "200 OK with metrics object"
+        expect_status: 200
+        expect_json_path: "$.metrics"
+        expect_body_contains: "requests"
+    tags: [metrics, public]
+    estimated_duration: "5s"
+    expected_result: "Metrics endpoint returns a metrics object with request counters"
+
+  - id: HXC-HEALTH-009
+    name: "Metrics endpoint exposes resource gauges"
+    category: functional
+    priority: low
+    platforms: [api]
+    steps:
+      - name: "GET /api/v1/metrics resources"
+        action: "http: GET /api/v1/metrics"
+        expected: "200 OK with resources object"
+        expect_status: 200
+        expect_json_path: "$.metrics"
+        expect_body_contains: "resources"
+    tags: [metrics, public, resources]
+    estimated_duration: "5s"
+    expected_result: "Metrics payload includes a resources gauge block (goroutines, memory)"
+
+  - id: HXC-HEALTH-010
+    name: "Metrics endpoint exposes uptime seconds"
+    category: functional
+    priority: low
+    platforms: [api]
+    steps:
+      - name: "GET /api/v1/metrics uptime"
+        action: "http: GET /api/v1/metrics"
+        expected: "200 OK with uptime_seconds"
+        expect_status: 200
+        expect_body_contains: "uptime_seconds"
+    tags: [metrics, public, uptime]
+    estimated_duration: "5s"
+    expected_result: "Metrics payload includes an uptime_seconds field"
+
+  - id: HXC-HEALTH-011
+    name: "Repeated health probes all return 200 healthy (no flakiness)"
+    category: performance
+    priority: high
+    platforms: [api]
+    steps:
+      - name: "GET /health #1"
+        action: "http: GET /health"
+        expected: "200 OK"
+        expect_status: 200
+        expect_body_contains: "healthy"
+      - name: "GET /health #2"
+        action: "http: GET /health"
+        expected: "200 OK"
+        expect_status: 200
+        expect_body_contains: "healthy"
+      - name: "GET /health #3"
+        action: "http: GET /health"
+        expected: "200 OK"
+        expect_status: 200
+        expect_body_contains: "healthy"
+      - name: "GET /health #4"
+        action: "http: GET /health"
+        expected: "200 OK"
+        expect_status: 200
+        expect_body_contains: "healthy"
+      - name: "GET /health #5"
+        action: "http: GET /health"
+        expected: "200 OK"
+        expect_status: 200
+        expect_body_contains: "healthy"
+    tags: [health, load, performance]
+    estimated_duration: "10s"
+    expected_result: "Five sequential health probes all return 200 healthy (no flakiness)"
+
+  - id: HXC-HEALTH-012
+    name: "Unknown route under /api/v1 returns 404"
+    category: negative
+    priority: medium
+    platforms: [api]
+    steps:
+      - name: "GET unknown route"
+        action: "http: GET /api/v1/this_route_does_not_exist_health"
+        expected: "404 Not Found"
+        expect_status: 404
+    tags: [routing, negative]
+    estimated_duration: "5s"
+    expected_result: "Unknown API route returns 404 page not found"

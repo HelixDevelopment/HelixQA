@@ -21,8 +21,8 @@ const defaultBridgeTimeout = 120 * time.Second
 
 // BridgedCLIProvider wraps an external CLI tool (e.g.
 // "claude", "qwen-coder", "opencode") as an LLM provider.
-// It shells out to the CLI with --json --print flags and
-// parses the JSON response.
+// It shells out to the CLI with --output-format json --print flags
+// and parses the JSON response.
 //
 // This enables using CLI-only LLM tools that have no HTTP
 // API in the HelixQA pipeline — the same pattern used by
@@ -134,7 +134,7 @@ func (p *BridgedCLIProvider) SupportsVision() bool {
 	return p.cliName == "claude"
 }
 
-// cliJSONResponse is the expected shape of a --json CLI
+// cliJSONResponse is the expected shape of a --output-format json CLI
 // response. Different CLIs may use slightly different
 // field names, so we handle the common variants.
 type cliJSONResponse struct {
@@ -160,7 +160,7 @@ type cliJSONResponse struct {
 
 // Chat sends a multi-turn conversation to the CLI tool by
 // concatenating messages into a single prompt string. The
-// CLI is invoked with --json --print flags.
+// CLI is invoked with --output-format json --print flags.
 func (p *BridgedCLIProvider) Chat(
 	ctx context.Context,
 	messages []Message,
@@ -250,7 +250,7 @@ func (p *BridgedCLIProvider) buildPrompt(
 func (p *BridgedCLIProvider) buildArgs(
 	prompt, imagePath string,
 ) []string {
-	args := []string{"--json", "--print", prompt}
+	args := []string{"--output-format", "json", "--print", prompt}
 	if p.model != "" {
 		args = append(args, "--model", p.model)
 	}

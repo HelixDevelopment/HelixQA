@@ -1,0 +1,233 @@
+version: "1.0"
+name: "HelixCode Task & Workflow Lifecycle"
+description: >-
+  Self-driving (§11.4.98) HelixQA bank exercising HelixCode's task and project-
+  workflow route surface. All task / workflow routes are auth-protected
+  (tasks.Use / projects.Use authMiddleware in server.go), so every step here
+  asserts the access-control boundary (401 without a bearer token) against the
+  REAL route paths — including the task lifecycle verbs (assign/start/complete/
+  fail/retry/checkpoint) and the four project workflow endpoints (planning/
+  building/testing/refactoring). The authenticated CRUD + workflow-execution
+  flow is an honest _skip because a JWT cannot be minted in this offline bank
+  (register is broken on a fresh DB per HXC-029); live execution against a
+  seeded server covers it. Routes verified against
+  helix_code/internal/server/server.go.
+metadata:
+  author: vasic-digital
+  app: HelixCode
+  target_server: "HelixCode HTTP server (cmd/server) — real PostgreSQL + Redis backed"
+  covenant: "§11.4.98 full-automation anti-bluff"
+  route_source: "helix_code/internal/server/server.go tasks.* + projects.*/workflows/*"
+  coverage_gap: "Authenticated task CRUD + workflow execution needs a mintable JWT — honest SKIP (HXC-029 register), not fabricated PASS"
+test_cases:
+  - id: HXC-TASK-001
+    name: "List tasks requires auth (401)"
+    category: security
+    priority: critical
+    platforms: [api]
+    steps:
+      - name: "GET /api/v1/tasks without auth"
+        action: "http: GET /api/v1/tasks"
+        expected: "401 Unauthorized"
+        expect_status: 401
+        expect_body_contains: "Authorization header required"
+    tags: [task, security, protected]
+    estimated_duration: "5s"
+    expected_result: "Unauthenticated GET /api/v1/tasks is rejected with 401"
+
+  - id: HXC-TASK-002
+    name: "Create task requires auth (401)"
+    category: security
+    priority: critical
+    platforms: [api]
+    steps:
+      - name: "POST /api/v1/tasks without auth"
+        action: "http: POST /api/v1/tasks"
+        expected: "401 Unauthorized"
+        body:
+          title: "boundary probe task"
+        expect_status: 401
+        expect_body_contains: "Authorization header required"
+    tags: [task, security, protected]
+    estimated_duration: "5s"
+    expected_result: "Unauthenticated POST /api/v1/tasks is rejected with 401 (no task created)"
+
+  - id: HXC-TASK-003
+    name: "Get task by id requires auth (401)"
+    category: security
+    priority: high
+    platforms: [api]
+    steps:
+      - name: "GET /api/v1/tasks/:id without auth"
+        action: "http: GET /api/v1/tasks/00000000-0000-0000-0000-000000000000"
+        expected: "401 Unauthorized"
+        expect_status: 401
+        expect_body_contains: "Authorization header required"
+    tags: [task, security, protected]
+    estimated_duration: "5s"
+    expected_result: "Unauthenticated GET of a task by id is rejected with 401"
+
+  - id: HXC-TASK-004
+    name: "Assign task requires auth (401)"
+    category: security
+    priority: high
+    platforms: [api]
+    steps:
+      - name: "POST /api/v1/tasks/:id/assign without auth"
+        action: "http: POST /api/v1/tasks/00000000-0000-0000-0000-000000000000/assign"
+        expected: "401 Unauthorized"
+        expect_status: 401
+        expect_body_contains: "Authorization header required"
+    tags: [task, lifecycle, security, protected]
+    estimated_duration: "5s"
+    expected_result: "Unauthenticated task assign is rejected with 401"
+
+  - id: HXC-TASK-005
+    name: "Start task requires auth (401)"
+    category: security
+    priority: high
+    platforms: [api]
+    steps:
+      - name: "POST /api/v1/tasks/:id/start without auth"
+        action: "http: POST /api/v1/tasks/00000000-0000-0000-0000-000000000000/start"
+        expected: "401 Unauthorized"
+        expect_status: 401
+        expect_body_contains: "Authorization header required"
+    tags: [task, lifecycle, security, protected]
+    estimated_duration: "5s"
+    expected_result: "Unauthenticated task start is rejected with 401"
+
+  - id: HXC-TASK-006
+    name: "Complete task requires auth (401)"
+    category: security
+    priority: high
+    platforms: [api]
+    steps:
+      - name: "POST /api/v1/tasks/:id/complete without auth"
+        action: "http: POST /api/v1/tasks/00000000-0000-0000-0000-000000000000/complete"
+        expected: "401 Unauthorized"
+        expect_status: 401
+        expect_body_contains: "Authorization header required"
+    tags: [task, lifecycle, security, protected]
+    estimated_duration: "5s"
+    expected_result: "Unauthenticated task complete is rejected with 401"
+
+  - id: HXC-TASK-007
+    name: "Fail task requires auth (401)"
+    category: security
+    priority: medium
+    platforms: [api]
+    steps:
+      - name: "POST /api/v1/tasks/:id/fail without auth"
+        action: "http: POST /api/v1/tasks/00000000-0000-0000-0000-000000000000/fail"
+        expected: "401 Unauthorized"
+        expect_status: 401
+        expect_body_contains: "Authorization header required"
+    tags: [task, lifecycle, security, protected]
+    estimated_duration: "5s"
+    expected_result: "Unauthenticated task fail is rejected with 401"
+
+  - id: HXC-TASK-008
+    name: "Retry task requires auth (401)"
+    category: security
+    priority: medium
+    platforms: [api]
+    steps:
+      - name: "POST /api/v1/tasks/:id/retry without auth"
+        action: "http: POST /api/v1/tasks/00000000-0000-0000-0000-000000000000/retry"
+        expected: "401 Unauthorized"
+        expect_status: 401
+        expect_body_contains: "Authorization header required"
+    tags: [task, lifecycle, security, protected]
+    estimated_duration: "5s"
+    expected_result: "Unauthenticated task retry is rejected with 401"
+
+  - id: HXC-TASK-009
+    name: "Create task checkpoint requires auth (401)"
+    category: security
+    priority: medium
+    platforms: [api]
+    steps:
+      - name: "POST /api/v1/tasks/:id/checkpoint without auth"
+        action: "http: POST /api/v1/tasks/00000000-0000-0000-0000-000000000000/checkpoint"
+        expected: "401 Unauthorized"
+        expect_status: 401
+        expect_body_contains: "Authorization header required"
+    tags: [task, lifecycle, checkpoint, security, protected]
+    estimated_duration: "5s"
+    expected_result: "Unauthenticated task checkpoint creation is rejected with 401"
+
+  - id: HXC-TASK-010
+    name: "Planning workflow requires auth (401)"
+    category: security
+    priority: high
+    platforms: [api]
+    steps:
+      - name: "POST .../workflows/planning without auth"
+        action: "http: POST /api/v1/projects/00000000-0000-0000-0000-000000000000/workflows/planning"
+        expected: "401 Unauthorized"
+        expect_status: 401
+        expect_body_contains: "Authorization header required"
+    tags: [workflow, planning, security, protected]
+    estimated_duration: "5s"
+    expected_result: "Unauthenticated planning-workflow execution is rejected with 401"
+
+  - id: HXC-TASK-011
+    name: "Building workflow requires auth (401)"
+    category: security
+    priority: high
+    platforms: [api]
+    steps:
+      - name: "POST .../workflows/building without auth"
+        action: "http: POST /api/v1/projects/00000000-0000-0000-0000-000000000000/workflows/building"
+        expected: "401 Unauthorized"
+        expect_status: 401
+        expect_body_contains: "Authorization header required"
+    tags: [workflow, building, security, protected]
+    estimated_duration: "5s"
+    expected_result: "Unauthenticated building-workflow execution is rejected with 401"
+
+  - id: HXC-TASK-012
+    name: "Testing workflow requires auth (401)"
+    category: security
+    priority: high
+    platforms: [api]
+    steps:
+      - name: "POST .../workflows/testing without auth"
+        action: "http: POST /api/v1/projects/00000000-0000-0000-0000-000000000000/workflows/testing"
+        expected: "401 Unauthorized"
+        expect_status: 401
+        expect_body_contains: "Authorization header required"
+    tags: [workflow, testing, security, protected]
+    estimated_duration: "5s"
+    expected_result: "Unauthenticated testing-workflow execution is rejected with 401"
+
+  - id: HXC-TASK-013
+    name: "Refactoring workflow requires auth (401)"
+    category: security
+    priority: medium
+    platforms: [api]
+    steps:
+      - name: "POST .../workflows/refactoring without auth"
+        action: "http: POST /api/v1/projects/00000000-0000-0000-0000-000000000000/workflows/refactoring"
+        expected: "401 Unauthorized"
+        expect_status: 401
+        expect_body_contains: "Authorization header required"
+    tags: [workflow, refactoring, security, protected]
+    estimated_duration: "5s"
+    expected_result: "Unauthenticated refactoring-workflow execution is rejected with 401"
+
+  - id: HXC-TASK-014
+    name: "Authenticated task lifecycle (create → assign → start → complete)"
+    category: e2e
+    priority: critical
+    platforms: [api]
+    steps:
+      - name: "Full authenticated task CRUD + lifecycle"
+        action: "Log in, create a task, assign it to a worker, start it, checkpoint it, complete it, and assert each state transition persisted in PostgreSQL"
+        expected: "Each transition returns 2xx and the task row reflects the new state"
+        _skip: true
+        _skip_reason: "#HXC-029-REGISTER-BROKEN — no JWT can be minted in this offline bank (/api/v1/auth/register returns 400 internal create-user failure on a fresh DB), so the authenticated lifecycle cannot be driven here. Honest SKIP per Article XI §11.2.2 rather than a fabricated PASS; the 401 boundary cases (HXC-TASK-001..013) ARE machine-checked, and live execution against a seeded server covers the authenticated flow."
+    tags: [task, lifecycle, e2e, auth, skip]
+    estimated_duration: "5s"
+    expected_result: "Authenticated lifecycle requires a mintable JWT; skipped honestly until register is fixed / DB seeded"

@@ -1,0 +1,225 @@
+version: "1.0"
+name: "HelixCode LLM Providers & Verifier"
+description: >-
+  Self-driving (§11.4.98) HelixQA bank exercising HelixCode's public LLM
+  provider/model listing surface — the CONST-036..040 LLMsVerifier single-
+  source-of-truth contract. Every step is a real http: request with machine-
+  checkable status / JSON-path / body-substring assertions; no manual review,
+  no human action after startup, self-cleaning (read-only public routes only).
+  NOTE: HelixCode exposes NO HTTP /api/v1/llm/generate route — model generation
+  is a CLI-client capability (cmd/cli/main.go handleGenerate), not a server
+  endpoint; this bank therefore covers only the real server routes
+  (/api/v1/llm/providers, /providers/:id, /models) verified against
+  helix_code/internal/server/server.go.
+metadata:
+  author: vasic-digital
+  app: HelixCode
+  target_server: "HelixCode HTTP server (cmd/server)"
+  covenant: "§11.4.98 full-automation anti-bluff; CONST-036..040 verifier SoT"
+  route_source: "helix_code/internal/server/server.go listLLMProviders/getLLMProvider/listLLMModels"
+test_cases:
+  - id: HXC-LLM-001
+    name: "List LLM providers returns providers array and count"
+    category: functional
+    priority: critical
+    platforms: [api]
+    steps:
+      - name: "GET /api/v1/llm/providers"
+        action: "http: GET /api/v1/llm/providers"
+        expected: "200 OK with providers array and count"
+        expect_status: 200
+        expect_json_path: "$.providers"
+        expect_body_contains: "\"count\""
+    tags: [llm, providers, public]
+    estimated_duration: "5s"
+    expected_result: "LLM providers list responds 200 with a providers array and count"
+
+  - id: HXC-LLM-002
+    name: "Providers response declares its source (verifier or fallback)"
+    category: functional
+    priority: high
+    platforms: [api]
+    steps:
+      - name: "GET /api/v1/llm/providers source"
+        action: "http: GET /api/v1/llm/providers"
+        expected: "200 OK with source field (CONST-036 provenance)"
+        expect_status: 200
+        expect_body_contains: "source"
+    tags: [llm, providers, verifier, const-036]
+    estimated_duration: "5s"
+    expected_result: "Providers payload declares source provenance per CONST-036"
+
+  - id: HXC-LLM-003
+    name: "Providers response carries last_updated freshness marker"
+    category: functional
+    priority: medium
+    platforms: [api]
+    steps:
+      - name: "GET /api/v1/llm/providers last_updated"
+        action: "http: GET /api/v1/llm/providers"
+        expected: "200 OK with last_updated"
+        expect_status: 200
+        expect_body_contains: "last_updated"
+    tags: [llm, providers, const-038]
+    estimated_duration: "5s"
+    expected_result: "Providers payload carries a last_updated freshness marker per CONST-038"
+
+  - id: HXC-LLM-004
+    name: "List LLM models returns models array and count"
+    category: functional
+    priority: critical
+    platforms: [api]
+    steps:
+      - name: "GET /api/v1/llm/models"
+        action: "http: GET /api/v1/llm/models"
+        expected: "200 OK with models array and count"
+        expect_status: 200
+        expect_json_path: "$.models"
+        expect_body_contains: "\"count\""
+    tags: [llm, models, public]
+    estimated_duration: "5s"
+    expected_result: "LLM models list responds 200 with a models array and count"
+
+  - id: HXC-LLM-005
+    name: "Models response declares its source (verifier or fallback)"
+    category: functional
+    priority: high
+    platforms: [api]
+    steps:
+      - name: "GET /api/v1/llm/models source"
+        action: "http: GET /api/v1/llm/models"
+        expected: "200 OK with source provenance"
+        expect_status: 200
+        expect_body_contains: "source"
+    tags: [llm, models, verifier, const-036]
+    estimated_duration: "5s"
+    expected_result: "Models payload declares source provenance per CONST-036 (no hardcoded lists)"
+
+  - id: HXC-LLM-006
+    name: "Get known provider 'ollama' resolves to a provider object"
+    category: functional
+    priority: high
+    platforms: [api]
+    steps:
+      - name: "GET /api/v1/llm/providers/ollama"
+        action: "http: GET /api/v1/llm/providers/ollama"
+        expected: "200 OK with provider object"
+        expect_status: 200
+        expect_json_path: "$.provider"
+        expect_body_contains: "ollama"
+    tags: [llm, providers, const-039]
+    estimated_duration: "5s"
+    expected_result: "Known provider id resolves to a provider object (CONST-039 provider coverage)"
+
+  - id: HXC-LLM-007
+    name: "Get known provider 'openai' resolves to a provider object"
+    category: functional
+    priority: high
+    platforms: [api]
+    steps:
+      - name: "GET /api/v1/llm/providers/openai"
+        action: "http: GET /api/v1/llm/providers/openai"
+        expected: "200 OK with provider object"
+        expect_status: 200
+        expect_json_path: "$.provider"
+        expect_body_contains: "openai"
+    tags: [llm, providers, const-039]
+    estimated_duration: "5s"
+    expected_result: "openai provider id resolves to a provider object per CONST-039"
+
+  - id: HXC-LLM-008
+    name: "Get known provider 'anthropic' resolves to a provider object"
+    category: functional
+    priority: high
+    platforms: [api]
+    steps:
+      - name: "GET /api/v1/llm/providers/anthropic"
+        action: "http: GET /api/v1/llm/providers/anthropic"
+        expected: "200 OK with provider object"
+        expect_status: 200
+        expect_json_path: "$.provider"
+        expect_body_contains: "anthropic"
+    tags: [llm, providers, const-039]
+    estimated_duration: "5s"
+    expected_result: "anthropic provider id resolves to a provider object per CONST-039"
+
+  - id: HXC-LLM-009
+    name: "Provider object exposes a model_count field"
+    category: functional
+    priority: medium
+    platforms: [api]
+    steps:
+      - name: "GET /api/v1/llm/providers/ollama model_count"
+        action: "http: GET /api/v1/llm/providers/ollama"
+        expected: "200 OK with model_count"
+        expect_status: 200
+        expect_body_contains: "model_count"
+    tags: [llm, providers, models]
+    estimated_duration: "5s"
+    expected_result: "Provider object includes a model_count field"
+
+  - id: HXC-LLM-010
+    name: "Unknown provider id returns 404 (not a fabricated 200)"
+    category: negative
+    priority: high
+    platforms: [api]
+    steps:
+      - name: "GET unknown provider"
+        action: "http: GET /api/v1/llm/providers/nonexistent_provider_xyz"
+        expected: "404 Not Found with error"
+        expect_status: 404
+        expect_body_contains: "unknown LLM provider"
+    tags: [llm, providers, negative]
+    estimated_duration: "5s"
+    expected_result: "Unknown provider id is rejected with 404, never a fabricated 200"
+
+  - id: HXC-LLM-011
+    name: "Models list is consistent across repeated reads (determinism)"
+    category: functional
+    priority: medium
+    platforms: [api]
+    steps:
+      - name: "GET /api/v1/llm/models read 1"
+        action: "http: GET /api/v1/llm/models"
+        expected: "200 OK"
+        expect_status: 200
+        expect_json_path: "$.models"
+      - name: "GET /api/v1/llm/models read 2"
+        action: "http: GET /api/v1/llm/models"
+        expected: "200 OK"
+        expect_status: 200
+        expect_json_path: "$.models"
+    tags: [llm, models, determinism, const-038]
+    estimated_duration: "8s"
+    expected_result: "Repeated model reads both succeed with a models array (steady-state)"
+
+  - id: HXC-LLM-012
+    name: "Providers list returns a success status envelope"
+    category: functional
+    priority: low
+    platforms: [api]
+    steps:
+      - name: "GET /api/v1/llm/providers status envelope"
+        action: "http: GET /api/v1/llm/providers"
+        expected: "200 OK with status=success"
+        expect_status: 200
+        expect_json_path: "$.status"
+        expect_body_contains: "success"
+    tags: [llm, providers, envelope]
+    estimated_duration: "5s"
+    expected_result: "Providers response uses the standard status=success envelope"
+
+  - id: HXC-LLM-013
+    name: "Capability flags sourced from verifier metadata (CONST-040)"
+    category: functional
+    priority: medium
+    platforms: [api]
+    steps:
+      - name: "Inspect supports_vision / supports_tools on a verified model"
+        action: "Decode /api/v1/llm/models and assert per-model capability flags are present and verifier-sourced (supports_vision/supports_tools/open_source)"
+        expected: "Each model object carries verifier-sourced capability flags"
+        _skip: true
+        _skip_reason: "#HXC-LLM-CAPFLAG-DEPENDS-VERIFIER — capability flags (supports_vision/supports_tools) are only emitted when the live LLMsVerifier has verified ≥1 model; on a fresh DB with no verifier run the models array is the fallback set whose flags may be absent. Honest SKIP per Article XI §11.2.2 rather than asserting a flag that depends on a verifier session this offline bank cannot trigger. Live execution against a verifier-populated server covers this."
+    tags: [llm, models, capabilities, const-040, skip]
+    estimated_duration: "5s"
+    expected_result: "Per-model capability flags require a verifier-populated server; skipped honestly here"

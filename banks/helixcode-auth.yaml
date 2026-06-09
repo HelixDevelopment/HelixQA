@@ -1,0 +1,263 @@
+version: "1.0"
+name: "HelixCode Auth & Access Control"
+description: >-
+  Self-driving (§11.4.98) HelixQA bank exercising HelixCode's authentication
+  endpoints and the authMiddleware access-control boundary. Every step is a real
+  http: request with machine-checkable status / body-substring assertions; no
+  manual review, no human action after startup, self-cleaning (negative paths
+  and unauthenticated probes only — no user is created or mutated). Routes and
+  exact reject messages verified against helix_code/internal/server/server.go
+  (authMiddleware) and handlers.go (login/logout/refresh).
+metadata:
+  author: vasic-digital
+  app: HelixCode
+  target_server: "HelixCode HTTP server (cmd/server) — real PostgreSQL + Redis backed"
+  covenant: "§11.4.98 full-automation anti-bluff"
+  route_source: "helix_code/internal/server/server.go authMiddleware + handlers.go login/logout/refresh"
+test_cases:
+  - id: HXC-AUTH-001
+    name: "Login with empty body fails request-body validation (400)"
+    category: negative
+    priority: high
+    platforms: [api]
+    steps:
+      - name: "POST /api/v1/auth/login empty body"
+        action: "http: POST /api/v1/auth/login"
+        expected: "400 Bad Request — username/password required"
+        body: {}
+        expect_status: 400
+        expect_body_contains: "required"
+    tags: [auth, login, negative, validation]
+    estimated_duration: "5s"
+    expected_result: "Empty login body fails binding validation with 400 (required fields)"
+
+  - id: HXC-AUTH-002
+    name: "Login with missing password fails validation (400)"
+    category: negative
+    priority: medium
+    platforms: [api]
+    steps:
+      - name: "POST /api/v1/auth/login no password"
+        action: "http: POST /api/v1/auth/login"
+        expected: "400 Bad Request — password required"
+        body:
+          username: "someuser_hxc_auth"
+        expect_status: 400
+        expect_body_contains: "required"
+    tags: [auth, login, negative, validation]
+    estimated_duration: "5s"
+    expected_result: "Login with only a username is rejected with 400 (password required)"
+
+  - id: HXC-AUTH-003
+    name: "Login with invalid credentials is rejected (401)"
+    category: negative
+    priority: critical
+    platforms: [api]
+    steps:
+      - name: "POST /api/v1/auth/login wrong creds"
+        action: "http: POST /api/v1/auth/login"
+        expected: "401 Unauthorized — Login failed"
+        body:
+          username: "definitely_not_a_user_hxc_auth"
+          password: "wrong_password_value"
+        expect_status: 401
+        expect_body_contains: "Login failed"
+    tags: [auth, login, negative]
+    estimated_duration: "5s"
+    expected_result: "Invalid credentials are rejected with 401, never a fabricated session"
+
+  - id: HXC-AUTH-004
+    name: "Logout without Authorization header is rejected (400)"
+    category: negative
+    priority: medium
+    platforms: [api]
+    steps:
+      - name: "POST /api/v1/auth/logout no header"
+        action: "http: POST /api/v1/auth/logout"
+        expected: "400 Bad Request — missing authorization header"
+        expect_status: 400
+    tags: [auth, logout, negative]
+    estimated_duration: "5s"
+    expected_result: "Logout without a bearer token is rejected with 400"
+
+  - id: HXC-AUTH-005
+    name: "Token refresh without Authorization header is rejected (401)"
+    category: negative
+    priority: medium
+    platforms: [api]
+    steps:
+      - name: "POST /api/v1/auth/refresh no header"
+        action: "http: POST /api/v1/auth/refresh"
+        expected: "401 Unauthorized — authorization header required"
+        expect_status: 401
+    tags: [auth, refresh, negative]
+    estimated_duration: "5s"
+    expected_result: "Refresh without a bearer token is rejected with 401"
+
+  - id: HXC-AUTH-006
+    name: "Protected /api/v1/tasks requires auth (401 + exact message)"
+    category: security
+    priority: critical
+    platforms: [api]
+    steps:
+      - name: "GET /api/v1/tasks without auth"
+        action: "http: GET /api/v1/tasks"
+        expected: "401 Unauthorized — Authorization header required"
+        expect_status: 401
+        expect_body_contains: "Authorization header required"
+    tags: [auth, security, protected]
+    estimated_duration: "5s"
+    expected_result: "Unauthenticated access to /api/v1/tasks is rejected with 401 and the exact reject message"
+
+  - id: HXC-AUTH-007
+    name: "Protected /api/v1/projects requires auth (401)"
+    category: security
+    priority: critical
+    platforms: [api]
+    steps:
+      - name: "GET /api/v1/projects without auth"
+        action: "http: GET /api/v1/projects"
+        expected: "401 Unauthorized"
+        expect_status: 401
+        expect_body_contains: "Authorization header required"
+    tags: [auth, security, protected]
+    estimated_duration: "5s"
+    expected_result: "Unauthenticated access to /api/v1/projects is rejected with 401"
+
+  - id: HXC-AUTH-008
+    name: "Protected /api/v1/workers requires auth (401)"
+    category: security
+    priority: critical
+    platforms: [api]
+    steps:
+      - name: "GET /api/v1/workers without auth"
+        action: "http: GET /api/v1/workers"
+        expected: "401 Unauthorized"
+        expect_status: 401
+        expect_body_contains: "Authorization header required"
+    tags: [auth, security, protected]
+    estimated_duration: "5s"
+    expected_result: "Unauthenticated access to /api/v1/workers is rejected with 401"
+
+  - id: HXC-AUTH-009
+    name: "Protected /api/v1/sessions requires auth (401)"
+    category: security
+    priority: critical
+    platforms: [api]
+    steps:
+      - name: "GET /api/v1/sessions without auth"
+        action: "http: GET /api/v1/sessions"
+        expected: "401 Unauthorized"
+        expect_status: 401
+        expect_body_contains: "Authorization header required"
+    tags: [auth, security, protected]
+    estimated_duration: "5s"
+    expected_result: "Unauthenticated access to /api/v1/sessions is rejected with 401"
+
+  - id: HXC-AUTH-010
+    name: "Protected /api/v1/users/me requires auth (401)"
+    category: security
+    priority: critical
+    platforms: [api]
+    steps:
+      - name: "GET /api/v1/users/me without auth"
+        action: "http: GET /api/v1/users/me"
+        expected: "401 Unauthorized"
+        expect_status: 401
+        expect_body_contains: "Authorization header required"
+    tags: [auth, security, protected]
+    estimated_duration: "5s"
+    expected_result: "Unauthenticated access to /api/v1/users/me is rejected with 401"
+
+  - id: HXC-AUTH-011
+    name: "Protected /api/v1/system/stats requires auth (401)"
+    category: security
+    priority: critical
+    platforms: [api]
+    steps:
+      - name: "GET /api/v1/system/stats without auth"
+        action: "http: GET /api/v1/system/stats"
+        expected: "401 Unauthorized"
+        expect_status: 401
+        expect_body_contains: "Authorization header required"
+    tags: [auth, security, protected]
+    estimated_duration: "5s"
+    expected_result: "Unauthenticated access to /api/v1/system/stats is rejected with 401"
+
+  - id: HXC-AUTH-012
+    name: "Protected /api/v1/qa/sessions requires auth (401)"
+    category: security
+    priority: critical
+    platforms: [api]
+    steps:
+      - name: "GET /api/v1/qa/sessions without auth"
+        action: "http: GET /api/v1/qa/sessions"
+        expected: "401 Unauthorized"
+        expect_status: 401
+        expect_body_contains: "Authorization header required"
+    tags: [auth, security, protected]
+    estimated_duration: "5s"
+    expected_result: "Unauthenticated access to /api/v1/qa/sessions is rejected with 401"
+
+  - id: HXC-AUTH-013
+    name: "Protected /api/v1/screenshot/engines requires auth (401)"
+    category: security
+    priority: high
+    platforms: [api]
+    steps:
+      - name: "GET /api/v1/screenshot/engines without auth"
+        action: "http: GET /api/v1/screenshot/engines"
+        expected: "401 Unauthorized"
+        expect_status: 401
+        expect_body_contains: "Authorization header required"
+    tags: [auth, security, protected]
+    estimated_duration: "5s"
+    expected_result: "Unauthenticated access to /api/v1/screenshot/engines is rejected with 401"
+
+  - id: HXC-AUTH-014
+    name: "Malformed (non-Bearer) Authorization header is rejected (401)"
+    category: security
+    priority: high
+    platforms: [api]
+    steps:
+      - name: "GET /api/v1/tasks with non-Bearer header"
+        action: "http: GET /api/v1/tasks"
+        expected: "401 Unauthorized — invalid authorization header format"
+        headers:
+          Authorization: "Basic dXNlcjpwYXNz"
+        expect_status: 401
+        expect_body_contains: "Invalid authorization header format"
+    tags: [auth, security, jwt, negative]
+    estimated_duration: "5s"
+    expected_result: "A non-Bearer Authorization header is rejected with 401 invalid format"
+
+  - id: HXC-AUTH-015
+    name: "Garbage bearer token is rejected as invalid/expired (401)"
+    category: security
+    priority: high
+    platforms: [api]
+    steps:
+      - name: "GET /api/v1/tasks with garbage bearer token"
+        action: "http: GET /api/v1/tasks"
+        expected: "401 Unauthorized — invalid or expired token"
+        auth: "raw:not-a-real-jwt-token-hxc-auth"
+        expect_status: 401
+        expect_body_contains: "Invalid or expired token"
+    tags: [auth, security, jwt, negative]
+    estimated_duration: "5s"
+    expected_result: "A malformed bearer token yields 401 invalid/expired token, not access"
+
+  - id: HXC-AUTH-016
+    name: "Register with empty body fails validation (400)"
+    category: negative
+    priority: medium
+    platforms: [api]
+    steps:
+      - name: "POST /api/v1/auth/register empty body"
+        action: "http: POST /api/v1/auth/register"
+        expected: "400 Bad Request — required fields missing"
+        body: {}
+        expect_status: 400
+    tags: [auth, register, negative, validation]
+    estimated_duration: "5s"
+    expected_result: "Empty register body fails binding validation with 400"

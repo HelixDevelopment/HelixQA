@@ -112,7 +112,8 @@ func TestBridgedCLIProvider_Chat_JSONResponse(t *testing.T) {
 
 	// Verify CLI was invoked correctly.
 	assert.Equal(t, "/usr/bin/claude", runner.lastName)
-	assert.Contains(t, runner.lastArgs, "--json")
+	assert.Contains(t, runner.lastArgs, "--output-format")
+	assert.Contains(t, runner.lastArgs, "json")
 	assert.Contains(t, runner.lastArgs, "--print")
 	assert.Contains(t, runner.lastArgs, "--model")
 	assert.Contains(t, runner.lastArgs, "sonnet")
@@ -348,7 +349,8 @@ func TestBridgedCLIProvider_BuildArgs_NoModel(
 				"when model is empty")
 		}
 	}
-	assert.Contains(t, args, "--json")
+	assert.Contains(t, args, "--output-format")
+	assert.Contains(t, args, "json")
 	assert.Contains(t, args, "--print")
 	assert.Contains(t, args, "hello")
 }
