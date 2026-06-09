@@ -1,0 +1,149 @@
+version: "1.0"
+name: "HelixCode Memory Systems Surface"
+description: >-
+  Self-driving (§11.4.98) HelixQA bank exercising HelixCode's public memory
+  subsystem surface (/api/v1/memory/systems and /api/v1/memory/stats). Both
+  routes are PUBLIC (no authMiddleware) per the memory route group in
+  helix_code/internal/server/server.go. Every step is a real http: request with
+  machine-checkable status / JSON-path / body-substring assertions; no manual
+  review, no human action after startup, self-cleaning (read-only public routes).
+  Anti-bluff focus: listMemorySystems is the CONST-035 honest-init handler —
+  status MUST report "not_configured" (NOT "available") and MUST agree with
+  /memory/stats systems_connected:0 until a real provider is wired.
+metadata:
+  author: vasic-digital
+  app: HelixCode
+  target_server: "HelixCode HTTP server (cmd/server) — real PostgreSQL + Redis backed"
+  covenant: "§11.4.98 full-automation anti-bluff"
+  route_source: "helix_code/internal/server/server.go memory group (public); handlers.go listMemorySystems/getMemoryStats"
+test_cases:
+  - id: HXC-MEM-001
+    name: "Memory systems endpoint returns the supported-backend catalogue"
+    category: functional
+    priority: high
+    platforms: [api]
+    steps:
+      - name: "GET /api/v1/memory/systems"
+        action: "http: GET /api/v1/memory/systems"
+        expected: "200 OK with the memory subsystem catalogue"
+        expect_status: 200
+        expect_body_contains: "cognee"
+    tags: [memory, public]
+    estimated_duration: "5s"
+    expected_result: "Memory systems endpoint lists the supported memory backends including cognee"
+
+  - id: HXC-MEM-002
+    name: "Memory catalogue advertises the vector-DB backends"
+    category: functional
+    priority: medium
+    platforms: [api]
+    steps:
+      - name: "GET /api/v1/memory/systems weaviate"
+        action: "http: GET /api/v1/memory/systems"
+        expected: "200 OK listing weaviate"
+        expect_status: 200
+        expect_body_contains: "weaviate"
+    tags: [memory, public, catalogue]
+    estimated_duration: "5s"
+    expected_result: "Memory catalogue includes the weaviate vector-DB backend"
+
+  - id: HXC-MEM-003
+    name: "Memory catalogue advertises qdrant"
+    category: functional
+    priority: low
+    platforms: [api]
+    steps:
+      - name: "GET /api/v1/memory/systems qdrant"
+        action: "http: GET /api/v1/memory/systems"
+        expected: "200 OK listing qdrant"
+        expect_status: 200
+        expect_body_contains: "qdrant"
+    tags: [memory, public, catalogue]
+    estimated_duration: "5s"
+    expected_result: "Memory catalogue includes the qdrant vector-DB backend"
+
+  - id: HXC-MEM-004
+    name: "Memory subsystem status is honest not_configured (CONST-035 anti-bluff)"
+    category: functional
+    priority: critical
+    platforms: [api]
+    steps:
+      - name: "GET /api/v1/memory/systems status"
+        action: "http: GET /api/v1/memory/systems"
+        expected: "200 OK; status reports not_configured, NOT a fabricated available"
+        expect_status: 200
+        expect_body_contains: "not_configured"
+    tags: [memory, public, anti-bluff]
+    estimated_duration: "5s"
+    expected_result: "Memory subsystems report not_configured until a real provider is wired (no available bluff)"
+
+  - id: HXC-MEM-005
+    name: "Memory stats endpoint returns a stats object"
+    category: functional
+    priority: high
+    platforms: [api]
+    steps:
+      - name: "GET /api/v1/memory/stats"
+        action: "http: GET /api/v1/memory/stats"
+        expected: "200 OK with a stats object"
+        expect_status: 200
+        expect_json_path: "$.stats"
+    tags: [memory, public, stats]
+    estimated_duration: "5s"
+    expected_result: "Memory stats endpoint returns a stats object"
+
+  - id: HXC-MEM-006
+    name: "Memory stats exposes systems_connected counter"
+    category: functional
+    priority: high
+    platforms: [api]
+    steps:
+      - name: "GET /api/v1/memory/stats systems_connected"
+        action: "http: GET /api/v1/memory/stats"
+        expected: "200 OK; stats includes systems_connected"
+        expect_status: 200
+        expect_body_contains: "systems_connected"
+    tags: [memory, public, stats]
+    estimated_duration: "5s"
+    expected_result: "Memory stats payload includes a systems_connected counter"
+
+  - id: HXC-MEM-007
+    name: "Memory stats success envelope"
+    category: functional
+    priority: medium
+    platforms: [api]
+    steps:
+      - name: "GET /api/v1/memory/stats status field"
+        action: "http: GET /api/v1/memory/stats"
+        expected: "200 OK with status=success"
+        expect_status: 200
+        expect_json_path: "$.status"
+        expect_body_contains: "success"
+    tags: [memory, public, stats]
+    estimated_duration: "5s"
+    expected_result: "Memory stats response carries the success status envelope"
+
+  - id: HXC-MEM-008
+    name: "Repeated memory-systems probes are deterministic (no flakiness)"
+    category: performance
+    priority: medium
+    platforms: [api]
+    steps:
+      - name: "GET /api/v1/memory/systems #1"
+        action: "http: GET /api/v1/memory/systems"
+        expected: "200 OK"
+        expect_status: 200
+        expect_body_contains: "not_configured"
+      - name: "GET /api/v1/memory/systems #2"
+        action: "http: GET /api/v1/memory/systems"
+        expected: "200 OK"
+        expect_status: 200
+        expect_body_contains: "not_configured"
+      - name: "GET /api/v1/memory/systems #3"
+        action: "http: GET /api/v1/memory/systems"
+        expected: "200 OK"
+        expect_status: 200
+        expect_body_contains: "not_configured"
+    tags: [memory, public, performance]
+    estimated_duration: "10s"
+    expected_result: "Three sequential memory-systems probes return identical not_configured status (deterministic)"

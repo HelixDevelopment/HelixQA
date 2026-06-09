@@ -1,0 +1,117 @@
+version: "1.0"
+name: "HelixCode Protected Sub-Resources (Checkpoints & Project Sessions)"
+description: >-
+  Self-driving (§11.4.98) HelixQA bank closing the two authenticated sub-resource
+  routes not exercised by the existing HelixCode banks:
+  GET /api/v1/tasks/:id/checkpoints (tasks group) and
+  GET /api/v1/projects/:id/sessions (projects group) — both under authMiddleware
+  in helix_code/internal/server/server.go. Two tiers: (A) protection cases drive
+  each route WITHOUT credentials and assert 401 (self-driving, no seed);
+  (B) authenticated cases use auth: admin and REQUIRE a booted+seeded server
+  (admin user + a real task/project row). Every step is a real http: request;
+  no manual action after startup.
+metadata:
+  author: vasic-digital
+  app: HelixCode
+  target_server: "HelixCode HTTP server (cmd/server) — admin creds + task/project seed required for authed tier"
+  covenant: "§11.4.98 full-automation anti-bluff"
+  route_source: "helix_code/internal/server/server.go tasks group (getTaskCheckpoints) + projects group (getProjectSessions)"
+  needs_booted_server: "Tier B (HXC-SUB-005..006) require a booted+seeded server (admin creds); Tier A (HXC-SUB-001..004) run against any booted server"
+test_cases:
+  - id: HXC-SUB-001
+    name: "Task checkpoints list requires auth (401)"
+    category: security
+    priority: high
+    platforms: [api]
+    steps:
+      - name: "GET /api/v1/tasks/:id/checkpoints without auth"
+        action: "http: GET /api/v1/tasks/00000000-0000-0000-0000-000000000000/checkpoints"
+        expected: "401 Unauthorized"
+        expect_status: 401
+        expect_body_contains: "Authorization header required"
+    tags: [task, checkpoint, security, protected]
+    estimated_duration: "5s"
+    expected_result: "Unauthenticated GET of task checkpoints is rejected with 401"
+
+  - id: HXC-SUB-002
+    name: "Project sessions list requires auth (401)"
+    category: security
+    priority: high
+    platforms: [api]
+    steps:
+      - name: "GET /api/v1/projects/:id/sessions without auth"
+        action: "http: GET /api/v1/projects/00000000-0000-0000-0000-000000000000/sessions"
+        expected: "401 Unauthorized"
+        expect_status: 401
+        expect_body_contains: "Authorization header required"
+    tags: [project, session, security, protected]
+    estimated_duration: "5s"
+    expected_result: "Unauthenticated GET of project sessions is rejected with 401"
+
+  - id: HXC-SUB-003
+    name: "Bad auth header format on task checkpoints returns 401"
+    category: security
+    priority: medium
+    platforms: [api]
+    steps:
+      - name: "GET task checkpoints with malformed Authorization"
+        action: "http: GET /api/v1/tasks/00000000-0000-0000-0000-000000000000/checkpoints"
+        headers:
+          Authorization: "NotBearer xyz"
+        expected: "401 Unauthorized — invalid authorization header format"
+        expect_status: 401
+        expect_body_contains: "Invalid authorization header format"
+    tags: [task, checkpoint, security, protected, negative]
+    estimated_duration: "5s"
+    expected_result: "A malformed (non-Bearer) Authorization header on task checkpoints is rejected with 401"
+
+  - id: HXC-SUB-004
+    name: "Invalid bearer token on project sessions returns 401"
+    category: security
+    priority: medium
+    platforms: [api]
+    steps:
+      - name: "GET project sessions with a bogus bearer token"
+        action: "http: GET /api/v1/projects/00000000-0000-0000-0000-000000000000/sessions"
+        headers:
+          Authorization: "Bearer not-a-real-jwt-token"
+        expected: "401 Unauthorized — invalid or expired token"
+        expect_status: 401
+        expect_body_contains: "Invalid or expired token"
+    tags: [project, session, security, protected, negative]
+    estimated_duration: "5s"
+    expected_result: "A forged bearer token on project sessions is rejected with 401 invalid or expired token"
+
+  - id: HXC-SUB-005
+    name: "Authenticated task checkpoints on unknown id (booted+seeded server)"
+    category: functional
+    priority: medium
+    platforms: [api]
+    requires_env: [HELIXQA_ADMIN_CREDENTIALS]
+    steps:
+      - name: "GET /api/v1/tasks/:unknown/checkpoints as admin"
+        action: "http: GET /api/v1/tasks/00000000-0000-0000-0000-000000000000/checkpoints"
+        auth: admin
+        expected: "200 OK with an empty checkpoints array (getTaskCheckpoints returns [] for an unknown id, not 404)"
+        expect_status: 200
+        expect_json_path: "$.checkpoints"
+    tags: [task, checkpoint, authed, booted-server]
+    estimated_duration: "10s"
+    expected_result: "An authenticated task-checkpoints request for an unknown task id reaches the handler and returns 200 with an empty checkpoints array (proves auth passed, not 401)"
+
+  - id: HXC-SUB-006
+    name: "Authenticated project sessions on unknown id (booted+seeded server)"
+    category: functional
+    priority: medium
+    platforms: [api]
+    requires_env: [HELIXQA_ADMIN_CREDENTIALS]
+    steps:
+      - name: "GET /api/v1/projects/:unknown/sessions as admin"
+        action: "http: GET /api/v1/projects/00000000-0000-0000-0000-000000000000/sessions"
+        auth: admin
+        expected: "200 OK with a sessions list (getProjectSessions returns the in-memory session set for the project id, not 404)"
+        expect_status: 200
+        expect_json_path: "$.sessions"
+    tags: [project, session, authed, booted-server]
+    estimated_duration: "10s"
+    expected_result: "An authenticated project-sessions request for an unknown project id reaches the handler and returns 200 with a sessions list (proves auth passed, not 401)"

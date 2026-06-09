@@ -1,0 +1,144 @@
+version: "1.0"
+name: "HelixCode CORS, Security Headers & Middleware"
+description: >-
+  Self-driving (§11.4.98) HelixQA bank exercising HelixCode's global middleware
+  surface. CORSMiddleware short-circuits OPTIONS preflight with 204 (machine-
+  checkable via expect_status) — that is the primary covered behaviour.
+  SecurityMiddleware and the Access-Control-* response headers (nosniff,
+  X-Frame-Options DENY, HSTS, allow-origin) are set per response but the HelixQA
+  TestStep grammar (pkg/testbank/schema.go) exposes only expect_status /
+  expect_json_path / expect_body_contains — there is NO response-header
+  assertion primitive — so the header-VALUE checks are honest _skip per Article
+  XI rather than fabricated PASS, pending an expect_header extension to the
+  schema. Both middlewares are registered globally in
+  helix_code/internal/server/server.go New().
+metadata:
+  author: vasic-digital
+  app: HelixCode
+  target_server: "HelixCode HTTP server (cmd/server)"
+  covenant: "§11.4.98 full-automation anti-bluff"
+  route_source: "helix_code/internal/server/server.go CORSMiddleware + SecurityMiddleware (router.Use)"
+  coverage_gap: "Response-header value assertions need an expect_header schema field — tracked as honest SKIP, not fabricated PASS"
+test_cases:
+  - id: HXC-MW-001
+    name: "OPTIONS preflight short-circuits with 204 on an authenticated route"
+    category: functional
+    priority: high
+    platforms: [api]
+    steps:
+      - name: "OPTIONS /api/v1/tasks"
+        action: "http: OPTIONS /api/v1/tasks"
+        expected: "204 No Content (CORSMiddleware aborts OPTIONS before auth runs)"
+        expect_status: 204
+    tags: [cors, middleware, preflight]
+    estimated_duration: "5s"
+    expected_result: "An OPTIONS preflight to an authenticated route returns 204 via CORSMiddleware short-circuit (no auth challenge)"
+
+  - id: HXC-MW-002
+    name: "OPTIONS preflight short-circuits with 204 on a public route"
+    category: functional
+    priority: medium
+    platforms: [api]
+    steps:
+      - name: "OPTIONS /api/v1/llm/providers"
+        action: "http: OPTIONS /api/v1/llm/providers"
+        expected: "204 No Content"
+        expect_status: 204
+    tags: [cors, middleware, preflight]
+    estimated_duration: "5s"
+    expected_result: "An OPTIONS preflight to a public route returns 204 via CORSMiddleware"
+
+  - id: HXC-MW-003
+    name: "OPTIONS preflight short-circuits with 204 on the projects collection"
+    category: functional
+    priority: medium
+    platforms: [api]
+    steps:
+      - name: "OPTIONS /api/v1/projects"
+        action: "http: OPTIONS /api/v1/projects"
+        expected: "204 No Content"
+        expect_status: 204
+    tags: [cors, middleware, preflight]
+    estimated_duration: "5s"
+    expected_result: "OPTIONS preflight returns 204 on the projects collection route"
+
+  - id: HXC-MW-004
+    name: "OPTIONS preflight short-circuits with 204 on the workers collection"
+    category: functional
+    priority: low
+    platforms: [api]
+    steps:
+      - name: "OPTIONS /api/v1/workers"
+        action: "http: OPTIONS /api/v1/workers"
+        expected: "204 No Content"
+        expect_status: 204
+    tags: [cors, middleware, preflight]
+    estimated_duration: "5s"
+    expected_result: "OPTIONS preflight returns 204 on the workers collection route"
+
+  - id: HXC-MW-005
+    name: "OPTIONS preflight is deterministic across repeated calls"
+    category: performance
+    priority: medium
+    platforms: [api]
+    steps:
+      - name: "OPTIONS /api/v1/tasks #1"
+        action: "http: OPTIONS /api/v1/tasks"
+        expected: "204 No Content"
+        expect_status: 204
+      - name: "OPTIONS /api/v1/tasks #2"
+        action: "http: OPTIONS /api/v1/tasks"
+        expected: "204 No Content"
+        expect_status: 204
+      - name: "OPTIONS /api/v1/tasks #3"
+        action: "http: OPTIONS /api/v1/tasks"
+        expected: "204 No Content"
+        expect_status: 204
+    tags: [cors, middleware, preflight, performance]
+    estimated_duration: "10s"
+    expected_result: "Three sequential OPTIONS preflights all return 204 (deterministic CORS short-circuit)"
+
+  - id: HXC-MW-006
+    name: "Access-Control-Allow-Origin header value assertion"
+    category: functional
+    priority: high
+    platforms: [api]
+    steps:
+      - name: "GET /health asserting Access-Control-Allow-Origin: *"
+        action: "GET /health and assert the Access-Control-Allow-Origin response header equals *"
+        expected: "200 OK with Access-Control-Allow-Origin: *"
+        _skip: true
+        _skip_reason: "#HXC-MW-NO-HEADER-ASSERT — the HelixQA TestStep grammar (pkg/testbank/schema.go) has no expect_header field; CORSMiddleware sets this header but a response-header assertion primitive is required to verify its value. Honest SKIP per Article XI rather than asserting via body (the value is not in the body). Covered by a Go-level middleware unit test until the schema gains expect_header."
+    tags: [cors, middleware, headers, skip]
+    estimated_duration: "5s"
+    expected_result: "Allow-Origin header value check requires an expect_header schema field; skipped honestly"
+
+  - id: HXC-MW-007
+    name: "Security header X-Content-Type-Options: nosniff value assertion"
+    category: security
+    priority: high
+    platforms: [api]
+    steps:
+      - name: "GET /health asserting X-Content-Type-Options: nosniff"
+        action: "GET /health and assert the X-Content-Type-Options response header equals nosniff"
+        expected: "200 OK with X-Content-Type-Options: nosniff"
+        _skip: true
+        _skip_reason: "#HXC-MW-NO-HEADER-ASSERT — SecurityMiddleware sets X-Content-Type-Options: nosniff but the grammar has no expect_header primitive. Honest SKIP pending an expect_header schema extension; not assertable via body/json-path."
+    tags: [security, middleware, headers, skip]
+    estimated_duration: "5s"
+    expected_result: "nosniff header value check requires an expect_header schema field; skipped honestly"
+
+  - id: HXC-MW-008
+    name: "Security header X-Frame-Options: DENY value assertion"
+    category: security
+    priority: high
+    platforms: [api]
+    steps:
+      - name: "GET /health asserting X-Frame-Options: DENY"
+        action: "GET /health and assert the X-Frame-Options response header equals DENY"
+        expected: "200 OK with X-Frame-Options: DENY"
+        _skip: true
+        _skip_reason: "#HXC-MW-NO-HEADER-ASSERT — SecurityMiddleware sets X-Frame-Options: DENY but the grammar has no expect_header primitive. Honest SKIP pending an expect_header schema extension."
+    tags: [security, middleware, headers, skip]
+    estimated_duration: "5s"
+    expected_result: "X-Frame-Options header value check requires an expect_header schema field; skipped honestly"

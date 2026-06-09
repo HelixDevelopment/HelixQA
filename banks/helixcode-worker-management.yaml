@@ -1,0 +1,187 @@
+version: "1.0"
+name: "HelixCode Worker Management Surface"
+description: >-
+  Self-driving (§11.4.98) HelixQA bank exercising HelixCode's authenticated
+  worker sub-resource routes registered under the workers group in
+  helix_code/internal/server/server.go (workers.Use(authMiddleware)):
+  GET/PUT/DELETE /workers/:id, POST /workers/:id/heartbeat, GET /workers/:id/metrics,
+  plus the collection routes GET/POST /workers. Two tiers: (A) protection cases
+  drive the routes WITHOUT credentials and assert 401 — fully self-driving with
+  no server seeding; (B) authenticated cases use auth: admin (the executor logs in
+  once and attaches Bearer <token>) and REQUIRE a booted + seeded server (real
+  PostgreSQL with an admin user and at least one worker row). The authed cases are
+  marked requires_env so the runner gates them on a live stack. Every step is a
+  real http: request; no manual action after startup.
+metadata:
+  author: vasic-digital
+  app: HelixCode
+  target_server: "HelixCode HTTP server (cmd/server) — real PostgreSQL + Redis backed; admin user + worker seed required for authed tier"
+  covenant: "§11.4.98 full-automation anti-bluff"
+  route_source: "helix_code/internal/server/server.go workers group; handlers.go getWorker/updateWorker/deleteWorker/workerHeartbeat/getWorkerMetrics"
+  needs_booted_server: "Tier B (HXC-WRK-007..010) require a booted+seeded server (admin creds + a worker row); Tier A (HXC-WRK-001..006) run against any booted server with no seed"
+test_cases:
+  - id: HXC-WRK-001
+    name: "List workers requires auth (401)"
+    category: security
+    priority: high
+    platforms: [api]
+    steps:
+      - name: "GET /api/v1/workers without auth"
+        action: "http: GET /api/v1/workers"
+        expected: "401 Unauthorized"
+        expect_status: 401
+        expect_body_contains: "Authorization header required"
+    tags: [worker, security, protected]
+    estimated_duration: "5s"
+    expected_result: "Unauthenticated GET /api/v1/workers is rejected with 401"
+
+  - id: HXC-WRK-002
+    name: "Create worker requires auth (401)"
+    category: security
+    priority: high
+    platforms: [api]
+    steps:
+      - name: "POST /api/v1/workers without auth"
+        action: "http: POST /api/v1/workers"
+        expected: "401 Unauthorized"
+        body:
+          hostname: "probe-worker"
+        expect_status: 401
+        expect_body_contains: "Authorization header required"
+    tags: [worker, security, protected]
+    estimated_duration: "5s"
+    expected_result: "Unauthenticated POST /api/v1/workers is rejected with 401 (no worker created)"
+
+  - id: HXC-WRK-003
+    name: "Get worker by id requires auth (401)"
+    category: security
+    priority: high
+    platforms: [api]
+    steps:
+      - name: "GET /api/v1/workers/:id without auth"
+        action: "http: GET /api/v1/workers/00000000-0000-0000-0000-000000000000"
+        expected: "401 Unauthorized"
+        expect_status: 401
+        expect_body_contains: "Authorization header required"
+    tags: [worker, security, protected]
+    estimated_duration: "5s"
+    expected_result: "Unauthenticated GET of a worker by id is rejected with 401"
+
+  - id: HXC-WRK-004
+    name: "Update worker requires auth (401)"
+    category: security
+    priority: high
+    platforms: [api]
+    steps:
+      - name: "PUT /api/v1/workers/:id without auth"
+        action: "http: PUT /api/v1/workers/00000000-0000-0000-0000-000000000000"
+        expected: "401 Unauthorized"
+        body:
+          status: "idle"
+        expect_status: 401
+        expect_body_contains: "Authorization header required"
+    tags: [worker, security, protected]
+    estimated_duration: "5s"
+    expected_result: "Unauthenticated PUT of a worker is rejected with 401"
+
+  - id: HXC-WRK-005
+    name: "Worker heartbeat requires auth (401)"
+    category: security
+    priority: high
+    platforms: [api]
+    steps:
+      - name: "POST /api/v1/workers/:id/heartbeat without auth"
+        action: "http: POST /api/v1/workers/00000000-0000-0000-0000-000000000000/heartbeat"
+        expected: "401 Unauthorized"
+        expect_status: 401
+        expect_body_contains: "Authorization header required"
+    tags: [worker, heartbeat, security, protected]
+    estimated_duration: "5s"
+    expected_result: "Unauthenticated worker heartbeat is rejected with 401"
+
+  - id: HXC-WRK-006
+    name: "Worker metrics requires auth (401)"
+    category: security
+    priority: medium
+    platforms: [api]
+    steps:
+      - name: "GET /api/v1/workers/:id/metrics without auth"
+        action: "http: GET /api/v1/workers/00000000-0000-0000-0000-000000000000/metrics"
+        expected: "401 Unauthorized"
+        expect_status: 401
+        expect_body_contains: "Authorization header required"
+    tags: [worker, metrics, security, protected]
+    estimated_duration: "5s"
+    expected_result: "Unauthenticated worker metrics request is rejected with 401"
+
+  - id: HXC-WRK-007
+    name: "Authenticated worker list returns 200 (booted+seeded server)"
+    category: functional
+    priority: high
+    platforms: [api]
+    requires_env: [HELIXQA_ADMIN_CREDENTIALS]
+    steps:
+      - name: "GET /api/v1/workers as admin"
+        action: "http: GET /api/v1/workers"
+        auth: admin
+        expected: "200 OK with a workers list payload"
+        expect_status: 200
+    tags: [worker, authed, booted-server]
+    estimated_duration: "10s"
+    expected_result: "An authenticated worker list returns 200 against a booted+seeded server"
+
+  - id: HXC-WRK-008
+    name: "Authenticated get of an unknown worker id returns 404 (booted server)"
+    category: functional
+    priority: medium
+    platforms: [api]
+    requires_env: [HELIXQA_ADMIN_CREDENTIALS]
+    steps:
+      - name: "GET /api/v1/workers/:unknown as admin"
+        action: "http: GET /api/v1/workers/00000000-0000-0000-0000-000000000000"
+        auth: admin
+        expected: "404 Not Found for an unknown worker id (authed, so not 401)"
+        expect_status: 404
+    tags: [worker, authed, booted-server, negative]
+    estimated_duration: "10s"
+    expected_result: "An authenticated get of a non-existent worker id returns 404 (proves auth passed and the handler ran)"
+
+  - id: HXC-WRK-009
+    name: "Authenticated worker heartbeat on unknown id returns 404 (booted server)"
+    category: functional
+    priority: medium
+    platforms: [api]
+    requires_env: [HELIXQA_ADMIN_CREDENTIALS]
+    steps:
+      - name: "POST /api/v1/workers/:unknown/heartbeat as admin"
+        action: "http: POST /api/v1/workers/00000000-0000-0000-0000-000000000000/heartbeat"
+        auth: admin
+        expected: "404 Not Found — authed heartbeat against a non-existent worker"
+        expect_status: 404
+    tags: [worker, heartbeat, authed, booted-server, negative]
+    estimated_duration: "10s"
+    expected_result: "An authenticated heartbeat against an unknown worker id returns 404 (auth passed, handler ran)"
+
+  - id: HXC-WRK-010
+    name: "Authenticated worker create + readback roundtrip (booted+seeded server)"
+    category: e2e
+    priority: high
+    platforms: [api]
+    requires_env: [HELIXQA_ADMIN_CREDENTIALS]
+    steps:
+      - name: "POST /api/v1/workers as admin"
+        action: "http: POST /api/v1/workers"
+        auth: admin
+        body:
+          hostname: "helixqa-roundtrip-worker"
+        expected: "201 Created (or 200) with the persisted worker"
+        expect_status: 201
+      - name: "GET /api/v1/workers as admin to confirm persistence"
+        action: "http: GET /api/v1/workers"
+        auth: admin
+        expected: "200 OK listing the just-created worker hostname"
+        expect_status: 200
+        expect_body_contains: "helixqa-roundtrip-worker"
+    tags: [worker, authed, booted-server, e2e, roundtrip]
+    estimated_duration: "15s"
+    expected_result: "Creating a worker as admin persists it in PostgreSQL and it is returned by a subsequent authenticated list"

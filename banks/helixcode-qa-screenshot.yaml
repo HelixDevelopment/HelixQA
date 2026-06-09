@@ -1,0 +1,205 @@
+version: "1.0"
+name: "HelixCode QA Sessions & Screenshot Surface"
+description: >-
+  Self-driving (§11.4.98) HelixQA bank exercising HelixCode's authenticated QA
+  and screenshot routes registered in helix_code/internal/server/server.go:
+  the qa group (POST /qa/session, GET /qa/sessions, GET /qa/session/:id/status,
+  GET /qa/session/:id/report, GET /qa/session/:id/screenshot/:name,
+  DELETE /qa/session/:id) and the screenshot group (GET /screenshot/engines,
+  GET /screenshot/:platform) — both gated by authMiddleware. Two tiers:
+  (A) protection cases drive each route WITHOUT credentials and assert 401 —
+  fully self-driving, no seeding; (B) authenticated cases use auth: admin and
+  REQUIRE a booted server with the helix_qa engine ENABLED (cfg.QA.Enabled) —
+  when the engine is disabled the handlers return 503, so those cases assert the
+  engine-enabled behaviour and are marked requires_env. Every step is a real
+  http: request; no manual action after startup.
+metadata:
+  author: vasic-digital
+  app: HelixCode
+  target_server: "HelixCode HTTP server (cmd/server) — admin creds + cfg.QA.Enabled=true required for authed tier"
+  covenant: "§11.4.98 full-automation anti-bluff"
+  route_source: "helix_code/internal/server/server.go qa + screenshot groups; qa_handlers.go + screenshot_handlers.go"
+  needs_booted_server: "Tier B (HXC-QASS-007..010) require a booted server with the helix_qa engine enabled + admin creds; Tier A (HXC-QASS-001..006) run against any booted server"
+test_cases:
+  - id: HXC-QASS-001
+    name: "Start QA session requires auth (401)"
+    category: security
+    priority: high
+    platforms: [api]
+    steps:
+      - name: "POST /api/v1/qa/session without auth"
+        action: "http: POST /api/v1/qa/session"
+        expected: "401 Unauthorized"
+        body:
+          banks: ["helixcode-health-readiness"]
+          platforms: ["api"]
+        expect_status: 401
+        expect_body_contains: "Authorization header required"
+    tags: [qa, security, protected]
+    estimated_duration: "5s"
+    expected_result: "Unauthenticated POST /api/v1/qa/session is rejected with 401"
+
+  - id: HXC-QASS-002
+    name: "QA session status requires auth (401)"
+    category: security
+    priority: high
+    platforms: [api]
+    steps:
+      - name: "GET /api/v1/qa/session/:id/status without auth"
+        action: "http: GET /api/v1/qa/session/00000000-0000-0000-0000-000000000000/status"
+        expected: "401 Unauthorized"
+        expect_status: 401
+        expect_body_contains: "Authorization header required"
+    tags: [qa, status, security, protected]
+    estimated_duration: "5s"
+    expected_result: "Unauthenticated QA session status request is rejected with 401"
+
+  - id: HXC-QASS-003
+    name: "QA session report requires auth (401)"
+    category: security
+    priority: high
+    platforms: [api]
+    steps:
+      - name: "GET /api/v1/qa/session/:id/report without auth"
+        action: "http: GET /api/v1/qa/session/00000000-0000-0000-0000-000000000000/report"
+        expected: "401 Unauthorized"
+        expect_status: 401
+        expect_body_contains: "Authorization header required"
+    tags: [qa, report, security, protected]
+    estimated_duration: "5s"
+    expected_result: "Unauthenticated QA session report request is rejected with 401"
+
+  - id: HXC-QASS-004
+    name: "QA session screenshot requires auth (401)"
+    category: security
+    priority: medium
+    platforms: [api]
+    steps:
+      - name: "GET /api/v1/qa/session/:id/screenshot/:name without auth"
+        action: "http: GET /api/v1/qa/session/00000000-0000-0000-0000-000000000000/screenshot/dashboard"
+        expected: "401 Unauthorized"
+        expect_status: 401
+        expect_body_contains: "Authorization header required"
+    tags: [qa, screenshot, security, protected]
+    estimated_duration: "5s"
+    expected_result: "Unauthenticated QA session screenshot request is rejected with 401"
+
+  - id: HXC-QASS-005
+    name: "Cancel QA session requires auth (401)"
+    category: security
+    priority: medium
+    platforms: [api]
+    steps:
+      - name: "DELETE /api/v1/qa/session/:id without auth"
+        action: "http: DELETE /api/v1/qa/session/00000000-0000-0000-0000-000000000000"
+        expected: "401 Unauthorized"
+        expect_status: 401
+        expect_body_contains: "Authorization header required"
+    tags: [qa, cancel, security, protected]
+    estimated_duration: "5s"
+    expected_result: "Unauthenticated QA session cancel is rejected with 401"
+
+  - id: HXC-QASS-006
+    name: "Standalone screenshot capture requires auth (401)"
+    category: security
+    priority: medium
+    platforms: [api]
+    steps:
+      - name: "GET /api/v1/screenshot/:platform without auth"
+        action: "http: GET /api/v1/screenshot/linux"
+        expected: "401 Unauthorized"
+        expect_status: 401
+        expect_body_contains: "Authorization header required"
+    tags: [screenshot, security, protected]
+    estimated_duration: "5s"
+    expected_result: "Unauthenticated standalone screenshot capture is rejected with 401"
+
+  - id: HXC-QASS-007
+    name: "Authenticated screenshot engines list (booted server, engine enabled)"
+    category: functional
+    priority: high
+    platforms: [api]
+    requires_env: [HELIXQA_ADMIN_CREDENTIALS]
+    steps:
+      - name: "GET /api/v1/screenshot/engines as admin"
+        action: "http: GET /api/v1/screenshot/engines"
+        auth: admin
+        expected: "200 OK with an engines list when the QA engine is enabled"
+        expect_status: 200
+        expect_body_contains: "engines"
+    tags: [screenshot, authed, booted-server]
+    estimated_duration: "10s"
+    expected_result: "An authenticated screenshot-engines request returns 200 with an engines list when the QA engine is enabled"
+
+  - id: HXC-QASS-008
+    name: "Authenticated QA sessions list (booted server, engine enabled)"
+    category: functional
+    priority: high
+    platforms: [api]
+    requires_env: [HELIXQA_ADMIN_CREDENTIALS]
+    steps:
+      - name: "GET /api/v1/qa/sessions as admin"
+        action: "http: GET /api/v1/qa/sessions"
+        auth: admin
+        expected: "200 OK with the QA sessions list when the engine is enabled"
+        expect_status: 200
+    tags: [qa, authed, booted-server]
+    estimated_duration: "10s"
+    expected_result: "An authenticated QA sessions list returns 200 when the QA engine is enabled"
+
+  - id: HXC-QASS-009
+    name: "Authenticated status of an unknown QA session returns 404 (booted server)"
+    category: functional
+    priority: medium
+    platforms: [api]
+    requires_env: [HELIXQA_ADMIN_CREDENTIALS]
+    steps:
+      - name: "GET /api/v1/qa/session/:unknown/status as admin"
+        action: "http: GET /api/v1/qa/session/00000000-0000-0000-0000-000000000000/status"
+        auth: admin
+        expected: "404 Not Found (session not found) — authed, engine enabled"
+        expect_status: 404
+        expect_body_contains: "session not found"
+    tags: [qa, status, authed, booted-server, negative]
+    estimated_duration: "10s"
+    expected_result: "An authenticated status request for an unknown session returns 404 session not found"
+
+  - id: HXC-QASS-010
+    name: "Authenticated start QA session creates a session (booted server, engine enabled)"
+    category: e2e
+    priority: high
+    platforms: [api]
+    requires_env: [HELIXQA_ADMIN_CREDENTIALS]
+    steps:
+      - name: "POST /api/v1/qa/session as admin"
+        action: "http: POST /api/v1/qa/session"
+        auth: admin
+        body:
+          banks: ["helixcode-health-readiness"]
+          platforms: ["api"]
+          autonomous: false
+        expected: "201 Created with a session state payload"
+        expect_status: 201
+    tags: [qa, authed, booted-server, e2e]
+    estimated_duration: "15s"
+    expected_result: "An authenticated start of a QA session with valid banks+platforms returns 201 with a session state"
+
+  - id: HXC-QASS-011
+    name: "Authenticated start QA session with empty banks returns 400 (booted server)"
+    category: negative
+    priority: medium
+    platforms: [api]
+    requires_env: [HELIXQA_ADMIN_CREDENTIALS]
+    steps:
+      - name: "POST /api/v1/qa/session with no banks as admin"
+        action: "http: POST /api/v1/qa/session"
+        auth: admin
+        body:
+          banks: []
+          platforms: ["api"]
+        expected: "400 Bad Request — banks are required"
+        expect_status: 400
+        expect_body_contains: "banks are required"
+    tags: [qa, authed, booted-server, negative, validation]
+    estimated_duration: "10s"
+    expected_result: "Starting a QA session with an empty banks array returns 400 banks are required (input validation)"
