@@ -2156,6 +2156,141 @@ Three cooperating invariants — the difference between guess-and-retry and inve
 **Canonical authority:** constitution submodule `Constitution.md` §11.4.102 for the full mandate.
 
 
+
+## §11.4.103 — Continuous parallel-stream working routine (User mandate, 2026-05-29)
+
+Cascaded from constitution submodule §11.4.103. Promotes the multi-stream operating pattern into the project's standing default working routine. The main work stream MUST always stay FREE; ALL commit AND push operations run detached. At least three parallel background subagent streams MUST run at all times alongside the main stream whenever three-plus non-contending actionable items exist; the moment any stream finishes a new stream MUST immediately start. Most-critical + most-visible first; audio always top per §11.4.72. Safe-during-build scope only (§11.4.96 SAFE catalogue). Heavy anti-bluff on every closure. Idle ONLY when genuinely externally blocked OR operator STOP OR §12 host-safety.
+
+**Cascade requirement:** This anchor (verbatim or by `§11.4.103` reference) MUST appear in every owned submodule's `CONSTITUTION.md`, `CLAUDE.md`, and `AGENTS.md`. Propagation gate `CM-COVENANT-114-103-PROPAGATION`; paired mutation strips the literal → gate FAILs. Release blocker.
+**Canonical authority:** constitution submodule `Constitution.md` §11.4.103 for the full mandate.
+
+## §11.4.104 — Participant identity, attribution & notification-tagging (User mandate, 2026-05-31)
+
+Cascaded from constitution submodule §11.4.104. Every messenger/notification surface MUST relate messages to a Participant (logical Subscriber/User); the same logical person MAY have a different username per messenger. Workable items MUST carry `created_by` + `assigned_to` (canonical handles). Notification tagging MUST tag `assigned_to` / `created_by` when human and not Operator and not Claude; NEVER tag Claude (system) or the Operator (no self-ping). Operator is designated by `HERALD_<CHANNEL>_OPERATOR_USERNAME` env var, not a DB flag.
+
+**Cascade requirement:** This anchor (verbatim or by `§11.4.104` reference) MUST appear in every owned submodule's `CONSTITUTION.md`, `CLAUDE.md`, and `AGENTS.md`. Propagation gate `CM-COVENANT-114-104-PROPAGATION`; paired mutation strips the literal → gate FAILs. Release blocker.
+**Canonical authority:** constitution submodule `Constitution.md` §11.4.104 for the full mandate.
+
+## §11.4.105 — Natural-language intent recognition & clarification (User mandate, 2026-05-31)
+
+Cascaded from constitution submodule §11.4.105. Users MUST NOT be required to know command syntax. Three-tier resolution: TIER 1 — recognize existing commands from natural language; TIER 2 — infer exact intent via LLM dispatch; TIER 3 — reply, tag sender (`@username`), and ask a precise clarifying question. Never guess, never drop a message silently; only genuine ambiguity reaches Tier 3, which always replies-tags-and-asks.
+
+**Cascade requirement:** This anchor (verbatim or by `§11.4.105` reference) MUST appear in every owned submodule's `CONSTITUTION.md`, `CLAUDE.md`, and `AGENTS.md`. Propagation gate `CM-COVENANT-114-105-PROPAGATION`; paired mutation strips the literal → gate FAILs. Release blocker.
+**Canonical authority:** constitution submodule `Constitution.md` §11.4.105 for the full mandate.
+
+## §11.4.106 — Docs Chain — mechanical documentation/DB sync engine (Operator mandate, 2026-05-31)
+
+Cascaded from constitution submodule §11.4.106. `vasic-digital/docs_chain` is the canonical mechanical enforcer of documentation-sync mandates. Consumers MUST use the engine (referenced, never copied), register chains via `.docs_chain/contexts/*.yaml`, and never accept a faked transform. The engine mechanizes §11.4.12/.53/.45/.56/.57/.59/.60/.65/.86/.93/.95/.44/§12.10. A missing pandoc/weasyprint surfaces a typed `ToolAbsentError` + honest SKIP-with-reason, never a fake PASS.
+
+**Cascade requirement:** This anchor (verbatim or by `§11.4.106` reference) MUST appear in every owned submodule's `CONSTITUTION.md`, `CLAUDE.md`, and `AGENTS.md`. Propagation gate `CM-COVENANT-114-106-PROPAGATION`; paired mutation strips the literal → gate FAILs. Release blocker.
+**Canonical authority:** constitution submodule `Constitution.md` §11.4.106 for the full mandate.
+
+## §11.4.107 — Anti-bluff AV/test-validation techniques mandate (User-driven research, 2026-06-02)
+
+Cascaded from constitution submodule §11.4.107. Every test asserting audio/video output is genuinely playing MUST satisfy: single captured frame NOT proof — prove LIVE ADVANCING frames via freeze-detection oracle; independent frame-advance counter from compositor/decoder telemetry; loading/buffering is a distinct state; not-stale-from-previous cross-check; measured FPS / no-lost-frames; no-flash-on-wrong-output; drive through realistic feed/UI path; metamorphic relations; full-reference quality metrics vs golden source; mutation-test every analyzer with golden-good + golden-bad fixture pair; per-channel audio RMS/loudness + XRUN census; OCR confidence floor + ROI; thresholds calibrated on project's own fixtures.
+
+**Cascade requirement:** This anchor (verbatim or by `§11.4.107` reference) MUST appear in every owned submodule's `CONSTITUTION.md`, `CLAUDE.md`, and `AGENTS.md`. Propagation gate `CM-COVENANT-114-107-PROPAGATION`; paired mutation strips the literal → gate FAILs. Release blocker.
+**Canonical authority:** constitution submodule `Constitution.md` §11.4.107 for the full mandate.
+
+## §11.4.108 — Four-layer fix-verification + runtime-signature-as-definition-of-done mandate (systematic-debugging Phase 4.5, 2026-06-03)
+
+Cascaded from constitution submodule §11.4.108. A fix crosses FOUR distinct layers: (1) SOURCE, (2) ARTIFACT, (3) RUNTIME-ON-CLEAN-TARGET, (4) USER-VISIBLE. Green at layer 1 says nothing about layers 2–4. Every fix declares ONE machine-checkable runtime signature verified on a CLEAN/fresh deployment. Gates span all four layers. Deployment MUST yield a CLEAN state OR a pre-validation assertion proves running-artifact == built-artifact. On ≥3 "fixed-but-not-working" discoveries in one cycle: STOP patching symptoms, fix the VERIFICATION pipeline.
+
+**Cascade requirement:** This anchor (verbatim or by `§11.4.108` reference) MUST appear in every owned submodule's `CONSTITUTION.md`, `CLAUDE.md`, and `AGENTS.md`. Propagation gate `CM-COVENANT-114-108-PROPAGATION`; paired mutation strips the literal → gate FAILs. Release blocker.
+**Canonical authority:** constitution submodule `Constitution.md` §11.4.108 for the full mandate.
+
+## §11.4.109 — Mandatory Anti-Forgetting Enforcement: PreToolUse Guard Hook + Subagent Constitutional Preamble + Orchestrator Pre-Action Checklist (Operator mandate)
+
+Cascaded from constitution submodule §11.4.109. A `PreToolUse` guard hook (`constitution/scripts/hooks/guard-forbidden-commands.sh`) MUST be wired in `.claude/settings.json` blocking host-direct emulator, force-push/bypass, sudo, and host-power commands. `docs/AGENT_GUARDRAILS.md` MUST contain the `SUBAGENT CONSTITUTIONAL PREAMBLE` and `ORCHESTRATOR PRE-ACTION CHECKLIST` headings with anchor literal `11.4.109`. A hermetic hook test suite (≥20 cases) is required. The hook is inherited by reference — NEVER copied locally.
+
+**Cascade requirement:** This anchor (verbatim or by `§11.4.109` reference) MUST appear in every owned submodule's `CONSTITUTION.md`, `CLAUDE.md`, and `AGENTS.md`. Propagation gate `CM-COVENANT-114-109-PROPAGATION`; paired mutation strips the literal → gate FAILs. Release blocker.
+**Canonical authority:** constitution submodule `Constitution.md` §11.4.109 for the full mandate.
+
+## §11.4.110 — Pre-build build-readiness verdict + change-impact clash detection mandate (operator mandate, 2026-06-03)
+
+Cascaded from constitution submodule §11.4.110. A single deterministic READY-FOR-BUILD verdict gates every rebuild. A diff-driven change-impact + clash detector cross-checks every newly-introduced second-artifact dependency (new property read ⇄ property-context type + read-grant; new service ⇄ service-context entry; etc.). Coverage-completeness is a gate — every changed file maps to ≥1 gate + ≥1 deployed-target test + ≥1 paired §1.1 mutation. Two-speed honesty: grep-speed always-on gates vs REQUIRES_BUILD heavy gates as diff-gated opt-in stages.
+
+**Cascade requirement:** This anchor (verbatim or by `§11.4.110` reference) MUST appear in every owned submodule's `CONSTITUTION.md`, `CLAUDE.md`, and `AGENTS.md`. Propagation gate `CM-COVENANT-114-110-PROPAGATION`; paired mutation strips the literal → gate FAILs. Release blocker.
+**Canonical authority:** constitution submodule `Constitution.md` §11.4.110 for the full mandate.
+
+## §11.4.111 — Resolve-by-stable-name-not-by-enumeration-index mandate (research-derived, 2026-06-03)
+
+Cascaded from constitution submodule §11.4.111. Any binding to a hardware device / resource handle / enumerated entity MUST resolve by a stable identifier (name / UUID / serial / label / controller-name / content-hash / sink-reported identity) and MUST NOT bind by enumeration index / ordinal / slot, UNLESS the platform documents that ordinal as deterministically pinned AND the pin is itself captured + asserted as part of the binding. Where a stable identifier exists at one layer, every other layer binding the same resource MUST use the same identifier.
+
+**Cascade requirement:** This anchor (verbatim or by `§11.4.111` reference) MUST appear in every owned submodule's `CONSTITUTION.md`, `CLAUDE.md`, and `AGENTS.md`. Propagation gate `CM-COVENANT-114-111-PROPAGATION`; paired mutation strips the literal → gate FAILs. Release blocker.
+**Canonical authority:** constitution submodule `Constitution.md` §11.4.111 for the full mandate.
+
+## §11.4.112 — Structural-impossibility won't-fix classification mandate (research-derived, 2026-06-03)
+
+Cascaded from constitution submodule §11.4.112. When deep research per §11.4.8 PROVES a goal is structurally impossible on the target platform (forbidden by platform design / hardware-protocol constraint / documented kernel-or-API limitation), the goal MUST be: classified `Won't-fix` + closed per §11.4.90 with closure reason `structurally-impossible`; documented with impossibility evidence; NOT re-attempted without NEW evidence the platform constraint changed. `structurally-impossible` is reserved for PROVEN platform/hardware/protocol impossibility — "could not find a way" is Operator-blocked, not won't-fix.
+
+**Cascade requirement:** This anchor (verbatim or by `§11.4.112` reference) MUST appear in every owned submodule's `CONSTITUTION.md`, `CLAUDE.md`, and `AGENTS.md`. Propagation gate `CM-COVENANT-114-112-PROPAGATION`; paired mutation strips the literal → gate FAILs. Release blocker.
+**Canonical authority:** constitution submodule `Constitution.md` §11.4.112 for the full mandate.
+
+## §11.4.113 — Absolute no-force-push + merge-onto-latest-main mandate (User mandate, 2026-06-03)
+
+Cascaded from constitution submodule §11.4.113. Force-push is STRICTLY FORBIDDEN with NO exception — `git push --force`, `--force-with-lease`, `+<ref>`, or any history-rewriting overwrite of a remote ref, against EVERY repository. The mandated 6-step integration procedure: (1) `git fetch --all --prune --tags`; (2) set base to LATEST commit on canonical `main`/`master`; (3) carefully MERGE every change on top; (4) resolve every conflict carefully; (5) commit the merge (stage only intended files); (6) push to ALL upstreams as fast-forward. REMOVES the force-push escape hatch from §11.4.41/§11.4.71/§9.2/CONST-043.
+
+**Cascade requirement:** This anchor (verbatim or by `§11.4.113` reference) MUST appear in every owned submodule's `CONSTITUTION.md`, `CLAUDE.md`, and `AGENTS.md`. Propagation gate `CM-COVENANT-114-113-PROPAGATION`; paired mutation strips the literal → gate FAILs. Release blocker.
+**Canonical authority:** constitution submodule `Constitution.md` §11.4.113 for the full mandate.
+
+## §11.4.114 — Last-known-good-tag regression isolation mandate (1.1.8-dev remediation, 2026-06-03)
+
+Cascaded from constitution submodule §11.4.114. When a previously-working feature is observed broken, the FIRST diagnostic action MUST be to identify the last release tag at which it was KNOWN-GOOD and diff/bisect the broken state against it — BEFORE any open-ended root-cause hunt or speculative fix. The known-good revision is the regression oracle. Default to a SURGICAL forward-fix (keep post-good-tag features, revert ONLY the broken sub-part) over a wholesale revert. "It worked before" is a HYPOTHESIS until the known-good tag is identified and confirmed.
+
+**Cascade requirement:** This anchor (verbatim or by `§11.4.114` reference) MUST appear in every owned submodule's `CONSTITUTION.md`, `CLAUDE.md`, and `AGENTS.md`. Propagation gate `CM-COVENANT-114-114-PROPAGATION`; paired mutation strips the literal → gate FAILs. Release blocker.
+**Canonical authority:** constitution submodule `Constitution.md` §11.4.114 for the full mandate.
+
+## §11.4.115 — RED-baseline-on-the-broken-artifact + polarity-switch mandate (1.1.8-dev remediation, 2026-06-03)
+
+Cascaded from constitution submodule §11.4.115. Every RED test MUST be authored to REPRODUCE the defect on the CURRENT pre-fix artifact, capturing positive evidence that the defect is genuinely present. The SAME test source carries a single polarity switch (env flag `RED_MODE`, default `1` = reproduce-and-assert-defect-present; flipped to `0` post-fix = standing GREEN regression-guard). One source, two roles: the bug-catcher IS the regression-guard. A RED test that passes on the known-broken artifact is a blind test — a finding, not evidence.
+
+**Cascade requirement:** This anchor (verbatim or by `§11.4.115` reference) MUST appear in every owned submodule's `CONSTITUTION.md`, `CLAUDE.md`, and `AGENTS.md`. Propagation gate `CM-COVENANT-114-115-PROPAGATION`; paired mutation strips the literal → gate FAILs. Release blocker.
+**Canonical authority:** constitution submodule `Constitution.md` §11.4.115 for the full mandate.
+
+## §11.4.116 — Real-time conductor↔autonomous-test-framework sync channel mandate (1.1.8-dev remediation, 2026-06-03)
+
+Cascaded from constitution submodule §11.4.116. Any autonomous long-running test/QA/validation framework MUST expose: (1) a structured append-only JSONL event stream emitting session-start / phase-transition / per-test-start / captured-evidence-path / verdict events; (2) an atomically-rewritten status snapshot (write-temp-then-rename). Every PASS verdict event MUST carry the evidence path — a PASS event with no evidence path is a channel-layer PASS-bluff. A snapshot reporting PASS while the stream shows no evidence event is a contradiction → treat as FAIL.
+
+**Cascade requirement:** This anchor (verbatim or by `§11.4.116` reference) MUST appear in every owned submodule's `CONSTITUTION.md`, `CLAUDE.md`, and `AGENTS.md`. Propagation gate `CM-COVENANT-114-116-PROPAGATION`; paired mutation strips the literal → gate FAILs. Release blocker.
+**Canonical authority:** constitution submodule `Constitution.md` §11.4.116 for the full mandate.
+
+## §11.4.117 — Computer-vision / OCR pixel-oracle fallback for non-introspectable UIs mandate (1.1.8-dev remediation, 2026-06-03)
+
+Cascaded from constitution submodule §11.4.117. Any test needing to drive a UI control OR assert on-screen content MUST NOT assume the accessibility/semantic/DOM hierarchy is the source of truth. When the hierarchy is blank/partial/known-unreliable, the test MUST fall back to a PIXEL ORACLE: drive input by computer-vision template-match; assert content by ROI OCR with per-word confidence floor + region-of-interest. The CV/OCR analyzer is self-validated — golden-good fixture PASSes, golden-bad fixture FAILs, wired into meta-test.
+
+**Cascade requirement:** This anchor (verbatim or by `§11.4.117` reference) MUST appear in every owned submodule's `CONSTITUTION.md`, `CLAUDE.md`, and `AGENTS.md`. Propagation gate `CM-COVENANT-114-117-PROPAGATION`; paired mutation strips the literal → gate FAILs. Release blocker.
+**Canonical authority:** constitution submodule `Constitution.md` §11.4.117 for the full mandate.
+
+## §11.4.118 — Discovery-pressure to confirm known-issue-set completeness mandate (1.1.8-dev remediation, 2026-06-03)
+
+Cascaded from constitution submodule §11.4.118. A remediation/release cycle MUST NOT treat "every reported defect is fixed" as "the build is good." After/alongside fixing the reported set, the cycle MUST run a discovery + stress pass across ALL target devices/environments that deliberately exercises subsystems, journeys, and edge cases BEYOND the reported defects. The pass MUST produce an enumerated list of subsystems/user-journeys/stress scenarios actually exercised, each with its outcome. "We found no other issues" is a bluff unless accompanied by "here is the enumerated set we exercised."
+
+**Cascade requirement:** This anchor (verbatim or by `§11.4.118` reference) MUST appear in every owned submodule's `CONSTITUTION.md`, `CLAUDE.md`, and `AGENTS.md`. Propagation gate `CM-COVENANT-114-118-PROPAGATION`; paired mutation strips the literal → gate FAILs. Release blocker.
+**Canonical authority:** constitution submodule `Constitution.md` §11.4.118 for the full mandate.
+
+## §11.4.119 — Single-resource-owner partitioning for parallel hardware testing mandate (1.1.8-dev remediation, 2026-06-03)
+
+Cascaded from constitution submodule §11.4.119. When multiple parallel streams exercise SHARED hardware or any exclusive-access resource, exactly ONE stream MUST own each such resource at a time. The exclusive owner drives it; every other concurrent stream targeting the same resource MUST be READ-ONLY (passive probes only). Parallelism is partitioned by resource: distinct devices/sinks run fully concurrent, but the same device's exclusive resource is single-owner. Ownership enforced by advisory lock/token. Concurrent drivers of one exclusive resource produce cross-contaminated evidence — a PASS under contention is a §11.4 evidence-integrity bluff.
+
+**Cascade requirement:** This anchor (verbatim or by `§11.4.119` reference) MUST appear in every owned submodule's `CONSTITUTION.md`, `CLAUDE.md`, and `AGENTS.md`. Propagation gate `CM-COVENANT-114-119-PROPAGATION`; paired mutation strips the literal → gate FAILs. Release blocker.
+**Canonical authority:** constitution submodule `Constitution.md` §11.4.119 for the full mandate.
+
+## §11.4.120 — Fix-breaks-its-own-gate reconciliation mandate (1.1.8-dev remediation, 2026-06-03)
+
+Cascaded from constitution submodule §11.4.120. When a correct fix causes a pre-existing gate/test to FAIL because that gate asserted the OLD (now-removed) behaviour, the required response is RECONCILIATION: rewrite the gate to assert the NEW mechanism the fix introduced, backed by captured evidence, AND update its paired §1.1 mutation. The two forbidden responses are: (1) FAKE-PASSING the gate (a §11.4 gate-layer bluff); (2) REVERTING the correct fix. After reconciliation the gate + mutation still form a valid §1.1 pair. Reconcile ONLY when investigation PROVES the gate asserted old-correct-now-removed behaviour.
+
+**Cascade requirement:** This anchor (verbatim or by `§11.4.120` reference) MUST appear in every owned submodule's `CONSTITUTION.md`, `CLAUDE.md`, and `AGENTS.md`. Propagation gate `CM-COVENANT-114-120-PROPAGATION`; paired mutation strips the literal → gate FAILs. Release blocker.
+**Canonical authority:** constitution submodule `Constitution.md` §11.4.120 for the full mandate.
+
+## §11.4.121 — No-commit-while-build-writes-tracked-artifacts mandate (1.1.8-dev remediation, 2026-06-03)
+
+Cascaded from constitution submodule §11.4.121. A commit (especially `git add -A` / any broad stage) MUST NOT run while a build/packaging/generation step is actively writing artifacts into tracked (version-controlled) directories — doing so races the writer and stages a PARTIAL or stale artifact. The commit MUST be deferred until the build step that writes tracked artifacts has COMPLETED. Before committing tracked build outputs, verify the writing step finished (process exit / completion marker / per-artifact mtime ≥ build-start). A build still in flight writing tracked dirs is a HOLD on the commit, not a race to win.
+
+**Cascade requirement:** This anchor (verbatim or by `§11.4.121` reference) MUST appear in every owned submodule's `CONSTITUTION.md`, `CLAUDE.md`, and `AGENTS.md`. Propagation gate `CM-COVENANT-114-121-PROPAGATION`; paired mutation strips the literal → gate FAILs. Release blocker.
+**Canonical authority:** constitution submodule `Constitution.md` §11.4.121 for the full mandate.
+
+
 ### §11.4.122 — No-silent-removal-of-existing-components-without-operator-confirmation mandate (User mandate, 2026-06-03)
 
 **Forensic anchor — verbatim user mandate (2026-06-03):**
