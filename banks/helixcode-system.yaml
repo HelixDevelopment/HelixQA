@@ -198,22 +198,21 @@ test_cases:
     expected_result: "Requests to unregistered routes are rejected with 404 rather than misrouted or 500-ing"
 
   - id: HXC-SYS-011
-    name: "Wrong method on /health is rejected (404/405)"
+    name: "Wrong method on /health is rejected (404)"
     category: negative
     priority: medium
     platforms: [api]
     steps:
       - name: "DELETE /health"
         action: "http: DELETE /health"
-        expected: "405 Method Not Allowed (Gin default) or 404 — health is GET-only"
-        # Gin's default for a known path with an unregistered method is 404
-        # (no automatic 405 unless HandleMethodNotAllowed is enabled). The
-        # captured context did not pin which of 404/405 this server returns,
-        # so this step is marked _skip with reason rather than asserting a
-        # guessed status (§11.4.6). The server-owning agent can pin the exact
-        # code from a live run and flip this to expect_status.
-        _skip: true
-        _skip_reason: "#HXC-SYS-011 wrong-method status (404 vs 405) not captured from a live run; do not guess — pin from live execution then assert"
+        expected: "404 Not Found — Gin has no auto-405; unregistered method on a known path is 404"
+        expect_status: 404
+        # PINNED from a live run (HXC-048, 2026-06-09) against
+        # helix_code/bin/helixcode (commit 437714ac, fresh build): Gin does NOT
+        # enable HandleMethodNotAllowed, so a non-GET method on the GET-only
+        # /health route yields 404 with body "404 page not found" (verified
+        # identically for DELETE and POST). No longer a guess (§11.4.6).
+        expect_body_contains: "404 page not found"
     tags: [system, negative, routing, method]
     estimated_duration: "5s"
-    expected_result: "A non-GET method on the GET-only /health route is rejected (exact 404-vs-405 status to be pinned from a live run)"
+    expected_result: "A non-GET method on the GET-only /health route is rejected with 404 (Gin has no automatic 405; pinned from a live run)"
