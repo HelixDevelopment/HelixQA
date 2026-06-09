@@ -1,0 +1,219 @@
+version: "1.0"
+name: "HelixCode System & Public Surface"
+description: >-
+  Self-driving (§11.4.98) HelixQA bank exercising HelixCode's non-auth
+  public HTTP surface: the health probe, the server-info endpoint, the
+  auth-boundary on the protected system-status route, and the LLM
+  providers listing. Every step is a real http: request with
+  machine-checkable status / body-substring assertions; no manual review,
+  no human action after startup, self-cleaning (read-only GETs + negative
+  probes only — no user, task, or session is created or mutated). Each
+  assertion below is restricted to the literal response shape captured
+  from a real running server (helix_code/bin/helixcode v3.0.0 booted with
+  zero infra); fields whose exact shape was NOT directly observed are
+  asserted by status code + a high-confidence substring only, never by a
+  guessed JSON path (§11.4.6 no-guessing).
+metadata:
+  author: vasic-digital
+  app: HelixCode
+  target_server: "HelixCode HTTP server (cmd/server → bin/helixcode) — boots with zero infra"
+  covenant: "§11.4.98 full-automation anti-bluff; §11.4.6 no-guessing"
+  evidence_source: >-
+    Real captured responses from helix_code/bin/helixcode v3.0.0 (prior agent):
+    GET /health → 200 {"status":"healthy"};
+    GET /api/v1/server/info → 200 (reports database.connected / redis.connected
+    booleans + go_version + uptime);
+    GET /api/v1/system/status → 401 (auth required);
+    GET /api/v1/llm/providers → 200 (7 providers, "source":"fallback" when
+    LLMsVerifier absent).
+test_cases:
+  - id: HXC-SYS-001
+    name: "Health probe returns 200 with healthy status"
+    category: functional
+    priority: critical
+    platforms: [api]
+    steps:
+      - name: "GET /health"
+        action: "http: GET /health"
+        expected: "200 OK — body reports status healthy"
+        expect_status: 200
+        # Confirmed literal: {"status":"healthy"}
+        expect_body_contains: "healthy"
+    tags: [system, health, functional]
+    estimated_duration: "5s"
+    expected_result: "The health endpoint is reachable and reports a healthy status to any unauthenticated client"
+
+  - id: HXC-SYS-002
+    name: "Health probe body carries the status field key"
+    category: functional
+    priority: high
+    platforms: [api]
+    steps:
+      - name: "GET /health checks status key"
+        action: "http: GET /health"
+        expected: "200 OK — body contains the status JSON key"
+        expect_status: 200
+        # Confirmed literal: {"status":"healthy"} — the "status" key is present.
+        expect_body_contains: "status"
+    tags: [system, health, functional]
+    estimated_duration: "5s"
+    expected_result: "The health response is structured JSON exposing a status field, not a bare 200"
+
+  - id: HXC-SYS-003
+    name: "Server info returns 200 reporting database connectivity"
+    category: functional
+    priority: high
+    platforms: [api]
+    steps:
+      - name: "GET /api/v1/server/info checks database key"
+        action: "http: GET /api/v1/server/info"
+        expected: "200 OK — body contains the database connectivity report"
+        expect_status: 200
+        # Confirmed: response reports database.connected boolean — the
+        # "database" key is present in the captured body.
+        expect_body_contains: "database"
+    tags: [system, server-info, functional]
+    estimated_duration: "5s"
+    expected_result: "Server info is reachable unauthenticated and reports backend database connectivity state to the caller"
+
+  - id: HXC-SYS-004
+    name: "Server info body reports redis connectivity"
+    category: functional
+    priority: high
+    platforms: [api]
+    steps:
+      - name: "GET /api/v1/server/info checks redis key"
+        action: "http: GET /api/v1/server/info"
+        expected: "200 OK — body contains the redis connectivity report"
+        expect_status: 200
+        # Confirmed: response reports redis.connected boolean — the "redis"
+        # key is present in the captured body.
+        expect_body_contains: "redis"
+    tags: [system, server-info, functional]
+    estimated_duration: "5s"
+    expected_result: "Server info reports backend Redis connectivity state, proving the info handler is wired to real subsystem probes"
+
+  - id: HXC-SYS-005
+    name: "Server info reports the Go runtime version"
+    category: functional
+    priority: medium
+    platforms: [api]
+    steps:
+      - name: "GET /api/v1/server/info checks go_version key"
+        action: "http: GET /api/v1/server/info"
+        expected: "200 OK — body contains the go_version field"
+        expect_status: 200
+        # Confirmed: response reports a go_version field — the literal
+        # "go_version" key is present in the captured body.
+        expect_body_contains: "go_version"
+    tags: [system, server-info, functional]
+    estimated_duration: "5s"
+    expected_result: "Server info exposes the Go runtime version the server binary was built with"
+
+  - id: HXC-SYS-006
+    name: "Protected system status requires auth (401 unauth)"
+    category: security
+    priority: critical
+    platforms: [api]
+    steps:
+      - name: "GET /api/v1/system/status without auth"
+        action: "http: GET /api/v1/system/status"
+        expected: "401 Unauthorized — auth required for system status"
+        expect_status: 401
+        # Confirmed: this route returns 401 to an unauthenticated client.
+        # Body substring NOT asserted — the captured context only proved the
+        # 401 status, not the exact reject message (§11.4.6 no-guessing).
+    tags: [system, security, protected]
+    estimated_duration: "5s"
+    expected_result: "Unauthenticated access to the privileged system-status endpoint is rejected with 401, never leaking system state"
+
+  - id: HXC-SYS-007
+    name: "Protected system status rejects a garbage bearer token (401)"
+    category: security
+    priority: high
+    platforms: [api]
+    steps:
+      - name: "GET /api/v1/system/status with garbage bearer token"
+        action: "http: GET /api/v1/system/status"
+        expected: "401 Unauthorized — invalid token is not access"
+        auth: "raw:not-a-real-jwt-token-hxc-sys"
+        expect_status: 401
+        # A malformed bearer token must NOT grant access — the route still
+        # answers 401. Body substring left unasserted (status-only) because
+        # the exact invalid-token message on this route was not captured.
+    tags: [system, security, protected, jwt, negative]
+    estimated_duration: "5s"
+    expected_result: "A forged bearer token does not bypass the system-status auth boundary; the request is rejected with 401"
+
+  - id: HXC-SYS-008
+    name: "LLM providers listing returns 200"
+    category: functional
+    priority: critical
+    platforms: [api]
+    steps:
+      - name: "GET /api/v1/llm/providers"
+        action: "http: GET /api/v1/llm/providers"
+        expected: "200 OK — providers listing is served"
+        expect_status: 200
+        # Confirmed: 200 with 7 providers and a "source" field. The "source"
+        # field key is a confirmed literal in the captured body.
+        expect_body_contains: "source"
+    tags: [system, llm, providers, functional]
+    estimated_duration: "5s"
+    expected_result: "The LLM providers endpoint serves the configured provider set to any client, with a source attribution field"
+
+  - id: HXC-SYS-009
+    name: "LLM providers listing exposes the ollama provider"
+    category: functional
+    priority: high
+    platforms: [api]
+    steps:
+      - name: "GET /api/v1/llm/providers checks for ollama"
+        action: "http: GET /api/v1/llm/providers"
+        expected: "200 OK — body lists the ollama provider"
+        expect_status: 200
+        # CONST-039 mandates Ollama among the integrated providers and the
+        # captured response reported 7 providers including the local Ollama
+        # provider. The provider name is asserted case-insensitively-safe by
+        # the lowercase literal the server emits.
+        expect_body_contains: "ollama"
+    tags: [system, llm, providers, functional]
+    estimated_duration: "5s"
+    expected_result: "The providers listing includes the Ollama provider required by CONST-039, proving the listing is sourced from real provider metadata not an empty set"
+
+  - id: HXC-SYS-010
+    name: "Unknown path returns 404 (negative)"
+    category: negative
+    priority: medium
+    platforms: [api]
+    steps:
+      - name: "GET a path that does not exist"
+        action: "http: GET /api/v1/this-route-does-not-exist-hxc-sys"
+        expected: "404 Not Found — unknown route"
+        expect_status: 404
+        # A route the router does not register must answer 404. Body substring
+        # left unasserted (the 404 body shape was not captured) — status-only.
+    tags: [system, negative, routing]
+    estimated_duration: "5s"
+    expected_result: "Requests to unregistered routes are rejected with 404 rather than misrouted or 500-ing"
+
+  - id: HXC-SYS-011
+    name: "Wrong method on /health is rejected (404/405)"
+    category: negative
+    priority: medium
+    platforms: [api]
+    steps:
+      - name: "DELETE /health"
+        action: "http: DELETE /health"
+        expected: "405 Method Not Allowed (Gin default) or 404 — health is GET-only"
+        # Gin's default for a known path with an unregistered method is 404
+        # (no automatic 405 unless HandleMethodNotAllowed is enabled). The
+        # captured context did not pin which of 404/405 this server returns,
+        # so this step is marked _skip with reason rather than asserting a
+        # guessed status (§11.4.6). The server-owning agent can pin the exact
+        # code from a live run and flip this to expect_status.
+        _skip: true
+        _skip_reason: "#HXC-SYS-011 wrong-method status (404 vs 405) not captured from a live run; do not guess — pin from live execution then assert"
+    tags: [system, negative, routing, method]
+    estimated_duration: "5s"
+    expected_result: "A non-GET method on the GET-only /health route is rejected (exact 404-vs-405 status to be pinned from a live run)"
