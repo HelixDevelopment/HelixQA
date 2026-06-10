@@ -260,3 +260,38 @@ test_cases:
       bug_id: "BOBA-LINK-BADBODY-001"
       description: "POST /api/v1/download must reject malformed bodies with a 4xx validation error (not 5xx, not a silent 200) via the DownloadRequest pydantic model"
       fix_file: "download-proxy/src/api/routes.py"
+
+  - id: BOBA-LINK-008
+    name: "Tab-group batch dedups the same magnet across tabs and forwards one batched POST to /api/v1/download (real modules)"
+    category: functional
+    priority: critical
+    platforms: [api]
+    steps:
+      - name: "Run the tab-group batch Challenge against the REAL extension modules (driven outside the http: runner)"
+        # The http: runner cannot import/exercise the extension's TypeScript
+        # modules; the EXTENSION-SIDE Phase 5 tab-group batch flow is driven by the
+        # committed Challenge, which runs the REAL batchGroupTorrents (cross-tab
+        # dedup) + dispatchGroupBatch + the REAL BobaClient.addMagnets (the one
+        # batched POST) + the REAL parseMagnetUri via Vitest, captures the deduped
+        # unique set + the emitted request, and asserts them independently. This is
+        # a documented Challenge step (driven by `helixqa run`/`autonomous` or the
+        # one-liner below), never a status-only bluff.
+        action: "bash challenges/extension/tab_group_batch_challenge.sh"
+        expected: "Challenge PASSes: a fake 3-tab Chrome group (tab A: magnet-1; tab B: the SAME magnet-1 DUPLICATE + magnet-2; tab C: empty) is deduped cross-tab to exactly 2 unique magnets (the magnet-1 appearing on two tabs collapses to one — 3 raw occurrences → 2 unique), and the WHOLE group is forwarded as a SINGLE batched POST http://localhost:7187/api/v1/download with body {result_id, download_urls:[magnet-1, magnet-2]} — the exact user-observable payload the extension sends for a tab group. Captured evidence at challenges/extension/.evidence/tab_group_batch.json. Removing the cross-tab dedup makes the Challenge FAIL (the duplicate survives → 3 urls; verified by mutation), so this is never a green-on-broken bluff."
+      - name: "The captured evidence file shows cross-tab dedup (3 raw → 2 unique) and the one batched payload"
+        # Independent re-assertion of the Challenge's evidence artefact (§11.4.83 /
+        # §11.4.69 network_throughput): the duplicate did NOT leak — 3 raw cross-tab
+        # occurrences deduped to 2 unique, exactly 1 batched request emitted, and the
+        # batched download_urls equal the deduped unique magnet URIs (no duplicate in
+        # the payload). The body matches the {result_id, download_urls:[...]} contract
+        # the merge service (BOBA-LINK-003) accepts — proving the extension's group
+        # batch and the backend agree on the exact add-by-magnet payload shape.
+        action: "python3 -c \"import json;d=json.load(open('challenges/extension/.evidence/tab_group_batch.json'));u=d['forward']['requestBody']['download_urls'];assert d['pass'] and d['group']['rawOccurrenceCount']==3 and d['dedup']['uniqueCount']==2 and d['forward']['requestCount']==1 and d['forward']['url']=='http://localhost:7187/api/v1/download' and u==list(d['dedup']['uniqueUris']) and len(set(u))==len(u),'evidence mismatch';print('OK')\""
+        expected: "Exit 0 / prints OK — the captured evidence shows pass=true, 3 raw cross-tab occurrences deduped to 2 unique, exactly one batched POST to the merge-service download endpoint, and the batched download_urls are the deduped unique magnet URIs with no duplicate (cross-tab dedup proven end-to-end)."
+    tags: [boba, bobalink, extension, tabgroup, dedup, batch, download, magnet, functional, freeleech-safe, challenge-driven]
+    estimated_duration: "20s"
+    expected_result: "The BobaLink extension's Phase 5 tab-group batch flow, driven end-to-end through the REAL shipped modules (batchGroupTorrents + dispatchGroupBatch + BobaClient.addMagnets + parseMagnetUri) by challenges/extension/tab_group_batch_challenge.sh, dedups the same magnet appearing on two tabs of a group down to one and forwards the whole group as a SINGLE POST /api/v1/download with {result_id, download_urls:[<the 2 unique magnets>]} — the user-observable payload the merge service (BOBA-LINK-003) accepts. PASS is backed by captured evidence at challenges/extension/.evidence/tab_group_batch.json; removing the cross-tab dedup makes the Challenge FAIL (verified by mutation). Both magnets are CC-BY public test fixtures — no private-tracker payload, no credentials (§11.4.10)."
+    fix_reference:
+      bug_id: "BOBA-LINK-TABGROUP-BATCH-001"
+      description: "The extension's tab-group batch must dedup the same torrent appearing on multiple tabs of a group (infohash-first identity) and forward the whole group as one batched POST /api/v1/download with the {result_id, download_urls:[...]} body the merge service accepts; validated end-to-end against the real extension modules by challenges/extension/tab_group_batch_challenge.sh"
+      fix_file: "extension/src/tabgroups/index.ts"
