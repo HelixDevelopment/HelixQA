@@ -361,3 +361,74 @@ test_cases:
       bug_id: "BOBA-LINK-QUEUE-RECOVERY-001"
       description: "The extension's OfflineQueue must persist failed sends, dead-letter them after the retry budget (nothing lost) while Boba is unreachable, and drain them all on recovery; validated end-to-end against the real extension module by challenges/extension/offline_queue_recovery_challenge.sh"
       fix_file: "extension/src/api/queue.ts"
+
+  - id: BOBA-LINK-011
+    name: "Popup user-journey: detected torrents render as rows, clicking Send POSTs the magnet to :7187 and the row flips to Sent (real popup + background + client)"
+    category: functional
+    priority: critical
+    platforms: [api]
+    steps:
+      - name: "Run the popup user-journey Challenge against the REAL extension modules (driven outside the http: runner)"
+        # The http: runner cannot import/exercise the extension's TypeScript
+        # modules; the EXTENSION-SIDE full popup user-journey is driven by the
+        # committed Challenge, which reuses the production sendMessage→onMessage
+        # bridge (tests/integration/popup-background.test.ts) to wire the REAL
+        # popup (initPopup), the REAL background router, and the REAL BobaClient:
+        # a real scan-result seeds the background, initPopup renders the detected
+        # rows from a real round-trip, a row Send click drives the real client to
+        # POST /api/v1/download (captured fetch), and the clicked row flips to
+        # Sent (the popup r.id contract fix). This is a documented Challenge step
+        # (driven by `helixqa run`/`autonomous` or the one-liner below), never a
+        # status-only bluff.
+        action: "bash challenges/extension/popup_journey_challenge.sh"
+        expected: "Challenge PASSes: the popup renders the EXACT detected torrents the background returns for the active tab (2 rows with their infohash ids), clicking the second row's Send drives the real background BobaClient to POST exactly one request to http://localhost:7187/api/v1/download carrying THAT torrent's magnet (not the other), and the clicked row flips to torrent-sent with its Send button disabled while the other row stays unsent. Captured evidence at challenges/extension/.evidence/popup_journey.json (rendered ids + captured POST url/body + row-sent state). A no-op stub of the popup (renders nothing), the router (drops the click), or the client (never POSTs / wrong magnet) makes the Challenge FAIL (verified by mutation — breaking the popup r.id contract makes the row never flip), so this is never a green-on-broken bluff."
+      - name: "The captured evidence file proves the rows rendered, the right magnet was POSTed, and the row flipped to Sent"
+        # Independent re-assertion of the Challenge's evidence artefact (§11.4.83 /
+        # §11.4.69 network_throughput): the rendered row ids equal the detected
+        # set, exactly one download POST carried the clicked magnet to the merge-
+        # service endpoint, and the clicked row carries the torrent-sent state.
+        action: "python3 -c \"import json;d=json.load(open('challenges/extension/.evidence/popup_journey.json'));r=d['render'];s=d['send'];w=d['rowSent'];assert d['pass'] and r['renderedRowCount']==2 and s['requestCount']==1 and s['url']=='http://localhost:7187/api/v1/download' and s['method']=='POST' and len(s['downloadUrls'])==1 and s['clickedId'] in s['downloadUrls'][0] and w['sentRowId']==s['clickedId'] and w['sentRowHasSentClass'] and w['sentButtonDisabled'] and w['otherRowStillUnsent'],'evidence mismatch';print('OK')\""
+        expected: "Exit 0 / prints OK — the captured evidence shows pass=true, exactly 2 rows rendered, exactly one POST to the merge-service download endpoint carrying the clicked torrent's magnet, and the clicked row flipped to Sent (sent class + disabled button) while the other row stayed unsent (the popup r.id contract proven end-to-end)."
+    tags: [boba, bobalink, extension, popup, ui-journey, detect, render, send, download, magnet, functional, freeleech-safe, challenge-driven]
+    estimated_duration: "20s"
+    expected_result: "The BobaLink extension's full popup user-journey, driven end-to-end through the REAL shipped modules (initPopup + the background message router + BobaClient) over the production sendMessage→onMessage bridge by challenges/extension/popup_journey_challenge.sh, renders the detected torrents as rows, forwards the clicked one as a single POST /api/v1/download with that torrent's magnet, and flips the clicked row to Sent. PASS is backed by captured evidence at challenges/extension/.evidence/popup_journey.json; breaking the popup r.id contract (so a successful send never flips the row) makes the Challenge FAIL (verified by mutation). Synthetic CC-BY-class magnets only — no private-tracker payload, no credentials (§11.4.10)."
+    fix_reference:
+      bug_id: "BOBA-LINK-POPUP-JOURNEY-001"
+      description: "The extension's popup must render the background's detected torrents, send the clicked torrent's magnet via the real BobaClient as POST /api/v1/download, and flip the clicked row to Sent by reading the flat SendOutcome r.id (not r.torrent.id); validated end-to-end against the real extension modules by challenges/extension/popup_journey_challenge.sh"
+      fix_file: "extension/src/popup/popup.ts"
+
+  - id: BOBA-LINK-012
+    name: "Options config round-trip: the options page persists an edited server config and the background reads back the SAME config field-for-field (real options + background + storage)"
+    category: functional
+    priority: high
+    platforms: [api]
+    steps:
+      - name: "Run the options config round-trip Challenge against the REAL extension modules (driven outside the http: runner)"
+        # The http: runner cannot import/exercise the extension's TypeScript
+        # modules; the EXTENSION-SIDE options save/load round-trip is driven by the
+        # committed Challenge, which reuses the production sendMessage→onMessage
+        # bridge (tests/integration/popup-background.test.ts) to wire the REAL
+        # options page (initOptions/saveOptions), the REAL background router
+        # (get-config), and the committed chrome.storage.local layer: initOptions
+        # loads the built-in default server URL into the form, the user edits + a
+        # real saveOptions persists a new server URL/name/health-interval, and the
+        # background get-config reads the SAME persisted config back out of the
+        # SAME backing store. This is a documented Challenge step (driven by
+        # `helixqa run`/`autonomous` or the one-liner below), never a status-only
+        # bluff.
+        action: "bash challenges/extension/options_config_challenge.sh"
+        expected: "Challenge PASSes: with an empty store, initOptions populates the Server tab with the built-in default URL http://localhost:7187; the user sets a new URL (http://192.168.1.50:7187), name (Home Boba), and health interval (9) and saveOptions persists the merged config to chrome.storage.local; the REAL background get-config handler then reads back the SAME config field-for-field (server url/name/id, healthCheckInterval, activeServerId all identical to what was saved). Captured evidence at challenges/extension/.evidence/options_config.json (loaded default + saved vs read-back fields). A no-op stub of saveOptions (never persists) or get-config (returns canned/empty) makes the read-back diverge from the saved config and the Challenge FAIL (verified by mutation — dropping the storageSet makes the round-trip diverge), so this is never a green-on-broken bluff."
+      - name: "The captured evidence file proves the default loaded, the edit persisted, and the background read back an identical config"
+        # Independent re-assertion of the Challenge's evidence artefact (§11.4.83 /
+        # §11.4.69 storage_write): the loaded default URL matched, the save
+        # persisted, and every round-trip identity flag (url/name/id/health/active)
+        # is true between what options saved and what the background read back.
+        action: "python3 -c \"import json;d=json.load(open('challenges/extension/.evidence/options_config.json'));l=d['load'];s=d['save'];r=d['roundTrip'];assert d['pass'] and l['storeEmptyBeforeLoad'] and l['loadedDefaultUrl']=='http://localhost:7187' and s['persisted'] and s['savedServerUrl']=='http://192.168.1.50:7187' and r['backgroundSuccess'] and r['urlMatches'] and r['nameMatches'] and r['idMatches'] and r['healthIntervalMatches'] and r['activeServerMatches'],'evidence mismatch';print('OK')\""
+        expected: "Exit 0 / prints OK — the captured evidence shows pass=true, the built-in default URL loaded into the form for an empty store, the edited config persisted to chrome.storage.local, and the background get-config read back the SAME config field-for-field (url/name/id/healthCheckInterval/activeServerId all identical to what the options page saved — a genuine persist→read-back round-trip, not a shared in-memory object)."
+    tags: [boba, bobalink, extension, options, config, save, load, round-trip, storage, functional, freeleech-safe, challenge-driven]
+    estimated_duration: "20s"
+    expected_result: "The BobaLink extension's options config save/load round-trip, driven end-to-end through the REAL shipped modules (initOptions/saveOptions + the background get-config handler + the committed chrome.storage.local layer) over the production sendMessage→onMessage bridge by challenges/extension/options_config_challenge.sh, loads the built-in default server URL, persists an edited server config, and the background reads back the SAME config field-for-field. PASS is backed by captured evidence at challenges/extension/.evidence/options_config.json; dropping the storageSet (so the save never persists) makes the read-back diverge and the Challenge FAIL (verified by mutation). Synthetic config values only — no credentials, no secret (§11.4.10)."
+    fix_reference:
+      bug_id: "BOBA-LINK-OPTIONS-ROUNDTRIP-001"
+      description: "The extension's options page must load the default server config, persist edits via the committed storage layer, and the background get-config handler must read back the SAME persisted config field-for-field; validated end-to-end against the real extension modules by challenges/extension/options_config_challenge.sh"
+      fix_file: "extension/src/options/options.ts"
