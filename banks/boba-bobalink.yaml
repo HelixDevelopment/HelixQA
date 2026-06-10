@@ -295,3 +295,69 @@ test_cases:
       bug_id: "BOBA-LINK-TABGROUP-BATCH-001"
       description: "The extension's tab-group batch must dedup the same torrent appearing on multiple tabs of a group (infohash-first identity) and forward the whole group as one batched POST /api/v1/download with the {result_id, download_urls:[...]} body the merge service accepts; validated end-to-end against the real extension modules by challenges/extension/tab_group_batch_challenge.sh"
       fix_file: "extension/src/tabgroups/index.ts"
+
+  - id: BOBA-LINK-009
+    name: "Decrypt-before-send token path sends the DECRYPTED plaintext (never the ciphertext) as Authorization: Bearer (real modules)"
+    category: security
+    priority: critical
+    platforms: [api]
+    steps:
+      - name: "Run the decrypt→send Challenge against the REAL extension modules (driven outside the http: runner)"
+        # The http: runner cannot import/exercise the extension's TypeScript
+        # modules; the EXTENSION-SIDE Phase-7 decrypt-and-send token path is driven
+        # by the committed Challenge, which encrypts a SYNTHETIC token via the REAL
+        # crypto.encrypt (AES-256-GCM/PBKDF2), constructs a client via the REAL
+        # BobaClient.create (the decrypt-and-send factory → real crypto.decrypt),
+        # captures the exact Authorization / X-Boba-Token headers it emits, and
+        # asserts them independently. This is a documented Challenge step (driven by
+        # `helixqa run`/`autonomous` or the one-liner below), never a status-only bluff.
+        action: "bash challenges/extension/decrypt_and_send_challenge.sh"
+        expected: "Challenge PASSes: a SYNTHETIC token encrypted to an EncryptedBundle is DECRYPTED by BobaClient.create and the resulting PLAINTEXT — NOT the ciphertext, NOT the JSON bundle, NOT the passphrase — is what travels on the wire as Authorization: Bearer <plaintext> (+ X-Boba-Token) on POST http://localhost:7187/api/v1/download. The NEGATIVE half: with NO passphrase, NO auth header is sent (default-open contract preserved). Captured evidence at challenges/extension/.evidence/decrypt_and_send.json (header fingerprints + booleans only — the plaintext is never logged nor persisted, §11.4.10). A no-op stub that skips decrypt and sends the ciphertext makes the Challenge FAIL (verified by mutation), so this is never a green-on-broken bluff."
+      - name: "The captured evidence file proves the decrypted plaintext is on the wire and the ciphertext is NOT"
+        # Independent re-assertion of the Challenge's evidence artefact (§11.4.83 /
+        # §11.4.69 network_throughput, §11.4.10 credentials): the captured
+        # Authorization-header fingerprint equals sha256('Bearer '+plaintext), the
+        # header did NOT contain the ciphertext, and the no-passphrase request carried
+        # no auth header at all (default-open).
+        action: "python3 -c \"import json;d=json.load(open('challenges/extension/.evidence/decrypt_and_send.json'));a=d['decryptAndSend'];n=d['negativeNoPassphrase'];assert d['pass'] and a['url']=='http://localhost:7187/api/v1/download' and a['authHeaderEqualsPlaintextBearer'] and a['authHeaderSha256']==a['expectedAuthHeaderSha256'] and a['authHeaderContainsCiphertext'] is False and n['hasAuthHeader'] is False,'evidence mismatch';print('OK')\""
+        expected: "Exit 0 / prints OK — the captured evidence shows pass=true, the Authorization header equals 'Bearer <decrypted-plaintext>' (sha256 fingerprint match), the ciphertext never appeared on the wire, and the no-passphrase request sent no auth header (default-open contract honoured)."
+    tags: [boba, bobalink, extension, crypto, token, decrypt, security, freeleech-safe, challenge-driven]
+    estimated_duration: "20s"
+    expected_result: "The BobaLink extension's decrypt-before-send token path, driven end-to-end through the REAL shipped modules (crypto.encrypt + BobaClient.create + crypto.decrypt + addMagnet) by challenges/extension/decrypt_and_send_challenge.sh, decrypts the operator's encrypted BOBA_API_TOKEN and sends the PLAINTEXT (not the ciphertext) as Authorization: Bearer <token> on POST /api/v1/download; with no passphrase it sends no auth header (default-open). PASS is backed by captured evidence at challenges/extension/.evidence/decrypt_and_send.json; sending the ciphertext (skipping decrypt) makes the Challenge FAIL (verified by mutation). The token is a SYNTHETIC in-process value — never logged, never persisted as plaintext, no private-tracker payload, no credentials (§11.4.10)."
+    fix_reference:
+      bug_id: "BOBA-LINK-DECRYPT-SEND-001"
+      description: "The extension's BobaClient.create must DECRYPT the stored encrypted BOBA_API_TOKEN and send the plaintext (never the ciphertext) as Authorization: Bearer <token>, and send no auth header when no passphrase is available (default-open); validated end-to-end against the real extension modules by challenges/extension/decrypt_and_send_challenge.sh"
+      fix_file: "extension/src/api/boba-client.ts"
+
+  - id: BOBA-LINK-010
+    name: "Offline queue persists + dead-letters items when Boba is down, then drains them all when Boba recovers (real OfflineQueue)"
+    category: functional
+    priority: critical
+    platforms: [api]
+    steps:
+      - name: "Run the offline-queue recovery Challenge against the REAL extension module (driven outside the http: runner)"
+        # The http: runner cannot import/exercise the extension's TypeScript
+        # modules; the EXTENSION-SIDE offline-queue failure→recover→drain path is
+        # driven by the committed Challenge, which drives the REAL OfflineQueue
+        # (enqueue/persist/retry/dead-letter/drain) against the SAME in-memory
+        # chrome.storage fake the production storage layer uses — a FAILING injected
+        # sender (throws), then a WORKING sender (resolves true) — reading the real
+        # persisted bytes back from the backing store. This is a documented Challenge
+        # step (driven by `helixqa run`/`autonomous` or the one-liner below), never a
+        # status-only bluff.
+        action: "bash challenges/extension/offline_queue_recovery_challenge.sh"
+        expected: "Challenge PASSes: with a FAILING sender (Boba unreachable), 4 enqueued items PERSIST to chrome.storage.local across the failure window and DEAD-LETTER once their attempts reach the retry budget (maxRetries=3) — nothing is silently lost; then, after resetting them for retry, a WORKING sender DRAINS all 4 (every item POSTed) leaving the queue and its persisted state empty. Captured evidence at challenges/extension/.evidence/offline_queue_recovery.json (counts). A queue that silently drops items, never dead-letters, or never drains makes the Challenge FAIL (verified by mutation), so this is never a green-on-broken bluff."
+      - name: "The captured evidence file shows persist+dead-letter under failure (none lost) and full drain on recovery"
+        # Independent re-assertion of the Challenge's evidence artefact (§11.4.83 /
+        # §11.4.69 storage_write): all N items persisted + dead-lettered under the
+        # failing sender (none lost), then all N drained under the working sender with
+        # the queue + persisted state ending empty.
+        action: "python3 -c \"import json;d=json.load(open('challenges/extension/.evidence/offline_queue_recovery.json'));n=d['config']['enqueued'];f=d['failurePhase'];r=d['recoverPhase'];assert d['pass'] and f['persistedAfterFail']==n and f['deadLetteredCount']==n and f['allDeadLettered'] and f['allReachedRetryBudget'] and r['drainedCount']==n and r['succeeded']==n and r['failed']==0 and r['queueSizeAfterDrain']==0 and r['persistedAfterDrain']==0,'evidence mismatch';print('OK')\""
+        expected: "Exit 0 / prints OK — the captured evidence shows pass=true, all enqueued items persisted + dead-lettered under the failing sender (none lost, attempts reached the retry budget), and all of them drained under the working sender with the queue and its persisted chrome.storage state ending empty."
+    tags: [boba, bobalink, extension, queue, offline, retry, dead-letter, recovery, functional, freeleech-safe, challenge-driven]
+    estimated_duration: "20s"
+    expected_result: "The BobaLink extension's offline-queue failure→recover→drain path, driven end-to-end through the REAL shipped OfflineQueue (enqueue/persist/retry/dead-letter/drain against the real chrome.storage fake) by challenges/extension/offline_queue_recovery_challenge.sh, persists N items + dead-letters them when Boba is unreachable (nothing lost), then drains all N when Boba recovers (queue + persisted state empty). PASS is backed by captured evidence at challenges/extension/.evidence/offline_queue_recovery.json; a queue that drops items / never dead-letters / never drains makes the Challenge FAIL (verified by mutation). Synthetic infohashes only — no private-tracker payload, no credentials (§11.4.10)."
+    fix_reference:
+      bug_id: "BOBA-LINK-QUEUE-RECOVERY-001"
+      description: "The extension's OfflineQueue must persist failed sends, dead-letter them after the retry budget (nothing lost) while Boba is unreachable, and drain them all on recovery; validated end-to-end against the real extension module by challenges/extension/offline_queue_recovery_challenge.sh"
+      fix_file: "extension/src/api/queue.ts"
