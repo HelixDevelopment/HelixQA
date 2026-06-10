@@ -1,0 +1,230 @@
+# SPDX-FileCopyrightText: 2026 Milos Vasic
+# SPDX-License-Identifier: Apache-2.0
+#
+# HelixQA Test Bank: Boba BobaLink Browser-Extension Backend
+# ===========================================================
+# Self-driving (§11.4.98) validation of the surface the BobaLink browser
+# extension calls on the Boba merge-search service. The extension talks ONLY to
+# Boba's merge service on port 7187 — NOT to qBittorrent directly (qBittorrent
+# admin/admin auth is handled SERVER-SIDE by Boba; the extension never sends
+# qBittorrent credentials). Backend contract source of truth:
+#   docs/browser_extension/_plan/A-backend-contract.md  (cites real routes.py
+#   / __init__.py / auth.py file:line — Python FastAPI backend is authoritative;
+#   the Go `--profile go` DownloadHandler is a no-op STUB and MUST NOT be used).
+#
+# RUN CONTRACT — THESE CASES REQUIRE A LIVE MERGE-SERVICE ON :7187.
+#   helixqa http --bank banks/boba-bobalink.yaml --base-url http://localhost:7187
+# If the merge service is DOWN, the run reports connection failure — it MUST NOT
+# pass-by-default (§11.4.3 topology dispatch / §11.4.68 no fail-open). Bring the
+# service up first: `./start.sh` (Python backend; the extension's real backend).
+#
+# CASE → DEPENDENCY MAP (read before running):
+#   BOBA-LINK-001/002/003/006 — run against the EXISTING live backend (no new
+#     backend work needed). 003 adds an ad-hoc SYNTHETIC magnet (public-domain
+#     test infohash, no private-tracker payload, no credentials — §11.4.10).
+#   BOBA-LINK-004 (CORS / BE-1) — needs the BE-1 change landed: the extension
+#     origin `chrome-extension://<id>` added to ALLOWED_ORIGINS
+#     (download-proxy/src/api/__init__.py). The http: runner has NO response-
+#     header assertion, so the Access-Control-Allow-Origin check is expressed as
+#     a curl/Playwright prose step (driven by `helixqa run`/`autonomous`, or by
+#     the documented curl one-liner) — never asserted as a 200-status bluff.
+#   BOBA-LINK-005 (.torrent upload / BE-2) — needs the BE-2 endpoint landed:
+#     POST /api/v1/download/upload (multipart). The http: runner cannot post
+#     multipart, so the body-bytes upload is a curl/Playwright prose step and the
+#     case is tagged `requires-be-2`; a SYNTHETIC test .torrent only.
+#
+# Schema mirrors banks/boba-services.yaml EXACTLY (top-level version/name/
+# description/metadata{author,app,version} + test_cases[] with id/name/category/
+# priority/platforms/steps[{name,action,expected(+expect_status/
+# expect_body_contains/body/headers)}]/tags/estimated_duration/expected_result/
+# fix_reference{bug_id,description,fix_file}). The http: action style with
+# expect_status + expect_body_contains follows banks/helixcode-system.yaml +
+# banks/helixcode-auth.yaml (the d6c084d `helixqa http` bridge).
+#
+# Anti-bluff (§11.4.107 / §11.4.68 / §11.4.6): every step asserts a user-
+# observable outcome — a real HTTP status + a high-confidence response-body
+# substring from the §A contract — never a bare "no error". JSON paths that were
+# not directly captured from a live response are asserted by status + substring
+# only, never a guessed deep path.
+#
+# COMPANION UI BANK — TODO (later phase, do NOT author yet):
+#   banks/boba-bobalink-ui.yaml — the in-browser popup/content-script UI
+#   (Playwright prose actions, platforms:[web]). Deferred until the extension UI
+#   is built; a true MV3 extension must be loaded into Chromium
+#   (--load-extension=) which the stock `helixqa run --platform web` path does
+#   not set up out-of-the-box (design item flagged in B-helixqa.md §4/§5).
+
+version: "1.0"
+name: "Boba BobaLink Browser-Extension Backend Validation Suite"
+description: "Self-driving (§11.4.98) validation of the BobaLink browser-extension's Boba backend surface on the merge-search service (port 7187, Python FastAPI backend — authoritative): liveness health probe, tracker/qBittorrent auth-status, ad-hoc SYNTHETIC magnet add via POST /api/v1/download, malformed-body rejection (4xx not 5xx), plus the BE-1 CORS allowlist and BE-2 multipart .torrent upload as documented curl/Playwright steps (gated on those backend changes landing). All magnets/torrents are synthetic/public — no private-tracker payloads, no credentials (§11.4.10)."
+metadata:
+  author: "vasic-digital"
+  app: "Boba"
+  version: "1.0.0"
+
+test_cases:
+
+  - id: BOBA-LINK-001
+    name: "Merge service health probe returns healthy for the extension liveness check"
+    category: functional
+    priority: critical
+    platforms: [api]
+    steps:
+      - name: "GET /health"
+        action: "http: GET /health"
+        expected: "200 OK — body reports the merge service is healthy"
+        expect_status: 200
+        # §A contract: GET /health → {status:"healthy",service,version} (__init__.py:140)
+        expect_body_contains: "healthy"
+      - name: "GET /health body carries the service marker"
+        action: "http: GET /health"
+        expected: "200 OK — body identifies the merge-search service so the extension can confirm it is talking to Boba"
+        expect_status: 200
+        # The extension's liveness check distinguishes Boba's merge service from
+        # any other :7187 listener via the service field.
+        expect_body_contains: "service"
+    tags: [boba, bobalink, extension, health, functional, requires-live-backend]
+    estimated_duration: "5s"
+    expected_result: "The extension's liveness probe (GET /health) returns HTTP 200 with a JSON body reporting status=healthy and a service identifier, proving the Boba merge service is up before the extension attempts any add."
+    fix_reference:
+      bug_id: "BOBA-LINK-HEALTH-001"
+      description: "The extension liveness endpoint /health must return 200 with status=healthy whenever the merge service is running"
+      fix_file: "download-proxy/src/api/__init__.py"
+
+  - id: BOBA-LINK-002
+    name: "Auth-status endpoint reports tracker and qBittorrent session state to the extension"
+    category: functional
+    priority: high
+    platforms: [api]
+    steps:
+      - name: "GET /api/v1/auth/status"
+        action: "http: GET /api/v1/auth/status"
+        expected: "200 OK — body reports per-tracker + qBittorrent session state the extension shows in its status panel"
+        expect_status: 200
+        # §A contract: GET /api/v1/auth/status →
+        # {trackers:{rutracker,kinozal,nnmclub,iptorrents,qbittorrent}} (auth.py:479)
+        expect_body_contains: "trackers"
+      - name: "GET /api/v1/auth/status reports qBittorrent session"
+        action: "http: GET /api/v1/auth/status"
+        expected: "200 OK — body includes the qbittorrent key so the extension knows whether downloads can be added"
+        expect_status: 200
+        expect_body_contains: "qbittorrent"
+    tags: [boba, bobalink, extension, auth, status, functional, requires-live-backend]
+    estimated_duration: "5s"
+    expected_result: "GET /api/v1/auth/status returns HTTP 200 with a JSON trackers map (rutracker/kinozal/nnmclub/iptorrents/qbittorrent), so the extension's status panel reflects real backend session state rather than a guessed value."
+    fix_reference:
+      bug_id: "BOBA-LINK-AUTHSTATUS-001"
+      description: "The auth-status endpoint must return 200 with a trackers map including qbittorrent so the extension can render session state"
+      fix_file: "download-proxy/src/api/auth.py"
+
+  - id: BOBA-LINK-003
+    name: "Add-by-magnet accepts a synthetic public-domain magnet via POST /api/v1/download"
+    category: functional
+    priority: critical
+    platforms: [api]
+    steps:
+      - name: "POST /api/v1/download with a synthetic test magnet"
+        action: "http: POST /api/v1/download"
+        expected: "200 OK — body confirms the magnet was accepted/queued to qBittorrent (status initiated, added_count > 0)"
+        body:
+          result_id: "helixqa-ext"
+          # SYNTHETIC, public test magnet — NOT private-tracker content, NO
+          # credentials (§11.4.10). btih is the canonical Sintel (CC-BY,
+          # public-domain test film) infohash used by webtorrent/BEP test
+          # fixtures; it is forwarded verbatim to qBittorrent urls= (routes.py:846).
+          download_urls:
+            - "magnet:?xt=urn:btih:08ada5a7a6183aae1e09d831df6748d566095a10&dn=helixqa-sintel-test"
+        expect_status: 200
+        # §A contract: POST /api/v1/download →
+        # {download_id,status:"initiated"|"failed",added_count,results[]} (routes.py:754)
+        expect_body_contains: "initiated"
+      - name: "POST /api/v1/download response carries the download_id label"
+        action: "http: POST /api/v1/download"
+        expected: "200 OK — body echoes a download_id derived from result_id so the extension can correlate the queued item"
+        body:
+          result_id: "helixqa-ext"
+          download_urls:
+            - "magnet:?xt=urn:btih:08ada5a7a6183aae1e09d831df6748d566095a10&dn=helixqa-sintel-test"
+        expect_status: 200
+        expect_body_contains: "download_id"
+    tags: [boba, bobalink, extension, download, magnet, functional, freeleech-safe, requires-live-backend]
+    estimated_duration: "10s"
+    expected_result: "POST /api/v1/download with {result_id, download_urls:[<synthetic magnet>]} returns HTTP 200 with status=initiated and a download_id — the magnet was actually forwarded to qBittorrent (urls=), the user-observable outcome the extension's add-button depends on. No prior search is required (result_id is just a label). The magnet is a CC-BY public test fixture — no private-tracker payload, no credentials."
+    fix_reference:
+      bug_id: "BOBA-LINK-ADDMAGNET-001"
+      description: "POST /api/v1/download must accept an ad-hoc magnet (no prior search) and forward it to qBittorrent, returning status=initiated with a download_id"
+      fix_file: "download-proxy/src/api/routes.py"
+
+  - id: BOBA-LINK-004
+    name: "CORS allowlist admits the extension origin on POST /api/v1/download (BE-1)"
+    category: security
+    priority: high
+    platforms: [api]
+    steps:
+      - name: "CORS preflight from the extension origin (curl/Playwright — header assertion not available in http: runner)"
+        action: "curl -s -D- -o /dev/null -H 'Origin: chrome-extension://testid' -H 'Access-Control-Request-Method: POST' -H 'Access-Control-Request-Headers: content-type' -X OPTIONS http://localhost:7187/api/v1/download | grep -i 'access-control-allow-origin'"
+        expected: "Response carries an Access-Control-Allow-Origin header echoing chrome-extension://testid (after BE-1 adds the extension origin to ALLOWED_ORIGINS); absence of the header means the browser will block the extension's fetch — that is a FAIL, never a pass-by-default."
+      - name: "Actual cross-origin POST from the extension origin succeeds (Playwright background fetch OR curl)"
+        action: "curl -s -o /dev/null -w '%{http_code}' -H 'Origin: chrome-extension://testid' -H 'Content-Type: application/json' -X POST http://localhost:7187/api/v1/download -d '{\"result_id\":\"helixqa-ext-cors\",\"download_urls\":[\"magnet:?xt=urn:btih:08ada5a7a6183aae1e09d831df6748d566095a10&dn=helixqa-sintel-test\"]}'"
+        expected: "HTTP 200 — the request from the chrome-extension origin is processed (not CORS-rejected at the browser layer); the user-observable outcome is the magnet being queued from the extension's own origin."
+    tags: [boba, bobalink, extension, cors, security, requires-be-1, header-assertion-via-curl]
+    estimated_duration: "5s"
+    expected_result: "After BE-1, a CORS preflight (OPTIONS) from Origin: chrome-extension://testid to /api/v1/download returns an Access-Control-Allow-Origin header echoing that origin, and a real cross-origin POST from that origin is accepted — so the MV3 extension's background fetch is not blocked by the browser. The Access-Control-Allow-Origin header is asserted via curl/Playwright because the http: runner has no response-header assertion (documented, not bluffed)."
+    fix_reference:
+      bug_id: "BOBA-LINK-CORS-001"
+      description: "BE-1: add the extension origin (chrome-extension://<id>) to ALLOWED_ORIGINS so the extension's cross-origin fetch is not blocked; default allowlist is localhost:4200 + localhost:7187 only"
+      fix_file: "download-proxy/src/api/__init__.py"
+
+  - id: BOBA-LINK-005
+    name: "Raw .torrent file-bytes upload accepted via POST /api/v1/download/upload (BE-2)"
+    category: functional
+    priority: high
+    platforms: [api]
+    steps:
+      - name: "POST a synthetic .torrent as multipart (curl/Playwright — http: runner cannot post multipart)"
+        action: "curl -s -o /dev/null -w '%{http_code}' -X POST http://localhost:7187/api/v1/download/upload -F 'file=@banks/fixtures/boba-bobalink-synthetic.torrent;type=application/x-bittorrent'"
+        expected: "HTTP 200 — the new BE-2 endpoint accepts the multipart .torrent and forwards it to qBittorrent /api/v2/torrents/add (torrents form field). The synthetic .torrent is a SYNTHETIC/public fixture (no private-tracker payload, no credentials)."
+      - name: "Upload response confirms the torrent was added"
+        action: "curl -s -X POST http://localhost:7187/api/v1/download/upload -F 'file=@banks/fixtures/boba-bobalink-synthetic.torrent;type=application/x-bittorrent' | grep -Eo '\"status\"[^,]*'"
+        expected: "Body reports an accepted/initiated status — the user-observable outcome of picking a local .torrent file in the extension and having it land in qBittorrent."
+    tags: [boba, bobalink, extension, download, torrent-upload, functional, requires-be-2, multipart-via-curl]
+    estimated_duration: "10s"
+    expected_result: "POST /api/v1/download/upload (multipart, single `file` field) accepts a SYNTHETIC .torrent's raw bytes (fixture banks/fixtures/boba-bobalink-synthetic.torrent) and forwards them to qBittorrent's /api/v2/torrents/add, returning an accepted/initiated status. The endpoint (BE-2) is implemented in download-proxy/src/api/routes.py. Multipart is driven via curl/Playwright because the http: runner cannot post multipart (documented, not bluffed)."
+    fix_reference:
+      bug_id: "BOBA-LINK-UPLOAD-001"
+      description: "BE-2: add POST /api/v1/download/upload (multipart) to accept raw .torrent file bytes and forward to qBittorrent /api/v2/torrents/add (mirroring the server-side code at routes.py:811-822); /api/v1/download accepts only URLs today"
+      fix_file: "download-proxy/src/api/routes.py"
+
+  - id: BOBA-LINK-006
+    name: "Malformed download body is rejected with a 4xx, never a 500 and never silently accepted"
+    category: security
+    priority: high
+    platforms: [api]
+    steps:
+      - name: "POST /api/v1/download with an empty body"
+        action: "http: POST /api/v1/download"
+        expected: "422 Unprocessable Entity — FastAPI request-body validation rejects the missing required fields (result_id / download_urls); the extension must get a clear client error, not a server crash."
+        body: {}
+        # FastAPI/pydantic returns 422 for a request body that fails the
+        # DownloadRequest model (routes.py:170-172). The load-bearing assertion
+        # is "NOT 5xx and NOT silent 200" — a 422 (or 400) status proves the
+        # malformed input was caught at the validation layer.
+        expect_status: 422
+      - name: "POST /api/v1/download with download_urls of the wrong type"
+        action: "http: POST /api/v1/download"
+        expected: "422 Unprocessable Entity — a non-list download_urls fails model validation; body reports a validation detail, not a 200 success and not an unhandled 500."
+        body:
+          result_id: "helixqa-ext-bad"
+          download_urls: "not-a-list"
+        expect_status: 422
+        # FastAPI validation error bodies carry a "detail" array — asserting the
+        # substring proves the rejection is a structured validation error, not a
+        # stack-trace 500 nor a fabricated success.
+        expect_body_contains: "detail"
+    tags: [boba, bobalink, extension, download, negative, validation, security, requires-live-backend]
+    estimated_duration: "5s"
+    expected_result: "A malformed POST /api/v1/download body (empty, or download_urls of the wrong type) is rejected with HTTP 422 (client-side validation error) carrying a detail payload — it MUST NOT return 5xx (server crash) and MUST NOT silently 200-accept. This proves the extension cannot crash or silently no-op the backend with bad input."
+    fix_reference:
+      bug_id: "BOBA-LINK-BADBODY-001"
+      description: "POST /api/v1/download must reject malformed bodies with a 4xx validation error (not 5xx, not a silent 200) via the DownloadRequest pydantic model"
+      fix_file: "download-proxy/src/api/routes.py"
