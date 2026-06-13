@@ -220,6 +220,130 @@ func TestMultiHealth(t *testing.T) {
 	}
 }
 
+// TestHealthProbe_RetrySucceedsAfterTransientTimeout proves the load-hardening:
+// a probe whose FIRST invocation sleeps past a single attempt's budget (and is
+// therefore SIGKILL'd, the "exceeded budget under load" case) but whose SECOND
+// invocation returns "ok\n" immediately MUST ultimately be reported healthy via
+// retry. Determinism is provided by a temp marker file: the script sleeps only
+// while the marker is absent, then creates it, so the first call is slow and
+// every subsequent call is fast — no reliance on wall-clock luck.
+func TestHealthProbe_RetrySucceedsAfterTransientTimeout(t *testing.T) {
+	dir := t.TempDir()
+	counter := filepath.Join(dir, "invocations")
+	bin := filepath.Join(dir, "slow_first.sh")
+	// Determinism via an invocation counter, NOT kill-timing: every call
+	// appends one line to the counter file, then reads the running total. On
+	// the FIRST call only (total <= 1) the probe sleeps far past the
+	// per-attempt budget, so that attempt is SIGKILL'd -> transient timeout.
+	// Every subsequent call sees total >= 2 and prints "ok" immediately. This
+	// makes "first call slow, all later calls fast" a deterministic property
+	// of the file system, independent of scheduler luck or kill races.
+	script := "#!/bin/sh\n" +
+		"if [ \"$1\" != \"--health\" ]; then exit 2; fi\n" +
+		"echo x >> \"" + counter + "\"\n" +
+		"n=$(wc -l < \"" + counter + "\")\n" +
+		"if [ \"$n\" -le 1 ]; then sleep 10; fi\n" +
+		"echo ok\n"
+	if err := os.WriteFile(bin, []byte(script), 0o755); err != nil {
+		t.Fatal(err)
+	}
+
+	// PerAttemptTimeout is deliberately generous (2s) so that even on a
+	// CPU-saturated host the trivial fast path (echo ok) completes within a
+	// single attempt — what makes the test deterministic is the slow first
+	// call sleeping 10s (>> any attempt budget, always SIGKILL'd -> transient
+	// timeout), NOT a tight per-attempt clock. MaxAttempts + TotalBudget give
+	// the retry loop ample room to reach a fast call under any load.
+	opts := HealthProbeOptions{
+		PerAttemptTimeout: 2 * time.Second,
+		MaxAttempts:       6,
+		BaseBackoff:       20 * time.Millisecond,
+		MaxBackoff:        200 * time.Millisecond,
+		TotalBudget:       30 * time.Second,
+	}
+	if err := HealthProbeWithOptions(context.Background(), bin, opts); err != nil {
+		t.Fatalf("expected healthy via retry, got: %v", err)
+	}
+	// The first (slow) invocation MUST have run and been retried: the counter
+	// file proves at least two invocations occurred (one slow, ≥1 fast).
+	data, err := os.ReadFile(counter)
+	if err != nil {
+		t.Fatalf("counter unreadable — first invocation did not run: %v", err)
+	}
+	if n := bytes.Count(data, []byte("\n")); n < 2 {
+		t.Fatalf("expected >=2 invocations (slow first + retry), got %d", n)
+	}
+}
+
+// TestHealthProbe_AlwaysHangingBoundedFailure proves the other side of the
+// contract: a probe that ALWAYS exceeds its per-attempt budget (a wedged/hung
+// sidecar) MUST return an error within a bounded total time — it must NOT retry
+// forever. We give a generous-but-finite TotalBudget and assert the call both
+// errors AND returns before a hard upper bound.
+func TestHealthProbe_AlwaysHangingBoundedFailure(t *testing.T) {
+	bin := filepath.Join(t.TempDir(), "hang.sh")
+	// Always sleeps far longer than any attempt budget: every attempt is a
+	// transient timeout, so retries are exhausted / budget is hit.
+	if err := os.WriteFile(bin, []byte("#!/bin/sh\nsleep 30\n"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	opts := HealthProbeOptions{
+		PerAttemptTimeout: 150 * time.Millisecond,
+		MaxAttempts:       3,
+		BaseBackoff:       20 * time.Millisecond,
+		MaxBackoff:        50 * time.Millisecond,
+		TotalBudget:       2 * time.Second,
+	}
+	start := time.Now()
+	err := HealthProbeWithOptions(context.Background(), bin, opts)
+	elapsed := time.Since(start)
+	if err == nil {
+		t.Fatal("want error for always-hanging probe, got nil")
+	}
+	// Bounded: must not have retried forever. Upper bound generously covers
+	// 3×150ms attempts + backoffs, well under the 30s the script would sleep.
+	if elapsed >= 3*time.Second {
+		t.Fatalf("hanging probe not bounded: took %v", elapsed)
+	}
+}
+
+// TestHealthProbe_NonZeroExitNotRetried proves a genuine failure is fast and is
+// NOT subjected to the retry loop: an exit-1 binary must be reported unhealthy
+// promptly, in roughly one attempt's worth of time (no backoff stacking).
+func TestHealthProbe_NonZeroExitNotRetried(t *testing.T) {
+	dir := t.TempDir()
+	counter := filepath.Join(dir, "invocations")
+	bin := filepath.Join(dir, "fastfail.sh")
+	// Count invocations on disk so the assertion is invocation-exact rather
+	// than wall-clock-fuzzy: a genuine exit-1 failure must be invoked EXACTLY
+	// once (no retry loop), even under -race / host load where a single
+	// fork+exec can take longer than a naive time bound would tolerate.
+	script := "#!/bin/sh\necho x >> \"" + counter + "\"\nexit 1\n"
+	if err := os.WriteFile(bin, []byte(script), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	opts := HealthProbeOptions{
+		PerAttemptTimeout: 2 * time.Second,
+		MaxAttempts:       5,
+		BaseBackoff:       50 * time.Millisecond,
+		MaxBackoff:        500 * time.Millisecond,
+		TotalBudget:       30 * time.Second,
+	}
+	err := HealthProbeWithOptions(context.Background(), bin, opts)
+	if err == nil {
+		t.Fatal("want error for exit 1, got nil")
+	}
+	// A genuine non-zero exit is NOT transient, so the probe must invoke the
+	// binary exactly once and fail fast — never enter the retry loop.
+	data, rerr := os.ReadFile(counter)
+	if rerr != nil {
+		t.Fatalf("counter unreadable: %v", rerr)
+	}
+	if n := bytes.Count(data, []byte("\n")); n != 1 {
+		t.Fatalf("genuine failure must NOT be retried: invoked %d times, want 1", n)
+	}
+}
+
 func TestPassFD_RecvFD_Roundtrip(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		t.Skip("SCM_RIGHTS not supported on windows") // SKIP-OK: #platform-not-linux
