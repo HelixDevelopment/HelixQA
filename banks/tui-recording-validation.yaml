@@ -1,0 +1,199 @@
+# SPDX-FileCopyrightText: 2026 Milos Vasic
+# SPDX-License-Identifier: Apache-2.0
+#
+# HelixQA Test Bank: TUI Recording Validation
+# =============================================
+#
+# PURPOSE. Orchestrate the validation that a RECORDED HelixCode TUI session
+# (an mp4 of the terminal LLM chat — prompts typed, model replies rendered)
+# genuinely ACHIEVED ITS GOAL: the prompts got real model replies AND no
+# error/warning/panic surfaced during the model interaction.
+#
+# WHY THIS IS NOT A PRESENCE CHECK (the §11.4 / §11.4.2 / §11.4.5 bluff it
+# closes). A bank case that asserts PASS because "the recording file exists"
+# is the canonical PASS-bluff: a 0-byte mp4 (Bug #24), a frozen first frame,
+# an error overlay in the captured frames, or a panic in the stderr log all
+# slip through a presence-only check. This bank raises the bar to:
+#   1. the mp4 exists AND is non-empty;
+#   2. the EXPECTED replies are actually rendered on-screen (frame OCR) AND
+#      NO error text is rendered (the "Panoptic" / recording-analyzer oracle);
+#   3. the TUI's stderr log contains NONE of the error/warning/panic /
+#      "no provider" / "0 models" / "unhealthy" patterns.
+# Only when ALL hold does the case PASS, citing the analyzed frames + the
+# stderr log as captured evidence (§11.4.69).
+#
+# HOW IT RUNS (the existing HelixQA dispatch mechanism — no new runtime).
+# Each case uses the schema's `dispatches_to` + `required_evidence`
+# orchestration (pkg/testbank/dispatch.go Dispatcher): the consumer-injected
+# DeviceExec runs `dispatches_to` (the conductor's recording-validator
+# wrapper) and its REAL exit code drives the PASS/FAIL verdict; then the
+# §11.4.69 evidence-ledger gate FAILs the case unless every `required_evidence`
+# glob resolves to a real, non-empty artefact. A non-zero wrapper exit OR any
+# missing evidence ⇒ FAIL — a green case on a broken recording is impossible.
+#
+# INTEGRATION POINT WITH THE PANOPTIC VALIDATOR (what the conductor wires).
+# `dispatches_to` names the conductor's recording-validator command. The
+# recommended wrapper is a thin script that:
+#   (a) runs the Panoptic / recording-analyzer video oracle over the mp4 —
+#       in-house HelixQA already ships this at cmd/recording-analyzer:
+#         recording-analyzer --post-analyze \
+#           --recording <mp4> \
+#           --findings-out <evidence-dir>/frames_findings.jsonl
+#       (OR the conductor's `panoptic-validate-recording <mp4>` hook once the
+#       sibling Panoptic extension lands — same contract: assert real replies
+#       present, no error text);
+#   (b) greps the TUI stderr log for the error patterns (or calls the Go
+#       orchestrator pkg/recordingqa.Validator, which does BOTH oracles +
+#       the evidence-ledger in one decoupled, tested place);
+#   (c) writes the analyzed-frames artefact + copies the stderr log under
+#       the evidence dir so `required_evidence` resolves;
+#   (d) exits 0 on goal-achieved, non-zero otherwise.
+# The Go package pkg/recordingqa is the canonical, project-agnostic
+# orchestrator the wrapper SHOULD call (VideoValidator injected = the
+# Panoptic/recording-analyzer oracle; log oracle built in).
+#
+# DECOUPLING (CONST-051(B) / §11.4.28). This bank names NO concrete host
+# path: `dispatches_to` is a consumer-owned command the conductor resolves
+# (it injects the DeviceExec + the evidence BaseDir at runtime). The
+# placeholder `panoptic-validate-recording ...` is the documented hook the
+# conductor will wire — HelixQA never interprets the string.
+#
+# ANTI-BLUFF SELF-PROOF (§11.4.50 / §11.4.98). The orchestrator behind these
+# cases (pkg/recordingqa) ships paired-mutation tests: a deliberately-bad
+# recording (0-byte mp4, error-overlay analysis, missing-reply analysis,
+# dirty stderr log) is proven to force FAIL — see
+# pkg/recordingqa/recordingqa_test.go. A green case here therefore CANNOT
+# rest on a broken recording.
+
+version: "1.0"
+name: "TUI Recording Validation"
+description: >
+  Orchestrates Panoptic/recording-analyzer video-oracle + stderr-log
+  validation of recorded HelixCode TUI LLM-chat sessions, asserting the
+  prompts got real model replies with no error/warning/panic. PASS requires
+  real captured evidence (analyzed frames + clean log); a green case on a
+  broken recording is impossible.
+metadata:
+  author: "HelixCode"
+  app: "HelixCode TUI"
+  category: "tui-recording-validation"
+  priority: "critical"
+  # The conductor sets the evidence BaseDir (GlobEvidenceResolver.BaseDir)
+  # and the DeviceExec when running these via the Dispatcher. The tokens in
+  # required_evidence are resolved relative to that BaseDir.
+  evidence_dir: "qa-results/<run-id>/tui-recording-validation"
+  integration_hook: "panoptic-validate-recording <mp4>  (or recording-analyzer --post-analyze --recording <mp4>)"
+
+test_cases:
+
+  # ========================================================================
+  # TRV-001 — single-prompt session: a typed prompt got a real model reply,
+  # no error text on-screen, clean stderr log.
+  # ========================================================================
+  - id: TRV-001
+    challenge_id: tui.recording.single-prompt-real-reply
+    name: "TUI recording: a typed prompt received a real model reply (no error overlay, clean log)"
+    category: e2e
+    priority: critical
+    platforms: [tui]
+    domains: [tui, recording, llm-chat]
+    # dispatches_to: the conductor's recording-validator wrapper. It runs the
+    # Panoptic/recording-analyzer video oracle over the session mp4 AND greps
+    # the TUI stderr log; exits 0 only when the prompt's reply is rendered,
+    # no error text appears, and the log is clean. The conductor resolves the
+    # mp4 + log + expected-reply for THIS run (project-agnostic — HelixQA does
+    # not interpret the command string).
+    dispatches_to: "panoptic-validate-recording --recording session_single.mp4 --stderr-log session_single.stderr.log --expect-reply-marker reply --error-patterns default --findings-out frames_findings.jsonl"
+    # required_evidence: the §11.4.69 ledger — every token MUST resolve to a
+    # real, non-empty artefact (relative to the conductor's evidence BaseDir)
+    # before PASS is permitted. analyzed-frames = the Panoptic oracle output;
+    # stderr log = the log-oracle input. A missing/0-byte either ⇒ FAIL.
+    required_evidence:
+      - "frames_findings.jsonl"
+      - "session_single.stderr.log"
+    steps:
+      - name: "Record a TUI session that types one prompt and waits for the reply"
+        action: "Consumer/conductor: launch the HelixCode TUI under screen recording, type one prompt (e.g. 'What is 2+2?'), wait for the model reply to render, then exit; capture stderr to session_single.stderr.log."
+        expected: "session_single.mp4 written non-empty; session_single.stderr.log captured."
+      - name: "Run the Panoptic/recording-analyzer video oracle over the mp4"
+        action: "panoptic-validate-recording --recording session_single.mp4 (or recording-analyzer --post-analyze --recording session_single.mp4 --findings-out frames_findings.jsonl)"
+        expected: "Analyzer reports the expected reply rendered on-screen (OCR hit) AND no error text on any frame; frames_findings.jsonl written non-empty."
+      - name: "Scan the TUI stderr log for error/warning/panic patterns"
+        action: "Grep session_single.stderr.log for: panic | fatal | error | warning | 'no provider' | '0 models' | unhealthy | 'connection refused' | simulated"
+        expected: "ZERO matches. Any match ⇒ the model interaction was broken (FAIL)."
+      - name: "Assert goal achieved (dispatch exit 0 + evidence ledger satisfied)"
+        action: "Dispatcher: wrapper exit 0 AND frames_findings.jsonl + session_single.stderr.log both resolve non-empty."
+        expected: "PASS — replies matched, no error text, clean log, evidence captured."
+    tags: [tui, recording, llm-chat, anti-bluff, "§11.4.2", "§11.4.5", "§11.4.69", "§11.4.107", "§11.4.116", "§11.4.98", video_display]
+    documentation_refs:
+      - type: source
+        section: "recordingqa orchestrator"
+        path: "pkg/recordingqa/recordingqa.go"
+      - type: source
+        section: "Panoptic/recording-analyzer video oracle"
+        path: "cmd/recording-analyzer/posthoc.go"
+
+  # ========================================================================
+  # TRV-002 — multi-prompt session: EVERY prompt in the session got a real
+  # reply (the conductor injects every expected-reply marker).
+  # ========================================================================
+  - id: TRV-002
+    challenge_id: tui.recording.multi-prompt-all-replies
+    name: "TUI recording: every prompt in a multi-turn session received a real reply (no error, clean log)"
+    category: e2e
+    priority: critical
+    platforms: [tui]
+    domains: [tui, recording, llm-chat]
+    dispatches_to: "panoptic-validate-recording --recording session_multi.mp4 --stderr-log session_multi.stderr.log --expect-all-replies --error-patterns default --findings-out frames_multi_findings.jsonl"
+    required_evidence:
+      - "frames_multi_findings.jsonl"
+      - "session_multi.stderr.log"
+    steps:
+      - name: "Record a multi-turn TUI session"
+        action: "Conductor: type N prompts in one TUI session, waiting for each reply; capture mp4 + stderr."
+        expected: "session_multi.mp4 non-empty; every prompt's reply rendered."
+      - name: "Panoptic oracle asserts EVERY expected reply rendered"
+        action: "panoptic-validate-recording --recording session_multi.mp4 --expect-all-replies (analyzer matches each prompt's expected reply marker on some frame)"
+        expected: "Zero missing replies; zero error text. frames_multi_findings.jsonl non-empty."
+      - name: "Stderr-log oracle clean across the whole session"
+        action: "Grep session_multi.stderr.log for the error pattern set."
+        expected: "ZERO matches."
+      - name: "Assert goal achieved"
+        action: "Dispatcher: wrapper exit 0 + evidence ledger satisfied."
+        expected: "PASS — all replies matched, no error text, clean log."
+    tags: [tui, recording, llm-chat, anti-bluff, multi-turn, "§11.4.5", "§11.4.69", "§11.4.98", video_display]
+    documentation_refs:
+      - type: source
+        section: "recordingqa orchestrator"
+        path: "pkg/recordingqa/recordingqa.go"
+
+  # ========================================================================
+  # TRV-003 — provider-health negative guard: a recording made while the
+  # provider was unhealthy ("no provider" / "0 models" in the log, or an
+  # error overlay on-screen) MUST come out FAIL. This case is the RED guard
+  # that proves the validation is not a presence-only bluff: pointed at a
+  # KNOWN-BROKEN recording it MUST FAIL; pointed at a healthy one it PASSes.
+  # ========================================================================
+  - id: TRV-003
+    challenge_id: tui.recording.provider-health-negative-guard
+    name: "TUI recording: a session recorded under an unhealthy provider (no models / error overlay) is FAILed, not bluffed green"
+    category: e2e
+    priority: critical
+    platforms: [tui]
+    domains: [tui, recording, llm-chat, anti-bluff]
+    dispatches_to: "panoptic-validate-recording --recording session_provider.mp4 --stderr-log session_provider.stderr.log --error-patterns default --findings-out frames_provider_findings.jsonl"
+    required_evidence:
+      - "frames_provider_findings.jsonl"
+      - "session_provider.stderr.log"
+    steps:
+      - name: "Record a TUI session and capture the provider-init stderr"
+        action: "Conductor: launch the TUI, send a prompt, capture mp4 + stderr (session_provider.stderr.log includes provider/model init lines)."
+        expected: "Artefacts captured."
+      - name: "Validate: a healthy run PASSes; an unhealthy run FAILs"
+        action: "panoptic-validate-recording + stderr grep: a real reply on-screen + clean log ⇒ PASS; an error overlay on-screen OR 'no provider'/'0 models'/'unhealthy' in the log ⇒ FAIL."
+        expected: "Verdict reflects the actual interaction — never green on a broken recording (the §11.4 bluff this guard forbids)."
+    tags: [tui, recording, llm-chat, anti-bluff, provider-health, "§11.4", "§11.4.69", "§11.4.98"]
+    documentation_refs:
+      - type: source
+        section: "recordingqa anti-bluff paired-mutation tests"
+        path: "pkg/recordingqa/recordingqa_test.go"
