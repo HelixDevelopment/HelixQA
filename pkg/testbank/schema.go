@@ -123,6 +123,20 @@ type TestCase struct {
 	// FAIL with the missing list. Project-agnostic: the token
 	// vocabulary is entirely consumer data.
 	RequiredEvidence []string `yaml:"required_evidence,omitempty" json:"required_evidence,omitempty"`
+
+	// Metadata holds arbitrary per-case key-value data the CONSUMER
+	// attaches and the CONSUMER interprets — HelixQA never reads into
+	// it (CONST-051(B) / §11.4.28). It is the structured, schema-
+	// agnostic companion to DispatchesTo: where DispatchesTo is an
+	// opaque command STRING, Metadata lets a case carry the same
+	// options as DATA a conductor wrapper can read without parsing a
+	// flag string. Example: a recording-validation case carries
+	// `metadata.recvalidate_options.{reply_markers,chrome_line_patterns,
+	// expected_replies}` that the wrapper maps onto a
+	// pkg/recordingqa.Spec (forwarded to the Panoptic recvalidate video
+	// oracle). The loader preserves it verbatim; nothing in HelixQA
+	// branches on its contents.
+	Metadata map[string]any `yaml:"metadata,omitempty" json:"metadata,omitempty"`
 }
 
 // EffectiveChallengeID returns ChallengeID when set, otherwise the

@@ -62,28 +62,70 @@ import (
 	"digital.vasic.helixqa/pkg/conduit"
 )
 
+// VideoOptions carries the consumer-supplied tuning the video oracle (the
+// sibling Panoptic `recvalidate` validator, the in-house recording-analyzer,
+// or any injected analyzer) needs to validate a chat-TUI recording WITHOUT
+// false positives. Every field is consumer DATA — recordingqa never
+// hardcodes a UI string (CONST-051(B) / §11.4.28); the bank YAML / the Spec
+// supplies the values and recordingqa forwards them unchanged.
+//
+// The two fields mirror the Panoptic recvalidate options the conductor
+// wires:
+//
+//   - ChromeLinePatterns (Panoptic CLI `--chrome-pattern`, repeatable):
+//     consumer-supplied case-insensitive regexes matching ambient UI chrome
+//     lines (sidebar labels / status panels / command lists) that the video
+//     oracle MUST EXCLUDE from reply-prose counting. Without them, a chat-TUI
+//     recording whose sidebar reads "Commands  Models  Settings" can be
+//     mis-counted as assistant reply prose — a §11.4.137-class chrome-as-reply
+//     bluff. Empty ⇒ the analyzer applies no chrome exclusion (generic chat).
+//
+//   - ReplyMarkers (Panoptic CLI `--reply-marker`, repeatable): assistant-turn
+//     prefixes (e.g. "AI:") that anchor where the real reply begins, so the
+//     oracle counts prose AFTER the marker, not the user's own echoed prompt
+//     or chrome above it. Empty ⇒ the analyzer falls back to its generic
+//     chat defaults.
+//
+// recordingqa does NOT interpret either list — it forwards them verbatim to
+// the injected VideoValidator, which maps them onto the Panoptic recvalidate
+// `ChromeLinePatterns` / `ReplyMarkers` options (CLI flags or Go API).
+type VideoOptions struct {
+	// ExpectedReplies are the reply fragments each prompt should have
+	// produced (or generic non-empty-reply markers) — the video oracle
+	// must match every one for a PASS.
+	ExpectedReplies []string
+
+	// ChromeLinePatterns are consumer-supplied regexes (raw strings) for
+	// ambient UI chrome lines to EXCLUDE from reply-prose counting.
+	ChromeLinePatterns []string
+
+	// ReplyMarkers are the assistant-turn prefixes that anchor the reply.
+	ReplyMarkers []string
+}
+
 // VideoValidator is the consumer-injected oracle that analyzes the mp4 of
 // a recorded session (frame extraction + OCR — the "Panoptic" /
 // recording-analyzer role). HelixQA never constructs a concrete one; the
 // consumer supplies an implementation that shells out to its analyzer (or
-// to the conductor's `panoptic-validate-recording <mp4>` hook) and maps the
-// result into a VideoResult.
+// to the conductor's `panoptic-validate-recording <mp4>` hook, OR the
+// sibling Panoptic `recvalidate` validator) and maps the result into a
+// VideoResult.
 //
-// Validate is given the absolute mp4 path and the list of expected reply
-// fragments (the prompts' anticipated answers / non-empty-reply markers).
-// It returns a VideoResult describing what the analyzer found. A non-nil
-// error means the analyzer COULD NOT RUN (tool absent, mp4 unreadable) —
+// Validate is given the absolute mp4 path and the VideoOptions the consumer
+// declared (expected replies + chrome-line patterns + reply markers). It
+// returns a VideoResult describing what the analyzer found. A non-nil error
+// means the analyzer COULD NOT RUN (tool absent, mp4 unreadable) —
 // recordingqa maps that to SKIP-with-reason per §11.4.3, never a fake PASS.
 type VideoValidator interface {
-	Validate(ctx context.Context, mp4Path string, expectedReplies []string) (VideoResult, error)
+	Validate(ctx context.Context, mp4Path string, opts VideoOptions) (VideoResult, error)
 }
 
 // VideoValidatorFunc adapts a plain function to VideoValidator.
-type VideoValidatorFunc func(ctx context.Context, mp4Path string, expectedReplies []string) (VideoResult, error)
+type VideoValidatorFunc func(ctx context.Context, mp4Path string, opts VideoOptions) (VideoResult, error)
 
 // Validate implements VideoValidator.
-func (f VideoValidatorFunc) Validate(ctx context.Context, mp4Path string, expectedReplies []string) (VideoResult, error) {
-	return f(ctx, mp4Path, expectedReplies)
+func (f VideoValidatorFunc) Validate(ctx context.Context, mp4Path string, opts VideoOptions) (VideoResult, error) {
+	return f(ctx, mp4Path, opts)
 }
 
 // VideoResult is the structured outcome the injected analyzer reports for
@@ -176,6 +218,21 @@ type Spec struct {
 	// assertion" — the consumer relies on the analyzer's own goal logic.
 	ExpectedReplies []string
 
+	// ChromeLinePatterns are consumer-supplied case-insensitive regexes
+	// (raw strings) matching ambient chat-TUI chrome lines (sidebar labels
+	// / status panels / command lists) that the video oracle MUST EXCLUDE
+	// from reply-prose counting (Panoptic recvalidate `--chrome-pattern`,
+	// repeatable). Forwarded verbatim to the injected VideoValidator via
+	// VideoOptions; recordingqa never interprets them (CONST-051(B)). Empty
+	// ⇒ no chrome exclusion (generic chat).
+	ChromeLinePatterns []string
+
+	// ReplyMarkers are the assistant-turn prefixes (e.g. "AI:") that anchor
+	// where the real reply begins (Panoptic recvalidate `--reply-marker`,
+	// repeatable). Forwarded verbatim to the injected VideoValidator via
+	// VideoOptions. Empty ⇒ the analyzer applies its generic chat defaults.
+	ReplyMarkers []string
+
 	// ErrorPatterns are the regexes the log oracle treats as failure
 	// evidence. When nil, DefaultErrorPatterns is used. The consumer may
 	// replace it entirely.
@@ -262,7 +319,15 @@ func (v *Validator) Validate(ctx context.Context, spec Spec) Result {
 		res.Reason = "no_video_validator_injected"
 		return v.finish(res)
 	}
-	vr, err := v.Video.Validate(ctx, spec.RecordingPath, spec.ExpectedReplies)
+	// Forward the consumer's chrome-line patterns + reply markers to the
+	// injected video oracle (which maps them onto the Panoptic recvalidate
+	// ChromeLinePatterns / ReplyMarkers options). recordingqa passes them
+	// through verbatim — it never interprets a UI string (CONST-051(B)).
+	vr, err := v.Video.Validate(ctx, spec.RecordingPath, VideoOptions{
+		ExpectedReplies:    spec.ExpectedReplies,
+		ChromeLinePatterns: spec.ChromeLinePatterns,
+		ReplyMarkers:       spec.ReplyMarkers,
+	})
 	res.Video = vr
 	if err != nil {
 		// Analyzer could not run — honest SKIP, never a fake PASS.

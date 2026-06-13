@@ -197,3 +197,110 @@ test_cases:
       - type: source
         section: "recordingqa anti-bluff paired-mutation tests"
         path: "pkg/recordingqa/recordingqa_test.go"
+
+  # ========================================================================
+  # TRV-ENSEMBLE-001 — Helix Agent ensemble chat-TUI recording: a 3-prompt
+  # session validated WITHOUT chrome/echo false positives.
+  #
+  # WHY THIS CASE EXISTS (the §11.4.137 chrome-as-reply bluff it closes).
+  # A chat-TUI renders ambient UI chrome around the conversation — a sidebar
+  # of command labels, a status panel naming the model/ensemble, a footer of
+  # keybindings. A naïve "prose appeared on a frame ⇒ the prompt got a reply"
+  # oracle counts that chrome (or the user's own echoed prompt) as if it were
+  # the assistant's answer, producing a green verdict on a recording where the
+  # model never actually replied. This case feeds the Panoptic recvalidate
+  # video oracle TWO consumer-supplied options — as DATA, never hardcoded in
+  # HelixQA (CONST-051(B) / §11.4.28):
+  #   * reply marker  "AI:"  — anchors where the real assistant reply begins,
+  #     so the oracle counts prose AFTER the marker, not the user echo or the
+  #     chrome above it (Panoptic recvalidate --reply-marker);
+  #   * chrome patterns      — case-insensitive regexes for the ensemble's
+  #     ambient chrome lines (sidebar command list, the "Helix Agent ensemble"
+  #     status panel, the keybinding footer) that the oracle EXCLUDES from
+  #     reply-prose counting (Panoptic recvalidate --chrome-pattern, repeatable).
+  # With both supplied, each of the 3 prompts must have a REAL post-"AI:" reply
+  # (chrome/echo excluded), no error/warning on-screen or in the stderr log,
+  # and the ensemble model name visible — else FAIL.
+  #
+  # PASS-THROUGH PATH (what threads the options). The conductor's wrapper
+  # builds a pkg/recordingqa.Spec with ExpectedReplies + ReplyMarkers +
+  # ChromeLinePatterns from the `recvalidate_options` block below and calls
+  # pkg/recordingqa.Validator, which forwards them verbatim to the injected
+  # Panoptic recvalidate VideoValidator (proven forwarded by the golden-good /
+  # golden-bad + paired-mutation tests in pkg/recordingqa/recordingqa_test.go:
+  # TestValidate_ChromeAndMarkersForwarded_* and
+  # TestValidate_ReplyMarkersForwarded_*). The `dispatches_to` command carries
+  # the same options as repeatable --reply-marker / --chrome-pattern flags for
+  # a wrapper that shells out to the recvalidate binary instead.
+  #
+  # NOTE ON THE VIDEO PATH. The actual mp4 is wired by the conductor at run
+  # time (HelixQA does not ship the recording). This entry fixes the STRUCTURE
+  # — options, expected replies, required evidence; the conductor resolves the
+  # real session_ensemble.mp4 + stderr log for THIS run.
+  # ========================================================================
+  - id: TRV-ENSEMBLE-001
+    challenge_id: tui.recording.helix-agent-ensemble-3prompt-chrome-aware
+    name: "TUI recording: a 3-prompt Helix Agent ensemble chat session got 3 real AI: replies (ambient chrome + user echo excluded, model visible, clean log)"
+    category: e2e
+    priority: critical
+    platforms: [tui]
+    domains: [tui, recording, llm-chat, ensemble]
+    # dispatches_to: the conductor's recvalidate wrapper. The new
+    # consumer-supplied options travel as repeatable flags (DATA — HelixQA
+    # never interprets the string): --reply-marker anchors the assistant turn;
+    # each --chrome-pattern excludes one ambient chrome family from reply-prose
+    # counting; --expect-replies asserts every prompt got a real reply.
+    dispatches_to: >-
+      panoptic-validate-recording
+      --recording session_ensemble.mp4
+      --stderr-log session_ensemble.stderr.log
+      --reply-marker "AI:"
+      --chrome-pattern "(?i)commands\s+models\s+settings"
+      --chrome-pattern "(?i)helix agent ensemble"
+      --chrome-pattern "(?i)^\s*\[[^]]+\]\s+(quit|help|scroll|history)"
+      --expect-reply "ensemble"
+      --expect-reply "second"
+      --expect-reply "third"
+      --error-patterns default
+      --findings-out frames_ensemble_findings.jsonl
+    # recvalidate_options: the STRUCTURED, schema-agnostic mirror of the flags
+    # above (read by a wrapper that builds a pkg/recordingqa.Spec instead of
+    # shelling out). Held under metadata as opaque consumer data — the testbank
+    # schema does not interpret it; the conductor's wrapper does.
+    metadata:
+      recvalidate_options:
+        reply_markers:
+          - "AI:"
+        chrome_line_patterns:
+          - "(?i)commands\\s+models\\s+settings"
+          - "(?i)helix agent ensemble"
+          - "(?i)^\\s*\\[[^]]+\\]\\s+(quit|help|scroll|history)"
+        expected_replies:
+          - "ensemble"
+          - "second"
+          - "third"
+        expected_model_visible: "Helix Agent ensemble"
+    required_evidence:
+      - "frames_ensemble_findings.jsonl"
+      - "session_ensemble.stderr.log"
+    steps:
+      - name: "Record a 3-prompt Helix Agent ensemble chat-TUI session"
+        action: "Conductor: launch the HelixCode chat TUI bound to the Helix Agent ensemble, type 3 prompts waiting for each AI: reply, then exit; capture session_ensemble.mp4 + session_ensemble.stderr.log."
+        expected: "session_ensemble.mp4 non-empty; 3 distinct AI: replies rendered; the 'Helix Agent ensemble' model name visible in the status panel."
+      - name: "Run the Panoptic recvalidate video oracle with chrome patterns + reply marker"
+        action: "panoptic-validate-recording ... --reply-marker 'AI:' --chrome-pattern '(?i)commands\\s+models\\s+settings' --chrome-pattern '(?i)helix agent ensemble' --chrome-pattern '(?i)^\\s*\\[[^]]+\\]\\s+(quit|help|scroll|history)' --expect-reply ensemble --expect-reply second --expect-reply third"
+        expected: "Each of the 3 expected replies matched in post-'AI:' prose with ambient chrome + user echo EXCLUDED; no error text on any frame; the model name 'Helix Agent ensemble' visible; frames_ensemble_findings.jsonl non-empty. A reply that survives ONLY because chrome was counted ⇒ the oracle reports it missing (FAIL), per §11.4.137."
+      - name: "Scan the TUI stderr log for error/warning/panic patterns"
+        action: "Grep session_ensemble.stderr.log for: panic | fatal | error | warning | 'no provider' | '0 models' | unhealthy | 'connection refused' | simulated"
+        expected: "ZERO matches. Any match ⇒ the ensemble interaction was broken (FAIL)."
+      - name: "Assert goal achieved (dispatch exit 0 + evidence ledger satisfied)"
+        action: "Dispatcher: wrapper exit 0 AND frames_ensemble_findings.jsonl + session_ensemble.stderr.log both resolve non-empty."
+        expected: "PASS — 3 real AI: replies (chrome/echo excluded), no error text, model visible, clean log, evidence captured."
+    tags: [tui, recording, llm-chat, ensemble, anti-bluff, chrome-aware, multi-turn, "§11.4.2", "§11.4.5", "§11.4.69", "§11.4.107", "§11.4.137", "§11.4.98", video_display]
+    documentation_refs:
+      - type: source
+        section: "recordingqa orchestrator — ChromeLinePatterns + ReplyMarkers forwarding"
+        path: "pkg/recordingqa/recordingqa.go"
+      - type: source
+        section: "chrome/marker forwarding golden-good/golden-bad + paired-mutation tests"
+        path: "pkg/recordingqa/recordingqa_test.go"
