@@ -275,11 +275,36 @@ test_cases:
           - "(?i)commands\\s+models\\s+settings"
           - "(?i)helix agent ensemble"
           - "(?i)^\\s*\\[[^]]+\\]\\s+(quit|help|scroll|history)"
+        # expected_replies: the ordinal reply-fragment markers used by the
+        # recordingqa forwarding-contract tests (chrome/marker golden-good /
+        # golden-bad). They are NOT OCR-literal prompt text.
         expected_replies:
           - "ensemble"
           - "second"
           - "third"
-        expected_model_visible: "Helix Agent ensemble"
+        # expected_prompts: the OCR-LITERAL prompt substrings actually typed in
+        # the real recorded session_ensemble.mp4 (each is the text Panoptic
+        # recvalidate `--prompt` locates on screen, after which a real post-"AI:"
+        # prose reply must follow — chrome/echo excluded). These DRIVE the real
+        # end-to-end Panoptic run on the recording (the integration test reads
+        # them verbatim). A recording with different prompts supplies its own.
+        expected_prompts:
+          - "codebase"
+          - "AGENTS"
+        # expected_model_visible: the single OCR-readable token of the model name
+        # that must appear on screen. Panoptic recvalidate's model matcher is
+        # per-OCR-token, so a multi-word display name ("Helix Agent ensemble")
+        # never matches a single token — the stable, OCR-visible core is the
+        # provider id token "ensemble" (also present as "helix-agent-ensemble").
+        expected_model_visible: "ensemble"
+        # preprocess_vf: the ffmpeg -vf input adaptation the Panoptic adapter
+        # applies to a temp copy BEFORE OCR. The HelixCode chat TUI renders
+        # light text on a dark background; tesseract expects dark-on-light, so a
+        # raw dark frame OCRs to EMPTY and every reply/model check then fails on
+        # a recording whose content is plainly visible. `negate` inverts the
+        # frames so OCR reads the real transcript. Input adaptation only — the
+        # PASS/FAIL verdict still comes entirely from Panoptic's analysis.
+        preprocess_vf: "negate"
     required_evidence:
       - "frames_ensemble_findings.jsonl"
       - "session_ensemble.stderr.log"
