@@ -1,0 +1,139 @@
+# SPDX-FileCopyrightText: 2026 Milos Vasic
+# SPDX-License-Identifier: Apache-2.0
+#
+# HelixQA Test Bank: HelixCode LSP capability (CONST-040)
+# =======================================================
+#
+# PURPOSE. Validate that HelixCode's newly-wired LSP capability is REACHABLE
+# AND genuinely used — not merely advertised as a feature flag. Two evidence
+# paths, mirroring the existing helixcode-mcp.yaml + tui-recording-validation.yaml
+# templates:
+#   1. server-side (HTTP-reachable): the server-info feature flag advertises
+#      lsp_enabled — the same machine-checkable shape helixcode-mcp.yaml uses
+#      for mcp_enabled (DATA-only http: action steps, no framework code);
+#   2. recordingqa (runtime-proof): a recorded TUI session in which the agent
+#      invokes the LSP tool MUST render, ON SCREEN, both the tool-call marker
+#      "tool: lsp_get_diagnostics" AND a REAL diagnostic line (e.g. a file:line
+#      "error"/"warning" the language server actually reported). The Panoptic
+#      recvalidate video oracle (frame OCR) asserts both markers are present —
+#      proving the LSP round-trip produced a real result, not a stub.
+#
+# WHY NOT A PRESENCE CHECK (the §11.4 / §11.4.5 / §11.4.69 bluff this closes).
+# A bank that PASSes because features.lsp_enabled==true is a configuration-only
+# PASS — the flag can be true while the LSP dispatch 503s. The recordingqa entry
+# raises the bar to captured on-screen evidence that a real diagnostic came back.
+#
+# DECOUPLING (CONST-051(B) / §11.4.28). This bank is DATA. The recordingqa entry
+# names NO concrete host path; dispatches_to is a consumer-owned command the
+# conductor resolves (injecting the DeviceExec + evidence BaseDir). The
+# recvalidate_options block is opaque consumer data the conductor's wrapper reads
+# to build a pkg/recordingqa.Spec; HelixQA never interprets it.
+version: "1.0"
+name: "HelixCode LSP Capability"
+description: >-
+  Validates HelixCode's LSP capability end-to-end: the server-info lsp_enabled
+  flag is reachable over HTTP, AND a recorded TUI session renders a real
+  lsp_get_diagnostics tool-call + a genuine diagnostic on screen (Panoptic
+  recvalidate frame OCR). A green case requires captured on-screen evidence of a
+  real diagnostic — not a flag-only / metadata-only PASS.
+metadata:
+  author: vasic-digital
+  app: HelixCode
+  category: "helixcode-lsp"
+  priority: critical
+  covenant: "§11.4.69 sink-side positive-evidence (the LSP diagnostic IS the sink)"
+  route_source: "helix_code/internal/server/server.go getServerInfo features.lsp_enabled"
+  evidence_dir: "qa-results/<run-id>/helixcode-lsp"
+  integration_hook: "panoptic-validate-recording <mp4>  (or recording-analyzer --post-analyze --recording <mp4>)"
+test_cases:
+
+  - id: HXC-LSP-001
+    name: "Server info advertises an lsp_enabled feature flag"
+    category: functional
+    priority: high
+    platforms: [api]
+    steps:
+      - name: "GET /api/v1/server/info lsp_enabled"
+        action: "http: GET /api/v1/server/info"
+        expected: "200 OK with features.lsp_enabled present"
+        expect_status: 200
+        expect_json_path: "$.info"
+        expect_body_contains: "lsp_enabled"
+    tags: [lsp, server-info, features]
+    estimated_duration: "5s"
+    expected_result: "Server info advertises the lsp_enabled feature flag"
+
+  # ========================================================================
+  # HXC-LSP-002 — recordingqa runtime proof: a recorded TUI session in which
+  # the agent runs lsp_get_diagnostics MUST render the tool-call marker AND a
+  # real diagnostic on screen. Flag-only is not enough — this is the sink-side
+  # evidence (§11.4.69): the diagnostic IS the proof the LSP round-trip worked.
+  # ========================================================================
+  - id: HXC-LSP-002
+    challenge_id: tui.recording.lsp-diagnostics-real
+    name: "TUI recording: lsp_get_diagnostics tool ran and a REAL diagnostic rendered on screen"
+    category: e2e
+    priority: critical
+    platforms: [tui]
+    domains: [tui, recording, lsp, capability]
+    dispatches_to: >-
+      panoptic-validate-recording
+      --recording session_lsp.mp4
+      --stderr-log session_lsp.stderr.log
+      --reply-marker "tool:"
+      --reply-marker "AI:"
+      --chrome-pattern "(?i)commands\s+models\s+settings"
+      --chrome-pattern "(?i)helix agent ensemble"
+      --expect-reply "lsp_get_diagnostics"
+      --expect-reply "diagnostic"
+      --error-patterns default
+      --findings-out frames_lsp_findings.jsonl
+    metadata:
+      recvalidate_options:
+        reply_markers:
+          - "tool:"
+          - "AI:"
+        chrome_line_patterns:
+          - "(?i)commands\\s+models\\s+settings"
+          - "(?i)helix agent ensemble"
+          - "(?i)^\\s*\\[[^]]+\\]\\s+(quit|help|scroll|history)"
+        # expected_replies: ordinal forwarding-contract markers.
+        expected_replies:
+          - "lsp_get_diagnostics"
+          - "diagnostic"
+        # expected_prompts: the OCR-LITERAL on-screen substrings that DRIVE the
+        # real Panoptic run — the tool-call name + a diagnostic-bearing token a
+        # real language-server response renders (file:line + severity word).
+        expected_prompts:
+          - "lsp_get_diagnostics"
+          - "diagnostic"
+        expected_model_visible: "ensemble"
+        # negate: the HelixCode chat TUI renders light text on a dark background;
+        # tesseract expects dark-on-light, so raw dark frames OCR to EMPTY. negate
+        # inverts the frames so OCR reads the real transcript. INPUT adaptation
+        # only — the verdict still comes entirely from Panoptic's analysis.
+        preprocess_vf: "negate"
+    required_evidence:
+      - "frames_lsp_findings.jsonl"
+      - "session_lsp.stderr.log"
+    steps:
+      - name: "Record a TUI session that triggers an LSP diagnostics request"
+        action: "Conductor: launch the HelixCode TUI on a project with a known diagnostic, ask the agent to run lsp_get_diagnostics, wait for the diagnostic to render, exit; capture mp4 + stderr."
+        expected: "session_lsp.mp4 non-empty; the tool-call + a real diagnostic line rendered."
+      - name: "Panoptic oracle asserts the tool-call marker AND a real diagnostic on screen"
+        action: "panoptic-validate-recording --recording session_lsp.mp4 --expect-reply lsp_get_diagnostics --expect-reply diagnostic"
+        expected: "Both markers matched in post-marker prose (chrome excluded); no error text; frames_lsp_findings.jsonl non-empty. A flag-true recording with NO diagnostic on screen ⇒ FAIL."
+      - name: "Scan the TUI stderr log for error/warning/panic patterns"
+        action: "Grep session_lsp.stderr.log for: panic | fatal | error | 'no provider' | '0 models' | unhealthy | 'connection refused' | simulated"
+        expected: "ZERO matches that indicate a broken LSP round-trip."
+      - name: "Assert goal achieved (dispatch exit 0 + evidence ledger satisfied)"
+        action: "Dispatcher: wrapper exit 0 AND frames_lsp_findings.jsonl + session_lsp.stderr.log both resolve non-empty."
+        expected: "PASS — LSP tool ran, real diagnostic rendered, evidence captured."
+    tags: [lsp, tui, recording, capability, anti-bluff, "§11.4.2", "§11.4.5", "§11.4.69", "§11.4.107", "§11.4.98", video_display]
+    documentation_refs:
+      - type: source
+        section: "recordingqa orchestrator"
+        path: "pkg/recordingqa/recordingqa.go"
+      - type: source
+        section: "Panoptic recvalidate video oracle adapter"
+        path: "pkg/recordingqa/panopticoracle/panopticoracle.go"

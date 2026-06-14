@@ -1,0 +1,132 @@
+# SPDX-FileCopyrightText: 2026 Milos Vasic
+# SPDX-License-Identifier: Apache-2.0
+#
+# HelixQA Test Bank: HelixCode Helix Agent ensemble member visibility
+# ===================================================================
+#
+# PURPOSE. Validate that the Helix Agent ensemble exposes its MEMBERS to the
+# user — each member name, its per-member model (codestral / mistral / deepseek),
+# and the "(via LLMsVerifier)" provenance marker proving members are sourced from
+# the verifier (CONST-036/037), NOT a hardcoded list. The proof is a recorded TUI
+# session whose status/members panel renders all three markers, asserted by the
+# Panoptic recvalidate frame OCR oracle.
+#
+# WHY THIS MATTERS (CONST-036/037 + the §11.4 hardcoded-list bluff). A bank that
+# PASSes because the ensemble "exists" misses the substance: the user must SEE
+# the real member names + their per-member models + the LLMsVerifier provenance.
+# A recording that renders the ensemble panel WITHOUT "(via LLMsVerifier)" or
+# WITHOUT per-member models is a hardcoded-list / metadata-only bluff ⇒ FAIL.
+#
+# DECOUPLING (CONST-051(B) / §11.4.28). DATA only. dispatches_to + recvalidate_
+# options are consumer data; HelixQA never interprets them. The member names +
+# per-member models below are the OCR-literal substrings a real ensemble panel
+# renders; a recording with different members supplies its own.
+version: "1.0"
+name: "HelixCode Ensemble Member Visibility"
+description: >-
+  Validates the Helix Agent ensemble's member visibility: a recorded TUI session
+  MUST render the member names + per-member models (codestral / mistral /
+  deepseek) + the '(via LLMsVerifier)' provenance marker on screen (Panoptic
+  recvalidate frame OCR). A green case requires captured on-screen evidence of
+  real members + models + verifier provenance — not a hardcoded-list / flag-only
+  PASS (CONST-036/037).
+metadata:
+  author: vasic-digital
+  app: HelixCode
+  category: "helixcode-ensemble-members"
+  priority: critical
+  covenant: "CONST-036/037 — members sourced from LLMsVerifier, NOT a hardcoded list; §11.4.69 the rendered panel IS the sink"
+  route_source: "helix_code/internal/llm (Helix Agent ensemble) + LLMsVerifier provenance"
+  evidence_dir: "qa-results/<run-id>/helixcode-ensemble-members"
+  integration_hook: "panoptic-validate-recording <mp4>  (or recording-analyzer --post-analyze --recording <mp4>)"
+test_cases:
+
+  - id: HXC-ENS-001
+    name: "Server info advertises the Helix Agent ensemble provider"
+    category: functional
+    priority: high
+    platforms: [api]
+    steps:
+      - name: "GET /api/v1/server/info ensemble"
+        action: "http: GET /api/v1/server/info"
+        expected: "200 OK; the response references the Helix Agent ensemble provider"
+        expect_status: 200
+        expect_json_path: "$.info"
+        expect_body_contains: "ensemble"
+    tags: [ensemble, server-info, features]
+    estimated_duration: "5s"
+    expected_result: "Server info advertises the Helix Agent ensemble provider"
+
+  # ========================================================================
+  # HXC-ENS-002 — recordingqa runtime proof: the ensemble members panel MUST
+  # render member names + per-member models (codestral/mistral/deepseek) + the
+  # "(via LLMsVerifier)" provenance marker on screen. Each is an expected reply
+  # the Panoptic oracle must match; a missing marker ⇒ FAIL.
+  # ========================================================================
+  - id: HXC-ENS-002
+    challenge_id: tui.recording.ensemble-members-and-models-visible
+    name: "TUI recording: ensemble member names + per-member models + '(via LLMsVerifier)' all rendered on screen"
+    category: e2e
+    priority: critical
+    platforms: [tui]
+    domains: [tui, recording, ensemble, capability, llmsverifier]
+    dispatches_to: >-
+      panoptic-validate-recording
+      --recording session_members.mp4
+      --stderr-log session_members.stderr.log
+      --reply-marker "AI:"
+      --reply-marker "member:"
+      --chrome-pattern "(?i)^\s*\[[^]]+\]\s+(quit|help|scroll|history)"
+      --expect-reply "via LLMsVerifier"
+      --expect-reply "codestral"
+      --expect-reply "mistral"
+      --expect-reply "deepseek"
+      --error-patterns default
+      --findings-out frames_members_findings.jsonl
+    metadata:
+      recvalidate_options:
+        reply_markers:
+          - "AI:"
+          - "member:"
+        chrome_line_patterns:
+          - "(?i)^\\s*\\[[^]]+\\]\\s+(quit|help|scroll|history)"
+        expected_replies:
+          - "via LLMsVerifier"
+          - "codestral"
+          - "mistral"
+          - "deepseek"
+        # expected_prompts: OCR-literal substrings the ensemble members panel
+        # renders — the provenance marker + each per-member model id. These DRIVE
+        # the real Panoptic run; a recording with different members supplies its
+        # own member/model tokens.
+        expected_prompts:
+          - "via LLMsVerifier"
+          - "codestral"
+          - "mistral"
+          - "deepseek"
+        expected_model_visible: "ensemble"
+        preprocess_vf: "negate"
+    required_evidence:
+      - "frames_members_findings.jsonl"
+      - "session_members.stderr.log"
+    steps:
+      - name: "Record a TUI session that shows the ensemble members panel"
+        action: "Conductor: launch the HelixCode TUI bound to the Helix Agent ensemble, open the members/status panel, wait for member names + per-member models + provenance to render, exit; capture mp4 + stderr."
+        expected: "session_members.mp4 non-empty; member names + codestral/mistral/deepseek models + '(via LLMsVerifier)' all rendered."
+      - name: "Panoptic oracle asserts members + models + LLMsVerifier provenance on screen"
+        action: "panoptic-validate-recording --recording session_members.mp4 --expect-reply 'via LLMsVerifier' --expect-reply codestral --expect-reply mistral --expect-reply deepseek"
+        expected: "All four markers matched in post-marker prose (chrome excluded); no error text; frames_members_findings.jsonl non-empty. A panel missing the provenance marker OR a per-member model ⇒ FAIL (hardcoded-list / incomplete bluff)."
+      - name: "Scan the TUI stderr log for error/warning/panic patterns"
+        action: "Grep session_members.stderr.log for: panic | fatal | error | 'no provider' | '0 models' | unhealthy | simulated"
+        expected: "ZERO matches that indicate a broken ensemble member listing."
+      - name: "Assert goal achieved (dispatch exit 0 + evidence ledger satisfied)"
+        action: "Dispatcher: wrapper exit 0 AND frames_members_findings.jsonl + session_members.stderr.log both resolve non-empty."
+        expected: "PASS — members + per-member models + LLMsVerifier provenance captured on screen, evidence captured."
+    tags: [ensemble, tui, recording, capability, llmsverifier, anti-bluff, "CONST-036", "CONST-037", "§11.4.5", "§11.4.69", "§11.4.107", "§11.4.98", video_display]
+    documentation_refs:
+      - type: source
+        section: "recordingqa orchestrator"
+        path: "pkg/recordingqa/recordingqa.go"
+      - type: source
+        section: "Panoptic recvalidate video oracle adapter"
+        path: "pkg/recordingqa/panopticoracle/panopticoracle.go"

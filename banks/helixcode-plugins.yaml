@@ -1,0 +1,122 @@
+# SPDX-FileCopyrightText: 2026 Milos Vasic
+# SPDX-License-Identifier: Apache-2.0
+#
+# HelixQA Test Bank: HelixCode Plugins capability (CONST-040)
+# ===========================================================
+#
+# PURPOSE. Validate that HelixCode's newly-wired Plugins capability genuinely
+# EXECUTES a plugin at runtime. The reference plugin is a sysinfo plugin that
+# shells out (anti-BLUFF-003: real os/exec, not print-and-sleep). The proof is a
+# recorded TUI session in which the sysinfo plugin runs and its REAL output
+# ("uname" output OR a git sha) renders on screen — asserted by the Panoptic
+# recvalidate frame OCR oracle.
+#
+# WHY NOT A FLAG CHECK (the §11.4 / §11.4.5 / §11.4.69 bluff this closes).
+# features.plugins_enabled==true is configuration-only; the plugin's real shelled
+# output on screen is the sink-side positive evidence (§11.4.69) that it executed.
+#
+# DECOUPLING (CONST-051(B) / §11.4.28). DATA only. dispatches_to is consumer-
+# owned; recvalidate_options is opaque consumer data. HelixQA never interprets it.
+version: "1.0"
+name: "HelixCode Plugins Capability"
+description: >-
+  Validates HelixCode's Plugins capability: a recorded TUI session in which the
+  sysinfo plugin runs MUST render its real output ('uname' output or a git sha)
+  on screen (Panoptic recvalidate frame OCR). A green case requires captured
+  on-screen evidence the plugin executed — not a plugins_enabled flag-only PASS.
+metadata:
+  author: vasic-digital
+  app: HelixCode
+  category: "helixcode-plugins"
+  priority: critical
+  covenant: "§11.4.69 sink-side positive-evidence (the plugin's real output IS the sink)"
+  route_source: "helix_code/internal/server/server.go getServerInfo features.plugins_enabled"
+  evidence_dir: "qa-results/<run-id>/helixcode-plugins"
+  integration_hook: "panoptic-validate-recording <mp4>  (or recording-analyzer --post-analyze --recording <mp4>)"
+test_cases:
+
+  - id: HXC-PLUGIN-001
+    name: "Server info advertises a plugins_enabled feature flag"
+    category: functional
+    priority: high
+    platforms: [api]
+    steps:
+      - name: "GET /api/v1/server/info plugins_enabled"
+        action: "http: GET /api/v1/server/info"
+        expected: "200 OK with features.plugins_enabled present"
+        expect_status: 200
+        expect_json_path: "$.info"
+        expect_body_contains: "plugins_enabled"
+    tags: [plugins, server-info, features]
+    estimated_duration: "5s"
+    expected_result: "Server info advertises the plugins_enabled feature flag"
+
+  # ========================================================================
+  # HXC-PLUGIN-002 — recordingqa runtime proof: a recorded session where the
+  # sysinfo plugin runs MUST render its real output ('uname' / a git sha) on
+  # screen. The rendered shelled output is the §11.4.69 proof the plugin executed
+  # (anti-BLUFF-003: real os/exec output, not a simulated string).
+  # ========================================================================
+  - id: HXC-PLUGIN-002
+    challenge_id: tui.recording.plugin-sysinfo-output
+    name: "TUI recording: the sysinfo plugin ran and its real output ('uname' / a git sha) rendered on screen"
+    category: e2e
+    priority: critical
+    platforms: [tui]
+    domains: [tui, recording, plugins, capability]
+    dispatches_to: >-
+      panoptic-validate-recording
+      --recording session_plugin.mp4
+      --stderr-log session_plugin.stderr.log
+      --reply-marker "AI:"
+      --reply-marker "plugin:"
+      --chrome-pattern "(?i)commands\s+models\s+settings"
+      --chrome-pattern "(?i)helix agent ensemble"
+      --expect-reply "uname"
+      --expect-reply "Linux"
+      --error-patterns default
+      --findings-out frames_plugin_findings.jsonl
+    metadata:
+      recvalidate_options:
+        reply_markers:
+          - "AI:"
+          - "plugin:"
+        chrome_line_patterns:
+          - "(?i)commands\\s+models\\s+settings"
+          - "(?i)helix agent ensemble"
+          - "(?i)^\\s*\\[[^]]+\\]\\s+(quit|help|scroll|history)"
+        expected_replies:
+          - "uname"
+          - "Linux"
+        # expected_prompts: OCR-literal substrings the real sysinfo plugin output
+        # contains — the "uname" invocation token + a token from a real uname
+        # line (e.g. "Linux" / "Darwin"). A recording must supply the token its
+        # actual host renders.
+        expected_prompts:
+          - "uname"
+        expected_model_visible: "ensemble"
+        preprocess_vf: "negate"
+    required_evidence:
+      - "frames_plugin_findings.jsonl"
+      - "session_plugin.stderr.log"
+    steps:
+      - name: "Record a TUI session that runs the sysinfo plugin"
+        action: "Conductor: launch the HelixCode TUI, ask the agent to run the sysinfo plugin, wait for the real uname/git-sha output to render, exit; capture mp4 + stderr."
+        expected: "session_plugin.mp4 non-empty; the plugin's real shelled output rendered."
+      - name: "Panoptic oracle asserts the plugin's real output on screen"
+        action: "panoptic-validate-recording --recording session_plugin.mp4 --expect-reply uname"
+        expected: "The uname/git-sha output matched in post-marker prose (chrome excluded); no error text; frames_plugin_findings.jsonl non-empty. A flag-true recording with NO plugin output ⇒ FAIL."
+      - name: "Scan the TUI stderr log for error/warning/panic patterns"
+        action: "Grep session_plugin.stderr.log for: panic | fatal | error | 'no provider' | '0 models' | unhealthy | simulated"
+        expected: "ZERO matches that indicate a broken plugin invocation."
+      - name: "Assert goal achieved (dispatch exit 0 + evidence ledger satisfied)"
+        action: "Dispatcher: wrapper exit 0 AND frames_plugin_findings.jsonl + session_plugin.stderr.log both resolve non-empty."
+        expected: "PASS — plugin executed, real output captured on screen, evidence captured."
+    tags: [plugins, tui, recording, capability, anti-bluff, "§11.4.2", "§11.4.5", "§11.4.69", "§11.4.107", "§11.4.98", video_display]
+    documentation_refs:
+      - type: source
+        section: "recordingqa orchestrator"
+        path: "pkg/recordingqa/recordingqa.go"
+      - type: source
+        section: "Panoptic recvalidate video oracle adapter"
+        path: "pkg/recordingqa/panopticoracle/panopticoracle.go"

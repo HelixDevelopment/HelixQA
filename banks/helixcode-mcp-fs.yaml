@@ -1,0 +1,128 @@
+# SPDX-FileCopyrightText: 2026 Milos Vasic
+# SPDX-License-Identifier: Apache-2.0
+#
+# HelixQA Test Bank: HelixCode MCP filesystem tool invocation (CONST-040)
+# =======================================================================
+#
+# PURPOSE. Validate that HelixCode genuinely USES an MCP tool at runtime — the
+# canonical example is the filesystem tool fs:read_text_file. The sibling
+# helixcode-mcp.yaml covers the MCP /ws route surface reachable over HTTP and
+# honestly SKIPs the full JSON-RPC protocol exchange (no ws: driver). THIS bank
+# closes the runtime-proof gap a different way: a recorded TUI session in which
+# the agent calls the MCP fs tool MUST render BOTH the tool-call marker
+# "tool: fs:read_text_file" AND the REAL file listing/content it returned — proof
+# an MCP tool was actually invoked and produced a real result.
+#
+# WHY NOT THE /ws SKIP ALONE (the §11.4 / §11.4.5 / §11.4.69 gap this closes).
+# helixcode-mcp.yaml's HXC-MCP-005/006 are honest SKIPs pending a ws: driver. The
+# recordingqa path needs no ws: driver — it proves the MCP tool ran by capturing
+# its on-screen output (the file listing IS the sink-side evidence, §11.4.69).
+#
+# DECOUPLING (CONST-051(B) / §11.4.28). DATA only. dispatches_to + recvalidate_
+# options are consumer data; HelixQA never interprets them.
+version: "1.0"
+name: "HelixCode MCP Filesystem Tool"
+description: >-
+  Validates HelixCode's MCP tool invocation via the filesystem tool: a recorded
+  TUI session in which fs:read_text_file runs MUST render the tool-call marker
+  AND a real file listing/content on screen (Panoptic recvalidate frame OCR). A
+  green case requires captured on-screen evidence an MCP tool was used — closing
+  the runtime-proof gap helixcode-mcp.yaml leaves as an honest ws-driver SKIP.
+metadata:
+  author: vasic-digital
+  app: HelixCode
+  category: "helixcode-mcp-fs"
+  priority: critical
+  covenant: "§11.4.69 sink-side positive-evidence (the real file listing IS the sink)"
+  route_source: "helix_code/internal/mcp filesystem tool (fs:read_text_file) + handleWebSocket /ws"
+  coverage_relation: "complements helixcode-mcp.yaml HXC-MCP-005/006 (ws: driver SKIPs) with a recordingqa runtime proof"
+  evidence_dir: "qa-results/<run-id>/helixcode-mcp-fs"
+  integration_hook: "panoptic-validate-recording <mp4>  (or recording-analyzer --post-analyze --recording <mp4>)"
+test_cases:
+
+  - id: HXC-MCPFS-001
+    name: "Server info advertises an mcp_enabled feature flag"
+    category: functional
+    priority: high
+    platforms: [api]
+    steps:
+      - name: "GET /api/v1/server/info mcp_enabled"
+        action: "http: GET /api/v1/server/info"
+        expected: "200 OK with features.mcp_enabled present (MCP fs tool depends on MCP being enabled)"
+        expect_status: 200
+        expect_json_path: "$.info"
+        expect_body_contains: "mcp_enabled"
+    tags: [mcp, fs, server-info, features]
+    estimated_duration: "5s"
+    expected_result: "Server info advertises the mcp_enabled feature flag the fs tool depends on"
+
+  # ========================================================================
+  # HXC-MCPFS-002 — recordingqa runtime proof: a recorded session where the
+  # agent calls fs:read_text_file MUST render the tool-call marker + the real
+  # file listing/content on screen. The rendered listing is the §11.4.69 proof
+  # an MCP tool was actually invoked (no ws: driver needed).
+  # ========================================================================
+  - id: HXC-MCPFS-002
+    challenge_id: tui.recording.mcp-fs-read-text-file-used
+    name: "TUI recording: fs:read_text_file MCP tool ran and a real file listing rendered on screen"
+    category: e2e
+    priority: critical
+    platforms: [tui]
+    domains: [tui, recording, mcp, capability]
+    dispatches_to: >-
+      panoptic-validate-recording
+      --recording session_mcpfs.mp4
+      --stderr-log session_mcpfs.stderr.log
+      --reply-marker "tool:"
+      --reply-marker "AI:"
+      --chrome-pattern "(?i)commands\s+models\s+settings"
+      --chrome-pattern "(?i)helix agent ensemble"
+      --expect-reply "fs:read_text_file"
+      --expect-reply "README"
+      --error-patterns default
+      --findings-out frames_mcpfs_findings.jsonl
+    metadata:
+      recvalidate_options:
+        reply_markers:
+          - "tool:"
+          - "AI:"
+        chrome_line_patterns:
+          - "(?i)commands\\s+models\\s+settings"
+          - "(?i)helix agent ensemble"
+          - "(?i)^\\s*\\[[^]]+\\]\\s+(quit|help|scroll|history)"
+        expected_replies:
+          - "fs:read_text_file"
+          - "README"
+        # expected_prompts: OCR-literal substrings — the MCP tool-call name +
+        # a token from the REAL file the tool read back (e.g. a filename like
+        # "README" the listing contains). A recording supplies the token its
+        # actual read returns.
+        expected_prompts:
+          - "fs:read_text_file"
+          - "README"
+        expected_model_visible: "ensemble"
+        preprocess_vf: "negate"
+    required_evidence:
+      - "frames_mcpfs_findings.jsonl"
+      - "session_mcpfs.stderr.log"
+    steps:
+      - name: "Record a TUI session that calls the MCP fs:read_text_file tool"
+        action: "Conductor: launch the HelixCode TUI on a project, ask the agent to read a known file via the MCP fs tool, wait for the tool-call marker + the real file content/listing to render, exit; capture mp4 + stderr."
+        expected: "session_mcpfs.mp4 non-empty; 'tool: fs:read_text_file' + a real file token rendered."
+      - name: "Panoptic oracle asserts the MCP tool-call marker AND a real listing on screen"
+        action: "panoptic-validate-recording --recording session_mcpfs.mp4 --expect-reply fs:read_text_file --expect-reply README"
+        expected: "Both markers matched in post-marker prose (chrome excluded); no error text; frames_mcpfs_findings.jsonl non-empty. A recording with the tool-call marker but NO real file content ⇒ FAIL (stub/no-result bluff)."
+      - name: "Scan the TUI stderr log for error/warning/panic patterns"
+        action: "Grep session_mcpfs.stderr.log for: panic | fatal | error | 'no provider' | '0 models' | unhealthy | simulated"
+        expected: "ZERO matches that indicate a broken MCP tool invocation."
+      - name: "Assert goal achieved (dispatch exit 0 + evidence ledger satisfied)"
+        action: "Dispatcher: wrapper exit 0 AND frames_mcpfs_findings.jsonl + session_mcpfs.stderr.log both resolve non-empty."
+        expected: "PASS — MCP fs tool ran, real file listing captured on screen, evidence captured."
+    tags: [mcp, fs, tui, recording, capability, anti-bluff, "§11.4.2", "§11.4.5", "§11.4.69", "§11.4.107", "§11.4.98", video_display]
+    documentation_refs:
+      - type: source
+        section: "recordingqa orchestrator"
+        path: "pkg/recordingqa/recordingqa.go"
+      - type: source
+        section: "Panoptic recvalidate video oracle adapter"
+        path: "pkg/recordingqa/panopticoracle/panopticoracle.go"
