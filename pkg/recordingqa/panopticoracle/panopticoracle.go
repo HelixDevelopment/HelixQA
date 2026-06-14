@@ -110,6 +110,14 @@ type Config struct {
 	// returns an error so the orchestrator SKIPs honestly (§11.4.3).
 	PreprocessVF   string
 	PreprocessTool string
+
+	// ErrorScopeReplies, when true, passes recvalidate `--error-scope-replies`
+	// so the built-in error/warning scan is restricted to the assistant-reply
+	// regions and incidental terminal scrollback (pre-session startup warnings,
+	// redis/log noise) cannot false-FAIL a STRUCTURAL-presence bank. Consumer
+	// DATA (CONST-051(B)) — default false leaves the whole-frame scan unchanged;
+	// genuine errors inside a reply still FAIL under either mode.
+	ErrorScopeReplies bool
 }
 
 // checkResult mirrors Panoptic recvalidate's per-check JSON shape.
@@ -269,6 +277,9 @@ func (v *validator) buildArgs(mp4Path string, opts recordingqa.VideoOptions) []s
 	}
 	if v.cfg.JSONOutPath != "" {
 		args = append(args, "--json-out", v.cfg.JSONOutPath)
+	}
+	if v.cfg.ErrorScopeReplies {
+		args = append(args, "--error-scope-replies")
 	}
 
 	// Expected replies → repeatable --prompt (recvalidate treats each as an

@@ -144,12 +144,13 @@ func run() int {
 	}
 
 	oracle := panopticoracle.New(panopticoracle.Config{
-		Command:      command,
-		Dir:          dir,
-		Model:        opts.expectedModel,
-		FramesDir:    fdir,
-		JSONOutPath:  jout,
-		PreprocessVF: opts.preprocessVF,
+		Command:           command,
+		Dir:               dir,
+		Model:             opts.expectedModel,
+		FramesDir:         fdir,
+		JSONOutPath:       jout,
+		PreprocessVF:      opts.preprocessVF,
+		ErrorScopeReplies: opts.errorScopeReplies,
 	})
 
 	// --- run the bank entry's options through the recordingqa orchestrator ---
@@ -232,12 +233,13 @@ func findCase(bf *testbank.BankFile, id string) *testbank.TestCase {
 // bankOptions is the typed view of metadata.recvalidate_options — the same shape
 // the panopticoracle integration test reads, so the bank's DATA drives the run.
 type bankOptions struct {
-	replyMarkers    []string
-	chromePatterns  []string
-	expectedReplies []string
-	expectedPrompts []string
-	expectedModel   string
-	preprocessVF    string
+	replyMarkers      []string
+	chromePatterns    []string
+	expectedReplies   []string
+	expectedPrompts   []string
+	expectedModel     string
+	preprocessVF      string
+	errorScopeReplies bool
 }
 
 // extractRecvalidateOptions reads metadata.recvalidate_options.{reply_markers,
@@ -265,6 +267,9 @@ func extractRecvalidateOptions(tc *testbank.TestCase) (bankOptions, error) {
 	}
 	if s, ok := m["preprocess_vf"].(string); ok {
 		out.preprocessVF = s
+	}
+	if b, ok := m["error_scope_replies"].(bool); ok {
+		out.errorScopeReplies = b
 	}
 	if len(out.expectedPrompts) == 0 {
 		return bankOptions{}, fmt.Errorf("metadata.recvalidate_options has no expected_prompts (nothing to assert on the recording)")
