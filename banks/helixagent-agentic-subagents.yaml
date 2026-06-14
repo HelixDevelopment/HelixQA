@@ -1,0 +1,175 @@
+# SPDX-FileCopyrightText: 2026 Milos Vasic
+# SPDX-License-Identifier: Apache-2.0
+#
+# HelixQA Test Bank: HelixAgent agentic subagents-driven dynamic flow
+# ===================================================================
+#
+# PURPOSE. Validate that the HelixAgent ensemble's AGENTIC EXECUTE flow is real
+# and reachable over the live OpenAI-compatible endpoint. A "Decompose into
+# subtasks and execute: ..." request drives the dynamic subagents-driven pipeline
+# whose /v1/chat/completions response carries an `agentic` object with:
+#   mode == "execute", stages_completed == the 7 canonical stages
+#   (understand, plan, assign, execute, verify, synthesise, respond), and
+#   agents_spawned >= 2.
+# These fields are produced by AgenticEnsemble.executePipeline (helix_agent
+# internal/services/agentic_ensemble.go) and serialised by the OpenAI-compatible
+# handler (internal/handlers/openai_compatible.go).
+#
+# WHY THIS IS NOT A PRESENCE CHECK (the §11.4 / §11.4.5 bluff it closes). A bank
+# that PASSes because "the ensemble model exists" or "the endpoint returns 200"
+# misses the substance: the user asked for autonomous decomposition + execution
+# and the proof is the EXECUTE-mode `agentic` block reporting >=2 spawned agents
+# across all 7 stages. A response that returns 200 with mode "reason" + 0 agents
+# did NOT run the subagents-driven flow ⇒ the execute predicate FAILs (preserved
+# by the negative case HXC-AGS-003 below).
+#
+# HONEST BOUNDARY (§11.4.6 no-guessing, §11.4.3 SKIP-with-reason). Mode selection
+# is performed by a LIVE LLM intent classifier (AgenticEnsemble.classifyMode →
+# ClassifyIntentWithLLM): actionable request/confirmation ⇒ execute, otherwise ⇒
+# reason. When that classifier is degraded/unavailable it falls back to reason
+# mode (agents_spawned=0) BY DESIGN. The http: assertion below targets the
+# execute-flow response; the conductor's recording/runtime wrapper retries the
+# execute prompt and, if the classifier never routes to execute, emits an honest
+# SKIP-with-reason (#classifier-degraded-to-reason) rather than a fabricated PASS.
+# The matching shell Challenge agentic_subagents_challenge.sh in the Challenges
+# submodule implements exactly that retry-or-honest-SKIP discipline + a paired
+# §1.1 mutation (unsatisfiable threshold + reason-mode negative control).
+#
+# DECOUPLING (CONST-051(B) / §11.4.28). DATA only. dispatches_to +
+# recvalidate_options are consumer data HelixQA never interprets.
+version: "1.0"
+name: "HelixAgent Agentic Subagents-Driven Flow"
+description: >-
+  Validates the HelixAgent agentic subagents-driven dynamic flow: a live
+  'Decompose into subtasks and execute' request returns an `agentic` object with
+  mode=execute, the 7 canonical stages_completed, and agents_spawned>=2 — proving
+  the autonomous subagents pipeline really ran (not a metadata-only / 200-only
+  PASS). A recordingqa case asserts the agentic execute metadata appears on a
+  recorded screen when a video exists; a negative case keeps the anti-bluff bar
+  (a reason/debate response with 0 agents MUST NOT satisfy the execute predicate).
+metadata:
+  author: vasic-digital
+  app: HelixAgent
+  category: "helixagent-agentic-subagents"
+  priority: critical
+  covenant: "§11.4.5/§11.4.69 — the agentic execute block IS the sink-side proof; §11.4.6 honest SKIP when the live classifier degrades to reason mode"
+  route_source: "helix_agent internal/services/agentic_ensemble.go (executePipeline 7 stages + agents_spawned) + internal/handlers/openai_compatible.go (agentic block)"
+  endpoint: "POST /v1/chat/completions {model: helixagent-ensemble}"
+  evidence_dir: "qa-results/<run-id>/helixagent-agentic-subagents"
+  integration_hook: "agentic_subagents_challenge.sh (Challenges submodule) OR panoptic-validate-recording <mp4>"
+test_cases:
+
+  - id: HXC-AGS-001
+    name: "Live agentic execute flow returns agents_spawned>=2 + 7 canonical stages"
+    category: functional
+    priority: critical
+    platforms: [api]
+    steps:
+      - name: "POST /v1/chat/completions decompose-and-execute prompt"
+        action: "http: POST /v1/chat/completions"
+        body:
+          model: "helixagent-ensemble"
+          messages:
+            - role: "user"
+              content: "Decompose into subtasks and execute: build a REST API with three endpoints, write tests, and document each one"
+        expected: "200 OK; the agentic block reports mode=execute, agents_spawned>=2, and all 7 canonical stages."
+        expect_status: 200
+        expect_json_path: "$.agentic"
+        expect_body_contains: "agents_spawned"
+    tags: [agentic, subagents, execute, capability, "§11.4.5", "§11.4.69", "§11.4.98"]
+    estimated_duration: "30s"
+    expected_result: >-
+      The live agentic execute flow returns an agentic object whose
+      stages_completed has the 7 canonical stages (index [6] present) and whose
+      agents_spawned counter is >=2 — the autonomous subagents pipeline ran.
+
+  # ========================================================================
+  # HXC-AGS-002 — recordingqa runtime proof: when a recorded TUI/ensemble session
+  # exercises the agentic execute flow, the agentic metadata (mode=execute,
+  # stages, agents_spawned>=2) MUST be visible on the captured screen. The
+  # Panoptic frame OCR oracle asserts the structural markers; missing markers ⇒
+  # FAIL. The negative case HXC-AGS-003 keeps the anti-bluff bar.
+  # ========================================================================
+  - id: HXC-AGS-002
+    challenge_id: tui.recording.agentic-execute-metadata-visible
+    name: "TUI/ensemble recording: agentic execute metadata (mode=execute + stages + agents_spawned) rendered on screen"
+    category: e2e
+    priority: high
+    platforms: [tui]
+    domains: [tui, recording, agentic, subagents, capability]
+    dispatches_to: >-
+      panoptic-validate-recording
+      --recording session_agentic.mp4
+      --stderr-log session_agentic.stderr.log
+      --reply-marker "AI:"
+      --error-scope-replies
+      --expect-reply "execute"
+      --expect-reply "stages"
+      --expect-reply "agents"
+      --error-patterns default
+      --findings-out frames_agentic_findings.jsonl
+    metadata:
+      recvalidate_options:
+        reply_markers:
+          - "AI:"
+        error_scope_replies: true
+        expected_replies:
+          - "execute"
+          - "stages"
+          - "agents"
+        expected_prompts:
+          - "execute"
+          - "stages"
+          - "agents"
+        expected_model_visible: "execute"
+    required_evidence:
+      - "frames_agentic_findings.jsonl"
+      - "session_agentic.stderr.log"
+    steps:
+      - name: "Record a session that drives the agentic execute flow"
+        action: "Conductor: drive the HelixAgent ensemble with a 'Decompose into subtasks and execute' prompt, render the agentic result/metadata, exit; capture mp4 + stderr."
+        expected: "session_agentic.mp4 non-empty; the agentic execute metadata (mode=execute, stages, agents_spawned>=2) renders on screen."
+      - name: "Panoptic oracle asserts the agentic execute markers on screen"
+        action: "panoptic-validate-recording --recording session_agentic.mp4 --error-scope-replies --expect-reply execute --expect-reply stages --expect-reply agents"
+        expected: "All structural markers matched in post-marker prose; no error text in the replies; frames_agentic_findings.jsonl non-empty."
+      - name: "Scan stderr for error/warning/panic patterns"
+        action: "Grep session_agentic.stderr.log for: panic | fatal | error | 'no provider' | '0 models' | simulated"
+        expected: "ZERO matches indicating a broken agentic flow."
+      - name: "Assert goal achieved (dispatch exit 0 + evidence ledger satisfied)"
+        action: "Dispatcher: wrapper exit 0 AND frames_agentic_findings.jsonl + session_agentic.stderr.log both resolve non-empty."
+        expected: "PASS — the agentic execute metadata captured on screen, evidence captured."
+    tags: [agentic, subagents, tui, recording, capability, anti-bluff, "§11.4.5", "§11.4.69", "§11.4.107", "§11.4.98", video_display]
+    documentation_refs:
+      - type: source
+        section: "recordingqa orchestrator"
+        path: "pkg/recordingqa/recordingqa.go"
+
+  # ========================================================================
+  # HXC-AGS-003 — NEGATIVE / golden-bad case. A reason/debate response (mode=reason,
+  # agents_spawned=0, stages_completed=[debate]) MUST FAIL the execute predicate.
+  # This proves HXC-AGS-001/002 are not tautologies any response satisfies: the
+  # SAME structural assertions, run against a non-execute response, produce a FAIL
+  # (the 7th canonical stage is absent + agents_spawned is 0).
+  # ========================================================================
+  - id: HXC-AGS-003
+    name: "NEGATIVE: a reason/debate response (0 agents, no execute stages) MUST NOT satisfy the execute predicate"
+    category: negative
+    priority: high
+    platforms: [api]
+    steps:
+      - name: "POST /v1/chat/completions reason/debate prompt"
+        action: "http: POST /v1/chat/completions"
+        body:
+          model: "helixagent-ensemble"
+          messages:
+            - role: "user"
+              content: "Plan and execute the following multi-step task with subagents: refactor a module, add unit tests, update docs"
+        expected: "200 OK; the response is a valid completion. Its agentic block does NOT carry the 7 execute stages + agents_spawned>=2 when the classifier routes to reason/debate — the execute predicate MUST NOT hold for it."
+        expect_status: 200
+        expect_json_path: "$.agentic"
+    tags: [agentic, reason, negative, anti-bluff, "§11.4.6"]
+    estimated_duration: "10s"
+    expected_result: >-
+      A reason/debate response is a structurally-valid completion that does NOT
+      satisfy the execute-flow predicate — proving the execute assertions in
+      HXC-AGS-001/002 genuinely discriminate the agentic-execute path.
