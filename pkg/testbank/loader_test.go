@@ -194,3 +194,75 @@ func TestLoadDir_W6A_RealBanksDirLoadsCleanly(t *testing.T) {
 		t.Error("expected re-IDed FQA-ATV-FOCUS-141 from validation-androidtv-focus.json")
 	}
 }
+
+// TestLoadFile_TRVEnsemble_RecvalidateOptionsRoundTrip pins the new
+// per-case Metadata field: the TUI-recording bank's TRV-ENSEMBLE-001
+// carries `metadata.recvalidate_options.{reply_markers,chrome_line_patterns,
+// expected_replies}` — the structured, consumer-interpreted mirror of the
+// Panoptic recvalidate options the bank threads through pkg/recordingqa.
+// Before TestCase grew a Metadata field, yaml.Unmarshal silently DROPPED
+// this block (a latent §11.4 bluff: the bank "declares" options that never
+// survive loading). This test loads the REAL bank file and asserts the
+// block round-trips with the expected reply marker, chrome pattern, and
+// expected replies present. Paired §1.1 mutation: removing the Metadata
+// field from the TestCase struct (or its yaml tag) makes this load lose the
+// block → the assertions below FAIL.
+func TestLoadFile_TRVEnsemble_RecvalidateOptionsRoundTrip(t *testing.T) {
+	bf, err := LoadFile(filepath.Join("..", "..", "banks", "tui-recording-validation.yaml"))
+	if err != nil {
+		t.Fatalf("load tui-recording-validation.yaml: %v", err)
+	}
+	var ens *TestCase
+	for i := range bf.TestCases {
+		if bf.TestCases[i].ID == "TRV-ENSEMBLE-001" {
+			ens = &bf.TestCases[i]
+			break
+		}
+	}
+	if ens == nil {
+		t.Fatal("TRV-ENSEMBLE-001 not found in tui-recording-validation.yaml")
+	}
+	if ens.Metadata == nil {
+		t.Fatal("TRV-ENSEMBLE-001 metadata dropped on load — recvalidate_options not preserved (per-case Metadata field missing?)")
+	}
+	opts, ok := ens.Metadata["recvalidate_options"].(map[string]any)
+	if !ok {
+		t.Fatalf("recvalidate_options not a map, got %T", ens.Metadata["recvalidate_options"])
+	}
+
+	// reply_markers must include "AI:"
+	markers, _ := opts["reply_markers"].([]any)
+	if !containsAny(markers, "AI:") {
+		t.Errorf("reply_markers missing \"AI:\", got %v", markers)
+	}
+	// chrome_line_patterns must include the ensemble status-panel pattern
+	chrome, _ := opts["chrome_line_patterns"].([]any)
+	if !containsSubstr(chrome, "helix agent ensemble") {
+		t.Errorf("chrome_line_patterns missing the ensemble pattern, got %v", chrome)
+	}
+	// expected_replies must carry all three prompts' markers
+	replies, _ := opts["expected_replies"].([]any)
+	for _, want := range []string{"ensemble", "second", "third"} {
+		if !containsAny(replies, want) {
+			t.Errorf("expected_replies missing %q, got %v", want, replies)
+		}
+	}
+}
+
+func containsAny(xs []any, want string) bool {
+	for _, x := range xs {
+		if s, ok := x.(string); ok && s == want {
+			return true
+		}
+	}
+	return false
+}
+
+func containsSubstr(xs []any, sub string) bool {
+	for _, x := range xs {
+		if s, ok := x.(string); ok && strings.Contains(strings.ToLower(s), sub) {
+			return true
+		}
+	}
+	return false
+}

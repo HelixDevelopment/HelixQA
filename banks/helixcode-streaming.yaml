@@ -1,0 +1,130 @@
+# SPDX-FileCopyrightText: 2026 Milos Vasic
+# SPDX-License-Identifier: Apache-2.0
+#
+# HelixQA Test Bank: HelixCode LLM streaming (token-by-token)
+# ===========================================================
+#
+# PURPOSE. Validate that HelixCode's LLM streaming (GenerateStream) genuinely
+# renders the reply PROGRESSIVELY — token-by-token — rather than dumping the
+# whole reply at once (or simulating). Streaming is a VISUAL property: the reply
+# text GROWS across frames. The Panoptic recvalidate frame-advance / liveness
+# oracle (§11.4.107) is the right tool — it asserts LIVE, ADVANCING on-screen
+# text over a steady-state window, which a progressive stream produces and a
+# frozen / single-shot render does not.
+#
+# WHY NOT A PRESENCE CHECK (the §11.4.107 single-frame bluff this closes).
+# A single captured frame showing the final reply does NOT prove streaming — it
+# could be a one-shot render. Proving streaming requires LIVE ADVANCING frames:
+# the reply prose must appear progressively, asserted by the freeze-detection /
+# frame-advance liveness battery, with the final reply token present.
+#
+# Server-side complement (HTTP-reachable). HXC-STREAM-001 asserts the streaming
+# capability flag is advertised (the same machine-checkable shape the mcp/lsp
+# banks use). The recordingqa entry carries the runtime liveness proof.
+#
+# DECOUPLING (CONST-051(B) / §11.4.28). DATA only. dispatches_to + recvalidate_
+# options are consumer data; HelixQA never interprets them.
+version: "1.0"
+name: "HelixCode LLM Streaming"
+description: >-
+  Validates HelixCode's token-by-token LLM streaming: the server advertises the
+  streaming capability AND a recorded TUI session shows the reply rendering
+  PROGRESSIVELY (Panoptic recvalidate frame-advance / liveness — §11.4.107). A
+  green case requires captured live-advancing on-screen text — not a single
+  final-frame snapshot (the §11.4.107 single-frame-proves-playback bluff).
+metadata:
+  author: vasic-digital
+  app: HelixCode
+  category: "helixcode-streaming"
+  priority: critical
+  covenant: "§11.4.107 liveness — live advancing frames prove streaming, not a single frame"
+  route_source: "helix_code/internal/server/server.go getServerInfo features (streaming) + provider.GenerateStream"
+  evidence_dir: "qa-results/<run-id>/helixcode-streaming"
+  integration_hook: "panoptic-validate-recording <mp4>  (or recording-analyzer --post-analyze --recording <mp4>)"
+test_cases:
+
+  - id: HXC-STREAM-001
+    name: "Server info advertises a streaming capability flag"
+    category: functional
+    priority: high
+    platforms: [api]
+    steps:
+      - name: "GET /api/v1/server/info streaming"
+        action: "http: GET /api/v1/server/info"
+        expected: "200 OK with a streaming capability flag present in features"
+        expect_status: 200
+        expect_json_path: "$.info"
+        expect_body_contains: "streaming"
+    tags: [streaming, server-info, features]
+    estimated_duration: "5s"
+    expected_result: "Server info advertises the streaming capability flag"
+
+  # ========================================================================
+  # HXC-STREAM-002 — recordingqa liveness proof: a recorded session where the
+  # reply STREAMS in MUST show the reply prose advancing across frames (live,
+  # not frozen), with the final reply token present. The frame-advance/liveness
+  # oracle distinguishes a progressive stream from a single-shot render.
+  # ========================================================================
+  - id: HXC-STREAM-002
+    challenge_id: tui.recording.streaming-progressive-text
+    name: "TUI recording: the reply rendered PROGRESSIVELY (live advancing frames), not a single-shot dump"
+    category: e2e
+    priority: critical
+    platforms: [tui]
+    domains: [tui, recording, streaming, capability, liveness]
+    dispatches_to: >-
+      panoptic-validate-recording
+      --recording session_stream.mp4
+      --stderr-log session_stream.stderr.log
+      --reply-marker "AI:"
+      --chrome-pattern "(?i)commands\s+models\s+settings"
+      --chrome-pattern "(?i)helix agent ensemble"
+      --assert-liveness
+      --expect-reply "streaming"
+      --error-patterns default
+      --findings-out frames_stream_findings.jsonl
+    metadata:
+      recvalidate_options:
+        reply_markers:
+          - "AI:"
+        chrome_line_patterns:
+          - "(?i)commands\\s+models\\s+settings"
+          - "(?i)helix agent ensemble"
+          - "(?i)^\\s*\\[[^]]+\\]\\s+(quit|help|scroll|history)"
+        expected_replies:
+          - "streaming"
+        # expected_prompts: OCR-literal substring of the streamed reply (the final
+        # token of the progressive render). A recording supplies the token its
+        # actual streamed reply ends on.
+        expected_prompts:
+          - "streaming"
+        expected_model_visible: "ensemble"
+        # assert_liveness: the Panoptic frame-advance / freeze-detection battery
+        # (§11.4.107) — the reply prose must ADVANCE across the steady-state
+        # window (progressive stream), not be a single static final frame.
+        assert_liveness: true
+        preprocess_vf: "negate"
+    required_evidence:
+      - "frames_stream_findings.jsonl"
+      - "session_stream.stderr.log"
+    steps:
+      - name: "Record a TUI session whose reply streams token-by-token"
+        action: "Conductor: launch the HelixCode TUI, send a prompt whose reply is long enough to observe streaming, capture the full progressive render, exit; capture mp4 + stderr."
+        expected: "session_stream.mp4 non-empty; the reply visibly grew across frames; the final reply token rendered."
+      - name: "Panoptic liveness oracle asserts live advancing reply prose"
+        action: "panoptic-validate-recording --recording session_stream.mp4 --assert-liveness --expect-reply streaming"
+        expected: "The reply prose ADVANCES across frames (not a single static frame) AND the final reply token matched; no error text; frames_stream_findings.jsonl non-empty. A single-frame / frozen render ⇒ FAIL (the §11.4.107 single-frame bluff)."
+      - name: "Scan the TUI stderr log for error/warning/panic patterns"
+        action: "Grep session_stream.stderr.log for: panic | fatal | error | 'no provider' | '0 models' | unhealthy | simulated"
+        expected: "ZERO matches that indicate a broken stream."
+      - name: "Assert goal achieved (dispatch exit 0 + evidence ledger satisfied)"
+        action: "Dispatcher: wrapper exit 0 AND frames_stream_findings.jsonl + session_stream.stderr.log both resolve non-empty."
+        expected: "PASS — reply streamed progressively (live frames), evidence captured."
+    tags: [streaming, tui, recording, capability, liveness, anti-bluff, "§11.4.2", "§11.4.5", "§11.4.69", "§11.4.107", "§11.4.98", video_display]
+    documentation_refs:
+      - type: source
+        section: "recordingqa orchestrator"
+        path: "pkg/recordingqa/recordingqa.go"
+      - type: source
+        section: "Panoptic recvalidate video oracle adapter (liveness)"
+        path: "pkg/recordingqa/panopticoracle/panopticoracle.go"

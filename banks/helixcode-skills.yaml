@@ -1,0 +1,120 @@
+# SPDX-FileCopyrightText: 2026 Milos Vasic
+# SPDX-License-Identifier: Apache-2.0
+#
+# HelixQA Test Bank: HelixCode Skills capability (CONST-040)
+# ==========================================================
+#
+# PURPOSE. Validate that HelixCode's newly-wired Skills capability genuinely
+# TRIGGERS at runtime — a skill, when invoked, produces its rendered output on
+# screen. The proof is a recorded TUI session in which a skill fires and its
+# distinctive rendered output (e.g. "Architecture: ensemble" from an architecture
+# skill) appears, asserted by the Panoptic recvalidate frame OCR oracle.
+#
+# WHY NOT A FLAG CHECK (the §11.4 / §11.4.5 / §11.4.69 bluff this closes).
+# features.skills_enabled==true is configuration-only; the rendered skill OUTPUT
+# on screen is the sink-side positive evidence (§11.4.69) that the skill ran.
+#
+# DECOUPLING (CONST-051(B) / §11.4.28). DATA only. dispatches_to is consumer-
+# owned; recvalidate_options is opaque consumer data the conductor's wrapper
+# reads to build a pkg/recordingqa.Spec. HelixQA never interprets it.
+version: "1.0"
+name: "HelixCode Skills Capability"
+description: >-
+  Validates HelixCode's Skills capability: a recorded TUI session in which a
+  skill triggers MUST render its distinctive output on screen (Panoptic
+  recvalidate frame OCR). A green case requires captured on-screen evidence that
+  the skill actually ran — not a skills_enabled flag-only / metadata-only PASS.
+metadata:
+  author: vasic-digital
+  app: HelixCode
+  category: "helixcode-skills"
+  priority: critical
+  covenant: "§11.4.69 sink-side positive-evidence (the rendered skill output IS the sink)"
+  route_source: "helix_code/internal/server/server.go getServerInfo features.skills_enabled"
+  evidence_dir: "qa-results/<run-id>/helixcode-skills"
+  integration_hook: "panoptic-validate-recording <mp4>  (or recording-analyzer --post-analyze --recording <mp4>)"
+test_cases:
+
+  - id: HXC-SKILL-001
+    name: "Server info advertises a skills_enabled feature flag"
+    category: functional
+    priority: high
+    platforms: [api]
+    steps:
+      - name: "GET /api/v1/server/info skills_enabled"
+        action: "http: GET /api/v1/server/info"
+        expected: "200 OK with features.skills_enabled present"
+        expect_status: 200
+        expect_json_path: "$.info"
+        expect_body_contains: "skills_enabled"
+    tags: [skills, server-info, features]
+    estimated_duration: "5s"
+    expected_result: "Server info advertises the skills_enabled feature flag"
+
+  # ========================================================================
+  # HXC-SKILL-002 — recordingqa runtime proof: a recorded session where a skill
+  # fires MUST render the skill's distinctive output (e.g. "Architecture:
+  # ensemble") on screen. The rendered output is the §11.4.69 proof the skill ran.
+  # ========================================================================
+  - id: HXC-SKILL-002
+    challenge_id: tui.recording.skill-output-rendered
+    name: "TUI recording: a skill triggered and its rendered output (e.g. 'Architecture: ensemble') appeared on screen"
+    category: e2e
+    priority: critical
+    platforms: [tui]
+    domains: [tui, recording, skills, capability]
+    dispatches_to: >-
+      panoptic-validate-recording
+      --recording session_skill.mp4
+      --stderr-log session_skill.stderr.log
+      --reply-marker "AI:"
+      --reply-marker "skill:"
+      --chrome-pattern "(?i)commands\s+models\s+settings"
+      --chrome-pattern "(?i)helix agent ensemble"
+      --expect-reply "Architecture"
+      --expect-reply "ensemble"
+      --error-patterns default
+      --findings-out frames_skill_findings.jsonl
+    metadata:
+      recvalidate_options:
+        reply_markers:
+          - "AI:"
+          - "skill:"
+        chrome_line_patterns:
+          - "(?i)commands\\s+models\\s+settings"
+          - "(?i)helix agent ensemble"
+          - "(?i)^\\s*\\[[^]]+\\]\\s+(quit|help|scroll|history)"
+        expected_replies:
+          - "Architecture"
+          - "ensemble"
+        # expected_prompts: OCR-literal substrings the rendered skill output
+        # contains — "Architecture:" header + the skill's answer token.
+        expected_prompts:
+          - "Architecture"
+          - "ensemble"
+        expected_model_visible: "ensemble"
+        preprocess_vf: "negate"
+    required_evidence:
+      - "frames_skill_findings.jsonl"
+      - "session_skill.stderr.log"
+    steps:
+      - name: "Record a TUI session that triggers a skill"
+        action: "Conductor: launch the HelixCode TUI, ask a question that fires an architecture-class skill, wait for the skill's rendered output, exit; capture mp4 + stderr."
+        expected: "session_skill.mp4 non-empty; the skill's distinctive output (e.g. 'Architecture: ensemble') rendered."
+      - name: "Panoptic oracle asserts the rendered skill output on screen"
+        action: "panoptic-validate-recording --recording session_skill.mp4 --expect-reply Architecture --expect-reply ensemble"
+        expected: "Both markers matched in post-marker prose (chrome excluded); no error text; frames_skill_findings.jsonl non-empty. A flag-true recording with NO skill output ⇒ FAIL."
+      - name: "Scan the TUI stderr log for error/warning/panic patterns"
+        action: "Grep session_skill.stderr.log for: panic | fatal | error | 'no provider' | '0 models' | unhealthy | simulated"
+        expected: "ZERO matches that indicate a broken skill invocation."
+      - name: "Assert goal achieved (dispatch exit 0 + evidence ledger satisfied)"
+        action: "Dispatcher: wrapper exit 0 AND frames_skill_findings.jsonl + session_skill.stderr.log both resolve non-empty."
+        expected: "PASS — skill triggered, rendered output captured on screen, evidence captured."
+    tags: [skills, tui, recording, capability, anti-bluff, "§11.4.2", "§11.4.5", "§11.4.69", "§11.4.107", "§11.4.98", video_display]
+    documentation_refs:
+      - type: source
+        section: "recordingqa orchestrator"
+        path: "pkg/recordingqa/recordingqa.go"
+      - type: source
+        section: "Panoptic recvalidate video oracle adapter"
+        path: "pkg/recordingqa/panopticoracle/panopticoracle.go"

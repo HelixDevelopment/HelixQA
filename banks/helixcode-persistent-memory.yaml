@@ -1,0 +1,160 @@
+# SPDX-FileCopyrightText: 2026 Milos Vasic
+# SPDX-License-Identifier: Apache-2.0
+#
+# HelixQA Test Bank: HelixCode HelixMemory persistent local store
+# ================================================================
+#
+# PURPOSE. Validate that the HelixCode HelixMemory zero-config local store is
+# GENUINELY persistent across OS processes: a distinctive token written to the
+# on-disk SQLite local store in ONE process is recalled from a SEPARATE, FRESH
+# process that opens the SAME on-disk file. The local store is the embedded
+# modernc.org/sqlite backend in submodules/helix_memory/pkg/localstore
+# (SQLiteStore.Open / Add / Search); HelixCode consumes it as its zero-config
+# durable MemoryStore.
+#
+# WHY THIS IS NOT A PRESENCE CHECK (the §11.4 / §11.4.5 bluff it closes). A bank
+# that PASSes because "a memory API returns 200" or "an in-memory map round-trips
+# in one process" misses the substance: the promise is DURABLE CROSS-PROCESS
+# recall. The proof is a token written by process-1 being recalled by a fresh
+# process-2 from the on-disk DB, with the on-disk SQLite file existing and being
+# non-empty. A recall that returns nothing from a fresh process ⇒ the persistence
+# predicate FAILs (preserved by the negative case HXC-PMEM-003 below: recalling a
+# never-written token MUST MISS).
+#
+# AUTONOMOUS PROOF (§11.4.52 / §11.4.98). The structural http: case asserts the
+# memory subsystem surface honestly; the cross-process persistence proof itself is
+# self-driving via the Challenges submodule's persistent_memory_challenge.sh,
+# which runs `go run` TWICE (two distinct OS processes) against one on-disk DB and
+# asserts RECALLED:<token> from the fresh reader + a paired §1.1 mutation (a
+# never-written token MUST MISS). A recordingqa case asserts the recall is visible
+# on a recorded screen when a video exists.
+#
+# DECOUPLING (CONST-051(B) / §11.4.28). DATA only. dispatches_to +
+# recvalidate_options are consumer data HelixQA never interprets.
+version: "1.0"
+name: "HelixCode HelixMemory Persistent Local Store"
+description: >-
+  Validates HelixCode HelixMemory cross-process persistence: a token written to
+  the on-disk SQLite local store in one process is recalled from a fresh process
+  reading the same file, proving durable cross-process recall (not in-memory /
+  metadata-only). A structural http: case asserts the memory surface; a
+  recordingqa case asserts the recall on a recorded screen; a negative case keeps
+  the anti-bluff bar (recalling a never-written token MUST MISS).
+metadata:
+  author: vasic-digital
+  app: HelixCode
+  category: "helixcode-persistent-memory"
+  priority: critical
+  covenant: "§11.4.5/§11.4.69 — the on-disk DB + fresh-process recall ARE the sink-side proof; cross-process recall, not in-memory state"
+  route_source: "submodules/helix_memory/pkg/localstore (SQLiteStore Open/Add/Search) + helix_code/internal/memory cross-process recall"
+  evidence_dir: "qa-results/<run-id>/helixcode-persistent-memory"
+  integration_hook: "persistent_memory_challenge.sh (Challenges submodule) OR panoptic-validate-recording <mp4>"
+test_cases:
+
+  - id: HXC-PMEM-001
+    name: "Memory stats endpoint returns a stats object (memory surface present)"
+    category: functional
+    priority: high
+    platforms: [api]
+    steps:
+      - name: "GET /api/v1/memory/stats"
+        action: "http: GET /api/v1/memory/stats"
+        expected: "200 OK with a stats object — the memory subsystem surface is mounted and honest."
+        expect_status: 200
+        expect_json_path: "$.stats"
+    tags: [memory, persistent, surface]
+    estimated_duration: "5s"
+    expected_result: "The memory stats endpoint returns a stats object (the memory surface is reachable)."
+
+  # ========================================================================
+  # HXC-PMEM-002 — cross-process persistence proof. The conductor's wrapper drives
+  # the Challenges submodule persistent_memory_challenge.sh (or an equivalent
+  # two-process write→read) and captures: the WROTE line (proc-1), the on-disk DB
+  # path + non-empty SQLite header, and the RECALLED:<token> line from a FRESH
+  # reader process. recordingqa asserts the recall is visible on screen when a
+  # video exists. Missing recall / empty DB ⇒ FAIL.
+  # ========================================================================
+  - id: HXC-PMEM-002
+    challenge_id: memory.crossprocess.token-written-then-recalled-from-fresh-process
+    name: "Cross-process recall: a token written in proc-1 is recalled from a fresh proc-2 reading the on-disk SQLite DB"
+    category: e2e
+    priority: critical
+    platforms: [api, tui]
+    domains: [memory, persistence, sqlite, capability]
+    dispatches_to: >-
+      panoptic-validate-recording
+      --recording session_memory_recall.mp4
+      --stderr-log session_memory_recall.stderr.log
+      --reply-marker "RECALLED:"
+      --error-scope-replies
+      --expect-reply "RECALLED"
+      --expect-reply "WROTE"
+      --error-patterns default
+      --findings-out frames_memory_findings.jsonl
+    metadata:
+      recvalidate_options:
+        reply_markers:
+          - "RECALLED:"
+          - "WROTE"
+        error_scope_replies: true
+        expected_replies:
+          - "RECALLED"
+          - "WROTE"
+        expected_prompts:
+          - "RECALLED"
+          - "WROTE"
+        expected_model_visible: "RECALLED"
+    required_evidence:
+      - "frames_memory_findings.jsonl"
+      - "session_memory_recall.stderr.log"
+    steps:
+      - name: "Process 1 writes a distinctive token to the on-disk local store"
+        action: "Conductor: run persistent_memory_challenge.sh (or memprobe write <db> <token>) — a first OS process opens the SQLite local store and Adds a memory whose content embeds a per-run unique token; capture stdout (the WROTE line) + the on-disk DB."
+        expected: "WROTE id=<uuid> count>=1 printed; the on-disk SQLite DB exists and is non-empty (header 'SQLite format 3')."
+      - name: "Process 2 (fresh OS process) recalls the token from the SAME on-disk DB"
+        action: "Conductor: run memprobe read <db> <token> in a SECOND, distinct OS process that opens the same file and Searches for the token."
+        expected: "RECALLED:<content carrying the exact token> printed (exit 0) — durable cross-process recall, not in-memory state."
+      - name: "Panoptic oracle / dispatcher asserts the recall + evidence ledger"
+        action: "panoptic-validate-recording --recording session_memory_recall.mp4 --expect-reply RECALLED --expect-reply WROTE; OR the challenge script's own PASS + captured evidence."
+        expected: "WROTE + RECALLED markers matched; no error text; frames_memory_findings.jsonl + session_memory_recall.stderr.log non-empty."
+      - name: "Assert goal achieved (dispatch exit 0 + evidence ledger satisfied)"
+        action: "Dispatcher: wrapper exit 0 AND both required_evidence globs resolve non-empty."
+        expected: "PASS — cross-process recall proven, on-disk DB + fresh-process RECALLED line captured as evidence."
+    tags: [memory, persistence, sqlite, crossprocess, capability, anti-bluff, "§11.4.5", "§11.4.69", "§11.4.107", "§11.4.98", storage_read, storage_write]
+    documentation_refs:
+      - type: source
+        section: "HelixMemory SQLite local store"
+        path: "submodules/helix_memory/pkg/localstore/sqlite_store.go"
+      - type: source
+        section: "recordingqa orchestrator"
+        path: "pkg/recordingqa/recordingqa.go"
+
+  # ========================================================================
+  # HXC-PMEM-003 — NEGATIVE / golden-bad case (keeps the anti-bluff bar). Recalling
+  # a token that was NEVER written MUST MISS (no recall). This proves HXC-PMEM-002
+  # is not a tautology any read satisfies: the SAME recall path, run for a
+  # never-written token, returns nothing. The Challenges submodule
+  # persistent_memory_challenge.sh --anti-bluff-mutate implements exactly this:
+  # write token T, then read a different token T' — a genuine store MUST report
+  # MISS, and the gate exits 99 (mutation correctly detected).
+  # ========================================================================
+  - id: HXC-PMEM-003
+    challenge_id: memory.crossprocess.never-written-token-must-miss
+    name: "NEGATIVE: a fresh-process recall of a NEVER-written token MUST MISS (no fabricated recall)"
+    category: negative
+    priority: high
+    platforms: [api]
+    domains: [memory, persistence, anti-bluff]
+    dispatches_to: >-
+      persistent-memory-challenge
+      --anti-bluff-mutate
+    steps:
+      - name: "Write token T, then recall a different never-written token T'"
+        action: "Conductor: persistent_memory_challenge.sh --anti-bluff-mutate — proc-1 writes T to the on-disk store; a fresh proc-2 Searches for T' (never written)."
+        expected: "The fresh reader reports MISS (no recall) and the gate exits 99 (mutation correctly detected). A store that 'recalls' a never-written token is a bluff ⇒ FAIL."
+    tags: [memory, persistence, negative, anti-bluff, "§11.4.6"]
+    estimated_duration: "10s"
+    expected_result: >-
+      Recalling a never-written token from a fresh process MISSes — proving the
+      recall assertion in HXC-PMEM-002 genuinely reads the on-disk store and is
+      not a tautology any read satisfies.
