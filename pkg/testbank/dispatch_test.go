@@ -25,7 +25,7 @@ name: dispatch-fixture
 description: "Fixture exercising challenge_id / dispatches_to / domains / required_evidence"
 test_cases:
   - id: atm999.audio.matrix
-    name: "ATM-999 audio output matrix"
+    name: "OTA-999 audio output matrix"
     category: functional
     priority: critical
     platforms: [android]
