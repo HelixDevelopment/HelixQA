@@ -1,0 +1,332 @@
+# SPDX-FileCopyrightText: 2026 HelixDevelopment
+# SPDX-License-Identifier: Apache-2.0
+#
+# HelixQA Test Bank: Helix OTA A/B Update Proof
+# =============================================================================
+# Constitution §11.4.58 (parallel-development PWU — every user-visible PWU adds
+# a Challenge entry dispatching to its real test, scoring PASS only on positive
+# captured evidence) + §11.4.27 (no fakes beyond unit tests — every challenge
+# exercises the real, fully implemented System) + §11.4.153 (feature Status docs
+# with real-use video evidence).
+#
+# PWU coverage:
+#   OTA-AB-001 — PWU-AB-1 A/B slot switch (U-Boot BOOT_ORDER)
+#   OTA-AB-002 — PWU-AB-2 RAUC dm-verity update (direct-dd to inactive slot)
+#   OTA-AB-003 — PWU-AB-3 corrupt-slot auto-rollback (U-Boot bootlimit guard)
+#   OTA-AB-004 — PWU-AB-4 ApplyPort service (in-guest OTA apply agent)
+#   OTA-AB-005 — PWU-AB-4 ApplyPort interface contract verification
+#   OTA-AB-006 — PWU-AB-5 Deterministic 3-iter consistency (meta-challenge)
+#
+# DISPATCH MODEL (native HelixQA test_cases schema):
+#   - Hardware-dependent cases (001-003) set dispatches_to to the real emulator
+#     script; the challenge IS the script's real run against QEMU virt + U-Boot.
+#     A PASS requires the script's real verdict to read PASS.
+#   - Software-only cases (004-005) set dispatches_to to go test the ApplyPort
+#     package; captured evidence at docs/qa/<run-id>/.
+#   - Case 006 is a meta-challenge aggregating 001-005 and asserting deterministic
+#     consistency per §11.4.50.
+#
+# Schema source of truth:
+#   submodules/helixqa/pkg/testbank/schema.go (BankFile/TestCase/TestStep)
+# ---
+version: "1"
+name: "Helix OTA A/B Update Proof Test Bank"
+description: >-
+  Verifies A/B slot switching, RAUC dm-verity updates, auto-rollback, and the
+  ApplyPort in-guest OTA apply agent. Every challenge dispatches to a real,
+  autonomous, anti-bluff test script (emulator or Go test) — there is NO
+  metadata-only / config-only / absence-of-error path to a PASS here.
+
+metadata:
+  author: "HelixDevelopment"
+  app: "Helix OTA"
+  version: "1.0.0"
+  bank_id: helix_ota_ab_proof
+  authority: "Constitution §11.4.58 / §11.4.27 / §11.4.69 / §11.4 anti-bluff covenant"
+  system_under_test: "QEMU virt U-Boot A/B emulator ; server/cmd/applyport ; server/internal/device"
+  working_directory: /Volumes/T7/Projects/helix_ota
+
+test_cases:
+
+  # ==========================================================================
+  # OTA-AB-001 — PWU-AB-1 A/B slot switch (U-Boot BOOT_ORDER)
+  # ==========================================================================
+  - id: OTA-AB-001
+    name: "PWU-AB-1 A/B slot switch via U-Boot BOOT_ORDER"
+    description: >-
+      Proves the REAL bootloader-driven A/B slot switch on Apple-Silicon HVF:
+      same disk + same u-boot.bin, booted twice with differing BOOT_ORDER,
+      MUST route root to different rootfs partitions AND report DIFFERENT
+      slot_id from inside userspace. §11.4.115 RED->GREEN contrast:
+      A-order->slot=A, B-order->slot=B. A no-op/fake switch reports same slot
+      in both runs (RED). Real switch reports A then B (GREEN).
+    category: functional
+    priority: critical
+    platforms: [emulator]
+    tags: [ab-update, slot-switch, pwu-ab-1, bootloader]
+    documentation_refs:
+      - type: design
+        section: "PWU-AB-1"
+        path: "docs/design/rk3588_ab_virt/PWU_AB_1_SLOT_SWITCH.md"
+      - type: script
+        path: "tests/emulator/ab_virt/ab_slot_switch.sh"
+    estimated_duration: "5m"
+    expected_result: >-
+      HELIX_PRESLOT=A then HELIX_POSTSLOT=B. Run A: /etc/slot_id=A, root=/dev/vda2.
+      Run B: /etc/slot_id=B, root=/dev/vda3. Consoles captured (§11.4.107 live).
+    dispatches_to: "bash tests/emulator/ab_virt/ab_slot_switch.sh"
+    requires_env:
+      HELIX_AB_ROOT_PW: "Root password for emulator guest (default: helixota)"
+    steps:
+      - name: "Boot slot A"
+        action: "ab_slot_switch.sh with BOOT_ORDER='A B'; expect driver interrupts U-Boot autoboot, sets env, sources boot.scr"
+        expected: "Guest boots with root=/dev/vda2, /etc/slot_id=A, HELIX_POSTSLOT=A"
+        timeout: 180
+      - name: "Boot slot B"
+        action: "ab_slot_switch.sh with BOOT_ORDER='B A'; same emulator disk, same U-Boot binary"
+        expected: "Guest boots with root=/dev/vda3, /etc/slot_id=B, HELIX_POSTSLOT=B"
+        timeout: 180
+      - name: "Deterministic consistency (§11.4.50)"
+        action: "Repeat both runs 3 times"
+        expected: "All 3 iterations produce identical slot assignments (A->A, B->B)"
+        timeout: 600
+
+  # ==========================================================================
+  # OTA-AB-002 — PWU-AB-2 RAUC dm-verity update (direct-dd to inactive slot)
+  # ==========================================================================
+  - id: OTA-AB-002
+    name: "PWU-AB-2 RAUC dm-verity update (direct-dd to inactive slot)"
+    description: >-
+      Proves a REAL in-guest A/B slot switch that simulates the OTA "apply to
+      inactive slot -> activate -> reboot -> verify" primitive. Uses a direct-dd
+      approach (Option A) to bypass the /dev/loop-control dependency absent in
+      QEMU virt guest kernels. §11.4.115 RED->GREEN contrast:
+      RED_MODE=1 (default): rauc install fails (no loop device), NO switch,
+      stays on slot A. RED_MODE=0: dd-based apply clones active rootfs to
+      inactive slot, arms fw_setenv, reboots -> slot B.
+    category: functional
+    priority: critical
+    platforms: [emulator]
+    tags: [ab-update, rauc, dm-verity, dd-apply, pwu-ab-2]
+    documentation_refs:
+      - type: design
+        section: "PWU-AB-2"
+        path: "docs/design/rk3588_ab_virt/PWU_AB_2_RAUC_VERITY.md"
+      - type: script
+        path: "tests/emulator/ab_virt/ab_rauc_verity.sh"
+    estimated_duration: "8m"
+    expected_result: >-
+      RED_MODE=1: slot_id=A, rauc install RC != 0. RED_MODE=0: HELIX_DD_RC=0,
+      HELIX_FWSET_RC=0, HELIX_POSTSLOT=B, HELIX_ROOTDEV=/dev/vda3.
+      Deterministic: 3/3 identical.
+    dispatches_to: "bash tests/emulator/ab_virt/ab_rauc_verity.sh"
+    requires_env:
+      HELIX_AB_ROOT_PW: "Root password (default: helixota)"
+      RED_MODE: "1=defect baseline; 0=GREEN guard"
+    steps:
+      - name: "RED_MODE=1 — defect baseline"
+        action: "RED_MODE=1 bash tests/emulator/ab_virt/ab_rauc_verity.sh"
+        expected: "rauc install RC != 0, slot remains A, HELIX_PRESLOT=A, no slot switch"
+        timeout: 300
+      - name: "GREEN mode — dd-based apply"
+        action: "RED_MODE=0 bash tests/emulator/ab_virt/ab_rauc_verity.sh"
+        expected: "dd RC=0, fw_setenv RC=0, reboot, HELIX_POSTSLOT=B, root=/dev/vda3"
+        timeout: 300
+      - name: "Deterministic confidence (§11.4.50)"
+        action: "Repeat GREEN mode 3 times"
+        expected: "3/3 HELIX_POSTSLOT=B, 3/3 HELIX_DD_RC=0, 3/3 HELIX_FWSET_RC=0"
+        timeout: 600
+
+  # ==========================================================================
+  # OTA-AB-003 — PWU-AB-3 corrupt-slot auto-rollback (U-Boot bootlimit guard)
+  # ==========================================================================
+  - id: OTA-AB-003
+    name: "PWU-AB-3 corrupt-slot auto-rollback (U-Boot bootlimit guard)"
+    description: >-
+      Proves the REAL bootloader-driven A/B AUTO-ROLLBACK on Apple-Silicon
+      HVF: when the head slot has EXHAUSTED its update probation (bootcount
+      > bootlimit with upgrade_available=1), U-Boot's bootcount guard in
+      boot.cmd swaps BOOT_ORDER so the OTHER (previous-good) slot becomes the
+      head. §11.4.115 RED->GREEN contrast: CONTROL-NOROLLBACK
+      (bootcount <= bootlimit, no swap) vs BADB-ROLLBACK (bootcount >
+      bootlimit, guard fires -> swap -> rollback).
+    category: functional
+    priority: critical
+    platforms: [emulator]
+    tags: [ab-update, auto-rollback, bootlimit, pwu-ab-3]
+    documentation_refs:
+      - type: design
+        section: "PWU-AB-3"
+        path: "docs/design/rk3588_ab_virt/PWU_AB_3_ROLLBACK.md"
+      - type: script
+        path: "tests/emulator/ab_virt/ab_rollback.sh"
+    estimated_duration: "8m"
+    expected_result: >-
+      CONTROL (bootcount=1, bootlimit=1): boots head=B, slot_id=B, NO swap.
+      BADB-ROLLBACK (bootcount=2, bootlimit=1): guard fires, swaps "B A"->"A B",
+      boots /dev/vda2, slot_id=A. U-Boot console carries "rolling back".
+    dispatches_to: "bash tests/emulator/ab_virt/ab_rollback.sh"
+    requires_env:
+      HELIX_AB_ROOT_PW: "Root password (default: helixota)"
+    steps:
+      - name: "CONTROL — no rollback"
+        action: "ab_rollback.sh CONTROL: bootcount=1, bootlimit=1, BOOT_ORDER='B A'"
+        expected: "Guard does NOT fire, boots head B (/dev/vda3), slot_id=B"
+        timeout: 300
+      - name: "ROLLBACK — simulated unhealthy slot B"
+        action: "ab_rollback.sh ROLLBACK: bootcount=2, bootlimit=1, upgrade_available=1, BOOT_ORDER='B A'"
+        expected: "Guard fires 'rolling back' -> swaps to 'A B' -> boots /dev/vda2, slot_id=A"
+        timeout: 300
+      - name: "Deterministic consistency (§11.4.50)"
+        action: "Repeat both variants 3 times"
+        expected: "3/3 no-rollback (slot_id=B in control), 3/3 rollback (slot_id=A in rollback run)"
+        timeout: 600
+
+  # ==========================================================================
+  # OTA-AB-004 — PWU-AB-4 ApplyPort service (in-guest OTA apply agent)
+  # ==========================================================================
+  - id: OTA-AB-004
+    name: "PWU-AB-4 ApplyPort service (in-guest OTA apply agent)"
+    description: >-
+      Verifies the ApplyPort binary compiles, parses flags correctly, nests its
+      subcommand tree (run/daemon/check/confirm/status), produces correct help
+      output, builds without error, and passes its full Go test suite (unit +
+      mutation). ApplyPort is the device-side half of the Helix OTA protocol:
+      Login -> Register -> CheckUpdate -> Download -> Verify -> Apply -> Arm
+      -> Reboot. Steps b-f are the apply sequence: write new rootfs (SlotWriter),
+      arm U-Boot env (UBootEnvManager), reboot, confirm healthy boot. Each
+      interface has a scaffold implementation with real fw_setenv/fw_printenv
+      shell-out for the env manager.
+    category: functional
+    priority: critical
+    platforms: [linux]
+    tags: [ab-update, applyport, pwu-ab-4, ota-agent, device-side]
+    documentation_refs:
+      - type: design
+        section: "PWU-AB-4"
+        path: "docs/design/rk3588_ab_virt/PWU_AB_4_APPLY_PORT.md"
+      - type: source
+        path: "server/cmd/applyport/main.go"
+      - type: source
+        path: "server/internal/device/applyport.go"
+      - type: source
+        path: "server/internal/device/applyport_test.go"
+      - type: source
+        path: "server/internal/device/applyport_mutation_test.go"
+    estimated_duration: "30s"
+    expected_result: >-
+      applyport compiles without error; all subcommands parse correctly; help
+      output lists run/daemon/check/confirm/status; Go test -count=1
+      ./cmd/applyport/... + ./internal/device/ -run -v PASS; mutation test
+      asserts 0 survivors.
+    dispatches_to: "cd server && go test -count=1 ./cmd/applyport/... ./internal/device/..."
+    steps:
+      - name: "Compile check"
+        action: "cd server && go build ./cmd/applyport/"
+        expected: "Binary compiles without errors; exit 0"
+        timeout: 60
+      - name: "Subcommand help"
+        action: "cd server && go run ./cmd/applyport/ 2>&1"
+        expected: "Output lists: run, daemon, check, confirm, status subcommands"
+        timeout: 10
+      - name: "Unit tests — ApplyPort package"
+        action: "cd server && go test -count=1 -v ./internal/device/... 2>&1 | tail -20"
+        expected: "All tests PASS (applyport_test.go, applyport_mutation_test.go)"
+        timeout: 60
+      - name: "Mutation test — zero survivors"
+        action: "cd server && go test -count=1 ./internal/device/... 2>&1"
+        expected: "All tests PASS including mutation gates; 0 survivors"
+        timeout: 120
+
+  # ==========================================================================
+  # OTA-AB-005 — PWU-AB-4 ApplyPort interface contract verification
+  # ==========================================================================
+  - id: OTA-AB-005
+    name: "PWU-AB-4 ApplyPort interface contract (SlotWriter + UBootEnvManager)"
+    description: >-
+      Verifies that the SlotWriter and UBootEnvManager interfaces compile, their
+      documented implementations resolve without error, and the ApplyPort struct
+      integrates both into the apply sequence (steps b-f). Compile-time + static
+      challenge proving the PWU-AB-4 scaffolding is structurally sound.
+    category: structural
+    priority: high
+    platforms: [linux]
+    tags: [ab-update, applyport, pwu-ab-4, interface, static]
+    documentation_refs:
+      - type: source
+        path: "server/internal/device/applyport.go"
+    estimated_duration: "15s"
+    expected_result: >-
+      SlotWriter and UBootEnvManager interfaces compile; fw_setenv/fw_printenv
+      Go tests pass; ApplyPort struct cycle returns no nil-pointer.
+    dispatches_to: "cd server && go vet ./internal/device/... && go test -count=1 -run 'TestSlot|TestUBoot|TestApplyPort' ./internal/device/..."
+    steps:
+      - name: "SlotWriter interface"
+        action: "go vet ./internal/device/... for unresolved interface methods"
+        expected: "WriteInactiveSlot, ActiveSlot, InactiveSlot compile without errors"
+        timeout: 30
+      - name: "UBootEnvManager interface"
+        action: "go vet ./internal/device/... for unresolved methods"
+        expected: "SetEnv, GetEnv, SaveEnv compile without errors"
+        timeout: 30
+      - name: "ApplyPort struct wiring"
+        action: "go test -count=1 -run 'TestApplyPort|TestSlot|TestUBoot' -v ./internal/device/... 2>&1"
+        expected: "All scaffold tests PASS — lifecycle, slot detection, env read/write"
+        timeout: 60
+
+  # ==========================================================================
+  # OTA-AB-006 — PWU-AB-5 Deterministic consistency (meta-challenge)
+  # ==========================================================================
+  - id: OTA-AB-006
+    name: "PWU-AB-5 Deterministic 3-iter consistency"
+    description: >-
+      Meta-challenge aggregating OTA-AB-001 through OTA-AB-005, asserting
+      deterministic consistency per §11.4.50: every test produces IDENTICAL
+      PASS (same exit code + same evidence hash) across 3 consecutive
+      iterations on the same emulator build + same host topology. A single
+      divergent run auto-FAILs. Proves the A/B stack is deterministic.
+    category: meta
+    priority: critical
+    platforms: [emulator, linux]
+    tags: [ab-update, deterministic, consistency, meta, pwu-ab-5]
+    documentation_refs:
+      - type: design
+        section: "PWU-AB-5"
+        path: "docs/design/rk3588_ab_virt/PWU_AB_5_DETERMINISTIC.md"
+      - type: constitution
+        section: "§11.4.50"
+        path: "constitution/Constitution.md"
+    estimated_duration: "30m"
+    expected_result: >-
+      3/3 iterations of OTA-AB-001/002/003 all PASS with identical evidence
+      hashes; OTA-AB-004/005 3/3 go test runs identical; zero divergence.
+    steps:
+      - name: "Slot switch — 3x"
+        action: "ab_slot_switch.sh 3 times, hash all evidence files"
+        expected: "3/3 identical verdicts (PASS), identical console evidence SHA256"
+        timeout: 900
+      - name: "RAUC dd-apply — 3x"
+        action: "RED_MODE=0 ab_rauc_verity.sh 3 times"
+        expected: "3/3 HELIX_POSTSLOT=B, HELIX_DD_RC=0, evidence hashes identical"
+        timeout: 900
+      - name: "Rollback — 3x each variant"
+        action: "ab_rollback.sh CONTROL 3x + ROLLBACK 3x"
+        expected: "3/3 CONTROL: no rollback; 3/3 ROLLBACK: swap + slot A; hashes identical"
+        timeout: 900
+      - name: "ApplyPort — 3x"
+        action: "go test -count=1 ./cmd/applyport/... ./internal/device/... 3 times"
+        expected: "All 3 runs exit 0 with identical test output"
+        timeout: 180
+
+# =============================================================================
+# Evidence artefacts (real captured runs)
+# =============================================================================
+evidence:
+  - path: "docs/qa/<run-id>-ab-slot-switch/"
+    description: "PWU-AB-1 slot switch evidence — consoleA.log, consoleB.log, verdict.txt"
+  - path: "docs/qa/<run-id>-ab-rauc-verity/"
+    description: "PWU-AB-2 RAUC verity evidence — console.log (RED/GREEN), rauc_status_*.txt, verdict.txt"
+  - path: "docs/qa/<run-id>-ab-rollback/"
+    description: "PWU-AB-3 rollback evidence — consoleCONTROL.log, consoleROLLBACK.log, verdict.txt"
+  - path: "qa-results/applyport-tests/<run-id>/"
+    description: "PWU-AB-4 ApplyPort test evidence — test output logs, evidence report"
