@@ -318,6 +318,190 @@ test_cases:
         expected: "All 3 runs exit 0 with identical test output"
         timeout: 180
 
+  # ==========================================================================
+  # CME-HELIX-OTA-007 — E2E Dashboard Full Flow (26 checks)
+  # ==========================================================================
+  - id: CME-HELIX-OTA-007
+    name: "E2E Dashboard Full Flow — 26 end-to-end OTA checks"
+    description: >-
+      Runs the full e2e_dashboard_full_flow_test.sh against an OTA server
+      booted on port 9090 with an in-memory store. Covers: server build,
+      key generation, admin login, SPA dashboard reachability, project CRUD,
+      device registration, signed artifact upload with ed25519 verification,
+      release creation, deployment creation, audit logging, health endpoints.
+      The test reports PASS only when ALL 26 checks pass with zero failures.
+      Any FAIL in intermediate steps stops the script with exit 1.
+      §11.4.153 (feature Status with video confirmation) + §11.4.159
+      (window-specific recording + vision validation).
+    category: functional
+    priority: critical
+    platforms: [linux]
+    tags: [e2e, dashboard, full-flow, upload, release, deployment, audit,
+           health, ota-server]
+    documentation_refs:
+      - type: script
+        path: "tests/helixqa/e2e_dashboard_full_flow_test.sh"
+      - type: evidence
+        path: "docs/helixqa/e2e_dashboard_flow_evidence.md"
+    estimated_duration: "45s"
+    expected_result: >-
+      Test exits 0, all 26 checks PASS. Summary shows FAIL_COUNT=0,
+      PASS_COUNT=26. Evidence file written to
+      docs/helixqa/e2e_dashboard_flow_evidence.md with project/device/
+      artifact IDs, artifact SHA256, PASS/FAIL table.
+    dispatches_to: "bash tests/helixqa/e2e_dashboard_full_flow_test.sh"
+    steps:
+      - name: "Build, boot, login, full CRUD lifecycle"
+        action: "e2e_dashboard_full_flow_test.sh builds server, starts it, creates keys, logs in, creates project+device+artifact+release+deployment, verifies audit + health"
+        expected: "Exit 0, FAIL_COUNT=0, PASS_COUNT=26, artefact paths populated"
+        timeout: 120
+      - name: "Evidence verification (§11.4.69)"
+        action: "Assert evidence file docs/helixqa/e2e_dashboard_flow_evidence.md exists and is non-empty"
+        expected: "Evidence file contains project_id, artifact_id, release_id, deployment_id"
+        timeout: 5
+
+  # ==========================================================================
+  # CME-HELIX-OTA-008 — HelixTrack E2E Bidirectional Sync
+  # ==========================================================================
+  - id: CME-HELIX-OTA-008
+    name: "HelixTrack E2E Bidirectional Sync — 11/11 PASS"
+    description: >-
+      Runs helix_e2e_bidir_sync_test.sh which proves the HelixTrack
+      bidirectional sync works end-to-end. Reads OTA items from
+      workable_items.db → pushes to HelixTrack API → pulls from HelixTrack
+      back → verifies all 11 checks PASS (dependency check, API reachability,
+      JWT acquisition, DB pre-count, push sync, ticket listing, pull sync,
+      count match, ID set match, cross-surface OTA coverage, cross-surface
+      ID set equality). On PASS writes evidence to docs/helixtrack_e2e_evidence.md.
+      §11.4.148 (workable-item integrity) + §11.4.149 (testing diary).
+    category: functional
+    priority: critical
+    platforms: [linux]
+    tags: [e2e, helixtrack, bidir-sync, workable-items, api]
+    documentation_refs:
+      - type: script
+        path: "tests/helixqa/helix_e2e_bidir_sync_test.sh"
+      - type: evidence
+        path: "docs/helixtrack_e2e_evidence.md"
+      - type: constitution
+        section: "§11.4.148"
+        path: "constitution/Constitution.md"
+      - type: constitution
+        section: "§11.4.149"
+        path: "constitution/Constitution.md"
+    estimated_duration: "45s"
+    expected_result: >-
+      All 11/11 checks PASS. FAIL_COUNT=0. Evidence file at
+      docs/helixtrack_e2e_evidence.md written. Pre-sync count == post-sync
+      count. All local OTA IDs present in HelixTrack.
+    dispatches_to: "bash tests/helixqa/helix_e2e_bidir_sync_test.sh"
+    requires_env:
+      HELIXTRACK_API: "HelixTrack API base URL (default: http://localhost:8080)"
+    steps:
+      - name: "Bidirectional sync end-to-end"
+        action: "helix_e2e_bidir_sync_test.sh checks deps, reaches API, gets JWT, pre-counts DB, pushes, lists tickets, pulls, post-counts, verifies ID set match"
+        expected: "Exit 0, all 11 checks PASS, evidence file written"
+        timeout: 120
+      - name: "Evidence verification (§11.4.69)"
+        action: "Assert evidence file exists and contains PASS verdict"
+        expected: "evidence file status line reads 'PASS (11/11 checks passed)'"
+        timeout: 5
+
+  # ==========================================================================
+  # CME-HELIX-OTA-009 — Media Validation (H.264 content verification)
+  # ==========================================================================
+  - id: CME-HELIX-OTA-009
+    name: "Media Validation — H.264 content verification"
+    description: >-
+      Takes a video recording (MP4), validates it is valid H.264 with
+      non-zero frame count and matching codec, then runs the
+      media-validator.sh against expected patterns. Verifies:
+      - File exists and is a valid MP4 (ffprobe header parse)
+      - Video codec is H.264 (h264)
+      - Frame count > 0 (non-empty playback)
+      - Width/height match expected resolution (1920x1080 or 1280x720)
+      - Expected patterns present via ffprobe metadata dump
+      Uses the constitution skill at constitution/skills/media-validator/
+      (§11.4.163 Universal Media Validation & Verification Mandate).
+    category: functional
+    priority: high
+    platforms: [linux]
+    tags: [media, validation, video, h264, quality, content-verification]
+    documentation_refs:
+      - type: script
+        path: "constitution/skills/media-validator/media-validator.sh"
+      - type: constitution
+        section: "§11.4.163"
+        path: "constitution/Constitution.md"
+      - type: constitution
+        section: "§11.4.107"
+        path: "constitution/Constitution.md"
+    estimated_duration: "30s"
+    expected_result: >-
+      media-validator.sh exits 0. ffprobe confirms codec=h264,
+      frame_count > 0, width=1920|1280. Evidence written to
+      qa-results/media-validator/<timestamp>-<basename>/.
+    dispatches_to: "bash constitution/skills/media-validator/media-validator.sh"
+    steps:
+      - name: "Video file existence and format check"
+        action: "ffprobe -v error -show_entries stream=codec_name,width,height -of json <video>"
+        expected: "JSON with stream.codec_name='h264', frame_count > 0"
+        timeout: 15
+      - name: "Content validation via media-validator.sh"
+        action: "bash constitution/skills/media-validator/media-validator.sh <video> [expected-pattern...]"
+        expected: "Exit 0, PASS verdict with evidence path"
+        timeout: 30
+      - name: "Evidence verification (§11.4.69)"
+        action: "Assert evidence directory has verdict.txt + extracted_text.txt"
+        expected: "Evidence non-empty with PASS verdict"
+        timeout: 5
+
+  # ==========================================================================
+  # CME-HELIX-OTA-010 — Constitution Propagation (post_update_hook)
+  # ==========================================================================
+  - id: CME-HELIX-OTA-010
+    name: "Constitution Auto-Propagation — post_update_hook verification"
+    description: >-
+      Verifies that the constitution submodule's post_update_hook.sh
+      (§11.4.164) works correctly:
+      - Script exists and is executable
+      - Parses under sh -n (target-shell-parseability §11.4.67)
+      - Detects changed files (dry-run detection without mutating state)
+      - Can parse git diff output and identify skills/mcp/hooks/scripts
+      - Does not produce false positives on no-change state
+      Run in DRY mode (HELIX_DRY_RUN=1) to avoid side effects on the
+      consuming project during QA.
+      §11.4.164 (Universal Constitution Auto-Propagation & Hook System).
+    category: structural
+    priority: critical
+    platforms: [linux]
+    tags: [constitution, propagation, hook, post-update, validation]
+    documentation_refs:
+      - type: script
+        path: "constitution/scripts/post_update_hook.sh"
+      - type: constitution
+        section: "§11.4.164"
+        path: "constitution/Constitution.md"
+    estimated_duration: "20s"
+    expected_result: >-
+      post_update_hook.sh parses clean under sh -n, prints valid help
+      output, detects no changes in a DRY run with nothing new, reports
+      changed files when simulated.
+    dispatches_to: "bash constitution/scripts/post_update_hook.sh"
+    steps:
+      - name: "Script existence and parseability (§11.4.67)"
+        action: "test -x constitution/scripts/post_update_hook.sh && sh -n constitution/scripts/post_update_hook.sh"
+        expected: "File is executable, sh -n reports no parse errors"
+        timeout: 5
+      - name: "DRY-run detection without mutation"
+        action: "HELIX_DRY_RUN=1 bash constitution/scripts/post_update_hook.sh 2>&1"
+        expected: "Script handles dry-run flag, outputs summary or no-change"
+        timeout: 15
+      - name: "No-side-effect guarantee"
+        action: "git status --porcelain shows no changes from before dry run"
+        expected: "Working tree is clean (unchanged by the hook)"
+        timeout: 5
+
 # =============================================================================
 # Evidence artefacts (real captured runs)
 # =============================================================================
@@ -330,3 +514,11 @@ evidence:
     description: "PWU-AB-3 rollback evidence — consoleCONTROL.log, consoleROLLBACK.log, verdict.txt"
   - path: "qa-results/applyport-tests/<run-id>/"
     description: "PWU-AB-4 ApplyPort test evidence — test output logs, evidence report"
+  - path: "docs/helixqa/e2e_dashboard_flow_evidence.md"
+    description: "CME-HELIX-OTA-007 E2E Dashboard Full Flow evidence — project/device/artifact/release/deployment IDs, PASS/FAIL table, SHA256 hashes"
+  - path: "docs/helixtrack_e2e_evidence.md"
+    description: "CME-HELIX-OTA-008 HelixTrack E2E Bidirectional Sync evidence — pre/post counts, OTA IDs, HelixTrack ticket list, push/pull output, PASS verdict"
+  - path: "qa-results/media-validator/<timestamp>-<basename>/"
+    description: "CME-HELIX-OTA-009 Media Validation evidence — verdict.txt, extracted_text.txt, ffprobe_metadata.json, mid_frame.png"
+  - path: "qa-results/post_update_hook/<run-id>/"
+    description: "CME-HELIX-OTA-010 Constitution Propagation evidence — hook output log, syntax check results, git status diff"
