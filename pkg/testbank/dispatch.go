@@ -35,7 +35,7 @@ import (
 // project provides the implementation — e.g. an `adb -s <serial>
 // shell` wrapper, a local `os/exec` runner, an SSH executor, or a
 // container exec. HelixQA never constructs a concrete one; it only
-// calls through this interface so no ATMOSphere/device knowledge
+// calls through this interface so no consuming-project/device knowledge
 // leaks into the framework.
 type DeviceExec interface {
 	// Exec runs the given command line and returns the combined

@@ -24,7 +24,7 @@
 //     to an append-only JSONL stream + an atomically-rewritten status
 //     snapshot the conductor can tail.
 //
-// Project-agnostic per CONST-051 (§11.4.28): every ATMOSphere fact
+// Project-agnostic per CONST-051 (§11.4.28): every consuming-project fact
 // (device serial, bank path, on-device test directory, evidence base
 // directory) is a CLI flag. HelixQA's Dispatcher + ContentAssertingResolver
 // hardcode nothing. The grammar of required_evidence tokens is generic;

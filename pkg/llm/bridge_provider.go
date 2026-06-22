@@ -25,8 +25,7 @@ const defaultBridgeTimeout = 120 * time.Second
 // and parses the JSON response.
 //
 // This enables using CLI-only LLM tools that have no HTTP
-// API in the HelixQA pipeline — the same pattern used by
-// HelixAgent's ClaudeCLIProvider.
+// API in the HelixQA pipeline — the same pattern used by// the parent project's ClaudeCLIProvider.
 type BridgedCLIProvider struct {
 	// cliPath is the absolute or $PATH-relative path to the
 	// CLI binary (e.g. "/usr/local/bin/claude").

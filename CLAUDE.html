@@ -242,7 +242,7 @@
 </header>
 <h2 id="inherited-from-helix-constitution">INHERITED FROM Helix
 Constitution</h2>
-<p>This module is a submodule of an ATMOSphere-family project that
+<p>This module is a submodule of an consuming project that
 includes the Helix Constitution submodule at the parent’s
 <code>constitution/</code> path. All rules in
 <code>constitution/CLAUDE.md</code> and the
@@ -259,7 +259,7 @@ nested depth using its <code>find_constitution.sh</code> helper.</p>
 href="https://github.com/HelixDevelopment/HelixConstitution"
 class="uri">https://github.com/HelixDevelopment/HelixConstitution</a></p>
 <hr />
-<h1 id="claude.md---helixcode-ai-agent-manual">CLAUDE.md - HelixCode AI
+<h1 id="claude.md---helixcode-ai-agent-manual">CLAUDE.md - the project AI
 Agent Manual</h1>
 <h2 id="inherited-from-constitutionclaude.md">INHERITED FROM
 constitution/CLAUDE.md</h2>
@@ -267,20 +267,20 @@ constitution/CLAUDE.md</h2>
 <code>constitution/Constitution.md</code> it references) apply
 unconditionally. This file’s rules below extend them — they MUST NOT
 weaken any inherited rule. See parent root <code>CLAUDE.md</code> §6.AD
-for the Lava-specific incorporation context (29th §6.L cycle,
+for the project-specific incorporation context (29th §6.L cycle,
 2026-05-14) and §6.AD-debt for the implementation-gap inventory. Use
 <code>constitution/find_constitution.sh</code> from the parent project
 root to resolve the absolute path of the submodule from any nested
 location.</p>
-<h2 id="helixcode---ai-agent-operating-manual">HelixCode - AI Agent
+<h2 id="helixcode---ai-agent-operating-manual">the project - AI Agent
 Operating Manual</h2>
 <p><strong>Version</strong>: 1.0.0 <strong>Date</strong>: 2026-04-30
 <strong>Scope</strong>: This document guides AI agents working on the
-HelixCode codebase <strong>Authority</strong>: Cascaded from HelixAgent
-root <code>CLAUDE.md</code> with HelixCode-specific addenda</p>
+the project codebase <strong>Authority</strong>: Cascaded from the parent project
+root <code>CLAUDE.md</code> with project-specific addenda</p>
 <hr />
 <h2 id="agent-identity-purpose">1. Agent Identity &amp; Purpose</h2>
-<p>You are an AI agent working on <strong>HelixCode</strong>, an
+<p>You are an AI agent working on <strong>the project</strong>, an
 enterprise-grade distributed AI development platform. Your work directly
 impacts the quality and usability of a production system.</p>
 <p><strong>Your mandate</strong>: Write real, working, tested code. No
@@ -302,7 +302,7 @@ file inherits from them and they inherit from this one.</p>
 <hr />
 <h2 id="universal-mandatory-rules-non-negotiable">2. Universal Mandatory
 Rules (Non-Negotiable)</h2>
-<p>These rules cascade from the HelixCode Constitution. They are
+<p>These rules cascade from the project Constitution. They are
 permanent and apply to every task.</p>
 <h3 id="rule-1-no-cicd-pipelines">Rule 1: No CI/CD Pipelines</h3>
 <p>No <code>.github/workflows/</code>, <code>.gitlab-ci.yml</code>,
@@ -396,7 +396,7 @@ same severity as a false-success test result under CONST-035 / Article
 XI §11.9. See <code>CONSTITUTION.md</code> Article XIII §13.1 for the
 full mandate.</p>
 <hr />
-<h2 id="helixcode-specific-architecture">3. HelixCode-Specific
+<h2 id="helixcode-specific-architecture">3. project-specific
 Architecture</h2>
 <h3 id="technology-stack">3.1 Technology Stack</h3>
 <ul>
@@ -569,7 +569,7 @@ class="sourceCode bash"><code class="sourceCode bash"><span id="cb7-1"><a href="
 <span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a><span class="fu">make</span> container-release          <span class="co"># full release in container</span></span></code></pre></div>
 <p><strong>Single-test invocation</strong> (inner module):</p>
 <div class="sourceCode" id="cb8"><pre
-class="sourceCode bash"><code class="sourceCode bash"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="bu">cd</span> HelixCode</span>
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="bu">cd</span> &lt;project_root&gt;</span>
 <span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="ex">go</span> test <span class="at">-v</span> <span class="at">-run</span> TestJWTGenerate ./internal/auth                          <span class="co"># single unit test</span></span>
 <span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a><span class="ex">go</span> test <span class="at">-v</span> <span class="at">-tags</span><span class="op">=</span>integration <span class="at">-run</span> TestAPI_CreateTask ./tests/integration/...</span>
 <span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a><span class="ex">go</span> test <span class="at">-v</span> <span class="at">-count</span><span class="op">=</span>1 ./internal/verifier/...                              <span class="co"># disable test cache</span></span>
@@ -876,7 +876,7 @@ class="sourceCode go"><code class="sourceCode go"><span id="cb21-1"><a href="#cb
 <span id="cb21-33"><a href="#cb21-33" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
 <hr />
 <h2 id="working-with-submodules">7. Working with Submodules</h2>
-<p>HelixCode has 80+ submodules. When working with them:</p>
+<p>the project has 80+ submodules. When working with them:</p>
 <ol type="1">
 <li><strong>Check governance</strong>: Does the submodule have
 Constitution.md / CLAUDE.md / AGENTS.md?</li>
@@ -884,7 +884,7 @@ Constitution.md / CLAUDE.md / AGENTS.md?</li>
 parent</li>
 <li><strong>Verify builds</strong>: Does the submodule actually
 compile?</li>
-<li><strong>Test integration</strong>: Does HelixCode integration with
+<li><strong>Test integration</strong>: Does the project integration with
 this submodule work?</li>
 </ol>
 <hr />
@@ -915,10 +915,10 @@ Commands</strong>. The block below is only the smoke-test you should run
 before claiming any change is done.</p>
 <div class="sourceCode" id="cb22"><pre
 class="sourceCode bash"><code class="sourceCode bash"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a><span class="co"># 1. Compiles?</span></span>
-<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a><span class="bu">cd</span> HelixCode <span class="kw">&amp;&amp;</span> <span class="fu">make</span> verify-compile</span>
+<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a><span class="bu">cd</span> &lt;project_root&gt; <span class="kw">&amp;&amp;</span> <span class="fu">make</span> verify-compile</span>
 <span id="cb22-3"><a href="#cb22-3" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb22-4"><a href="#cb22-4" aria-hidden="true" tabindex="-1"></a><span class="co"># 2. Unit tests (mocks allowed only here)</span></span>
-<span id="cb22-5"><a href="#cb22-5" aria-hidden="true" tabindex="-1"></a><span class="bu">cd</span> HelixCode <span class="kw">&amp;&amp;</span> <span class="ex">go</span> test <span class="at">-count</span><span class="op">=</span>1 ./...</span>
+<span id="cb22-5"><a href="#cb22-5" aria-hidden="true" tabindex="-1"></a><span class="bu">cd</span> &lt;project_root&gt; <span class="kw">&amp;&amp;</span> <span class="ex">go</span> test <span class="at">-count</span><span class="op">=</span>1 ./...</span>
 <span id="cb22-6"><a href="#cb22-6" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb22-7"><a href="#cb22-7" aria-hidden="true" tabindex="-1"></a><span class="co"># 3. Anti-bluff scan</span></span>
 <span id="cb22-8"><a href="#cb22-8" aria-hidden="true" tabindex="-1"></a><span class="fu">grep</span> <span class="at">-rn</span> <span class="st">&quot;simulated\|for now\|TODO implement\|placeholder&quot;</span> <span class="dt">\</span></span>
@@ -952,7 +952,7 @@ Model Status Accuracy</h3>
 60s if push unavailable.</p>
 <h3 id="const-039-all-providers-integration-mandate">CONST-039: All
 Providers Integration Mandate</h3>
-<p>HelixCode MUST integrate with all verifier-supported providers:
+<p>the project MUST integrate with all verifier-supported providers:
 OpenAI, Anthropic, Gemini, DeepSeek, Groq, Mistral, xAI, OpenRouter,
 Ollama, Llama.cpp.</p>
 <h3 id="const-040-capability-integration-mandate">CONST-040: Capability
@@ -1005,7 +1005,7 @@ source-code layer (no command may directly terminate a session) and the
 operational layer (do not spawn workloads that will plausibly force a
 manual logout). See
 <code>docs/issues/fixed/SESSION_LOSS_2026-04-28.md</code> in the
-HelixAgent project for the full forensic timeline.</p>
+the parent project for the full forensic timeline.</p>
 <h3 id="forbidden-direct-invocations-non-exhaustive">Forbidden direct
 invocations (non-exhaustive)</h3>
 <pre><code>loginctl   terminate-user|terminate-session|kill-user|kill-session
@@ -1044,8 +1044,8 @@ class="sourceCode bash"><code class="sourceCode bash"><span id="cb24-1"><a href=
 id="const-035-end-user-usability-mandate-2026-04-29-strengthening">CONST-035
 — End-User Usability Mandate (2026-04-29 strengthening)</h2>
 <p>A test or Challenge that PASSES is a CLAIM that the tested behavior
-<strong>works for the end user of the product</strong>. The HelixAgent
-project has repeatedly hit the failure mode where every test ran green
+<strong>works for the end user of the product</strong>. The parent project
+has repeatedly hit the failure mode where every test ran green
 AND every Challenge reported PASS, yet most product features did not
 actually work — buggy challenge wrappers masked failed assertions,
 scripts checked file existence without executing the file,
@@ -1071,7 +1071,7 @@ aliases the dispatcher actually accepts.</li>
 coverage is loud rather than silent.</p>
 <h3
 id="bluff-taxonomy-each-pattern-observed-in-helixagent-and-now-forbidden">Bluff
-taxonomy (each pattern observed in HelixAgent and now forbidden)</h3>
+taxonomy (each pattern observed in the parent project and now forbidden)</h3>
 <ul>
 <li><strong>Wrapper bluff</strong> — assertions PASS but the wrapper’s
 exit-code logic is buggy, marking the run FAILED (or the inverse:
@@ -2147,7 +2147,7 @@ executed from the root of the cloned (added) repository - only if in it
 is Upstreams or upstreams directory present with bash script files
 (recipes) for all repository’s upstreams!”</em></p>
 </blockquote>
-<p>Every clone / add of a Git repository under HelixCode MUST be
+<p>Every clone / add of a Git repository under the project MUST be
 followed by <code>install_upstreams</code> invocation from the
 repository’s root IF its tree contains <code>upstreams/</code> (or
 legacy <code>Upstreams/</code> per CONST-052 transition) populated with

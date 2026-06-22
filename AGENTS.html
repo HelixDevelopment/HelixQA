@@ -275,27 +275,27 @@ href="https://github.com/HelixDevelopment/HelixConstitution"
 class="uri">https://github.com/HelixDevelopment/HelixConstitution</a></p>
 <hr />
 <h1 id="agents.md-helixcode-authoritative-agent-guide">AGENTS.md —
-HelixCode Authoritative Agent Guide</h1>
+the project Authoritative Agent Guide</h1>
 <h2 id="inherited-from-constitutionagents.md">INHERITED FROM
 constitution/AGENTS.md</h2>
 <p>All rules in <code>constitution/AGENTS.md</code> (and the
 <code>constitution/Constitution.md</code> it references) apply
 unconditionally. This file’s rules below extend them — they MUST NOT
 weaken any inherited rule. See parent root <code>CLAUDE.md</code> §6.AD
-for the Lava-specific incorporation context (29th §6.L cycle,
+for the project-specific incorporation context (29th §6.L cycle,
 2026-05-14) and §6.AD-debt for the implementation-gap inventory. Use
 <code>constitution/find_constitution.sh</code> from the parent project
 root to resolve the absolute path of the submodule from any nested
 location.</p>
-<h2 id="helixcode-agent-guidelines">HelixCode Agent Guidelines</h2>
+<h2 id="helixcode-agent-guidelines">the project Agent Guidelines</h2>
 <p><strong>Version</strong>: 3.0.0 (Updated with full architecture
 audit) <strong>Date</strong>: 2026-04-30 <strong>Scope</strong>: All AI
-agents, human contributors, and automated processes working on HelixCode
-<strong>Authority</strong>: Derived from HelixAgent AGENTS.md with
-HelixCode-specific enhancements</p>
+agents, human contributors, and automated processes working on the project
+<strong>Authority</strong>: Derived from the parent project AGENTS.md with
+project-specific enhancements</p>
 <hr />
 <h2 id="project-overview">Project Overview</h2>
-<p>HelixCode is an enterprise-grade distributed AI development platform
+<p>the project is an enterprise-grade distributed AI development platform
 built in Go. It enables intelligent task division, work preservation,
 cross-platform development workflows, and multi-provider LLM integration
 through a unified REST API, CLI, Terminal UI, Desktop, and Mobile client
@@ -362,7 +362,7 @@ System</h2>
 from the <code>helix_code/</code> subdirectory, not the repository
 root.</p>
 <div class="sourceCode" id="cb1"><pre
-class="sourceCode bash"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="bu">cd</span> HelixCode</span></code></pre></div>
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="bu">cd</span> &lt;project_root&gt;</span></code></pre></div>
 <h3 id="build-commands">Build Commands</h3>
 <table>
 <colgroup>
@@ -1103,7 +1103,7 @@ Weaviate, mock-Slack, multicast router</li>
 </ul>
 <h3 id="challenge-framework-testse2echallenges">Challenge Framework
 (<code>tests/e2e/challenges/</code>)</h3>
-<p>The most rigorous test system validates HelixCode by having it
+<p>The most rigorous test system validates the project by having it
 <strong>generate real projects</strong> and testing them: -
 <strong>Challenge Definitions</strong>: JSON specs (ASCII art generator,
 CLI task manager, JSON validator, notes API, tic-tac-toe TUI, URL
@@ -1116,7 +1116,7 @@ interfaces across 15+ providers and worker pool distributions</p>
 <h3 id="test-scripts-summary">Test Scripts Summary</h3>
 <div class="sourceCode" id="cb6"><pre
 class="sourceCode bash"><code class="sourceCode bash"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Basic</span></span>
-<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="bu">cd</span> HelixCode <span class="kw">&amp;&amp;</span> <span class="fu">make</span> test</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="bu">cd</span> &lt;project_root&gt; <span class="kw">&amp;&amp;</span> <span class="fu">make</span> test</span>
 <span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Full infrastructure (recommended for validation)</span></span>
 <span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a><span class="fu">make</span> test-infra-up</span>
@@ -1142,7 +1142,7 @@ class="sourceCode bash"><code class="sourceCode bash"><span id="cb6-1"><a href="
 (80, 443), prometheus (9090), grafana (3000)</p>
 <h3 id="quick-start">Quick Start</h3>
 <div class="sourceCode" id="cb7"><pre
-class="sourceCode bash"><code class="sourceCode bash"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="bu">cd</span> HelixCode</span>
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="bu">cd</span> &lt;project_root&gt;</span>
 <span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="fu">cp</span> .env.example .env</span>
 <span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Edit .env with secure passwords</span></span>
 <span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a><span class="ex">docker</span> compose up <span class="at">-d</span></span>
@@ -1323,13 +1323,13 @@ with <code>SKIP-OK: #&lt;ticket&gt;</code> markers</p>
 Usability Mandate</h2>
 <p>A test or Challenge that PASSES is a CLAIM that the tested behavior
 <strong>works for the end user of the product</strong>.</p>
-<p>The HelixAgent project has repeatedly hit the failure mode where
+<p>The parent project has repeatedly hit the failure mode where
 every test ran green AND every Challenge reported PASS, yet most product
 features did not actually work — buggy challenge wrappers masked failed
 assertions, scripts checked file existence without executing the file,
 “reachability” tests tolerated timeouts, contracts were honest in
 advertising but broken in dispatch. <strong>This MUST NOT recur in
-HelixCode.</strong></p>
+the project.</strong></p>
 <p>Every PASS result MUST guarantee: a. <strong>Quality</strong> —
 correct behavior under real inputs, edge cases, concurrency b.
 <strong>Completion</strong> — wired end-to-end with no stub/placeholder
@@ -1447,7 +1447,7 @@ recovery time if known.</p>
 <h2
 id="const-039-all-providers-and-models-integration-mandate">CONST-039:
 All Providers and Models Integration Mandate</h2>
-<p><strong>Rule</strong>: HelixCode MUST integrate with ALL providers
+<p><strong>Rule</strong>: the project MUST integrate with ALL providers
 that LLMsVerifier supports, subject only to: 1. The provider being
 explicitly disabled in configuration (<code>enabled: false</code>) 2.
 The API key being absent and the provider requiring one 3. The provider
@@ -1615,7 +1615,7 @@ had to manually end the session anyway, because nothing prevented
 overlapping heavy workloads from saturating the slice. CONST-036 closes
 that loophole at both the source-code layer and the operational layer.
 See <code>docs/issues/fixed/SESSION_LOSS_2026-04-28.md</code> in the
-HelixAgent project.</p>
+the parent project.</p>
 <p><strong>Forbidden direct invocations</strong> (non-exhaustive):</p>
 <ul>
 <li><code>loginctl terminate-user|terminate-session|kill-user|kill-session</code></li>
@@ -1652,8 +1652,8 @@ Rootless podman containers die with the user manager.</li>
 id="const-035-end-user-usability-mandate-2026-04-29-strengthening">CONST-035
 — End-User Usability Mandate (2026-04-29 strengthening)</h2>
 <p>A test or Challenge that PASSES is a CLAIM that the tested behavior
-<strong>works for the end user of the product</strong>. The HelixAgent
-project has repeatedly hit the failure mode where every test ran green
+<strong>works for the end user of the product</strong>. The parent project
+has repeatedly hit the failure mode where every test ran green
 AND every Challenge reported PASS, yet most product features did not
 actually work — buggy challenge wrappers masked failed assertions,
 scripts checked file existence without executing the file,
@@ -1679,7 +1679,7 @@ aliases the dispatcher actually accepts.</li>
 coverage is loud rather than silent.</p>
 <h3
 id="bluff-taxonomy-each-pattern-observed-in-helixagent-and-now-forbidden">Bluff
-taxonomy (each pattern observed in HelixAgent and now forbidden)</h3>
+taxonomy (each pattern observed in the parent project and now forbidden)</h3>
 <ul>
 <li><strong>Wrapper bluff</strong> — assertions PASS but the wrapper’s
 exit-code logic is buggy, marking the run FAILED (or the inverse:
@@ -2754,7 +2754,7 @@ executed from the root of the cloned (added) repository - only if in it
 is Upstreams or upstreams directory present with bash script files
 (recipes) for all repository’s upstreams!”</em></p>
 </blockquote>
-<p>Every clone / add of a Git repository under HelixCode MUST be
+<p>Every clone / add of a Git repository under the project MUST be
 followed by <code>install_upstreams</code> invocation from the
 repository’s root IF its tree contains <code>upstreams/</code> (or
 legacy <code>Upstreams/</code> per CONST-052 transition) populated with

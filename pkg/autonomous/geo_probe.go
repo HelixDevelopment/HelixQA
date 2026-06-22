@@ -9,7 +9,7 @@
 // so tests can SKIP (not FAIL) and optionally substitute an alternative.
 //
 // This file is INTENTIONALLY project-agnostic. It ships with EMPTY maps of
-// endpoints and alternatives. Callers (any project — ATMOSphere, a TV
+// endpoints and alternatives. Callers (any project — a firmware vendor, a TV
 // vendor, a generic Android farm) register the packages they care about
 // via RegisterEndpoint / RegisterAlternative, or mutate the exported maps
 // directly. The probing mechanism itself — curl-over-adb with ping

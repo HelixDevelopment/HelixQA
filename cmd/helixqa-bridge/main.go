@@ -24,7 +24,7 @@
 // Project-agnostic: HelixQA core stays generic (per HELIXQA-AGNOSTIC
 // Constitution rules). All consumer-specific paths (the bash helpers,
 // the recording temp dir) come from request parameters or runtime
-// configuration — no ATMOSphere-specific symbols are baked into
+// configuration — no project-specific symbols are baked into
 // `digital.vasic.helixqa/cmd/helixqa-bridge`.
 //
 // Run modes:

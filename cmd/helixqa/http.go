@@ -33,11 +33,11 @@ import (
 //
 // Decoupling (CONST-051(B)): the base URL is a required flag — never
 // hardcoded — so this command is reusable against any HTTP server a
-// bank targets, not just HelixCode.
+// bank targets, not just one project.
 //
 // Closes the gap where the only CLI run paths were `run -platform
 // web` (needs Playwright) and `autonomous` (needs an Ollama LLM):
-// neither could drive the existing 16-case HelixCode auth bank's
+// neither could drive the existing 16-case auth bank's
 // http: cases against a live server. The HTTPExecutor existed; this
 // is the missing CLI bridge.
 func cmdHTTP(args []string) {

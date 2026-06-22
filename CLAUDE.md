@@ -1,6 +1,6 @@
 ## INHERITED FROM Helix Constitution
 
-This module is a submodule of an ATMOSphere-family project that
+This module is a submodule of an consuming project that
 includes the Helix Constitution submodule at the parent's
 `constitution/` path. All rules in `constitution/CLAUDE.md` and the
 `constitution/Constitution.md` it references (universal anti-bluff
@@ -18,24 +18,24 @@ Canonical reference: <https://github.com/HelixDevelopment/HelixConstitution>
 
 ---
 
-# CLAUDE.md - HelixCode AI Agent Manual
+# CLAUDE.md - the project AI Agent Manual
 
 ## INHERITED FROM constitution/CLAUDE.md
 
-All rules in `constitution/CLAUDE.md` (and the `constitution/Constitution.md` it references) apply unconditionally. This file's rules below extend them — they MUST NOT weaken any inherited rule. See parent root `CLAUDE.md` §6.AD for the Lava-specific incorporation context (29th §6.L cycle, 2026-05-14) and §6.AD-debt for the implementation-gap inventory. Use `constitution/find_constitution.sh` from the parent project root to resolve the absolute path of the submodule from any nested location.
+All rules in `constitution/CLAUDE.md` (and the `constitution/Constitution.md` it references) apply unconditionally. This file's rules below extend them — they MUST NOT weaken any inherited rule. See parent root `CLAUDE.md` §6.AD for the project-specific incorporation context (29th §6.L cycle, 2026-05-14) and §6.AD-debt for the implementation-gap inventory. Use `constitution/find_constitution.sh` from the parent project root to resolve the absolute path of the submodule from any nested location.
 
-## HelixCode - AI Agent Operating Manual
+## the project - AI Agent Operating Manual
 
 **Version**: 1.0.0
 **Date**: 2026-04-30
-**Scope**: This document guides AI agents working on the HelixCode codebase
-**Authority**: Cascaded from HelixAgent root `CLAUDE.md` with HelixCode-specific addenda
+**Scope**: This document guides AI agents working on the project codebase
+**Authority**: Cascaded from the parent project root `CLAUDE.md` with project-specific addenda
 
 ---
 
 ## 1. Agent Identity & Purpose
 
-You are an AI agent working on **HelixCode**, an enterprise-grade distributed AI development platform. Your work directly impacts the quality and usability of a production system.
+You are an AI agent working on **the project**, an enterprise-grade distributed AI development platform. Your work directly impacts the quality and usability of a production system.
 
 **Your mandate**: Write real, working, tested code. No simulations. No placeholders. No "for now" implementations. Every feature you implement MUST actually work when a user invokes it.
 
@@ -50,7 +50,7 @@ This `CLAUDE.md` sits alongside several other agent/governance manuals at the re
 
 ## 2. Universal Mandatory Rules (Non-Negotiable)
 
-These rules cascade from the HelixCode Constitution. They are permanent and apply to every task.
+These rules cascade from the project Constitution. They are permanent and apply to every task.
 
 ### Rule 1: No CI/CD Pipelines
 No `.github/workflows/`, `.gitlab-ci.yml`, `Jenkinsfile`, `.travis.yml`, `.circleci/`, or any automated pipeline. All builds and tests run manually or via Makefile/script targets.
@@ -102,7 +102,7 @@ The meta-repo's `docs/CONTINUATION.md` MUST be kept in sync with actual programm
 
 ---
 
-## 3. HelixCode-Specific Architecture
+## 3. project-specific Architecture
 
 ### 3.1 Technology Stack
 - **Language**: Go — root meta-repo on `go 1.25.2`, inner Go application (`helix_code/`) on `go 1.26`. Keep both modules current; do not downgrade.
@@ -263,7 +263,7 @@ make container-release          # full release in container
 
 **Single-test invocation** (inner module):
 ```bash
-cd HelixCode
+cd <project_root>
 go test -v -run TestJWTGenerate ./internal/auth                          # single unit test
 go test -v -tags=integration -run TestAPI_CreateTask ./tests/integration/...
 go test -v -count=1 ./internal/verifier/...                              # disable test cache
@@ -573,12 +573,12 @@ func (p *SSHWorkerPool) AddWorker(ctx context.Context, w *SSHWorker) error {
 
 ## 7. Working with Submodules
 
-HelixCode has 80+ submodules. When working with them:
+The project has 80+ submodules. When working with them:
 
 1. **Check governance**: Does the submodule have Constitution.md / CLAUDE.md / AGENTS.md?
 2. **Add if missing**: Create governance files referencing parent
 3. **Verify builds**: Does the submodule actually compile?
-4. **Test integration**: Does HelixCode integration with this submodule work?
+4. **Test integration**: Does the project integration with this submodule work?
 
 ---
 
@@ -608,10 +608,10 @@ The full command catalog lives in **§3.4 Build & Test Commands**. The block bel
 
 ```bash
 # 1. Compiles?
-cd HelixCode && make verify-compile
+cd <project_root> && make verify-compile
 
 # 2. Unit tests (mocks allowed only here)
-cd HelixCode && go test -count=1 ./...
+cd <project_root> && go test -count=1 ./...
 
 # 3. Anti-bluff scan
 grep -rn "simulated\|for now\|TODO implement\|placeholder" \
@@ -641,7 +641,7 @@ Every model displayed to users MUST be verified by LLMsVerifier within 24h. Inte
 Model status MUST reflect verifier state within 60s. Poll interval ≤ 60s if push unavailable.
 
 ### CONST-039: All Providers Integration Mandate
-HelixCode MUST integrate with all verifier-supported providers: OpenAI, Anthropic, Gemini, DeepSeek, Groq, Mistral, xAI, OpenRouter, Ollama, Llama.cpp.
+The project MUST integrate with all verifier-supported providers: OpenAI, Anthropic, Gemini, DeepSeek, Groq, Mistral, xAI, OpenRouter, Ollama, Llama.cpp.
 
 ### CONST-040: Capability Integration Mandate
 MCP, LSP, ACP, Embedding, RAG, Skills, and Plugins capability flags MUST be sourced from verifier `VerificationResult`. NO hardcoded capability flags.
@@ -691,8 +691,8 @@ saturating the slice. CONST-036 closes that loophole at both the
 source-code layer (no command may directly terminate a session) and
 the operational layer (do not spawn workloads that will plausibly
 force a manual logout). See
-`docs/issues/fixed/SESSION_LOSS_2026-04-28.md` in the HelixAgent
-project for the full forensic timeline.
+`docs/issues/fixed/SESSION_LOSS_2026-04-28.md` in the parent project
+for the full forensic timeline.
 
 ### Forbidden direct invocations (non-exhaustive)
 
@@ -738,7 +738,7 @@ All three must PASS.
 ## CONST-035 — End-User Usability Mandate (2026-04-29 strengthening)
 
 A test or Challenge that PASSES is a CLAIM that the tested behavior
-**works for the end user of the product**. The HelixAgent project
+**works for the end user of the product**. The parent project
 has repeatedly hit the failure mode where every test ran green AND
 every Challenge reported PASS, yet most product features did not
 actually work — buggy challenge wrappers masked failed assertions,
@@ -763,7 +763,7 @@ A passing test that doesn't certify all three is a **bluff** and
 MUST be tightened, or marked `t.Skip("...SKIP-OK: #<ticket>")`
 so absence of coverage is loud rather than silent.
 
-### Bluff taxonomy (each pattern observed in HelixAgent and now forbidden)
+### Bluff taxonomy (each pattern observed in the parent project and now forbidden)
 
 - **Wrapper bluff** — assertions PASS but the wrapper's exit-code
   logic is buggy, marking the run FAILED (or the inverse: assertions
@@ -1491,7 +1491,7 @@ CONST-055 is the **enforcement engine** for every other §11.4.x and CONST-NNN r
 
 > Verbatim user mandate (2026-05-15): *"Every Submodule or Git repository we add or clone MUST BE upstreams installed using Upstreamable utility which MUST BE available through exported paths of the host system (in .bashrc or .zhrc) using install_upstreams command executed from the root of the cloned (added) repository - only if in it is Upstreams or upstreams directory present with bash script files (recipes) for all repository's upstreams!"*
 
-Every clone / add of a Git repository under HelixCode MUST be followed by `install_upstreams` invocation from the repository's root IF its tree contains `upstreams/` (or legacy `Upstreams/` per CONST-052 transition) populated with `*.sh` recipe files. The utility (installed on operator's `PATH` via `.bashrc`/`.zshrc`; implementation in the constitution submodule's `install_upstreams.sh` — already supports BOTH directory names since constitution commit `45d3678`) reads the recipe files, configures every declared upstream as a named git remote, and fans out `origin` push URLs.
+Every clone / add of a Git repository under the project MUST be followed by `install_upstreams` invocation from the repository's root IF its tree contains `upstreams/` (or legacy `Upstreams/` per CONST-052 transition) populated with `*.sh` recipe files. The utility (installed on operator's `PATH` via `.bashrc`/`.zshrc`; implementation in the constitution submodule's `install_upstreams.sh` — already supports BOTH directory names since constitution commit `45d3678`) reads the recipe files, configures every declared upstream as a named git remote, and fans out `origin` push URLs.
 
 Skipping the invocation when `upstreams/` is present silently breaks §2.1 (multi-upstream push is the norm) — the next push lands on only one upstream. Gate `CM-INSTALL-UPSTREAMS-ON-CLONE` + paired mutation. Automation: the future `incorporate-submodule` per CONST-054 auto-invokes; manual invocation supported. Pre-commit check: `git remote -v | grep -c push` reports expected count.
 

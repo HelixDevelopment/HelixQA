@@ -109,7 +109,7 @@ already bridged in `pkg/autonomous/coordinator.go`.
 ## Decoupling
 
 Per CONST-051 (§11.4.28), `pkg/conduit` carries no consumer-project
-knowledge — no ATMOSphere/device/package strings. The consuming project
+knowledge — no consuming-project/device/package strings. The consuming project
 supplies session and feature identifiers at runtime. The conductor
 consumes plain files, so the conductor itself can be any process on any
 platform.

@@ -999,7 +999,7 @@ func loadEnvFile(path string) error {
 	return scanner.Err()
 }
 
-// cmdSignoff runs the HelixPlay release gate (Constitution §6.7).
+// cmdSignoff runs the project release gate (Constitution §6.7).
 // It executes the full test matrix via the helixqa orchestrator and
 // evaluates the release gate. Exit 0 = signoff granted, Exit 1 = blocked.
 func cmdSignoff(args []string) {

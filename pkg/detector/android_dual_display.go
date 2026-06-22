@@ -149,7 +149,7 @@ type DualDisplayOption func(*DualDisplayDetector)
 
 // DualDisplayDetector extends the base Detector with
 // dual-display awareness for any Android device with two HDMI
-// outputs (originally written against the ATMOSphere Orange Pi
+// outputs (originally written against an Orange Pi
 // 5 Max reference hardware; the detector itself is hardware-
 // agnostic and the caller supplies the Presenter package via
 // WithPresenterPackage).

@@ -27,7 +27,7 @@ import (
 // CONST-051 (§11.4.28): the resolver interprets a generic, declarative
 // assertion grammar, and the consuming project supplies ALL concrete
 // values (which codec regex, which JSON key, which threshold) entirely
-// in its bank data. HelixQA hardcodes NO ATMOSphere codec name, no
+// in its bank data. HelixQA hardcodes NO consuming-project codec name, no
 // device serial, no Arvus value, no display id.
 //
 // ---------------------------------------------------------------------
@@ -66,8 +66,7 @@ import (
 // This grammar is enough to express EVERY required_evidence assertion the
 // audit asked for (Arvus value != N.E./stereo, hw_params channels>=6,
 // video_live==true, route==expected-display, ΔE2000 pass, freeze absent,
-// captured-WAV RMS-not-silent, channels==N) WITHOUT HelixQA learning any
-// ATMOSphere fact — the bank declares the regex/key/value.
+// captured-WAV RMS-not-silent, channels==N) WITHOUT HelixQA learning any// consuming-project fact — the bank declares the regex/key/value.
 //
 // Wrong-but-present content now FAILs the ledger; the size-only blind
 // spot (a `echo stereo > codec.txt` PASS-bluff) is closed.

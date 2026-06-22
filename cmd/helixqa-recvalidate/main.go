@@ -40,8 +40,7 @@
 // (pkg/recordingqa/recordingqa_test.go) which this entrypoint reuses verbatim:
 // the same Validator that FAILs a bad recording in those tests FAILs it here.
 //
-// DECOUPLING (CONST-051(B) / §11.4.28). This entrypoint carries NO HelixCode /
-// ATMOSphere knowledge: the bank, the case id, the mp4, the Panoptic invocation
+// DECOUPLING (CONST-051(B) / §11.4.28). This entrypoint // bank, the case id, the mp4, the Panoptic invocation
 // are all flags. The recvalidate options are read from the bank's
 // metadata.recvalidate_options block as opaque consumer DATA.
 package main

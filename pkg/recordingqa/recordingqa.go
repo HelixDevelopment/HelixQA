@@ -14,7 +14,7 @@
 // session GENUINELY achieved its goal — the prompts received real replies
 // AND no error/warning/panic surfaced during the interaction.
 //
-// CANONICAL USE CASE (the consumer the conductor wires). HelixCode records
+// CANONICAL USE CASE (the consumer the conductor wires). The consuming project records
 // TUI LLM-chat sessions to mp4 (prompts typed, model replies rendered on
 // the terminal). recordingqa ORCHESTRATES the validation of each such
 // recording by composing TWO independent oracles, both consumer-injected:
@@ -35,8 +35,8 @@
 //     starting set the consumer may replace) so HelixQA stays project-
 //     agnostic per CONST-051(B).
 //
-// DECOUPLING (CONST-051(B) / §11.4.28). This package carries NO HelixCode /
-// ATMOSphere knowledge: no hardcoded binary path, no hardcoded log path, no
+// DECOUPLING (CONST-051(B) / §11.4.28). This package carries NO consuming-project knowledge:
+// no hardcoded binary path, no hardcoded log path, no
 // hardcoded model id, no hardcoded prompt. Every concrete value arrives via
 // the Spec the consumer constructs at runtime. It depends only on the
 // stdlib + the in-repo conduit package for the §11.4.116 sync channel.
@@ -197,7 +197,7 @@ type Result struct {
 }
 
 // Spec is everything the consumer supplies to validate ONE recorded
-// session. Every field is consumer data — no HelixCode/ATMOSphere knowledge
+// session. Every field is consumer data — no consuming-project knowledge
 // lives here (CONST-051(B)).
 type Spec struct {
 	// ChallengeID is the stable handle the consumer assigns.

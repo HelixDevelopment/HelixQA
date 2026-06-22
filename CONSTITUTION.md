@@ -1,25 +1,25 @@
-# HelixCode Constitution
+# the project Constitution
 
 ## INHERITED FROM constitution/Constitution.md
 
-All rules in `constitution/Constitution.md` (and the `constitution/Constitution.md` it references) apply unconditionally. This file's rules below extend them — they MUST NOT weaken any inherited rule. See parent root `CLAUDE.md` §6.AD for the Lava-specific incorporation context (29th §6.L cycle, 2026-05-14) and §6.AD-debt for the implementation-gap inventory. Use `constitution/find_constitution.sh` from the parent project root to resolve the absolute path of the submodule from any nested location.
+All rules in `constitution/Constitution.md` (and the `constitution/Constitution.md` it references) apply unconditionally. This file's rules below extend them — they MUST NOT weaken any inherited rule. See parent root `CLAUDE.md` §6.AD for the project-specific incorporation context (29th §6.L cycle, 2026-05-14) and §6.AD-debt for the implementation-gap inventory. Use `constitution/find_constitution.sh` from the parent project root to resolve the absolute path of the submodule from any nested location.
 
 > **Inherits from:** `HelixConstitution/Constitution.md` — all universal
 > clauses in that document apply unconditionally. Rules below extend or
 > tighten them; they MUST NOT weaken any inherited clause.
 
-## HelixCode Project Constitution
+## Project Constitution
 
 **Version**: 1.0.0
 **Effective Date**: 2026-04-30
-**Scope**: This Constitution applies to HelixCode and ALL its submodules
-**Authority**: Cascaded from HelixAgent root governance with HelixCode-specific addenda
+**Scope**: This Constitution applies to the project and ALL its submodules
+**Authority**: Cascaded from the parent project root governance with project-specific addenda
 
 ---
 
 ## Preamble
 
-HelixCode is an enterprise-grade distributed AI development platform. This Constitution establishes the non-negotiable rules that govern all development, testing, deployment, and maintenance activities within the project. Every contributor, agent, and automated process MUST adhere to these rules. No exceptions.
+The project is an enterprise-grade distributed AI development platform. This Constitution establishes the non-negotiable rules that govern all development, testing, deployment, and maintenance activities within the project. Every contributor, agent, and automated process MUST adhere to these rules. No exceptions.
 
 ---
 
@@ -320,7 +320,7 @@ Public APIs maintain backward compatibility within major versions. Deprecation r
 
 A test or Challenge that PASSES is a CLAIM that the tested behavior **works for the end user of the product**.
 
-The HelixAgent project has repeatedly hit the failure mode where every test ran green AND every Challenge reported PASS, yet most product features did not actually work. This MUST NOT recur in HelixCode.
+The parent project has repeatedly hit the failure mode where every test ran green AND every Challenge reported PASS, yet most product features did not actually work. This MUST NOT recur in the project.
 
 Every PASS result MUST guarantee:
 a. **Quality** - correct behavior under real inputs, edge cases, concurrency
@@ -414,7 +414,7 @@ BY AN END USER IN THE SAME BUILD.
 
 ## CONST-040: All Providers and Models Integration Mandate
 
-**Rule**: HelixCode MUST integrate with ALL providers and models that LLMsVerifier supports, subject only to:
+**Rule**: the project MUST integrate with ALL providers and models that LLMsVerifier supports, subject only to:
 1. The provider being explicitly disabled in configuration (`enabled: false`)
 2. The API key being absent and the provider requiring one
 3. The provider being marked `deprecated` in the verifier database
@@ -445,7 +445,7 @@ BY AN END USER IN THE SAME BUILD.
 
 **Rule**: LLMsVerifier integration SHALL extend beyond basic model listing to cover ALL capability dimensions:
 
-1. **MCP (Model Context Protocol)**: The verifier MUST report which models support MCP tool calling. HelixCode's MCP subsystem MUST consult verifier capability flags before selecting a model for tool-use tasks.
+1. **MCP (Model Context Protocol)**: The verifier MUST report which models support MCP tool calling. the project's MCP subsystem MUST consult verifier capability flags before selecting a model for tool-use tasks.
 
 2. **LSP (Language Server Protocol)**: The verifier MUST report code-analysis capabilities. Models without `code_analysis` capability MUST NOT be selected for refactoring or debugging tasks.
 
@@ -499,7 +499,7 @@ No force push, force-with-lease push, history rewrite, branch deletion of `main`
 
 ### §13.1 (CONST-044) — Continuation Document Maintenance Mandate
 
-The `docs/CONTINUATION.md` document at the meta-repo (`HelixCode/`) MUST be maintained in sync with the actual state of the CLI-Agent Fusion programme at all times. It is the authoritative resumption record for any CLI agent or LLM picking up the work from any session, at any time.
+The `docs/CONTINUATION.md` document at the meta-repo (`<repo_root>/`) MUST be maintained in sync with the actual state of the CLI-Agent Fusion programme at all times. It is the authoritative resumption record for any CLI agent or LLM picking up the work from any session, at any time.
 
 **Mandate:** Every commit that advances programme state — feature task completion, feature close-out, push to remotes, known-issue discovery, deferred-item resolution, phase transition, addition or removal of submodules / remotes — MUST update `docs/CONTINUATION.md` to reflect the new state in the same commit (or in an immediately-following commit if the state-changing commit is small and topical).
 
@@ -523,7 +523,7 @@ The `docs/CONTINUATION.md` document at the meta-repo (`HelixCode/`) MUST be main
 
 > **Verbatim user mandate (2026-05-14):** *"Make sure all work we do is applied ALWAYS to all Submodules we control under our organizations (vasic-digital and HelixDevelopment) fully recursively everywhere with full bluff-proofing and comprehensive documentation, user manuals and guides and full tests and Challenges coverage!"*
 
-**Operative rule:** Every engineering deliverable produced for HelixCode MUST be applied — fully and recursively — to every owned submodule under the `vasic-digital` and `HelixDevelopment` GitHub organizations. "Owned" means any submodule whose remote URL is `git@github.com:vasic-digital/*.git` or `git@github.com:HelixDevelopment/*.git` (including the `HelixDevelopment-s-Code/*` brand variant). Each such submodule MUST receive in lockstep:
+**Operative rule:** Every engineering deliverable produced for the project MUST be applied — fully and recursively — to every owned submodule under the `vasic-digital` and `HelixDevelopment` GitHub organizations. "Owned" means any submodule whose remote URL is `git@github.com:vasic-digital/*.git` or `git@github.com:HelixDevelopment/*.git` (including the `HelixDevelopment-s-Code/*` brand variant). Each such submodule MUST receive in lockstep:
 
 1. **Anti-bluff posture (CONST-035 / Article XI §11.9):** every test and Challenge in the submodule must guarantee real, end-user-usable functionality. Metadata-only / absence-of-error / fake-PASS results are critical defects in submodules just as in the meta-repo.
 
@@ -547,7 +547,7 @@ The `docs/CONTINUATION.md` document at the meta-repo (`HelixCode/`) MUST be main
 
 > Verbatim user mandate (2026-05-15): *"Make sure that every feature, every functionality, every flow, every use case, every edge case, every service or application, on every platform we support is covered with full automation tests which will confirm anti-bluff policy and provide the proof of fully working capabilities, working implementation as expected, no issues, no bugs, fully documented, tests covered! Nothing less than this does not give us a chance to deliver stable product! This is mandatory constraint which MUST BE respected without ignoring, skipping, slacking or forgetting it!"*
 
-No feature / functionality / flow / use case / edge case / service / application on any supported platform of HelixCode may be considered deliverable until covered by automation tests proving six invariants: (1) anti-bluff posture (CONST-035) with captured runtime evidence; (2) proof of working capability end-to-end on target topology (no mocks beyond unit tests — see CONST-050); (3) implementation matches documented promise; (4) no open issues/bugs surfaced — cross-checked against §11.4.15 / §11.4.16 trackers; (5) full documentation in sync per §11.4.12; (6) four-layer test floor per §1 (pre-build + post-build + runtime + paired mutation).
+No feature / functionality / flow / use case / edge case / service / application on any supported platform of the project may be considered deliverable until covered by automation tests proving six invariants: (1) anti-bluff posture (CONST-035) with captured runtime evidence; (2) proof of working capability end-to-end on target topology (no mocks beyond unit tests — see CONST-050); (3) implementation matches documented promise; (4) no open issues/bugs surfaced — cross-checked against §11.4.15 / §11.4.16 trackers; (5) full documentation in sync per §11.4.12; (6) four-layer test floor per §1 (pre-build + post-build + runtime + paired mutation).
 
 Consuming projects MUST publish a coverage ledger (feature × platform × invariant-1..6 × status) regenerated as part of the release-gate sweep. Gaps tracked per §11.4.15 (`UNCONFIRMED:` / `PENDING_FORENSICS:` / `OPERATOR-BLOCKED:` with §11.4.21 audit) — rows that quietly omit a platform are CONST-048 violations.
 
@@ -575,9 +575,9 @@ Before ANY modification to `constitution/Constitution.md`, `constitution/CLAUDE.
 
 Two cooperating invariants:
 
-**(A) No-fakes-beyond-unit-tests.** Mocks, stubs, fakes, placeholders, `TODO`, `FIXME`, "for now", "in production this would", or empty-implementation patterns are PERMITTED only in unit-test sources (`*_test.go` files invoked without the integration build tag; `helix_code/tests/unit/`; etc.). Every other test type — integration, E2E, full automation, security, DDoS, scaling, chaos, stress, performance, benchmarking, UI, UX, Challenges, helix_qa — MUST exercise the real, fully implemented HelixCode system against real infrastructure (real PostgreSQL, real Redis, real LLM endpoints, real containers, real captured devices). Production code (anything under `helix_code/cmd/`, `helix_code/applications/`, `helix_code/internal/<pkg>/<file>.go` not ending `_test.go`) MUST NOT import from `helix_code/internal/mocks/`.
+**(A) No-fakes-beyond-unit-tests.** Mocks, stubs, fakes, placeholders, `TODO`, `FIXME`, "for now", "in production this would", or empty-implementation patterns are PERMITTED only in unit-test sources (`*_test.go` files invoked without the integration build tag; `helix_code/tests/unit/`; etc.). Every other test type — integration, E2E, full automation, security, DDoS, scaling, chaos, stress, performance, benchmarking, UI, UX, Challenges, helix_qa — MUST exercise the real, fully implemented the project system against real infrastructure (real PostgreSQL, real Redis, real LLM endpoints, real containers, real captured devices). Production code (anything under `helix_code/cmd/`, `helix_code/applications/`, `helix_code/internal/<pkg>/<file>.go` not ending `_test.go`) MUST NOT import from `helix_code/internal/mocks/`.
 
-**(B) 100% test-type coverage.** HelixCode's codebase MUST be covered by every supported test type the domain warrants:
+**(B) 100% test-type coverage.** the project's codebase MUST be covered by every supported test type the domain warrants:
 - **Unit** — fast, isolated, mocks permitted per (A).
 - **Integration** — multi-component, no mocks, real backing services.
 - **End-to-end (E2E)** — full user-flow exercise on target topology.
@@ -597,7 +597,7 @@ Two cooperating invariants:
 **Required dependency submodules** (recursive per CONST-047):
 - Challenges — `git@github.com:vasic-digital/Challenges.git` — incorporated at `./challenges/`.
 - helix_qa — `git@github.com:HelixDevelopment/HelixQA.git` — incorporated at `./helix_qa/`.
-- Any additional functionality submodules under `vasic-digital/*` / `HelixDevelopment/*` orgs that HelixCode depends on — incorporate rather than duplicate work the orgs already maintain.
+- Any additional functionality submodules under `vasic-digital/*` / `HelixDevelopment/*` orgs that the project depends on — incorporate rather than duplicate work the orgs already maintain.
 
 Submodule pointers MUST be bumped to upstream HEAD in the SAME commit as any dependent cascade work (CONST-049 step 7). Pointer drift = CONST-050 violation.
 
@@ -607,17 +607,17 @@ Submodule pointers MUST be bumped to upstream HEAD in the SAME commit as any dep
 
 > Verbatim user mandate (2026-05-15): *"All existing Submodules in the project that we are controlling and belong to some our organizations (vasic-digital, HelixDevelopment, red-elf, ATMOSphere1234321, Bear-Suite, BoatOS123456, Helix-Flow, Helix-Track, Server-Factory - we can ALWAYS check dynamically using GitHub and GitLab CLIs) are equal parts of the project's codebase! We MUST work on that code as much as we do with main project's codebase! All on equal basis! Equally important! We MUST take it into the account, analyze it, extend it, create missing tests, do full testing of it, fill the gaps (if any), fix any issues that we discover or they pop-up, write and extend the documentation, user guides, manulas, diagrams, graphs, SQL definitions, Website(s) and all other relevant materials! We MUST NEVER modify Submodules to bring into them any project specific context since they all MUST BE ALWAYS fully decoupled, project not-aware, fully reusable and modular (by any other project(s)), completely testable! All Submodule dependencies that are used by Submodule MUST BE acessed from the root of the project! We MUST NOT have nested Submodule dependencies but accessing each from proper location from the root of the project - directly from project's root project_name/submodule_name or some more proper structure project_name/submodules/submodule_name!"*
 
-Three cooperating invariants apply to every HelixCode-owned submodule (those whose upstream `origin` lives under `vasic-digital`, `HelixDevelopment`, `red-elf`, `ATMOSphere1234321`, `Bear-Suite`, `BoatOS123456`, `Helix-Flow`, `Helix-Track`, `Server-Factory`, or any subsequently authorised org):
+Three cooperating invariants apply to every owned submodule (those whose upstream `origin` lives under `vasic-digital`, `HelixDevelopment`, `red-elf`, `ATMOSphere1234321`, `Bear-Suite`, `BoatOS123456`, `Helix-Flow`, `Helix-Track`, `Server-Factory`, or any subsequently authorised org):
 
-**(A) Equal-codebase.** Every owned-by-us submodule is an **equal part** of HelixCode's codebase. The same engineering practice — analysis, extension, test creation, gap-filling, bug-fix, documentation (user manuals, guides, diagrams, graphs, SQL definitions, website pages, all materials) — applies to each owned submodule on equal basis. A round of work that improves only HelixCode's main while leaving an owned-submodule deficiency unaddressed is a CONST-051 violation, severity-equivalent to a §11.4 PASS-bluff at the project-scope layer. The §11.4.25 / CONST-048 coverage ledger MUST list every owned submodule as an in-scope target.
+**(A) Equal-codebase.** Every owned-by-us submodule is an **equal part** of the project's codebase. The same engineering practice — analysis, extension, test creation, gap-filling, bug-fix, documentation (user manuals, guides, diagrams, graphs, SQL definitions, website pages, all materials) — applies to each owned submodule on equal basis. A round of work that improves only the project's main while leaving an owned-submodule deficiency unaddressed is a CONST-051 violation, severity-equivalent to a §11.4 PASS-bluff at the project-scope layer. The §11.4.25 / CONST-048 coverage ledger MUST list every owned submodule as an in-scope target.
 
-**(B) Decoupling / reusability.** Owned submodules MUST remain fully decoupled from HelixCode (and any other consuming project). No HelixCode-specific context, hardcoded paths, hostnames, asset names, or runtime assumptions may be introduced into an owned submodule's source tree. When a submodule needs information from HelixCode, the honest path is configuration injection (env var, config file, constructor parameter) — never a hardcoded reach into the parent's tree. Every owned submodule MUST be project-not-aware, fully reusable, modular, and completely testable as a standalone repository.
+**(B) Decoupling / reusability.** Owned submodules MUST remain fully decoupled from the project (and any other consuming project). No project-specific context, hardcoded paths, hostnames, asset names, or runtime assumptions may be introduced into an owned submodule's source tree. When a submodule needs information from the project, the honest path is configuration injection (env var, config file, constructor parameter) — never a hardcoded reach into the parent's tree. Every owned submodule MUST be project-not-aware, fully reusable, modular, and completely testable as a standalone repository.
 
-**(C) Dependency-layout.** Every dependency that an owned submodule consumes MUST be accessible from HelixCode's root at one of two canonical paths:
-- `<repo_root>/<submodule_name>/` (flat layout — current HelixCode layout for Challenges, HelixQA, Containers, Security, etc.)
+**(C) Dependency-layout.** Every dependency that an owned submodule consumes MUST be accessible from the project's root at one of two canonical paths:
+- `<repo_root>/<submodule_name>/` (flat layout — current the project layout for Challenges, HelixQA, Containers, Security, etc.)
 - `<repo_root>/submodules/<submodule_name>/` (grouped layout — alternate)
 
-**Nested own-org submodule chains are FORBIDDEN.** A submodule MUST NOT have its own `.gitmodules` entries pulling in further owned-by-us repos. Every dependency required by submodule X is added to HelixCode's root at the canonical path; X reaches it via documented import / SDK path / runtime resolver — never via its own nested submodule pointer. Third-party submodules (not under our orgs) are exempt — they MAY appear at any depth.
+**Nested own-org submodule chains are FORBIDDEN.** A submodule MUST NOT have its own `.gitmodules` entries pulling in further owned-by-us repos. Every dependency required by submodule X is added to the project's root at the canonical path; X reaches it via documented import / SDK path / runtime resolver — never via its own nested submodule pointer. Third-party submodules (not under our orgs) are exempt — they MAY appear at any depth.
 
 The owned-org list is dynamically discoverable at any time via `gh org list` / `glab` CLIs or the orgs' public APIs.
 
@@ -636,14 +636,14 @@ Constitution amendments require:
 
 ---
 
-*This Constitution is the supreme law of the HelixCode project. No code, test, or process may contradict it.*
+*This Constitution is the supreme law of the project. No code, test, or process may contradict it.*
 
 
 ## CONST-052: Lowercase-Snake_Case-Naming Mandate (cascaded from constitution submodule §11.4.29)
 
 > Verbatim user mandate (2026-05-15): *"naming convention for Submodules and directories (applied deep into hierarchy recursively) - all directories and Submodules MSUT HAVE lowercase names with space separator between the words of '_' character (snake-case)! All existing Submodules and directories which are not following this rule MUST BE renamed! However, since this will most likely break some of the functionalities renaming we do MUST BE applied to all references to particular Submodule or directory! ... There MUST BE reasonable exceptions for this rules - source code for programming languages or Submodules which apply different naming convention - Android, Java, Kotlin and others. ... Upstreams directory which all of our projects and Submodules have MUST BE renamed to the lowercase letters too, however root project containing the install_upstreams system command (it is exported in out paths in our .bashrc or .zshrc) MUST BE updated to fully work with both Upstreams and upstreams directory. ... NOTE: Rules lowercase / snake-case do apply to all project files as well and references to it and from them!"*
 
-Every directory, submodule, and file in HelixCode MUST use lowercase snake_case names. Existing non-compliant names (`helix_code/`, `challenges/`, `containers/`, `helix_agent/`, `helix_qa/`, `security/`, `github_pages_website/`, `upstreams/`, `dependencies/`, etc.) MUST be renamed as part of the phased migration opened by this clause. Every reference (configs, docs, links, source-code imports, governance files) MUST be updated atomically with the rename — reference drift after a rename is a CONST-052 violation of equal severity to the rename itself.
+Every directory, submodule, and file in the project MUST use lowercase snake_case names. Existing non-compliant names (`helix_code/`, `challenges/`, `containers/`, `helix_agent/`, `helix_qa/`, `security/`, `github_pages_website/`, `upstreams/`, `dependencies/`, etc.) MUST be renamed as part of the phased migration opened by this clause. Every reference (configs, docs, links, source-code imports, governance files) MUST be updated atomically with the rename — reference drift after a rename is a CONST-052 violation of equal severity to the rename itself.
 
 **Common-sense exceptions (technology-preserving):** language-mandated case for Java/Kotlin/Android/Apple/C#/Swift INSIDE the language root (submodule root follows our convention; subtree follows language convention); vendor/upstream third-party submodules keep upstream names; build artefacts (`node_modules`, `__pycache__`, `.git`, `target`, `build`, `bin`) keep tool-mandated names. The test "does renaming break the technology?" trumps the rule.
 
@@ -711,7 +711,7 @@ CONST-055 is the **enforcement engine** for every other §11.4.x and CONST-NNN r
 
 > Verbatim user mandate (2026-05-15): *"Every Submodule or Git repository we add or clone MUST BE upstreams installed using Upstreamable utility which MUST BE available through exported paths of the host system (in .bashrc or .zhrc) using install_upstreams command executed from the root of the cloned (added) repository - only if in it is Upstreams or upstreams directory present with bash script files (recipes) for all repository's upstreams!"*
 
-Every clone / add of a Git repository under HelixCode MUST be followed by `install_upstreams` invocation from the repository's root IF its tree contains `upstreams/` (or legacy `upstreams/` per CONST-052 transition) populated with `*.sh` recipe files. The utility (installed on operator's `PATH` via `.bashrc`/`.zshrc`; implementation in the constitution submodule's `install_upstreams.sh` — already supports BOTH directory names since constitution commit `45d3678`) reads the recipe files, configures every declared upstream as a named git remote, and fans out `origin` push URLs.
+Every clone / add of a Git repository under the project MUST be followed by `install_upstreams` invocation from the repository's root IF its tree contains `upstreams/` (or legacy `upstreams/` per CONST-052 transition) populated with `*.sh` recipe files. The utility (installed on operator's `PATH` via `.bashrc`/`.zshrc`; implementation in the constitution submodule's `install_upstreams.sh` — already supports BOTH directory names since constitution commit `45d3678`) reads the recipe files, configures every declared upstream as a named git remote, and fans out `origin` push URLs.
 
 Skipping the invocation when `upstreams/` is present silently breaks §2.1 (multi-upstream push is the norm) — the next push lands on only one upstream. Gate `CM-INSTALL-UPSTREAMS-ON-CLONE` + paired mutation. Automation: the future `incorporate-submodule` per CONST-054 auto-invokes; manual invocation supported. Pre-commit check: `git remote -v | grep -c push` reports expected count.
 
@@ -746,7 +746,7 @@ Constitution amendments require:
 
 ---
 
-*This Constitution is the supreme law of the HelixCode project. No code, test, or process may contradict it.*
+*This Constitution is the supreme law of the project. No code, test, or process may contradict it.*
 <!-- BEGIN submodule-decoupling-and-reusability (parent-mirror) -->
 
 ### Submodule Decoupling & Reusability — Mandatory

@@ -19,8 +19,7 @@
 // bank YAML → recordingqa.Spec → recordingqa.Validator → THIS adapter →
 // Panoptic recvalidate → JSON verdict.
 //
-// DECOUPLING (CONST-051(B) / §11.4.28). This package carries NO hardcoded
-// absolute path to Panoptic and NO HelixCode/ATMOSphere knowledge. The Panoptic
+// DECOUPLING (CONST-051(B) / §11.4.28). This package carries NO hardcoded// absolute path to Panoptic and NO consuming-project knowledge. The Panoptic
 // invocation is fully INJECTED via Config.Command + Config.Dir — the consumer
 // (or an integration helper) supplies how to reach Panoptic (a prebuilt binary
 // on PATH, `go run .` in the sibling checkout, a container entrypoint, …). The

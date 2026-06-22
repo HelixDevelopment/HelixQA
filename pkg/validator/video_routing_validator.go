@@ -8,7 +8,7 @@
 // loop on "did playback really happen on the secondary display / TV".
 //
 // Project-agnostic per HelixQA constitution — no hardcoded package
-// names, no ATMOSphere-specific assumptions. The caller supplies:
+// names, no project-specific assumptions. The caller supplies:
 //   - a screenshot grabber (cb returns PNG/JPEG bytes)
 //   - an LLM vision client that answers "is there video in this frame"
 //   - expected-output metadata (resolution, display id, packages, etc.)

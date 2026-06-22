@@ -4,7 +4,7 @@
 
 On 2026-04-26 18:23:43 the host running mission-critical parallel CLI
 agents and container workloads was auto-suspended mid-session. This
-killed the running HelixAgent binary, all 41 dependent services, every
+killed the running parent-project binary, all 41 dependent services, every
 SSH session, and every active CLI agent on the box. journalctl showed:
 
 ```

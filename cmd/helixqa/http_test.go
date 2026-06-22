@@ -18,7 +18,7 @@ import (
 	"digital.vasic.helixqa/pkg/testbank"
 )
 
-// newFakeServer stands in for a real HelixCode server: it returns the
+// newFakeServer stands in for a real consuming-project server: it returns the
 // same auth-boundary shapes the real bank asserts on (401 with the
 // "Authorization header required" body on a protected route, 401 for a
 // garbage bearer token, 400 on an empty login body). It is httptest

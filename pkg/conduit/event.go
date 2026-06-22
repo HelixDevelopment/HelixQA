@@ -21,7 +21,7 @@
 //     now" view without replaying the whole stream.
 //
 // This package is project-agnostic per CONST-051 (§11.4.28): it
-// carries no ATMOSphere / device / package knowledge. The consuming
+// carries no consuming-project / device / package knowledge. The consuming
 // project supplies the session/feature identifiers at runtime.
 package conduit
 

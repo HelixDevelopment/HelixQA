@@ -46,7 +46,7 @@ helix_qa/
 ├── pkg/nexus/native/              [NEW — P0]
 │   ├── bridge/                    CGO + subprocess + RPC bridge primitives
 │   ├── remote/                    Thin adapter over containers/pkg/distribution
-│   │                              (HelixAgent-style functional-options wrapper,
+│   │                              (the parent project-style functional-options wrapper,
 │   │                              <200 LOC: configure hosts, Resolve(Capability))
 │   ├── budget/                    Shared CPU/GPU/RAM/latency quotas (constants
 │   │                              + asserters; §4.4 encoded here)
@@ -374,7 +374,7 @@ CONTAINERS_REMOTE_HOST_1_GPU_AUTOPROBE=true
 
 ### 3.9 Rationale for placing extension in containers/
 
-- HelixAgent benefits (can move off legacy `DB_HOST=thinker.local`)
+- the parent project benefits (can move off legacy `DB_HOST=thinker.local`)
 - Future consumers get GPU-aware distribution for free
 - Keeps HelixQA `pkg/nexus/native/remote` adapter thin (~200 LOC)
 

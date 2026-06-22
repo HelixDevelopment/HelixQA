@@ -21,7 +21,7 @@
 // HelixQA's own full build / test loop SHOULD use the tag (the
 // EnhancedGenerator unit tests live in ticket_enhanced_test.go with
 // the same tag). HelixQA CI default builds include the tag; plain
-// downstream consumers (Lava) build without it.
+// downstream consumers (the consuming project) build without it.
 
 //go:build helixqa_enhanced_tickets
 

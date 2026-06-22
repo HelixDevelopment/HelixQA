@@ -10,7 +10,7 @@
 | Last modified | 2026-05-31 |
 | Status | active |
 | Ticket | LVA-8 (Bug) |
-| Incident | `.lava-ci-evidence/sixth-law-incidents/2026-05-31-helixqa-validator-killbinary-macos-bluff.json` (in the consuming Lava project) |
+| Incident | `.lava-ci-evidence/sixth-law-incidents/2026-05-31-helixqa-validator-killbinary-macos-bluff.json` (in the consuming project) |
 
 ## Table of contents
 
@@ -89,7 +89,7 @@ Files changed in the helixqa submodule:
   regression test `TestCheckDesktop_ByPID_Dead` plus
   `TestCheckDesktop_ByPID_DeadOfReapedChild`.
 
-No Lava-specific context was injected (CONST-051 decoupling preserved).
+No project-specific context was injected (CONST-051 decoupling preserved).
 
 ## Build / vet / test
 

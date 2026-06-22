@@ -27,24 +27,24 @@ Canonical reference: <https://github.com/HelixDevelopment/HelixConstitution>
 
 ---
 
-# AGENTS.md — HelixCode Authoritative Agent Guide
+# AGENTS.md — the project Authoritative Agent Guide
 
 ## INHERITED FROM constitution/AGENTS.md
 
-All rules in `constitution/AGENTS.md` (and the `constitution/Constitution.md` it references) apply unconditionally. This file's rules below extend them — they MUST NOT weaken any inherited rule. See parent root `CLAUDE.md` §6.AD for the Lava-specific incorporation context (29th §6.L cycle, 2026-05-14) and §6.AD-debt for the implementation-gap inventory. Use `constitution/find_constitution.sh` from the parent project root to resolve the absolute path of the submodule from any nested location.
+All rules in `constitution/AGENTS.md` (and the `constitution/Constitution.md` it references) apply unconditionally. This file's rules below extend them — they MUST NOT weaken any inherited rule. See parent root `CLAUDE.md` §6.AD for the project-specific incorporation context (29th §6.L cycle, 2026-05-14) and §6.AD-debt for the implementation-gap inventory. Use `constitution/find_constitution.sh` from the parent project root to resolve the absolute path of the submodule from any nested location.
 
-## HelixCode Agent Guidelines
+## the project Agent Guidelines
 
 **Version**: 3.0.0 (Updated with full architecture audit)
 **Date**: 2026-04-30
-**Scope**: All AI agents, human contributors, and automated processes working on HelixCode
-**Authority**: Derived from HelixAgent AGENTS.md with HelixCode-specific enhancements
+**Scope**: All AI agents, human contributors, and automated processes working on the project
+**Authority**: Derived from the parent project AGENTS.md with project-specific enhancements
 
 ---
 
 ## Project Overview
 
-HelixCode is an enterprise-grade distributed AI development platform built in Go. It enables intelligent task division, work preservation, cross-platform development workflows, and multi-provider LLM integration through a unified REST API, CLI, Terminal UI, Desktop, and Mobile client architecture.
+The project is an enterprise-grade distributed AI development platform built in Go. It enables intelligent task division, work preservation, cross-platform development workflows, and multi-provider LLM integration through a unified REST API, CLI, Terminal UI, Desktop, and Mobile client architecture.
 
 **Current Status**: The `internal/` foundation is largely solid (auth, database, server, worker, task, workflow, tools, editor, notification, MCP, **verifier** are real implementations). Critical bluff and stub areas remain in select entry points and peripheral packages. All agents MUST prioritize zero-bluff implementation.
 
@@ -97,7 +97,7 @@ HelixCode is an enterprise-grade distributed AI development platform built in Go
 **CRITICAL**: All build and test commands must be run from the `helix_code/` subdirectory, not the repository root.
 
 ```bash
-cd HelixCode
+cd <project_root>
 ```
 
 ### Build Commands
@@ -608,7 +608,7 @@ notifications:
 - `docker-compose.full-test.yml`: Complete stack with mock-LLM server, Selenium, ChromeDP, SSH server + 3 workers, Cognee, Weaviate, mock-Slack, multicast router
 
 ### Challenge Framework (`tests/e2e/challenges/`)
-The most rigorous test system validates HelixCode by having it **generate real projects** and testing them:
+The most rigorous test system validates the project by having it **generate real projects** and testing them:
 - **Challenge Definitions**: JSON specs (ASCII art generator, CLI task manager, JSON validator, notes API, tic-tac-toe TUI, URL shortener)
 - **Execution Flow**: Load spec → Call real LLM API → Parse generated code → Compile → Test → Runtime validation
 - **Validation Layers**: Directory structure, code quality, compilation, testing, functionality, runtime validation with diverse data
@@ -617,7 +617,7 @@ The most rigorous test system validates HelixCode by having it **generate real p
 ### Test Scripts Summary
 ```bash
 # Basic
-cd HelixCode && make test
+cd <project_root> && make test
 
 # Full infrastructure (recommended for validation)
 make test-infra-up
@@ -646,7 +646,7 @@ Services: helixcode-server (8080, 2222), postgres:15, redis:7, nginx (80, 443), 
 
 ### Quick Start
 ```bash
-cd HelixCode
+cd <project_root>
 cp .env.example .env
 # Edit .env with secure passwords
 docker compose up -d
@@ -764,7 +764,7 @@ A change is NOT done because code compiles. "Done" requires:
 
 A test or Challenge that PASSES is a CLAIM that the tested behavior **works for the end user of the product**.
 
-The HelixAgent project has repeatedly hit the failure mode where every test ran green AND every Challenge reported PASS, yet most product features did not actually work — buggy challenge wrappers masked failed assertions, scripts checked file existence without executing the file, "reachability" tests tolerated timeouts, contracts were honest in advertising but broken in dispatch. **This MUST NOT recur in HelixCode.**
+The parent project has repeatedly hit the failure mode where every test ran green AND every Challenge reported PASS, yet most product features did not actually work — buggy challenge wrappers masked failed assertions, scripts checked file existence without executing the file, "reachability" tests tolerated timeouts, contracts were honest in advertising but broken in dispatch. **This MUST NOT recur in the project.**
 
 Every PASS result MUST guarantee:
 a. **Quality** — correct behavior under real inputs, edge cases, concurrency
@@ -841,7 +841,7 @@ The meta-repo's `docs/CONTINUATION.md` MUST be maintained in sync with actual pr
 
 ## CONST-039: All Providers and Models Integration Mandate
 
-**Rule**: HelixCode MUST integrate with ALL providers that LLMsVerifier supports, subject only to:
+**Rule**: the project MUST integrate with ALL providers that LLMsVerifier supports, subject only to:
 1. The provider being explicitly disabled in configuration (`enabled: false`)
 2. The API key being absent and the provider requiring one
 3. The provider being marked `deprecated` in the verifier database
@@ -993,8 +993,8 @@ user had to manually end the session anyway, because nothing
 prevented overlapping heavy workloads from saturating the slice.
 CONST-036 closes that loophole at both the source-code layer and the
 operational layer. See
-`docs/issues/fixed/SESSION_LOSS_2026-04-28.md` in the HelixAgent
-project.
+`docs/issues/fixed/SESSION_LOSS_2026-04-28.md` in the parent project
+.
 
 **Forbidden direct invocations** (non-exhaustive):
 
@@ -1029,7 +1029,7 @@ project.
 ## CONST-035 — End-User Usability Mandate (2026-04-29 strengthening)
 
 A test or Challenge that PASSES is a CLAIM that the tested behavior
-**works for the end user of the product**. The HelixAgent project
+**works for the end user of the product**. The parent project
 has repeatedly hit the failure mode where every test ran green AND
 every Challenge reported PASS, yet most product features did not
 actually work — buggy challenge wrappers masked failed assertions,
@@ -1054,7 +1054,7 @@ A passing test that doesn't certify all three is a **bluff** and
 MUST be tightened, or marked `t.Skip("...SKIP-OK: #<ticket>")`
 so absence of coverage is loud rather than silent.
 
-### Bluff taxonomy (each pattern observed in HelixAgent and now forbidden)
+### Bluff taxonomy (each pattern observed in the parent project and now forbidden)
 
 - **Wrapper bluff** — assertions PASS but the wrapper's exit-code
   logic is buggy, marking the run FAILED (or the inverse: assertions
@@ -1782,7 +1782,7 @@ CONST-055 is the **enforcement engine** for every other §11.4.x and CONST-NNN r
 
 > Verbatim user mandate (2026-05-15): *"Every Submodule or Git repository we add or clone MUST BE upstreams installed using Upstreamable utility which MUST BE available through exported paths of the host system (in .bashrc or .zhrc) using install_upstreams command executed from the root of the cloned (added) repository - only if in it is Upstreams or upstreams directory present with bash script files (recipes) for all repository's upstreams!"*
 
-Every clone / add of a Git repository under HelixCode MUST be followed by `install_upstreams` invocation from the repository's root IF its tree contains `upstreams/` (or legacy `Upstreams/` per CONST-052 transition) populated with `*.sh` recipe files. The utility (installed on operator's `PATH` via `.bashrc`/`.zshrc`; implementation in the constitution submodule's `install_upstreams.sh` — already supports BOTH directory names since constitution commit `45d3678`) reads the recipe files, configures every declared upstream as a named git remote, and fans out `origin` push URLs.
+Every clone / add of a Git repository under the project MUST be followed by `install_upstreams` invocation from the repository's root IF its tree contains `upstreams/` (or legacy `Upstreams/` per CONST-052 transition) populated with `*.sh` recipe files. The utility (installed on operator's `PATH` via `.bashrc`/`.zshrc`; implementation in the constitution submodule's `install_upstreams.sh` — already supports BOTH directory names since constitution commit `45d3678`) reads the recipe files, configures every declared upstream as a named git remote, and fans out `origin` push URLs.
 
 Skipping the invocation when `upstreams/` is present silently breaks §2.1 (multi-upstream push is the norm) — the next push lands on only one upstream. Gate `CM-INSTALL-UPSTREAMS-ON-CLONE` + paired mutation. Automation: the future `incorporate-submodule` per CONST-054 auto-invokes; manual invocation supported. Pre-commit check: `git remote -v | grep -c push` reports expected count.
 
