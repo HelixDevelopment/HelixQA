@@ -58,7 +58,7 @@ type Orchestrator struct {
 
 // NewOrchestrator creates an orchestrator rooted at the HelixPlay repo.
 func NewOrchestrator(opts ...OrchestratorOption) (*Orchestrator, error) {
-	root, err := findHelixPlayRoot()
+	root, err := findProjectRoot()
 	if err != nil {
 		return nil, err
 	}
@@ -557,7 +557,7 @@ func collectQAEnvSnapshot() map[string]string {
 	return snapshot
 }
 
-func findHelixPlayRoot() (string, error) {
+func findProjectRoot() (string, error) {
 	_, callerFile, _, ok := runtime.Caller(0)
 	if !ok {
 		return "", fmt.Errorf("cannot determine caller path")
@@ -574,5 +574,5 @@ func findHelixPlayRoot() (string, error) {
 		}
 		dir = parent
 	}
-	return "", fmt.Errorf("HelixPlay root not found (searched up from %s)", filepath.Dir(callerFile))
+	return "", fmt.Errorf("project root not found (searched up from %s)", filepath.Dir(callerFile))
 }

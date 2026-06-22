@@ -102,7 +102,7 @@ func (g *ReleaseGate) IsOpen(results []TestResult) bool {
 }
 
 func (g *ReleaseGate) verifyAntiBluff() error {
-	root, err := findHelixPlayRoot()
+	root, err := findProjectRoot()
 	if err != nil {
 		return err
 	}
