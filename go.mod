@@ -127,7 +127,7 @@ replace (
 	digital.vasic.docprocessor => ../doc_processor
 	digital.vasic.llmorchestrator => ../llm_orchestrator
 	digital.vasic.llmprovider => ../llm_provider
-	digital.vasic.llmsverifier => ../llms_verifier/llm-verifier
+	digital.vasic.llmsverifier => ../../LLMsVerifier
 	digital.vasic.security => ../security
 	digital.vasic.visionengine => ../vision_engine
 )
