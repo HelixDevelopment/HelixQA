@@ -75,8 +75,7 @@ test_cases:
       HELIX_PRESLOT=A then HELIX_POSTSLOT=B. Run A: /etc/slot_id=A, root=/dev/vda2.
       Run B: /etc/slot_id=B, root=/dev/vda3. Consoles captured (§11.4.107 live).
     dispatches_to: "bash tests/emulator/ab_virt/ab_slot_switch.sh"
-    requires_env:
-      HELIX_AB_ROOT_PW: "Root password for emulator guest (default: helixota)"
+    requires_env: [HELIX_AB_ROOT_PW]  # HELIX_AB_ROOT_PW=Root password for emulator guest (default: helixota)
     steps:
       - name: "Boot slot A"
         action: "ab_slot_switch.sh with BOOT_ORDER='A B'; expect driver interrupts U-Boot autoboot, sets env, sources boot.scr"
@@ -120,9 +119,7 @@ test_cases:
       HELIX_FWSET_RC=0, HELIX_POSTSLOT=B, HELIX_ROOTDEV=/dev/vda3.
       Deterministic: 3/3 identical.
     dispatches_to: "bash tests/emulator/ab_virt/ab_rauc_verity.sh"
-    requires_env:
-      HELIX_AB_ROOT_PW: "Root password (default: helixota)"
-      RED_MODE: "1=defect baseline; 0=GREEN guard"
+    requires_env: [HELIX_AB_ROOT_PW, RED_MODE]  # HELIX_AB_ROOT_PW=Root password (default: helixota); RED_MODE=1=defect baseline; 0=GREEN guard
     steps:
       - name: "RED_MODE=1 — defect baseline"
         action: "RED_MODE=1 bash tests/emulator/ab_virt/ab_rauc_verity.sh"
@@ -166,8 +163,7 @@ test_cases:
       BADB-ROLLBACK (bootcount=2, bootlimit=1): guard fires, swaps "B A"->"A B",
       boots /dev/vda2, slot_id=A. U-Boot console carries "rolling back".
     dispatches_to: "bash tests/emulator/ab_virt/ab_rollback.sh"
-    requires_env:
-      HELIX_AB_ROOT_PW: "Root password (default: helixota)"
+    requires_env: [HELIX_AB_ROOT_PW]  # HELIX_AB_ROOT_PW=Root password (default: helixota)
     steps:
       - name: "CONTROL — no rollback"
         action: "ab_rollback.sh CONTROL: bootcount=1, bootlimit=1, BOOT_ORDER='B A'"
@@ -395,8 +391,7 @@ test_cases:
       docs/helixtrack_e2e_evidence.md written. Pre-sync count == post-sync
       count. All local OTA IDs present in HelixTrack.
     dispatches_to: "bash tests/helixqa/helix_e2e_bidir_sync_test.sh"
-    requires_env:
-      HELIXTRACK_API: "HelixTrack API base URL (default: http://localhost:8080)"
+    requires_env: [HELIXTRACK_API]  # HELIXTRACK_API=HelixTrack API base URL (default: http://localhost:8080)
     steps:
       - name: "Bidirectional sync end-to-end"
         action: "helix_e2e_bidir_sync_test.sh checks deps, reaches API, gets JWT, pre-counts DB, pushes, lists tickets, pulls, post-counts, verifies ID set match"
