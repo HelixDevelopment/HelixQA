@@ -176,7 +176,7 @@ Wait for the window to appear. Explain that the autonomous session needs a runni
 
 ```bash
 helixqa autonomous \
-  --project /path/to/Yole \
+  --project /path/to/your-project \
   --platforms desktop \
   --env .env \
   --timeout 30m \

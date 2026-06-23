@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # ddos_health_flood_challenge.sh — anti-bluff DDoS Challenge for
 # HelixQA per CONST-035 + CONST-050(B). Submodule-side cascade of
-# the HelixCode DDoS Challenge per CONST-051(A) (submodules-as-equal-
+# the parent project's DDoS Challenge per CONST-051(A) (submodules-as-equal-
 # codebase mandate).
 #
 # What this Challenge proves:

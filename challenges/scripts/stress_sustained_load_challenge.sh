@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # stress_sustained_load_challenge.sh — anti-bluff Stress Challenge
 # for HelixQA per CONST-035 + CONST-050(B). Submodule cascade of
-# HelixCode stress Challenge per CONST-051(A).
+# the parent project's stress Challenge per CONST-051(A).
 
 set -uo pipefail
 

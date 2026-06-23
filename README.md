@@ -92,7 +92,7 @@ helixqa version
 
 ```yaml
 version: "1.0"
-name: "Yole Core Tests"
+name: "Sample Core Tests"
 test_cases:
   - id: TC-001
     name: "Create new document"
@@ -172,7 +172,7 @@ The autonomous session integrates 4 external Go modules (consumed as Git submodu
 ### CLI Subcommand
 
 ```bash
-helixqa autonomous --project /path/to/Yole \
+helixqa autonomous --project /path/to/your-project \
   --platforms android,desktop,web \
   --env .env \
   --timeout 2h \
@@ -201,7 +201,7 @@ cp .env.example .env
 # Edit .env — set at least one API key and platform settings
 
 # 2. Run an autonomous session against a project
-helixqa autonomous --project /path/to/Yole \
+helixqa autonomous --project /path/to/your-project \
   --platforms desktop \
   --env .env \
   --timeout 30m \

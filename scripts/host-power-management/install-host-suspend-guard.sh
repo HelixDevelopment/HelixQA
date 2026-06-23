@@ -6,7 +6,7 @@
 # spawns long-running CLI agents.
 #
 # Background (CONST-032 / CONST-033): on 2026-04-26 18:23:43 the host
-# suspended mid-session, killing HelixAgent + 41 services + the user's
+# suspended mid-session, killing the running application + its dependent services + the user's
 # SSH session. journalctl showed:
 #   systemd-logind[1183]: The system will suspend now!
 # Root cause: the GDM greeter session at the local console has its own

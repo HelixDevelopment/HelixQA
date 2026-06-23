@@ -10,7 +10,7 @@ import (
 )
 
 // ReleaseGate enforces the 1,840-cell test matrix requirement before
-// a HelixPlay release candidate can be promoted.
+// a project release candidate can be promoted.
 //
 // Constitution §6.7: usability evidence is mandatory. The gate checks
 // that all 10 test types have passed and that visual assertion evidence

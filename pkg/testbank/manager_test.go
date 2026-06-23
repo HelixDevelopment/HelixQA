@@ -17,8 +17,8 @@ import (
 // --- BankFile YAML ---
 
 const sampleBank = `version: "1.0"
-name: "Yole Core Tests"
-description: "Core functionality tests for Yole editor"
+name: "Sample Core Tests"
+description: "Core functionality tests for the sample editor"
 test_cases:
   - id: TC-001
     name: "Create new document"
@@ -362,7 +362,7 @@ func TestManager_Banks(t *testing.T) {
 
 	banks := mgr.Banks()
 	require.Len(t, banks, 1)
-	assert.Equal(t, "Yole Core Tests", banks[0].Name)
+	assert.Equal(t, "Sample Core Tests", banks[0].Name)
 	assert.Equal(t, "1.0", banks[0].Version)
 	assert.Len(t, banks[0].TestCases, 4)
 	assert.Equal(t, "test-suite", banks[0].Metadata["author"])
@@ -511,7 +511,7 @@ func TestLoadFile(t *testing.T) {
 
 	bf, err := LoadFile(path)
 	require.NoError(t, err)
-	assert.Equal(t, "Yole Core Tests", bf.Name)
+	assert.Equal(t, "Sample Core Tests", bf.Name)
 	assert.Len(t, bf.TestCases, 4)
 }
 

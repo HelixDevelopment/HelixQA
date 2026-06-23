@@ -3,7 +3,7 @@
 //
 // helixqa-concrete-runner — runs CONCRETE-ACTION banks (as opposed to
 // the prose-step banks the legacy `helixqa run` consumed). Closes the
-// CONST-035 §11.4 bluff documented in Yole's docs/qa/iter-32/README.md:
+// CONST-035 §11.4 bluff documented in a consuming project's docs/qa/iter-32/README.md:
 //
 //   > helixqa run reports PASSED for 22 challenges that NEVER EXECUTED.
 //   > The validator is a 200µs crash-observer presented as a test

@@ -214,7 +214,7 @@ adb shell am start -n digital.vasic.yole/.MainActivity
 
 ```bash
 helixqa autonomous \
-  --project /path/to/Yole \
+  --project /path/to/your-project \
   --platforms desktop \
   --env .env \
   --timeout 30m \
@@ -464,7 +464,7 @@ HELIX_AUTONOMOUS_CURIOSITY_TIMEOUT=1h
 By default, the doc processor scans `./docs` and well-known files (README.md, *_GUIDE.md). To specify a custom root:
 
 ```bash
-HELIX_DOCS_ROOT=/path/to/Yole/docs
+HELIX_DOCS_ROOT=/path/to/your-project/docs
 HELIX_DOCS_AUTO_DISCOVER=true
 HELIX_DOCS_FORMATS=md,yaml,html,adoc,rst
 ```
@@ -543,7 +543,7 @@ For more verbose output during development:
 
 ```bash
 helixqa autonomous \
-  --project /path/to/Yole \
+  --project /path/to/your-project \
   --platforms desktop \
   --env .env \
   --timeout 30m \

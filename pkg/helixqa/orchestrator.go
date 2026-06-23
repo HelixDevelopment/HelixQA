@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 // Package helixqa provides the autonomous QA orchestration layer that
-// integrates HelixDevelopment/HelixQA with the HelixPlay test matrix.
+// integrates HelixDevelopment/HelixQA with the consuming project's test matrix.
 //
 // Constitution §6.7: every feature needs HelixQA visual assertion,
 // manual recording, or Challenge scenario evidence.
@@ -46,7 +46,7 @@ type TestResult struct {
 	Evidence  []string // paths to captured evidence (screenshots, logs)
 }
 
-// Orchestrator coordinates the full 10-type test matrix for a HelixPlay
+// Orchestrator coordinates the full 10-type test matrix for a project
 // release candidate. It delegates to the existing test infrastructure
 // while capturing visual evidence for Constitution §6.7 compliance.
 type Orchestrator struct {
@@ -56,7 +56,7 @@ type Orchestrator struct {
 	results      []TestResult
 }
 
-// NewOrchestrator creates an orchestrator rooted at the HelixPlay repo.
+// NewOrchestrator creates an orchestrator rooted at the project repo.
 func NewOrchestrator(opts ...OrchestratorOption) (*Orchestrator, error) {
 	root, err := findProjectRoot()
 	if err != nil {
