@@ -284,7 +284,7 @@ VOCAB_HITS=$(grep -rEn 'simulated|for now|TODO implement|placeholder' \
                  --include='*.go' --exclude='*_test.go' 2>/dev/null \
                  | grep -vE '//.*(SKIP-OK|anti-bluff|forbidden|MUST NOT|legitimate|whitelist)' \
                  | grep -vE 'ProviderConfig\{|llm\.ProviderConfig|adaptive' \
-                 || true)
+                 || true)  # bluff-scan: ok (capture-then-assert: `|| true` only guards the no-match grep exit of this $(...) capture; the verdict is the `[[ -z "${VOCAB_HITS}" ]]` assertion below — not laundered)
 if [[ -z "${VOCAB_HITS}" ]]; then
     phase_ok "no forbidden-vocab hits in production cmd/helixqa/ source"
 else
@@ -304,7 +304,7 @@ LEAK_HITS=$(grep -rEn "${LEAK_PATTERNS}" "${ROOT_DIR}/cmd/helixqa/" \
                 --include='*.go' --include='*.yaml' --include='*.json' \
                 2>/dev/null \
                 | grep -vE 'EXAMPLE|PLACEHOLDER|YOUR_KEY|<key>' \
-                || true)
+                || true)  # bluff-scan: ok (capture-then-assert: `|| true` only guards the no-match grep exit of this $(...) capture; the verdict is the `[[ -z "${LEAK_HITS}" ]]` assertion below — not laundered)
 if [[ -z "${LEAK_HITS}" ]]; then
     phase_ok "no API-token-shape literals in cmd/helixqa/"
 else
