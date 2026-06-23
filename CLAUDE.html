@@ -1,597 +1,479 @@
-<h2 id="inherited-from-helix-constitution">INHERITED FROM Helix
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>CLAUDE</title>
+  <style>
+    /* Default styles provided by pandoc.
+    ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+    */
+    html {
+      color: #1a1a1a;
+      background-color: #fdfdfd;
+    }
+    body {
+      margin: 0 auto;
+      max-width: 36em;
+      padding-left: 50px;
+      padding-right: 50px;
+      padding-top: 50px;
+      padding-bottom: 50px;
+      hyphens: auto;
+      overflow-wrap: break-word;
+      text-rendering: optimizeLegibility;
+      font-kerning: normal;
+    }
+    @media (max-width: 600px) {
+      body {
+        font-size: 0.9em;
+        padding: 12px;
+      }
+      h1 {
+        font-size: 1.8em;
+      }
+    }
+    @media print {
+      html {
+        background-color: white;
+      }
+      body {
+        background-color: transparent;
+        color: black;
+        font-size: 12pt;
+      }
+      p, h2, h3 {
+        orphans: 3;
+        widows: 3;
+      }
+      h2, h3, h4 {
+        page-break-after: avoid;
+      }
+    }
+    p {
+      margin: 1em 0;
+    }
+    a {
+      color: #1a1a1a;
+    }
+    a:visited {
+      color: #1a1a1a;
+    }
+    img {
+      max-width: 100%;
+    }
+    svg {
+      height: auto;
+      max-width: 100%;
+    }
+    h1, h2, h3, h4, h5, h6 {
+      margin-top: 1.4em;
+    }
+    h5, h6 {
+      font-size: 1em;
+      font-style: italic;
+    }
+    h6 {
+      font-weight: normal;
+    }
+    ol, ul {
+      padding-left: 1.7em;
+      margin-top: 1em;
+    }
+    li > ol, li > ul {
+      margin-top: 0;
+    }
+    blockquote {
+      margin: 1em 0 1em 1.7em;
+      padding-left: 1em;
+      border-left: 2px solid #e6e6e6;
+      color: #606060;
+    }
+    code {
+      white-space: pre-wrap;
+      font-family: Menlo, Monaco, Consolas, 'Lucida Console', monospace;
+      font-size: 85%;
+      margin: 0;
+      hyphens: manual;
+    }
+    pre {
+      margin: 1em 0;
+      overflow: auto;
+    }
+    pre code {
+      padding: 0;
+      overflow: visible;
+      overflow-wrap: normal;
+    }
+    .sourceCode {
+     background-color: transparent;
+     overflow: visible;
+    }
+    hr {
+      border: none;
+      border-top: 1px solid #1a1a1a;
+      height: 1px;
+      margin: 1em 0;
+    }
+    table {
+      margin: 1em 0;
+      border-collapse: collapse;
+      width: 100%;
+      overflow-x: auto;
+      display: block;
+      font-variant-numeric: lining-nums tabular-nums;
+    }
+    table caption {
+      margin-bottom: 0.75em;
+    }
+    tbody {
+      margin-top: 0.5em;
+      border-top: 1px solid #1a1a1a;
+      border-bottom: 1px solid #1a1a1a;
+    }
+    th {
+      border-top: 1px solid #1a1a1a;
+      padding: 0.25em 0.5em 0.25em 0.5em;
+    }
+    td {
+      padding: 0.125em 0.5em 0.25em 0.5em;
+    }
+    header {
+      margin-bottom: 4em;
+      text-align: center;
+    }
+    #TOC li {
+      list-style: none;
+    }
+    #TOC ul {
+      padding-left: 1.3em;
+    }
+    #TOC > ul {
+      padding-left: 0;
+    }
+    #TOC a:not(:hover) {
+      text-decoration: none;
+    }
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: min(4vw, 1.5em);}
+    div.column{flex: auto; overflow-x: auto;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    /* The extra [class] is a hack that increases specificity enough to
+       override a similar rule in reveal.js */
+    ul.task-list[class]{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      font-size: inherit;
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1.6em;
+      vertical-align: middle;
+    }
+    .display.math{display: block; text-align: center; margin: 0.5rem auto;}
+    /* CSS for syntax highlighting */
+    html { -webkit-text-size-adjust: 100%; }
+    pre > code.sourceCode { white-space: pre; position: relative; }
+    pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+    pre > code.sourceCode > span:empty { height: 1.2em; }
+    .sourceCode { overflow: visible; }
+    code.sourceCode > span { color: inherit; text-decoration: inherit; }
+    div.sourceCode { margin: 1em 0; }
+    pre.sourceCode { margin: 0; }
+    @media screen {
+    div.sourceCode { overflow: auto; }
+    }
+    @media print {
+    pre > code.sourceCode { white-space: pre-wrap; }
+    pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+    }
+    pre.numberSource code
+      { counter-reset: source-line 0; }
+    pre.numberSource code > span
+      { position: relative; left: -4em; counter-increment: source-line; }
+    pre.numberSource code > span > a:first-child::before
+      { content: counter(source-line);
+        position: relative; left: -1em; text-align: right; vertical-align: baseline;
+        border: none; display: inline-block;
+        -webkit-touch-callout: none; -webkit-user-select: none;
+        -khtml-user-select: none; -moz-user-select: none;
+        -ms-user-select: none; user-select: none;
+        padding: 0 4px; width: 4em;
+        color: #aaaaaa;
+      }
+    pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+    div.sourceCode
+      {   }
+    @media screen {
+    pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+    }
+    code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+    code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+    code span.at { color: #7d9029; } /* Attribute */
+    code span.bn { color: #40a070; } /* BaseN */
+    code span.bu { color: #008000; } /* BuiltIn */
+    code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+    code span.ch { color: #4070a0; } /* Char */
+    code span.cn { color: #880000; } /* Constant */
+    code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+    code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+    code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+    code span.dt { color: #902000; } /* DataType */
+    code span.dv { color: #40a070; } /* DecVal */
+    code span.er { color: #ff0000; font-weight: bold; } /* Error */
+    code span.ex { } /* Extension */
+    code span.fl { color: #40a070; } /* Float */
+    code span.fu { color: #06287e; } /* Function */
+    code span.im { color: #008000; font-weight: bold; } /* Import */
+    code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+    code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+    code span.op { color: #666666; } /* Operator */
+    code span.ot { color: #007020; } /* Other */
+    code span.pp { color: #bc7a00; } /* Preprocessor */
+    code span.sc { color: #4070a0; } /* SpecialChar */
+    code span.ss { color: #bb6688; } /* SpecialString */
+    code span.st { color: #4070a0; } /* String */
+    code span.va { color: #19177c; } /* Variable */
+    code span.vs { color: #4070a0; } /* VerbatimString */
+    code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+  </style>
+</head>
+<body>
+<header id="title-block-header">
+<h1 class="title">CLAUDE</h1>
+</header>
+<h1 id="claudemd">CLAUDE.md</h1>
+<h2 id="inherited-from-the-helix-constitution">INHERITED FROM the Helix
 Constitution</h2>
-<p>This module is a submodule of an consuming project that includes the
-Helix Constitution submodule at the parent’s <code>constitution/</code>
-path. All rules in <code>constitution/CLAUDE.md</code> and the
-<code>constitution/Constitution.md</code> it references (universal
-anti-bluff covenant §11.4, no-guessing mandate §11.4.6,
-credentials-handling mandate §11.4.10, host-session safety §12, data
-safety §9, mutation- paired gates §1.1) apply unconditionally to every
-change landed here. The module-specific rules below extend them — they
-never weaken any universal clause.</p>
-<p>When this file disagrees with the constitution submodule, the
-constitution wins. Locate the constitution submodule from any arbitrary
-nested depth using its <code>find_constitution.sh</code> helper.</p>
+<p>This module is governed by the Helix Constitution. All rules in the
+constitution's <code>CLAUDE.md</code> and the
+<code>Constitution.md</code> it references apply unconditionally — the
+universal anti-bluff covenant §11.4, the no-guessing mandate §11.4.6,
+the credentials-handling mandate §11.4.10, host-session safety §12, data
+safety §9, and mutation-paired gates §1.1. Locate the constitution from
+any nested depth via its <code>find_constitution.sh</code> helper — do
+NOT hardcode a path (this module stays fully decoupled and
+project-agnostic per §11.4.28). The module-specific rules below extend
+the universal clauses; they never weaken any of them. When this file
+disagrees with the constitution, the constitution wins.</p>
 <p>Canonical reference: <a
-href="https://github.com/HelixDevelopment/HelixConstitution"
-class="uri">https://github.com/HelixDevelopment/HelixConstitution</a></p>
+href="https://github.com/HelixDevelopment/HelixConstitution">https://github.com/HelixDevelopment/HelixConstitution</a></p>
+<p>This file provides guidance to Claude Code (claude.ai/code) when
+working with code in this repository.</p>
 <hr />
-<h1 id="claude.md---the-project-ai-agent-manual">CLAUDE.md - the project
-AI Agent Manual</h1>
-<h2 id="the-project---ai-agent-operating-manual">the project - AI Agent
-Operating Manual</h2>
-<p><strong>Version</strong>: 1.0.0 <strong>Date</strong>: 2026-04-30
-<strong>Scope</strong>: This document guides AI agents working on the
-project codebase <strong>Authority</strong>: Cascaded from the parent
-project root <code>CLAUDE.md</code> with project-specific addenda</p>
-<hr />
-<h2 id="agent-identity-purpose">1. Agent Identity &amp; Purpose</h2>
-<p>You are an AI agent working on <strong>the project</strong>, an
-enterprise-grade distributed AI development platform. Your work directly
-impacts the quality and usability of a production system.</p>
-<p><strong>Your mandate</strong>: Write real, working, tested code. No
-simulations. No placeholders. No “for now” implementations. Every
-feature you implement MUST actually work when a user invokes it.</p>
-<h3 id="peer-governance-documents-keep-in-sync">1.1 Peer Governance
-Documents (keep in sync)</h3>
-<p>This <code>CLAUDE.md</code> sits alongside several other
-agent/governance manuals at the repo root. They overlap and must remain
-consistent: - <code>CONSTITUTION.md</code> — source of truth for all
-mandates (CONST-033, CONST-035, CONST-036–040, Article XI §11.9). When
-this file conflicts with the Constitution, the Constitution wins. -
-<code>AGENTS.md</code> — generic agent manual (40 KB; mirror anti-bluff
-rules here). - <code>CRUSH.md</code>, <code>QWEN.md</code> — sibling
-agent manuals for other CLI tools. Cascade rule changes to all of them.
-- <code>helix_code/CLAUDE.md</code>, <code>helix_qa/CLAUDE.md</code>,
-<code>challenges/CLAUDE.md</code> — submodule-scoped manuals; this root
-file inherits from them and they inherit from this one.</p>
-<hr />
-<h2 id="project-specific-architecture">3. project-specific
-Architecture</h2>
-<h3 id="technology-stack">3.1 Technology Stack</h3>
+<h1 id="helixqa--ai-agent-operating-manual">HelixQA — AI Agent Operating
+Manual</h1>
+<p><code>digital.vasic.helixqa</code> is an <strong>anti-bluff QA
+orchestration framework</strong> for cross-platform testing. It runs
+YAML test banks across Android, Android TV, Web, and Desktop targets
+with real-time crash/ANR detection, step-by-step evidence collection,
+automated Markdown ticket generation, and an LLM-driven
+<strong>Autonomous QA Session</strong> mode that navigates applications,
+verifies documented features, discovers bugs, and records video
+evidence.</p>
+<p>The design centre is the §11.4 Operative Rule: <strong>the bar is not
+"tests pass" but "users can use the feature."</strong> Every PASS
+HelixQA emits MUST carry positive runtime evidence captured during
+execution (screenshots, logcat, video, stack traces). A green summary
+line without that evidence is a critical defect of equal severity to a
+missing feature.</p>
+<h2 id="1-agent-identity--purpose">1. Agent Identity &amp; Purpose</h2>
+<p>You are an AI agent working on <strong>HelixQA</strong>. Your
+mandate: write real, working, tested Go code. No simulations, no
+placeholders, no "for now" implementations. The framework's whole reason
+to exist is to catch bluffs — so a bluff landed in HelixQA itself
+defeats its purpose and is the most severe class of defect here.</p>
+<h2 id="2-module-facts">2. Module Facts</h2>
 <ul>
-<li><strong>Language</strong>: Go — root meta-repo on
-<code>go 1.25.2</code>, inner Go application (<code>helix_code/</code>)
-on <code>go 1.26</code>. Keep both modules current; do not
-downgrade.</li>
-<li><strong>Module IDs</strong>: root <code>dev.helix.code</code>
-(thin), inner <code>dev.helix.code</code> (full app + transitive
-deps).</li>
-<li><strong>HTTP / API</strong>: Gin v1.11.0, gorilla/websocket v1.5.3,
-gRPC v1.80.0.</li>
-<li><strong>Persistence</strong>: PostgreSQL 15+ via pgx/v5 + lib/pq;
-Redis 7+ via go-redis/v9.</li>
-<li><strong>AuthN/Z</strong>: golang-jwt/v4 v4.5.2, bcrypt/argon2
-(<code>golang.org/x/crypto</code>), oauth2.</li>
-<li><strong>Config / CLI</strong>: Viper v1.21.0, Cobra v1.8.0, pflag
-v1.0.10, fsnotify v1.9.0.</li>
-<li><strong>LLM / Cloud</strong>: AWS Bedrock runtime (aws-sdk-go-v2),
-Azure azcore/azidentity, getzep/zep-go/v3, smacker/go-tree-sitter.</li>
-<li><strong>UI</strong>: Fyne v2.7.0 (desktop GUI), tview / tcell/v2
-(terminal UI), chromedp (headless browser).</li>
-<li><strong>Testing</strong>: stretchr/testify v1.11.1.</li>
+<li><strong>Module ID</strong>: <code>digital.vasic.helixqa</code>
+(single Go module; <code>go 1.26</code>).</li>
+<li><strong>CLI binary</strong>: <code>bin/helixqa</code>, built from
+<code>cmd/helixqa</code>.</li>
+<li><strong>Subcommands</strong>: <code>run</code>,
+<code>autonomous</code>, <code>http</code>, <code>replay</code>,
+<code>list</code>, <code>report</code>, <code>signoff</code>,
+<code>version</code>, <code>help</code> (see
+<code>cmd/helixqa/main.go</code>).</li>
+<li><strong>Test banks</strong>: YAML/JSON documents under
+<code>banks/</code> (96 YAML + 66 JSON peers at last count) describing
+platform-targeted test cases.</li>
+<li><strong>License</strong>: Apache-2.0.</li>
 </ul>
-<h3 id="repository-layout-meta-repo-submodules">3.2 Repository Layout —
-Meta-Repo + Submodules</h3>
-<p><strong>This repo is a governance/meta-repo, not the Go
-application.</strong> The actual Go binary lives in the
-<code>helix_code/</code> subdirectory (a submodule). When an agent says
-“edit <code>internal/auth</code>,” they almost always mean
-<code>helix_code/internal/auth</code>, not the root
-<code>internal/</code>.</p>
-<pre><code>helix_code/                                # ← repo root (governance + submodules)
-├── CLAUDE.md / AGENTS.md / CONSTITUTION.md / CRUSH.md / QWEN.md   # agent manuals
-├── Makefile                              # governance gates only (see §3.4)
-├── go.mod                                # thin root module (dev.helix.code, go 1.25.2)
-├── helix                                 # Docker facade script (run platform standalone)
-├── setup.sh                              # one-shot: submodule init + deps + build
-├── .gitmodules                           # source of truth for submodule wiring
-├── docker-compose.helix.yml              # standalone deployment
-├── internal/{fix,security,testing,theme} # root-level helpers ONLY (NOT the app)
-├── cmd/security-test/                    # root-level security-test tool ONLY
-├── scripts/                              # init-submodules, propagate-governance,
-│                                         #   verify-governance-cascade, no-silent-skips,
-│                                         #   demo-all, run-all-tests, …
-├── docs/                                 # ARCHITECTURE.md, COMPLETE_*.md guides,
-│                                         #   bluff-proofing/, llms_verifier/, helix_qa/
-│
-├── helix_code/      ← TRACKED SUBDIRECTORY (NOT a submodule — meta-repo&#39;s primary inner directory; circular reference if promoted; see §3.2.1)
-├── helix_qa/        ← SUBMODULE: QA / challenge-orchestration platform
-├── challenges/     ← SUBMODULE: cross-cutting Challenge bank (Panoptic, banks/)
-├── containers/     ← SUBMODULE: Docker/container artefacts
-├── Dependencies/   ← SUBMODULES: LLama_CPP, Ollama, HuggingFace_Hub, …
-├── security/       ← SUBMODULE: security tooling
-├── Assets/         ← SUBMODULE: logos, themes, brand
-├── github_pages_website/ ← SUBMODULE: marketing site
-├── cli_agents/          ← reference CLI agents (aider, cline, plandex, openhands, …) — formerly Example_Projects/
-└── cli_agents_resources/ ← reference resources (Awesome-AI-Agents, Cheshire-Cat-Ai, …) — formerly Example_Resources/</code></pre>
-<h4 id="inner-go-application-helix_code-submodule">3.2.1 Inner Go
-application — <code>helix_code/</code> submodule</h4>
-<pre><code>helix_code/helix_code/                      # module dev.helix.code, go 1.26
-├── Makefile                              # real build/test targets (see §3.4)
-├── cmd/
-│   ├── server/                           # HTTP server entry → bin/helixcode
-│   ├── cli/                              # CLI client entry → bin/cli
-│   ├── helix-config/                     # config tool
-│   ├── config-test/                      # config validator
-│   ├── security-test/, security-fix*/    # security tools
-│   └── performance-optimization*/        # perf tools
-├── internal/                             # ~45 packages — the real domain code
-│   ├── auth/        agent/      cognee/      commands/   config/
-│   ├── context/     database/   deployment/  discovery/  editor/
-│   ├── event/       focus/      hardware/    helixqa/    hooks/
-│   ├── llm/         logging/    logo/        mcp/        memory/
-│   ├── monitoring/  notification/ performance/ persistence/ project/
-│   ├── provider/    providers/  redis/       repomap/    rules/
-│   ├── security/    server/     session/     task/       template/
-│   ├── tools/       verifier/   version/     worker/     workflow/
-│   ├── adapters/    fix/        testutil/    mocks/      # mocks/ is unit-test-only
-├── applications/
-│   ├── desktop/      (Fyne GUI)
-│   ├── terminal-ui/  (tview TUI)
-│   ├── ios/  android/  aurora-os/  harmony-os/
-├── tests/
-│   ├── e2e/challenges/   # E2E challenge runner (cmd/runner/main.go)
-│   ├── integration/      # gated by `-tags=integration`
-│   ├── unit/             # mocks ALLOWED here only
-│   ├── security/         # security suite
-│   └── performance/      # benchmarks
-├── config/                # YAML configs (dev/, prod/, test/)
-├── docker/  scripts/  shared/  qa-integration/
-└── docker-compose.full-test.yml + .env.full-test    # zero-skip integration stack</code></pre>
-<p><strong>Cardinal rule:</strong> if a path in instructions doesn’t
-start with <code>helix_code/</code>, <code>helix_qa/</code>, etc.,
-assume it is relative to the inner Go module and prefix with
-<code>helix_code/</code>.</p>
-<h3 id="historical-bluffs-resolved-guard-against-regression">3.3
-Historical Bluffs — Resolved, Guard Against Regression</h3>
-<p>The three patterns below were live bluffs in earlier revisions of
-<code>helix_code/cmd/cli/main.go</code>. They have been fixed (verify
-with
-<code>grep -rn "simulate\|For now\|TODO implement\|placeholder" helix_code/cmd/cli/main.go</code>
-— must return empty). Treat these as canonical anti-pattern examples; if
-a future change reintroduces any of them, the change is broken
-regardless of whether tests pass.</p>
-<h4 id="bluff-001-llm-generation-is-simulated">BLUFF-001: LLM Generation
-is Simulated</h4>
-<p><strong>Location</strong>: <code>helix_code/cmd/cli/main.go</code> →
-function <code>handleGenerate</code> <strong>Status</strong>: RESOLVED —
-now calls <code>provider.Generate</code> / <code>GenerateStream</code>
-directly. Do not regress. <strong>Code Pattern</strong>:</p>
-<div class="sourceCode" id="cb3"><pre class="sourceCode go"><code class="sourceCode go"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="co">// ANTI-BLUFF: NEVER write code like this</span></span>
-<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="co">// &quot;For now, simulate generation&quot;</span></span>
-<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="co">// &quot;In production, this would use the actual LLM provider&quot;</span></span>
-<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a><span class="co">// WRONG - SIMULATION:</span></span>
-<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>response <span class="op">:=</span> fmt<span class="op">.</span>Sprintf<span class="op">(</span><span class="st">&quot;Generated response for: %s</span><span class="ch">\n\n</span><span class="st">This is a simulated response...&quot;</span><span class="op">)</span></span>
-<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a><span class="co">// CORRECT - REAL IMPLEMENTATION:</span></span>
-<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>resp<span class="op">,</span> err <span class="op">:=</span> c<span class="op">.</span>llmProvider<span class="op">.</span>Generate<span class="op">(</span>ctx<span class="op">,</span> req<span class="op">)</span></span>
-<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> err <span class="op">!=</span> <span class="ot">nil</span> <span class="op">{</span></span>
-<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> fmt<span class="op">.</span>Errorf<span class="op">(</span><span class="st">&quot;generation failed: %w&quot;</span><span class="op">,</span> err<span class="op">)</span></span>
-<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
-<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a>fmt<span class="op">.</span>Println<span class="op">(</span>resp<span class="op">.</span>Text<span class="op">)</span></span></code></pre></div>
-<p><strong>Agent Rule</strong>: When implementing LLM-related code, you
-MUST make real HTTP calls to real providers. NEVER simulate
-responses.</p>
-<h3 id="build-test-commands">3.4 Build &amp; Test Commands</h3>
-<p>Two Makefiles. The <strong>root</strong> Makefile only runs
-governance gates; the <strong>inner</strong>
-<code>helix_code/Makefile</code> does real builds and tests. Always know
-which directory you are in.</p>
-<p><strong>Root governance gates</strong> (run from repo root):</p>
-<div class="sourceCode" id="cb4"><pre
-class="sourceCode bash"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="fu">make</span> no-silent-skips         <span class="co"># fail on bare t.Skip() without SKIP-OK marker</span></span>
-<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="fu">make</span> demo-all                <span class="co"># run every submodule&#39;s demo (proves they actually run)</span></span>
-<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="fu">make</span> demo-one MOD=<span class="op">&lt;</span>name<span class="op">&gt;</span>     <span class="co"># run one submodule&#39;s demo</span></span>
-<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="fu">make</span> ci-validate-all         <span class="co"># all governance gates in warn-mode</span></span>
-<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a><span class="ex">./setup.sh</span>                   <span class="co"># first-time: submodules + system deps + build</span></span>
-<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a><span class="ex">./scripts/init-submodules.sh</span>                 <span class="co"># init all submodules</span></span>
-<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a><span class="ex">./scripts/propagate-governance.sh</span>            <span class="co"># cascade Constitution/CLAUDE/AGENTS</span></span>
-<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a><span class="ex">./scripts/verify-governance-cascade.sh</span>       <span class="co"># confirm anchors present in submodules</span></span>
-<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a><span class="ex">./helix</span> start <span class="kw">|</span> <span class="ex">stop</span> <span class="kw">|</span> <span class="ex">logs</span> <span class="kw">|</span> <span class="ex">shell</span>          <span class="co"># Docker facade for the platform</span></span></code></pre></div>
-<p><strong>Inner application</strong> (run from
-<code>helix_code/</code>):</p>
-<div class="sourceCode" id="cb5"><pre
-class="sourceCode bash"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="fu">make</span> build                   <span class="co"># → bin/helixcode (server)</span></span>
-<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="fu">make</span> verify-compile          <span class="co"># quick compile-only sanity check</span></span>
-<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="fu">make</span> test                    <span class="co"># all unit tests</span></span>
-<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a><span class="fu">make</span> test-coverage           <span class="co"># coverage with -race</span></span>
-<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a><span class="fu">make</span> fmt                     <span class="co"># gofmt</span></span>
-<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a><span class="fu">make</span> lint                    <span class="co"># golangci-lint run</span></span>
-<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a><span class="fu">make</span> dev                     <span class="co"># build + run with config/dev/config.yaml</span></span>
-<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a><span class="fu">make</span> prod                    <span class="co"># cross-compile linux/macos/windows</span></span></code></pre></div>
-<p><strong>Full integration / E2E</strong> (real PostgreSQL + Redis +
-Ollama via docker-compose):</p>
-<div class="sourceCode" id="cb6"><pre
-class="sourceCode bash"><code class="sourceCode bash"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="fu">make</span> test-infra-up                           <span class="co"># start docker-compose.full-test.yml</span></span>
-<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="fu">make</span> test-infra-status                       <span class="co"># check stack health</span></span>
-<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a><span class="fu">make</span> test-full                               <span class="co"># ALL tests, ZERO skips</span></span>
-<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a><span class="fu">make</span> test-unit-full / test-integration-full / test-e2e-full / test-security-full</span>
-<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a><span class="fu">make</span> test-verifier-unit / test-verifier-integration / test-verifier-challenges</span>
-<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a><span class="fu">make</span> test-infra-down                         <span class="co"># tear down stack + volumes</span></span></code></pre></div>
-<p><strong>Containerized builds</strong> (no host Go required):</p>
-<div class="sourceCode" id="cb7"><pre
-class="sourceCode bash"><code class="sourceCode bash"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="fu">make</span> container-builder-image    <span class="co"># build the builder image once</span></span>
-<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="fu">make</span> container-build            <span class="co"># build inside container</span></span>
-<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a><span class="fu">make</span> container-test             <span class="co"># test inside container</span></span>
-<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a><span class="fu">make</span> container-shell            <span class="co"># interactive shell in builder</span></span>
-<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a><span class="fu">make</span> container-release          <span class="co"># full release in container</span></span></code></pre></div>
-<p><strong>Single-test invocation</strong> (inner module):</p>
-<div class="sourceCode" id="cb8"><pre
-class="sourceCode bash"><code class="sourceCode bash"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="bu">cd</span> <span class="op">&lt;</span>project_root<span class="op">&gt;</span></span>
-<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="ex">go</span> test <span class="at">-v</span> <span class="at">-run</span> TestJWTGenerate ./internal/auth                          <span class="co"># single unit test</span></span>
-<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a><span class="ex">go</span> test <span class="at">-v</span> <span class="at">-tags</span><span class="op">=</span>integration <span class="at">-run</span> TestAPI_CreateTask ./tests/integration/...</span>
-<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a><span class="ex">go</span> test <span class="at">-v</span> <span class="at">-count</span><span class="op">=</span>1 ./internal/verifier/...                              <span class="co"># disable test cache</span></span>
-<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a><span class="ex">go</span> test <span class="at">-v</span> <span class="at">-race</span> <span class="at">-coverprofile</span><span class="op">=</span>cover.out ./internal/llm                  <span class="co"># one pkg with race+cover</span></span></code></pre></div>
-<p><strong>E2E challenges</strong> (real, end-to-end, runtime evidence
-required):</p>
-<div class="sourceCode" id="cb9"><pre
-class="sourceCode bash"><code class="sourceCode bash"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="bu">cd</span> helix_code/tests/e2e/challenges <span class="kw">&amp;&amp;</span> <span class="ex">go</span> run cmd/runner/main.go <span class="at">-all</span></span>
-<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="co"># Or root-level cross-cutting Challenges:</span></span>
-<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a><span class="bu">cd</span> Challenges <span class="kw">&amp;&amp;</span> <span class="fu">make</span> <span class="op">&lt;</span>target<span class="op">&gt;</span></span></code></pre></div>
-<p><strong>Anti-bluff smoke check</strong> (must always pass):</p>
-<div class="sourceCode" id="cb10"><pre
-class="sourceCode bash"><code class="sourceCode bash"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="fu">grep</span> <span class="at">-rn</span> <span class="st">&quot;simulated\|for now\|TODO implement\|placeholder&quot;</span> <span class="dt">\</span></span>
-<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>  helix_code/internal helix_code/cmd <span class="kw">&amp;&amp;</span> <span class="bu">echo</span> <span class="st">&quot;BLUFF FOUND&quot;</span> <span class="kw">||</span> <span class="bu">echo</span> <span class="st">&quot;clean&quot;</span></span></code></pre></div>
-<p><strong>Platform / mobile builds</strong> (inner module):</p>
-<div class="sourceCode" id="cb11"><pre
-class="sourceCode bash"><code class="sourceCode bash"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="fu">make</span> desktop / desktop-nogui / desktop-linux / desktop-macos / desktop-windows</span>
-<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a><span class="fu">make</span> mobile-init <span class="kw">&amp;&amp;</span> <span class="fu">make</span> mobile-ios <span class="kw">&amp;&amp;</span> <span class="fu">make</span> mobile-android</span>
-<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a><span class="fu">make</span> aurora-os <span class="kw">&amp;&amp;</span> <span class="fu">make</span> harmony-os</span></code></pre></div>
-<h4 id="bluff-002-model-listing-is-hardcoded">BLUFF-002: Model Listing
-is Hardcoded</h4>
-<p><strong>Location</strong>: <code>helix_code/cmd/cli/main.go</code> →
-function <code>handleListModels</code> <strong>Status</strong>: RESOLVED
-— must continue to query <code>c.providerManager.GetProviders()</code>
-per CONST-036/037 (LLMsVerifier is the single source of truth).
-<strong>Correct Pattern</strong>:</p>
-<div class="sourceCode" id="cb12"><pre
-class="sourceCode go"><code class="sourceCode go"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="kw">func</span> <span class="op">(</span>c <span class="op">*</span>CLI<span class="op">)</span> handleListModels<span class="op">(</span>ctx context<span class="op">.</span>Context<span class="op">)</span> <span class="dt">error</span> <span class="op">{</span></span>
-<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>    <span class="co">// Query ALL configured providers</span></span>
-<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> name<span class="op">,</span> provider <span class="op">:=</span> <span class="kw">range</span> c<span class="op">.</span>providerManager<span class="op">.</span>GetProviders<span class="op">()</span> <span class="op">{</span></span>
-<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a>        models<span class="op">,</span> err <span class="op">:=</span> provider<span class="op">.</span>GetModels<span class="op">()</span></span>
-<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> err <span class="op">!=</span> <span class="ot">nil</span> <span class="op">{</span></span>
-<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a>            log<span class="op">.</span>Printf<span class="op">(</span><span class="st">&quot;Warning: failed to list models from %s: %v&quot;</span><span class="op">,</span> name<span class="op">,</span> err<span class="op">)</span></span>
-<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a>            <span class="cf">continue</span></span>
-<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a>        <span class="op">}</span></span>
-<span id="cb12-9"><a href="#cb12-9" aria-hidden="true" tabindex="-1"></a>        <span class="co">// Display real models</span></span>
-<span id="cb12-10"><a href="#cb12-10" aria-hidden="true" tabindex="-1"></a>        <span class="cf">for</span> _<span class="op">,</span> model <span class="op">:=</span> <span class="kw">range</span> models <span class="op">{</span></span>
-<span id="cb12-11"><a href="#cb12-11" aria-hidden="true" tabindex="-1"></a>            fmt<span class="op">.</span>Printf<span class="op">(</span><span class="st">&quot;%s/%s: %s (context: %d)</span><span class="ch">\n</span><span class="st">&quot;</span><span class="op">,</span> name<span class="op">,</span> model<span class="op">.</span>ID<span class="op">,</span> model<span class="op">.</span>Name<span class="op">,</span> model<span class="op">.</span>ContextSize<span class="op">)</span></span>
-<span id="cb12-12"><a href="#cb12-12" aria-hidden="true" tabindex="-1"></a>        <span class="op">}</span></span>
-<span id="cb12-13"><a href="#cb12-13" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
-<span id="cb12-14"><a href="#cb12-14" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> <span class="ot">nil</span></span>
-<span id="cb12-15"><a href="#cb12-15" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
-<h4 id="bluff-003-command-execution-is-simulated">BLUFF-003: Command
-Execution is Simulated</h4>
-<p><strong>Location</strong>: <code>helix_code/cmd/cli/main.go</code> →
-function <code>handleCommand</code> <strong>Status</strong>: RESOLVED —
-must continue to use <code>os/exec</code> via
-<code>exec.CommandContext</code> and surface real exit codes. Never
-replace with print-and-sleep. <strong>Correct Pattern</strong>:</p>
-<div class="sourceCode" id="cb13"><pre
-class="sourceCode go"><code class="sourceCode go"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="kw">func</span> <span class="op">(</span>c <span class="op">*</span>CLI<span class="op">)</span> handleCommand<span class="op">(</span>ctx context<span class="op">.</span>Context<span class="op">,</span> command <span class="dt">string</span><span class="op">)</span> <span class="dt">error</span> <span class="op">{</span></span>
-<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>    <span class="co">// ANTI-BLUFF: Actually execute the command</span></span>
-<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a>    cmd <span class="op">:=</span> exec<span class="op">.</span>CommandContext<span class="op">(</span>ctx<span class="op">,</span> <span class="st">&quot;sh&quot;</span><span class="op">,</span> <span class="st">&quot;-c&quot;</span><span class="op">,</span> command<span class="op">)</span></span>
-<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a>    cmd<span class="op">.</span>Dir <span class="op">=</span> c<span class="op">.</span>workingDirectory</span>
-<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a>    </span>
-<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a>    output<span class="op">,</span> err <span class="op">:=</span> cmd<span class="op">.</span>CombinedOutput<span class="op">()</span></span>
-<span id="cb13-7"><a href="#cb13-7" aria-hidden="true" tabindex="-1"></a>    </span>
-<span id="cb13-8"><a href="#cb13-8" aria-hidden="true" tabindex="-1"></a>    fmt<span class="op">.</span>Printf<span class="op">(</span><span class="st">&quot;Exit code: %d</span><span class="ch">\n</span><span class="st">&quot;</span><span class="op">,</span> cmd<span class="op">.</span>ProcessState<span class="op">.</span>ExitCode<span class="op">())</span></span>
-<span id="cb13-9"><a href="#cb13-9" aria-hidden="true" tabindex="-1"></a>    fmt<span class="op">.</span>Printf<span class="op">(</span><span class="st">&quot;Output:</span><span class="ch">\n</span><span class="st">%s</span><span class="ch">\n</span><span class="st">&quot;</span><span class="op">,</span> <span class="dt">string</span><span class="op">(</span>output<span class="op">))</span></span>
-<span id="cb13-10"><a href="#cb13-10" aria-hidden="true" tabindex="-1"></a>    </span>
-<span id="cb13-11"><a href="#cb13-11" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> err</span>
-<span id="cb13-12"><a href="#cb13-12" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
-<hr />
-<h2 id="code-patterns-for-agents">4. Code Patterns for Agents</h2>
-<h3 id="interface-driven-design">4.1 Interface-Driven Design</h3>
-<div class="sourceCode" id="cb14"><pre
-class="sourceCode go"><code class="sourceCode go"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="co">// Define the contract</span></span>
-<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a><span class="kw">type</span> Provider <span class="kw">interface</span> <span class="op">{</span></span>
-<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a>    Generate<span class="op">(</span>ctx context<span class="op">.</span>Context<span class="op">,</span> req <span class="op">*</span>GenerateRequest<span class="op">)</span> <span class="op">(*</span>GenerateResponse<span class="op">,</span> <span class="dt">error</span><span class="op">)</span></span>
-<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a>    GetModels<span class="op">()</span> <span class="op">([]</span>Model<span class="op">,</span> <span class="dt">error</span><span class="op">)</span></span>
-<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a>    HealthCheck<span class="op">(</span>ctx context<span class="op">.</span>Context<span class="op">)</span> <span class="dt">error</span></span>
-<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
-<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-8"><a href="#cb14-8" aria-hidden="true" tabindex="-1"></a><span class="co">// Implement with REAL behavior</span></span>
-<span id="cb14-9"><a href="#cb14-9" aria-hidden="true" tabindex="-1"></a><span class="kw">type</span> OllamaProvider <span class="kw">struct</span> <span class="op">{</span> <span class="op">...</span> <span class="op">}</span></span>
-<span id="cb14-10"><a href="#cb14-10" aria-hidden="true" tabindex="-1"></a><span class="kw">func</span> <span class="op">(</span>p <span class="op">*</span>OllamaProvider<span class="op">)</span> Generate<span class="op">(</span>ctx context<span class="op">.</span>Context<span class="op">,</span> req <span class="op">*</span>GenerateRequest<span class="op">)</span> <span class="op">(*</span>GenerateResponse<span class="op">,</span> <span class="dt">error</span><span class="op">)</span> <span class="op">{</span></span>
-<span id="cb14-11"><a href="#cb14-11" aria-hidden="true" tabindex="-1"></a>    <span class="co">// Make REAL HTTP call</span></span>
-<span id="cb14-12"><a href="#cb14-12" aria-hidden="true" tabindex="-1"></a>    <span class="co">// NO simulation</span></span>
-<span id="cb14-13"><a href="#cb14-13" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
-<h3 id="manager-pattern">4.2 Manager Pattern</h3>
-<div class="sourceCode" id="cb15"><pre
-class="sourceCode go"><code class="sourceCode go"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="kw">type</span> TaskManager <span class="kw">struct</span> <span class="op">{</span></span>
-<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a>    db     TaskRepository</span>
-<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a>    mu     sync<span class="op">.</span>RWMutex</span>
-<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a>    tasks  <span class="kw">map</span><span class="op">[</span>uuid<span class="op">.</span>UUID<span class="op">]*</span>Task</span>
-<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
-<span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb15-7"><a href="#cb15-7" aria-hidden="true" tabindex="-1"></a><span class="kw">func</span> <span class="op">(</span>m <span class="op">*</span>TaskManager<span class="op">)</span> Create<span class="op">(</span>ctx context<span class="op">.</span>Context<span class="op">,</span> task <span class="op">*</span>Task<span class="op">)</span> <span class="dt">error</span> <span class="op">{</span></span>
-<span id="cb15-8"><a href="#cb15-8" aria-hidden="true" tabindex="-1"></a>    m<span class="op">.</span>mu<span class="op">.</span>Lock<span class="op">()</span></span>
-<span id="cb15-9"><a href="#cb15-9" aria-hidden="true" tabindex="-1"></a>    <span class="cf">defer</span> m<span class="op">.</span>mu<span class="op">.</span>Unlock<span class="op">()</span></span>
-<span id="cb15-10"><a href="#cb15-10" aria-hidden="true" tabindex="-1"></a>    </span>
-<span id="cb15-11"><a href="#cb15-11" aria-hidden="true" tabindex="-1"></a>    <span class="co">// Persist to REAL database</span></span>
-<span id="cb15-12"><a href="#cb15-12" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> err <span class="op">:=</span> m<span class="op">.</span>db<span class="op">.</span>Save<span class="op">(</span>ctx<span class="op">,</span> task<span class="op">);</span> err <span class="op">!=</span> <span class="ot">nil</span> <span class="op">{</span></span>
-<span id="cb15-13"><a href="#cb15-13" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> fmt<span class="op">.</span>Errorf<span class="op">(</span><span class="st">&quot;failed to save task: %w&quot;</span><span class="op">,</span> err<span class="op">)</span></span>
-<span id="cb15-14"><a href="#cb15-14" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
-<span id="cb15-15"><a href="#cb15-15" aria-hidden="true" tabindex="-1"></a>    </span>
-<span id="cb15-16"><a href="#cb15-16" aria-hidden="true" tabindex="-1"></a>    m<span class="op">.</span>tasks<span class="op">[</span>task<span class="op">.</span>ID<span class="op">]</span> <span class="op">=</span> task</span>
-<span id="cb15-17"><a href="#cb15-17" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> <span class="ot">nil</span></span>
-<span id="cb15-18"><a href="#cb15-18" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
-<h3 id="error-handling">4.3 Error Handling</h3>
-<div class="sourceCode" id="cb16"><pre
-class="sourceCode go"><code class="sourceCode go"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="co">// Package-level errors</span></span>
-<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a><span class="kw">var</span> <span class="op">(</span></span>
-<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a>    ErrInvalidCredentials <span class="op">=</span> errors<span class="op">.</span>New<span class="op">(</span><span class="st">&quot;invalid credentials&quot;</span><span class="op">)</span></span>
-<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a>    ErrTokenExpired       <span class="op">=</span> errors<span class="op">.</span>New<span class="op">(</span><span class="st">&quot;token expired&quot;</span><span class="op">)</span></span>
-<span id="cb16-5"><a href="#cb16-5" aria-hidden="true" tabindex="-1"></a><span class="op">)</span></span>
-<span id="cb16-6"><a href="#cb16-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-7"><a href="#cb16-7" aria-hidden="true" tabindex="-1"></a><span class="co">// Contextual wrapping</span></span>
-<span id="cb16-8"><a href="#cb16-8" aria-hidden="true" tabindex="-1"></a><span class="kw">func</span> <span class="op">(</span>s <span class="op">*</span>Service<span class="op">)</span> DoSomething<span class="op">(</span>ctx context<span class="op">.</span>Context<span class="op">)</span> <span class="dt">error</span> <span class="op">{</span></span>
-<span id="cb16-9"><a href="#cb16-9" aria-hidden="true" tabindex="-1"></a>    result<span class="op">,</span> err <span class="op">:=</span> s<span class="op">.</span>db<span class="op">.</span>Query<span class="op">(</span>ctx<span class="op">)</span></span>
-<span id="cb16-10"><a href="#cb16-10" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> err <span class="op">!=</span> <span class="ot">nil</span> <span class="op">{</span></span>
-<span id="cb16-11"><a href="#cb16-11" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> fmt<span class="op">.</span>Errorf<span class="op">(</span><span class="st">&quot;failed to query database for user %s: %w&quot;</span><span class="op">,</span> userID<span class="op">,</span> err<span class="op">)</span></span>
-<span id="cb16-12"><a href="#cb16-12" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
-<span id="cb16-13"><a href="#cb16-13" aria-hidden="true" tabindex="-1"></a>    </span>
-<span id="cb16-14"><a href="#cb16-14" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> err <span class="op">:=</span> s<span class="op">.</span>process<span class="op">(</span>result<span class="op">);</span> err <span class="op">!=</span> <span class="ot">nil</span> <span class="op">{</span></span>
-<span id="cb16-15"><a href="#cb16-15" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> fmt<span class="op">.</span>Errorf<span class="op">(</span><span class="st">&quot;failed to process query result: %w&quot;</span><span class="op">,</span> err<span class="op">)</span></span>
-<span id="cb16-16"><a href="#cb16-16" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
-<span id="cb16-17"><a href="#cb16-17" aria-hidden="true" tabindex="-1"></a>    </span>
-<span id="cb16-18"><a href="#cb16-18" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> <span class="ot">nil</span></span>
-<span id="cb16-19"><a href="#cb16-19" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
-<h3 id="testing-pattern-unit">4.4 Testing Pattern (Unit)</h3>
-<div class="sourceCode" id="cb17"><pre
-class="sourceCode go"><code class="sourceCode go"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="kw">func</span> TestService_DoSomething<span class="op">(</span>t <span class="op">*</span>testing<span class="op">.</span>T<span class="op">)</span> <span class="op">{</span></span>
-<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a>    tests <span class="op">:=</span> <span class="op">[]</span><span class="kw">struct</span> <span class="op">{</span></span>
-<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a>        name    <span class="dt">string</span></span>
-<span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a>        setup   <span class="kw">func</span><span class="op">(*</span>mockRepository<span class="op">)</span></span>
-<span id="cb17-5"><a href="#cb17-5" aria-hidden="true" tabindex="-1"></a>        wantErr <span class="dt">bool</span></span>
-<span id="cb17-6"><a href="#cb17-6" aria-hidden="true" tabindex="-1"></a>    <span class="op">}{</span></span>
-<span id="cb17-7"><a href="#cb17-7" aria-hidden="true" tabindex="-1"></a>        <span class="op">{</span></span>
-<span id="cb17-8"><a href="#cb17-8" aria-hidden="true" tabindex="-1"></a>            name<span class="op">:</span> <span class="st">&quot;success&quot;</span><span class="op">,</span></span>
-<span id="cb17-9"><a href="#cb17-9" aria-hidden="true" tabindex="-1"></a>            setup<span class="op">:</span> <span class="kw">func</span><span class="op">(</span>m <span class="op">*</span>mockRepository<span class="op">)</span> <span class="op">{</span></span>
-<span id="cb17-10"><a href="#cb17-10" aria-hidden="true" tabindex="-1"></a>                m<span class="op">.</span>On<span class="op">(</span><span class="st">&quot;Query&quot;</span><span class="op">,</span> mock<span class="op">.</span>Anything<span class="op">).</span>Return<span class="op">(&amp;</span>Result<span class="op">{</span>Data<span class="op">:</span> <span class="st">&quot;test&quot;</span><span class="op">},</span> <span class="ot">nil</span><span class="op">)</span></span>
-<span id="cb17-11"><a href="#cb17-11" aria-hidden="true" tabindex="-1"></a>            <span class="op">},</span></span>
-<span id="cb17-12"><a href="#cb17-12" aria-hidden="true" tabindex="-1"></a>            wantErr<span class="op">:</span> <span class="ot">false</span><span class="op">,</span></span>
-<span id="cb17-13"><a href="#cb17-13" aria-hidden="true" tabindex="-1"></a>        <span class="op">},</span></span>
-<span id="cb17-14"><a href="#cb17-14" aria-hidden="true" tabindex="-1"></a>        <span class="op">{</span></span>
-<span id="cb17-15"><a href="#cb17-15" aria-hidden="true" tabindex="-1"></a>            name<span class="op">:</span> <span class="st">&quot;database_error&quot;</span><span class="op">,</span></span>
-<span id="cb17-16"><a href="#cb17-16" aria-hidden="true" tabindex="-1"></a>            setup<span class="op">:</span> <span class="kw">func</span><span class="op">(</span>m <span class="op">*</span>mockRepository<span class="op">)</span> <span class="op">{</span></span>
-<span id="cb17-17"><a href="#cb17-17" aria-hidden="true" tabindex="-1"></a>                m<span class="op">.</span>On<span class="op">(</span><span class="st">&quot;Query&quot;</span><span class="op">,</span> mock<span class="op">.</span>Anything<span class="op">).</span>Return<span class="op">(</span><span class="ot">nil</span><span class="op">,</span> errors<span class="op">.</span>New<span class="op">(</span><span class="st">&quot;connection refused&quot;</span><span class="op">))</span></span>
-<span id="cb17-18"><a href="#cb17-18" aria-hidden="true" tabindex="-1"></a>            <span class="op">},</span></span>
-<span id="cb17-19"><a href="#cb17-19" aria-hidden="true" tabindex="-1"></a>            wantErr<span class="op">:</span> <span class="ot">true</span><span class="op">,</span></span>
-<span id="cb17-20"><a href="#cb17-20" aria-hidden="true" tabindex="-1"></a>        <span class="op">},</span></span>
-<span id="cb17-21"><a href="#cb17-21" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
-<span id="cb17-22"><a href="#cb17-22" aria-hidden="true" tabindex="-1"></a>    </span>
-<span id="cb17-23"><a href="#cb17-23" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> _<span class="op">,</span> tt <span class="op">:=</span> <span class="kw">range</span> tests <span class="op">{</span></span>
-<span id="cb17-24"><a href="#cb17-24" aria-hidden="true" tabindex="-1"></a>        t<span class="op">.</span>Run<span class="op">(</span>tt<span class="op">.</span>name<span class="op">,</span> <span class="kw">func</span><span class="op">(</span>t <span class="op">*</span>testing<span class="op">.</span>T<span class="op">)</span> <span class="op">{</span></span>
-<span id="cb17-25"><a href="#cb17-25" aria-hidden="true" tabindex="-1"></a>            repo <span class="op">:=</span> <span class="bu">new</span><span class="op">(</span>mockRepository<span class="op">)</span></span>
-<span id="cb17-26"><a href="#cb17-26" aria-hidden="true" tabindex="-1"></a>            tt<span class="op">.</span>setup<span class="op">(</span>repo<span class="op">)</span></span>
-<span id="cb17-27"><a href="#cb17-27" aria-hidden="true" tabindex="-1"></a>            </span>
-<span id="cb17-28"><a href="#cb17-28" aria-hidden="true" tabindex="-1"></a>            svc <span class="op">:=</span> NewService<span class="op">(</span>repo<span class="op">)</span></span>
-<span id="cb17-29"><a href="#cb17-29" aria-hidden="true" tabindex="-1"></a>            err <span class="op">:=</span> svc<span class="op">.</span>DoSomething<span class="op">(</span>context<span class="op">.</span>Background<span class="op">())</span></span>
-<span id="cb17-30"><a href="#cb17-30" aria-hidden="true" tabindex="-1"></a>            </span>
-<span id="cb17-31"><a href="#cb17-31" aria-hidden="true" tabindex="-1"></a>            <span class="cf">if</span> tt<span class="op">.</span>wantErr <span class="op">{</span></span>
-<span id="cb17-32"><a href="#cb17-32" aria-hidden="true" tabindex="-1"></a>                require<span class="op">.</span>Error<span class="op">(</span>t<span class="op">,</span> err<span class="op">)</span></span>
-<span id="cb17-33"><a href="#cb17-33" aria-hidden="true" tabindex="-1"></a>            <span class="op">}</span> <span class="cf">else</span> <span class="op">{</span></span>
-<span id="cb17-34"><a href="#cb17-34" aria-hidden="true" tabindex="-1"></a>                require<span class="op">.</span>NoError<span class="op">(</span>t<span class="op">,</span> err<span class="op">)</span></span>
-<span id="cb17-35"><a href="#cb17-35" aria-hidden="true" tabindex="-1"></a>            <span class="op">}</span></span>
-<span id="cb17-36"><a href="#cb17-36" aria-hidden="true" tabindex="-1"></a>            </span>
-<span id="cb17-37"><a href="#cb17-37" aria-hidden="true" tabindex="-1"></a>            repo<span class="op">.</span>AssertExpectations<span class="op">(</span>t<span class="op">)</span></span>
-<span id="cb17-38"><a href="#cb17-38" aria-hidden="true" tabindex="-1"></a>        <span class="op">})</span></span>
-<span id="cb17-39"><a href="#cb17-39" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
-<span id="cb17-40"><a href="#cb17-40" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
-<h3 id="testing-pattern-integration---no-mocks">4.5 Testing Pattern
-(Integration - NO MOCKS)</h3>
-<div class="sourceCode" id="cb18"><pre
-class="sourceCode go"><code class="sourceCode go"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="kw">func</span> TestAPI_CreateTask_Integration<span class="op">(</span>t <span class="op">*</span>testing<span class="op">.</span>T<span class="op">)</span> <span class="op">{</span></span>
-<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> testing<span class="op">.</span>Short<span class="op">()</span> <span class="op">{</span></span>
-<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a>        t<span class="op">.</span>Skip<span class="op">(</span><span class="st">&quot;Integration test skipped in short mode&quot;</span><span class="op">)</span></span>
-<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
-<span id="cb18-5"><a href="#cb18-5" aria-hidden="true" tabindex="-1"></a>    </span>
-<span id="cb18-6"><a href="#cb18-6" aria-hidden="true" tabindex="-1"></a>    <span class="co">// Start REAL PostgreSQL container</span></span>
-<span id="cb18-7"><a href="#cb18-7" aria-hidden="true" tabindex="-1"></a>    dbContainer <span class="op">:=</span> startPostgresContainer<span class="op">(</span>t<span class="op">)</span></span>
-<span id="cb18-8"><a href="#cb18-8" aria-hidden="true" tabindex="-1"></a>    <span class="cf">defer</span> dbContainer<span class="op">.</span>Terminate<span class="op">(</span>context<span class="op">.</span>Background<span class="op">())</span></span>
-<span id="cb18-9"><a href="#cb18-9" aria-hidden="true" tabindex="-1"></a>    </span>
-<span id="cb18-10"><a href="#cb18-10" aria-hidden="true" tabindex="-1"></a>    <span class="co">// Connect to REAL database</span></span>
-<span id="cb18-11"><a href="#cb18-11" aria-hidden="true" tabindex="-1"></a>    db <span class="op">:=</span> connectToPostgres<span class="op">(</span>dbContainer<span class="op">)</span></span>
-<span id="cb18-12"><a href="#cb18-12" aria-hidden="true" tabindex="-1"></a>    </span>
-<span id="cb18-13"><a href="#cb18-13" aria-hidden="true" tabindex="-1"></a>    <span class="co">// Initialize REAL service</span></span>
-<span id="cb18-14"><a href="#cb18-14" aria-hidden="true" tabindex="-1"></a>    taskMgr <span class="op">:=</span> task<span class="op">.</span>NewManager<span class="op">(</span>db<span class="op">)</span></span>
-<span id="cb18-15"><a href="#cb18-15" aria-hidden="true" tabindex="-1"></a>    </span>
-<span id="cb18-16"><a href="#cb18-16" aria-hidden="true" tabindex="-1"></a>    <span class="co">// ANTI-BLUFF: Test with REAL data</span></span>
-<span id="cb18-17"><a href="#cb18-17" aria-hidden="true" tabindex="-1"></a>    task<span class="op">,</span> err <span class="op">:=</span> taskMgr<span class="op">.</span>Create<span class="op">(</span>context<span class="op">.</span>Background<span class="op">(),</span> <span class="op">&amp;</span>task<span class="op">.</span>Task<span class="op">{</span></span>
-<span id="cb18-18"><a href="#cb18-18" aria-hidden="true" tabindex="-1"></a>        Title<span class="op">:</span> <span class="st">&quot;Integration Test Task&quot;</span><span class="op">,</span></span>
-<span id="cb18-19"><a href="#cb18-19" aria-hidden="true" tabindex="-1"></a>    <span class="op">})</span></span>
-<span id="cb18-20"><a href="#cb18-20" aria-hidden="true" tabindex="-1"></a>    </span>
-<span id="cb18-21"><a href="#cb18-21" aria-hidden="true" tabindex="-1"></a>    require<span class="op">.</span>NoError<span class="op">(</span>t<span class="op">,</span> err<span class="op">)</span></span>
-<span id="cb18-22"><a href="#cb18-22" aria-hidden="true" tabindex="-1"></a>    require<span class="op">.</span>NotZero<span class="op">(</span>t<span class="op">,</span> task<span class="op">.</span>ID<span class="op">)</span></span>
-<span id="cb18-23"><a href="#cb18-23" aria-hidden="true" tabindex="-1"></a>    </span>
-<span id="cb18-24"><a href="#cb18-24" aria-hidden="true" tabindex="-1"></a>    <span class="co">// ANTI-BLUFF: Verify it REALLY exists in database</span></span>
-<span id="cb18-25"><a href="#cb18-25" aria-hidden="true" tabindex="-1"></a>    persisted<span class="op">,</span> err <span class="op">:=</span> taskMgr<span class="op">.</span>Get<span class="op">(</span>context<span class="op">.</span>Background<span class="op">(),</span> task<span class="op">.</span>ID<span class="op">)</span></span>
-<span id="cb18-26"><a href="#cb18-26" aria-hidden="true" tabindex="-1"></a>    require<span class="op">.</span>NoError<span class="op">(</span>t<span class="op">,</span> err<span class="op">)</span></span>
-<span id="cb18-27"><a href="#cb18-27" aria-hidden="true" tabindex="-1"></a>    require<span class="op">.</span>Equal<span class="op">(</span>t<span class="op">,</span> <span class="st">&quot;Integration Test Task&quot;</span><span class="op">,</span> persisted<span class="op">.</span>Title<span class="op">)</span></span>
-<span id="cb18-28"><a href="#cb18-28" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
-<hr />
-<h2 id="anti-bluff-checklist-for-every-task">5. Anti-Bluff Checklist for
-Every Task</h2>
+<h3 id="21-own-org-dependencies">2.1 Own-org dependencies</h3>
+<p>This module depends on sibling own-org Go modules consumed by
+reference (declared in <code>helix-deps.yaml</code>, never nested as
+<code>.gitmodules</code> entries per §11.4.28(C)):
+<code>digital.vasic.challenges</code>,
+<code>digital.vasic.containers</code>,
+<code>digital.vasic.security</code>, plus the autonomous-session
+integrations <code>LLMsVerifier</code>, <code>LLMOrchestrator</code>,
+<code>LLMProvider</code>, <code>VisionEngine</code>, and
+<code>DocProcessor</code>. <code>go.work</code> wires local replaces
+during development.</p>
+<h2 id="3-build--test-commands">3. Build &amp; Test Commands</h2>
+<div class="sourceCode" id="cb1"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="ex">go</span> build ./...                 <span class="co"># build every package</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="ex">go</span> build <span class="at">-o</span> bin/helixqa ./cmd/helixqa   <span class="co"># build the CLI (or: make build)</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="ex">go</span> test ./... <span class="at">-count</span><span class="op">=</span>1         <span class="co"># all tests, cache disabled (or: make test)</span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="ex">go</span> vet ./...                   <span class="co"># static analysis (or: make vet)</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Single package / single test</span></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="ex">go</span> test <span class="at">-v</span> ./pkg/testbank/ <span class="at">-count</span><span class="op">=</span>1</span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="ex">go</span> test <span class="at">-v</span> <span class="at">-run</span> TestSomething ./pkg/orchestrator/</span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a><span class="fu">make</span> test-race                 <span class="co"># tests with -race</span></span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a><span class="fu">make</span> test-cover                <span class="co"># coverage report → coverage.html</span></span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a><span class="fu">make</span> lint                      <span class="co"># golangci-lint run ./...</span></span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a><span class="fu">make</span> fmt                       <span class="co"># gofmt -w .</span></span></code></pre></div>
+<h3 id="31-running-qa-pipelines-and-banks">3.1 Running QA pipelines and
+banks</h3>
+<div class="sourceCode" id="cb2"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Run the QA pipeline across platforms</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="ex">bin/helixqa</span> run <span class="at">--banks</span> banks/ <span class="at">--platform</span> all</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Android-specific run against a device/emulator</span></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="ex">bin/helixqa</span> run <span class="at">--banks</span> banks/ <span class="at">--platform</span> android <span class="dt">\</span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">--device</span> emulator-5554 <span class="at">--package</span> com.example.app</span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a><span class="co"># List test cases discovered in banks</span></span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a><span class="ex">bin/helixqa</span> list <span class="at">--banks</span> banks/ <span class="at">--platform</span> android</span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a><span class="co"># Generate a report from existing results</span></span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a><span class="ex">bin/helixqa</span> report <span class="at">--input</span> qa-results <span class="at">--format</span> html</span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a><span class="co"># Autonomous LLM-driven QA session against a project</span></span>
+<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a><span class="ex">bin/helixqa</span> autonomous <span class="at">--project</span> /path/to/your-project <span class="dt">\</span></span>
+<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a>  <span class="at">--platforms</span> desktop <span class="at">--env</span> .env <span class="at">--timeout</span> 30m <span class="at">--output</span> qa-results/</span></code></pre></div>
+<h3 id="32-anti-bluff-gates-and-challenges">3.2 Anti-bluff gates and
+challenges</h3>
+<div class="sourceCode" id="cb3"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="fu">make</span> anti-bluff           <span class="co"># CONST-035 gates: scanner + behaviour-anchor</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>                          <span class="co"># manifest + mutation ratchet (changed files)</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="fu">make</span> anti-bluff-scan      <span class="co"># static bluff scanner over the full tree</span></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="fu">make</span> anti-bluff-anchors   <span class="co"># behaviour-anchor manifest validator</span></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a><span class="fu">make</span> challenge            <span class="co"># run every challenges/scripts/*.sh</span></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a><span class="fu">make</span> qa-all               <span class="co"># challenge scripts + all anti-bluff gates</span></span></code></pre></div>
+<p>Note (per the Makefile): <code>make qa-all</code> deliberately
+excludes <code>vet</code>/<code>test</code> because some packages
+require own-org replace directives that may be absent in a clean
+checkout; run <code>go test ./...</code> separately once those siblings
+are wired via <code>go.work</code>.</p>
+<h2 id="4-architecture">4. Architecture</h2>
+<p>The CLI in <code>cmd/helixqa/</code> dispatches subcommands to the
+orchestrator. The domain code lives under <code>pkg/</code> (~50
+packages). The packages most central to the framework:</p>
+<ul>
+<li><strong><code>pkg/config</code></strong> — configuration types and
+validation (<code>.env</code>-driven).</li>
+<li><strong><code>pkg/testbank</code></strong> — YAML/JSON test-bank
+loading with platform/priority filtering.</li>
+<li><strong><code>pkg/detector</code></strong> — platform-specific
+crash/ANR detection: <code>android.go</code> (ADB: pidof, logcat,
+screencap), <code>web.go</code> (browser process monitoring),
+<code>desktop.go</code> (JVM/process monitoring).</li>
+<li><strong><code>pkg/validator</code> /
+<code>pkg/validators</code></strong> — step-by-step validation with
+evidence at each step to prevent false positives.</li>
+<li><strong><code>pkg/evidence</code></strong> — centralized evidence
+collection (screenshots, video, logs, stack traces).</li>
+<li><strong><code>pkg/ticket</code></strong> — Markdown ticket
+generation for AI fix pipelines.</li>
+<li><strong><code>pkg/reporter</code></strong> — QA report generation
+(Markdown/HTML/JSON).</li>
+<li><strong><code>pkg/orchestrator</code></strong> — the main QA
+pipeline coordinator.</li>
+<li><strong><code>pkg/autonomous</code></strong> —
+<code>SessionCoordinator</code>, <code>PlatformWorker</code>,
+<code>PhaseManager</code> for the 4-phase autonomous session (Setup →
+Doc-Driven Verification → Curiosity-Driven Exploration → Report).</li>
+<li><strong><code>pkg/navigator</code> /
+<code>pkg/visionnav</code></strong> — navigation engine and action
+executors (ADB, Playwright, X11) plus vision-driven navigation.</li>
+<li><strong><code>pkg/issuedetector</code></strong> — LLM-powered bug
+detection (visual, UX, accessibility, functional).</li>
+<li><strong><code>pkg/session</code> /
+<code>pkg/recordingqa</code></strong> — session recording, timeline,
+video management, and recording-quality validation.</li>
+<li><strong><code>pkg/bridge</code> / <code>pkg/bridges</code> /
+<code>pkg/capture</code></strong> — device bridges and frame capture
+(scrcpy/x11grab/kmsgrab and related capture backends).</li>
+<li><strong><code>pkg/vision</code> / <code>pkg/gpu</code></strong> —
+vision analysis and GPU-accelerated comparison (LPIPS, DreamSim — see
+the <code>cmd/helixqa-*</code> tools).</li>
+<li><strong><code>pkg/planning</code></strong> — test-plan generation,
+including the generic Android TV Channels testing framework.</li>
+<li><strong><code>pkg/llm</code></strong> — LLM client wiring for issue
+detection and question generation.</li>
+</ul>
+<p>The auxiliary <code>cmd/helixqa-*</code> and <code>cmd/ocu-*</code>
+binaries are capture/vision helper tools (bridge, capture, axtree,
+omniparser, uitars, lpips, dreamsim, recording-analyzer, etc.) invoked
+by the framework.</p>
+<p>See <a href="ARCHITECTURE.md">ARCHITECTURE.md</a> and <a
+href="API_REFERENCE.md">API_REFERENCE.md</a> for full detail.</p>
+<h2 id="5-test-bank-conventions">5. Test-bank conventions</h2>
+<p>Banks under <code>banks/</code> are YAML documents (with optional
+JSON peers sharing the base name so tooling can auto-pair). Required
+top-level keys: <code>version</code> (string), <code>name</code>,
+<code>test_cases</code> (array). Per-test-case keys: <code>id</code>
+(<code>TC-XXX</code>), <code>name</code>, <code>category</code>
+(<code>functional</code> / <code>performance</code> /
+<code>security</code> / <code>ux</code> / <code>chaos</code> / …),
+<code>priority</code> (<code>critical</code> / <code>high</code> /
+<code>medium</code> / <code>low</code>), <code>platforms</code> (subset
+of
+<code>[android, android_tv, web, desktop, ios, aurora_os, harmony_os]</code>),
+<code>steps[]</code> (each <code>name</code> / <code>action</code> /
+<code>expected</code>), <code>tags[]</code>, and optional
+<code>documentation_refs[]</code> for traceability into
+<code>docs/</code>. Banks describe <strong>structure</strong>, not prose
+— <code>name</code> / <code>expected</code> strings drive LLM-generated
+prompts at runtime, so avoid hardcoded user-facing English in banks.</p>
+<h2 id="6-anti-bluff-principles-universal--apply-to-all-code-here">6.
+Anti-bluff principles (universal — apply to all code here)</h2>
 <p>Before marking any task complete, verify:</p>
-<ul class="task-list">
-<li><label><input type="checkbox" /><strong>No simulation</strong>: Code
-doesn’t contain “simulate”, “for now”, “TODO implement”,
-“placeholder”</label></li>
-<li><label><input type="checkbox" /><strong>Real HTTP calls</strong>:
-API clients make actual HTTP requests with real bodies</label></li>
-<li><label><input type="checkbox" /><strong>Real database
-operations</strong>: Database code uses real queries, not in-memory maps
-(unless explicitly caching)</label></li>
-<li><label><input type="checkbox" /><strong>Real process
-execution</strong>: Shell/command execution uses <code>os/exec</code>,
-not <code>fmt.Printf</code> + <code>time.Sleep</code></label></li>
-<li><label><input type="checkbox" /><strong>Real file
-operations</strong>: File tools use
-<code>os.ReadFile</code>/<code>os.WriteFile</code>, not mock in-memory
-buffers</label></li>
-<li><label><input type="checkbox" /><strong>Test validates
-reality</strong>: Tests check actual behavior, not just function call
-counts</label></li>
-<li><label><input type="checkbox" /><strong>Challenge validates
-end-to-end</strong>: Challenge script exercises the complete user
-workflow</label></li>
-<li><label><input type="checkbox" /><strong>Documentation example
-works</strong>: README example executes successfully when
-copy-pasted</label></li>
-<li><label><input type="checkbox" /><strong>No bare skips</strong>: All
-<code>t.Skip()</code> have <code>SKIP-OK: #&lt;ticket&gt;</code>
-markers</label></li>
-<li><label><input type="checkbox" /><strong>Evidence pasted</strong>:
-Commit/PR contains actual terminal output from real
-execution</label></li>
-</ul>
-<hr />
-<h2 id="common-anti-patterns-to-avoid">6. Common Anti-Patterns to
-Avoid</h2>
-<h3 id="anti-pattern-1-the-simulation-trap">ANTI-PATTERN 1: The
-Simulation Trap</h3>
-<div class="sourceCode" id="cb19"><pre
-class="sourceCode go"><code class="sourceCode go"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="co">// WRONG</span></span>
-<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a><span class="kw">func</span> Generate<span class="op">(</span>prompt <span class="dt">string</span><span class="op">)</span> <span class="dt">string</span> <span class="op">{</span></span>
-<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a>    <span class="co">// For now, just return a simulated response</span></span>
-<span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> fmt<span class="op">.</span>Sprintf<span class="op">(</span><span class="st">&quot;Generated: %s&quot;</span><span class="op">,</span> prompt<span class="op">)</span></span>
-<span id="cb19-5"><a href="#cb19-5" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
-<span id="cb19-6"><a href="#cb19-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb19-7"><a href="#cb19-7" aria-hidden="true" tabindex="-1"></a><span class="co">// CORRECT</span></span>
-<span id="cb19-8"><a href="#cb19-8" aria-hidden="true" tabindex="-1"></a><span class="kw">func</span> <span class="op">(</span>p <span class="op">*</span>Provider<span class="op">)</span> Generate<span class="op">(</span>ctx context<span class="op">.</span>Context<span class="op">,</span> req <span class="op">*</span>GenerateRequest<span class="op">)</span> <span class="op">(*</span>GenerateResponse<span class="op">,</span> <span class="dt">error</span><span class="op">)</span> <span class="op">{</span></span>
-<span id="cb19-9"><a href="#cb19-9" aria-hidden="true" tabindex="-1"></a>    resp<span class="op">,</span> err <span class="op">:=</span> p<span class="op">.</span>client<span class="op">.</span>Post<span class="op">(</span>p<span class="op">.</span>endpoint<span class="op">,</span> req<span class="op">)</span></span>
-<span id="cb19-10"><a href="#cb19-10" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> err <span class="op">!=</span> <span class="ot">nil</span> <span class="op">{</span></span>
-<span id="cb19-11"><a href="#cb19-11" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> <span class="ot">nil</span><span class="op">,</span> fmt<span class="op">.</span>Errorf<span class="op">(</span><span class="st">&quot;generation request failed: %w&quot;</span><span class="op">,</span> err<span class="op">)</span></span>
-<span id="cb19-12"><a href="#cb19-12" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
-<span id="cb19-13"><a href="#cb19-13" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> parseResponse<span class="op">(</span>resp<span class="op">)</span></span>
-<span id="cb19-14"><a href="#cb19-14" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
-<h3 id="anti-pattern-2-the-hardcoded-list">ANTI-PATTERN 2: The Hardcoded
-List</h3>
-<div class="sourceCode" id="cb20"><pre
-class="sourceCode go"><code class="sourceCode go"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="co">// WRONG</span></span>
-<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a><span class="kw">func</span> ListModels<span class="op">()</span> <span class="op">[]</span>Model <span class="op">{</span></span>
-<span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> <span class="op">[]</span>Model<span class="op">{</span></span>
-<span id="cb20-4"><a href="#cb20-4" aria-hidden="true" tabindex="-1"></a>        <span class="op">{</span><span class="st">&quot;llama-3-8b&quot;</span><span class="op">,</span> <span class="st">&quot;Llama 3 8B&quot;</span><span class="op">},</span></span>
-<span id="cb20-5"><a href="#cb20-5" aria-hidden="true" tabindex="-1"></a>        <span class="op">{</span><span class="st">&quot;mistral-7b&quot;</span><span class="op">,</span> <span class="st">&quot;Mistral 7B&quot;</span><span class="op">},</span></span>
-<span id="cb20-6"><a href="#cb20-6" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
-<span id="cb20-7"><a href="#cb20-7" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
-<span id="cb20-8"><a href="#cb20-8" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb20-9"><a href="#cb20-9" aria-hidden="true" tabindex="-1"></a><span class="co">// CORRECT</span></span>
-<span id="cb20-10"><a href="#cb20-10" aria-hidden="true" tabindex="-1"></a><span class="kw">func</span> <span class="op">(</span>p <span class="op">*</span>Provider<span class="op">)</span> GetModels<span class="op">()</span> <span class="op">([]</span>Model<span class="op">,</span> <span class="dt">error</span><span class="op">)</span> <span class="op">{</span></span>
-<span id="cb20-11"><a href="#cb20-11" aria-hidden="true" tabindex="-1"></a>    resp<span class="op">,</span> err <span class="op">:=</span> p<span class="op">.</span>client<span class="op">.</span>Get<span class="op">(</span>p<span class="op">.</span>baseURL <span class="op">+</span> <span class="st">&quot;/api/tags&quot;</span><span class="op">)</span></span>
-<span id="cb20-12"><a href="#cb20-12" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> err <span class="op">!=</span> <span class="ot">nil</span> <span class="op">{</span></span>
-<span id="cb20-13"><a href="#cb20-13" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> <span class="ot">nil</span><span class="op">,</span> err</span>
-<span id="cb20-14"><a href="#cb20-14" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
-<span id="cb20-15"><a href="#cb20-15" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> parseModelList<span class="op">(</span>resp<span class="op">)</span></span>
-<span id="cb20-16"><a href="#cb20-16" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
-<h3 id="anti-pattern-3-the-stub-interface">ANTI-PATTERN 3: The Stub
-Interface</h3>
-<div class="sourceCode" id="cb21"><pre
-class="sourceCode go"><code class="sourceCode go"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="co">// WRONG</span></span>
-<span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a><span class="kw">type</span> WorkerPool <span class="kw">struct</span> <span class="op">{}</span></span>
-<span id="cb21-3"><a href="#cb21-3" aria-hidden="true" tabindex="-1"></a><span class="kw">func</span> <span class="op">(</span>p <span class="op">*</span>WorkerPool<span class="op">)</span> AddWorker<span class="op">(</span>w <span class="op">*</span>Worker<span class="op">)</span> <span class="dt">error</span> <span class="op">{</span></span>
-<span id="cb21-4"><a href="#cb21-4" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> <span class="ot">nil</span>  <span class="co">// </span><span class="al">TODO</span><span class="co">: implement</span></span>
-<span id="cb21-5"><a href="#cb21-5" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
-<span id="cb21-6"><a href="#cb21-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb21-7"><a href="#cb21-7" aria-hidden="true" tabindex="-1"></a><span class="co">// CORRECT</span></span>
-<span id="cb21-8"><a href="#cb21-8" aria-hidden="true" tabindex="-1"></a><span class="kw">func</span> <span class="op">(</span>p <span class="op">*</span>SSHWorkerPool<span class="op">)</span> AddWorker<span class="op">(</span>ctx context<span class="op">.</span>Context<span class="op">,</span> w <span class="op">*</span>SSHWorker<span class="op">)</span> <span class="dt">error</span> <span class="op">{</span></span>
-<span id="cb21-9"><a href="#cb21-9" aria-hidden="true" tabindex="-1"></a>    client<span class="op">,</span> err <span class="op">:=</span> ssh<span class="op">.</span>Dial<span class="op">(</span><span class="st">&quot;tcp&quot;</span><span class="op">,</span> w<span class="op">.</span>Host<span class="op">,</span> w<span class="op">.</span>SSHConfig<span class="op">)</span></span>
-<span id="cb21-10"><a href="#cb21-10" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> err <span class="op">!=</span> <span class="ot">nil</span> <span class="op">{</span></span>
-<span id="cb21-11"><a href="#cb21-11" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> fmt<span class="op">.</span>Errorf<span class="op">(</span><span class="st">&quot;failed to connect to worker %s: %w&quot;</span><span class="op">,</span> w<span class="op">.</span>Host<span class="op">,</span> err<span class="op">)</span></span>
-<span id="cb21-12"><a href="#cb21-12" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
-<span id="cb21-13"><a href="#cb21-13" aria-hidden="true" tabindex="-1"></a>    <span class="cf">defer</span> client<span class="op">.</span>Close<span class="op">()</span></span>
-<span id="cb21-14"><a href="#cb21-14" aria-hidden="true" tabindex="-1"></a>    </span>
-<span id="cb21-15"><a href="#cb21-15" aria-hidden="true" tabindex="-1"></a>    <span class="co">// Verify worker has helix binary</span></span>
-<span id="cb21-16"><a href="#cb21-16" aria-hidden="true" tabindex="-1"></a>    session<span class="op">,</span> err <span class="op">:=</span> client<span class="op">.</span>NewSession<span class="op">()</span></span>
-<span id="cb21-17"><a href="#cb21-17" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> err <span class="op">!=</span> <span class="ot">nil</span> <span class="op">{</span></span>
-<span id="cb21-18"><a href="#cb21-18" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> fmt<span class="op">.</span>Errorf<span class="op">(</span><span class="st">&quot;failed to create SSH session: %w&quot;</span><span class="op">,</span> err<span class="op">)</span></span>
-<span id="cb21-19"><a href="#cb21-19" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
-<span id="cb21-20"><a href="#cb21-20" aria-hidden="true" tabindex="-1"></a>    <span class="cf">defer</span> session<span class="op">.</span>Close<span class="op">()</span></span>
-<span id="cb21-21"><a href="#cb21-21" aria-hidden="true" tabindex="-1"></a>    </span>
-<span id="cb21-22"><a href="#cb21-22" aria-hidden="true" tabindex="-1"></a>    <span class="co">// Actually test the worker</span></span>
-<span id="cb21-23"><a href="#cb21-23" aria-hidden="true" tabindex="-1"></a>    output<span class="op">,</span> err <span class="op">:=</span> session<span class="op">.</span>Output<span class="op">(</span><span class="st">&quot;which helix || echo &#39;NOT_INSTALLED&#39;&quot;</span><span class="op">)</span></span>
-<span id="cb21-24"><a href="#cb21-24" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> strings<span class="op">.</span>Contains<span class="op">(</span><span class="dt">string</span><span class="op">(</span>output<span class="op">),</span> <span class="st">&quot;NOT_INSTALLED&quot;</span><span class="op">)</span> <span class="op">{</span></span>
-<span id="cb21-25"><a href="#cb21-25" aria-hidden="true" tabindex="-1"></a>        <span class="co">// Auto-install</span></span>
-<span id="cb21-26"><a href="#cb21-26" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> err <span class="op">:=</span> p<span class="op">.</span>installWorker<span class="op">(</span>ctx<span class="op">,</span> client<span class="op">);</span> err <span class="op">!=</span> <span class="ot">nil</span> <span class="op">{</span></span>
-<span id="cb21-27"><a href="#cb21-27" aria-hidden="true" tabindex="-1"></a>            <span class="cf">return</span> fmt<span class="op">.</span>Errorf<span class="op">(</span><span class="st">&quot;failed to install worker: %w&quot;</span><span class="op">,</span> err<span class="op">)</span></span>
-<span id="cb21-28"><a href="#cb21-28" aria-hidden="true" tabindex="-1"></a>        <span class="op">}</span></span>
-<span id="cb21-29"><a href="#cb21-29" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
-<span id="cb21-30"><a href="#cb21-30" aria-hidden="true" tabindex="-1"></a>    </span>
-<span id="cb21-31"><a href="#cb21-31" aria-hidden="true" tabindex="-1"></a>    p<span class="op">.</span>workers<span class="op">[</span>w<span class="op">.</span>Hostname<span class="op">]</span> <span class="op">=</span> w</span>
-<span id="cb21-32"><a href="#cb21-32" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> <span class="ot">nil</span></span>
-<span id="cb21-33"><a href="#cb21-33" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
-<hr />
-<h2 id="working-with-submodules">7. Working with Submodules</h2>
-<p>The project has 80+ submodules. When working with them:</p>
-<ol type="1">
-<li><strong>Check governance</strong>: Does the submodule have
-Constitution.md / CLAUDE.md / AGENTS.md?</li>
-<li><strong>Add if missing</strong>: Create governance files referencing
-parent</li>
-<li><strong>Verify builds</strong>: Does the submodule actually
-compile?</li>
-<li><strong>Test integration</strong>: Does the project integration with
-this submodule work?</li>
-</ol>
-<hr />
-<h2 id="emergency-procedures">8. Emergency Procedures</h2>
-<h3 id="if-you-discover-a-bluff">If You Discover a Bluff</h3>
-<ol type="1">
-<li>STOP working on dependent features</li>
-<li>Document the bluff in <code>docs/issues/BLUFFS.md</code></li>
-<li>Write a Challenge that reproduces the bluff</li>
-<li>Fix the bluff</li>
-<li>Verify the Challenge now passes</li>
-<li>Update documentation to reflect reality</li>
-</ol>
-<h3 id="if-a-test-passes-but-feature-doesnt-work">If a Test Passes But
-Feature Doesn’t Work</h3>
-<ol type="1">
-<li>The test is a bluff - tighten it</li>
-<li>Add assertions that verify actual output quality</li>
-<li>Add anti-bluff checks (no “simulated” in responses)</li>
-<li>Run the test against real infrastructure</li>
-<li>Verify it FAILS with the broken code</li>
-<li>Then fix the code</li>
-</ol>
-<hr />
-<h2 id="reference-commands">9. Reference Commands</h2>
-<p>The full command catalog lives in <strong>§3.4 Build &amp; Test
-Commands</strong>. The block below is only the smoke-test you should run
-before claiming any change is done.</p>
-<div class="sourceCode" id="cb22"><pre
-class="sourceCode bash"><code class="sourceCode bash"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a><span class="co"># 1. Compiles?</span></span>
-<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a><span class="bu">cd</span> <span class="op">&lt;</span>project_root<span class="op">&gt;</span> <span class="kw">&amp;&amp;</span> <span class="fu">make</span> verify-compile</span>
-<span id="cb22-3"><a href="#cb22-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb22-4"><a href="#cb22-4" aria-hidden="true" tabindex="-1"></a><span class="co"># 2. Unit tests (mocks allowed only here)</span></span>
-<span id="cb22-5"><a href="#cb22-5" aria-hidden="true" tabindex="-1"></a><span class="bu">cd</span> <span class="op">&lt;</span>project_root<span class="op">&gt;</span> <span class="kw">&amp;&amp;</span> <span class="ex">go</span> test <span class="at">-count</span><span class="op">=</span>1 ./...</span>
-<span id="cb22-6"><a href="#cb22-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb22-7"><a href="#cb22-7" aria-hidden="true" tabindex="-1"></a><span class="co"># 3. Anti-bluff scan</span></span>
-<span id="cb22-8"><a href="#cb22-8" aria-hidden="true" tabindex="-1"></a><span class="fu">grep</span> <span class="at">-rn</span> <span class="st">&quot;simulated\|for now\|TODO implement\|placeholder&quot;</span> <span class="dt">\</span></span>
-<span id="cb22-9"><a href="#cb22-9" aria-hidden="true" tabindex="-1"></a>  helix_code/internal helix_code/cmd <span class="kw">&amp;&amp;</span> <span class="bu">echo</span> <span class="st">&quot;BLUFF FOUND&quot;</span> <span class="kw">||</span> <span class="bu">echo</span> <span class="st">&quot;clean&quot;</span></span>
-<span id="cb22-10"><a href="#cb22-10" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb22-11"><a href="#cb22-11" aria-hidden="true" tabindex="-1"></a><span class="co"># 4. Real LLM end-to-end (requires `make test-infra-up` first)</span></span>
-<span id="cb22-12"><a href="#cb22-12" aria-hidden="true" tabindex="-1"></a><span class="ex">curl</span> <span class="at">-sS</span> <span class="at">-X</span> POST http://localhost:8080/api/v1/llm/generate <span class="dt">\</span></span>
-<span id="cb22-13"><a href="#cb22-13" aria-hidden="true" tabindex="-1"></a>  <span class="at">-H</span> <span class="st">&quot;Content-Type: application/json&quot;</span> <span class="dt">\</span></span>
-<span id="cb22-14"><a href="#cb22-14" aria-hidden="true" tabindex="-1"></a>  <span class="at">-d</span> <span class="st">&#39;{&quot;prompt&quot;:&quot;What is 2+2?&quot;,&quot;model&quot;:&quot;llama3.2&quot;}&#39;</span></span>
-<span id="cb22-15"><a href="#cb22-15" aria-hidden="true" tabindex="-1"></a><span class="co"># Must return real AI output, not &quot;simulated response&quot;.</span></span>
-<span id="cb22-16"><a href="#cb22-16" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb22-17"><a href="#cb22-17" aria-hidden="true" tabindex="-1"></a><span class="co"># 5. Governance still cascading?</span></span>
-<span id="cb22-18"><a href="#cb22-18" aria-hidden="true" tabindex="-1"></a><span class="ex">./scripts/verify-governance-cascade.sh</span></span></code></pre></div>
-<hr />
-<h2 id="contact-escalation">11. Contact &amp; Escalation</h2>
 <ul>
-<li><strong>Bluff reports</strong>:
-<code>docs/issues/BLUFFS.md</code></li>
-<li><strong>Bug fixes</strong>:
-<code>docs/issues/fixed/BUGFIXES.md</code></li>
-<li><strong>Architecture questions</strong>:
-<code>docs/ARCHITECTURE.md</code></li>
-<li><strong>Emergency</strong>: Create a Challenge that reproduces the
-issue</li>
+<li><strong>No simulation</strong> — code does not contain "simulate",
+"for now", "TODO implement", "placeholder". Run the bluff scanner
+(<code>make anti-bluff-scan</code>).</li>
+<li><strong>Real I/O</strong> — HTTP clients make real requests; device
+detection runs real ADB/process calls; file ops use real <code>os</code>
+calls; command execution uses <code>os/exec</code> and surfaces real
+exit codes — never <code>Printf</code> + <code>Sleep</code>.</li>
+<li><strong>Mocks are unit-test-only</strong> — integration / e2e /
+autonomous / Challenge paths exercise the real system (§11.4.27).</li>
+<li><strong>Tests validate reality</strong> — assert observable
+behaviour and captured evidence, not just call counts.</li>
+<li><strong>Every gate has a paired mutation</strong> — a new gate ships
+with a §1.1 mutation proving it catches the regression it claims
+to.</li>
+<li><strong>No bare skips</strong> — every <code>t.Skip()</code> is
+topology-justified with a reason (§11.4.3); PASS-by-default is
+forbidden.</li>
+<li><strong>Evidence captured</strong> — a PASS for a user-visible
+behaviour cites the artifact (screenshot/video/logcat/report) proving
+it.</li>
 </ul>
-<hr />
+<h2 id="7-conventions">7. Conventions</h2>
+<ul>
+<li><strong>Go</strong>: constructor injection
+(<code>NewXxx(cfg)</code>), table-driven tests, <code>*_test.go</code>
+beside source. Wrap errors with <code>fmt.Errorf</code> +
+<code>%w</code>. Respect <code>context.Context</code> cancellation in
+long-running scans and sessions.</li>
+<li><strong>Concurrency</strong>: platform workers and capture loops run
+concurrently; bound parallelism and reap child processes/goroutines on
+cleanup.</li>
+<li><strong>Configuration</strong>: all runtime settings load from
+<code>.env</code> (copy <code>.env.example</code>). Credentials are
+never committed (§11.4.10).</li>
+<li><strong>Static analysis</strong>: <code>go vet ./...</code> must be
+clean before commit.</li>
+</ul>
+<h2 id="8-peer-governance-documents-keep-in-sync">8. Peer governance
+documents (keep in sync)</h2>
+<p>This <code>CLAUDE.md</code> sits alongside <code>AGENTS.md</code>,
+<code>QWEN.md</code>, and <code>CONSTITUTION.md</code> in this module.
+They share the same inheritance pointer and anti-bluff posture; cascade
+any rule change across all of them so an agent reading any one file gets
+the same binding rules.</p>
+</body>
+</html>

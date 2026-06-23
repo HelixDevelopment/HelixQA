@@ -1,1059 +1,520 @@
-<h2 id="inherited-from-helix-constitution">INHERITED FROM Helix
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>AGENTS</title>
+  <style>
+    /* Default styles provided by pandoc.
+    ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+    */
+    html {
+      color: #1a1a1a;
+      background-color: #fdfdfd;
+    }
+    body {
+      margin: 0 auto;
+      max-width: 36em;
+      padding-left: 50px;
+      padding-right: 50px;
+      padding-top: 50px;
+      padding-bottom: 50px;
+      hyphens: auto;
+      overflow-wrap: break-word;
+      text-rendering: optimizeLegibility;
+      font-kerning: normal;
+    }
+    @media (max-width: 600px) {
+      body {
+        font-size: 0.9em;
+        padding: 12px;
+      }
+      h1 {
+        font-size: 1.8em;
+      }
+    }
+    @media print {
+      html {
+        background-color: white;
+      }
+      body {
+        background-color: transparent;
+        color: black;
+        font-size: 12pt;
+      }
+      p, h2, h3 {
+        orphans: 3;
+        widows: 3;
+      }
+      h2, h3, h4 {
+        page-break-after: avoid;
+      }
+    }
+    p {
+      margin: 1em 0;
+    }
+    a {
+      color: #1a1a1a;
+    }
+    a:visited {
+      color: #1a1a1a;
+    }
+    img {
+      max-width: 100%;
+    }
+    svg {
+      height: auto;
+      max-width: 100%;
+    }
+    h1, h2, h3, h4, h5, h6 {
+      margin-top: 1.4em;
+    }
+    h5, h6 {
+      font-size: 1em;
+      font-style: italic;
+    }
+    h6 {
+      font-weight: normal;
+    }
+    ol, ul {
+      padding-left: 1.7em;
+      margin-top: 1em;
+    }
+    li > ol, li > ul {
+      margin-top: 0;
+    }
+    blockquote {
+      margin: 1em 0 1em 1.7em;
+      padding-left: 1em;
+      border-left: 2px solid #e6e6e6;
+      color: #606060;
+    }
+    code {
+      white-space: pre-wrap;
+      font-family: Menlo, Monaco, Consolas, 'Lucida Console', monospace;
+      font-size: 85%;
+      margin: 0;
+      hyphens: manual;
+    }
+    pre {
+      margin: 1em 0;
+      overflow: auto;
+    }
+    pre code {
+      padding: 0;
+      overflow: visible;
+      overflow-wrap: normal;
+    }
+    .sourceCode {
+     background-color: transparent;
+     overflow: visible;
+    }
+    hr {
+      border: none;
+      border-top: 1px solid #1a1a1a;
+      height: 1px;
+      margin: 1em 0;
+    }
+    table {
+      margin: 1em 0;
+      border-collapse: collapse;
+      width: 100%;
+      overflow-x: auto;
+      display: block;
+      font-variant-numeric: lining-nums tabular-nums;
+    }
+    table caption {
+      margin-bottom: 0.75em;
+    }
+    tbody {
+      margin-top: 0.5em;
+      border-top: 1px solid #1a1a1a;
+      border-bottom: 1px solid #1a1a1a;
+    }
+    th {
+      border-top: 1px solid #1a1a1a;
+      padding: 0.25em 0.5em 0.25em 0.5em;
+    }
+    td {
+      padding: 0.125em 0.5em 0.25em 0.5em;
+    }
+    header {
+      margin-bottom: 4em;
+      text-align: center;
+    }
+    #TOC li {
+      list-style: none;
+    }
+    #TOC ul {
+      padding-left: 1.3em;
+    }
+    #TOC > ul {
+      padding-left: 0;
+    }
+    #TOC a:not(:hover) {
+      text-decoration: none;
+    }
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: min(4vw, 1.5em);}
+    div.column{flex: auto; overflow-x: auto;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    /* The extra [class] is a hack that increases specificity enough to
+       override a similar rule in reveal.js */
+    ul.task-list[class]{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      font-size: inherit;
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1.6em;
+      vertical-align: middle;
+    }
+    .display.math{display: block; text-align: center; margin: 0.5rem auto;}
+    /* CSS for syntax highlighting */
+    html { -webkit-text-size-adjust: 100%; }
+    pre > code.sourceCode { white-space: pre; position: relative; }
+    pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+    pre > code.sourceCode > span:empty { height: 1.2em; }
+    .sourceCode { overflow: visible; }
+    code.sourceCode > span { color: inherit; text-decoration: inherit; }
+    div.sourceCode { margin: 1em 0; }
+    pre.sourceCode { margin: 0; }
+    @media screen {
+    div.sourceCode { overflow: auto; }
+    }
+    @media print {
+    pre > code.sourceCode { white-space: pre-wrap; }
+    pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+    }
+    pre.numberSource code
+      { counter-reset: source-line 0; }
+    pre.numberSource code > span
+      { position: relative; left: -4em; counter-increment: source-line; }
+    pre.numberSource code > span > a:first-child::before
+      { content: counter(source-line);
+        position: relative; left: -1em; text-align: right; vertical-align: baseline;
+        border: none; display: inline-block;
+        -webkit-touch-callout: none; -webkit-user-select: none;
+        -khtml-user-select: none; -moz-user-select: none;
+        -ms-user-select: none; user-select: none;
+        padding: 0 4px; width: 4em;
+        color: #aaaaaa;
+      }
+    pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+    div.sourceCode
+      {   }
+    @media screen {
+    pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+    }
+    code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+    code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+    code span.at { color: #7d9029; } /* Attribute */
+    code span.bn { color: #40a070; } /* BaseN */
+    code span.bu { color: #008000; } /* BuiltIn */
+    code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+    code span.ch { color: #4070a0; } /* Char */
+    code span.cn { color: #880000; } /* Constant */
+    code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+    code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+    code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+    code span.dt { color: #902000; } /* DataType */
+    code span.dv { color: #40a070; } /* DecVal */
+    code span.er { color: #ff0000; font-weight: bold; } /* Error */
+    code span.ex { } /* Extension */
+    code span.fl { color: #40a070; } /* Float */
+    code span.fu { color: #06287e; } /* Function */
+    code span.im { color: #008000; font-weight: bold; } /* Import */
+    code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+    code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+    code span.op { color: #666666; } /* Operator */
+    code span.ot { color: #007020; } /* Other */
+    code span.pp { color: #bc7a00; } /* Preprocessor */
+    code span.sc { color: #4070a0; } /* SpecialChar */
+    code span.ss { color: #bb6688; } /* SpecialString */
+    code span.st { color: #4070a0; } /* String */
+    code span.va { color: #19177c; } /* Variable */
+    code span.vs { color: #4070a0; } /* VerbatimString */
+    code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+  </style>
+</head>
+<body>
+<header id="title-block-header">
+<h1 class="title">AGENTS</h1>
+</header>
+<h2 id="inherited-from-the-helix-constitution">INHERITED FROM the Helix
 Constitution</h2>
 <blockquote>
-<p>Base agent rules live in the Helix Constitution submodule at the
-parent project’s <code>constitution/AGENTS.md</code> and the universal
-<code>constitution/Constitution.md</code> it references. <strong>READ
-THOSE FIRST.</strong> The base file is authoritative for any topic not
-covered here. Module-specific rules below extend them; they never weaken
-them.</p>
+<p>Base agent rules live in the Helix Constitution. <strong>READ THOSE
+FIRST.</strong> The constitution's <code>AGENTS.md</code> and the
+universal <code>Constitution.md</code> it references are authoritative
+for any topic not covered here. Locate the constitution from any nested
+depth via its <code>find_constitution.sh</code> helper — do NOT hardcode
+a path (this module stays fully decoupled and project-agnostic per
+§11.4.28). Module-specific rules below extend the universal clauses;
+they never weaken them.</p>
 </blockquote>
 <p>Critical universal rules every CLI agent (Claude Code, Cursor, Aider,
-Codex, Gemini CLI) MUST honour while working in this module:</p>
+Codex, Gemini CLI, Qwen Code) MUST honour while working in this
+module:</p>
 <ul>
-<li><strong>No bluffing.</strong> Every PASS carries positive evidence.
-Constitution §11.4.</li>
+<li><strong>No bluffing.</strong> Every PASS carries positive captured
+evidence. §11.4.</li>
 <li><strong>Mutation-paired gates.</strong> Every new gate has a paired
-mutation proving it catches regressions. Constitution §1.1.</li>
+mutation proving it catches regressions. §1.1.</li>
 <li><strong>No guessing language</strong> (<code>likely</code>,
 <code>probably</code>, <code>maybe</code>, <code>seems</code>).
-Constitution §11.4.6.</li>
+§11.4.6.</li>
 <li><strong>Credentials never tracked.</strong> <code>.env</code>
-patterns git-ignored; runtime-load only. Constitution §11.4.10.</li>
-<li><strong>Never force-push.</strong> Force-push requires explicit
-per-session authorization AND a green §9.1.5 post-op gate. Constitution
-§9.</li>
-<li><strong>CONTINUATION.md kept in sync</strong> in every non-trivial
-commit. Constitution §12.10.</li>
-<li><strong>60% RAM cap.</strong> Heavy work wrapped in bounded
-execution scope. Constitution §12.6.</li>
+patterns git-ignored; runtime-load only. §11.4.10.</li>
+<li><strong>Never force-push.</strong> Force-push is forbidden;
+integrate by merging onto the latest main. §9 / §11.4.113.</li>
+<li><strong>60% RAM cap.</strong> Heavy work wrapped in a bounded
+execution scope. §12.6.</li>
 </ul>
 <p>Canonical reference: <a
-href="https://github.com/HelixDevelopment/HelixConstitution"
-class="uri">https://github.com/HelixDevelopment/HelixConstitution</a></p>
+href="https://github.com/HelixDevelopment/HelixConstitution">https://github.com/HelixDevelopment/HelixConstitution</a></p>
 <hr />
-<h1 id="agents.md-the-project-authoritative-agent-guide">AGENTS.md — the
-project Authoritative Agent Guide</h1>
-<h2 id="the-project-agent-guidelines">the project Agent Guidelines</h2>
-<p><strong>Version</strong>: 3.0.0 (Updated with full architecture
-audit) <strong>Date</strong>: 2026-04-30 <strong>Scope</strong>: All AI
-agents, human contributors, and automated processes working on the
-project <strong>Authority</strong>: Derived from the parent project
-AGENTS.md with project-specific enhancements</p>
-<hr />
-<h2 id="project-overview">Project Overview</h2>
-<p>The project is an enterprise-grade distributed AI development
-platform built in Go. It enables intelligent task division, work
-preservation, cross-platform development workflows, and multi-provider
-LLM integration through a unified REST API, CLI, Terminal UI, Desktop,
-and Mobile client architecture.</p>
-<p><strong>Current Status</strong>: The <code>internal/</code>
-foundation is largely solid (auth, database, server, worker, task,
-workflow, tools, editor, notification, MCP, <strong>verifier</strong>
-are real implementations). Critical bluff and stub areas remain in
-select entry points and peripheral packages. All agents MUST prioritize
-zero-bluff implementation.</p>
-<p><strong>LLMsVerifier Integration Status</strong>:
-<code>internal/verifier/</code> package is now implemented with REST API
-client, two-tier cache, circuit breaker health monitor, background
-poller, score adapter, and event publisher. BLUFF-002 (hardcoded CLI
-models) and BLUFF-004 (hardcoded external models) are FIXED. BLUFF-005
-(scoring ignores verifier data) is FIXED in
-<code>ModelManager.SelectOptimalModel()</code>.</p>
-<p><strong>Key Features</strong>: - <strong>Distributed
-Computing</strong>: SSH-based worker pools with health monitoring,
-auto-installation, and consensus - <strong>Multi-Provider LLM
-Integration</strong>: 15+ providers (OpenAI, Anthropic, Gemini, Ollama,
-Azure, Bedrock, Groq, Mistral, Cohere, xAI, DeepSeek, Qwen, OpenRouter,
-HuggingFace, Llama.cpp) - <strong>Development Workflows</strong>:
-Automated planning, building, testing, refactoring with real shell
-execution - <strong>Task Management</strong>: Intelligent task division
-with priorities, dependencies, checkpointing, and Redis caching -
-<strong>MCP Protocol</strong>: Full Model Context Protocol server over
-WebSocket with tool dispatch - <strong>Multi-Client
-Architecture</strong>: REST API (Gin), Cobra CLI, Terminal UI (tview),
-Desktop (Fyne), Mobile (gomobile), WebSocket - <strong>Memory
-Systems</strong>: In-memory, filesystem, Redis, Memcached, Cognee,
-ChromaDB, Qdrant, Weaviate integrations - <strong>Advanced
-Editor</strong>: Multi-format code editing (diff, whole-file,
-search/replace, line-based) with backups - <strong>Tools
-Ecosystem</strong>: 40+ tools across filesystem, shell, web, browser,
-mapping, multiedit, confirmation, notebook, git -
-<strong>Notifications</strong>: Multi-channel support (Slack, Email,
-Telegram, Discord, Yandex Messenger, Max)</p>
-<hr />
-<h2 id="technology-stack">Technology Stack</h2>
-<p><strong>Core Technologies</strong>: - <strong>Language</strong>: Go
-1.24.0 with toolchain go1.24.9 - <strong>Module</strong>:
-<code>dev.helix.code</code> - <strong>HTTP Framework</strong>: Gin
-v1.11.0 - <strong>Authentication</strong>: JWT v4.5.2, bcrypt + argon2 -
-<strong>Database</strong>: PostgreSQL 15+ via pgx/v5 (optional) -
-<strong>Cache</strong>: Redis 7+ via go-redis/v9 (optional) -
-<strong>Configuration</strong>: Viper v1.21.0 - <strong>CLI
-Framework</strong>: Cobra v1.8.0 - <strong>Testing</strong>: Testify
-v1.11.1</p>
-<p><strong>UI Technologies</strong>: - <strong>Desktop</strong>: Fyne
-v2.7.0 - <strong>Terminal UI</strong>: tview v0.42.0 -
-<strong>Mobile</strong>: gomobile bindings</p>
-<p><strong>External Integrations</strong>: - <strong>Browser
-Automation</strong>: chromedp v0.14.2 - <strong>Web Scraping</strong>:
-goquery v1.10.3 - <strong>Tree-sitter</strong>: go-tree-sitter -
-<strong>Identity</strong>: Azure SDK, AWS SDK v2 -
-<strong>Vector/Memory</strong>: Cognee, ChromaDB, Qdrant, Weaviate
-clients - <strong>Container Orchestration</strong>:
-digital.vasic.containers (vasic-digital/Containers submodule)</p>
-<hr />
-<h2 id="working-directory-build-system">Working Directory &amp; Build
+<h1 id="agentsmd--helixqa-authoritative-agent-guide">AGENTS.md — HelixQA
+Authoritative Agent Guide</h1>
+<p><strong>Scope</strong>: All AI agents, human contributors, and
+automated processes working on the <code>digital.vasic.helixqa</code>
+module.</p>
+<h2 id="module-overview">Module Overview</h2>
+<p>HelixQA is an <strong>anti-bluff QA orchestration framework</strong>
+written in Go (<code>digital.vasic.helixqa</code>,
+<code>go 1.26</code>). It executes YAML test banks across Android,
+Android TV, Web, and Desktop targets with real-time crash/ANR detection,
+step-by-step evidence collection, and automated Markdown ticket
+generation. It also provides an LLM-driven <strong>Autonomous QA
+Session</strong> that navigates running applications, verifies
+documented features, discovers bugs via computer vision, and produces QA
+reports with video evidence.</p>
+<p>Because the entire purpose of HelixQA is to prove that <em>other</em>
+software genuinely works for end users, the framework holds itself to
+the same bar: every PASS it emits — and every PASS in its own test suite
+— MUST carry positive runtime evidence. CI green is necessary, never
+sufficient.</p>
+<h2 id="key-capabilities">Key Capabilities</h2>
+<ul>
+<li><strong>Cross-platform testing</strong> — Android, Android TV, Web,
+Desktop.</li>
+<li><strong>Android TV Channels testing</strong> — generic framework for
+Home Screen Channels (default channel, category channels, Watch Next,
+deep links).</li>
+<li><strong>Real-time crash detection</strong> — ADB-based Android
+crash/ANR detection, browser and JVM process monitoring.</li>
+<li><strong>Step-by-step validation</strong> — evidence collected at
+every step to prevent false positives.</li>
+<li><strong>YAML test banks</strong> — platform-targeted test cases with
+priority and documentation references (<code>banks/</code>).</li>
+<li><strong>Evidence collection</strong> — screenshots, logcat, video
+recording, stack traces, centralized under the output directory.</li>
+<li><strong>Markdown ticket generation</strong> — auto-generated issue
+tickets with full evidence for AI fix pipelines.</li>
+<li><strong>Multiple report formats</strong> — Markdown, HTML,
+JSON.</li>
+<li><strong>Device capture/bridge backends</strong> — scrcpy, x11grab,
+kmsgrab, and related capture tools (<code>cmd/helixqa-*</code>,
+<code>pkg/capture</code>, <code>pkg/bridge</code>).</li>
+<li><strong>Vision analysis</strong> — GoCV mechanical vision + LLM
+Vision, with GPU-accelerated comparison (LPIPS, DreamSim).</li>
+<li><strong>Autonomous QA session</strong> — 4-phase LLM-driven
+exploration.</li>
+</ul>
+<h2 id="working-directory--build-system">Working Directory &amp; Build
 System</h2>
-<p><strong>CRITICAL</strong>: All build and test commands must be run
-from the <code>helix_code/</code> subdirectory, not the repository
-root.</p>
+<p>This is a single Go module. Build and test from the module root.</p>
 <div class="sourceCode" id="cb1"><pre
-class="sourceCode bash"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="bu">cd</span> <span class="op">&lt;</span>project_root<span class="op">&gt;</span></span></code></pre></div>
-<h3 id="build-commands">Build Commands</h3>
-<table>
-<colgroup>
-<col style="width: 50%" />
-<col style="width: 50%" />
-</colgroup>
-<thead>
-<tr>
-<th>Command</th>
-<th>Purpose</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>make build</code></td>
-<td>Build server binary to <code>bin/helixcode</code></td>
-</tr>
-<tr>
-<td><code>make test</code></td>
-<td>Run <code>go test -v ./...</code></td>
-</tr>
-<tr>
-<td><code>make test-all</code></td>
-<td>Run tests + coverage + benchmarks + docs</td>
-</tr>
-<tr>
-<td><code>make test-coverage</code></td>
-<td>Generate coverage report</td>
-</tr>
-<tr>
-<td><code>make test-benchmark</code></td>
-<td>Run Go benchmarks</td>
-</tr>
-<tr>
-<td><code>make logo-assets</code></td>
-<td>Generate logo assets (required before first build)</td>
-</tr>
-<tr>
-<td><code>make setup-deps</code></td>
-<td>Run <code>go mod tidy</code></td>
-</tr>
-<tr>
-<td><code>make fmt</code></td>
-<td>Run <code>go fmt ./...</code></td>
-</tr>
-<tr>
-<td><code>make lint</code></td>
-<td>Run <code>golangci-lint run ./...</code></td>
-</tr>
-<tr>
-<td><code>make clean</code></td>
-<td>Clean build artifacts</td>
-</tr>
-<tr>
-<td><code>make dev</code></td>
-<td>Start development server</td>
-</tr>
-<tr>
-<td><code>make prod</code></td>
-<td>Cross-platform production build</td>
-</tr>
-<tr>
-<td><code>make mobile</code></td>
-<td>Build iOS + Android targets</td>
-</tr>
-<tr>
-<td><code>make aurora-os</code></td>
-<td>Build Aurora OS target</td>
-</tr>
-<tr>
-<td><code>make harmony-os</code></td>
-<td>Build Harmony OS target</td>
-</tr>
-</tbody>
-</table>
-<h3 id="full-infrastructure-test-commands">Full Infrastructure Test
-Commands</h3>
-<table>
-<colgroup>
-<col style="width: 50%" />
-<col style="width: 50%" />
-</colgroup>
-<thead>
-<tr>
-<th>Command</th>
-<th>Purpose</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>make test-infra-up</code></td>
-<td>Start full Docker test infrastructure</td>
-</tr>
-<tr>
-<td><code>make test-infra-down</code></td>
-<td>Stop full Docker test infrastructure</td>
-</tr>
-<tr>
-<td><code>make test-full</code></td>
-<td>ALL tests with real infrastructure (zero skips)</td>
-</tr>
-<tr>
-<td><code>make test-unit-full</code></td>
-<td>Unit tests with real services</td>
-</tr>
-<tr>
-<td><code>make test-integration-full</code></td>
-<td>Integration tests with <code>-tags=integration</code></td>
-</tr>
-<tr>
-<td><code>make test-e2e-full</code></td>
-<td>E2E challenge tests via runner</td>
-</tr>
-<tr>
-<td><code>make test-security-full</code></td>
-<td>Security test suite</td>
-</tr>
-<tr>
-<td><code>make test-load-full</code></td>
-<td>Load tests</td>
-</tr>
-<tr>
-<td><code>make test-complete</code></td>
-<td>Sequential run of all full test types</td>
-</tr>
-<tr>
-<td><code>make coverage-full</code></td>
-<td>Coverage with full infrastructure</td>
-</tr>
-</tbody>
-</table>
-<h3 id="containerized-builds-no-host-dependencies">Containerized Builds
-(NO Host Dependencies)</h3>
-<table>
-<colgroup>
-<col style="width: 50%" />
-<col style="width: 50%" />
-</colgroup>
-<thead>
-<tr>
-<th>Command</th>
-<th>Purpose</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>make container-builder-image</code></td>
-<td>Build the builder container image</td>
-</tr>
-<tr>
-<td><code>make container-build</code></td>
-<td>Build application inside container</td>
-</tr>
-<tr>
-<td><code>make container-test</code></td>
-<td>Run tests inside container</td>
-</tr>
-<tr>
-<td><code>make container-lint</code></td>
-<td>Run linter inside container</td>
-</tr>
-<tr>
-<td><code>make container-shell</code></td>
-<td>Interactive shell in builder container</td>
-</tr>
-<tr>
-<td><code>make container-dev-up</code></td>
-<td>Start containerized dev environment</td>
-</tr>
-<tr>
-<td><code>make container-dev-down</code></td>
-<td>Stop containerized dev environment</td>
-</tr>
-<tr>
-<td><code>make container-release</code></td>
-<td>Full release build in container</td>
-</tr>
-<tr>
-<td><code>./scripts/containers/build-in-container.sh</code></td>
-<td>Convenience wrapper script</td>
-</tr>
-</tbody>
-</table>
-<p>The builder container includes: Go 1.24, gcc, postgresql-client,
-redis, docker-cli, golangci-lint, and all build tools. The only host
-requirement is Docker/Podman.</p>
-<h3 id="standalone-test-scripts">Standalone Test Scripts</h3>
-<table>
-<thead>
-<tr>
-<th>Script</th>
-<th>Purpose</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>./run_tests.sh --unit</code></td>
-<td>Unit tests</td>
-</tr>
-<tr>
-<td><code>./run_tests.sh --integration</code></td>
-<td>Integration tests</td>
-</tr>
-<tr>
-<td><code>./run_tests.sh --e2e</code></td>
-<td>E2E tests</td>
-</tr>
-<tr>
-<td><code>./run_tests.sh --coverage</code></td>
-<td>Coverage analysis</td>
-</tr>
-<tr>
-<td><code>./run_tests.sh --security</code></td>
-<td>Security tests</td>
-</tr>
-<tr>
-<td><code>./run_all_tests.sh</code></td>
-<td>Orchestrates ALL suites sequentially</td>
-</tr>
-<tr>
-<td><code>./run_integration_tests.sh</code></td>
-<td>DB integration tests with Docker</td>
-</tr>
-</tbody>
-</table>
-<h3 id="single-test-execution">Single Test Execution</h3>
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Build</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="ex">go</span> build ./...                          <span class="co"># all packages</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="ex">go</span> build <span class="at">-o</span> bin/helixqa ./cmd/helixqa   <span class="co"># the CLI (or: make build)</span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="fu">make</span> build                              <span class="co"># → bin/helixqa</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Test</span></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="ex">go</span> test ./... <span class="at">-count</span><span class="op">=</span>1                  <span class="co"># all tests (or: make test)</span></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="fu">make</span> test-race                          <span class="co"># with -race</span></span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a><span class="fu">make</span> test-cover                         <span class="co"># coverage → coverage.html</span></span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a><span class="ex">go</span> test <span class="at">-v</span> ./pkg/testbank/ <span class="at">-count</span><span class="op">=</span>1     <span class="co"># one package</span></span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a><span class="ex">go</span> test <span class="at">-v</span> <span class="at">-run</span> TestX ./pkg/orchestrator/   <span class="co"># one test</span></span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a><span class="co"># Static analysis / format</span></span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a><span class="ex">go</span> vet ./...                            <span class="co"># (or: make vet)</span></span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a><span class="fu">make</span> lint                               <span class="co"># golangci-lint</span></span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a><span class="fu">make</span> fmt                                <span class="co"># gofmt -w .</span></span></code></pre></div>
+<h3 id="anti-bluff-gates-const-035-family">Anti-bluff gates (CONST-035
+family)</h3>
 <div class="sourceCode" id="cb2"><pre
-class="sourceCode bash"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="ex">go</span> test <span class="at">-v</span> <span class="at">-run</span> TestName ./path/to/package</span>
-<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="ex">go</span> test <span class="at">-v</span> <span class="at">-tags</span><span class="op">=</span>integration ./internal/database</span>
-<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="bu">cd</span> tests/e2e/challenges <span class="kw">&amp;&amp;</span> <span class="ex">go</span> run cmd/runner/main.go <span class="at">-challenge</span> ascii-art-generator-001 <span class="at">-providers</span> ollama</span></code></pre></div>
-<hr />
-<h2 id="architecture-code-organization">Architecture &amp; Code
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="fu">make</span> anti-bluff           <span class="co"># scanner + behaviour-anchor manifest + mutation</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="fu">make</span> anti-bluff-scan      <span class="co"># static bluff scanner over the full tree</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="fu">make</span> anti-bluff-anchors   <span class="co"># behaviour-anchor manifest validator</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="fu">make</span> anti-bluff-mutation  <span class="co"># go-mutesting full project (slow)</span></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="fu">make</span> challenge            <span class="co"># run every challenges/scripts/*.sh</span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a><span class="fu">make</span> qa-all               <span class="co"># challenge scripts + all anti-bluff gates</span></span></code></pre></div>
+<p><code>make qa-all</code> intentionally omits
+<code>vet</code>/<code>test</code> because some packages need own-org
+replace directives (declared in <code>helix-deps.yaml</code>, wired via
+<code>go.work</code>) that may be absent in a clean checkout. Run
+<code>go test ./...</code> separately once those siblings are
+present.</p>
+<h3 id="running-the-framework">Running the framework</h3>
+<div class="sourceCode" id="cb3"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="ex">bin/helixqa</span> run <span class="at">--banks</span> banks/ <span class="at">--platform</span> all</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="ex">bin/helixqa</span> list <span class="at">--banks</span> banks/ <span class="at">--platform</span> android</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="ex">bin/helixqa</span> report <span class="at">--input</span> qa-results <span class="at">--format</span> html</span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="ex">bin/helixqa</span> autonomous <span class="at">--project</span> /path/to/project <span class="at">--platforms</span> desktop <span class="dt">\</span></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">--env</span> .env <span class="at">--timeout</span> 30m <span class="at">--output</span> qa-results/</span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a><span class="ex">bin/helixqa</span> version</span></code></pre></div>
+<h2 id="architecture--code-organization">Architecture &amp; Code
 Organization</h2>
-<pre><code>helix_code/
-├── cmd/                          # Application entry points
-│   ├── server/main.go            # HTTP server entry point
-│   ├── cli/main.go               # Legacy flag-based CLI client
-│   ├── root.go                   # Cobra root command (`helix`)
-│   ├── main_commands.go          # `helix start`, `helix auto`
-│   ├── other_commands.go         # `helix server`, `helix version`, etc.
-│   ├── local-llm.go              # `helix local-llm` command tree
-│   ├── local-llm-advanced.go     # Advanced local-llm commands
-│   ├── helix-config/main.go      # Dedicated config management CLI
-│   ├── security-test/main.go     # Simulated security test runner
-│   ├── security-fix/main.go      # Security fix wrapper
-│   ├── security-fix-standalone/main.go  # Standalone security scanner
-│   ├── performance-optimization/main.go # Performance optimizer
-│   ├── performance-optimization-standalone/main.go # Standalone perf simulator
-│   └── config-test/main.go       # Config hot-reload test utility
-│
-├── internal/                     # Internal packages (~40 packages)
-│   ├── auth/                     # JWT authentication, bcrypt/argon2, sessions
-│   ├── llm/                      # LLM provider implementations (15+ providers)
-│   │   ├── providers/            # Per-provider HTTP clients
-│   │   ├── compression/          # Context compression
-│   │   └── vision/               # Vision/multimodal support
-│   ├── provider/                 # Provider abstractions
-│   ├── providers/                # Provider management
-│   ├── worker/                   # SSH-based worker pool, health checks
-│   ├── task/                     # Task queues, dependencies, checkpoints
-│   ├── server/                   # Gin HTTP server, routes, middleware
-│   ├── database/                 # PostgreSQL pgx pool, schema initialization
-│   ├── redis/                    # go-redis wrapper with graceful degradation
-│   ├── tools/                    # 40+ tool ecosystem registry
-│   │   ├── filesystem/           # fs_read, fs_write, fs_edit, glob, grep
-│   │   ├── shell/                # shell, shell_background with sandbox
-│   │   ├── web/                  # web_fetch, web_search
-│   │   ├── browser/              # browser_launch, browser_navigate, browser_screenshot
-│   │   ├── multiedit/            # Transactional multi-file editing
-│   │   └── git/                  # Git automation
-│   ├── editor/                   # Multi-format code editing with backups
-│   ├── memory/                   # Memory providers (in-mem, filesystem, Redis, etc.)
-│   ├── cognee/                   # Cognee.ai memory integration
-│   ├── context/                  # Hierarchical context management with TTL
-│   ├── notification/             # Multi-channel notification engine
-│   ├── mcp/                      # Model Context Protocol WebSocket server
-│   ├── workflow/                 # Development workflow execution
-│   ├── config/                   # Viper-based configuration management
-│   ├── event/                    # Pub/sub event bus
-│   ├── logging/                  # Structured logging wrapper
-│   ├── monitoring/               # Metric collection framework
-│   ├── security/                 # Security scanning (stubbed)
-│   ├── session/                  # Development session management
-│   ├── agent/                    # Agent orchestration
-│   ├── project/                  # Project management
-│   ├── rules/                    # Rules engine
-│   ├── hooks/                    # Hook system
-│   ├── focus/                    # Focus chain management
-│   ├── template/                 # Template system
-│   ├── persistence/              # State persistence
-│   ├── deployment/               # Deployment management
-│   ├── discovery/                # Service/model discovery
-│   ├── hardware/                 # Hardware abstraction
-│   ├── repomap/                  # Repository mapping
-│   ├── version/                  # Version management
-│   ├── fix/                      # Security fix engine
-│   ├── performance/              # Performance optimization
-│   ├── testutil/                 # Test utilities
-│   └── mocks/                    # Shared mocks
-│
-├── applications/                 # Platform-specific applications
-│   ├── desktop/                  # Fyne desktop app
-│   ├── terminal-ui/              # tview terminal UI
-│   ├── android/                  # Android app
-│   ├── ios/                      # iOS app
-│   ├── aurora-os/                # Aurora OS client
-│   └── harmony-os/               # Harmony OS client
-│
-├── api/                          # OpenAPI specification
-│   └── openapi.yaml              # Full REST API spec (OpenAPI 3.0.3)
-│
-├── config/                       # Configuration files
-│   ├── config.yaml               # Primary application config
-│   ├── production-config.yaml    # Enterprise production config
-│   ├── minimal-config.yaml       # Minimal test config (DB/Redis disabled)
-│   ├── test-config.yaml          # Test-specific config
-│   ├── working-config.yaml       # Working variant
-│   ├── azure_example.yaml        # Azure-specific example
-│   └── model-aliases.example.yaml# Model alias examples
-│
-├── tests/                        # New test framework
-│   ├── e2e/challenges/           # Challenge-based E2E tests
-│   └── automation/               # Hardware automation tests
-│
-├── test/                         # Legacy/parallel test suites
-│   ├── integration/              # Integration tests
-│   ├── e2e/                      # Legacy E2E tests
-│   ├── automation/               # Provider automation tests
-│   └── load/                     # Load tests
-│
-├── benchmarks/                   # Performance benchmarks
-├── security/                     # Security tests
-├── standalone_tests/             # Standalone CLI tests
-├── docker/                       # Docker assets and extended compose
-├── scripts/                      # Build and deployment scripts
-└── assets/                       # Logo and image assets</code></pre>
-<hr />
-<h2 id="verified-real-implementations">Verified Real
-Implementations</h2>
-<h3 id="auth-001-authentication-system-verified-real">AUTH-001:
-Authentication System (VERIFIED REAL)</h3>
-<p><strong>File</strong>: <code>internal/auth/auth.go</code> (~470
-lines) <strong>Assessment</strong>: Production-ready - User registration
-with validation - Password hashing with bcrypt + argon2 fallback - JWT
-token generation and verification (JWT v4) - Session management with
-crypto-random tokens - Constant-time comparison for timing attack
-prevention - Full test coverage in
-<code>internal/auth/auth_test.go</code> (~777 lines)</p>
-<h3 id="db-001-database-layer-verified-real">DB-001: Database Layer
-(VERIFIED REAL)</h3>
-<p><strong>File</strong>: <code>internal/database/database.go</code>
-<strong>Assessment</strong>: Production-ready - PostgreSQL connection
-pool via pgx/v5 - Full schema initialization (users, workers, tasks,
-projects, sessions, LLM providers, MCP servers, notifications, audit
-logs) - <code>DatabaseInterface</code> for testability - Graceful
-degradation when host is empty</p>
-<h3 id="srv-001-http-server-verified-real">SRV-001: HTTP Server
-(VERIFIED REAL)</h3>
-<p><strong>File</strong>: <code>internal/server/server.go</code>
-<strong>Assessment</strong>: Production-ready - Gin-based server with
-50+ routes across <code>/api/v1/</code> - JWT auth middleware, CORS,
-security headers - WebSocket endpoint for MCP - Health check with DB +
-Redis validation - Graceful shutdown (30s timeout)</p>
-<h3 id="llm-001-llm-providers-verified-real">LLM-001: LLM Providers
-(VERIFIED REAL)</h3>
-<p><strong>File</strong>: <code>internal/llm/</code> (~5000+ lines
-across providers) <strong>Assessment</strong>: Real HTTP clients -
-<code>AnthropicProvider</code> (~752 lines): Full SSE streaming, prompt
-caching, extended thinking, tool calls - <code>OpenAIProvider</code>
-(~431+ lines): Full HTTP API client - <code>ModelManager</code>:
-Multi-provider orchestration, selection strategy, fallback chain - 16
-provider subdirectories with real HTTP implementations -
-<strong>Note</strong>: The <code>internal/llm/</code> package is
-genuine. Bluff areas are at <code>cmd/cli/main.go</code> only.</p>
-<h3 id="wrk-001-worker-pool-verified-real">WRK-001: Worker Pool
-(VERIFIED REAL)</h3>
-<p><strong>File</strong>: <code>internal/worker/</code> (~800+ lines)
-<strong>Assessment</strong>: Real distributed worker management -
-<code>WorkerManager</code>: Register, heartbeat, assign tasks, complete
-tasks - SSH config parsing, capability matching, resource tracking -
-Health checks with TTL</p>
-<h3 id="tsk-001-task-management-verified-real">TSK-001: Task Management
-(VERIFIED REAL)</h3>
-<p><strong>File</strong>: <code>internal/task/</code> (~1000+ lines)
-<strong>Assessment</strong>: Real task lifecycle - Priority queues,
-dependency validation, checkpointing - Redis caching with graceful
-degradation - Retry logic and cleanup</p>
-<h3 id="wfl-001-workflow-engine-verified-real">WFL-001: Workflow Engine
-(VERIFIED REAL)</h3>
-<p><strong>File</strong>: <code>internal/workflow/</code> (~1100+ lines)
-<strong>Assessment</strong>: Real shell execution -
-<code>Executor</code> dispatches to real
-<code>exec.CommandContext()</code> calls - Security filtering via
-<code>isDangerousCommand()</code> (rm, dd, mkfs, fork bombs, etc.) - LLM
-integration with real <code>LLMRequest</code> - Supports Go, Node,
-Python, Rust project types</p>
-<h3 id="too-001-tools-ecosystem-verified-real">TOO-001: Tools Ecosystem
-(VERIFIED REAL)</h3>
-<p><strong>File</strong>: <code>internal/tools/</code> (~2000+ lines)
-<strong>Assessment</strong>: Real tool registry - 8 categories:
-filesystem, shell, web, browser, mapping, multiedit, confirmation,
-notebook - Real chromedp browser automation - Transactional multi-file
-editing</p>
-<h3 id="edt-001-code-editor-verified-real">EDT-001: Code Editor
-(VERIFIED REAL)</h3>
-<p><strong>File</strong>: <code>internal/editor/</code> (~600+ lines)
-<strong>Assessment</strong>: Real file I/O - Diff, whole-file,
-search/replace, line-based editors - Automatic file backup with
-<code>io.Copy</code> - <code>EditApplier</code> /
-<code>EditValidator</code> interfaces</p>
-<h3 id="not-001-notification-engine-verified-real">NOT-001: Notification
-Engine (VERIFIED REAL)</h3>
-<p><strong>File</strong>: <code>internal/notification/</code> (~800+
-lines) <strong>Assessment</strong>: Real HTTP/SMTP calls - Slack
-(webhook HTTP POST), Email (SMTP via <code>net/smtp</code>), Telegram
-(Bot API), Discord (webhook) - Yandex Messenger (OAuth API), Max
-(enterprise API) - Rate limiting, retry, queue, metrics</p>
-<h3 id="mcp-001-mcp-protocol-server-verified-real">MCP-001: MCP Protocol
-Server (VERIFIED REAL)</h3>
-<p><strong>File</strong>: <code>internal/mcp/</code> (~400+ lines)
-<strong>Assessment</strong>: Real WebSocket server - gorilla/websocket
-concurrent session handling - JSON-RPC-like message format - Tool
-execution dispatch</p>
-<h3 id="cfg-001-configuration-management-verified-real">CFG-001:
-Configuration Management (VERIFIED REAL)</h3>
-<p><strong>File</strong>: <code>internal/config/</code> (~1700+ lines)
-<strong>Assessment</strong>: Full Viper integration - Environment
-variable binding (<code>HELIX_*</code>) - Config file search
-(<code>.</code>, <code>$HOME/.helixcode</code>,
-<code>/etc/helixcode</code>) - Validation rules, default config creation
-- <code>ConfigManager</code> for load/save/merge</p>
-<h3 id="qa-001-helixqa-integration-verified-real">QA-001: HelixQA
-Integration (VERIFIED REAL)</h3>
-<p><strong>Files</strong>: <code>internal/helixqa/</code>,
-<code>internal/server/qa_handlers.go</code>,
-<code>applications/terminal-ui/main.go</code>
-<strong>Assessment</strong>: Full embedded QA engine with real session
-lifecycle - <code>Engine</code> struct manages QA sessions with map +
-sync.RWMutex - <code>StartSession()</code>,
-<code>CancelSession()</code>, <code>GetSession()</code>,
-<code>ListSessions()</code> with real state tracking - REST API:
-<code>POST /api/v1/qa/session</code>,
-<code>GET /api/v1/qa/session/:id/status</code>,
-<code>GET /api/v1/qa/session/:id/report</code>,
-<code>GET /api/v1/qa/session/:id/screenshot/:name</code>,
-<code>DELETE /api/v1/qa/session/:id</code> - CLI flags:
-<code>--qa-run</code>, <code>--qa-list</code>, <code>--qa-report</code>,
-<code>--qa-screenshot</code>, <code>--qa-cancel</code> - TUI dashboard
-with session table, stats panel, refresh/cancel actions - Screenshot
-pipeline: 8 platform engines (Linux, Web, iOS, Android, CLI, TUI, macOS,
-Windows) - Tests: <code>internal/helixqa/wrapper_test.go</code>,
-<code>internal/server/qa_handlers_test.go</code>,
-<code>pkg/screenshot/*_test.go</code></p>
-<hr />
-<h2 id="verified-bluff-stub-areas-must-fix">Verified Bluff &amp; Stub
-Areas (MUST FIX)</h2>
-<h3
-id="bluff-001-llm-generation-is-simulated-in-legacy-cli-critical-fixed">BLUFF-001:
-LLM Generation is Simulated in Legacy CLI (CRITICAL) — FIXED</h3>
-<p><strong>File</strong>: <code>cmd/cli/main.go</code> lines ~236-284
-<strong>Evidence</strong>: Previously returned
-<code>fmt.Sprintf("Generated response for: %s...", prompt)</code>
-without calling any provider. <strong>Fix</strong>:
-<code>handleGenerate()</code> now constructs a real
-<code>llm.LLMRequest</code> with user messages and calls
-<code>provider.Generate()</code> /
-<code>provider.GenerateStream()</code>. Errors are propagated to the
-user if the provider is unavailable. <strong>Verification</strong>:
-<code>go build -tags nogui ./cmd/cli/</code> compiles; provider call is
-real (returns error if Ollama/etc. is not running). <strong>Fix
-Priority</strong>: P0 — RESOLVED</p>
-<h3
-id="bluff-002-model-listing-is-hardcoded-in-legacy-cli-critical-fixed">BLUFF-002:
-Model Listing is Hardcoded in Legacy CLI (CRITICAL) — FIXED</h3>
-<p><strong>File</strong>: <code>cmd/cli/main.go</code> lines ~101-128
-<strong>Evidence</strong>: Previously only 3 hardcoded models. No
-dynamic discovery. <strong>Fix</strong>: Replaced with verifier-aware
-<code>handleListModels()</code> that queries LLMsVerifier adapter first,
-falls back to provider discovery, then to constitutional
-<code>FallbackModels</code> (7 models with scores and verification
-status). <strong>Verification</strong>:
-<code>go test -v ./internal/verifier/...</code> passes;
-<code>go build ./cmd/cli/...</code> compiles. <strong>Fix
-Priority</strong>: P0 — RESOLVED</p>
-<h3
-id="bluff-003-command-execution-is-simulated-in-legacy-cli-high-fixed">BLUFF-003:
-Command Execution is Simulated in Legacy CLI (HIGH) — FIXED</h3>
-<p><strong>File</strong>: <code>cmd/cli/main.go</code> lines ~310-324
-<strong>Evidence</strong>: Previously printed the command and slept for
-1 second without executing anything. <strong>Fix</strong>:
-<code>handleCommand()</code> uses
-<code>exec.CommandContext(ctx, "sh", "-c", command)</code> with real
-<code>os.Stdout</code>/<code>os.Stderr</code> redirection. Exit codes
-are reported. <strong>Verification</strong>:
-<code>go build -tags nogui ./cmd/cli/</code> compiles. <strong>Fix
-Priority</strong>: P0 — RESOLVED</p>
-<h3 id="stub-001-security-scanning-is-simulated">STUB-001: Security
-Scanning is Simulated</h3>
-<p><strong>File</strong>: <code>internal/security/security.go</code>
-(~132 lines) <strong>Evidence</strong>: <code>ScanFeature()</code>
-contains explicit “Simulate security scanning logic” comment. Always
-returns <code>Success=true, Score=95</code> with empty issues.
-<strong>Fix Priority</strong>: P1</p>
-<h3
-id="stub-002-memory-redismemcached-providers-store-locally">STUB-002:
-Memory Redis/Memcached Providers Store Locally</h3>
-<p><strong>File</strong>: <code>internal/memory/</code> (~1800+ lines)
-<strong>Evidence</strong>: <code>RedisMemoryProvider</code> and
-<code>MemcachedMemoryProvider</code> store data in local maps with
-comments like “Redis client would be used in production.” Connection
-config is parsed but not used. <strong>Fix Priority</strong>: P2</p>
-<h3
-id="stub-003-security-test-entry-point-is-entirely-simulated">STUB-003:
-Security-Test Entry Point is Entirely Simulated</h3>
-<p><strong>File</strong>: <code>cmd/security-test/main.go</code>
-<strong>Evidence</strong>: Hardcoded list of 12 simulated security
-tests. <code>simulateSecurityScan()</code> returns pre-canned issue
-lists per category. <strong>Fix Priority</strong>: P2</p>
-<h3 id="stub-004-several-helix-subcommands-are-print-only">STUB-004:
-Several <code>helix</code> Subcommands are Print-Only</h3>
-<p><strong>File</strong>: <code>cmd/other_commands.go</code>
-<strong>Evidence</strong>: <code>server</code>, <code>generate</code>,
-<code>test</code>, <code>worker</code>, <code>notify</code> commands are
-stubbed (print placeholder messages). <strong>Fix Priority</strong>:
-P2</p>
-<h3
-id="stub-005-several-helix-config-subcommands-are-placeholders">STUB-005:
-Several <code>helix-config</code> Subcommands are Placeholders</h3>
-<p><strong>File</strong>: <code>cmd/helix-config/main.go</code>
-<strong>Evidence</strong>: Many template/history/schema subcommands
-print placeholder messages. <strong>Fix Priority</strong>: P3</p>
-<h3
-id="bluff-004-llmsverifier-integration-is-stubbed-or-bypassed-critical">BLUFF-004:
-LLMsVerifier Integration is Stubbed or Bypassed (CRITICAL)</h3>
-<p><strong>File Pattern</strong>: <code>internal/verifier/*.go</code>
-containing empty structs, <code>// TODO</code>, or methods that return
-hardcoded data instead of calling the verifier.
-<strong>Evidence</strong>: - <code>VerificationService</code> methods
-return hardcoded <code>VerificationResult{OverallScore: 8.5}</code>
-instead of querying the verifier database -
-<code>ModelDiscoveryService</code> returns an empty slice instead of
-calling provider APIs - The verifier client returns fallback models
-without attempting a real HTTP call <strong>Fix Priority</strong>: P0 -
-Immediate <strong>Verification Command</strong>:</p>
-<div class="sourceCode" id="cb4"><pre
-class="sourceCode bash"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="fu">make</span> test-verifier-integration</span>
-<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="co"># This MUST pass with real verifier data, not mocked scores</span></span></code></pre></div>
-<h3
-id="bluff-005-provider-discovery-uses-hardcoded-env-var-names-high">BLUFF-005:
-Provider Discovery Uses Hardcoded Env Var Names (HIGH)</h3>
-<p><strong>File Pattern</strong>:
-<code>internal/verifier/startup.go</code> or provider adapter files
-containing hardcoded strings like <code>"OPENAI_API_KEY"</code> without
-checking <code>SupportedProviders[provider].EnvVars</code>. <strong>Fix
-Priority</strong>: P1 - High</p>
-<h3 id="bluff-006-model-capabilities-are-hardcoded-high">BLUFF-006:
-Model Capabilities Are Hardcoded (HIGH)</h3>
-<p><strong>File Pattern</strong>: <code>internal/llm/*.go</code>
-containing <code>SupportsToolUse: true</code> as a struct literal for
-specific models, or <code>Provider.GetCapabilities()</code> returning a
-static slice. <strong>Fix Priority</strong>: P1 - High
-<strong>Constitutional Impact</strong>: Violates CONST-041
-(MCP/LSP/ACP/Embedding/RAG/Skills/Plugins Integration Mandate).</p>
-<h3
-id="bluff-007-test-claims-integration-but-uses-mocked-verifier-critical">BLUFF-007:
-Test Claims Integration But Uses Mocked Verifier (CRITICAL)</h3>
-<p><strong>File Pattern</strong>: <code>*_test.go</code> files with
-<code>testify/mock</code> or <code>testMode: true</code> in non-unit
-test files. <strong>Fix Priority</strong>: P0 - Immediate
-<strong>Constitutional Impact</strong>: Violates CONST-038 (Model
-Provider Anti-Bluff Guarantee) and CONST-035 (Zero-Bluff Testing).</p>
-<h3 id="bluff-008-scoring-weights-do-not-sum-to-1.0-medium">BLUFF-008:
-Scoring Weights Do Not Sum to 1.0 (MEDIUM)</h3>
-<p><strong>File Pattern</strong>: <code>configs/verifier.yaml</code> or
-<code>internal/verifier/config.go</code> where scoring weights are
-misconfigured. <strong>Fix Priority</strong>: P2 - Medium</p>
-<h3
-id="bluff-009-metrics-endpoint-returns-hardcoded-zeros-critical-fixed">BLUFF-009:
-<code>/metrics</code> Endpoint Returns Hardcoded Zeros (CRITICAL) —
-FIXED</h3>
-<p><strong>File</strong>: <code>internal/server/handlers.go</code> lines
-~834-855 <strong>Evidence</strong>: All dynamic metrics (goroutines,
-memory, database connections) were hardcoded to <code>0</code>.
-<strong>Fix</strong>: <code>getMetrics()</code> now calls
-<code>runtime.ReadMemStats()</code>,
-<code>runtime.NumGoroutine()</code>, and <code>s.db.Pool.Stat()</code>
-to return real values. <strong>Fix Priority</strong>: P0 — RESOLVED</p>
-<h3
-id="bluff-010-multi-edit-conflict-detection-is-a-no-op-high-fixed">BLUFF-010:
-Multi-Edit Conflict Detection is a No-Op (HIGH) — FIXED</h3>
-<p><strong>File</strong>:
-<code>internal/tools/multiedit/transaction.go</code> lines ~352-369
-<strong>Evidence</strong>: <code>detectFileConflict()</code> always
-returned <code>nil, nil</code> with comment “For now, we’ll assume no
-conflicts.” <strong>Fix</strong>: Implemented real conflict detection —
-reads the file from disk, computes SHA-256, and compares against the
-<code>Checksum</code> field. Returns <code>ConflictModified</code> or
-<code>ConflictDeleted</code> when appropriate. <strong>Fix
-Priority</strong>: P1 — RESOLVED</p>
-<hr />
-<h2 id="configuration-management">Configuration Management</h2>
-<h3 id="primary-configuration">Primary Configuration</h3>
-<p>Main config at <code>config/config.yaml</code>:</p>
-<div class="sourceCode" id="cb5"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="fu">server</span><span class="kw">:</span></span>
-<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">address</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;0.0.0.0&quot;</span></span>
-<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">port</span><span class="kw">:</span><span class="at"> </span><span class="dv">8080</span></span>
-<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">read_timeout</span><span class="kw">:</span><span class="at"> </span><span class="dv">30</span></span>
-<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">write_timeout</span><span class="kw">:</span><span class="at"> </span><span class="dv">30</span></span>
-<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">idle_timeout</span><span class="kw">:</span><span class="at"> </span><span class="dv">300</span></span>
-<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">shutdown_timeout</span><span class="kw">:</span><span class="at"> </span><span class="dv">30</span></span>
-<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a><span class="fu">database</span><span class="kw">:</span></span>
-<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">host</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;&quot;</span><span class="co">          # Empty string disables PostgreSQL</span></span>
-<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">port</span><span class="kw">:</span><span class="at"> </span><span class="dv">5432</span></span>
-<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">user</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;helix&quot;</span></span>
-<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">password</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;${HELIX_DATABASE_PASSWORD}&quot;</span></span>
-<span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">dbname</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;helixcode_prod&quot;</span></span>
-<span id="cb5-15"><a href="#cb5-15" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">sslmode</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;disable&quot;</span></span>
-<span id="cb5-16"><a href="#cb5-16" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb5-17"><a href="#cb5-17" aria-hidden="true" tabindex="-1"></a><span class="fu">redis</span><span class="kw">:</span></span>
-<span id="cb5-18"><a href="#cb5-18" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">host</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;redis&quot;</span></span>
-<span id="cb5-19"><a href="#cb5-19" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">port</span><span class="kw">:</span><span class="at"> </span><span class="dv">6379</span></span>
-<span id="cb5-20"><a href="#cb5-20" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">password</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;${HELIX_REDIS_PASSWORD}&quot;</span></span>
-<span id="cb5-21"><a href="#cb5-21" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">db</span><span class="kw">:</span><span class="at"> </span><span class="dv">0</span></span>
-<span id="cb5-22"><a href="#cb5-22" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">enabled</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span>
-<span id="cb5-23"><a href="#cb5-23" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb5-24"><a href="#cb5-24" aria-hidden="true" tabindex="-1"></a><span class="fu">auth</span><span class="kw">:</span></span>
-<span id="cb5-25"><a href="#cb5-25" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">jwt_secret</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;${HELIX_AUTH_JWT_SECRET}&quot;</span></span>
-<span id="cb5-26"><a href="#cb5-26" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">token_expiry</span><span class="kw">:</span><span class="at"> </span><span class="dv">86400</span></span>
-<span id="cb5-27"><a href="#cb5-27" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">session_expiry</span><span class="kw">:</span><span class="at"> </span><span class="dv">604800</span></span>
-<span id="cb5-28"><a href="#cb5-28" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">bcrypt_cost</span><span class="kw">:</span><span class="at"> </span><span class="dv">12</span></span>
-<span id="cb5-29"><a href="#cb5-29" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb5-30"><a href="#cb5-30" aria-hidden="true" tabindex="-1"></a><span class="fu">workers</span><span class="kw">:</span></span>
-<span id="cb5-31"><a href="#cb5-31" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">health_check_interval</span><span class="kw">:</span><span class="at"> </span><span class="dv">30</span></span>
-<span id="cb5-32"><a href="#cb5-32" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">health_ttl</span><span class="kw">:</span><span class="at"> </span><span class="dv">120</span></span>
-<span id="cb5-33"><a href="#cb5-33" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">max_concurrent_tasks</span><span class="kw">:</span><span class="at"> </span><span class="dv">10</span></span>
-<span id="cb5-34"><a href="#cb5-34" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb5-35"><a href="#cb5-35" aria-hidden="true" tabindex="-1"></a><span class="fu">tasks</span><span class="kw">:</span></span>
-<span id="cb5-36"><a href="#cb5-36" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">max_retries</span><span class="kw">:</span><span class="at"> </span><span class="dv">3</span></span>
-<span id="cb5-37"><a href="#cb5-37" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">checkpoint_interval</span><span class="kw">:</span><span class="at"> </span><span class="dv">300</span></span>
-<span id="cb5-38"><a href="#cb5-38" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">cleanup_interval</span><span class="kw">:</span><span class="at"> </span><span class="dv">3600</span></span>
-<span id="cb5-39"><a href="#cb5-39" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb5-40"><a href="#cb5-40" aria-hidden="true" tabindex="-1"></a><span class="fu">llm</span><span class="kw">:</span></span>
-<span id="cb5-41"><a href="#cb5-41" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">default_provider</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;local&quot;</span></span>
-<span id="cb5-42"><a href="#cb5-42" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">max_tokens</span><span class="kw">:</span><span class="at"> </span><span class="dv">4096</span></span>
-<span id="cb5-43"><a href="#cb5-43" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">temperature</span><span class="kw">:</span><span class="at"> </span><span class="fl">0.7</span></span>
-<span id="cb5-44"><a href="#cb5-44" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">timeout</span><span class="kw">:</span><span class="at"> </span><span class="dv">30</span></span>
-<span id="cb5-45"><a href="#cb5-45" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">max_retries</span><span class="kw">:</span><span class="at"> </span><span class="dv">3</span></span>
-<span id="cb5-46"><a href="#cb5-46" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">providers</span><span class="kw">:</span></span>
-<span id="cb5-47"><a href="#cb5-47" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">&lt;name&gt;</span><span class="kw">:</span></span>
-<span id="cb5-48"><a href="#cb5-48" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">type</span><span class="kw">:</span><span class="at"> &lt;provider-type&gt;</span></span>
-<span id="cb5-49"><a href="#cb5-49" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">endpoint</span><span class="kw">:</span><span class="at"> &lt;url&gt;</span></span>
-<span id="cb5-50"><a href="#cb5-50" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">enabled</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span>
-<span id="cb5-51"><a href="#cb5-51" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">parameters</span><span class="kw">:</span></span>
-<span id="cb5-52"><a href="#cb5-52" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">timeout</span><span class="kw">:</span><span class="at"> </span><span class="fl">30.0</span></span>
-<span id="cb5-53"><a href="#cb5-53" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">max_retries</span><span class="kw">:</span><span class="at"> </span><span class="dv">3</span></span>
-<span id="cb5-54"><a href="#cb5-54" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">streaming_support</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span>
-<span id="cb5-55"><a href="#cb5-55" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">api_key</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;&quot;</span></span>
-<span id="cb5-56"><a href="#cb5-56" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">selection</span><span class="kw">:</span></span>
-<span id="cb5-57"><a href="#cb5-57" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">strategy</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;performance&quot;</span></span>
-<span id="cb5-58"><a href="#cb5-58" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">fallback_enabled</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span>
-<span id="cb5-59"><a href="#cb5-59" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">health_check_interval</span><span class="kw">:</span><span class="at"> </span><span class="dv">30</span></span>
-<span id="cb5-60"><a href="#cb5-60" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb5-61"><a href="#cb5-61" aria-hidden="true" tabindex="-1"></a><span class="fu">logging</span><span class="kw">:</span></span>
-<span id="cb5-62"><a href="#cb5-62" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">level</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;info&quot;</span></span>
-<span id="cb5-63"><a href="#cb5-63" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">format</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;text&quot;</span></span>
-<span id="cb5-64"><a href="#cb5-64" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">output</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;stdout&quot;</span></span>
-<span id="cb5-65"><a href="#cb5-65" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb5-66"><a href="#cb5-66" aria-hidden="true" tabindex="-1"></a><span class="fu">notifications</span><span class="kw">:</span></span>
-<span id="cb5-67"><a href="#cb5-67" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">enabled</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span>
-<span id="cb5-68"><a href="#cb5-68" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">rules</span><span class="kw">:</span></span>
-<span id="cb5-69"><a href="#cb5-69" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;...&quot;</span></span>
-<span id="cb5-70"><a href="#cb5-70" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">condition</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;type==error&quot;</span></span>
-<span id="cb5-71"><a href="#cb5-71" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">channels</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;slack&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;email&quot;</span><span class="kw">]</span></span>
-<span id="cb5-72"><a href="#cb5-72" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">priority</span><span class="kw">:</span><span class="at"> urgent</span></span>
-<span id="cb5-73"><a href="#cb5-73" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">enabled</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span>
-<span id="cb5-74"><a href="#cb5-74" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">channels</span><span class="kw">:</span></span>
-<span id="cb5-75"><a href="#cb5-75" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">slack</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="at"> enabled</span><span class="kw">,</span><span class="at"> webhook_url</span><span class="kw">,</span><span class="at"> channel</span><span class="kw">,</span><span class="at"> username</span><span class="kw">,</span><span class="at"> timeout </span><span class="kw">}</span></span>
-<span id="cb5-76"><a href="#cb5-76" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">telegram</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="at"> enabled</span><span class="kw">,</span><span class="at"> bot_token</span><span class="kw">,</span><span class="at"> chat_id</span><span class="kw">,</span><span class="at"> timeout </span><span class="kw">}</span></span>
-<span id="cb5-77"><a href="#cb5-77" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">email</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="at"> enabled</span><span class="kw">,</span><span class="at"> </span><span class="fu">smtp</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="at"> server</span><span class="kw">,</span><span class="at"> port</span><span class="kw">,</span><span class="at"> username</span><span class="kw">,</span><span class="at"> password</span><span class="kw">,</span><span class="at"> tls </span><span class="kw">},</span><span class="at"> recipients</span><span class="kw">,</span><span class="at"> timeout </span><span class="kw">}</span></span>
-<span id="cb5-78"><a href="#cb5-78" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">discord</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="at"> enabled</span><span class="kw">,</span><span class="at"> webhook_url</span><span class="kw">,</span><span class="at"> timeout </span><span class="kw">}</span></span></code></pre></div>
-<h3 id="environment-variables">Environment Variables</h3>
-<p><strong>Required for Production</strong>: -
-<code>HELIX_DATABASE_PASSWORD</code> -
-<code>HELIX_AUTH_JWT_SECRET</code> -
-<code>HELIX_REDIS_PASSWORD</code></p>
-<p><strong>LLM Provider Keys</strong> (as needed): -
-<code>OPENAI_API_KEY</code>, <code>ANTHROPIC_API_KEY</code>,
-<code>GEMINI_API_KEY</code>, <code>XAI_API_KEY</code>,
-<code>DEEPSEEK_API_KEY</code>, <code>GROQ_API_KEY</code>,
-<code>MISTRAL_API_KEY</code>, <code>COHERE_API_KEY</code>,
-<code>AZURE_OPENAI_API_KEY</code>, <code>AWS_ACCESS_KEY_ID</code> /
-<code>AWS_SECRET_ACCESS_KEY</code></p>
-<p><strong>Notification Integrations</strong>: -
-<code>HELIX_SLACK_WEBHOOK_URL</code> -
-<code>HELIX_TELEGRAM_BOT_TOKEN</code>,
-<code>HELIX_TELEGRAM_CHAT_ID</code> -
-<code>HELIX_EMAIL_SMTP_SERVER</code>, <code>HELIX_EMAIL_USERNAME</code>,
-<code>HELIX_EMAIL_PASSWORD</code> -
-<code>HELIX_DISCORD_WEBHOOK_URL</code></p>
-<hr />
-<h2 id="testing-strategy">Testing Strategy</h2>
-<h3 id="test-categories">Test Categories</h3>
+<pre><code>cmd/
+  helixqa/            CLI entry point (run, autonomous, http, replay,
+                      list, report, signoff, version, help)
+  helixqa-bridge/     device bridge (scrcpy-class capture)
+  helixqa-capture-*/  platform capture backends (linux, x11grab, kmsgrab)
+  helixqa-axtree-*/   accessibility-tree extraction (darwin, windows)
+  helixqa-lpips/      LPIPS perceptual-distance comparator
+  helixqa-dreamsim/   DreamSim perceptual-similarity comparator
+  helixqa-omniparser/ UI element parsing
+  helixqa-uitars/     UI-TARS vision navigation
+  recording-analyzer/ recorded-evidence content analysis
+  ocu-*/              on-screen-content / observe utilities
+pkg/
+  config/             configuration types + validation (.env-driven)
+  testbank/           YAML/JSON test-bank loading, platform/priority filter
+  detector/           crash/ANR detection (android.go, web.go, desktop.go)
+  validator/, validators/   step validation with evidence
+  evidence/           centralized evidence collection
+  ticket/             Markdown ticket generation for AI fix pipelines
+  reporter/           report generation (Markdown/HTML/JSON)
+  orchestrator/       main QA pipeline coordinator
+  autonomous/         SessionCoordinator, PlatformWorker, PhaseManager
+  navigator/, visionnav/   navigation engine + ADB/Playwright/X11 executors
+  issuedetector/      LLM-powered bug detection (visual/UX/a11y/functional)
+  session/, recordingqa/   session recording, timeline, video, recording QA
+  bridge/, bridges/, capture/   device bridges and frame capture
+  vision/, gpu/       vision analysis + GPU-accelerated comparison
+  planning/           test-plan generation (incl. Android TV Channels)
+  llm/                LLM client wiring
+  regression/, replay/   regression + ticket-replay surfaces</code></pre>
+<h2 id="autonomous-qa-session">Autonomous QA Session</h2>
+<p>The autonomous session (<code>pkg/autonomous</code>) runs in four
+phases:</p>
 <ol type="1">
-<li><strong>Unit tests</strong>: Mocks allowed, <code>*_test.go</code>,
-<code>-short</code> flag</li>
-<li><strong>Contract tests</strong>: Real API schemas, no mocks</li>
-<li><strong>Component tests</strong>: Real subsystems wired
-together</li>
-<li><strong>Integration tests</strong>: Full app with real dependencies
-(<code>-tags=integration</code>)</li>
-<li><strong>E2E challenges</strong>: Complete user workflows against
-real LLM APIs</li>
-<li><strong>Security tests</strong>: OWASP compliance</li>
-<li><strong>Performance tests</strong>: Benchmarks</li>
-<li><strong>Automation tests</strong>: Provider/hardware automation
-(<code>-tags=automation</code>)</li>
-<li><strong>Load tests</strong>: Stress testing</li>
+<li><strong>Setup</strong> — select LLMs via LLMsVerifier, build a
+feature map from project docs via DocProcessor, spawn CLI agents via
+LLMOrchestrator, initialize VisionEngine.</li>
+<li><strong>Doc-Driven Verification</strong> — platform workers verify
+every documented feature against the running app, capturing screenshots
+and video.</li>
+<li><strong>Curiosity-Driven Exploration</strong> — workers explore
+undiscovered areas, testing edge cases, empty inputs, rapid
+interactions, undocumented paths.</li>
+<li><strong>Report &amp; Cleanup</strong> — aggregate coverage, tickets,
+and navigation maps into Markdown/HTML/JSON reports with linked video
+timestamps.</li>
 </ol>
-<h3 id="anti-bluff-testing-rules">Anti-Bluff Testing Rules</h3>
+<p>External own-org modules it integrates (consumed by reference per
+<code>helix-deps.yaml</code>, never nested submodules per §11.4.28(C)):
+<code>LLMsVerifier</code> (LLM selection/scoring),
+<code>LLMOrchestrator</code> (headless CLI agent management),
+<code>LLMProvider</code>, <code>VisionEngine</code> (GoCV + LLM Vision),
+<code>DocProcessor</code> (doc loading + feature-map/coverage).</p>
+<h2 id="anti-bluff-testing-rules">Anti-Bluff Testing Rules</h2>
 <ul>
-<li>Unit tests: Mocks OK</li>
-<li><strong>ALL other tests: Real infrastructure ONLY</strong></li>
-<li>Every PASS guarantees <strong>Quality + Completion +
-Usability</strong></li>
-<li>Challenges fail on simulated/stubbed behavior</li>
-<li>No bare <code>t.Skip()</code> without
-<code>SKIP-OK: #&lt;ticket&gt;</code> marker</li>
+<li>Mocks, stubs, placeholders, <code>TODO</code>/<code>FIXME</code>,
+and "for now" code are permitted <strong>only</strong> in unit tests
+(§11.4.27). Every other test type — integration, e2e, full-automation,
+autonomous QA, Challenges — exercises the real system.</li>
+<li>Every advertised capability is anchored to an executable test in the
+behaviour-anchor manifest (<code>make anti-bluff-anchors</code>).</li>
+<li>Every new gate ships with a paired §1.1 mutation that makes the gate
+FAIL when the invariant is broken.</li>
+<li>A PASS for a user-visible behaviour MUST cite captured evidence
+(screenshot/video/logcat/report). A green line without evidence is a
+bluff and a release blocker.</li>
+<li><code>t.Skip()</code> requires a topology-justified reason
+(§11.4.3); a missing required topology is a SKIP-with-reason, never a
+PASS-by-default.</li>
 </ul>
-<h3 id="docker-test-infrastructure">Docker Test Infrastructure</h3>
+<h2 id="test-bank-conventions">Test-bank conventions</h2>
+<p>Banks under <code>banks/</code> are YAML (with optional JSON peers
+sharing the base name). Required top-level keys: <code>version</code>,
+<code>name</code>, <code>test_cases</code>. Per-test-case:
+<code>id</code> (<code>TC-XXX</code>), <code>name</code>,
+<code>category</code>, <code>priority</code>, <code>platforms</code>
+(subset of
+<code>[android, android_tv, web, desktop, ios, aurora_os, harmony_os]</code>),
+<code>steps[]</code> (<code>name</code> / <code>action</code> /
+<code>expected</code>), <code>tags[]</code>, optional
+<code>documentation_refs[]</code>. Banks describe structure, not prose —
+strings drive LLM prompts at runtime, so avoid hardcoded user-facing
+English.</p>
+<h2 id="configuration">Configuration</h2>
+<p>All runtime settings load from a <code>.env</code> file (copy
+<code>.env.example</code>). Key groups: master switch
+(enable/platforms/timeout/coverage target), LLMsVerifier strategy +
+thresholds, provider API keys, CLI-agent pool + binary paths, vision
+provider + SSIM threshold, recording (ffmpeg path, quality), and
+per-platform device/URL/process settings. Credentials are never
+committed (§11.4.10) — load them at runtime only.</p>
+<h2 id="code-style--conventions">Code Style &amp; Conventions</h2>
 <ul>
-<li><code>docker-compose.test.yml</code>: PostgreSQL 16, Redis 7,
-Memcached, Cognee, ChromaDB, Qdrant, Ollama, Prometheus, Grafana</li>
-<li><code>docker-compose.full-test.yml</code>: Complete stack with
-mock-LLM server, Selenium, ChromeDP, SSH server + 3 workers, Cognee,
-Weaviate, mock-Slack, multicast router</li>
+<li><strong>Go</strong>: constructor injection
+(<code>NewXxx(cfg)</code>), table-driven tests, <code>*_test.go</code>
+beside source, errors wrapped with <code>fmt.Errorf</code> +
+<code>%w</code>, <code>context.Context</code> cancellation respected in
+scans and sessions.</li>
+<li><strong>Concurrency</strong>: bound worker/capture parallelism; reap
+child processes and goroutines on cleanup; leave the target quiescent
+(§11.4.14).</li>
+<li><strong>Static analysis</strong>: <code>go vet ./...</code> clean
+before commit.</li>
 </ul>
-<h3 id="challenge-framework-testse2echallenges">Challenge Framework
-(<code>tests/e2e/challenges/</code>)</h3>
-<p>The most rigorous test system validates the project by having it
-<strong>generate real projects</strong> and testing them: -
-<strong>Challenge Definitions</strong>: JSON specs (ASCII art generator,
-CLI task manager, JSON validator, notes API, tic-tac-toe TUI, URL
-shortener) - <strong>Execution Flow</strong>: Load spec → Call real LLM
-API → Parse generated code → Compile → Test → Runtime validation -
-<strong>Validation Layers</strong>: Directory structure, code quality,
-compilation, testing, functionality, runtime validation with diverse
-data - <strong>Test Matrix</strong>: Supports CLI, TUI, REST, WebSocket
-interfaces across 15+ providers and worker pool distributions</p>
-<h3 id="test-scripts-summary">Test Scripts Summary</h3>
-<div class="sourceCode" id="cb6"><pre
-class="sourceCode bash"><code class="sourceCode bash"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Basic</span></span>
-<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="bu">cd</span> <span class="op">&lt;</span>project_root<span class="op">&gt;</span> <span class="kw">&amp;&amp;</span> <span class="fu">make</span> test</span>
-<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Full infrastructure (recommended for validation)</span></span>
-<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a><span class="fu">make</span> test-infra-up</span>
-<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a><span class="fu">make</span> test-complete</span>
-<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a><span class="fu">make</span> test-infra-down</span>
-<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a><span class="co"># Individual categories</span></span>
-<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a><span class="fu">make</span> test-unit-full</span>
-<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a><span class="fu">make</span> test-integration-full</span>
-<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a><span class="fu">make</span> test-e2e-full</span>
-<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a><span class="fu">make</span> test-security-full</span>
-<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a><span class="fu">make</span> test-load-full</span>
-<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-16"><a href="#cb6-16" aria-hidden="true" tabindex="-1"></a><span class="co"># Legacy scripts</span></span>
-<span id="cb6-17"><a href="#cb6-17" aria-hidden="true" tabindex="-1"></a><span class="ex">./run_tests.sh</span> <span class="at">--all</span></span>
-<span id="cb6-18"><a href="#cb6-18" aria-hidden="true" tabindex="-1"></a><span class="ex">./run_all_tests.sh</span></span>
-<span id="cb6-19"><a href="#cb6-19" aria-hidden="true" tabindex="-1"></a><span class="ex">./run_integration_tests.sh</span></span></code></pre></div>
-<hr />
-<h2 id="docker-deployment">Docker Deployment</h2>
-<h3 id="production-docker-compose.yml">Production
-(<code>docker-compose.yml</code>)</h3>
-<p>Services: helixcode-server (8080, 2222), postgres:15, redis:7, nginx
-(80, 443), prometheus (9090), grafana (3000)</p>
-<h3 id="quick-start">Quick Start</h3>
-<div class="sourceCode" id="cb7"><pre
-class="sourceCode bash"><code class="sourceCode bash"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="bu">cd</span> <span class="op">&lt;</span>project_root<span class="op">&gt;</span></span>
-<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="fu">cp</span> .env.example .env</span>
-<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Edit .env with secure passwords</span></span>
-<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a><span class="ex">docker</span> compose up <span class="at">-d</span></span>
-<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a><span class="ex">docker</span> compose ps</span>
-<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a><span class="ex">curl</span> http://localhost/health</span></code></pre></div>
-<h3 id="other-compose-files">Other Compose Files</h3>
+<h2 id="governance-pointers">Governance pointers</h2>
 <table>
-<colgroup>
-<col style="width: 40%" />
-<col style="width: 60%" />
-</colgroup>
 <thead>
 <tr>
-<th>File</th>
-<th>Purpose</th>
+<th>Document</th>
+<th>Authority</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><code>docker-compose-simple.yml</code></td>
-<td>Minimal dev (postgres + redis only)</td>
+<td><a href="CONSTITUTION.md"><code>CONSTITUTION.md</code></a></td>
+<td>Submodule-scoped anchors inherited from the Helix Constitution</td>
 </tr>
 <tr>
-<td><code>docker-compose.test.yml</code></td>
-<td>Integration/E2E testing stack</td>
+<td><a href="CLAUDE.md"><code>CLAUDE.md</code></a> / <a
+href="AGENTS.md"><code>AGENTS.md</code></a> / <a
+href="QWEN.md"><code>QWEN.md</code></a></td>
+<td>AI-agent operating manuals — same inheritance pointer + anti-bluff
+posture</td>
 </tr>
 <tr>
-<td><code>docker-compose.full-test.yml</code></td>
-<td>Zero-skip full test infrastructure</td>
+<td><a href="helix-deps.yaml"><code>helix-deps.yaml</code></a></td>
+<td>Own-org dependency manifest</td>
 </tr>
 <tr>
-<td><code>docker-compose.aurora-os.yml</code></td>
-<td>Security-focused Aurora OS platform</td>
+<td><a href="ARCHITECTURE.md"><code>ARCHITECTURE.md</code></a> / <a
+href="API_REFERENCE.md"><code>API_REFERENCE.md</code></a></td>
+<td>Architecture + API detail</td>
 </tr>
 <tr>
-<td><code>docker-compose.harmony-os.yml</code></td>
-<td>Distributed Harmony OS platform</td>
-</tr>
-<tr>
-<td><code>docker-compose.specialized-platforms.yml</code></td>
-<td>Combined Aurora + Harmony</td>
-</tr>
-<tr>
-<td><code>docker/docker-compose.yml</code></td>
-<td>Extended full-stack with Milvus, Elasticsearch, MLflow, Jaeger,
-Jupyter, Portainer</td>
+<td><a
+href="USER_GUIDE_AUTONOMOUS.md"><code>USER_GUIDE_AUTONOMOUS.md</code></a>
+/ <a
+href="VIDEO_COURSE_AUTONOMOUS.md"><code>VIDEO_COURSE_AUTONOMOUS.md</code></a></td>
+<td>Autonomous-QA-session tutorials</td>
 </tr>
 </tbody>
 </table>
-<h3 id="deployment-patterns">Deployment Patterns</h3>
+<h2 id="resources">Resources</h2>
 <ul>
-<li>Healthchecks on every service</li>
-<li>Docker profiles: <code>monitoring</code>, <code>distributed</code>,
-<code>with-redis</code>, <code>production</code>, <code>dev</code>,
-<code>server</code></li>
-<li>Isolated bridge networks per deployment</li>
-<li>Named persistent volumes for all stateful services</li>
-<li><code>.env</code> file for secrets</li>
+<li><code>README.md</code> — overview, install, usage, test-bank
+format.</li>
+<li><code>docs/</code> — architecture, anti-bluff posture, test-coverage
+matrix, behaviour anchors, user manual.</li>
+<li><code>Makefile</code> — authoritative list of build/test/anti-bluff
+targets.</li>
 </ul>
-<hr />
-<h2 id="code-style-development-conventions">Code Style &amp; Development
-Conventions</h2>
-<h3 id="go-conventions">Go Conventions</h3>
-<ul>
-<li>Standard Go formatting: <code>go fmt ./...</code></li>
-<li>Linting: <code>golangci-lint run ./...</code> (timeout 10m in
-CI)</li>
-<li>Vet: <code>go vet ./...</code></li>
-<li>Table-driven tests with <code>t.Run()</code> subtests</li>
-<li>Build tags for integration/automation tests:
-<code>//go:build integration</code></li>
-</ul>
-<h3 id="project-conventions">Project Conventions</h3>
-<ul>
-<li><strong>Always work from <code>helix_code/</code>
-subdirectory</strong></li>
-<li><strong>Generate logo assets before first build</strong>:
-<code>make logo-assets</code></li>
-<li><strong>Database/Redis optional</strong>: Disable by setting
-<code>database.host: ""</code></li>
-<li><strong>Environment variables override config file</strong></li>
-<li>Use <code>internal/</code> for all core packages; no
-<code>pkg/</code> directory in active use</li>
-<li>Error handling: explicit, no silent failures</li>
-<li>Concurrent access: use <code>sync.RWMutex</code> or channel
-patterns</li>
-</ul>
-<h3 id="api-conventions">API Conventions</h3>
-<ul>
-<li>REST API documented in <code>api/openapi.yaml</code> (OpenAPI
-3.0.3)</li>
-<li>Base path: <code>/api/v1</code></li>
-<li>Authentication: Bearer JWT via <code>Authorization</code>
-header</li>
-<li>Health endpoint: <code>GET /health</code> (no auth required)</li>
-</ul>
-<hr />
-<h2 id="security-considerations">Security Considerations</h2>
-<h3 id="verified-security-features">Verified Security Features</h3>
-<ul>
-<li>Password hashing: bcrypt (cost 12) with argon2 fallback</li>
-<li>JWT with constant-time comparison</li>
-<li>CORS middleware, security headers (X-Frame-Options, CSP, HSTS)</li>
-<li>Rate limiting support in production config</li>
-<li>Session timeout, concurrent session limits, IP binding options</li>
-<li>Workflow <code>isDangerousCommand()</code> filter blocks rm, dd,
-mkfs, fork bombs, etc.</li>
-<li>Input validation in auth and server packages</li>
-</ul>
-<h3 id="security-testing">Security Testing</h3>
-<ul>
-<li><code>security/security_test.go</code>: OWASP Top 10, SAST, DAST,
-credential scanning, TLS enforcement, input validation (path traversal,
-XSS, SQL injection, command injection, SSRF)</li>
-<li>File permission checks (0600 for configs)</li>
-</ul>
-<h3 id="known-security-stubs">Known Security Stubs</h3>
-<ul>
-<li><code>internal/security/security.go</code>: Simulated scanning
-(always returns clean)</li>
-<li><code>cmd/security-test/main.go</code>: Entirely simulated security
-tests</li>
-</ul>
-<h3 id="production-hardening">Production Hardening</h3>
-<ul>
-<li>Use <code>HELIX_AUTH_JWT_SECRET</code> with high entropy</li>
-<li>Enable PostgreSQL SSL in production</li>
-<li>Enable Redis authentication</li>
-<li>Configure CORS <code>allowed_origins</code> explicitly</li>
-<li>Enable audit logging</li>
-<li>Set <code>bcrypt_cost: 14</code> in production</li>
-</ul>
-<hr />
-<h2 id="common-issues">Common Issues</h2>
-<ol type="1">
-<li><strong>Build fails</strong>: Run <code>make logo-assets</code> then
-<code>make build</code></li>
-<li><strong>Database errors</strong>: Check
-<code>HELIX_DATABASE_PASSWORD</code></li>
-<li><strong>Worker SSH failures</strong>: Verify SSH key
-authentication</li>
-<li><strong>LLM timeouts</strong>: Check provider status and config</li>
-<li><strong>Redis connection failures</strong>: Check
-<code>HELIX_REDIS_PASSWORD</code> and <code>redis.enabled</code></li>
-<li><strong>Test skips</strong>: Ensure
-<code>SKIP-OK: #&lt;ticket&gt;</code> marker is present for any
-intentional skips</li>
-</ol>
-<hr />
-<h2 id="resources-references">Resources &amp; References</h2>
-<ul>
-<li><strong>Constitution</strong>: <code>CONSTITUTION.md</code></li>
-<li><strong>CLAUDE.md</strong>: <code>CLAUDE.md</code></li>
-<li><strong>Gap Analysis</strong>:
-<code>HELIXCODE_GAP_ANALYSIS.md</code></li>
-<li><strong>Zero-Bluff Plan</strong>:
-<code>HELIXCODE_ZERO_BLUFF_PLAN.md</code></li>
-<li><strong>Testing Strategy</strong>:
-<code>ANTI_BLUFF_TESTING_STRATEGY.md</code></li>
-<li><strong>OpenAPI Spec</strong>:
-<code>helix_code/api/openapi.yaml</code></li>
-<li><strong>Docker Guide</strong>:
-<code>helix_code/DOCKER_DEPLOYMENT.md</code></li>
-</ul>
-<hr />
-<!-- END host-power-management addendum (CONST-033) -->
-<!-- CONST-035 anti-bluff addendum (cascaded) -->
+</body>
+</html>
