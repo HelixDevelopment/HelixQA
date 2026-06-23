@@ -54,7 +54,7 @@ func TestEnsembleRecording_ThroughBank_RealPanoptic(t *testing.T) {
 	// --- prerequisite: ffmpeg + tesseract (the recvalidate OCR engine) ---
 	for _, bin := range []string{"ffmpeg", "tesseract"} {
 		if _, err := exec.LookPath(bin); err != nil {
-			t.Skipf("SKIP (§11.4.3): %s not on PATH — Panoptic recvalidate OCR cannot run", bin)
+			t.Skipf("SKIP (§11.4.3): %s not on PATH — Panoptic recvalidate OCR cannot run", bin) // SKIP-OK: #env-ffmpeg-tesseract-missing
 		}
 	}
 
@@ -64,7 +64,7 @@ func TestEnsembleRecording_ThroughBank_RealPanoptic(t *testing.T) {
 		mp4 = "/tmp/helix_recordings/video2-helix-agent-ensemble.mp4"
 	}
 	if fi, err := os.Stat(mp4); err != nil || fi.Size() == 0 {
-		t.Skipf("SKIP (§11.4.3): recorded ensemble mp4 absent/empty at %s (set %s to override)", mp4, envVideo)
+		t.Skipf("SKIP (§11.4.3): recorded ensemble mp4 absent/empty at %s (set %s to override)", mp4, envVideo) // SKIP-OK: #fixture-ensemble-mp4-absent
 	}
 
 	// --- prerequisite: the sibling Panoptic checkout (integration: local sibling) ---
@@ -76,10 +76,10 @@ func TestEnsembleRecording_ThroughBank_RealPanoptic(t *testing.T) {
 		panopticDir = filepath.Clean(filepath.Join(wd, "..", "..", "..", "..", "panoptic"))
 	}
 	if _, err := os.Stat(filepath.Join(panopticDir, "main.go")); err != nil {
-		t.Skipf("SKIP (§11.4.3): sibling Panoptic checkout not found at %s (set %s to override)", panopticDir, envPanopticDir)
+		t.Skipf("SKIP (§11.4.3): sibling Panoptic checkout not found at %s (set %s to override)", panopticDir, envPanopticDir) // SKIP-OK: #dep-sibling-panoptic-absent
 	}
 	if _, err := exec.LookPath("go"); err != nil {
-		t.Skipf("SKIP (§11.4.3): go toolchain not on PATH — cannot `go run` Panoptic")
+		t.Skipf("SKIP (§11.4.3): go toolchain not on PATH — cannot `go run` Panoptic") // SKIP-OK: #env-go-toolchain-missing
 	}
 
 	// --- load the TRV-ENSEMBLE-001 bank entry + extract recvalidate options ---
@@ -89,7 +89,7 @@ func TestEnsembleRecording_ThroughBank_RealPanoptic(t *testing.T) {
 		bankPath = filepath.Clean(filepath.Join(wd, "..", "..", "..", "banks", "tui-recording-validation.yaml"))
 	}
 	if _, err := os.Stat(bankPath); err != nil {
-		t.Skipf("SKIP (§11.4.3): recording-validation bank not found at %s (set %s to override)", bankPath, envBank)
+		t.Skipf("SKIP (§11.4.3): recording-validation bank not found at %s (set %s to override)", bankPath, envBank) // SKIP-OK: #fixture-recording-bank-absent
 	}
 	bf, err := testbank.LoadFile(bankPath)
 	if err != nil {
@@ -147,7 +147,7 @@ func TestEnsembleRecording_ThroughBank_RealPanoptic(t *testing.T) {
 	t.Logf("evidence paths: %v", res.EvidencePaths)
 
 	if res.Verdict == conduit.VerdictSkip {
-		t.Skipf("SKIP (§11.4.3): Panoptic oracle could not run end-to-end: %s", res.Reason)
+		t.Skipf("SKIP (§11.4.3): Panoptic oracle could not run end-to-end: %s", res.Reason) // SKIP-OK: #dep-panoptic-oracle-skip
 	}
 	if res.Verdict != conduit.VerdictPass {
 		t.Fatalf("the real ensemble recording must PASS through the bank + Panoptic oracle, got %s (%s)",

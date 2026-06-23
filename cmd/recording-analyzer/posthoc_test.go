@@ -364,7 +364,7 @@ func TestFFprobeFrameSource_RealClips(t *testing.T) {
 	ffmpeg, e1 := exec.LookPath("ffmpeg")
 	ffprobe, e2 := exec.LookPath("ffprobe")
 	if e1 != nil || e2 != nil {
-		t.Skipf("SKIP-OK real-backend: ffmpeg=%v ffprobe=%v (honest SKIP per §11.4.3)", e1, e2)
+		t.Skipf("SKIP-OK real-backend: ffmpeg=%v ffprobe=%v (honest SKIP per §11.4.3)", e1, e2) // SKIP-OK: #env-ffmpeg-ffprobe-missing
 	}
 	dir := t.TempDir()
 
@@ -374,7 +374,7 @@ func TestFFprobeFrameSource_RealClips(t *testing.T) {
 		"-f", "lavfi", "-i", "testsrc=size=128x128:rate=10:duration=2",
 		"-pix_fmt", "yuv420p", good)
 	if b, err := mk.CombinedOutput(); err != nil {
-		t.Skipf("SKIP-OK could not synthesize advancing clip: %v %s", err, b)
+		t.Skipf("SKIP-OK could not synthesize advancing clip: %v %s", err, b) // SKIP-OK: #env-ffmpeg-synth-failed
 	}
 
 	bad := filepath.Join(dir, "frozen.mp4")
@@ -383,7 +383,7 @@ func TestFFprobeFrameSource_RealClips(t *testing.T) {
 		"-f", "lavfi", "-i", "color=c=gray:size=128x128:rate=10:duration=2",
 		"-pix_fmt", "yuv420p", bad)
 	if b, err := mk2.CombinedOutput(); err != nil {
-		t.Skipf("SKIP-OK could not synthesize frozen clip: %v %s", err, b)
+		t.Skipf("SKIP-OK could not synthesize frozen clip: %v %s", err, b) // SKIP-OK: #env-ffmpeg-synth-failed
 	}
 
 	src := &FFprobeFrameSource{FFprobe: ffprobe, FFmpeg: ffmpeg, IntervalMS: 200}
