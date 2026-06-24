@@ -386,7 +386,7 @@
           "action": "http: POST /api/v1/auth/refresh",
           "expected": "401 Unauthorized missing authorization",
           "expect_status": 401,
-          "expect_body_contains": "authorization"
+          "expect_body_contains": "Authorization header required"
         }
       ],
       "tags": [

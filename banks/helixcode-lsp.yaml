@@ -56,6 +56,8 @@ test_cases:
       - name: "GET /api/v1/server/info lsp_enabled"
         action: "http: GET /api/v1/server/info"
         expected: "200 OK with features.lsp_enabled present"
+        _skip: true
+        _skip_reason: "SKIP-OK: LSP is unshipped in helix_code (internal/lsp absent); /server/info correctly omits features.lsp_enabled — asserting it would advertise a §11.4.122 bluff. Flip _skip:false when LSP ships."
         expect_status: 200
         expect_json_path: "$.info"
         expect_body_contains: "lsp_enabled"
