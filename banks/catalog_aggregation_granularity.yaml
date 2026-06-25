@@ -1,0 +1,226 @@
+version: '1.0'
+name: Catalogizer Aggregation Granularity - DEFECT-E Regression Guard
+description: 'Standing regression (11.4.135) + full-automation API challenge bank
+  guarding DEFECT-E (title-granular SMB-scan aggregation). DEFECT-E produced only 3
+  directory-level entities (movies/music/software) instead of one entity PER TITLE;
+  the fix is the title-granular leaf walk in
+  catalog-api/internal/services/aggregation_service.go (commit e748bba5). Each
+  challenge drives a REAL /api/v1 endpoint over live HTTP and scores PASS only on
+  positive captured evidence (the actual HTTP response body written under
+  qa-results/aggregation_granularity/<run-id>/). Anti-bluff per Helix Constitution
+  11.4 / 11.4.27 / 11.4.69 / 11.4.98 / 11.4.135 / 11.4.146: no mocks, no tautologies,
+  no metadata-only PASS; every challenge records the concrete API action it exercises
+  (record_action — the runner RecordAction binding) so a green score cannot be a
+  bluff; an unreachable API yields SKIP-with-reason (11.4.3), never a fabricated
+  PASS. The companion executable suite is
+  scripts/testing/full_automation/catalog_aggregation_granularity.sh and its guide is
+  docs/scripts/catalog_aggregation_granularity.md.'
+metadata:
+  author: vasic-digital
+  app: Catalogizer
+  version: 2.3.0
+  guards_defect: DEFECT-E
+  fixed_in: catalog-api/internal/services/aggregation_service.go@e748bba5
+  driver_script: scripts/testing/full_automation/catalog_aggregation_granularity.sh
+  evidence_root: qa-results/aggregation_granularity
+  endpoints_source: catalog-api/main.go
+test_cases:
+- id: AGG-API-001
+  name: Per-title movie entities exist (Inception, Interstellar, The Matrix)
+  category: functional
+  priority: critical
+  platforms:
+  - api
+  record_action: GET /api/v1/entities/browse/movie
+  steps:
+  - name: Browse movies
+    action: 'GET /api/v1/entities/browse/movie with Authorization: Bearer <session_token>'
+    expected: 200 OK with an items array containing three distinct per-title entities
+      titled exactly "Inception", "Interstellar", and "The Matrix" — NOT a single
+      collapsed "movies" folder entity
+    auth: bearer
+  - name: Record action and capture evidence
+    action: Runner RecordAction(GET /api/v1/entities/browse/movie); driver writes
+      agg_a_browse_movie.json and asserts each exact title is present
+    expected: Evidence file is non-empty and positively contains all three movie titles
+  tags:
+  - aggregation
+  - granularity
+  - movies
+  - per-title
+  - defect-e
+  - regression-guard
+  - anti-bluff
+  estimated_duration: 5s
+  expected_result: PASS only when the captured browse/movie body shows distinct
+    Inception + Interstellar + The Matrix entities (per-title, not a folder)
+- id: AGG-API-002
+  name: Movie titles resolve to media_type movie on detail
+  category: functional
+  priority: critical
+  platforms:
+  - api
+  record_action: GET /api/v1/entities/{id}
+  steps:
+  - name: Fetch detail per movie title
+    action: 'For each of Inception/Interstellar/The Matrix, GET /api/v1/entities/<id>
+      with Authorization: Bearer <session_token>'
+    expected: 200 OK with a detail body whose media_type field equals "movie" and
+      whose title matches the requested title
+    auth: bearer
+  - name: Record action and capture evidence
+    action: Runner RecordAction(GET /api/v1/entities/<id>); driver writes
+      agg_a2_detail_*.json and asserts media_type=movie for every title
+    expected: Each detail evidence file positively shows media_type "movie"
+  tags:
+  - aggregation
+  - media-type
+  - movies
+  - detail
+  - defect-e
+  - anti-bluff
+  estimated_duration: 8s
+  expected_result: PASS only when every movie title's detail evidence shows
+    media_type=movie (proving per-title entities, not a folder)
+- id: AGG-API-003
+  name: tv_show Breaking Bad is browsable
+  category: functional
+  priority: critical
+  platforms:
+  - api
+  record_action: GET /api/v1/entities/browse/tv_show
+  steps:
+  - name: Browse tv_shows
+    action: 'GET /api/v1/entities/browse/tv_show with Authorization: Bearer <session_token>'
+    expected: 200 OK with an items array containing a tv_show entity titled exactly
+      "Breaking Bad"
+    auth: bearer
+  - name: Record action and capture evidence
+    action: Runner RecordAction(GET /api/v1/entities/browse/tv_show); driver writes
+      agg_b_browse_tv.json and asserts "Breaking Bad" is present, capturing its id
+    expected: Evidence positively contains the Breaking Bad tv_show entity with an id
+  tags:
+  - aggregation
+  - granularity
+  - tv_show
+  - breaking-bad
+  - defect-e
+  - regression-guard
+  - anti-bluff
+  estimated_duration: 5s
+  expected_result: PASS only when the captured browse/tv_show body shows the Breaking
+    Bad tv_show entity
+- id: AGG-API-004
+  name: Breaking Bad has tv_season children Season 1 and Season 2
+  category: functional
+  priority: critical
+  platforms:
+  - api
+  record_action: GET /api/v1/entities/{breaking_bad_id}/children
+  steps:
+  - name: List Breaking Bad children
+    action: 'GET /api/v1/entities/<breaking_bad_id>/children with Authorization: Bearer <session_token>'
+    expected: 200 OK with children titled exactly "Season 1" and "Season 2", each
+      resolving to media_type tv_season on its detail
+    auth: bearer
+  - name: Record action and capture evidence
+    action: Runner RecordAction(GET /api/v1/entities/<id>/children); driver writes
+      agg_b2_seasons.json + agg_b2_season1_detail.json and asserts both seasons
+      present and media_type=tv_season
+    expected: Evidence positively shows Season 1 + Season 2 as tv_season children
+  tags:
+  - aggregation
+  - tv_season
+  - hierarchy
+  - children
+  - defect-e
+  - anti-bluff
+  estimated_duration: 8s
+  expected_result: PASS only when the captured children body shows Season 1 + Season 2
+    tv_season entities under Breaking Bad
+- id: AGG-API-005
+  name: Season has tv_episode descendants
+  category: functional
+  priority: high
+  platforms:
+  - api
+  record_action: GET /api/v1/entities/{season_id}/children
+  steps:
+  - name: List season children
+    action: 'GET /api/v1/entities/<season_id>/children with Authorization: Bearer <session_token>'
+    expected: 200 OK with one or more children whose detail media_type equals
+      "tv_episode"
+    auth: bearer
+  - name: Record action and capture evidence
+    action: Runner RecordAction(GET /api/v1/entities/<season_id>/children); driver
+      writes agg_b3_episodes.json + agg_b3_episode1_detail.json and asserts >=1
+      tv_episode descendant
+    expected: Evidence positively shows at least one tv_episode descendant of a season
+  tags:
+  - aggregation
+  - tv_episode
+  - hierarchy
+  - descendants
+  - defect-e
+  - anti-bluff
+  estimated_duration: 8s
+  expected_result: PASS only when the captured season-children evidence shows
+    tv_episode descendants
+- id: AGG-API-006
+  name: music_album The Dark Side of the Moon exists
+  category: functional
+  priority: high
+  platforms:
+  - api
+  record_action: GET /api/v1/entities/browse/music_album
+  steps:
+  - name: Browse music albums
+    action: 'GET /api/v1/entities/browse/music_album with Authorization: Bearer <session_token>'
+    expected: 200 OK with an items array containing a music_album titled exactly
+      "The Dark Side of the Moon", whose detail media_type equals "music_album"
+    auth: bearer
+  - name: Record action and capture evidence
+    action: Runner RecordAction(GET /api/v1/entities/browse/music_album); driver
+      writes agg_c_browse_album.json + agg_c_album_detail.json and asserts the album
+      is present with media_type=music_album
+    expected: Evidence positively shows the album entity with media_type music_album
+  tags:
+  - aggregation
+  - granularity
+  - music_album
+  - per-title
+  - defect-e
+  - regression-guard
+  - anti-bluff
+  estimated_duration: 6s
+  expected_result: PASS only when the captured browse/music_album body shows The Dark
+    Side of the Moon as a music_album entity
+- id: AGG-API-007
+  name: NEGATIVE - no directory-level folder entity (bug signature absent)
+  category: functional
+  priority: critical
+  platforms:
+  - api
+  record_action: GET /api/v1/entities?limit=500
+  steps:
+  - name: Sweep all entities
+    action: 'GET /api/v1/entities?limit=500&offset=0 with Authorization: Bearer <session_token>'
+    expected: 200 OK with NO entity titled (case-insensitively) movies / music /
+      series / software / tv / shows / tv_shows / videos — the directory-level
+      folder entities the pre-fix scan emitted (DEFECT-E signature)
+    auth: bearer
+  - name: Record action and capture evidence
+    action: Runner RecordAction(GET /api/v1/entities?limit=500); driver writes
+      agg_d_all_entities.json and asserts none of the folder-level titles are present
+    expected: Evidence positively shows the bug signature is absent across all entities
+  tags:
+  - aggregation
+  - granularity
+  - negative
+  - bug-signature
+  - defect-e
+  - regression-guard
+  - anti-bluff
+  estimated_duration: 5s
+  expected_result: PASS only when the captured full-entity sweep contains NO
+    directory-level folder entity (movies/music/series/software/tv/shows)

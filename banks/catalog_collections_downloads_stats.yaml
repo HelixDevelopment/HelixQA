@@ -1,0 +1,290 @@
+version: '1.0'
+name: Catalogizer Collections / Downloads / Stats - API
+description: 'Full-automation API challenge bank for the Catalogizer Go/Gin backend
+  covering the collections, downloads, recommendations and statistics surfaces that
+  the catalog_functional_matrix / catalog_auth_pagination / catalog_browse_favorites_resume
+  banks do not touch. Each challenge drives a REAL /api/v1 endpoint (every route
+  verified present in catalog-api/main.go) over live HTTP and scores PASS only on
+  positive captured evidence (the actual HTTP response body written under
+  qa-results/collections_downloads_stats/<run-id>/). Anti-bluff per Helix
+  Constitution 11.4 / 11.4.27 / 11.4.69 / 11.4.98: no mocks, no tautologies, no
+  metadata-only PASS; an unreachable API yields SKIP-with-reason (11.4.3), never a
+  fabricated PASS. The companion executable suite is
+  scripts/testing/full_automation/catalog_collections_downloads_stats.sh and its
+  guide is docs/scripts/catalog_collections_downloads_stats.md.'
+metadata:
+  author: vasic-digital
+  app: Catalogizer
+  version: 2.3.0
+  driver_script: scripts/testing/full_automation/catalog_collections_downloads_stats.sh
+  evidence_root: qa-results/collections_downloads_stats
+  endpoints_source: catalog-api/main.go
+test_cases:
+- id: CDS-API-001
+  name: Authenticated collections list returns items and total
+  category: functional
+  priority: high
+  platforms:
+  - api
+  steps:
+  - name: List collections
+    action: 'GET /api/v1/collections?limit=24&offset=0 with Authorization: Bearer <session_token>'
+    expected: 200 OK with JSON containing an items array and a total field
+    auth: bearer
+  - name: Capture evidence
+    action: Driver writes c1_collections.json and asserts status 200 + items + total
+    expected: Evidence shows HTTP 200 with items[] and total
+  tags:
+  - collections
+  - browse
+  - authenticated
+  - anti-bluff
+  estimated_duration: 5s
+  expected_result: PASS only when /api/v1/collections (main.go L1410) returns 200 with the items+total shape in captured evidence
+- id: CDS-API-002
+  name: Unauthenticated collections access is rejected with 401
+  category: security
+  priority: critical
+  platforms:
+  - api
+  steps:
+  - name: List collections without a token
+    action: GET /api/v1/collections with NO Authorization header
+    expected: 401 Unauthorized (the /api/v1 group is gated by RequireAuth, main.go L1107)
+    auth: none
+  - name: Capture evidence
+    action: Driver writes c2_collections_unauth.json and asserts status 401
+    expected: Evidence shows HTTP 401 with an Authorization-required error body
+  tags:
+  - collections
+  - auth
+  - negative
+  - access-control
+  - anti-bluff
+  estimated_duration: 5s
+  expected_result: PASS only when collections access without a token is rejected with 401 in the captured evidence
+- id: CDS-API-003
+  name: Collection create then get-by-id then delete (full self-cleaning cycle)
+  category: functional
+  priority: critical
+  platforms:
+  - api
+  steps:
+  - name: Create collection
+    action: POST /api/v1/collections with body {"name":"qa-cds-<run-id>","description":"automation test collection"}
+    expected: 200/201 with a created collection id
+    auth: bearer
+  - name: Get collection by id contains the created name
+    action: GET /api/v1/collections/<id> with auth token
+    expected: 200 OK whose body positively contains the created collection name
+    auth: bearer
+  - name: Delete collection (self-cleaning)
+    action: DELETE /api/v1/collections/<id> with auth token
+    expected: 200 OK / 204 No Content
+    auth: bearer
+  - name: Capture evidence
+    action: Driver writes c3a_coll_create.json, c3b_coll_get.json, c3c_coll_delete.json
+    expected: get-by-id evidence positively shows the created name; removal succeeds
+  tags:
+  - collections
+  - crud
+  - lifecycle
+  - self-cleaning
+  - anti-bluff
+  estimated_duration: 10s
+  expected_result: PASS only when create returns an id, get-by-id positively contains the created name, and delete succeeds — all in captured evidence (main.go L1411/1412/1414)
+- id: CDS-API-004
+  name: Download archive validation path is reachable and rejects empty paths
+  category: functional
+  priority: high
+  platforms:
+  - api
+  steps:
+  - name: Request archive with empty paths
+    action: POST /api/v1/download/archive with body {"paths":[],"format":"zip"} and auth token
+    expected: 400 Bad Request with an error body (empty paths rejected) — or 200 if the route archives nothing
+    auth: bearer
+  - name: Capture evidence
+    action: Driver writes d1_download_archive.json and asserts status 400 + error (or 200 reachable)
+    expected: Evidence shows the /download/archive route is genuinely live (not phantom) and validates input
+  tags:
+  - downloads
+  - archive
+  - validation
+  - negative
+  - anti-bluff
+  estimated_duration: 5s
+  expected_result: PASS only when /api/v1/download/archive (main.go L1125) returns 400+error for empty paths (or 200 reachable) in captured evidence
+- id: CDS-API-005
+  name: Recommendations root returns an items list
+  category: functional
+  priority: high
+  platforms:
+  - api
+  steps:
+  - name: Get recommendations root
+    action: GET /api/v1/recommendations?limit=10 with auth token
+    expected: 200 OK with an items array (trending default list)
+    auth: bearer
+  - name: Capture evidence
+    action: Driver writes r1_recommendations.json and asserts status 200 + items
+    expected: Evidence shows HTTP 200 and an items array
+  tags:
+  - recommendations
+  - trending
+  - list
+  - authenticated
+  - anti-bluff
+  estimated_duration: 5s
+  expected_result: PASS only when /api/v1/recommendations (main.go L1587) returns 200 with an items array in captured evidence
+- id: CDS-API-006
+  name: Recommendations trending returns items with time_range
+  category: functional
+  priority: high
+  platforms:
+  - api
+  steps:
+  - name: Get trending recommendations
+    action: GET /api/v1/recommendations/trending?limit=10&time_range=week with auth token
+    expected: 200 OK with an items array and a time_range field
+    auth: bearer
+  - name: Capture evidence
+    action: Driver writes r2_rec_trending.json and asserts status 200 + items + time_range
+    expected: Evidence shows HTTP 200 with items[] and time_range
+  tags:
+  - recommendations
+  - trending
+  - authenticated
+  - anti-bluff
+  estimated_duration: 5s
+  expected_result: PASS only when /api/v1/recommendations/trending (main.go L1223) returns 200 with items+time_range in captured evidence
+- id: CDS-API-007
+  name: Recommendations by-type returns a categorised recommendations object
+  category: functional
+  priority: medium
+  platforms:
+  - api
+  steps:
+  - name: Get recommendations by type
+    action: GET /api/v1/recommendations/by-type with auth token
+    expected: 200 OK with a recommendations object keyed by media type
+    auth: bearer
+  - name: Capture evidence
+    action: Driver writes r3_rec_bytype.json and asserts status 200 + recommendations
+    expected: Evidence shows HTTP 200 with a recommendations object
+  tags:
+  - recommendations
+  - by-type
+  - authenticated
+  - anti-bluff
+  estimated_duration: 5s
+  expected_result: PASS only when /api/v1/recommendations/by-type (main.go L1591) returns 200 with a recommendations object in captured evidence
+- id: CDS-API-008
+  name: Overall statistics return success and a data payload
+  category: functional
+  priority: high
+  platforms:
+  - api
+  steps:
+  - name: Get overall stats
+    action: GET /api/v1/stats/overall with auth token
+    expected: 200 OK with success=true and a data object (total_files, total_size, ...)
+    auth: bearer
+  - name: Capture evidence
+    action: Driver writes s1_stats_overall.json and asserts status 200 + success + data
+    expected: Evidence shows HTTP 200 with success and a data payload
+  tags:
+  - stats
+  - overall
+  - authenticated
+  - anti-bluff
+  estimated_duration: 5s
+  expected_result: PASS only when /api/v1/stats/overall (main.go L1253) returns 200 with success+data in captured evidence
+- id: CDS-API-009
+  name: Scan statistics return success and a data payload
+  category: functional
+  priority: medium
+  platforms:
+  - api
+  steps:
+  - name: Get scan stats
+    action: GET /api/v1/stats/scans with auth token
+    expected: 200 OK with success=true and a data payload (scan history)
+    auth: bearer
+  - name: Capture evidence
+    action: Driver writes s2_stats_scans.json and asserts status 200 + data
+    expected: Evidence shows HTTP 200 with a data payload
+  tags:
+  - stats
+  - scans
+  - scan-history
+  - authenticated
+  - anti-bluff
+  estimated_duration: 5s
+  expected_result: PASS only when /api/v1/stats/scans (main.go L1261) returns 200 with success+data in captured evidence
+- id: CDS-API-010
+  name: Scan-history alias returns history list and count
+  category: functional
+  priority: medium
+  platforms:
+  - api
+  steps:
+  - name: Get scan history alias
+    action: GET /api/v1/stats/scan-history with auth token
+    expected: 200 OK with a history array and a count field
+    auth: bearer
+  - name: Capture evidence
+    action: Driver writes s3_stats_scan_history.json and asserts status 200 + history + count
+    expected: Evidence shows HTTP 200 with history[] and count
+  tags:
+  - stats
+  - scan-history
+  - alias
+  - authenticated
+  - anti-bluff
+  estimated_duration: 5s
+  expected_result: PASS only when /api/v1/stats/scan-history (main.go L1672) returns 200 with history+count in captured evidence
+- id: CDS-API-011
+  name: Popular media returns items and total
+  category: functional
+  priority: high
+  platforms:
+  - api
+  steps:
+  - name: Get popular media
+    action: GET /api/v1/media/popular?limit=10 with auth token
+    expected: 200 OK with an items array and a total field (favourite-count ranked)
+    auth: bearer
+  - name: Capture evidence
+    action: Driver writes m1_media_popular.json and asserts status 200 + items + total
+    expected: Evidence shows HTTP 200 with items[] and total
+  tags:
+  - media
+  - popular
+  - list
+  - authenticated
+  - anti-bluff
+  estimated_duration: 5s
+  expected_result: PASS only when /api/v1/media/popular (main.go L1139) returns 200 with items+total in captured evidence
+- id: CDS-API-012
+  name: Recent media oversized limit is clamped without error (edge case)
+  category: functional
+  priority: medium
+  platforms:
+  - api
+  steps:
+  - name: Request recent media with an out-of-range limit
+    action: GET /api/v1/media/recent?limit=99999 with auth token
+    expected: 200 OK with items + total — the oversized limit is clamped to the default, no 500
+    auth: bearer
+  - name: Capture evidence
+    action: Driver writes m2_media_recent_clamp.json and asserts status 200 + items + total
+    expected: Evidence shows HTTP 200 with a well-formed body despite the oversized limit
+  tags:
+  - media
+  - recent
+  - limit-clamp
+  - edge-case
+  - anti-bluff
+  estimated_duration: 5s
+  expected_result: PASS only when /api/v1/media/recent (main.go L1138) clamps an oversized limit and returns 200 with items+total in captured evidence
