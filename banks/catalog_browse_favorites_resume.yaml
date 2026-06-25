@@ -1,0 +1,306 @@
+version: '1.0'
+name: Catalogizer Browse + Favorites + Resume Lifecycle - API
+description: 'Full-automation API browse/filter/search and favorites/resume-lifecycle
+  challenge bank for the Catalogizer Go/Gin backend. Each challenge drives a REAL
+  /api/v1 endpoint over live HTTP and scores PASS only on positive captured evidence
+  (the actual HTTP response body written under qa-results/browse_filter_search/<run-id>/
+  or qa-results/favorites_resume_lifecycle/<run-id>/). The favorites and resume
+  challenges assert observable STATE DELTAS — an added favorite must appear in the
+  listing and disappear after removal; a written resume position must read back as
+  exactly that position. Anti-bluff per Helix Constitution 11.4 / 11.4.27 / 11.4.69
+  / 11.4.98: no mocks, no tautologies, no metadata-only PASS; an unreachable API or
+  absent data-precondition yields SKIP-with-reason (11.4.3), never a fabricated
+  PASS. The companion executable suites are
+  scripts/testing/full_automation/catalog_browse_filter_search.sh and
+  scripts/testing/full_automation/catalog_favorites_resume_lifecycle.sh, with guides
+  docs/scripts/catalog_browse_filter_search.md and
+  docs/scripts/catalog_favorites_resume_lifecycle.md.'
+metadata:
+  author: vasic-digital
+  app: Catalogizer
+  version: 2.3.0
+  driver_scripts:
+  - scripts/testing/full_automation/catalog_browse_filter_search.sh
+  - scripts/testing/full_automation/catalog_favorites_resume_lifecycle.sh
+  evidence_roots:
+  - qa-results/browse_filter_search
+  - qa-results/favorites_resume_lifecycle
+  endpoints_source: catalog-api/main.go
+test_cases:
+- id: BFR-API-001
+  name: Authenticated entities default browse returns items + total shape
+  category: functional
+  priority: high
+  platforms:
+  - api
+  steps:
+  - name: List entities (default browse)
+    action: 'GET /api/v1/entities with Authorization: Bearer <session_token>'
+    expected: 200 OK with JSON containing an items array and a total field
+    auth: bearer
+  - name: Capture evidence
+    action: Driver (catalog_browse_filter_search.sh) writes b1_entities_default.json and asserts status 200 + items + total
+    expected: Evidence file exists, non-empty, shows HTTP 200 with items[] and total
+  tags:
+  - entities
+  - browse
+  - authenticated
+  - anti-bluff
+  estimated_duration: 5s
+  expected_result: PASS only when /api/v1/entities returns 200 with the items+total shape in captured evidence
+- id: BFR-API-002
+  name: Entities limit=1 filter is honoured (at most one item returned)
+  category: functional
+  priority: high
+  platforms:
+  - api
+  steps:
+  - name: List entities with limit=1
+    action: 'GET /api/v1/entities?limit=1&offset=0 with Authorization: Bearer <session_token>'
+    expected: 200 OK with an items array whose length is at most 1
+    auth: bearer
+  - name: Capture evidence + assert length
+    action: Driver writes b2_entities_limit.json and asserts the returned items array length <= 1 (jq present)
+    expected: Evidence shows HTTP 200 and at most one item, proving the limit param is honoured
+  tags:
+  - entities
+  - filter
+  - pagination
+  - limit
+  - anti-bluff
+  estimated_duration: 5s
+  expected_result: PASS only when limit=1 is observably honoured (<=1 item) in captured evidence
+- id: BFR-API-003
+  name: Entities media_type filter returns items + total
+  category: functional
+  priority: medium
+  platforms:
+  - api
+  steps:
+  - name: List entities filtered by media_type
+    action: 'GET /api/v1/entities?media_type=<CATALOGIZER_MEDIA_TYPE>&limit=10 with auth token'
+    expected: 200 OK with an items array and a total field for the filtered query
+    auth: bearer
+  - name: Capture evidence
+    action: Driver writes b3_entities_type.json and asserts status 200 + items + total
+    expected: Evidence shows HTTP 200 with items[] and total for the media_type filter
+  tags:
+  - entities
+  - filter
+  - media-type
+  - authenticated
+  - anti-bluff
+  estimated_duration: 5s
+  expected_result: PASS only when the media_type-filtered /api/v1/entities returns 200 with items+total in captured evidence
+- id: BFR-API-004
+  name: Search with a query term returns a results array
+  category: functional
+  priority: high
+  platforms:
+  - api
+  steps:
+  - name: Search
+    action: GET /api/v1/search?q=<CATALOGIZER_SEARCH_QUERY> with auth token
+    expected: 200 OK with a results array (possibly empty)
+    auth: bearer
+  - name: Capture evidence
+    action: Driver writes s1_search_results.json and asserts status 200 + results key
+    expected: Evidence shows HTTP 200 and a results array
+  tags:
+  - search
+  - query
+  - authenticated
+  - anti-bluff
+  estimated_duration: 5s
+  expected_result: PASS only when /api/v1/search returns 200 with a results array in captured evidence
+- id: BFR-API-005
+  name: Search with an empty query is handled deterministically (never 5xx)
+  category: functional
+  priority: high
+  platforms:
+  - api
+  steps:
+  - name: Search with empty query
+    action: GET /api/v1/search?q= with auth token
+    expected: 200 OK with a (possibly empty) results array, OR 400 client error — never a 5xx crash
+    auth: bearer
+  - name: Capture evidence
+    action: Driver writes s2_search_empty.json and asserts 200+results OR 400; a 5xx/transport-failure FAILs
+    expected: Evidence shows the empty query was handled cleanly, proving no unguarded edge-case crash
+  tags:
+  - search
+  - edge-case
+  - empty-query
+  - robustness
+  - anti-bluff
+  estimated_duration: 5s
+  expected_result: PASS only when an empty search query is handled with 200+results or 400 in captured evidence — never a 5xx
+- id: BFR-API-006
+  name: Media-item detail fetch returns a detail body
+  category: functional
+  priority: medium
+  platforms:
+  - api
+  steps:
+  - name: Fetch media detail
+    action: 'GET /api/v1/media/<CATALOGIZER_MEDIA_ID> with Authorization: Bearer <session_token>'
+    expected: 200 OK with a detail body carrying id/title (or 404 honest data-precondition SKIP)
+    auth: bearer
+  - name: Capture evidence
+    action: Driver writes d1_media_detail.json and asserts status 200 + a detail field
+    expected: Evidence shows HTTP 200 with a detail field, or an honest 404 SKIP when the id is absent
+  tags:
+  - media
+  - detail
+  - authenticated
+  - anti-bluff
+  estimated_duration: 5s
+  expected_result: PASS only when /api/v1/media/:id returns 200 with a detail body in captured evidence; 404 is an honest SKIP, never a PASS
+- id: BFR-API-007
+  name: Popular media discovery feed returns a list-shaped body
+  category: functional
+  priority: medium
+  platforms:
+  - api
+  steps:
+  - name: Get popular media
+    action: 'GET /api/v1/media/popular?limit=10 with Authorization: Bearer <session_token>'
+    expected: 200 OK with a list-shaped body (media/items/data/results array)
+    auth: bearer
+  - name: Capture evidence
+    action: Driver writes p1_media_popular.json and asserts status 200 + list shape
+    expected: Evidence shows HTTP 200 and a list-bearing key or top-level array
+  tags:
+  - media
+  - popular
+  - discovery
+  - list
+  - authenticated
+  - anti-bluff
+  estimated_duration: 5s
+  expected_result: PASS only when /api/v1/media/popular returns 200 with a list-shaped body in captured evidence
+- id: BFR-API-008
+  name: Favorites add then listing positively CONTAINS the added entity
+  category: functional
+  priority: critical
+  platforms:
+  - api
+  steps:
+  - name: Add favorite
+    action: POST /api/v1/favorites with body {"entity_id":<id>,"entity_type":"movie"}
+    expected: 200 added (or 409 already-in-favorites on idempotent re-run)
+    auth: bearer
+  - name: List favorites contains the added entity
+    action: GET /api/v1/favorites with auth token
+    expected: 200 OK with a favorites array that observably contains the added entity_id
+    auth: bearer
+  - name: Capture evidence
+    action: Driver (catalog_favorites_resume_lifecycle.sh) writes f1_fav_add.json and f2_fav_list_present.json
+    expected: f2 evidence positively shows the added entity_id in the favorites listing
+  tags:
+  - favorites
+  - add
+  - state-delta
+  - present
+  - anti-bluff
+  estimated_duration: 8s
+  expected_result: PASS only when add is accepted AND the favorites listing positively contains the added entity_id in captured evidence
+- id: BFR-API-009
+  name: Favorites remove then listing confirms the entity is ABSENT
+  category: functional
+  priority: critical
+  platforms:
+  - api
+  steps:
+  - name: Remove favorite
+    action: DELETE /api/v1/favorites/movie/<id> with auth token
+    expected: 200 OK / 204 No Content
+    auth: bearer
+  - name: List favorites no longer contains the entity
+    action: GET /api/v1/favorites with auth token
+    expected: 200 OK with a favorites array that no longer contains the removed entity_id
+    auth: bearer
+  - name: Capture evidence
+    action: Driver writes f3_fav_remove.json and f4_fav_list_absent.json
+    expected: f4 evidence positively shows the removed entity_id is gone — the deletion took observable effect
+  tags:
+  - favorites
+  - remove
+  - state-delta
+  - absent
+  - self-cleaning
+  - anti-bluff
+  estimated_duration: 8s
+  expected_result: PASS only when removal succeeds AND the favorites listing observably no longer contains the entity_id in captured evidence
+- id: BFR-API-010
+  name: Playback session start returns a session_id
+  category: functional
+  priority: critical
+  platforms:
+  - api
+  steps:
+  - name: Start playback session
+    action: POST /api/v1/playback/sessions/start with body {"media_item_id":<id>,"position_unit":"seconds","start_position":0}
+    expected: 200 OK with a usable session_id (or 404/500 honest media-precondition SKIP)
+    auth: bearer
+  - name: Capture evidence + extract session_id
+    action: Driver writes r1_resume_start.json and extracts session_id for the progress/end/read steps
+    expected: Evidence shows HTTP 200 with a session_id, reused by BFR-API-011..012
+  tags:
+  - playback
+  - sessions
+  - start
+  - lifecycle
+  - anti-bluff
+  estimated_duration: 5s
+  expected_result: PASS only when playback start returns 200 with a session_id in captured evidence; 404/500 is an honest media-precondition SKIP
+- id: BFR-API-011
+  name: Playback progress and end record the position without completing
+  category: functional
+  priority: high
+  platforms:
+  - api
+  steps:
+  - name: Report progress to N seconds
+    action: POST /api/v1/playback/sessions/progress with body {"session_id":<sid>,"end_position":<N>,"total_amount":<N>}
+    expected: 200 OK
+    auth: bearer
+  - name: End session at N seconds, not completed
+    action: POST /api/v1/playback/sessions/end with body {"session_id":<sid>,"end_position":<N>,"total_amount":<N>,"completed":false}
+    expected: 200 OK
+    auth: bearer
+  - name: Capture evidence
+    action: Driver writes r2_resume_progress.json and r3_resume_end.json
+    expected: Both steps return 200 in captured evidence, leaving a persisted resume point (not a completed view)
+  tags:
+  - playback
+  - sessions
+  - progress
+  - end
+  - lifecycle
+  - anti-bluff
+  estimated_duration: 8s
+  expected_result: PASS only when progress and end both return 200 in captured evidence, recording the resume position without marking completed
+- id: BFR-API-012
+  name: Resume position persists — read-back last_position equals the written N (remember where you left off)
+  category: functional
+  priority: critical
+  platforms:
+  - api
+  steps:
+  - name: Read per-entity progress
+    action: GET /api/v1/entities/<id>/progress with auth token
+    expected: 200 OK with progress.last_position observably equal to the written position N
+    auth: bearer
+  - name: Capture evidence + assert equality
+    action: Driver writes r4_resume_read.json and asserts the read-back last_position == the written N
+    expected: r4 evidence positively shows last_position == N — the persisted resume point, proving the feature end-to-end
+  tags:
+  - playback
+  - resume
+  - remember-where-you-left-off
+  - state-delta
+  - persistence
+  - anti-bluff
+  estimated_duration: 6s
+  expected_result: PASS only when the per-entity progress evidence positively shows last_position equal to the exact written resume position N

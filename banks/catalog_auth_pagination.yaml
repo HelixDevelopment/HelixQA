@@ -1,0 +1,227 @@
+version: '1.0'
+name: Catalogizer Auth + Pagination - API
+description: 'Full-automation API auth-matrix, entities-pagination, and unauth
+  health challenge bank for the Catalogizer Go/Gin backend. Each challenge drives
+  a REAL endpoint over live HTTP and scores PASS only on positive captured
+  evidence (the actual HTTP response body written under
+  qa-results/auth_pagination/<run-id>/). Anti-bluff per Helix Constitution 11.4 /
+  11.4.27 / 11.4.69 / 11.4.98: no mocks, no tautologies, no metadata-only PASS; an
+  unreachable API yields SKIP-with-reason (11.4.3), and a dataset too small to
+  prove distinct pages yields SKIP citing the captured total (never a
+  PASS-by-default). This bank deepens the auth + pagination + health slices that
+  the catalog_functional_matrix bank touches but does not fully cover. The
+  companion executable suite is
+  scripts/testing/full_automation/catalog_auth_pagination.sh and its guide is
+  docs/scripts/catalog_auth_pagination.md.'
+metadata:
+  author: vasic-digital
+  app: Catalogizer
+  version: 2.3.0
+  driver_script: scripts/testing/full_automation/catalog_auth_pagination.sh
+  evidence_root: qa-results/auth_pagination
+  endpoints_source: catalog-api/handlers/auth_handler.go
+test_cases:
+- id: AUP-API-001
+  name: Health endpoint reachable without authentication
+  category: functional
+  priority: critical
+  platforms:
+  - api
+  steps:
+  - name: Probe health without a token
+    action: GET /health with NO Authorization header
+    expected: 200 OK (health is a public, unauthenticated endpoint)
+    auth: none
+  - name: Capture evidence
+    action: Driver writes the response body to h1_health.json and asserts status 200
+    expected: Evidence file exists, non-empty; HTTP status is 200
+  tags:
+  - health
+  - unauthenticated
+  - happy-path
+  - anti-bluff
+  estimated_duration: 5s
+  expected_result: PASS only when GET /health returns 200 without a token in the captured evidence
+- id: AUP-API-002
+  name: Login with valid credentials returns a non-empty session_token
+  category: functional
+  priority: critical
+  platforms:
+  - api
+  steps:
+  - name: Send login request
+    action: POST /api/v1/auth/login with body {"username":"<CATALOGIZER_USER>","password":"<CATALOGIZER_PASS>"}
+    expected: 200 OK with JSON containing a non-empty session_token field
+    auth: none
+  - name: Capture evidence + extract token
+    action: Driver writes a1_login.json and extracts session_token for the pagination challenges
+    expected: Evidence shows a non-empty session_token; token reused for AUP-API-007..009
+  tags:
+  - auth
+  - login
+  - session-token
+  - happy-path
+  - anti-bluff
+  estimated_duration: 5s
+  expected_result: PASS only when login returns 200 and the captured body carries a non-empty session_token
+- id: AUP-API-003
+  name: Login with wrong password is rejected with 401
+  category: security
+  priority: critical
+  platforms:
+  - api
+  steps:
+  - name: Send login with wrong password
+    action: POST /api/v1/auth/login with body {"username":"<CATALOGIZER_USER>","password":"definitely-wrong"}
+    expected: 401 Unauthorized with an error field in the body
+    auth: none
+  - name: Capture evidence
+    action: Driver writes a2_login_bad.json and asserts status 401 + error key
+    expected: Evidence shows HTTP 401 and an error message
+  tags:
+  - auth
+  - login
+  - negative
+  - invalid-credentials
+  - anti-bluff
+  estimated_duration: 5s
+  expected_result: PASS only when a wrong-password login is rejected with 401 and an error body in captured evidence
+- id: AUP-API-004
+  name: Login with missing credentials is rejected (no credential bypass)
+  category: security
+  priority: critical
+  platforms:
+  - api
+  steps:
+  - name: Send empty-object login
+    action: POST /api/v1/auth/login with body {} (no username, no password)
+    expected: Rejected with 400, 401, or 422 — NEVER accepted with 200
+    auth: none
+  - name: Capture evidence
+    action: Driver writes a3_login_missing.json and asserts the rejection status
+    expected: Evidence shows a rejection code; a 200 acceptance is a credential-bypass FAIL
+  tags:
+  - auth
+  - login
+  - negative
+  - missing-fields
+  - access-control
+  - anti-bluff
+  estimated_duration: 5s
+  expected_result: PASS only when an empty-credential login is rejected (400/401/422) in captured evidence; FAIL if accepted with 200
+- id: AUP-API-005
+  name: Login with malformed JSON is rejected at the bind layer
+  category: security
+  priority: high
+  platforms:
+  - api
+  steps:
+  - name: Send malformed JSON body
+    action: POST /api/v1/auth/login with a non-JSON body (e.g. not-json{{{)
+    expected: 400 Bad Request at the bind layer (401/422 also accepted as a genuine rejection)
+    auth: none
+  - name: Capture evidence
+    action: Driver writes a3b_login_malformed.json and asserts the rejection status
+    expected: Evidence shows a rejection code (400 preferred)
+  tags:
+  - auth
+  - login
+  - negative
+  - malformed-input
+  - anti-bluff
+  estimated_duration: 5s
+  expected_result: PASS only when a malformed-JSON login is rejected (400/401/422) in captured evidence
+- id: AUP-API-006
+  name: Protected endpoint without a token is rejected with 401
+  category: security
+  priority: critical
+  platforms:
+  - api
+  steps:
+  - name: Call a protected endpoint with no token
+    action: GET /api/v1/catalog with NO Authorization header
+    expected: 401 Unauthorized (authentication required)
+    auth: none
+  - name: Capture evidence
+    action: Driver writes a4_catalog_unauth.json and asserts status 401
+    expected: Evidence shows HTTP 401
+  tags:
+  - auth
+  - negative
+  - access-control
+  - protected-endpoint
+  - anti-bluff
+  estimated_duration: 5s
+  expected_result: PASS only when an unauthenticated protected-endpoint call is rejected with 401 in captured evidence
+- id: AUP-API-007
+  name: Pagination limit is honored (limit=1 yields at most one item)
+  category: functional
+  priority: high
+  platforms:
+  - api
+  steps:
+  - name: Request a single-item page
+    action: 'GET /api/v1/entities?limit=1&offset=0 with Authorization: Bearer <session_token>'
+    expected: 200 OK with an items array whose length is at most 1
+    auth: bearer
+  - name: Capture evidence
+    action: Driver writes p1_entities_limit1.json and asserts items length <= 1 via jq/python3
+    expected: Evidence shows HTTP 200 and an items array of length <= 1
+  tags:
+  - pagination
+  - entities
+  - limit
+  - authenticated
+  - anti-bluff
+  estimated_duration: 5s
+  expected_result: PASS only when limit=1 yields an items array of length <= 1 in captured evidence
+- id: AUP-API-008
+  name: Pagination total field is a non-negative number
+  category: functional
+  priority: high
+  platforms:
+  - api
+  steps:
+  - name: Inspect the total field
+    action: 'GET /api/v1/entities?limit=1 with Authorization: Bearer <session_token>'
+    expected: 200 OK with a numeric total field (>= 0)
+    auth: bearer
+  - name: Capture evidence
+    action: Driver reuses p1_entities_limit1.json and asserts total is a non-negative number
+    expected: Evidence shows a numeric total; a non-numeric or absent total is a FAIL
+  tags:
+  - pagination
+  - entities
+  - total
+  - schema
+  - authenticated
+  - anti-bluff
+  estimated_duration: 5s
+  expected_result: PASS only when the captured entities response carries a non-negative numeric total
+- id: AUP-API-009
+  name: Pagination offset advances the window (distinct pages when total>2)
+  category: functional
+  priority: high
+  platforms:
+  - api
+  steps:
+  - name: Fetch page 0
+    action: 'GET /api/v1/entities?limit=2&offset=0 with Authorization: Bearer <session_token>'
+    expected: 200 OK with an items array
+    auth: bearer
+  - name: Fetch page 1
+    action: 'GET /api/v1/entities?limit=2&offset=2 with Authorization: Bearer <session_token>'
+    expected: 200 OK with an items array
+    auth: bearer
+  - name: Compare pages
+    action: Driver writes p3_page0.json and p3_page1.json and compares their items arrays
+    expected: When total>2 the two pages differ; when total<=2 the driver SKIPs honestly citing the captured total
+  tags:
+  - pagination
+  - entities
+  - offset
+  - distinct-pages
+  - authenticated
+  - anti-bluff
+  estimated_duration: 10s
+  expected_result: PASS only when total>2 and the two offset pages differ in captured evidence; honest SKIP (not PASS) when total<=2

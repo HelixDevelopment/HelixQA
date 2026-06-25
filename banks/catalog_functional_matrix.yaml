@@ -1,0 +1,255 @@
+version: '1.0'
+name: Catalogizer Functional Matrix - API
+description: 'Full-automation API functional-matrix challenge bank for the Catalogizer
+  Go/Gin backend. Each challenge drives a REAL /api/v1 endpoint over live HTTP and
+  scores PASS only on positive captured evidence (the actual HTTP response body
+  written under qa-results/functional_matrix/<run-id>/). Anti-bluff per Helix
+  Constitution 11.4 / 11.4.27 / 11.4.69 / 11.4.98: no mocks, no tautologies, no
+  metadata-only PASS; an unreachable API yields SKIP-with-reason (11.4.3), never a
+  fabricated PASS. The companion executable suite is
+  scripts/testing/full_automation/catalog_functional_matrix.sh and its guide is
+  docs/scripts/catalog_functional_matrix.md.'
+metadata:
+  author: vasic-digital
+  app: Catalogizer
+  version: 2.3.0
+  driver_script: scripts/testing/full_automation/catalog_functional_matrix.sh
+  evidence_root: qa-results/functional_matrix
+  endpoints_source: catalog-api/main.go
+test_cases:
+- id: FMX-API-001
+  name: Health endpoint reports healthy
+  category: functional
+  priority: critical
+  platforms:
+  - api
+  steps:
+  - name: Probe health
+    action: GET /health
+    expected: 200 OK with JSON body whose status field equals "healthy"
+    auth: none
+  - name: Capture evidence
+    action: Driver writes the response body to t1_health.json and asserts status=healthy
+    expected: Evidence file exists, non-empty, contains "status":"healthy"
+  tags:
+  - health
+  - happy-path
+  - anti-bluff
+  estimated_duration: 5s
+  expected_result: PASS only when /health returns 200 and the captured body shows status=healthy
+- id: FMX-API-002
+  name: Login with valid admin credentials returns session_token
+  category: functional
+  priority: critical
+  platforms:
+  - api
+  steps:
+  - name: Send login request
+    action: POST /api/v1/auth/login with body {"username":"<CATALOGIZER_USER>","password":"<CATALOGIZER_PASS>"}
+    expected: 200 OK with JSON containing a non-empty session_token field
+    auth: none
+  - name: Capture evidence + extract token
+    action: Driver writes t2_login.json and extracts session_token for downstream auth
+    expected: Evidence shows a non-empty session_token; token reused for FMX-API-004..010
+  tags:
+  - auth
+  - login
+  - session-token
+  - happy-path
+  - anti-bluff
+  estimated_duration: 5s
+  expected_result: PASS only when login returns 200 and the captured body carries a non-empty session_token
+- id: FMX-API-003
+  name: Login with wrong password is rejected with 401
+  category: functional
+  priority: critical
+  platforms:
+  - api
+  steps:
+  - name: Send login with wrong password
+    action: POST /api/v1/auth/login with body {"username":"<CATALOGIZER_USER>","password":"definitely-wrong"}
+    expected: 401 Unauthorized with an error field in the body
+    auth: none
+  - name: Capture evidence
+    action: Driver writes t2b_login_bad.json and asserts status 401 + error key
+    expected: Evidence shows HTTP 401 and an error message
+  tags:
+  - auth
+  - login
+  - negative
+  - invalid-credentials
+  - anti-bluff
+  estimated_duration: 5s
+  expected_result: PASS only when a wrong-password login is rejected with 401 and an error body
+- id: FMX-API-004
+  name: Authenticated catalog list returns roots
+  category: functional
+  priority: critical
+  platforms:
+  - api
+  steps:
+  - name: List catalog
+    action: 'GET /api/v1/catalog with Authorization: Bearer <session_token>'
+    expected: 200 OK with JSON containing a roots array
+    auth: bearer
+  - name: Capture evidence
+    action: Driver writes t3_catalog.json and asserts status 200 + roots key
+    expected: Evidence shows HTTP 200 and a roots field
+  tags:
+  - catalog
+  - browse
+  - authenticated
+  - anti-bluff
+  estimated_duration: 5s
+  expected_result: PASS only when authenticated /api/v1/catalog returns 200 with a roots array in the captured body
+- id: FMX-API-005
+  name: Unauthenticated catalog access is rejected with 401
+  category: security
+  priority: critical
+  platforms:
+  - api
+  steps:
+  - name: List catalog without a token
+    action: GET /api/v1/catalog with NO Authorization header
+    expected: 401 Unauthorized (Authorization header required)
+    auth: none
+  - name: Capture evidence
+    action: Driver writes t3b_catalog_unauth.json and asserts status 401
+    expected: Evidence shows HTTP 401
+  tags:
+  - catalog
+  - auth
+  - negative
+  - access-control
+  - anti-bluff
+  estimated_duration: 5s
+  expected_result: PASS only when catalog access without a token is rejected with 401 in the captured evidence
+- id: FMX-API-006
+  name: Entities browse returns items + total shape
+  category: functional
+  priority: high
+  platforms:
+  - api
+  steps:
+  - name: List entities
+    action: 'GET /api/v1/entities?limit=10&offset=0 with Authorization: Bearer <session_token>'
+    expected: 200 OK with JSON containing an items array and a total field
+    auth: bearer
+  - name: Capture evidence
+    action: Driver writes t4_entities.json and asserts status 200 + items + total
+    expected: Evidence shows HTTP 200 with items[] and total
+  tags:
+  - entities
+  - browse
+  - authenticated
+  - anti-bluff
+  estimated_duration: 5s
+  expected_result: PASS only when /api/v1/entities returns 200 with the items+total shape in captured evidence
+- id: FMX-API-007
+  name: Recent media list returns a list-shaped body
+  category: functional
+  priority: high
+  platforms:
+  - api
+  steps:
+  - name: Get recent media
+    action: 'GET /api/v1/media/recent?limit=10 with Authorization: Bearer <session_token>'
+    expected: 200 OK with a list-shaped body (media/items/data/results array)
+    auth: bearer
+  - name: Capture evidence
+    action: Driver writes t5_media_recent.json and asserts status 200 + list shape
+    expected: Evidence shows HTTP 200 and a list-bearing key or top-level array
+  tags:
+  - media
+  - recent
+  - list
+  - authenticated
+  - anti-bluff
+  estimated_duration: 5s
+  expected_result: PASS only when /api/v1/media/recent returns 200 with a list-shaped body in captured evidence
+- id: FMX-API-008
+  name: Favorites add then list-contains then remove (full cycle)
+  category: functional
+  priority: critical
+  platforms:
+  - api
+  steps:
+  - name: Add favorite
+    action: POST /api/v1/favorites with body {"entity_id":<id>,"entity_type":"movie"}
+    expected: 200 added (or 409 already-in-favorites on idempotent re-run)
+    auth: bearer
+  - name: List favorites contains the added entity
+    action: GET /api/v1/favorites with auth token
+    expected: 200 OK with a favorites array that contains the added entity_id
+    auth: bearer
+  - name: Remove favorite (self-cleaning)
+    action: DELETE /api/v1/favorites/movie/<id> with auth token
+    expected: 200 OK / 204 No Content
+    auth: bearer
+  - name: Capture evidence
+    action: Driver writes t6a_fav_add.json, t6b_fav_list.json, t6c_fav_remove.json
+    expected: list evidence positively shows the added entity_id; remove succeeds
+  tags:
+  - favorites
+  - crud
+  - lifecycle
+  - self-cleaning
+  - anti-bluff
+  estimated_duration: 10s
+  expected_result: PASS only when add is accepted, the listing positively contains the added entity_id, and removal succeeds — all in captured evidence
+- id: FMX-API-009
+  name: Playback session lifecycle and resume-position persistence (remember where you left off)
+  category: functional
+  priority: critical
+  platforms:
+  - api
+  steps:
+  - name: Start playback session
+    action: POST /api/v1/playback/sessions/start with body {"media_item_id":<id>,"position_unit":"seconds","start_position":0}
+    expected: 200 OK with a session_id
+    auth: bearer
+  - name: Report progress to 137 seconds
+    action: POST /api/v1/playback/sessions/progress with body {"session_id":<sid>,"end_position":137,"total_amount":137}
+    expected: 200 OK
+    auth: bearer
+  - name: End session at 137 seconds, not completed
+    action: POST /api/v1/playback/sessions/end with body {"session_id":<sid>,"end_position":137,"total_amount":137,"completed":false}
+    expected: 200 OK
+    auth: bearer
+  - name: Resume position persisted
+    action: GET /api/v1/entities/<id>/progress with auth token
+    expected: 200 OK with progress.last_position == 137 (the remembered resume point)
+    auth: bearer
+  - name: Capture evidence
+    action: Driver writes t7a_pb_start.json..t7d_pb_resume.json
+    expected: t7d_pb_resume.json positively shows last_position 137 — the persisted resume point
+  tags:
+  - playback
+  - sessions
+  - resume
+  - remember-where-you-left-off
+  - lifecycle
+  - anti-bluff
+  estimated_duration: 15s
+  expected_result: PASS only when start->progress->end succeed and the per-entity progress evidence positively shows the persisted resume position (137s)
+- id: FMX-API-010
+  name: Search returns a results array
+  category: functional
+  priority: high
+  platforms:
+  - api
+  steps:
+  - name: Search
+    action: GET /api/v1/search?q=test with auth token
+    expected: 200 OK with a results array (possibly empty)
+    auth: bearer
+  - name: Capture evidence
+    action: Driver writes t8_search.json and asserts status 200 + results key
+    expected: Evidence shows HTTP 200 and a results array
+  tags:
+  - search
+  - query
+  - authenticated
+  - anti-bluff
+  estimated_duration: 5s
+  expected_result: PASS only when /api/v1/search returns 200 with a results array in captured evidence
