@@ -1,0 +1,158 @@
+version: '1.0'
+name: Catalogizer Episode Titles + Dedup - DEFECT-H + DEFECT-I Regression Guard
+description: 'Standing regression (11.4.135) + full-automation API challenge bank
+  guarding DEFECT-H (duplicate episodes) and DEFECT-I (generic episode titles) in
+  the TV-episode aggregation path. DEFECT-H emitted two or more episode entities
+  sharing the same episode_number under the same season; the fix de-duplicates by
+  (season, episode_number). DEFECT-I titled episodes generically ("Episode 1")
+  even when the source filename carried a human title (e.g. Breaking Bad
+  S01E01.Pilot -> "Pilot"); the fix carries the human title from the filename into
+  the entity title. Each challenge drives a REAL /api/v1 endpoint over live HTTP
+  and scores PASS only on positive captured evidence (the actual HTTP response body
+  written under qa-results/episode_titles_dedup/<run-id>/). Anti-bluff per Helix
+  Constitution 11.4 / 11.4.27 / 11.4.69 / 11.4.98 / 11.4.115 / 11.4.135 / 11.4.146:
+  no mocks, no tautologies, no metadata-only PASS; every challenge records the
+  concrete API action it exercises (record_action — the runner RecordAction
+  binding) so a green score cannot be a bluff; an unreachable API yields
+  SKIP-with-reason (11.4.3), never a fabricated PASS. The companion executable
+  suite is scripts/testing/full_automation/catalog_episode_titles_dedup.sh and its
+  guide is docs/scripts/catalog_episode_titles_dedup.md.'
+metadata:
+  author: vasic-digital
+  app: Catalogizer
+  version: 2.3.0
+  guards_defect: DEFECT-H + DEFECT-I
+  driver_script: scripts/testing/full_automation/catalog_episode_titles_dedup.sh
+  evidence_root: qa-results/episode_titles_dedup
+  endpoints_source: catalog-api/main.go
+test_cases:
+- id: ETD-API-001
+  name: No duplicate episodes per season (DEFECT-H)
+  category: functional
+  priority: critical
+  platforms:
+  - api
+  record_action: GET /api/v1/entities/{season_id}/children
+  steps:
+  - name: Walk Breaking Bad seasons then episodes
+    action: 'GET /api/v1/entities/browse/tv_show to resolve "Breaking Bad", then
+      GET /api/v1/entities/<show_id>/children for seasons, then
+      GET /api/v1/entities/<season_id>/children for each season''s episodes, each
+      with Authorization: Bearer <session_token>'
+    expected: 200 OK at every level; collecting (season_id, episode_number) pairs
+      from each tv_episode detail yields NO duplicate pair — every episode_number
+      is unique within its season (DEFECT-H signature absent)
+    auth: bearer
+  - name: Record action and capture evidence
+    action: Runner RecordAction(GET /api/v1/entities/<season_id>/children); driver
+      writes etd_seasons.json + etd_eps_season_*.json + etd_ep_detail_*.json and
+      the derived etd_episode_facts.tsv, then asserts no duplicate
+      (season_id, episode_number) pair
+    expected: Evidence file is non-empty and positively shows every
+      (season, episode_number) pair is unique
+  tags:
+  - episodes
+  - dedup
+  - no-duplicate
+  - hierarchy
+  - defect-h
+  - regression-guard
+  - anti-bluff
+  estimated_duration: 12s
+  expected_result: PASS only when the captured episode fact-table shows every
+    (season_id, episode_number) pair unique (no duplicate episodes)
+- id: ETD-API-002
+  name: Real human episode title carried from filename (DEFECT-I)
+  category: functional
+  priority: critical
+  platforms:
+  - api
+  record_action: GET /api/v1/entities/{episode_id}
+  steps:
+  - name: Fetch episode detail and inspect title
+    action: 'For each tv_episode under "Breaking Bad", GET /api/v1/entities/<id>
+      with Authorization: Bearer <session_token> and read the title field'
+    expected: 200 OK; at least one episode whose source filename carries a human
+      title (e.g. S01E01 "Pilot") has an entity title that is the human title —
+      i.e. NOT matching the generic regex ^Episode [0-9]+$
+    auth: bearer
+  - name: Record action and capture evidence
+    action: Runner RecordAction(GET /api/v1/entities/<episode_id>); driver writes
+      etd_ep_detail_*.json + etd_episode_facts.tsv and asserts at least one human
+      (non ^Episode N$) episode title is present
+    expected: Evidence positively shows at least one real human episode title
+      (e.g. "Pilot")
+  tags:
+  - episodes
+  - titles
+  - human-title
+  - filename
+  - defect-i
+  - regression-guard
+  - anti-bluff
+  estimated_duration: 10s
+  expected_result: PASS only when the captured episode detail evidence shows at
+    least one human episode title (not "Episode N")
+- id: ETD-API-003
+  name: Episode N is an accepted fallback for genuinely-untitled episodes
+  category: functional
+  priority: high
+  platforms:
+  - api
+  record_action: GET /api/v1/entities/{episode_id}
+  steps:
+  - name: Classify each episode title against the fallback pattern
+    action: 'Over the same per-episode GET /api/v1/entities/<id> detail set,
+      classify each title: human title, accepted "Episode N" fallback, or
+      empty/malformed'
+    expected: 200 OK; an episode with NO human title in its filename is legitimately
+      titled "Episode N" and the guard ACCEPTS that pattern (does not false-FAIL);
+      only an empty/malformed title is reportable
+    auth: bearer
+  - name: Record action and capture evidence
+    action: Runner RecordAction(GET /api/v1/entities/<episode_id>); driver writes
+      etd_episode_facts.tsv and asserts there are zero empty/malformed titles
+      (the "Episode N" fallback is accepted)
+    expected: Evidence positively shows the "Episode N" fallback is accepted and
+      no title is empty/malformed
+  tags:
+  - episodes
+  - titles
+  - fallback
+  - honesty
+  - defect-i
+  - anti-bluff
+  estimated_duration: 8s
+  expected_result: PASS only when no episode has an empty/malformed title (the
+    "Episode N" fallback is accepted, never false-FAILed)
+- id: ETD-API-004
+  name: Episode count sanity and determinism across two reads
+  category: functional
+  priority: high
+  platforms:
+  - api
+  record_action: GET /api/v1/entities/{show_id}/children
+  steps:
+  - name: Re-walk the show hierarchy a second time
+    action: 'GET /api/v1/entities/<show_id>/children and each season''s children a
+      second, independent time with Authorization: Bearer <session_token>, counting
+      tv_episode descendants'
+    expected: 200 OK; the de-duplicated tv_episode count under "Breaking Bad" is
+      >= 1 and IDENTICAL across the two independent reads (determinism §11.4.50)
+    auth: bearer
+  - name: Record action and capture evidence
+    action: Runner RecordAction(GET /api/v1/entities/<show_id>/children); driver
+      writes etd_seasons_read2.json + etd_ep2_detail_*.json and asserts read1 count
+      equals read2 count and both >= 1
+    expected: Evidence positively shows a stable, non-zero episode count across two
+      reads
+  tags:
+  - episodes
+  - count
+  - determinism
+  - stability
+  - defect-h
+  - anti-bluff
+  estimated_duration: 12s
+  expected_result: PASS only when the captured episode count is >= 1 and identical
+    across two independent reads

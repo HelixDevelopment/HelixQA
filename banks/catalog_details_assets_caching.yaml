@@ -1,0 +1,222 @@
+version: '1.0'
+name: Catalogizer Details + Cover/Asset + Caching - Full-Automation API Guard
+description: 'Standing regression (11.4.135) + full-automation API challenge bank
+  (11.4.27 / 11.4.98) guarding three catalog-api end-user surfaces: media-DETAILS
+  (GET /api/v1/entities/:id -> populated entity detail with a non-empty title),
+  COVER/ASSET (GET /api/v1/cover/:id -> image bytes with an image/* content-type
+  and a NON-DEGENERATE size per 11.4.38; plus /cover/url/:id JSON and the
+  /cover/placeholder/:type SVG fallback), and CACHING (the entities group is
+  wrapped in CacheHeaders(300) so a detail GET carries an ETag + Cache-Control,
+  the ETag is STABLE across two reads per 11.4.50, and a second request with
+  If-None-Match:<ETag> is served from cache as 304 Not Modified). Each challenge
+  drives a REAL /api/v1 endpoint over live HTTP and scores PASS only on positive
+  captured evidence (the actual HTTP response body / asset .meta sidecar / header
+  dump written under qa-results/details_assets_caching/<run-id>/). Anti-bluff per
+  Helix Constitution 11.4 / 11.4.27 / 11.4.38 / 11.4.69 / 11.4.98 / 11.4.135 /
+  11.4.146: no mocks, no tautologies, no metadata-only PASS; a present-but-
+  degenerate asset (0 bytes / 1x1 / non-image) is a FAIL, never a PASS. Every
+  challenge records the concrete API action it exercises (record_action — the
+  runner RecordAction binding) so a green score cannot be a bluff; an unreachable
+  API yields SKIP-with-reason (11.4.3), never a fabricated PASS. The companion
+  executable suite is
+  scripts/testing/full_automation/catalog_details_assets_caching.sh and its guide
+  is docs/scripts/catalog_details_assets_caching.md.'
+metadata:
+  author: vasic-digital
+  app: Catalogizer
+  version: 2.3.0
+  guards_surface: details + cover/asset + caching
+  driver_script: scripts/testing/full_automation/catalog_details_assets_caching.sh
+  evidence_root: qa-results/details_assets_caching
+  endpoints_source: catalog-api/main.go
+test_cases:
+- id: DAC-API-001
+  name: Entity detail is populated (DETAILS surface)
+  category: functional
+  priority: critical
+  platforms:
+  - api
+  record_action: GET /api/v1/entities/{entity_id}
+  steps:
+  - name: Resolve a subject then fetch its detail
+    action: 'GET /api/v1/entities/browse/movie (falling back to tv_show, then the
+      entities list) to resolve a real entity id, then GET /api/v1/entities/<id>
+      with Authorization: Bearer <session_token> and read the detail body'
+    expected: 200 OK; the detail body carries a numeric id, a NON-EMPTY title, and
+      a media_type field (the populated detail an end user actually sees — a 404
+      or empty-title detail is a real defect)
+    auth: bearer
+  - name: Record action and capture evidence
+    action: Runner RecordAction(GET /api/v1/entities/<entity_id>); driver writes
+      dac_browse_*.json + dac_detail.json and asserts title is non-empty, id is
+      numeric, and media_type is present
+    expected: Evidence file is non-empty and positively shows a populated detail
+      (non-empty title)
+  tags:
+  - entities
+  - detail
+  - title
+  - metadata
+  - regression-guard
+  - anti-bluff
+  estimated_duration: 8s
+  expected_result: PASS only when the captured detail body shows a non-empty
+    title, a numeric id, and a media_type field
+- id: DAC-API-002
+  name: Cover asset is non-degenerate image bytes (COVER/ASSET surface, 11.4.38)
+  category: functional
+  priority: critical
+  platforms:
+  - api
+  record_action: GET /api/v1/cover/{entity_id}
+  steps:
+  - name: Fetch the cover image bytes and inspect them
+    action: 'GET /api/v1/cover/<id> (public, no auth) and capture the HTTP status,
+      response byte size, and content-type'
+    expected: 200 OK; the response content-type is image/* (raster jpeg/png/webp
+      or the svg placeholder fallback) AND the byte size exceeds the
+      non-degenerate floor (default 64 bytes) — a 0-byte / 1x1 / non-image body is
+      a FAIL per 11.4.38 (installable-asset evidence)
+    auth: none
+  - name: Record action and capture evidence
+    action: Runner RecordAction(GET /api/v1/cover/<entity_id>); driver writes
+      dac_cover.bin + dac_cover.meta (observed http_code, size_bytes,
+      content_type) and asserts image/* content-type with size above the floor
+    expected: Evidence (dac_cover.meta) positively shows an image/* content-type
+      and a non-degenerate byte size
+  tags:
+  - cover
+  - asset
+  - image
+  - non-degenerate
+  - installable-asset
+  - anti-bluff
+  estimated_duration: 6s
+  expected_result: PASS only when the captured cover response is an image/*
+    content-type with a byte size above the non-degenerate floor (degenerate =
+    FAIL)
+- id: DAC-API-003
+  name: Cover-url metadata JSON present (COVER/ASSET surface)
+  category: functional
+  priority: high
+  platforms:
+  - api
+  record_action: GET /api/v1/cover/url/{entity_id}
+  steps:
+  - name: Fetch the cover-url JSON companion
+    action: 'GET /api/v1/cover/url/<id> (public, no auth) and read the JSON body'
+    expected: 200 OK; the JSON body carries a cover_url field for the same
+      media_item_id (the metadata companion to the byte stream)
+    auth: none
+  - name: Record action and capture evidence
+    action: Runner RecordAction(GET /api/v1/cover/url/<entity_id>); driver writes
+      dac_cover_url.json and asserts a cover_url field is present
+    expected: Evidence positively shows a cover_url field for the requested
+      media id
+  tags:
+  - cover
+  - cover-url
+  - metadata
+  - json
+  - anti-bluff
+  estimated_duration: 5s
+  expected_result: PASS only when the captured response JSON carries a cover_url
+    field
+- id: DAC-API-004
+  name: Entity detail carries a stable ETag + Cache-Control (CACHING surface, 11.4.50)
+  category: functional
+  priority: critical
+  platforms:
+  - api
+  record_action: GET /api/v1/entities/{entity_id}
+  steps:
+  - name: Read the entity detail twice and compare cache headers
+    action: 'GET /api/v1/entities/<id> twice, independently, with
+      Authorization: Bearer <session_token>, capturing the ETag and Cache-Control
+      response headers each time'
+    expected: 200 OK both times; the entities group (CacheHeaders(300)) sets an
+      ETag and a Cache-Control public max-age=300 header, and the ETag is
+      IDENTICAL across the two reads of the unchanged entity (determinism 11.4.50)
+    auth: bearer
+  - name: Record action and capture evidence
+    action: Runner RecordAction(GET /api/v1/entities/<entity_id>); driver writes
+      dac_etag_read1.hdr + dac_etag_read2.hdr + dac_cachectl_read1.hdr and asserts
+      the ETag is present, Cache-Control is present, and read1 ETag equals read2
+      ETag
+    expected: Evidence (header dumps) positively shows a present, stable ETag and
+      a Cache-Control header
+  tags:
+  - entities
+  - caching
+  - etag
+  - cache-control
+  - determinism
+  - anti-bluff
+  estimated_duration: 8s
+  expected_result: PASS only when the captured detail responses carry an ETag +
+    Cache-Control header and the ETag is identical across two reads
+- id: DAC-API-005
+  name: Conditional request served from cache as 304 (CACHING surface)
+  category: functional
+  priority: critical
+  platforms:
+  - api
+  record_action: GET /api/v1/entities/{entity_id}
+  steps:
+  - name: Re-request the detail with If-None-Match
+    action: 'GET /api/v1/entities/<id> a second time with
+      If-None-Match: <ETag-from-DAC-API-004> and
+      Authorization: Bearer <session_token>'
+    expected: 304 Not Modified — the cache revalidation short-circuits and the
+      response body is NOT re-sent (served from cache); the
+      media_metadata_cache-backed HTTP caching is genuinely effective
+    auth: bearer
+  - name: Record action and capture evidence
+    action: Runner RecordAction(GET /api/v1/entities/<entity_id>); driver writes
+      dac_conditional_304.hdr and asserts the response status is 304
+    expected: Evidence (header dump) positively shows HTTP 304 Not Modified for the
+      conditional request
+  tags:
+  - entities
+  - caching
+  - conditional
+  - if-none-match
+  - 304
+  - served-from-cache
+  - anti-bluff
+  estimated_duration: 6s
+  expected_result: PASS only when the conditional If-None-Match request returns
+    304 Not Modified (served from cache, body not re-sent)
+- id: DAC-API-006
+  name: Placeholder fallback asset is non-degenerate (COVER/ASSET surface, 11.4.38)
+  category: functional
+  priority: high
+  platforms:
+  - api
+  record_action: GET /api/v1/cover/placeholder/{type}
+  steps:
+  - name: Fetch the always-available placeholder asset
+    action: 'GET /api/v1/cover/placeholder/<type> (public, no auth) and capture the
+      HTTP status, byte size, and content-type'
+    expected: 200 OK; the placeholder is image/svg+xml with a byte size above the
+      non-degenerate floor (default 64 bytes) — the always-available fallback
+      asset every entity without a stored cover can serve (11.4.38)
+    auth: none
+  - name: Record action and capture evidence
+    action: Runner RecordAction(GET /api/v1/cover/placeholder/<type>); driver
+      writes dac_placeholder.bin + dac_placeholder.meta (observed http_code,
+      size_bytes, content_type) and asserts image/* content-type with size above
+      the floor
+    expected: Evidence (dac_placeholder.meta) positively shows an image/svg+xml
+      content-type and a non-degenerate byte size
+  tags:
+  - cover
+  - placeholder
+  - asset
+  - fallback
+  - svg
+  - installable-asset
+  - anti-bluff
+  estimated_duration: 5s
+  expected_result: PASS only when the captured placeholder response is an image/*
+    content-type with a byte size above the non-degenerate floor

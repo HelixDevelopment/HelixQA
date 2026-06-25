@@ -1,0 +1,162 @@
+version: '1.0'
+name: Catalogizer Playback Progress + Favorites - Resume + Favorites Regression Guard
+description: 'Standing regression (11.4.135) + full-automation API challenge bank
+  proving the catalog-api playback-progress / resume-where-left-off and favorites
+  endpoints really work end-to-end for an end user. The playback-session lifecycle
+  (POST /api/v1/playback/sessions/start -> /progress -> /end) upserts a media_progress
+  row whose last_position records exactly where the user stopped; a client reads
+  GET /api/v1/entities/<id>/progress and resumes there. Favorites add via
+  POST /api/v1/favorites {entity_id, entity_type}, list via GET /api/v1/favorites,
+  membership via GET /api/v1/favorites/check/<type>/<id>, and remove via
+  DELETE /api/v1/favorites/<type>/<id>. Each challenge drives a REAL /api/v1 endpoint
+  over live HTTP and scores PASS only on positive captured evidence (the actual HTTP
+  response body written under qa-results/playback_progress_favorites/<run-id>/): a
+  read-back last_position EQUAL to the value written; a favorite that APPEARS after
+  add and DISAPPEARS after remove. Anti-bluff per Helix Constitution
+  11.4 / 11.4.27 / 11.4.69 / 11.4.98 / 11.4.135 / 11.4.146 / 11.4.50: no mocks, no
+  tautologies, no metadata-only PASS; every challenge records the concrete API action
+  it exercises (record_action — the runner RecordAction binding) so a green score
+  cannot be a bluff. The suite is self-cleaning (11.4.14) — every write (one playback
+  session, one favorite) is undone on exit; the conductor owns the live DB (11.4.119),
+  this bank touches only its own per-user rows for one entity and never scans or
+  aggregates. An unreachable API / no token / python3-absent / no fixture yields
+  SKIP-with-reason (11.4.3), never a fabricated PASS. The companion executable suite is
+  scripts/testing/full_automation/catalog_playback_progress_favorites.sh and its guide
+  is docs/scripts/catalog_playback_progress_favorites.md.'
+metadata:
+  author: vasic-digital
+  app: Catalogizer
+  version: 2.3.0
+  guards_feature: playback-progress-resume + favorites
+  driver_script: scripts/testing/full_automation/catalog_playback_progress_favorites.sh
+  evidence_root: qa-results/playback_progress_favorites
+  endpoints_source: catalog-api/main.go
+test_cases:
+- id: PPF-API-001
+  name: Resume where left off - media_progress.last_position equals written end_position
+  category: functional
+  priority: critical
+  platforms:
+  - api
+  record_action: POST /api/v1/playback/sessions/end
+  steps:
+  - name: Drive the real playback-session lifecycle on a real entity
+    action: 'Resolve a real entity via GET /api/v1/entities/browse/movie, then
+      POST /api/v1/playback/sessions/start {media_item_id:<id>,position_unit:"seconds",
+      start_position:0}, then POST /api/v1/playback/sessions/progress
+      {session_id,end_position:873,total_amount:873}, then
+      POST /api/v1/playback/sessions/end {session_id,end_position:873,total_amount:873,
+      completed:false}, each with Authorization: Bearer <session_token>'
+    expected: 200 OK at every step; the end() upserts the media_progress row for the
+      (user, media_item) pair
+    auth: bearer
+  - name: Read the rolled-up progress back and assert the resume position
+    action: Runner RecordAction(POST /api/v1/playback/sessions/end); driver then GETs
+      /api/v1/entities/<id>/progress, writes ppf_a_end.json + ppf_a_progress_read.json,
+      and asserts progress.last_position equals the end_position written (873)
+    expected: Evidence file is non-empty and positively shows progress.last_position
+      == 873 (exactly where the user left off — a client can resume there)
+  tags:
+  - playback
+  - progress
+  - resume
+  - last-position
+  - set-and-read-back
+  - regression-guard
+  - anti-bluff
+  estimated_duration: 10s
+  expected_result: PASS only when the captured progress evidence shows a non-null
+    last_position equal to the end_position written (resume position recorded)
+- id: PPF-API-002
+  name: Favorite add then present - appears in list and is_favorite true
+  category: functional
+  priority: critical
+  platforms:
+  - api
+  record_action: POST /api/v1/favorites
+  steps:
+  - name: Add a favorite for a real entity
+    action: 'POST /api/v1/favorites {entity_id:<id>,entity_type:<media_type>} with
+      Authorization: Bearer <session_token> for the resolved fixture entity'
+    expected: 200 OK (added) or 409 Conflict (already present from a prior interrupted
+      run) — either way the favorite is now present and owned for cleanup
+    auth: bearer
+  - name: Assert the favorite is observably present
+    action: Runner RecordAction(POST /api/v1/favorites); driver then GETs
+      /api/v1/favorites and GET /api/v1/favorites/check/<type>/<id>, writes
+      ppf_b_add.json + ppf_b_list.json + ppf_b_check.json, and asserts the
+      (entity_type, entity_id) pair appears in the list AND is_favorite is true
+    expected: Evidence positively shows the added pair present in GET /favorites and
+      is_favorite:true
+  tags:
+  - favorites
+  - add
+  - list
+  - check
+  - present
+  - regression-guard
+  - anti-bluff
+  estimated_duration: 8s
+  expected_result: PASS only when the captured evidence shows the added
+    (entity_type, entity_id) appears in the favorites list and is_favorite is true
+- id: PPF-API-003
+  name: Favorite remove then gone - absent from list and is_favorite false
+  category: functional
+  priority: critical
+  platforms:
+  - api
+  record_action: DELETE /api/v1/favorites/{entity_type}/{entity_id}
+  steps:
+  - name: Remove the favorite added in PPF-API-002
+    action: 'DELETE /api/v1/favorites/<entity_type>/<entity_id> with
+      Authorization: Bearer <session_token>'
+    expected: 200 OK; the favorite is removed for the (user, entity_type, entity_id)
+      tuple
+    auth: bearer
+  - name: Assert the favorite is observably gone
+    action: Runner RecordAction(DELETE /api/v1/favorites/<type>/<id>); driver then GETs
+      /api/v1/favorites and GET /api/v1/favorites/check/<type>/<id>, writes
+      ppf_c_remove.json + ppf_c_list.json + ppf_c_check.json, and asserts the pair is
+      ABSENT from the list AND is_favorite is false
+    expected: Evidence positively shows the pair absent from GET /favorites and
+      is_favorite:false (the remove is observable)
+  tags:
+  - favorites
+  - remove
+  - delete
+  - gone
+  - negative
+  - regression-guard
+  - anti-bluff
+  estimated_duration: 8s
+  expected_result: PASS only when the captured evidence shows the removed
+    (entity_type, entity_id) is absent from the list and is_favorite is false
+- id: PPF-API-004
+  name: Progress determinism - last_position identical across two reads
+  category: functional
+  priority: high
+  platforms:
+  - api
+  record_action: GET /api/v1/entities/{id}/progress
+  steps:
+  - name: Read the entity progress twice independently
+    action: 'GET /api/v1/entities/<id>/progress a second and third time with
+      Authorization: Bearer <session_token> after the PPF-API-001 write'
+    expected: 200 OK; the observed progress.last_position is identical across the two
+      independent reads (determinism §11.4.50)
+    auth: bearer
+  - name: Record action and capture evidence
+    action: Runner RecordAction(GET /api/v1/entities/<id>/progress); driver writes
+      ppf_d_read1.json + ppf_d_read2.json and asserts read1 last_position equals read2
+      last_position and both are non-null
+    expected: Evidence positively shows a stable, non-null last_position across two
+      reads
+  tags:
+  - playback
+  - progress
+  - determinism
+  - stability
+  - anti-bluff
+  estimated_duration: 6s
+  expected_result: PASS only when the captured progress evidence shows last_position
+    is non-null and identical across two independent reads
