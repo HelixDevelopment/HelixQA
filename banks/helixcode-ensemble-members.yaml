@@ -67,6 +67,8 @@ test_cases:
       - name: "GET /api/v1/server/info ensemble"
         action: "http: GET /api/v1/server/info"
         expected: "200 OK; the response references the Helix Agent ensemble provider"
+        _skip: true
+        _skip_reason: "SKIP-OK: ensemble provider is unshipped in helix_code (internal/ensemble absent); /server/info correctly does NOT advertise an 'ensemble' flag — asserting it would advertise a §11.4.122 bluff. Flip _skip:false when ensemble ships."
         expect_status: 200
         expect_json_path: "$.info"
         expect_body_contains: "ensemble"

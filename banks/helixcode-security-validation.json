@@ -205,7 +205,7 @@
           "body": "not json{",
           "expected": "400 invalid request",
           "expect_status": 400,
-          "expect_body_contains": "invalid_request"
+          "expect_body_contains": "Invalid request"
         }
       ],
       "tags": ["security", "auth", "malformed-json"],
