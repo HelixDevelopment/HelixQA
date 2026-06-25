@@ -1,0 +1,176 @@
+version: '1.0'
+name: Catalogizer Books + Comics Reading Surface - Resume + Chapters/Pages Guard
+description: 'Standing regression (11.4.135) + full-automation API challenge bank
+  proving the catalog-api BOOK and COMIC reading surfaces work for end users:
+  (1) a book/comic entity resolves via GET /api/v1/entities/browse/{book,comic};
+  (2) its chapters/pages list via the container-children endpoint
+  GET /api/v1/entities/{id}/children (>=0, honest zero for single-file
+  books/comics); (3) resume-where-left-off works through the SAME
+  playback-session mechanism episodes and movies use — a reading position is set
+  via POST /api/v1/playback/sessions/start + /progress (position_unit "pages") and
+  read back equal via GET /api/v1/entities/{id}/progress -> progress.last_position.
+  The catalog-api playback handler explicitly records "video, audio, book, comic,
+  game" sessions, so book/comic reading progress is the playback rollup with
+  position_unit=pages, not a separate subsystem. Each challenge drives a REAL
+  /api/v1 endpoint over live HTTP and scores PASS only on positive captured
+  evidence (the actual HTTP response body written under
+  qa-results/books_comics_resume/<run-id>/). Anti-bluff per Helix Constitution
+  11.4 / 11.4.27 / 11.4.69 / 11.4.98 / 11.4.119 / 11.4.135 / 11.4.146: no mocks, no
+  tautologies, no metadata-only PASS; every challenge records the concrete API
+  action it exercises (record_action — the runner RecordAction binding) so a green
+  score cannot be a bluff. The conductor OWNS the live API+DB (11.4.119): all
+  default probes are read-only GETs; the resume WRITE round-trip is gated behind
+  CATALOGIZER_ALLOW_PLAYBACK_WRITE=1. An unreachable API, missing auth, or no
+  book/comic seeded yields SKIP-with-reason (11.4.3), never a fabricated PASS. The
+  companion executable suite is
+  scripts/testing/full_automation/catalog_books_comics_resume.sh and its guide is
+  docs/scripts/catalog_books_comics_resume.md.'
+metadata:
+  author: vasic-digital
+  app: Catalogizer
+  version: 2.3.0
+  guards_surface: books-comics-reading-resume
+  driver_script: scripts/testing/full_automation/catalog_books_comics_resume.sh
+  evidence_root: qa-results/books_comics_resume
+  endpoints_source: catalog-api/main.go
+test_cases:
+- id: BCR-API-001
+  name: A book or comic entity resolves via type-browse
+  category: functional
+  priority: critical
+  platforms:
+  - api
+  record_action: GET /api/v1/entities/browse/comic
+  steps:
+  - name: Browse the book and comic media types
+    action: 'GET /api/v1/entities/browse/book and GET /api/v1/entities/browse/comic
+      with Authorization: Bearer <session_token>; pick the first item whose
+      media_type is one of {book, comic, comic_book} and that carries a numeric id'
+    expected: 200 OK from at least one type-browse (a 400 means the type name is not
+      provisioned in media_types — treated as type-absent, not a failure); at least
+      one resolved entity has a numeric id and a media_type in {book, comic,
+      comic_book}
+    auth: bearer
+  - name: Record action and capture evidence
+    action: Runner RecordAction(GET /api/v1/entities/browse/comic); driver writes
+      bcr_browse_book.json + bcr_browse_comic.json and asserts a real book/comic
+      entity id + media_type was resolved
+    expected: Evidence file is non-empty and positively shows a resolved book/comic
+      entity id and media_type
+  tags:
+  - books
+  - comics
+  - browse
+  - entity-resolve
+  - reading-surface
+  - regression-guard
+  - anti-bluff
+  estimated_duration: 8s
+  expected_result: PASS only when the captured type-browse evidence shows at least
+    one book/comic entity with a numeric id and a media_type in {book, comic,
+    comic_book}; honest SKIP if no book/comic is seeded (never a fake PASS)
+- id: BCR-API-002
+  name: Chapters/pages list via container children
+  category: functional
+  priority: critical
+  platforms:
+  - api
+  record_action: GET /api/v1/entities/{id}/children
+  steps:
+  - name: List the resolved entity's chapters/pages
+    action: 'GET /api/v1/entities/<book_or_comic_id>/children with
+      Authorization: Bearer <session_token> and parse the items array'
+    expected: 200 OK; the children body is a JSON list of the entity's chapter/page
+      child entities (>=0 — a genuine empty list is accepted for single-file
+      books/comics, an honest zero); a non-200 or non-array body is a failure
+    auth: bearer
+  - name: Record action and capture evidence
+    action: Runner RecordAction(GET /api/v1/entities/<id>/children); driver writes
+      bcr_children.json and asserts the children body parses as a real JSON list
+      (>=0 chapters/pages)
+    expected: Evidence positively shows a parseable JSON list of chapter/page child
+      entities (count >=0)
+  tags:
+  - books
+  - comics
+  - children
+  - chapters
+  - pages
+  - container
+  - regression-guard
+  - anti-bluff
+  estimated_duration: 8s
+  expected_result: PASS only when the captured children evidence is a real JSON
+    list (>=0 chapters/pages); honest zero accepted for single-file books/comics
+- id: BCR-API-003
+  name: Reading-position resume round-trip (set then read back equal)
+  category: functional
+  priority: critical
+  platforms:
+  - api
+  record_action: GET /api/v1/entities/{id}/progress
+  steps:
+  - name: Read the reading-progress baseline
+    action: 'GET /api/v1/entities/<book_or_comic_id>/progress with
+      Authorization: Bearer <session_token> and assert the response is a
+      well-formed {"progress": object|null} envelope'
+    expected: '200 OK; the body is a well-formed {"progress": object|null}
+      envelope (a never-read entity returns {"progress": null}, 200, by design)'
+    auth: bearer
+  - name: Set a reading position via a real session, then read it back (gated)
+    action: 'When CATALOGIZER_ALLOW_PLAYBACK_WRITE=1 (conductor-gated per 11.4.119):
+      POST /api/v1/playback/sessions/start {media_item_id, position_unit:"pages",
+      start_position:0} -> session_id, then POST /api/v1/playback/sessions/progress
+      {session_id, end_position:<page>, total_amount:<page>}, then
+      GET /api/v1/entities/<id>/progress and assert progress.last_position equals
+      the page written AND progress.position_unit == "pages". Runner
+      RecordAction(GET /api/v1/entities/<id>/progress); driver writes
+      bcr_progress_baseline.json + bcr_session_start.json + bcr_session_progress.json
+      + bcr_progress_after.json'
+    expected: With the write-leg enabled, the per-entity progress rollup reads back
+      the exact page just written (progress.last_position == page,
+      progress.position_unit == "pages") — resume-where-left-off works; with the
+      write-leg disabled (read-only default), the well-formed progress envelope is
+      asserted and the write round-trip SKIPs with reason
+  tags:
+  - books
+  - comics
+  - reading-progress
+  - resume
+  - playback-session
+  - last-position
+  - regression-guard
+  - anti-bluff
+  estimated_duration: 12s
+  expected_result: PASS when the progress envelope is well-formed; with
+    CATALOGIZER_ALLOW_PLAYBACK_WRITE=1, PASS only when the written page reads back
+    equal (progress.last_position == page, position_unit == "pages")
+- id: BCR-API-004
+  name: Children-count determinism across two reads
+  category: functional
+  priority: high
+  platforms:
+  - api
+  record_action: GET /api/v1/entities/{id}/children
+  steps:
+  - name: Re-read the entity's children a second time
+    action: 'GET /api/v1/entities/<book_or_comic_id>/children a second, independent
+      time with Authorization: Bearer <session_token> and count the items array'
+    expected: 200 OK; the chapter/page children count is identical to the first
+      read (deterministic per 11.4.50)
+    auth: bearer
+  - name: Record action and capture evidence
+    action: Runner RecordAction(GET /api/v1/entities/<id>/children); driver writes
+      bcr_children_read2.json and asserts read2 count equals the read1 count from
+      BCR-API-002
+    expected: Evidence positively shows the children count is stable across two
+      independent reads
+  tags:
+  - books
+  - comics
+  - children
+  - determinism
+  - anti-bluff
+  estimated_duration: 8s
+  expected_result: PASS only when the children count is identical across two
+    independent reads

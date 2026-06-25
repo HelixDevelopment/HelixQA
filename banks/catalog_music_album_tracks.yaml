@@ -1,0 +1,198 @@
+version: '1.0'
+name: Catalogizer Music Album -> Tracks + Per-Track Playback - Full-Automation API Guard
+description: 'Standing regression (11.4.135) + full-automation API challenge bank
+  proving the catalog-api MUSIC surfaces work end-to-end: music_album browse +
+  resolve, album -> track listing (container children), and per-track playback
+  progress with resume. Album browse via GET /api/v1/entities/browse/music_album
+  lists music_album entities; each resolves via GET /api/v1/entities/<id> to
+  media_type == "music_album". Album children (tracks) via
+  GET /api/v1/entities/<album_id>/children are asserted by shape honestly
+  (items[] present, count >= 0); where tracks are seeded their track_number
+  ordering is captured, and where an album has no track children the
+  children-list shape is the asserted fact rather than a fabricated track
+  (11.4.6 / 11.4.3). Per-track playback uses the same mechanism every media card
+  uses: POST /api/v1/playback/sessions/start -> /progress -> /end, then
+  GET /api/v1/entities/<id>/progress reads progress.last_position back EQUAL to the
+  set position (resume), stable across two cycles (determinism 11.4.50). The
+  chosen playable media item is a real track child when seeded, else the album
+  entity (a valid media_item_id for the entity-agnostic playback lifecycle). Each
+  challenge drives a REAL /api/v1 endpoint over live HTTP and scores PASS only on
+  positive captured evidence (the actual HTTP response body written under
+  qa-results/music_album_tracks/<run-id>/). Anti-bluff per Helix Constitution 11.4
+  / 11.4.27 / 11.4.69 / 11.4.98 / 11.4.119 / 11.4.135 / 11.4.146: no mocks, no
+  tautologies, no metadata-only PASS; every challenge records the concrete API
+  action it exercises (record_action — the runner RecordAction binding) so a green
+  score cannot be a bluff; an unreachable API / no album / no token yields
+  SKIP-with-reason (11.4.3), never a fabricated PASS. The companion executable
+  suite is scripts/testing/full_automation/catalog_music_album_tracks.sh and its
+  guide is docs/scripts/catalog_music_album_tracks.md.'
+metadata:
+  author: vasic-digital
+  app: Catalogizer
+  version: 2.3.0
+  guards_surface: music-album-tracks-playback
+  driver_script: scripts/testing/full_automation/catalog_music_album_tracks.sh
+  evidence_root: qa-results/music_album_tracks
+  endpoints_source: catalog-api/main.go
+test_cases:
+- id: MAT-API-001
+  name: Music album browse resolves at least one music_album entity
+  category: functional
+  priority: critical
+  platforms:
+  - api
+  record_action: GET /api/v1/entities/browse/music_album
+  steps:
+  - name: Browse the music_album type
+    action: 'GET /api/v1/entities/browse/music_album?limit=50 with
+      Authorization: Bearer <session_token> and read the items[] array'
+    expected: 200 OK; the body carries an items[] array with >= 1 music_album
+      entity (each item has an id and title); zero seeded albums is an honest
+      topology SKIP, never a fabricated PASS
+    auth: bearer
+  - name: Record action and capture evidence
+    action: Runner RecordAction(GET /api/v1/entities/browse/music_album); driver
+      writes mat_browse_album.json and asserts the album count >= 1, capturing the
+      first album id + title
+    expected: Evidence file is non-empty and positively shows >= 1 listed
+      music_album entity
+  tags:
+  - music
+  - album
+  - browse
+  - resolve
+  - regression-guard
+  - anti-bluff
+  estimated_duration: 6s
+  expected_result: PASS only when the captured browse evidence lists >= 1
+    music_album entity (else honest SKIP when none seeded)
+- id: MAT-API-002
+  name: Album children are a valid track listing (container children, honest shape)
+  category: functional
+  priority: critical
+  platforms:
+  - api
+  record_action: GET /api/v1/entities/{album_id}/children
+  steps:
+  - name: List each album's track children
+    action: 'For every browsed album, GET /api/v1/entities/<album_id>/children with
+      Authorization: Bearer <session_token> and read the items[] track listing'
+    expected: 200 OK at every album; the body carries an items[] array (count >= 0,
+      asserted honestly — an empty track list is NOT a failure and NO track is
+      fabricated); where track children are present each track_number is ascending
+    auth: bearer
+  - name: Record action and capture evidence
+    action: Runner RecordAction(GET /api/v1/entities/<album_id>/children); driver
+      writes mat_album_children_<id>.json per album and asserts a valid items[]
+      array (count >= 0) with ascending track_number ordering when tracks exist
+    expected: Evidence positively shows every album returns a valid items[] track
+      listing (count >= 0) with correct ordering when tracks are present
+  tags:
+  - music
+  - album
+  - tracks
+  - children
+  - track-listing
+  - ordering
+  - honesty
+  - anti-bluff
+  estimated_duration: 8s
+  expected_result: PASS only when every album's /children returns a valid items[]
+    track listing (count >= 0; ascending track_number when present)
+- id: MAT-API-003
+  name: Each browsed album resolves to media_type music_album
+  category: functional
+  priority: high
+  platforms:
+  - api
+  record_action: GET /api/v1/entities/{album_id}
+  steps:
+  - name: Resolve each album's entity detail
+    action: 'For every browsed album, GET /api/v1/entities/<album_id> with
+      Authorization: Bearer <session_token> and read the media_type + title +
+      children_count fields'
+    expected: 200 OK; every album resolves with media_type == "music_album" (a
+      non-music_album media_type for a browsed album is a defect)
+    auth: bearer
+  - name: Record action and capture evidence
+    action: Runner RecordAction(GET /api/v1/entities/<album_id>); driver writes
+      mat_album_detail_<id>.json per album and asserts media_type == "music_album"
+      for every one
+    expected: Evidence positively shows every browsed album resolves to
+      media_type music_album
+  tags:
+  - music
+  - album
+  - entity-detail
+  - media-type
+  - regression-guard
+  - anti-bluff
+  estimated_duration: 7s
+  expected_result: PASS only when every browsed album's detail resolves
+    media_type == "music_album"
+- id: MAT-API-004
+  name: Per-track playback progress sets and resumes the chosen position
+  category: functional
+  priority: critical
+  platforms:
+  - api
+  record_action: GET /api/v1/entities/{id}/progress
+  steps:
+  - name: Drive the playback lifecycle on the chosen media item
+    action: 'For the chosen playable media item (a real track child when seeded,
+      else the album entity), POST /api/v1/playback/sessions/start (position_unit
+      seconds), POST /api/v1/playback/sessions/progress (end_position=<position>),
+      POST /api/v1/playback/sessions/end, all with
+      Authorization: Bearer <session_token>'
+    expected: 200 OK with a session_id at start; progress + end accepted; the
+      lifecycle is the identical mechanism a per-track resume uses
+    auth: bearer
+  - name: Read the progress back and assert resume
+    action: Runner RecordAction(GET /api/v1/entities/<id>/progress); driver writes
+      mat_play_start.json + mat_play_read1.json and asserts
+      progress.last_position == the set position (resume-per-track)
+    expected: Evidence positively shows progress.last_position equals the set
+      position (the chosen item resumes from where playback stopped)
+  tags:
+  - music
+  - track
+  - playback
+  - progress
+  - resume
+  - regression-guard
+  - anti-bluff
+  estimated_duration: 6s
+  expected_result: PASS only when the captured progress evidence shows
+    progress.last_position equals the set playback position
+- id: MAT-API-005
+  name: Per-track playback progress is deterministic across two cycles
+  category: functional
+  priority: high
+  platforms:
+  - api
+  record_action: GET /api/v1/entities/{id}/progress
+  steps:
+  - name: Re-run the playback lifecycle a second independent time
+    action: 'A second start -> progress -> end cycle for the SAME media item and
+      SAME position, then GET /api/v1/entities/<id>/progress with
+      Authorization: Bearer <session_token>'
+    expected: 200 OK; last_position is set-state (overwrite), so the second cycle
+      reads back the identical last_position == the set position (determinism
+      §11.4.50)
+    auth: bearer
+  - name: Record action and capture evidence
+    action: Runner RecordAction(GET /api/v1/entities/<id>/progress); driver writes
+      mat_play_read2.json and asserts read2 last_position equals read1 last_position
+      and equals the set position
+    expected: Evidence positively shows the read-back last_position is identical
+      across the two independent cycles
+  tags:
+  - music
+  - track
+  - playback
+  - determinism
+  - stability
+  - anti-bluff
+  estimated_duration: 6s
+  expected_result: PASS only when the captured progress evidence shows the
+    read-back last_position identical across two independent cycles
