@@ -1,0 +1,190 @@
+# SPDX-FileCopyrightText: 2026 Milos Vasic
+# SPDX-License-Identifier: Apache-2.0
+#
+# HelixQA Test Bank: Catalogizer Android TV — Navigation
+#
+# Tests Android TV UI navigation flows for Catalogizer on the MIBOX4 device.
+# Uses ADB shell commands for input (DPad keys, am start, dumpsys) since
+# Android TV Compose UIs have limited accessibility tree on TV launcher.
+#
+# Run via:
+#   helixqa run --banks banks/catalog-tv-navigation.yaml --platform android_tv
+
+version: "1.0"
+name: "Catalogizer Android TV Navigation"
+description: "Android TV UI navigation tests for Catalogizer on MIBOX4 — app launch, D-pad navigation through catalog screens, screenshot capture, and home-screen element verification."
+metadata:
+  author: "vasic-digital"
+  app: "Catalogizer"
+  version: "1.0.0"
+
+test_cases:
+  # ==================== App Launch ====================
+
+  - id: CATV-NAV-001
+    name: "Cold launch Catalogizer on Android TV via am start"
+    category: functional
+    priority: critical
+    platforms: [android_tv]
+    steps:
+      - name: "Launch the app via ADB"
+        action: "adb shell am start -n digital.vasic.catalogizer/.MainActivity"
+        expected: "Activity started, no crash — 'START u0' line appears in adb shell output"
+      - name: "Wait for activity to settle"
+        action: "adb shell sleep 3"
+        expected: "App has time to initialise MainActivity"
+      - name: "Verify app is in foreground"
+        action: "adb shell dumpsys window windows | grep -E 'mCurrentFocus|mFocusedApp' | grep -i catalogizer"
+        expected: "Catalogizer package appears in the focused window line"
+    tags: [launch, cold-start, android-tv, mibox4]
+    estimated_duration: "15s"
+    expected_result: "Catalogizer launches without crash and is the focused Activity"
+
+  - id: CATV-NAV-002
+    name: "Verify app process is running after launch"
+    category: functional
+    priority: critical
+    platforms: [android_tv]
+    steps:
+      - name: "Force-stop any prior instance for clean state"
+        action: "adb shell am force-stop digital.vasic.catalogizer"
+        expected: "Process killed cleanly"
+      - name: "Launch app"
+        action: "adb shell am start -n digital.vasic.catalogizer/.MainActivity"
+        expected: "Activity start acknowledged"
+      - name: "Wait for process registration"
+        action: "adb shell sleep 3"
+        expected: "App process registers"
+      - name: "Verify process exists with PID"
+        action: "adb shell pidof digital.vasic.catalogizer"
+        expected: "Non-empty PID number returned"
+    tags: [launch, process, android-tv, mibox4]
+    estimated_duration: "12s"
+    expected_result: "Catalogizer process is running with a valid PID"
+
+  - id: CATV-NAV-003
+    name: "Verify login screen elements visible after launch"
+    category: functional
+    priority: critical
+    platforms: [android_tv]
+    steps:
+      - name: "Launch app cleanly"
+        action: "adb shell am force-stop digital.vasic.catalogizer; adb shell am start -n digital.vasic.catalogizer/.MainActivity"
+        expected: "App relaunched"
+      - name: "Wait for UI composition"
+        action: "adb shell sleep 4"
+        expected: "Login screen renders"
+      - name: "Dump accessibility tree"
+        action: "adb shell uiautomator dump /data/local/tmp/view.xml && adb shell cat /data/local/tmp/view.xml"
+        expected: "XML dump contains Catalogizer-related text nodes or login fields"
+    tags: [launch, login-screen, uiautomator, android-tv, mibox4]
+    estimated_duration: "15s"
+    expected_result: "Accessibility dump confirms login screen elements are present"
+
+  # ==================== Navigation via D-pad ====================
+
+  - id: CATV-NAV-004
+    name: "D-pad right moves focus between carousel cards"
+    category: functional
+    priority: high
+    platforms: [android_tv]
+    steps:
+      - name: "Launch app and wait for home screen"
+        action: "adb shell am start -n digital.vasic.catalogizer/.MainActivity && adb shell sleep 4"
+        expected: "App on home screen"
+      - name: "Press DPAD_RIGHT multiple times"
+        action: "adb shell input keyevent 22 && adb shell sleep 1 && adb shell input keyevent 22 && adb shell sleep 1 && adb shell input keyevent 22"
+        expected: "Focus moves right across carousel — no crash, no ANR"
+      - name: "Verify app still responsive"
+        action: "adb shell dumpsys window windows | grep -E 'mCurrentFocus' | grep -i catalogizer"
+        expected: "Catalogizer still in focus"
+    tags: [navigation, d-pad, carousel, android-tv, mibox4]
+    estimated_duration: "15s"
+    expected_result: "D-pad right navigates across carousel items without crash"
+
+  - id: CATV-NAV-005
+    name: "D-pad down scrolls to Favorites section"
+    category: functional
+    priority: high
+    platforms: [android_tv]
+    steps:
+      - name: "Launch app and wait for home screen"
+        action: "adb shell am start -n digital.vasic.catalogizer/.MainActivity && adb shell sleep 4"
+        expected: "Home screen displayed"
+      - name: "Press DPAD_DOWN repeatedly to scroll past Recently Added"
+        action: "adb shell input keyevent 20 && adb shell sleep 1 && adb shell input keyevent 20 && adb shell sleep 1 && adb shell input keyevent 20"
+        expected: "Focus moves down through sections"
+      - name: "Verify app remains stable"
+        action: "adb shell dumpsys window windows | grep -E 'mCurrentFocus' | grep -i catalogizer"
+        expected: "Catalogizer still focused, no crash"
+    tags: [navigation, d-pad, scroll, favorites, android-tv, mibox4]
+    estimated_duration: "15s"
+    expected_result: "D-pad down scrolls to lower sections without crash"
+
+  - id: CATV-NAV-006
+    name: "Navigate to media detail from carousel"
+    category: functional
+    priority: critical
+    platforms: [android_tv]
+    steps:
+      - name: "Launch app"
+        action: "adb shell am start -n digital.vasic.catalogizer/.MainActivity && adb shell sleep 4"
+        expected: "Home screen displayed"
+      - name: "Move focus onto first carousel card"
+        action: "adb shell input keyevent 21 && adb shell sleep 1 && adb shell input keyevent 22 && adb shell sleep 1"
+        expected: "Focus on a carousel card"
+      - name: "Press DPAD_CENTER to select"
+        action: "adb shell input keyevent 23 && adb shell sleep 3"
+        expected: "Media detail screen loads — no crash"
+      - name: "Verify app still focused"
+        action: "adb shell dumpsys window windows | grep -E 'mCurrentFocus' | grep -i catalogizer"
+        expected: "Catalogizer still in focus after navigation"
+    tags: [navigation, detail, d-pad, select, android-tv, mibox4]
+    estimated_duration: "18s"
+    expected_result: "DPAD_CENTER on a carousel card navigates to media detail screen"
+
+  # ==================== Screenshot verification ====================
+
+  - id: CATV-NAV-007
+    name: "Capture device screenshot during playback of main screen"
+    category: functional
+    priority: medium
+    platforms: [android_tv]
+    steps:
+      - name: "Launch app on home screen"
+        action: "adb shell am start -n digital.vasic.catalogizer/.MainActivity && adb shell sleep 4"
+        expected: "Home screen displayed"
+      - name: "Take a screenshot"
+        action: "adb shell screencap -p /data/local/tmp/catalogizer_home.png"
+        expected: "Screenshot saved to /data/local/tmp/catalogizer_home.png"
+      - name: "Verify screenshot size"
+        action: "adb shell ls -l /data/local/tmp/catalogizer_home.png"
+        expected: "File exists and is non-zero (contains actual pixel data)"
+      - name: "Pull screenshot for offline analysis"
+        action: "adb pull /data/local/tmp/catalogizer_home.png /tmp/catalogizer_home_screenshot.png"
+        expected: "File pulled to host, non-zero size"
+    tags: [screenshot, capture, evidence, android-tv, mibox4]
+    estimated_duration: "15s"
+    expected_result: "Screenshot captured and pulled from device, demonstrating app is rendering"
+
+  - id: CATV-NAV-008
+    name: "Navigate back from detail to home screen"
+    category: functional
+    priority: high
+    platforms: [android_tv]
+    steps:
+      - name: "Launch app"
+        action: "adb shell am start -n digital.vasic.catalogizer/.MainActivity && adb shell sleep 4"
+        expected: "Home screen displayed"
+      - name: "Move focus onto carousel card and select"
+        action: "adb shell input keyevent 22 && adb shell sleep 1 && adb shell input keyevent 23 && adb shell sleep 3"
+        expected: "Detail screen displayed"
+      - name: "Press BACK to go back"
+        action: "adb shell input keyevent 4 && adb shell sleep 2"
+        expected: "Returns to home screen or previous screen"
+      - name: "Verify app still focused after back"
+        action: "adb shell dumpsys window windows | grep -E 'mCurrentFocus' | grep -i catalogizer"
+        expected: "Catalogizer still in focus after BACK navigation"
+    tags: [navigation, back, d-pad, android-tv, mibox4]
+    estimated_duration: "18s"
+    expected_result: "BACK navigation returns from detail to home screen without crash"
