@@ -34,17 +34,17 @@ deps:
     layout: flat
   - name: DocProcessor
     ssh_url: git@github.com:HelixDevelopment/DocProcessor.git
-    ref: main
+    ref: master
     why: "Document-processing dependency — go.mod replace digital.vasic.docprocessor => ../doc_processor"
     layout: flat
   - name: LLMOrchestrator
     ssh_url: git@github.com:HelixDevelopment/LLMOrchestrator.git
-    ref: main
+    ref: master
     why: "LLM orchestration layer for HelixQA QA sessions — go.mod replace digital.vasic.llmorchestrator => ../llm_orchestrator"
     layout: flat
   - name: LLMProvider
     ssh_url: git@github.com:HelixDevelopment/LLMProvider.git
-    ref: main
+    ref: master
     why: "LLM provider abstraction — go.mod replace digital.vasic.llmprovider => ../llm_provider"
     layout: flat
   - name: LLMsVerifier
@@ -59,7 +59,7 @@ deps:
     layout: flat
   - name: VisionEngine
     ssh_url: git@github.com:HelixDevelopment/VisionEngine.git
-    ref: main
+    ref: master
     why: "Vision/OCR analysis engine for video-evidence validation — go.mod replace digital.vasic.visionengine => ../vision_engine"
     layout: flat
 
