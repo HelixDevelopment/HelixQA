@@ -1,0 +1,247 @@
+# SPDX-FileCopyrightText: 2026 Milos Vasic
+# SPDX-License-Identifier: Apache-2.0
+#
+# HelixQA Test Bank: HelixVPN MVP
+# Autonomous-session tests for the six critical paths plus GAP-6 DDoS ownership.
+
+version: "1.0"
+name: "HelixVPN MVP Test Bank"
+description: "HelixVPN MVP autonomous-session tests: auth/tunnel, reconnect/roaming, kill-switch, DNS leak, control-plane HA, client UI visual proof, and explicit GAP-6 DDoS ownership for NFR-413/NFR-414."
+
+metadata:
+  author: "HelixVPN QA Architecture"
+  app: "HelixVPN"
+  category: "mvp"
+  phase: "MVP"
+  maturity: "defined"
+
+test_cases:
+  # ==================== Critical path: auth + tunnel establishment ====================
+  - id: HVPN-HQA-AUTH-TUNNEL
+    name: "Auth + tunnel establishment"
+    description: "Proves that a real device can anonymously enroll, authenticate via mTLS, establish a WireGuard tunnel, and reach an authorized LAN host."
+    category: e2e
+    priority: critical
+    platforms: [api, desktop, mobile]
+    steps:
+      - name: "Enroll device with token"
+        action: "helixvpnctl enroll --token $ENROLLMENT_TOKEN --out device.toml"
+        expected: "Device enrolled; mTLS cert issued; private key stays local"
+      - name: "Connect tunnel"
+        action: "helixvpnctl connect --config device.toml"
+        expected: "WireGuard handshake completes; status becomes Connected"
+      - name: "Reach authorized LAN host"
+        action: "curl http://$TEST_LAN_HOST/"
+        expected: "HTTP 200 with expected body hash"
+      - name: "Verify pcap evidence"
+        action: "Inspect host-iface pcap for WG handshake + inner packets"
+        expected: "pcap contains valid WG initiation and encrypted data frames"
+    tags: [e2e, auth, tunnel, enrollment, mtls]
+    estimated_duration: "3m"
+    expected_result: "Real device enrolls, authenticates, establishes tunnel, reaches LAN"
+    evidence:
+      - path: "qa-results/hqa/auth_tunnel/auth_tunnel.pcap"
+        class: network_connectivity
+      - path: "qa-results/hqa/auth_tunnel/iperf3.json"
+        class: network_throughput
+
+  # ==================== Critical path: reconnect / roaming ====================
+  - id: HVPN-HQA-RECONNECT-ROAMING
+    name: "Reconnect / roaming"
+    description: "Proves that a transient carrier drop triggers kill-switch engagement and automatic tunnel reconnect with zero plaintext leakage."
+    category: chaos
+    priority: critical
+    platforms: [desktop, mobile]
+    steps:
+      - name: "Establish baseline tunnel"
+        action: "helixvpnctl connect; start iperf3 to LAN host"
+        expected: "Tunnel Connected; goodput > 0"
+      - name: "Trigger transient drop"
+        action: "ip netns exec client ip link set eth0 down; sleep 2; ip link set eth0 up"
+        expected: "Client detects drop; kill-switch engages during gap"
+      - name: "Verify automatic reconnect"
+        action: "Wait for status transition Reconnecting → Connected"
+        expected: "Reconnected within 3 s without user action"
+      - name: "Verify no leak in gap"
+        action: "Run LeakDetector over gap pcap"
+        expected: "Zero plaintext / zero non-loopback egress during gap"
+    tags: [chaos, reconnect, roaming, kill-switch, no-leak]
+    estimated_duration: "4m"
+    expected_result: "Tunnel recovers automatically after transient drop with no leak"
+    evidence:
+      - path: "qa-results/hqa/reconnect_roaming/roaming_reconnect.pcap"
+        class: network_connectivity
+      - path: "qa-results/hqa/reconnect_roaming/status_log.json"
+        class: counter_delta
+
+  # ==================== Critical path: kill-switch ====================
+  - id: HVPN-HQA-KILL-SWITCH
+    name: "Kill-switch no plaintext leak"
+    description: "Proves that forcibly killing the edge path activates the OS firewall kill-switch and blocks all off-tunnel plaintext egress."
+    category: security
+    priority: critical
+    platforms: [desktop, mobile]
+    steps:
+      - name: "Connect tunnel"
+        action: "helixvpnctl connect"
+        expected: "Status Connected"
+      - name: "Start background traffic"
+        action: "iperf3 -c $TEST_LAN_HOST -t 30"
+        expected: "Goodput > 0"
+      - name: "Kill edge path"
+        action: "ip route del default via $GATEWAY_IP; kill edge process"
+        expected: "Core detects tunnel down; kill-switch state entered"
+      - name: "Capture gap traffic"
+        action: "tcpdump -i any -w gap.pcap during 10 s gap"
+        expected: "pcap contains zero plaintext and zero non-loopback packets"
+    tags: [security, kill-switch, no-leak, pcap]
+    estimated_duration: "3m"
+    expected_result: "No plaintext or non-loopback egress while tunnel is down"
+    evidence:
+      - path: "qa-results/hqa/killswitch/killswitch_gap.pcap"
+        class: wifi_link
+
+  # ==================== Critical path: DNS leak prevention ====================
+  - id: HVPN-HQA-DNS-LEAK
+    name: "DNS leak prevention"
+    description: "Proves that all DNS queries egress through the tunnel with zero plaintext :53 packets observable off-tunnel."
+    category: security
+    priority: critical
+    platforms: [desktop, mobile]
+    steps:
+      - name: "Connect tunnel"
+        action: "helixvpnctl connect"
+        expected: "Status Connected; tunnel DNS resolver pushed"
+      - name: "Resolve test domains"
+        action: "for d in $TEST_DOMAINS; do dig +short $d; done"
+        expected: "All domains resolve"
+      - name: "Inspect host pcap for :53"
+        action: "tshark -r dns.pcap -Y 'udp.port == 53'"
+        expected: "Zero plaintext DNS outside tunnel interface"
+      - name: "Verify tunnel DNS used"
+        action: "Compare resolver IPs against tunnel DNS config"
+        expected: "Queries egress tunnel interface only"
+    tags: [security, dns, leak, pcap]
+    estimated_duration: "2m"
+    expected_result: "All DNS stays inside tunnel; zero plaintext :53 off-tunnel"
+    evidence:
+      - path: "qa-results/hqa/dns_leak/dns_leak.pcap"
+        class: network_connectivity
+      - path: "qa-results/hqa/dns_leak/dns_resolvers.json"
+        class: counter_delta
+
+  # ==================== Critical path: control-plane HA / fail-static ====================
+  - id: HVPN-HQA-CONTROL-PLANE-HA
+    name: "Control-plane HA / fail-static"
+    description: "Proves that established tunnels survive a control-plane outage using cached edge verdicts and resume deltas when the control plane returns."
+    category: chaos
+    priority: high
+    platforms: [api]
+    steps:
+      - name: "Establish tunnel and traffic"
+        action: "helixvpnctl connect; iperf3 -c $TEST_LAN_HOST -t 60"
+        expected: "Connected; goodput > 0"
+      - name: "Stop control plane"
+        action: "systemctl stop helix-coordinator; podman stop helix-redis helix-postgres"
+        expected: "Control plane down; edge continues forwarding"
+      - name: "Verify tunnel survives"
+        action: "Check iperf3 continuity and WG handshake age"
+        expected: "No tunnel drop; traffic keeps flowing"
+      - name: "Restore control plane and resume deltas"
+        action: "systemctl start helix-coordinator; podman start helix-redis helix-postgres"
+        expected: "Agents resume from known_version; delta stream active"
+    tags: [chaos, ha, fail-static, control-plane]
+    estimated_duration: "4m"
+    expected_result: "Existing tunnels survive CP outage and resume deltas on return"
+    evidence:
+      - path: "qa-results/hqa/control_plane_ha/ha_failstatic.pcap"
+        class: network_throughput
+      - path: "qa-results/hqa/control_plane_ha/cp_down.log"
+        class: counter_delta
+
+  # ==================== Critical path: client UI visual proof (§11.4.170) ====================
+  - id: HVPN-HQA-CLIENT-UI-VISUAL
+    name: "Client UI visual proof"
+    description: "Proves that the Access app connect flow renders the expected states and matches the core status stream under a vision-engine verdict."
+    category: ui
+    priority: critical
+    platforms: [android, ios, desktop]
+    steps:
+      - name: "Launch Access app"
+        action: "Start app flavor=Access platform=$PLATFORM"
+        expected: "Window visible; Connect button rendered"
+      - name: "Record connect flow"
+        action: "panoptic capture --window-scope --out ui_connect.mp4"
+        expected: "MP4 covers launch → tap Connect → Connecting → Connected"
+      - name: "Run vision_engine verdict"
+        action: "vision_engine --input ui_connect.mp4 --expect-states Disconnected,Connecting,Connected"
+        expected: "PASS; OCR reads expected status text"
+      - name: "Cross-check core FSM"
+        action: "Compare vision state sequence with helix_status_stream log"
+        expected: "Rendered UI matches core FSM; no frozen frame"
+    tags: [ui, visual, recorded-evidence, vision-engine, client]
+    estimated_duration: "2m"
+    expected_result: "Access app connect flow renders correctly and matches core state"
+    evidence:
+      - path: "qa-results/hqa/client_ui/ui_connect.mp4"
+        class: recorded_evidence
+      - path: "qa-results/hqa/client_ui/vision_verdict.json"
+        class: vision_verdict
+
+  # ==================== GAP-6: DDoS ownership — control-plane API rate limiting ====================
+  - id: HVPN-HQA-NFR413-API-Rate-Limit
+    name: "GAP-6 closure: control-plane API rate limiting"
+    description: "Proves that the API gateway token-bucket rate limiter rejects a credential-stuffing flood while legitimate clients remain within latency budget."
+    category: ddos
+    priority: high
+    platforms: [api]
+    steps:
+      - name: "Establish baseline latency"
+        action: "Send 10 GET /api/v1/health requests; record p95"
+        expected: "Baseline p95 < 100 ms"
+      - name: "Flood login endpoint"
+        action: "Send 200 POST /api/v1/auth/login with invalid creds in 10 s"
+        expected: "First few 401, then 429 dominates; zero 5xx"
+      - name: "Verify legitimate client unaffected"
+        action: "During flood, send 5 valid requests from different IP"
+        expected: "All 200 OK within 500 ms"
+      - name: "Verify limiter counters"
+        action: "Scrape /metrics for ratelimit_rejected"
+        expected: "Counter strictly > 0 during flood"
+    tags: [ddos, gap-6, rate-limit, api, nfr-413]
+    estimated_duration: "60s"
+    expected_result: "API gateway token-bucket rejects flood; legitimate traffic served"
+    evidence:
+      - path: "qa-results/hqa/ddos_api/legit_latency.json"
+        class: network_connectivity
+      - path: "qa-results/hqa/ddos_api/limiter_counters.csv"
+        class: counter_delta
+
+  # ==================== GAP-6: DDoS ownership — data-plane edge flood resilience ====================
+  - id: HVPN-HQA-NFR414-Edge-Flood
+    name: "GAP-6 closure: data-plane edge flood resilience"
+    description: "Proves that the data-plane edge drops a spoofed WireGuard handshake flood statelessly while a legitimate client stays usable and no plaintext leaks."
+    category: ddos
+    priority: high
+    platforms: [api]
+    steps:
+      - name: "Start legitimate probe"
+        action: "helix-core probe enroll + WG handshake + iperf3"
+        expected: "Handshake complete; goodput > 0"
+      - name: "Flood WG init packets"
+        action: "rig/wg_init_flood --target gw:51820 --pps $ATTACK_PPS"
+        expected: "Flood runs for configured duration"
+      - name: "Verify legit p99 bounded"
+        action: "Collect handshake latency samples during flood"
+        expected: "legit handshake p99 within SLO budget"
+      - name: "Verify edge fail-static"
+        action: "Scrape helix_edge_up and RSS counters"
+        expected: "Edge stays up (or restarts within budget); no plaintext leak"
+    tags: [ddos, gap-6, edge, flood, fail-static, nfr-414]
+    estimated_duration: "120s"
+    expected_result: "Edge drops flood statelessly; legitimate client stays usable"
+    evidence:
+      - path: "qa-results/hqa/ddos_edge/legit_latency.json"
+        class: network_throughput
+      - path: "qa-results/hqa/ddos_edge/edge_liveness.csv"
+        class: counter_delta
