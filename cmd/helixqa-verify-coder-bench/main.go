@@ -623,46 +623,53 @@ func run() int {
 	return exitFail
 }
 
-// collectLevels re-parses os.Args to collect all --level values.
+// collectLevels re-parses os.Args to collect all unique --level values.
+// Uses flag.ContinueOnError to silently skip flags defined by the outer
+// flag.Parse() that this sidecar FlagSet does not carry.
 func collectLevels() []int {
+	seen := make(map[int]bool)
 	var vals []int
+
 	fs := flag.NewFlagSet("level-collector", flag.ContinueOnError)
 	fs.Usage = func() {}
+	// Suppress "flag provided but not defined" for flags the outer set owns
+	fs.SetOutput(io.Discard)
 	levels := fs.Int("level", 10, "")
 	_ = fs.Parse(os.Args[1:])
-	vals = append(vals, *levels)
+	if !seen[*levels] {
+		seen[*levels] = true
+		vals = append(vals, *levels)
+	}
 
-	// Get all occurrences
-	fs.VisitAll(func(f *flag.Flag) {
-		if f.Name == "level" {
-			// The first one was captured; we need to re-parse for multiples
-		}
-	})
-
-	// Re-parse manually for multiple --level occurrences
+	// Also scan os.Args manually for --level= N and --level N to pick up
+	// all repeat occurrences (flag.Int holds only the last value).
 	for i := 1; i < len(os.Args); i++ {
 		arg := os.Args[i]
+		var v int
+		parsed := false
 		if arg == "--level" || arg == "-level" {
 			if i+1 < len(os.Args) {
-				var v int
 				if _, err := fmt.Sscanf(os.Args[i+1], "%d", &v); err == nil {
-					if len(vals) == 0 || vals[len(vals)-1] != v {
-						vals = append(vals, v)
-					}
+					parsed = true
 				}
 				i++
 			}
 		} else if strings.HasPrefix(arg, "--level=") || strings.HasPrefix(arg, "-level=") {
 			parts := strings.SplitN(arg, "=", 2)
 			if len(parts) == 2 {
-				var v int
 				if _, err := fmt.Sscanf(parts[1], "%d", &v); err == nil {
-					if len(vals) == 0 || vals[len(vals)-1] != v {
-						vals = append(vals, v)
-					}
+					parsed = true
 				}
 			}
 		}
+		if parsed && !seen[v] {
+			seen[v] = true
+			vals = append(vals, v)
+		}
+	}
+
+	if len(vals) == 0 {
+		vals = append(vals, 10)
 	}
 	return vals
 }
