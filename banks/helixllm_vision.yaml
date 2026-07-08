@@ -1,0 +1,308 @@
+# SPDX-FileCopyrightText: 2026 Milos Vasic
+# SPDX-License-Identifier: Apache-2.0
+#
+# HelixQA Test Bank B: HelixLLM Vision (VLM) Capability
+# ======================================================
+#
+# Authored per docs/research/07.2026/00_master/MASTER_IMPLEMENTATION_PLAN.md
+# §6.5 + docs/research/07.2026/02_vision_generative/CAPABILITIES_MASTER_PLAN_v2.md
+# §5.2 + docs/research/07.2026/12_helixqa_testing/12_helixqa_testing.md
+# Part 3 "Bank B" design — the headline HelixLLM capability, authored FIRST
+# per §11.4.132 risk-descending priority (most-recently-worked / most
+# recently proven capability goes first).
+#
+# TARGET. The live HelixLLM vision (VLM) service: Qwen2.5-VL-3B-Instruct-Q4_K_M
+# GGUF + mmproj, served via the on-demand `visiongen-boot` harness
+# (submodules/helix_llm/cmd/visiongen-boot) on its own port :18439,
+# co-resident with the coder (:18434) under vrambroker ClassVLM admission
+# (§11.4.76 containers submodule + §11.4.161 rootless podman + §11.4.119
+# single-resource-owner). This bank NEVER boots/tears-down the vision
+# service itself — the conductor (or an operator) boots it first via
+# `visiongen-boot boot compose.vision.yml helixllm_visiongen` and tears it
+# down afterward via `visiongen-boot down ...`; the bank only DRIVES the
+# already-running endpoint.
+#
+# ANTI-BLUFF (§11.4.6 / §11.4.69 / §11.4.107(10) / §11.4.123). Every
+# ground-truth fixture below was AUTHORED AGAINST THE LIVE 3B MODEL'S ACTUAL
+# BEHAVIOUR — each candidate image+prompt was run against the live :18439
+# endpoint during authoring (2026-07-08) and its real answer confirmed to
+# contain the asserted fact tokens (deterministic at temperature=0,
+# re-confirmed by re-running each fixture twice, §11.4.50) BEFORE being
+# committed here as a "must-match" assertion. No expected answer below is
+# guessed — every one is a captured, reproduced fact.
+#
+# Analyzer: cmd/helixqa-verify-vision (this repo) — a thin, project-agnostic
+# dispatches_to analyzer (CONST-051(B), no HelixQA core-engine change) that
+# POSTs the image + prompt to the OpenAI-compatible multimodal
+# /v1/chat/completions endpoint, strictly fact-matches the response
+# (case-insensitive substring, ALL expected tokens required), and writes an
+# auditable verdict JSON. The verdict embeds the raw model response + the
+# expected facts + the metric, per Part 4 item 2 of the design doc — never
+# trust-the-analyzer-blindly.
+#
+# VIS-SELF-VALIDATE-001 (mandatory §11.4.107(10)) proves the analyzer itself
+# cannot bluff: the SAME analyzer binary runs a golden-good fixture (must
+# PASS) and a golden-bad fixture — the identical image, but DELIBERATELY
+# wrong expected facts — via the SAME `--expect-fail` inversion convention
+# already used by helixcode-ensemble-members.yaml HXC-ENS-003
+# (`panoptic-validate-recording --expect-fail`): the RAW fact-match verdict
+# ("pass" in the verdict JSON) is recorded honestly and NEVER flipped; only
+# which raw outcome counts as case success is inverted. A paired §1.1
+# mutation (stripping the fact-matching assertion in the analyzer source,
+# forcing pass=true unconditionally) was run during authoring and confirmed
+# to flip VIS-SELF-VALIDATE-001-BAD's case_result from true to false — i.e.
+# WITHOUT the real discriminator, the golden-bad fixture bluff-PASSes at the
+# raw level and the --expect-fail inversion catches it as a case FAIL. This
+# proves the discriminator is load-bearing, not decorative.
+#
+# DECOUPLING (CONST-051(B) / §11.4.28). This bank is DATA. dispatches_to
+# names a consumer-built binary (bin/helixqa-verify-vision); the endpoint
+# URL, model id, image paths, prompts, and expected/forbidden fact tokens are
+# ALL bank data — HelixQA's core packages (pkg/testbank, pkg/conduit) never
+# learn a HelixLLM-specific fact. `qa-results/helixllm_vision/**` is the
+# per-run RAW evidence dir (git-ignored, §11.4.128) the conductor curates
+# into `docs/qa/<run-id>/` at release-prep (§11.4.83).
+#
+# HONEST GAP (§11.4.3 / §11.4.52). VIS-LIVENESS-001 (window-scoped capture +
+# freeze-detection before the VLM judges a LIVE screen, per §11.4.107/159)
+# requires an X11/Wayland display + helixqa-x11grab; this authoring host is
+# headless (no $DISPLAY). The case below SKIPs honestly via requires_env
+# rather than faking a pass — never guessed, never silently dropped.
+version: "1.0"
+name: "HelixLLM Vision (VLM) Capability — Bank B"
+description: >-
+  Drives real multimodal completions against the live HelixLLM vision (VLM)
+  endpoint (Qwen2.5-VL-3B-Instruct-Q4_K_M, :18439) and strictly fact-matches
+  the responses against ground-truth image fixtures authored against the
+  live model's actual behaviour. VIS-SELF-VALIDATE-001 proves the analyzer
+  itself cannot bluff (golden-good PASS + golden-bad FAIL via the SAME
+  analyzer, paired §1.1 mutation confirmed during authoring). A green case
+  requires the model's response to genuinely contain every asserted fact —
+  never a metadata-only / endpoint-reachable-only PASS (closes AB-15,
+  capabilities plan §2.5: "/v1/models responds" is not proof of
+  understanding).
+metadata:
+  author: vasic-digital
+  app: HelixLLM
+  category: "helixllm-vision"
+  priority: critical
+  covenant: "§11.4.107(10) self-validated analyzer + §11.4.69 sink-side positive evidence (the model's own response text IS the sink)"
+  route_source: "submodules/helix_llm/cmd/visiongen-boot (compose.vision.yml, :18439) — vrambroker ClassVLM warm-tier admission"
+  evidence_dir: "qa-results/helixllm_vision"
+  ground_truth_dir: "data/vision_gt"
+  analyzer: "cmd/helixqa-verify-vision"
+  boot_precondition: >-
+    Vision service MUST already be booted (visiongen-boot boot
+    compose.vision.yml helixllm_visiongen) before this bank runs; this bank
+    does not boot/pause/teardown any service itself (§11.4.119
+    single-resource-owner — the boot/teardown owner is the conductor).
+
+test_cases:
+
+  - id: VIS-UNDERSTAND-001
+    challenge_id: helixllm.vision.understand-shape-color
+    name: "VLM correctly identifies shape + color of a known ground-truth image"
+    category: functional
+    priority: critical
+    platforms: [api]
+    domains: [vision, llm]
+    dispatches_to: >-
+      bin/helixqa-verify-vision
+      --image data/vision_gt/red_circle.png
+      --prompt "What shape and what color is the main object in this image? Answer with the shape name and the color."
+      --expect "circle,red"
+      --out qa-results/helixllm_vision/understand_001_verdict.json
+      --conduit-dir qa-results/helixllm_vision/conduit
+      --challenge-id VIS-UNDERSTAND-001
+    required_evidence:
+      - "qa-results/helixllm_vision/understand_001_verdict.json | json:case_result==true | json:matched_facts==2 | json:hallucinated==false"
+    steps:
+      - name: "POST image+prompt to the live vision endpoint and fact-match the response"
+        action: "http: POST /v1/chat/completions"
+        expected: >-
+          Response content contains both "circle" and "red" (case-insensitive).
+          Authored 2026-07-08 against the live 3B model, which answered:
+          "The main object in the image is a circle, and it is red in color."
+          (re-confirmed deterministic across two runs at temperature=0).
+
+  - id: VIS-COUNT-001
+    challenge_id: helixllm.vision.count-objects
+    name: "VLM correctly counts a small number of same-colored shapes"
+    category: functional
+    priority: high
+    platforms: [api]
+    domains: [vision, llm]
+    dispatches_to: >-
+      bin/helixqa-verify-vision
+      --image data/vision_gt/three_blue_circles.png
+      --prompt "How many blue circles are in this image? Reply with just the number as a word or digit."
+      --expect "3"
+      --out qa-results/helixllm_vision/count_001_verdict.json
+      --conduit-dir qa-results/helixllm_vision/conduit
+      --challenge-id VIS-COUNT-001
+    required_evidence:
+      - "qa-results/helixllm_vision/count_001_verdict.json | json:case_result==true | json:matched_facts==1 | json:hallucinated==false"
+    steps:
+      - name: "POST a 3-blue-circle image + counting prompt; assert the digit 3 in the response"
+        action: "http: POST /v1/chat/completions"
+        expected: >-
+          Response contains "3". Authored 2026-07-08 against the live 3B
+          model, which answered "3" (re-confirmed deterministic).
+
+  - id: VIS-OCR-READ-001
+    challenge_id: helixllm.vision.read-text-in-image
+    name: "VLM correctly reads a single rendered word inside the image"
+    category: functional
+    priority: high
+    platforms: [api]
+    domains: [vision, llm, ocr]
+    dispatches_to: >-
+      bin/helixqa-verify-vision
+      --image data/vision_gt/text_helix.png
+      --prompt "What single word is written in this image? Reply with just the word."
+      --expect "helix"
+      --out qa-results/helixllm_vision/ocr_read_001_verdict.json
+      --conduit-dir qa-results/helixllm_vision/conduit
+      --challenge-id VIS-OCR-READ-001
+    required_evidence:
+      - "qa-results/helixllm_vision/ocr_read_001_verdict.json | json:case_result==true | json:matched_facts==1 | json:hallucinated==false"
+    steps:
+      - name: "POST a rendered-text image + reading prompt; assert the exact word (case-insensitive)"
+        action: "http: POST /v1/chat/completions"
+        expected: >-
+          Response contains "helix" (case-insensitive). Authored 2026-07-08
+          against the live 3B model, which answered "HELIX" (re-confirmed
+          deterministic).
+
+  - id: VIS-SPATIAL-001
+    challenge_id: helixllm.vision.spatial-left-right
+    name: "VLM correctly answers a left/right spatial-relation question"
+    category: functional
+    priority: high
+    platforms: [api]
+    domains: [vision, llm]
+    dispatches_to: >-
+      bin/helixqa-verify-vision
+      --image data/vision_gt/spatial_left_right.png
+      --prompt "There are two colored squares in this image, one red and one blue. Is the red square to the left or to the right of the blue square? Answer with one word: left or right."
+      --expect "left"
+      --forbid "right"
+      --out qa-results/helixllm_vision/spatial_001_verdict.json
+      --conduit-dir qa-results/helixllm_vision/conduit
+      --challenge-id VIS-SPATIAL-001
+    required_evidence:
+      - "qa-results/helixllm_vision/spatial_001_verdict.json | json:case_result==true | json:matched_facts==1 | json:hallucinated==false"
+    steps:
+      - name: "POST the two-square image + spatial-relation prompt; assert 'left' and NOT 'right'"
+        action: "http: POST /v1/chat/completions"
+        expected: >-
+          Response contains "left" and does not contain "right". Authored
+          2026-07-08 against the live 3B model, which answered "left"
+          (re-confirmed deterministic).
+
+  # ==========================================================================
+  # VIS-SELF-VALIDATE-001 (mandatory §11.4.107(10)) — TWO cases, ONE analyzer.
+  # -GOOD reuses the VIS-UNDERSTAND-001 fixture (must PASS at the raw level).
+  # -BAD reuses the SAME image but asserts DELIBERATELY wrong facts
+  # ("square,blue" against an image the model correctly calls a red circle)
+  # via --expect-fail, mirroring the helixcode-ensemble-members.yaml
+  # HXC-ENS-003 negative-case convention: the analyzer's raw "pass" MUST be
+  # false (proving the discriminator correctly rejects the mismatch); the
+  # case-level "case_result" is then the (inverted) success signal the bank
+  # gates on. A paired §1.1 mutation (main.go: force v.Pass=true
+  # unconditionally) was run during authoring and confirmed -BAD's
+  # case_result flips to false under the mutation — i.e. the mutation is
+  # caught, proving this discriminator is real (mutation NOT committed;
+  # restored + re-verified before landing this bank).
+  # ==========================================================================
+  - id: VIS-SELF-VALIDATE-001-GOOD
+    challenge_id: helixllm.vision.self-validate-golden-good
+    name: "Self-validation golden-good: correct facts against a known image PASS"
+    category: functional
+    priority: critical
+    platforms: [api]
+    domains: [vision, llm, anti-bluff]
+    dispatches_to: >-
+      bin/helixqa-verify-vision
+      --image data/vision_gt/red_circle.png
+      --prompt "What shape and what color is the main object in this image? Answer with the shape name and the color."
+      --expect "circle,red"
+      --out qa-results/helixllm_vision/self_validate_001_golden_good_verdict.json
+      --conduit-dir qa-results/helixllm_vision/conduit
+      --challenge-id VIS-SELF-VALIDATE-001-GOOD
+    required_evidence:
+      - "qa-results/helixllm_vision/self_validate_001_golden_good_verdict.json | json:case_result==true | json:pass==true | json:matched_facts==2"
+    steps:
+      - name: "Golden-good: analyzer must PASS when facts genuinely match"
+        action: "http: POST /v1/chat/completions"
+        expected: "pass==true (facts genuinely present in the model's response)."
+
+  - id: VIS-SELF-VALIDATE-001-BAD
+    challenge_id: helixllm.vision.self-validate-golden-bad-must-fail
+    name: "Self-validation golden-bad: mismatched facts against the SAME image MUST FAIL raw, case succeeds via --expect-fail"
+    category: functional
+    priority: critical
+    platforms: [api]
+    domains: [vision, llm, anti-bluff]
+    dispatches_to: >-
+      bin/helixqa-verify-vision
+      --image data/vision_gt/red_circle.png
+      --prompt "What shape and what color is the main object in this image? Answer with the shape name and the color."
+      --expect "square,blue"
+      --expect-fail
+      --out qa-results/helixllm_vision/self_validate_001_golden_bad_verdict.json
+      --conduit-dir qa-results/helixllm_vision/conduit
+      --challenge-id VIS-SELF-VALIDATE-001-BAD
+    metadata:
+      expect_fail: true
+      mutation_proof: >-
+        Authored 2026-07-08: with the analyzer's fact-matching assertion
+        intact, this case's raw pass=false (matched_facts=0/2) and
+        case_result=true (via --expect-fail inversion) — exit 0. A paired
+        §1.1 mutation replacing the assertion with an unconditional
+        "v.Pass = true" was applied to cmd/helixqa-verify-vision/main.go,
+        rebuilt, and re-run against this exact fixture: raw pass flipped to
+        true, case_result flipped to false — exit 1 (case FAIL). The
+        mutation was then reverted and the restored binary re-confirmed to
+        discriminate correctly (raw pass=false, case_result=true) before
+        this bank was committed. No mutation code is committed anywhere in
+        this tree (§11.4.84 quiescence).
+    required_evidence:
+      - "qa-results/helixllm_vision/self_validate_001_golden_bad_verdict.json | json:case_result==true | json:pass==false | json:matched_facts==0"
+    steps:
+      - name: "Golden-bad: analyzer must reject mismatched facts (raw FAIL), case succeeds via --expect-fail inversion"
+        action: "http: POST /v1/chat/completions"
+        expected: >-
+          pass==false (the response genuinely does NOT contain "square" or
+          "blue" — it correctly describes a red circle); case_result==true
+          because this case declares --expect-fail. A case_result==false
+          here would mean the analyzer bluff-PASSed a deliberately wrong
+          fixture.
+
+  - id: VIS-LIVENESS-001
+    challenge_id: helixllm.vision.liveness-not-stale
+    name: "Live-screen description: window-scoped capture + freeze-detection before the VLM judges it"
+    category: functional
+    priority: medium
+    platforms: [api]
+    domains: [vision, llm, liveness]
+    requires_env: [HELIXQA_LAB_HAS_DISPLAY]
+    dispatches_to: >-
+      bin/helixqa-verify-vision-liveness
+      --window-capture helixqa-x11grab
+      --conduit-dir qa-results/helixllm_vision/conduit
+      --challenge-id VIS-LIVENESS-001
+    required_evidence:
+      - "qa-results/helixllm_vision/liveness_001_verdict.json | json:case_result==true | json:not_stale==true"
+    steps:
+      - name: "Window-scoped capture (helixqa-x11grab, §11.4.159) -> freeze-detection (pkg/vision/diff, §11.4.107) -> VLM judges the live surface"
+        action: "shell: helixqa-x11grab --window <target> --out /tmp/liveness_frame.png"
+        expected: >-
+          Frame captured, freeze-detection confirms not-stale vs the prior
+          frame, VLM description is genuinely about the current content.
+      # HONEST GAP (§11.4.3): this authoring host is headless (no $DISPLAY,
+      # no xdotool) — HELIXQA_LAB_HAS_DISPLAY is unset here, so this case
+      # SKIPs honestly rather than faking a pass. It requires a display +
+      # window-capture-capable lab install to run; the analyzer binary
+      # (bin/helixqa-verify-vision-liveness) is NOT yet implemented in this
+      # bank pass — tracked as a follow-up, never silently claimed done.
