@@ -8,9 +8,9 @@
 # script automatically on clone; manual invocation from the repo root is also
 # supported.
 #
-# This script reads UPSTREAMABLE_REPOSITORY from each .sh file in the Upstreams/
+# This script reads UPSTREAMABLE_REPOSITORY from each .sh file in the upstreams/
 # directory and adds them as git remotes. Existing remotes with the same name
-# are updated. Both `Upstreams/` (legacy CamelCase) and `upstreams/` (CONST-052
+# are updated. Both `upstreams/` (legacy CamelCase) and `upstreams/` (CONST-052
 # lowercase target) directory names are honored — lowercase wins when both are
 # present, mirroring the constitution submodule's reference implementation.
 #
@@ -25,16 +25,16 @@ set -e
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # CONST-052 transition: prefer lowercase upstreams/ when present, else
-# fall back to legacy CamelCase Upstreams/. Mirrors the constitution
+# fall back to legacy CamelCase upstreams/. Mirrors the constitution
 # submodule's install_upstreams.sh behavior (commit 45d3678).
 if [[ -d "${SCRIPT_DIR}/upstreams" ]]; then
     UPSTREAMS_DIR="${SCRIPT_DIR}/upstreams"
 elif [[ -d "${SCRIPT_DIR}/Upstreams" ]]; then
-    UPSTREAMS_DIR="${SCRIPT_DIR}/Upstreams"
+    UPSTREAMS_DIR="${SCRIPT_DIR}/upstreams"
 else
-    echo "Error: Upstreams directory not found at ${SCRIPT_DIR}/upstreams or ${SCRIPT_DIR}/Upstreams" >&2
-    echo "Create upstreams/ (or legacy Upstreams/) with one *.sh recipe per upstream" >&2
-    echo "(e.g. GitHub.sh, GitLab.sh, GitFlic.sh, GitVerse.sh) — each exporting" >&2
+    echo "Error: upstreams directory not found at ${SCRIPT_DIR}/upstreams or ${SCRIPT_DIR}/Upstreams" >&2
+    echo "Create upstreams/ (or legacy upstreams/) with one *.sh recipe per upstream" >&2
+    echo "(e.g. github.sh, gitlab.sh, gitflic.sh, gitverse.sh) — each exporting" >&2
     echo "UPSTREAMABLE_REPOSITORY=git@<host>:<owner>/<repo>.git" >&2
     exit 1
 fi
@@ -61,7 +61,7 @@ while [[ $# -gt 0 ]]; do
 done
 
 echo "=== Configuring upstream git remotes ==="
-echo "Upstreams directory: ${UPSTREAMS_DIR}"
+echo "upstreams directory: ${UPSTREAMS_DIR}"
 echo
 
 for script in "${UPSTREAMS_DIR}"/*.sh; do
