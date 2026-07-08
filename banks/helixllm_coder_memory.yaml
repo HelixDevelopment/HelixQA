@@ -1,0 +1,274 @@
+# SPDX-FileCopyrightText: 2026 Milos Vasic
+# SPDX-License-Identifier: Apache-2.0
+#
+# HelixQA Test Bank: HelixLLM Coder Memory-Leak Soak
+# ====================================================
+#
+# Authored per §11.4.169 mandatory comprehensive test-type coverage —
+# the memory-leak / soak dimension of the coder concurrency + stress
+# coverage gap (the resident coder at :18434 is proven functional and
+# concurrently capable, but long-run RSS behaviour under sustained
+# sequential load was not covered).
+#
+# TARGET. The live resident coder at :18434 — llama.cpp running the
+# default model (HELIX_CODER_MODEL or "llama3.2"), serving
+# /v1/chat/completions (OpenAI-compatible). This bank NEVER boots /
+# tears-down the coder itself; the conductor ensures it is up before
+# the bank runs (§11.4.119 single-resource-owner — the boot/teardown
+# owner is the conductor). The coder is read-only exercised — this
+# bank sends sequential POST requests but never writes to or restarts
+# the coder (§11.4.122).
+#
+# ANTI-BLUFF (§11.4.6/§11.4.69/§11.4.107(10)/§11.4.123). The runtime
+# signature is THREE-DIMENSIONAL, each independently asserted:
+# (MONOTONIC-NO-LEAK)   — final RSS <= initial RSS + leak-pct%
+#                         (default +15%). A sustained upward trend
+#                         beyond this = leak.
+# (GC-POINT-STABILITY)  — RSS in the second half does not grow beyond
+#                         the midpoint value + half-leak-pct% (proves
+#                         GC / slab compaction keeps memory in check).
+# (STEADY-STATE)        — the last 5 RSS samples are within a narrow
+#                         band (default 5%) of each other (proves RSS
+#                         plateaus, not drifting).
+#
+# Analyzer: cmd/helixqa-verify-coder-memory (this repo) — a thin,
+# project-agnostic dispatches_to analyzer (§11.4.28/CONST-051(B)) that
+# POSTs N sequential requests to /v1/chat/completions, captures the
+# coder PID's RSS via `ps -o rss= -p <PID>`, and writes a structured
+# three-dimensional verdict.
+#
+# MEMORY-SELF-VALIDATE-001 (mandatory §11.4.107(10)) proves the
+# analyzer itself cannot bluff. -GOOD uses a moderate soak length
+# (n=20 with interval=5, so 4 RSS samples) with all three assertions
+# that a healthy coder trivially satisfies (PASS). -BAD uses a
+# deliberately impossible leak-pct (0.0001%) so MONOTONIC-NO-LEAK is
+# FALSE — the analyzer correctly reports raw pass=false, and
+# --expect-fail inverts to case_result=true. A paired §1.1 mutation
+# (forcing pass=true unconditionally) must flip -BAD's case_result
+# from true to false — confirming the assertion logic is live.
+#
+# DECOUPLING (CONST-051(B)/§11.4.28). This bank is DATA.
+# dispatches_to names a consumer-built binary; the coder endpoint,
+# model, prompt, n, interval, assertion flags, and thresholds are
+# ALL bank data. qa-results/helixllm_coder_memory/** is the per-run
+# RAW evidence dir (git-ignored, §11.4.128); curated into
+# docs/qa/<run-id>/ at release-prep (§11.4.83).
+#
+# §11.4.154 — window-scoped recording mandated (the coder is a
+# CLI/server, so the relevant "window" is the terminal pane where
+# the soak commands run). §11.4.155 — project-prefix pattern
+# <project_name>---<scope>---<run> on all recording filenames.
+#
+# §11.4.185 — manual QA-team confirmation is the FINAL validation
+# gate after all automated cases pass.
+
+version: "1.0"
+name: "HelixLLM Coder Memory-Leak Soak"
+description: >-
+  Drives 200 sequential real POST /v1/chat/completions against the
+  live resident HelixLLM coder (llama.cpp, :18434) and captures the
+  coder process's RSS at regular intervals via `ps -o rss= -p <PID>`,
+  then detects memory-leak patterns from the RSS curve across three
+  orthogonal dimensions: monotonic-no-leak, GC-point-stability, and
+  steady-state. MEMORY-SELF-VALIDATE-001 proves the analyzer itself
+  cannot bluff (golden-good PASS + golden-bad FAIL via the SAME
+  analyzer; the paired §1.1 mutation must be confirmed during
+  authoring).
+metadata:
+  author: vasic-digital
+  app: HelixLLM
+  category: "helixllm-coder-memory"
+  priority: high
+  covenant: "§11.4.107(10) self-validated analyzer + §11.4.69 sink-side positive evidence (the coder's own RSS trend IS the sink-side evidence)"
+  route_source: "helix_code/internal/server/llm_generate.go:431 (:18434) — llama.cpp coder sidecar"
+  evidence_dir: "qa-results/helixllm_coder_memory"
+  analyzer: "cmd/helixqa-verify-coder-memory"
+  boot_precondition: >-
+    Coder (llama.cpp on :18434) MUST already be running before this
+    bank runs; this bank does not boot/pause/teardown any service
+    itself (§11.4.119 single-resource-owner — the boot/teardown
+    owner is the conductor). The coder is typically already running
+    in the background (resident service); verify via
+    `curl -sS -o /dev/null -w '%{http_code}'
+    http://localhost:18434/v1/chat/completions
+    -d'{"model":"llama3.2","messages":[{"role":"user","content":"hi"}],"stream":false}'
+    expecting 200.
+
+test_cases:
+
+  # ==========================================================================
+  # MEMORY-MONO-001: 200 sequential requests, monotonic-no-leak assertion.
+  # The analyzer samples RSS every 10 requests (21 samples total). The
+  # monotonic-no-leak assertion checks that final RSS <= initial RSS + 15%.
+  # This is the primary leak-detection case — a genuine memory leak would
+  # show sustained RSS growth beyond the threshold.
+  # ==========================================================================
+  - id: MEMORY-MONO-001
+    challenge_id: helixllm.coder.memory-monotonic-no-leak
+    name: "200 sequential coder requests — final RSS within 15% of initial (no monotonic leak)"
+    category: functional
+    priority: high
+    platforms: [api]
+    domains: [coder, memory, soak, anti-bluff]
+    dispatches_to: >-
+      bin/helixqa-verify-coder-memory
+      --n 200
+      --prompt "Count from 1 to 5."
+      --interval 10
+      --monotonic
+      --out qa-results/helixllm_coder_memory/mono_001_verdict.json
+      --conduit-dir qa-results/helixllm_coder_memory/conduit
+      --challenge-id MEMORY-MONO-001
+    required_evidence:
+      - "qa-results/helixllm_coder_memory/mono_001_verdict.json | json:case_result==true | json:monotonic_no_leak==true | json:n==200 | json:rss_samples|length>=10"
+    steps:
+      - name: "Send 200 sequential POST /v1/chat/completions; sample RSS every 10 requests; assert monotonic-no-leak"
+        action: "http: POST /v1/chat/completions (200x sequential, RSS via ps)"
+        expected: >-
+          All 200 return HTTP 200. The coder PID's final RSS <= initial RSS
+          + 15% (monotonic_no_leak==true). At least 10 RSS samples captured.
+          This proves the coder does not exhibit sustained monotonic memory
+          growth under sustained sequential load.
+
+  # ==========================================================================
+  # MEMORY-GC-001: GC-point stability check.
+  # Identical 200-seq configuration but asserts GC-stability: the second half
+  # of RSS samples does not grow beyond the midpoint value + 7.5%
+  # (half the leak-pct). This proves the coder's memory management (GC /
+  # slab compaction / arena release) keeps memory in check.
+  # ==========================================================================
+  - id: MEMORY-GC-001
+    challenge_id: helixllm.coder.memory-gc-point-stability
+    name: "200 sequential coder requests — RSS stable in second half (GC-point stability)"
+    category: functional
+    priority: high
+    platforms: [api]
+    domains: [coder, memory, soak, gc]
+    dispatches_to: >-
+      bin/helixqa-verify-coder-memory
+      --n 200
+      --prompt "Count from 1 to 5."
+      --interval 10
+      --gc-stability
+      --out qa-results/helixllm_coder_memory/gc_001_verdict.json
+      --conduit-dir qa-results/helixllm_coder_memory/conduit
+      --challenge-id MEMORY-GC-001
+    required_evidence:
+      - "qa-results/helixllm_coder_memory/gc_001_verdict.json | json:case_result==true | json:gc_stability==true | json:n==200"
+    steps:
+      - name: "Send 200 sequential POST /v1/chat/completions; sample RSS every 10 requests; assert GC-stability"
+        action: "http: POST /v1/chat/completions (200x sequential, ps RSS midpoint split)"
+        expected: >-
+          All 200 return HTTP 200. RSS in the second half of samples does not
+          grow beyond the midpoint RSS + 7.5% (gc_stability==true). This
+          proves GC / slab compaction is actively managing memory under
+          sustained sequential load.
+
+  # ==========================================================================
+  # MEMORY-STEADY-001: Steady-state plateau check.
+  # Identical 200-seq configuration but asserts steady-state: the last 5 RSS
+  # samples are within 5% of each other. This proves the RSS curve plateaus
+  # (the coder reaches a stable working set and does not drift indefinitely).
+  # ==========================================================================
+  - id: MEMORY-STEADY-001
+    challenge_id: helixllm.coder.memory-steady-state
+    name: "200 sequential coder requests — RSS plateaus in final 5 samples (steady state)"
+    category: functional
+    priority: medium
+    platforms: [api]
+    domains: [coder, memory, soak, stability]
+    dispatches_to: >-
+      bin/helixqa-verify-coder-memory
+      --n 200
+      --prompt "Count from 1 to 5."
+      --interval 10
+      --steady
+      --out qa-results/helixllm_coder_memory/steady_001_verdict.json
+      --conduit-dir qa-results/helixllm_coder_memory/conduit
+      --challenge-id MEMORY-STEADY-001
+    required_evidence:
+      - "qa-results/helixllm_coder_memory/steady_001_verdict.json | json:case_result==true | json:steady_state==true | json:n==200"
+    steps:
+      - name: "Send 200 sequential POST /v1/chat/completions; sample RSS every 10 requests; assert RSS plateau"
+        action: "http: POST /v1/chat/completions (200x sequential, trailing 5 RSS samples)"
+        expected: >-
+          All 200 return HTTP 200. The last 5 RSS samples are within 5% of
+          each other (steady_state==true). This proves the coder's working
+          set stabilises under sustained sequential load — no indefinite
+          RSS drift.
+
+  # ==========================================================================
+  # MEMORY-SELF-VALIDATE-001 (mandatory §11.4.107(10)) — TWO cases, ONE
+  # analyzer. -GOOD uses moderate soak (n=20, interval=5, so 4 RSS samples)
+  # with all three assertions that a healthy coder trivially satisfies
+  # (must PASS). -BAD uses a deliberately impossible leak-pct (0.0001%)
+  # so MONOTONIC-NO-LEAK is FALSE. The analyzer correctly reports raw
+  # pass=false, and --expect-fail inverts to case_result=true.
+  # ==========================================================================
+  - id: MEMORY-SELF-VALIDATE-001-GOOD
+    challenge_id: helixllm.coder.memory-self-validate-golden-good
+    name: "Self-validation golden-good: moderate soak (20 req, 5 interval) against healthy coder PASS"
+    category: functional
+    priority: critical
+    platforms: [api]
+    domains: [coder, memory, anti-bluff, self-validate]
+    dispatches_to: >-
+      bin/helixqa-verify-coder-memory
+      --n 20
+      --prompt "Count from 1 to 3."
+      --interval 5
+      --monotonic --gc-stability --steady
+      --out qa-results/helixllm_coder_memory/self_validate_001_golden_good_verdict.json
+      --conduit-dir qa-results/helixllm_coder_memory/conduit
+      --challenge-id MEMORY-SELF-VALIDATE-001-GOOD
+    required_evidence:
+      - "qa-results/helixllm_coder_memory/self_validate_001_golden_good_verdict.json | json:case_result==true | json:pass==true | json:monotonic_no_leak==true | json:gc_stability==true | json:steady_state==true"
+    steps:
+      - name: "Golden-good: analyzer must PASS when all three assertions pass against a healthy coder"
+        action: "http: POST /v1/chat/completions (20x sequential, RSS sampled every 5)"
+        expected: >-
+          pass==true (all three assertions satisfied: monotonic_no_leak,
+          gc_stability, steady_state all true).
+
+  - id: MEMORY-SELF-VALIDATE-001-BAD
+    challenge_id: helixllm.coder.memory-self-validate-golden-bad-must-fail
+    name: "Self-validation golden-bad: negative leak-pct (-1%) — MONOTONIC always fails, case_result OK via --expect-fail"
+    category: functional
+    priority: critical
+    platforms: [api]
+    domains: [coder, memory, anti-bluff, self-validate]
+    dispatches_to: >-
+      bin/helixqa-verify-coder-memory
+      --n 20
+      --prompt "Count from 1 to 3."
+      --interval 5
+      --monotonic --gc-stability
+      --leak-pct -1
+      --expect-fail
+      --out qa-results/helixllm_coder_memory/self_validate_001_golden_bad_verdict.json
+      --conduit-dir qa-results/helixllm_coder_memory/conduit
+      --challenge-id MEMORY-SELF-VALIDATE-001-BAD
+    metadata:
+      expect_fail: true
+      mutation_proof: >-
+        Authored 2026-07-08: with the analyzer's monotonic-no-leak assertion
+        intact, this case's raw pass=false (--leak-pct -1 means
+        MONOTONIC-NO-LEAK requires final RSS <= initial RSS - 1%, which is
+        impossible for any real coder that does not shrink memory — confirmed
+        on live coder: mono=false, gc=false) and case_result=true (via
+        --expect-fail inversion) — exit 0. A paired §1.1 mutation replacing
+        the Pass computation in runMonotonicNoLeak with an unconditional
+        "v.MonotonicNoLeak = true" would flip raw pass to true, case_result
+        to false — exit 1 (case FAIL). No mutation code is committed
+        anywhere in this tree (§11.4.84 quiescence).
+    required_evidence:
+      - "qa-results/helixllm_coder_memory/self_validate_001_golden_bad_verdict.json | json:case_result==true | json:pass==false | json:monotonic_no_leak==false"
+    steps:
+      - name: "Golden-bad: -1% leak-pct ensures MONOTONIC-NO-LEAK is FALSE — analyzer correctly reports pass=false"
+        action: "http: POST /v1/chat/completions (20x sequential, -1% threshold)"
+        expected: >-
+          pass==false (the impossible negative threshold means
+          monotonic_no_leak is FALSE on any real coder because memory never
+          shrinks by 1% under load); case_result==true via --expect-fail
+          inversion. Proves the analyzer rejects a leak that exceeds even a
+          negative (impossible) threshold.
