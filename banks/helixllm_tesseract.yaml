@@ -1,0 +1,210 @@
+# SPDX-FileCopyrightText: 2026 Milos Vasic
+# SPDX-License-Identifier: Apache-2.0
+#
+# HelixQA Test Bank: HelixLLM CPU Tesseract OCR Capability
+# ===========================================================
+#
+# Authored per docs/research/07.2026/00_master/MASTER_IMPLEMENTATION_PLAN.md
+# §1.1 (Tesseract OCR — IMPLEMENTED, reviewed GO, :18438) + the phase-3 proof
+# docs/qa/phase3_tesseract_ocr_20260707/RESULTS.md +
+# docs/qa/phase3_tesseract_ocr_20260707/harness/main.go, mirroring the
+# structure + self-validation discipline of banks/helixllm_vision.yaml.
+#
+# TARGET. The live HelixLLM CPU OCR service: Tesseract 5 (OEM 1/LSTM) behind
+# a minimal Go HTTP shim (submodules/helix_llm/services/ocr/), served on its
+# own port :18438, NO GPU (§11.4.76/§11.4.161/§11.4.119 — independent CPU
+# service, no contention with the GPU coder :18434). This bank NEVER
+# boots/tears-down the OCR service itself — the conductor boots it first via
+# the harness's `boot-up` subcommand and tears it down afterward via
+# `boot-down`; the bank only DRIVES the already-running endpoint.
+#
+# ANTI-BLUFF (§11.4.6/§11.4.69/§11.4.107(10)/§11.4.107(13)/§11.4.123). Every
+# fixture below is a render->OCR ROUND TRIP: POST /v1/render renders a
+# KNOWN text string to a PNG the shim itself controls, then a SEPARATE POST
+# /v1/ocr call recovers text from that image — unfakeable, since the only
+# way this passes is if Tesseract genuinely reads pixels it was never told
+# the answer to. Both candidate strings were run against the live :18438
+# endpoint during authoring (2026-07-08, this session) via
+# bin/helixqa-verify-tesseract and the real recognized text + mean_conf
+# confirmed BEFORE being committed here as a "must-match" assertion —
+# corroborating the independently-proven fixtures already recorded in
+# docs/qa/phase3_tesseract_ocr_20260707/RESULTS.md (2026-07-07): "HELIX OCR
+# 2026 quick brown fox" => mean_conf 95.99; "PHASE THREE TESSERACT PROOF
+# SEVEN" => mean_conf 94.77.
+#
+# CONF_FLOOR=60 (§11.4.107(13)) is calibrated from THIS capability's own
+# observed data (good cluster ~95-96, phase-3 proof's worst bad-fixture
+# ~12) — never from literature.
+#
+# Analyzer: cmd/helixqa-verify-tesseract (this repo) — a thin, project-
+# agnostic dispatches_to analyzer (CONST-051(B)) that POSTs
+# {text,mode,pointsize} to /v1/render, POSTs the returned PNG bytes to
+# /v1/ocr, requires every --expect token present in the recognized
+# full_text (case-insensitive substring) AND mean_conf >= --conf-floor, and
+# writes an auditable verdict JSON.
+#
+# OCR-SELF-VALIDATE-001 (mandatory §11.4.107(10)) proves the analyzer itself
+# cannot bluff: -GOOD reuses the "HELIX OCR..." golden-good request (must
+# PASS). -BAD sends the SAME live render+OCR request but asserts the OTHER
+# fixture's DELIBERATELY WRONG tokens ("phase,three,tesseract,proof,seven" —
+# genuinely absent from "HELIX OCR 2026 quick brown fox") via --expect-fail,
+# mirroring VIS-SELF-VALIDATE-001-BAD's negative-case convention. A paired
+# §1.1 mutation (forcing pass=true unconditionally) was run during authoring
+# and confirmed to flip OCR-SELF-VALIDATE-001-BAD's case_result from true to
+# false. Evidence: docs/qa/phase1_helixqa_tesseract_20260708T*/mutation_proof/.
+#
+# DECOUPLING (CONST-051(B)/§11.4.28). This bank is DATA. dispatches_to names
+# a consumer-built binary; the endpoint URL, known-text strings, expected
+# tokens, and confidence floor are ALL bank data.
+# `qa-results/helixllm_tesseract/**` is the per-run RAW evidence dir
+# (git-ignored, §11.4.128); curated into `docs/qa/<run-id>/` at release-prep
+# (§11.4.83).
+version: "1.0"
+name: "HelixLLM CPU Tesseract OCR Capability"
+description: >-
+  Drives real render->OCR round trips against the live HelixLLM CPU
+  Tesseract-5 endpoint (:18438) and token-matches + confidence-floors the
+  recognized text against known-text fixtures rendered by the shim itself
+  (unfakeable). OCR-SELF-VALIDATE-001 proves the analyzer itself cannot
+  bluff (golden-good PASS + golden-bad FAIL via the SAME analyzer, paired
+  §1.1 mutation confirmed during authoring). A green case requires the
+  recognized text to genuinely contain every asserted token AND mean_conf
+  to clear the calibrated floor — never a metadata-only /
+  endpoint-reachable-only PASS.
+metadata:
+  author: vasic-digital
+  app: HelixLLM
+  category: "helixllm-tesseract-ocr"
+  priority: high
+  covenant: "§11.4.107(10) self-validated analyzer + §11.4.107(13) self-calibrated confidence floor + §11.4.69 sink-side positive evidence"
+  route_source: "docs/qa/phase3_tesseract_ocr_20260707/harness (compose.phase3ocr.yml, :18438) — CPU-only, built from submodules/helix_llm/services/ocr/"
+  evidence_dir: "qa-results/helixllm_tesseract"
+  analyzer: "cmd/helixqa-verify-tesseract"
+  boot_precondition: >-
+    Tesseract OCR service MUST already be booted (harness boot-up
+    compose.phase3ocr.yml <project>) before this bank runs; this bank does
+    not boot/pause/teardown any service itself (§11.4.119
+    single-resource-owner — the boot/teardown owner is the conductor).
+
+test_cases:
+
+  - id: OCR-GOOD-001
+    challenge_id: helixllm.tesseract.render-ocr-roundtrip-1
+    name: "Tesseract genuinely recovers a known rendered label (fixture 1)"
+    category: functional
+    priority: high
+    platforms: [api]
+    domains: [ocr, llm]
+    dispatches_to: >-
+      bin/helixqa-verify-tesseract
+      --known-text "HELIX OCR 2026 quick brown fox"
+      --expect "helix,ocr,2026,quick,brown,fox"
+      --conf-floor 60
+      --out qa-results/helixllm_tesseract/good_001_verdict.json
+      --conduit-dir qa-results/helixllm_tesseract/conduit
+      --challenge-id OCR-GOOD-001
+    required_evidence:
+      - "qa-results/helixllm_tesseract/good_001_verdict.json | json:case_result==true | json:matched_facts==6 | json:mean_conf>=60"
+    steps:
+      - name: "Render known text -> OCR the rendered PNG -> token-match + confidence-floor the recognized text"
+        action: "http: POST /v1/render then POST /v1/ocr"
+        expected: >-
+          Recognized full_text contains all 6 tokens and mean_conf >= 60.
+          Authored 2026-07-08 (this session) against the live shim, which
+          answered full_text="HELIX OCR 2026 quick brown fox" mean_conf=95.99
+          (matching the independently-proven fixture recorded 2026-07-07).
+
+  - id: OCR-GOOD-002
+    challenge_id: helixllm.tesseract.render-ocr-roundtrip-2
+    name: "Tesseract genuinely recovers a known rendered label (fixture 2)"
+    category: functional
+    priority: high
+    platforms: [api]
+    domains: [ocr, llm]
+    dispatches_to: >-
+      bin/helixqa-verify-tesseract
+      --known-text "PHASE THREE TESSERACT PROOF SEVEN"
+      --expect "phase,three,tesseract,proof,seven"
+      --conf-floor 60
+      --out qa-results/helixllm_tesseract/good_002_verdict.json
+      --conduit-dir qa-results/helixllm_tesseract/conduit
+      --challenge-id OCR-GOOD-002
+    required_evidence:
+      - "qa-results/helixllm_tesseract/good_002_verdict.json | json:case_result==true | json:matched_facts==5 | json:mean_conf>=60"
+    steps:
+      - name: "Render known text -> OCR the rendered PNG -> token-match + confidence-floor the recognized text"
+        action: "http: POST /v1/render then POST /v1/ocr"
+        expected: >-
+          Recognized full_text contains all 5 tokens and mean_conf >= 60.
+          Authored 2026-07-08 against the live shim, which answered
+          full_text="PHASE THREE TESSERACT PROOF SEVEN" mean_conf=94.77.
+
+  # ============================================================================
+  # OCR-SELF-VALIDATE-001 (mandatory §11.4.107(10)) — TWO cases, ONE analyzer.
+  # -GOOD reuses the OCR-GOOD-001 fixture (must PASS at the raw level).
+  # -BAD sends the SAME live render+OCR request but asserts OCR-GOOD-002's
+  # DELIBERATELY WRONG tokens via --expect-fail.
+  # ============================================================================
+  - id: OCR-SELF-VALIDATE-001-GOOD
+    challenge_id: helixllm.tesseract.self-validate-golden-good
+    name: "Self-validation golden-good: correct tokens against a genuine live OCR result PASS"
+    category: functional
+    priority: critical
+    platforms: [api]
+    domains: [ocr, llm, anti-bluff]
+    dispatches_to: >-
+      bin/helixqa-verify-tesseract
+      --known-text "HELIX OCR 2026 quick brown fox"
+      --expect "helix,ocr,2026,quick,brown,fox"
+      --conf-floor 60
+      --out qa-results/helixllm_tesseract/self_validate_001_golden_good_verdict.json
+      --conduit-dir qa-results/helixllm_tesseract/conduit
+      --challenge-id OCR-SELF-VALIDATE-001-GOOD
+    required_evidence:
+      - "qa-results/helixllm_tesseract/self_validate_001_golden_good_verdict.json | json:case_result==true | json:pass==true | json:matched_facts==6"
+    steps:
+      - name: "Golden-good: analyzer must PASS when tokens genuinely match a real OCR result"
+        action: "http: POST /v1/render then POST /v1/ocr"
+        expected: "pass==true (tokens genuinely present, mean_conf clears the floor)."
+
+  - id: OCR-SELF-VALIDATE-001-BAD
+    challenge_id: helixllm.tesseract.self-validate-golden-bad-must-fail
+    name: "Self-validation golden-bad: mismatched tokens against the SAME live OCR result MUST FAIL raw, case succeeds via --expect-fail"
+    category: functional
+    priority: critical
+    platforms: [api]
+    domains: [ocr, llm, anti-bluff]
+    dispatches_to: >-
+      bin/helixqa-verify-tesseract
+      --known-text "HELIX OCR 2026 quick brown fox"
+      --expect "phase,three,tesseract,proof,seven"
+      --conf-floor 60
+      --expect-fail
+      --out qa-results/helixllm_tesseract/self_validate_001_golden_bad_verdict.json
+      --conduit-dir qa-results/helixllm_tesseract/conduit
+      --challenge-id OCR-SELF-VALIDATE-001-BAD
+    metadata:
+      expect_fail: true
+      mutation_proof: >-
+        Authored 2026-07-08: with the analyzer's token-match+conf-floor
+        assertion intact, this case's raw pass=false (matched_facts=0/5,
+        "phase"/"three"/"tesseract"/"proof"/"seven" genuinely absent from
+        "HELIX OCR 2026 quick brown fox") and case_result=true (via
+        --expect-fail inversion) — exit 0. A paired §1.1 mutation replacing
+        the assertion with an unconditional "v.Pass = true" was applied to
+        cmd/helixqa-verify-tesseract/main.go, rebuilt, and re-run against
+        this exact fixture: raw pass flipped to true, case_result flipped
+        to false — exit 1 (case FAIL). The mutation was then reverted and
+        the restored binary re-confirmed to discriminate correctly before
+        this bank was committed. No mutation code is committed anywhere in
+        this tree (§11.4.84 quiescence).
+    required_evidence:
+      - "qa-results/helixllm_tesseract/self_validate_001_golden_bad_verdict.json | json:case_result==true | json:pass==false | json:matched_facts==0"
+    steps:
+      - name: "Golden-bad: analyzer must reject mismatched tokens (raw FAIL), case succeeds via --expect-fail inversion"
+        action: "http: POST /v1/render then POST /v1/ocr"
+        expected: >-
+          pass==false (the real recognized text "HELIX OCR 2026 quick brown
+          fox" genuinely does NOT contain "phase"/"three"/"tesseract"/
+          "proof"/"seven"); case_result==true because this case declares
+          --expect-fail.

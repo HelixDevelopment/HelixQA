@@ -1,0 +1,216 @@
+# SPDX-FileCopyrightText: 2026 Milos Vasic
+# SPDX-License-Identifier: Apache-2.0
+#
+# HelixQA Test Bank: HelixLLM CPU RAG (Retrieval-Augmented Generation) Capability
+# ================================================================================
+#
+# Authored per docs/research/07.2026/00_master/MASTER_IMPLEMENTATION_PLAN.md
+# §1.1 (RAG-TEI — landed at :18440) + the phase-3 proof
+# docs/qa/phase3_rag_20260707/RESULTS.md +
+# submodules/helix_llm/docs/qa/phase3_rag_20260707/harness/main.go, mirroring
+# the structure + self-validation discipline of banks/helixllm_vision.yaml.
+#
+# TARGET. A real end-to-end RAG pipeline composed of TWO live CPU/GPU
+# services this bank only READS: (1) the CPU embeddings endpoint (HF TEI,
+# BAAI/bge-small-en-v1.5, default :18435 — reused from the embeddings lane,
+# §11.4.74) for corpus+query embedding, and (2) the live coder LLM
+# (Qwen3-Coder-30B, :18434, READ-ONLY, never restarted/stopped —
+# §11.4.122/§11.4.119) for grounded generation. This bank NEVER
+# boots/tears-down either service — the conductor owns the embeddings-service
+# boot/teardown (harness boot-up compose.phase3embed.yml <project>,
+# TEI_MODEL_ID=BAAI/bge-small-en-v1.5) and the coder is a pre-existing
+# always-on resource; the bank only DRIVES the already-running endpoints.
+#
+# ANTI-BLUFF (§11.4.6/§11.4.69/§11.4.107(10)/§11.4.115/§11.4.123). Two facts
+# are INVENTED for this proof (the coder cannot know them from training):
+# "Borealis-9" (the 2027 HelixCode release codename, in doc_codename) and
+# "Quillfeather-7" (the HelixLLM routing sidecar name, in doc_sidecar). A
+# green case is unfakeable proof the generation is genuinely GROUNDED in
+# retrieval, not recalled or hardcoded: the analyzer embeds a 6-doc corpus
+# (2 fact-bearing + 4 distractors) + the query on the live TEI, retrieves the
+# real-cosine top-1, grounds the coder on the top-k docs, generates, and
+# asserts BOTH retrieval-top-1 == expected fact-bearing doc AND the invented
+# token present in the answer. Both queries were run against the live
+# endpoints during authoring (2026-07-08, this session) via
+# bin/helixqa-verify-rag BEFORE being committed — corroborating the
+# independently-proven RED→GREEN signatures already recorded in
+# docs/qa/phase3_rag_20260707/RESULTS.md (2026-07-07): q1 top1=doc_codename
+# (0.8852) answer contains "Borealis-9"; q2 top1=doc_sidecar (0.8855) answer
+# contains "Quillfeather-7".
+#
+# Analyzer: cmd/helixqa-verify-rag (this repo) — a thin, project-agnostic
+# dispatches_to analyzer (CONST-051(B)) that runs the full embed->retrieve->
+# ground->generate pipeline against the live endpoints and writes an
+# auditable verdict JSON embedding the real retrieval ranking + the generated
+# answer.
+#
+# RAG-SELF-VALIDATE-001 (mandatory §11.4.107(10) + §11.4.115 RED polarity)
+# proves the analyzer itself cannot bluff: -GOOD runs the full grounded
+# pipeline (must PASS). -BAD reruns the SAME live query with --no-context
+# (the §11.4.115 RED scenario — "broken" = no grounding provided → the coder
+# CANNOT know the invented fact → raw token-found=false) via --expect-fail,
+# mirroring VIS-SELF-VALIDATE-001-BAD's negative-case convention. A paired
+# §1.1 mutation (forcing pass=true unconditionally) was run during authoring
+# and confirmed to flip RAG-SELF-VALIDATE-001-BAD's case_result from true to
+# false. Evidence: docs/qa/phase1_helixqa_rag_20260708T*/mutation_proof/.
+#
+# DECOUPLING (CONST-051(B)/§11.4.28). This bank is DATA. dispatches_to names
+# a consumer-built binary; the endpoint URLs, corpus (built-in fixture or
+# --corpus-file), queries, invented tokens, and expected docs are ALL bank
+# data. `qa-results/helixllm_rag/**` is the per-run RAW evidence dir
+# (git-ignored, §11.4.128); curated into `docs/qa/<run-id>/` at release-prep
+# (§11.4.83).
+version: "1.0"
+name: "HelixLLM CPU RAG (Retrieval-Augmented Generation) Capability"
+description: >-
+  Drives a real end-to-end RAG pipeline (embed corpus+query on the live TEI
+  :18435 -> real-cosine top-k retrieve -> ground the live coder :18434 ->
+  generate) and asserts BOTH the retrieval top-1 is the expected fact-bearing
+  document AND the generated answer genuinely contains an INVENTED fact token
+  the coder cannot know from training. RAG-SELF-VALIDATE-001 proves the
+  analyzer itself cannot bluff (golden-good grounded PASS + golden-bad
+  no-context RED FAIL via the SAME analyzer, paired §1.1 mutation confirmed
+  during authoring). A green case is unfakeable proof generation is genuinely
+  grounded in retrieval — never a metadata-only / endpoint-reachable-only
+  PASS.
+metadata:
+  author: vasic-digital
+  app: HelixLLM
+  category: "helixllm-rag"
+  priority: high
+  covenant: "§11.4.107(10) self-validated analyzer + §11.4.115 RED-on-no-context polarity + §11.4.69 sink-side positive evidence (the grounded answer text IS the sink)"
+  route_source: "docs/qa/phase3_embeddings_20260706/harness (TEI :18435) + live coder :18434 read-only — CPU embeddings + resident coder, no new service booted by this bank"
+  evidence_dir: "qa-results/helixllm_rag"
+  analyzer: "cmd/helixqa-verify-rag"
+  boot_precondition: >-
+    Embeddings TEI service MUST already be booted (:18435,
+    BAAI/bge-small-en-v1.5) AND the coder (:18434) MUST be live before this
+    bank runs; this bank does not boot/pause/teardown any service itself
+    (§11.4.119 single-resource-owner — the boot/teardown owner is the
+    conductor; the coder is read-only per §11.4.122).
+
+test_cases:
+
+  - id: RAG-Q1-001
+    challenge_id: helixllm.rag.grounded-invented-fact-codename
+    name: "RAG retrieves the right doc and grounds the coder to answer with the invented codename"
+    category: functional
+    priority: high
+    platforms: [api]
+    domains: [rag, embeddings, llm]
+    dispatches_to: >-
+      bin/helixqa-verify-rag
+      --query "What is the internal codename for the 2027 HelixCode release?"
+      --expect-token "Borealis-9" --expect-doc doc_codename
+      --out qa-results/helixllm_rag/q1_verdict.json
+      --conduit-dir qa-results/helixllm_rag/conduit
+      --challenge-id RAG-Q1-001
+    required_evidence:
+      - "qa-results/helixllm_rag/q1_verdict.json | json:case_result==true | json:retrieval_ok==true | json:token_found==true | json:top1_id==doc_codename"
+    steps:
+      - name: "Embed corpus+query on TEI -> real-cosine top-1 -> ground coder -> assert invented token present"
+        action: "http: POST /v1/embeddings then POST /v1/chat/completions"
+        expected: >-
+          Retrieval top-1 == doc_codename and the grounded answer contains
+          "Borealis-9". Authored 2026-07-08 (this session) against the live
+          endpoints, which produced top1=doc_codename and answer "The
+          internal codename for the 2027 HelixCode release is Borealis-9."
+          (matching the independently-proven signature recorded 2026-07-07).
+
+  - id: RAG-Q2-001
+    challenge_id: helixllm.rag.grounded-invented-fact-sidecar
+    name: "RAG retrieves the right doc and grounds the coder to answer with the invented sidecar name"
+    category: functional
+    priority: high
+    platforms: [api]
+    domains: [rag, embeddings, llm]
+    dispatches_to: >-
+      bin/helixqa-verify-rag
+      --query "What is the name of the internal service-mesh sidecar used for HelixLLM routing?"
+      --expect-token "Quillfeather-7" --expect-doc doc_sidecar
+      --out qa-results/helixllm_rag/q2_verdict.json
+      --conduit-dir qa-results/helixllm_rag/conduit
+      --challenge-id RAG-Q2-001
+    required_evidence:
+      - "qa-results/helixllm_rag/q2_verdict.json | json:case_result==true | json:retrieval_ok==true | json:token_found==true | json:top1_id==doc_sidecar"
+    steps:
+      - name: "Embed corpus+query on TEI -> real-cosine top-1 -> ground coder -> assert invented token present"
+        action: "http: POST /v1/embeddings then POST /v1/chat/completions"
+        expected: >-
+          Retrieval top-1 == doc_sidecar and the grounded answer contains
+          "Quillfeather-7". Authored 2026-07-08 against the live endpoints,
+          which produced top1=doc_sidecar and answer "The internal
+          service-mesh sidecar used internally for HelixLLM routing is called
+          Quillfeather-7."
+
+  # ============================================================================
+  # RAG-SELF-VALIDATE-001 (mandatory §11.4.107(10) + §11.4.115 RED polarity) —
+  # TWO cases, ONE analyzer.
+  # -GOOD reuses the RAG-Q1-001 grounded pipeline (must PASS at the raw level).
+  # -BAD reruns the SAME live query with --no-context (RED — no grounding
+  # provided) so the coder CANNOT produce the invented token, via --expect-fail.
+  # ============================================================================
+  - id: RAG-SELF-VALIDATE-001-GOOD
+    challenge_id: helixllm.rag.self-validate-golden-good
+    name: "Self-validation golden-good: full grounded pipeline PASSes"
+    category: functional
+    priority: critical
+    platforms: [api]
+    domains: [rag, llm, anti-bluff]
+    dispatches_to: >-
+      bin/helixqa-verify-rag
+      --query "What is the internal codename for the 2027 HelixCode release?"
+      --expect-token "Borealis-9" --expect-doc doc_codename
+      --out qa-results/helixllm_rag/self_validate_001_golden_good_verdict.json
+      --conduit-dir qa-results/helixllm_rag/conduit
+      --challenge-id RAG-SELF-VALIDATE-001-GOOD
+    required_evidence:
+      - "qa-results/helixllm_rag/self_validate_001_golden_good_verdict.json | json:case_result==true | json:pass==true | json:token_found==true"
+    steps:
+      - name: "Golden-good: grounded pipeline must PASS (retrieval correct + invented token present)"
+        action: "http: POST /v1/embeddings then POST /v1/chat/completions"
+        expected: "pass==true (grounded answer genuinely contains the invented token)."
+
+  - id: RAG-SELF-VALIDATE-001-BAD
+    challenge_id: helixllm.rag.self-validate-golden-bad-must-fail
+    name: "Self-validation golden-bad: no-context RED means the coder cannot produce the invented token — MUST FAIL raw, case succeeds via --expect-fail"
+    category: functional
+    priority: critical
+    platforms: [api]
+    domains: [rag, llm, anti-bluff]
+    dispatches_to: >-
+      bin/helixqa-verify-rag
+      --query "What is the internal codename for the 2027 HelixCode release?"
+      --expect-token "Borealis-9" --expect-doc doc_codename
+      --no-context
+      --expect-fail
+      --out qa-results/helixllm_rag/self_validate_001_golden_bad_verdict.json
+      --conduit-dir qa-results/helixllm_rag/conduit
+      --challenge-id RAG-SELF-VALIDATE-001-BAD
+    metadata:
+      expect_fail: true
+      mutation_proof: >-
+        Authored 2026-07-08: with the analyzer's token-found assertion intact,
+        this case's raw pass=false (token_found=false — the bare question
+        without retrieval context cannot yield the invented "Borealis-9"; the
+        live coder answered "I don't have any information about a 2027
+        HelixCode release... this appears to be fictional or hypothetical")
+        and case_result=true (via --expect-fail inversion) — exit 0. A paired
+        §1.1 mutation replacing the assertion with an unconditional
+        "v.Pass = true" was applied to cmd/helixqa-verify-rag/main.go,
+        rebuilt, and re-run against this exact fixture: raw pass flipped to
+        true, case_result flipped to false — exit 1 (case FAIL). The mutation
+        was then reverted and the restored binary re-confirmed to
+        discriminate correctly before this bank was committed. No mutation
+        code is committed anywhere in this tree (§11.4.84 quiescence).
+    required_evidence:
+      - "qa-results/helixllm_rag/self_validate_001_golden_bad_verdict.json | json:case_result==true | json:pass==false | json:token_found==false"
+    steps:
+      - name: "Golden-bad: no-context RED — analyzer must report the invented token ABSENT (raw FAIL), case succeeds via --expect-fail inversion"
+        action: "http: POST /v1/chat/completions (bare question, no grounding)"
+        expected: >-
+          pass==false (the coder genuinely cannot know the invented fact
+          without retrieval context); case_result==true because this case
+          declares --expect-fail. Proves the pipeline's grounding is
+          load-bearing (RED→GREEN §11.4.115): the invented token appears ONLY
+          when retrieval genuinely feeds it in.

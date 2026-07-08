@@ -1,0 +1,224 @@
+# SPDX-FileCopyrightText: 2026 Milos Vasic
+# SPDX-License-Identifier: Apache-2.0
+#
+# HelixQA Test Bank: HelixLLM CPU Translation (NLLB-200-CTranslate2) Capability
+# ==============================================================================
+#
+# Authored per docs/research/07.2026/00_master/MASTER_IMPLEMENTATION_PLAN.md
+# §1.1 (Translation (NLLB) — landed at :18436, cited to RESUME.md Phase 3) +
+# the phase-3 proof docs/qa/phase3_translation_nllb_20260707/RESULTS.md +
+# docs/qa/phase3_translation_nllb_20260707/harness/main.go, mirroring the
+# structure + self-validation discipline of banks/helixllm_vision.yaml
+# (Bank B).
+#
+# TARGET. The live HelixLLM CPU translation service: NLLB-200-distilled-600M
+# via CTranslate2, served behind a thin HTTP shim
+# (docs/qa/phase3_translation_nllb_20260707/harness/shim/) on its own port
+# :18436, NO GPU (§11.4.76 containers submodule + §11.4.161 rootless podman +
+# §11.4.119 single-resource-owner — independent CPU service, does not contend
+# with the GPU coder :18434). This bank NEVER boots/tears-down the
+# translation service itself — the conductor boots it first via the harness's
+# `boot-up` subcommand (or an equivalent orchestrator invocation) and tears
+# it down afterward via `boot-down`; the bank only DRIVES the already-running
+# endpoint.
+#
+# ANTI-BLUFF (§11.4.6/§11.4.69/§11.4.107(10)/§11.4.123). Every ground-truth
+# fixture below was AUTHORED AGAINST THE LIVE SERVICE'S ACTUAL BEHAVIOUR —
+# each candidate source sentence + language pair was run against the live
+# :18436 endpoint during authoring (2026-07-08, this session) via
+# bin/helixqa-verify-translate-nllb and its real answer confirmed to contain
+# the asserted fact tokens (CTranslate2 beam_size=1 greedy decoding =>
+# deterministic, no sampling) BEFORE being committed here as a "must-match"
+# assertion. No expected answer below is guessed — both are captured,
+# reproduced facts, corroborating the same fixtures already independently
+# proven end-to-end in docs/qa/phase3_translation_nllb_20260707/RESULTS.md
+# (2026-07-07): en->de "The house is blue." => "Das Haus ist blau."; en->fr
+# "The cat sleeps." => "Le chat dort."
+#
+# Analyzer: cmd/helixqa-verify-translate-nllb (this repo) — a thin,
+# project-agnostic dispatches_to analyzer (CONST-051(B), no HelixQA
+# core-engine change) that POSTs {q,source,target} to the shim's /translate
+# endpoint, requires EVERY --expect fact token present (case-insensitive
+# substring) AND the forward translation NOT identical to the source (kills
+# the echo/passthrough bluff the design's §2.5 forbids), and writes an
+# auditable verdict JSON embedding the raw request+response.
+#
+# TRA-SELF-VALIDATE-001 (mandatory §11.4.107(10)) proves the analyzer itself
+# cannot bluff: the SAME analyzer binary runs against the SAME live en->de
+# request as the golden-good case (must PASS) and a golden-bad case —
+# IDENTICAL live request, but DELIBERATELY WRONG expected facts ("chat,dort" —
+# the en->fr fixture's tokens, genuinely absent from the real German
+# response) — via the SAME `--expect-fail` inversion convention already used
+# by banks/helixllm_vision.yaml VIS-SELF-VALIDATE-001-BAD (itself mirroring
+# helixcode-ensemble-members.yaml HXC-ENS-003): the RAW fact-match verdict
+# ("pass" in the verdict JSON) is recorded honestly and NEVER flipped; only
+# which raw outcome counts as case success is inverted. A paired §1.1
+# mutation (stripping the fact-matching+not-identity assertion in the
+# analyzer source, forcing pass=true unconditionally) was run during
+# authoring and confirmed to flip TRA-SELF-VALIDATE-001-BAD's case_result
+# from true to false — i.e. WITHOUT the real discriminator, the golden-bad
+# fixture bluff-PASSes at the raw level and the --expect-fail inversion
+# catches it as a case FAIL. This proves the discriminator is load-bearing,
+# not decorative. Evidence: docs/qa/phase1_helixqa_translate_20260708T*/
+# mutation_proof/.
+#
+# DECOUPLING (CONST-051(B)/§11.4.28). This bank is DATA. dispatches_to names
+# a consumer-built binary (bin/helixqa-verify-translate-nllb); the endpoint
+# URL, source/target language codes, source sentences, and expected fact
+# tokens are ALL bank data — HelixQA's core packages (pkg/testbank,
+# pkg/conduit) never learn a HelixLLM-specific fact.
+# `qa-results/helixllm_translate_nllb/**` is the per-run RAW evidence dir
+# (git-ignored, §11.4.128) the conductor curates into `docs/qa/<run-id>/` at
+# release-prep (§11.4.83).
+version: "1.0"
+name: "HelixLLM CPU Translation (NLLB-200-CTranslate2) Capability"
+description: >-
+  Drives real POST /translate requests against the live HelixLLM CPU
+  translation endpoint (NLLB-200-distilled-600M via CTranslate2, :18436) and
+  strictly fact-matches + not-identity-checks the forward translations
+  against ground-truth source sentences authored against the live service's
+  actual behaviour. TRA-SELF-VALIDATE-001 proves the analyzer itself cannot
+  bluff (golden-good PASS + golden-bad FAIL via the SAME analyzer, paired
+  §1.1 mutation confirmed during authoring). A green case requires the real
+  forward translation to genuinely contain every asserted fact AND to differ
+  from the source — never a metadata-only / endpoint-reachable-only PASS.
+metadata:
+  author: vasic-digital
+  app: HelixLLM
+  category: "helixllm-translate-nllb"
+  priority: critical
+  covenant: "§11.4.107(10) self-validated analyzer + §11.4.69 sink-side positive evidence (the shim's own translated text IS the sink)"
+  route_source: "docs/qa/phase3_translation_nllb_20260707/harness (compose.phase3translatenllb.yml, :18436) — CPU-only, no vrambroker admission needed"
+  evidence_dir: "qa-results/helixllm_translate_nllb"
+  analyzer: "cmd/helixqa-verify-translate-nllb"
+  boot_precondition: >-
+    NLLB translation shim MUST already be booted (harness boot-up
+    compose.phase3translatenllb.yml <project>) before this bank runs; this
+    bank does not boot/pause/teardown any service itself (§11.4.119
+    single-resource-owner — the boot/teardown owner is the conductor).
+
+test_cases:
+
+  - id: TRA-UNDERSTAND-001
+    challenge_id: helixllm.translate.en-de-house-is-blue
+    name: "NLLB correctly translates en->de and produces a genuine, non-identity forward translation"
+    category: functional
+    priority: critical
+    platforms: [api]
+    domains: [translation, llm]
+    dispatches_to: >-
+      bin/helixqa-verify-translate-nllb
+      --source "The house is blue." --source-lang eng_Latn --target-lang deu_Latn
+      --expect "haus,blau"
+      --out qa-results/helixllm_translate_nllb/understand_001_verdict.json
+      --conduit-dir qa-results/helixllm_translate_nllb/conduit
+      --challenge-id TRA-UNDERSTAND-001
+    required_evidence:
+      - "qa-results/helixllm_translate_nllb/understand_001_verdict.json | json:case_result==true | json:not_identity==true | json:matched_facts==2 | json:hallucinated==false"
+    steps:
+      - name: "POST source+langs to the live NLLB shim and fact-match + not-identity check the forward translation"
+        action: "http: POST /translate"
+        expected: >-
+          Response translatedText contains both "haus" and "blau"
+          (case-insensitive) and differs from the source. Authored
+          2026-07-08 (this session) against the live shim, which answered
+          "Das Haus ist blau." (re-confirmed matching the independently
+          proven fixture in docs/qa/phase3_translation_nllb_20260707/RESULTS.md,
+          2026-07-07 — deterministic, CTranslate2 beam_size=1 greedy decoding).
+
+  - id: TRA-UNDERSTAND-002
+    challenge_id: helixllm.translate.en-fr-cat-sleeps
+    name: "NLLB correctly translates en->fr and produces a genuine, non-identity forward translation"
+    category: functional
+    priority: high
+    platforms: [api]
+    domains: [translation, llm]
+    dispatches_to: >-
+      bin/helixqa-verify-translate-nllb
+      --source "The cat sleeps." --source-lang eng_Latn --target-lang fra_Latn
+      --expect "chat,dort"
+      --out qa-results/helixllm_translate_nllb/understand_002_verdict.json
+      --conduit-dir qa-results/helixllm_translate_nllb/conduit
+      --challenge-id TRA-UNDERSTAND-002
+    required_evidence:
+      - "qa-results/helixllm_translate_nllb/understand_002_verdict.json | json:case_result==true | json:not_identity==true | json:matched_facts==2 | json:hallucinated==false"
+    steps:
+      - name: "POST source+langs to the live NLLB shim and fact-match + not-identity check the forward translation"
+        action: "http: POST /translate"
+        expected: >-
+          Response translatedText contains both "chat" and "dort"
+          (case-insensitive) and differs from the source. Authored
+          2026-07-08 (this session) against the live shim, which answered
+          "Le chat dort." (re-confirmed matching the independently proven
+          fixture, 2026-07-07 — deterministic).
+
+  # ============================================================================
+  # TRA-SELF-VALIDATE-001 (mandatory §11.4.107(10)) — TWO cases, ONE analyzer.
+  # -GOOD reuses the TRA-UNDERSTAND-001 fixture (must PASS at the raw level).
+  # -BAD sends the SAME live en->de request but asserts the en->fr fixture's
+  # DELIBERATELY WRONG tokens ("chat,dort" — genuinely absent from "Das Haus
+  # ist blau.") via --expect-fail, mirroring VIS-SELF-VALIDATE-001-BAD /
+  # HXC-ENS-003's negative-case convention.
+  # ============================================================================
+  - id: TRA-SELF-VALIDATE-001-GOOD
+    challenge_id: helixllm.translate.self-validate-golden-good
+    name: "Self-validation golden-good: correct facts against a genuine live translation PASS"
+    category: functional
+    priority: critical
+    platforms: [api]
+    domains: [translation, llm, anti-bluff]
+    dispatches_to: >-
+      bin/helixqa-verify-translate-nllb
+      --source "The house is blue." --source-lang eng_Latn --target-lang deu_Latn
+      --expect "haus,blau"
+      --out qa-results/helixllm_translate_nllb/self_validate_001_golden_good_verdict.json
+      --conduit-dir qa-results/helixllm_translate_nllb/conduit
+      --challenge-id TRA-SELF-VALIDATE-001-GOOD
+    required_evidence:
+      - "qa-results/helixllm_translate_nllb/self_validate_001_golden_good_verdict.json | json:case_result==true | json:pass==true | json:matched_facts==2"
+    steps:
+      - name: "Golden-good: analyzer must PASS when facts genuinely match a real live translation"
+        action: "http: POST /translate"
+        expected: "pass==true (facts genuinely present in the real forward translation)."
+
+  - id: TRA-SELF-VALIDATE-001-BAD
+    challenge_id: helixllm.translate.self-validate-golden-bad-must-fail
+    name: "Self-validation golden-bad: mismatched facts against the SAME live translation MUST FAIL raw, case succeeds via --expect-fail"
+    category: functional
+    priority: critical
+    platforms: [api]
+    domains: [translation, llm, anti-bluff]
+    dispatches_to: >-
+      bin/helixqa-verify-translate-nllb
+      --source "The house is blue." --source-lang eng_Latn --target-lang deu_Latn
+      --expect "chat,dort"
+      --expect-fail
+      --out qa-results/helixllm_translate_nllb/self_validate_001_golden_bad_verdict.json
+      --conduit-dir qa-results/helixllm_translate_nllb/conduit
+      --challenge-id TRA-SELF-VALIDATE-001-BAD
+    metadata:
+      expect_fail: true
+      mutation_proof: >-
+        Authored 2026-07-08: with the analyzer's fact-matching +
+        not-identity assertion intact, this case's raw pass=false
+        (matched_facts=0/2, "chat"/"dort" genuinely absent from
+        "Das Haus ist blau.") and case_result=true (via --expect-fail
+        inversion) — exit 0. A paired §1.1 mutation replacing the
+        assertion with an unconditional "v.Pass = true" was applied to
+        cmd/helixqa-verify-translate-nllb/main.go, rebuilt, and re-run
+        against this exact fixture: raw pass flipped to true, case_result
+        flipped to false — exit 1 (case FAIL). The mutation was then
+        reverted and the restored binary re-confirmed to discriminate
+        correctly before this bank was committed. No mutation code is
+        committed anywhere in this tree (§11.4.84 quiescence).
+    required_evidence:
+      - "qa-results/helixllm_translate_nllb/self_validate_001_golden_bad_verdict.json | json:case_result==true | json:pass==false | json:matched_facts==0"
+    steps:
+      - name: "Golden-bad: analyzer must reject mismatched facts (raw FAIL), case succeeds via --expect-fail inversion"
+        action: "http: POST /translate"
+        expected: >-
+          pass==false (the real forward translation "Das Haus ist blau."
+          genuinely does NOT contain "chat" or "dort"); case_result==true
+          because this case declares --expect-fail. A case_result==false
+          here would mean the analyzer bluff-PASSed a deliberately wrong
+          fixture.

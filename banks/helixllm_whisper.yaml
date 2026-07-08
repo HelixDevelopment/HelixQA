@@ -1,0 +1,210 @@
+# SPDX-FileCopyrightText: 2026 Milos Vasic
+# SPDX-License-Identifier: Apache-2.0
+#
+# HelixQA Test Bank: HelixLLM CPU Whisper STT Capability
+# ========================================================
+#
+# Authored per docs/research/07.2026/00_master/MASTER_IMPLEMENTATION_PLAN.md
+# §1.1 (Whisper STT — IMPLEMENTED, reviewed GO, :18437) + the phase-3 proof
+# docs/qa/phase3_whisper_stt_20260707/RESULTS.md +
+# docs/qa/phase3_whisper_stt_20260707/harness/main.go, mirroring the
+# structure + self-validation discipline of banks/helixllm_vision.yaml.
+#
+# TARGET. The live HelixLLM CPU Speech-To-Text service: faster-whisper
+# (CTranslate2, model=base, compute_type=int8, device=cpu) served on its own
+# port :18437, NO GPU (§11.4.76/§11.4.161/§11.4.119 — independent CPU
+# service, no contention with the GPU coder :18434). This bank NEVER
+# boots/tears-down the STT service itself — the conductor boots it first via
+# the harness's `boot-up` subcommand and tears it down afterward via
+# `boot-down`; the bank only DRIVES the already-running endpoint.
+#
+# ANTI-BLUFF (§11.4.6/§11.4.69/§11.4.107(10)/§11.4.123). Both fixtures below
+# reuse the EXACT known-text WAV files already committed at
+# docs/qa/phase3_whisper_stt_20260707/harness/{fox,helloworld}.wav
+# (synthesized with espeak-ng from a literal known-text string — unfakeable:
+# the harness generated the audio from known text, and the running container
+# has to recover that text from the waveform alone). Each was POSTed to the
+# live :18437 endpoint during authoring (2026-07-08, this session) via
+# bin/helixqa-verify-whisper and the real transcript confirmed to contain
+# every asserted content word BEFORE being committed here as a "must-match"
+# assertion — corroborating the independently-proven transcripts already
+# recorded in docs/qa/phase3_whisper_stt_20260707/RESULTS.md (2026-07-07):
+# fox.wav => "The quick brown fox dumps over the lazy dog."; helloworld.wav
+# => "Hello World 1, 2, 3!".
+#
+# Honest engine-behavior note (§11.4.6, carried from the phase-3 proof, NOT
+# a weakening): "jumps"->"dumps" is a real, minor ASR mis-hearing on
+# synthetic espeak-ng audio (not asserted as a required word); "one two
+# three"->"1, 2, 3" is Whisper's documented number-word->digit
+# normalization, reconciled via digit/number-word canonicalization in the
+# analyzer (§11.4.120), never fake-passed.
+#
+# Analyzer: cmd/helixqa-verify-whisper (this repo) — a thin, project-
+# agnostic dispatches_to analyzer (CONST-051(B)) that POSTs a WAV file
+# (multipart) to /v1/audio/transcriptions, requires every --expect content
+# word present in the normalized (lowercase, punctuation-stripped,
+# digit<->number-word canonicalized) transcript, and writes an auditable
+# verdict JSON.
+#
+# STT-SELF-VALIDATE-001 (mandatory §11.4.107(10)) proves the analyzer itself
+# cannot bluff: -GOOD reuses the fox.wav golden-good request (must PASS).
+# -BAD sends the SAME live fox.wav request but asserts the helloworld
+# fixture's DELIBERATELY WRONG words ("hello,world" — genuinely absent from
+# the fox transcript) via --expect-fail, mirroring
+# VIS-SELF-VALIDATE-001-BAD / TRA-SELF-VALIDATE-001-BAD's negative-case
+# convention. A paired §1.1 mutation (forcing pass=true unconditionally) was
+# run during authoring and confirmed to flip STT-SELF-VALIDATE-001-BAD's
+# case_result from true to false. Evidence:
+# docs/qa/phase1_helixqa_whisper_20260708T*/mutation_proof/.
+#
+# DECOUPLING (CONST-051(B)/§11.4.28). This bank is DATA. dispatches_to names
+# a consumer-built binary; the endpoint URL, WAV paths, and expected words
+# are ALL bank data. `qa-results/helixllm_whisper/**` is the per-run RAW
+# evidence dir (git-ignored, §11.4.128); curated into `docs/qa/<run-id>/` at
+# release-prep (§11.4.83).
+version: "1.0"
+name: "HelixLLM CPU Whisper STT Capability"
+description: >-
+  Drives real POST /v1/audio/transcriptions requests against the live
+  HelixLLM CPU faster-whisper endpoint (:18437) and word-matches the
+  recovered transcripts against known-text WAV fixtures (synthesized via
+  espeak-ng from a literal known string — unfakeable). STT-SELF-VALIDATE-001
+  proves the analyzer itself cannot bluff (golden-good PASS + golden-bad
+  FAIL via the SAME analyzer, paired §1.1 mutation confirmed during
+  authoring). A green case requires the real transcript to genuinely
+  contain every asserted content word — never a metadata-only /
+  endpoint-reachable-only PASS.
+metadata:
+  author: vasic-digital
+  app: HelixLLM
+  category: "helixllm-whisper-stt"
+  priority: critical
+  covenant: "§11.4.107(10) self-validated analyzer + §11.4.69 sink-side positive evidence (the recovered transcript text IS the sink)"
+  route_source: "docs/qa/phase3_whisper_stt_20260707/harness (compose.phase3whisper.yml, :18437) — CPU-only, built from submodules/helix_llm/container/Containerfile.whisper"
+  evidence_dir: "qa-results/helixllm_whisper"
+  analyzer: "cmd/helixqa-verify-whisper"
+  boot_precondition: >-
+    Whisper STT service MUST already be booted (harness boot-up
+    compose.phase3whisper.yml <project>) before this bank runs; this bank
+    does not boot/pause/teardown any service itself (§11.4.119
+    single-resource-owner — the boot/teardown owner is the conductor).
+
+test_cases:
+
+  - id: STT-FOX-001
+    challenge_id: helixllm.whisper.fox-sentence
+    name: "Whisper correctly recovers the known 'fox' sentence from synthesized audio"
+    category: functional
+    priority: critical
+    platforms: [api]
+    domains: [stt, llm]
+    dispatches_to: >-
+      bin/helixqa-verify-whisper
+      --wav data/whisper_gt/fox.wav
+      --expect "quick,brown,fox,lazy,dog"
+      --out qa-results/helixllm_whisper/fox_001_verdict.json
+      --conduit-dir qa-results/helixllm_whisper/conduit
+      --challenge-id STT-FOX-001
+    required_evidence:
+      - "qa-results/helixllm_whisper/fox_001_verdict.json | json:case_result==true | json:matched_words==5"
+    steps:
+      - name: "POST fox.wav to the live Whisper STT endpoint and word-match the transcript"
+        action: "http: POST /v1/audio/transcriptions"
+        expected: >-
+          Normalized transcript contains "quick","brown","fox","lazy","dog".
+          Authored 2026-07-08 (this session) against the live service, which
+          answered "The quick brown fox dumps over the lazy dog." (matching
+          the independently-proven transcript recorded 2026-07-07).
+
+  - id: STT-HELLOWORLD-001
+    challenge_id: helixllm.whisper.helloworld-numbers
+    name: "Whisper correctly recovers the known 'hello world' + spoken-number sentence"
+    category: functional
+    priority: high
+    platforms: [api]
+    domains: [stt, llm]
+    dispatches_to: >-
+      bin/helixqa-verify-whisper
+      --wav data/whisper_gt/helloworld.wav
+      --expect "hello,world,one,two,three"
+      --out qa-results/helixllm_whisper/helloworld_001_verdict.json
+      --conduit-dir qa-results/helixllm_whisper/conduit
+      --challenge-id STT-HELLOWORLD-001
+    required_evidence:
+      - "qa-results/helixllm_whisper/helloworld_001_verdict.json | json:case_result==true | json:matched_words==5"
+    steps:
+      - name: "POST helloworld.wav to the live Whisper STT endpoint and word-match (digit/number-word canonicalized)"
+        action: "http: POST /v1/audio/transcriptions"
+        expected: >-
+          Normalized+canonicalized transcript contains
+          "hello","world","one","two","three" (Whisper renders spoken
+          numbers as digits "1, 2, 3" — the analyzer canonicalizes
+          digit<->number-word per §11.4.120, a documented real engine
+          behavior). Authored 2026-07-08 against the live service, which
+          answered "Hello World 1, 2, 3!".
+
+  # ============================================================================
+  # STT-SELF-VALIDATE-001 (mandatory §11.4.107(10)) — TWO cases, ONE analyzer.
+  # -GOOD reuses the STT-FOX-001 fixture (must PASS at the raw level).
+  # -BAD sends the SAME live fox.wav request but asserts the helloworld
+  # fixture's DELIBERATELY WRONG words via --expect-fail.
+  # ============================================================================
+  - id: STT-SELF-VALIDATE-001-GOOD
+    challenge_id: helixllm.whisper.self-validate-golden-good
+    name: "Self-validation golden-good: correct words against a genuine live transcript PASS"
+    category: functional
+    priority: critical
+    platforms: [api]
+    domains: [stt, llm, anti-bluff]
+    dispatches_to: >-
+      bin/helixqa-verify-whisper
+      --wav data/whisper_gt/fox.wav
+      --expect "quick,brown,fox,lazy,dog"
+      --out qa-results/helixllm_whisper/self_validate_001_golden_good_verdict.json
+      --conduit-dir qa-results/helixllm_whisper/conduit
+      --challenge-id STT-SELF-VALIDATE-001-GOOD
+    required_evidence:
+      - "qa-results/helixllm_whisper/self_validate_001_golden_good_verdict.json | json:case_result==true | json:pass==true | json:matched_words==5"
+    steps:
+      - name: "Golden-good: analyzer must PASS when words genuinely match a real live transcript"
+        action: "http: POST /v1/audio/transcriptions"
+        expected: "pass==true (words genuinely present in the real transcript)."
+
+  - id: STT-SELF-VALIDATE-001-BAD
+    challenge_id: helixllm.whisper.self-validate-golden-bad-must-fail
+    name: "Self-validation golden-bad: mismatched words against the SAME live transcript MUST FAIL raw, case succeeds via --expect-fail"
+    category: functional
+    priority: critical
+    platforms: [api]
+    domains: [stt, llm, anti-bluff]
+    dispatches_to: >-
+      bin/helixqa-verify-whisper
+      --wav data/whisper_gt/fox.wav
+      --expect "hello,world"
+      --expect-fail
+      --out qa-results/helixllm_whisper/self_validate_001_golden_bad_verdict.json
+      --conduit-dir qa-results/helixllm_whisper/conduit
+      --challenge-id STT-SELF-VALIDATE-001-BAD
+    metadata:
+      expect_fail: true
+      mutation_proof: >-
+        Authored 2026-07-08: with the analyzer's word-match assertion
+        intact, this case's raw pass=false (matched_words=0/2, "hello"/
+        "world" genuinely absent from the fox transcript) and
+        case_result=true (via --expect-fail inversion) — exit 0. A paired
+        §1.1 mutation replacing the assertion with an unconditional
+        "v.Pass = true" was applied to cmd/helixqa-verify-whisper/main.go,
+        rebuilt, and re-run against this exact fixture: raw pass flipped to
+        true, case_result flipped to false — exit 1 (case FAIL). The
+        mutation was then reverted and the restored binary re-confirmed to
+        discriminate correctly before this bank was committed. No mutation
+        code is committed anywhere in this tree (§11.4.84 quiescence).
+    required_evidence:
+      - "qa-results/helixllm_whisper/self_validate_001_golden_bad_verdict.json | json:case_result==true | json:pass==false | json:matched_words==0"
+    steps:
+      - name: "Golden-bad: analyzer must reject mismatched words (raw FAIL), case succeeds via --expect-fail inversion"
+        action: "http: POST /v1/audio/transcriptions"
+        expected: >-
+          pass==false (the real transcript "The quick brown fox dumps over
+          the lazy dog." genuinely does NOT contain "hello" or "world");
+          case_result==true because this case declares --expect-fail.

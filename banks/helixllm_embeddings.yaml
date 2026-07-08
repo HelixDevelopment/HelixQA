@@ -1,0 +1,182 @@
+# SPDX-FileCopyrightText: 2026 Milos Vasic
+# SPDX-License-Identifier: Apache-2.0
+#
+# HelixQA Test Bank: HelixLLM CPU Embeddings Capability
+# =======================================================
+#
+# Authored per docs/research/07.2026/00_master/MASTER_IMPLEMENTATION_PLAN.md
+# §1.1 (Embeddings — IMPLEMENTED, PROVEN, bge-small via TEI, cos margin
+# 0.3578) + the phase-3 proof docs/qa/phase3_embeddings_20260706/RESULTS.md +
+# docs/qa/phase3_embeddings_20260706/harness/main.go, mirroring the structure
+# + self-validation discipline of banks/helixllm_vision.yaml.
+#
+# TARGET. The live HelixLLM CPU embeddings service: HF Text Embeddings
+# Inference (TEI cpu-1.9), model BAAI/bge-small-en-v1.5 (dim 384) — the
+# ship-now CPU lane (the design-default nomic primary is a known TEI-parser
+# incompatibility, §11.4.6 honest substitution per the phase-3 proof).
+# Served on its own port :18435, NO GPU (§11.4.76/§11.4.161/§11.4.119 —
+# independent CPU service, no contention with the GPU coder :18434). This
+# bank NEVER boots/tears-down the embeddings service itself — the conductor
+# boots it first via the harness's `boot-up` subcommand (TEI_MODEL_ID=
+# BAAI/bge-small-en-v1.5) and tears it down afterward via `boot-down`; the
+# bank only DRIVES the already-running endpoint.
+#
+# ANTI-BLUFF (§11.4.6/§11.4.69/§11.4.107(10)/§11.4.123). The runtime
+# signature is a SEMANTIC-ORDER cosine-margin check: cos(A,A') (a
+# related/paraphrase pair) MUST exceed cos(A,U) (an unrelated pair) by at
+# least the margin floor — unfakeable by a zero-vector/shuffled/wrong-dim
+# stub. The sentence triple was run against the live :18435 endpoint during
+# authoring (2026-07-08, this session) via bin/helixqa-verify-embeddings and
+# the real margin confirmed BEFORE being committed here as a "must-match"
+# assertion — corroborating the independently-proven signature already
+# recorded in docs/qa/phase3_embeddings_20260706/RESULTS.md (2026-07-06):
+# cos(A,A')=0.7509, cos(A,U)=0.3931, margin=0.3578 >> the 0.15 floor.
+#
+# Analyzer: cmd/helixqa-verify-embeddings (this repo) — a thin, project-
+# agnostic dispatches_to analyzer (CONST-051(B)) that POSTs the sentence
+# triple to /v1/embeddings, computes real L2-norms + cosines, and requires
+# non-zero-norm + equal-dimension + cos(A,A')-cos(A,U) >= --margin-floor.
+#
+# EMB-SELF-VALIDATE-001 (mandatory §11.4.107(10)) proves the analyzer itself
+# cannot bluff: -GOOD reuses the correct triple (must PASS). -BAD SWAPS the
+# related and unrelated sentences (A' <- unrelated, U <- related) so the
+# semantic ordering is inverted — real, fluent vectors, but the asserted
+# ordering is wrong, so cos(A,A') < cos(A,U) and margin goes NEGATIVE — via
+# --expect-fail, mirroring VIS-SELF-VALIDATE-001-BAD's negative-case
+# convention (and the phase-3 proof's "shuffled-order" golden-bad). A paired
+# §1.1 mutation (forcing pass=true unconditionally) was run during authoring
+# and confirmed to flip EMB-SELF-VALIDATE-001-BAD's case_result from true to
+# false. Evidence: docs/qa/phase1_helixqa_embeddings_20260708T*/mutation_proof/.
+#
+# DECOUPLING (CONST-051(B)/§11.4.28). This bank is DATA. dispatches_to names
+# a consumer-built binary; the endpoint URL, sentence triple, and margin
+# floor are ALL bank data. `qa-results/helixllm_embeddings/**` is the per-run
+# RAW evidence dir (git-ignored, §11.4.128); curated into `docs/qa/<run-id>/`
+# at release-prep (§11.4.83).
+version: "1.0"
+name: "HelixLLM CPU Embeddings Capability"
+description: >-
+  Drives real POST /v1/embeddings requests against the live HelixLLM CPU
+  embeddings endpoint (TEI, bge-small-en-v1.5, :18435) and asserts a
+  semantic-order cosine-margin runtime signature (related pair must
+  out-score an unrelated pair) authored against the live service's actual
+  behaviour. EMB-SELF-VALIDATE-001 proves the analyzer itself cannot bluff
+  (golden-good PASS + golden-bad FAIL via the SAME analyzer, paired §1.1
+  mutation confirmed during authoring). A green case requires real,
+  non-zero, correctly-ordered embeddings — never a metadata-only /
+  endpoint-reachable-only PASS.
+metadata:
+  author: vasic-digital
+  app: HelixLLM
+  category: "helixllm-embeddings"
+  priority: high
+  covenant: "§11.4.107(10) self-validated analyzer + §11.4.69 sink-side positive evidence (the served embedding vectors ARE the sink)"
+  route_source: "docs/qa/phase3_embeddings_20260706/harness (compose.phase3embed.yml, :18435) — CPU-only, TEI cpu-1.9 image"
+  evidence_dir: "qa-results/helixllm_embeddings"
+  analyzer: "cmd/helixqa-verify-embeddings"
+  boot_precondition: >-
+    Embeddings TEI service MUST already be booted (harness boot-up
+    compose.phase3embed.yml <project>, TEI_MODEL_ID=BAAI/bge-small-en-v1.5)
+    before this bank runs; this bank does not boot/pause/teardown any
+    service itself (§11.4.119 single-resource-owner — the boot/teardown
+    owner is the conductor).
+
+test_cases:
+
+  - id: EMB-MARGIN-001
+    challenge_id: helixllm.embeddings.semantic-order-margin
+    name: "TEI serves real embeddings whose related-pair cosine out-scores an unrelated pair"
+    category: functional
+    priority: high
+    platforms: [api]
+    domains: [embeddings, llm]
+    dispatches_to: >-
+      bin/helixqa-verify-embeddings
+      --text-a "The cat sat on the mat."
+      --text-a-prime "A feline rested on the rug."
+      --text-u "Quarterly revenue rose four percent."
+      --margin-floor 0.15
+      --out qa-results/helixllm_embeddings/margin_001_verdict.json
+      --conduit-dir qa-results/helixllm_embeddings/conduit
+      --challenge-id EMB-MARGIN-001
+    required_evidence:
+      - "qa-results/helixllm_embeddings/margin_001_verdict.json | json:case_result==true | json:dim==384 | json:margin>=0.15 | json:norm_a>0"
+    steps:
+      - name: "POST the sentence triple to the live TEI endpoint; assert semantic-order cosine margin"
+        action: "http: POST /v1/embeddings"
+        expected: >-
+          dim=384, all norms non-zero, cos(A,A') - cos(A,U) >= 0.15.
+          Authored 2026-07-08 (this session) against the live TEI service,
+          which produced cos(A,A')=0.7509, cos(A,U)=0.3931, margin=0.3578
+          (matching the independently-proven signature recorded 2026-07-06).
+
+  # ============================================================================
+  # EMB-SELF-VALIDATE-001 (mandatory §11.4.107(10)) — TWO cases, ONE analyzer.
+  # -GOOD reuses the EMB-MARGIN-001 triple (must PASS at the raw level).
+  # -BAD SWAPS the related/unrelated sentences so the margin goes NEGATIVE
+  # (real vectors, wrong asserted ordering) via --expect-fail.
+  # ============================================================================
+  - id: EMB-SELF-VALIDATE-001-GOOD
+    challenge_id: helixllm.embeddings.self-validate-golden-good
+    name: "Self-validation golden-good: correctly-ordered triple against real embeddings PASS"
+    category: functional
+    priority: critical
+    platforms: [api]
+    domains: [embeddings, llm, anti-bluff]
+    dispatches_to: >-
+      bin/helixqa-verify-embeddings
+      --text-a "The cat sat on the mat."
+      --text-a-prime "A feline rested on the rug."
+      --text-u "Quarterly revenue rose four percent."
+      --margin-floor 0.15
+      --out qa-results/helixllm_embeddings/self_validate_001_golden_good_verdict.json
+      --conduit-dir qa-results/helixllm_embeddings/conduit
+      --challenge-id EMB-SELF-VALIDATE-001-GOOD
+    required_evidence:
+      - "qa-results/helixllm_embeddings/self_validate_001_golden_good_verdict.json | json:case_result==true | json:pass==true | json:margin>=0.15"
+    steps:
+      - name: "Golden-good: analyzer must PASS when the semantic ordering is correct"
+        action: "http: POST /v1/embeddings"
+        expected: "pass==true (related pair genuinely out-scores the unrelated pair)."
+
+  - id: EMB-SELF-VALIDATE-001-BAD
+    challenge_id: helixllm.embeddings.self-validate-golden-bad-must-fail
+    name: "Self-validation golden-bad: swapped (inverted-ordering) triple MUST FAIL raw, case succeeds via --expect-fail"
+    category: functional
+    priority: critical
+    platforms: [api]
+    domains: [embeddings, llm, anti-bluff]
+    dispatches_to: >-
+      bin/helixqa-verify-embeddings
+      --text-a "The cat sat on the mat."
+      --text-a-prime "Quarterly revenue rose four percent."
+      --text-u "A feline rested on the rug."
+      --margin-floor 0.15
+      --expect-fail
+      --out qa-results/helixllm_embeddings/self_validate_001_golden_bad_verdict.json
+      --conduit-dir qa-results/helixllm_embeddings/conduit
+      --challenge-id EMB-SELF-VALIDATE-001-BAD
+    metadata:
+      expect_fail: true
+      mutation_proof: >-
+        Authored 2026-07-08: with the analyzer's margin assertion intact,
+        this case's raw pass=false (margin=-0.3578, the related sentence is
+        placed in the "unrelated" slot so cos(A,A')=0.3931 < cos(A,U)=0.7509)
+        and case_result=true (via --expect-fail inversion) — exit 0. A
+        paired §1.1 mutation replacing the assertion with an unconditional
+        "v.Pass = true" was applied to cmd/helixqa-verify-embeddings/main.go,
+        rebuilt, and re-run against this exact fixture: raw pass flipped to
+        true, case_result flipped to false — exit 1 (case FAIL). The
+        mutation was then reverted and the restored binary re-confirmed to
+        discriminate correctly before this bank was committed. No mutation
+        code is committed anywhere in this tree (§11.4.84 quiescence).
+    required_evidence:
+      - "qa-results/helixllm_embeddings/self_validate_001_golden_bad_verdict.json | json:case_result==true | json:pass==false | json:margin<0"
+    steps:
+      - name: "Golden-bad: analyzer must reject the inverted ordering (raw FAIL), case succeeds via --expect-fail inversion"
+        action: "http: POST /v1/embeddings"
+        expected: >-
+          pass==false (real, fluent vectors, but the semantic ordering is
+          inverted so the margin goes negative); case_result==true because
+          this case declares --expect-fail. Proves the analyzer rejects
+          "real embeddings, just wrongly ordered," not only garbage.
