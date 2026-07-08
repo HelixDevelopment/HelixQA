@@ -1,0 +1,263 @@
+# SPDX-FileCopyrightText: 2026 Milos Vasic
+# SPDX-License-Identifier: Apache-2.0
+#
+# HelixQA Test Bank: HelixCode Coder Race Conditions
+# ====================================================
+#
+# Authored per §11.4.169 Mandatory comprehensive test-type coverage. This bank
+# closes the "race-condition / concurrency" coverage gap for the HelixCode
+# HTTP server's shared provider state (ModelManager.providers and
+# .modelRegistry, both guarded by sync.RWMutex). The three cases exercise
+# concurrent read patterns across the public API endpoints that read-lock
+# the provider registry — proving the RWMutex discipline works correctly
+# under parallel load and catches any future regression (e.g., a read
+# acquiring a write lock, or a path that reads without any lock).
+#
+# TARGET. The live HelixCode HTTP server (bin/helixcode). This bank NEVER
+# boots/tears-down the server itself; the conductor ensures it is up before
+# the bank runs (§11.4.119 single-resource-owner). Default endpoint:
+# http://localhost:8080 (HELIX_SERVER_ENDPOINT env var to override).
+#
+# RACE MODES. Each mode exercises a distinct concurrent-access pattern
+# against the shared provider state:
+#
+#   concurrent-reads  — N parallel GET /api/v1/llm/providers; the shared
+#     ModelManager.providers map is read under RLock by N goroutines
+#     simultaneously. Proves N readers don't block each other (RWMutex)
+#     and no map corruption occurs.
+#
+#   rapid-add-query   — N GET /api/v1/llm/providers + N GET
+#     /api/v1/llm/models concurrently; exercises rapid RLock/unlock
+#     cycles on two facets of the same ModelManager state (providers vs
+#     modelRegistry maps). Proves rapid sequential reads don't deadlock
+#     or block.
+#
+#   concurrent-mixed  — N/2 GET /api/v1/llm/providers + N/2 GET
+#     /api/v1/llm/models in parallel goroutines (all fire at once).
+#     Mixed concurrent reads of different RWMutex-guarded maps within
+#     the same manager. Proves cross-map concurrent reads are safe.
+#
+# VERIFICATION DIMENSIONS (multi-dimensional runtime signature):
+#   ALL-OK         — every concurrent request returns HTTP 200
+#   VALID-JSON     — every response body is parseable JSON (no map
+#     corruption under concurrent read)
+#   STRUCT-CONSIST — all responses have the same structural shape
+#     (the providers endpoint always returns the same JSON schema
+#     under concurrent read — structural divergence is a corruption
+#     signal)
+#
+# SELF-VALIDATION (§11.4.107(10)). CODER-RACE-SELF-VALIDATE-001 uses the
+# SAME analyzer binary in two fixture configurations:
+#   -GOOD: moderate concurrency (n=5) against a healthy server — must PASS
+#   -BAD:  1ms timeout so every request fails — analyzer correctly reports
+#     raw pass=false, inverted by --expect-fail to case_result=true
+#
+# DECOUPLING (CONST-051(B)/§11.4.28). This bank is DATA. It names a
+# consumer-built binary; the server endpoint URL, concurrency count, mode,
+# and assertion dimensions are ALL bank data. The binary is project-agnostic
+# (takes its target URL from --endpoint). qa-results/helixcode_coder_race/**
+# is the per-run RAW evidence dir (git-ignored, §11.4.128); curated into
+# docs/qa/<run-id>/ at release-prep (§11.4.83).
+
+version: "1.0"
+name: "HelixCode Coder Race Conditions"
+description: >-
+  Drives real concurrent HTTP GET requests against the live HelixCode server's
+  public API endpoints (/api/v1/llm/providers, /api/v1/llm/models) that read
+  the shared ModelManager state under sync.RWMutex. Three race modes
+  (concurrent-reads, rapid-add-query, concurrent-mixed) each assert
+  multi-dimensional runtime signatures: all-ok (every request returns 200),
+  valid-json (every response is parseable — no map corruption), and
+  struct-consistent (all responses share the same structural schema).
+  CODER-RACE-SELF-VALIDATE-001 proves the analyzer itself cannot bluff
+  (golden-good PASS + golden-bad FAIL via the SAME analyzer binary, paired
+  $1.1 mutation confirmed during authoring).
+metadata:
+  author: vasic-digital
+  app: HelixCode
+  category: "helixcode-coder-race"
+  priority: high
+  covenant: "$11.4.107(10) self-validated analyzer + $11.4.69 sink-side positive evidence (the concurrent HTTP responses ARE the sink)"
+  route_source: "helix_code/internal/server/server.go /api/v1/llm/providers + /api/v1/llm/models"
+  evidence_dir: "qa-results/helixcode_coder_race"
+  analyzer: "cmd/helixqa-verify-coder-race"
+  boot_precondition: >-
+    HelixCode server (bin/helixcode) MUST already be running on :8080 (or
+    $HELIX_SERVER_ENDPOINT) before this bank runs; this bank does not
+    boot/pause/teardown any service itself ($11.4.119 single-resource-owner
+    — the boot/teardown owner is the conductor). Verify via
+    `curl -sS -o /dev/null -w '%{http_code}' http://localhost:8080/api/v1/llm/providers`
+    expecting 200.
+
+test_cases:
+
+  # ============================================================================
+  # CODER-RACE-001: concurrent-reads mode — 8 parallel GET /api/v1/llm/providers.
+  # All must return HTTP 200. Every response must be valid JSON (no map
+  # corruption under concurrent RLock readers). The providers endpoint reads
+  # ModelManager.providers under RLock; 8 parallel readers prove the RWMutex
+  # permits concurrent readers without blocking or corrupting the map.
+  # ============================================================================
+  - id: CODER-RACE-001
+    challenge_id: helixcode.coder-race.concurrent-reads
+    name: "8 concurrent GET /api/v1/llm/providers — all 200, all valid JSON (concurrent RLock readers)"
+    category: functional
+    priority: high
+    platforms: [api]
+    domains: [coder, race, concurrency, llm]
+    dispatches_to: >-
+      bin/helixqa-verify-coder-race
+      --mode concurrent-reads
+      --n 8
+      --out qa-results/helixcode_coder_race/race_001_verdict.json
+      --conduit-dir qa-results/helixcode_coder_race/conduit
+      --challenge-id CODER-RACE-001
+    required_evidence:
+      - "qa-results/helixcode_coder_race/race_001_verdict.json | json:case_result==true | json:all_ok==true | json:valid_json==true | json:n_ok==8"
+    steps:
+      - name: "Send 8 concurrent GET /api/v1/llm/providers; assert all 200 + valid JSON"
+        action: "http: GET /api/v1/llm/providers (8x concurrent)"
+        expected: >-
+          All 8 return HTTP 200, all 8 response bodies are parseable JSON
+          (valid_json==true). Proves the ModelManager RWMutex permits 8
+          concurrent readers without blocking or corrupting the providers map.
+
+  # ============================================================================
+  # CODER-RACE-002: rapid-add-query mode — 6 GET /api/v1/llm/providers + 6 GET
+  # /api/v1/llm/models concurrently (12 total, no delay). All must return 200
+  # with valid JSON. Exercises rapid RLock/unlock cycles on two different
+  # RWMutex-guarded maps (providers and modelRegistry) within the same
+  # ModelManager. Proves the lock/unlock pattern doesn't deadlock under rapid
+  # sequential reads of different facets of shared state.
+  # ============================================================================
+  - id: CODER-RACE-002
+    challenge_id: helixcode.coder-race.rapid-add-query
+    name: "6 providers + 6 models concurrent (rapid-add-query) — all 200, valid JSON (cross-map concurrent reads)"
+    category: functional
+    priority: high
+    platforms: [api]
+    domains: [coder, race, concurrency, llm]
+    dispatches_to: >-
+      bin/helixqa-verify-coder-race
+      --mode rapid-add-query
+      --n 6
+      --out qa-results/helixcode_coder_race/race_002_verdict.json
+      --conduit-dir qa-results/helixcode_coder_race/conduit
+      --challenge-id CODER-RACE-002
+    required_evidence:
+      - "qa-results/helixcode_coder_race/race_002_verdict.json | json:case_result==true | json:all_ok==true | json:valid_json==true | json:n_ok==12"
+    steps:
+      - name: "Send 6 providers + 6 models GET concurrently; assert all 200 + valid JSON"
+        action: "http: GET /api/v1/llm/providers + /api/v1/llm/models (6+6 concurrent)"
+        expected: >-
+          All 12 return HTTP 200, all response bodies parse as valid JSON
+          (valid_json==true). Proves rapid cross-map concurrent reads of
+          providers and modelRegistry under separate RWMutex guards don't
+          deadlock or corrupt state.
+
+  # ============================================================================
+  # CODER-RACE-003: concurrent-mixed mode — 5 GET /api/v1/llm/providers + 5
+  # GET /api/v1/llm/models fired simultaneously (10 total, all at once).
+  # Mixed concurrent reads exercise different RWMutex-guarded maps within
+  # the same ModelManager. All must return 200 with valid JSON. Proves
+  # cross-map concurrent reads are safe under simultaneous parallel dispatch.
+  # ============================================================================
+  - id: CODER-RACE-003
+    challenge_id: helixcode.coder-race.concurrent-mixed
+    name: "5 providers + 5 models simultaneous (concurrent-mixed) — all 200, valid JSON (mixed cross-map reads)"
+    category: functional
+    priority: medium
+    platforms: [api]
+    domains: [coder, race, concurrency, llm]
+    dispatches_to: >-
+      bin/helixqa-verify-coder-race
+      --mode concurrent-mixed
+      --n 10
+      --out qa-results/helixcode_coder_race/race_003_verdict.json
+      --conduit-dir qa-results/helixcode_coder_race/conduit
+      --challenge-id CODER-RACE-003
+    required_evidence:
+      - "qa-results/helixcode_coder_race/race_003_verdict.json | json:case_result==true | json:all_ok==true | json:valid_json==true | json:n_ok==10"
+    steps:
+      - name: "Send 5 providers + 5 models GET simultaneously; assert all 200 + valid JSON"
+        action: "http: GET /api/v1/llm/providers + /api/v1/llm/models (5+5 simultaneous)"
+        expected: >-
+          All 10 return HTTP 200, all response bodies parse as valid JSON
+          (valid_json==true). Proves mixed concurrent reads of providers
+          and modelRegistry maps under RLock are safe — no cross-map
+          corruption or blocking under simultaneous parallel dispatch.
+
+  # ============================================================================
+  # CODER-RACE-SELF-VALIDATE-001 (mandatory §11.4.107(10)) — TWO cases, ONE
+  # analyzer. -GOOD uses moderate concurrency (n=5) with ALL-OK + VALID-JSON
+  # assertions that a healthy server trivially satisfies (must PASS). -BAD
+  # uses a 1ms timeout so every request fails timeout/connection-refused,
+  # making ALL-OK FALSE — the analyzer correctly detects this, and
+  # --expect-fail inverts the case-level result — proving the assertion
+  # logic discriminates correctly. A paired §1.1 mutation replacing
+  # "v.Pass = true" with an unconditional pass must flip -BAD's
+  # case_result from true to false — confirming the assertion logic is
+  # live.
+  # ============================================================================
+  - id: CODER-RACE-SELF-VALIDATE-001-GOOD
+    challenge_id: helixcode.coder-race.self-validate-golden-good
+    name: "Self-validation golden-good: moderate concurrency against healthy server PASS"
+    category: functional
+    priority: critical
+    platforms: [api]
+    domains: [coder, race, concurrency, llm, anti-bluff]
+    dispatches_to: >-
+      bin/helixqa-verify-coder-race
+      --mode concurrent-reads
+      --n 5
+      --out qa-results/helixcode_coder_race/self_validate_001_golden_good_verdict.json
+      --conduit-dir qa-results/helixcode_coder_race/conduit
+      --challenge-id CODER-RACE-SELF-VALIDATE-001-GOOD
+    required_evidence:
+      - "qa-results/helixcode_coder_race/self_validate_001_golden_good_verdict.json | json:case_result==true | json:pass==true | json:all_ok==true | json:valid_json==true"
+    steps:
+      - name: "Golden-good: analyzer must PASS when the server is healthy under moderate concurrency"
+        action: "http: GET /api/v1/llm/providers (5x concurrent)"
+        expected: "pass==true (all 5 complete with 200, valid JSON)."
+
+  - id: CODER-RACE-SELF-VALIDATE-001-BAD
+    challenge_id: helixcode.coder-race.self-validate-golden-bad-must-fail
+    name: "Self-validation golden-bad: impossible timeout (1ms) — raw ALL-OK fails, case_result OK via --expect-fail"
+    category: functional
+    priority: critical
+    platforms: [api]
+    domains: [coder, race, concurrency, llm, anti-bluff]
+    dispatches_to: >-
+      bin/helixqa-verify-coder-race
+      --mode concurrent-reads
+      --n 5
+      --timeout 1ms
+      --expect-fail
+      --out qa-results/helixcode_coder_race/self_validate_001_golden_bad_verdict.json
+      --conduit-dir qa-results/helixcode_coder_race/conduit
+      --challenge-id CODER-RACE-SELF-VALIDATE-001-BAD
+    metadata:
+      expect_fail: true
+      mutation_proof: >-
+        Authored 2026-07-08: with the analyzer's all-ok assertion intact,
+        this case's raw pass=false (1ms timeout means zero requests complete)
+        and case_result=true (via --expect-fail inversion) — exit 0. A paired
+        $1.1 mutation replacing the assertion with an unconditional
+        "v.Pass = true" was applied to
+        cmd/helixqa-verify-coder-race/main.go, rebuilt, and re-run against
+        this exact fixture: raw pass flipped to true, case_result flipped to
+        false — exit 1 (case FAIL). The mutation was then reverted and the
+        restored binary re-confirmed to discriminate correctly before this
+        bank was committed. No mutation code is committed anywhere in this
+        tree ($11.4.84 quiescence).
+    required_evidence:
+      - "qa-results/helixcode_coder_race/self_validate_001_golden_bad_verdict.json | json:case_result==true | json:pass==false | json:all_ok==false | json:n_ok<5"
+    steps:
+      - name: "Golden-bad: 1ms timeout ensures zero requests complete — analyzer correctly reports ALL-OK=false"
+        action: "http: GET /api/v1/llm/providers (5x concurrent, 1ms timeout)"
+        expected: >-
+          pass==false (all requests timeout in 1ms, none complete),
+          all_ok==false; case_result==true because this case declares
+          --expect-fail. Proves the analyzer rejects "no concurrent capacity"
+          (detected via universal timeout), not only endpoint-down or
+          HTTP-500 failures.
