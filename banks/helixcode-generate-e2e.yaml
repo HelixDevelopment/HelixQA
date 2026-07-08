@@ -1,0 +1,143 @@
+version: "1.0"
+name: "HelixCode Full-HTTP E2E — Auth → LLM Generate → HelixLLM Coder"
+description: >-
+  Self-driving (§11.4.98) HelixQA bank exercising the REAL HelixCode API
+  auth→generate→coder pipeline end-to-end. Every step is a real http: request
+  with machine-checkable status / body-substring / JSON-path assertions.
+
+  RED:    POST /api/v1/llm/generate with NO auth header -> 401
+  GREEN:  Register test user -> auto-login via auth:admin mode -> POST
+          /api/v1/llm/generate with provider=helixllm -> 200 + real LLM
+          content proxied through resolveLLMProvider / resolveHelixLLMLocalProvider
+          to the local llama.cpp coder on port 18434.
+
+  Self-validated analyzer (golden-good/golden-bad fixture pair, §11.4.107(10)):
+  companion driver script scripts/qa/self_val_analyzer_fullhttp_gen.sh verifies
+  every step assertion is tight AND rejects a known-bad fixture injected into
+  the same assertion pipeline.
+
+  Route source:
+    helix_code/internal/server/server.go        — authMiddleware on /llm/generate
+    helix_code/internal/server/llm_generate.go  — resolveLLMProvider → resolveHelixLLMLocalProvider
+    helix_code/internal/server/handlers.go      — register / login handlers
+metadata:
+  author: vasic-digital
+  app: HelixCode
+  target_server: "HelixCode HTTP server (cmd/server) — real PostgreSQL + Redis backed"
+  covenant: "§11.4.98 full-automation anti-bluff"
+  route_source: "helix_code/internal/server/server.go + handlers.go + llm_generate.go"
+test_cases:
+  - id: HXC-GEN-001
+    name: "RED — POST /api/v1/llm/generate without auth returns 401"
+    category: security
+    priority: critical
+    platforms: [api]
+    steps:
+      - name: "POST /api/v1/llm/generate no Authorization header"
+        action: "http: POST /api/v1/llm/generate"
+        body:
+          provider: "helixllm"
+          model: "llama3.2"
+          prompt: "Say hello in one short sentence"
+        expect_status: 401
+        expect_body_contains: "authorization"
+    tags: [auth, generate, red, security, anti-bluff]
+    estimated_duration: "5s"
+    expected_result: "Unauthenticated LLM generate request is rejected with 401 (RED test — proves authMiddleware is wired)"
+
+  - id: HXC-GEN-002
+    name: "RED — POST /api/v1/llm/generate with bad token returns 401"
+    category: security
+    priority: critical
+    platforms: [api]
+    steps:
+      - name: "POST /api/v1/llm/generate with fake bearer token"
+        action: "http: POST /api/v1/llm/generate"
+        auth: "raw:definitely_not_a_real_jwt_token_12345"
+        body:
+          provider: "helixllm"
+          model: "llama3.2"
+          prompt: "Say hello in one short sentence"
+        expect_status: 401
+        expect_body_contains: "authorization"
+    tags: [auth, generate, red, security, anti-bluff]
+    estimated_duration: "5s"
+    expected_result: "LLM generate with an invalid JWT token is rejected with 401"
+
+  - id: HXC-GEN-003
+    name: "RED — POST /api/v1/llm/generate with empty body returns 400"
+    category: validation
+    priority: high
+    platforms: [api]
+    steps:
+      - name: "POST /api/v1/llm/generate empty body"
+        action: "http: POST /api/v1/llm/generate"
+        auth: "raw:eyJhbGciOiJIUzI1NiJ9.dGVzdA.test"  # structurally-valid-looking JWT (won't pass DB verify but hits body parsing first)
+        body: {}
+        expect_status: 400
+        expect_body_contains: "invalid"
+    tags: [generate, red, validation]
+    estimated_duration: "5s"
+    expected_result: "Generate with empty request body is rejected with 400 (request validation before auth-verify makes this useful as a validation-layer test)"
+
+  - id: HXC-GEN-004
+    name: "Register test user for authenticated generate flow"
+    category: functional
+    priority: critical
+    platforms: [api]
+    steps:
+      - name: "POST /api/v1/auth/register new helixllm test user"
+        action: "http: POST /api/v1/auth/register"
+        body:
+          username: "hxc_gen_e2e"
+          email: "hxc_gen_e2e@helixcode.test"
+          password: "hxcGenE2ePass!"
+          display_name: "HXC Gen E2E Test"
+        expect_status: 201
+        expect_body_contains: "success"
+        expect_json_path: "$.user"
+    tags: [setup, register, auth]
+    estimated_duration: "10s"
+    expected_result: "New test user is created with 201 — feeds the auth:admin login in HXC-GEN-005"
+
+  - id: HXC-GEN-005
+    name: "GREEN — POST /api/v1/llm/generate with helixllm provider returns real LLM content"
+    category: functional
+    priority: critical
+    platforms: [api]
+    steps:
+      - name: "POST /api/v1/llm/generate provider=helixllm (auth:admin auto-login)"
+        action: "http: POST /api/v1/llm/generate"
+        auth: "admin"
+        body:
+          provider: "helixllm"
+          model: "llama3.2"
+          prompt: "Reply with exactly one word: hello"
+        expect_status: 200
+        expect_json_path: "$.content"
+        expect_body_contains: "hello"
+    tags: [generate, green, helixllm, coder, anti-bluff, e2e]
+    estimated_duration: "120s"
+    expected_result: "Authenticated LLM generate with helixllm provider returns 200 with real content from the coder on :18434 — proves resolveLLMProvider -> resolveHelixLLMLocalProvider -> OpenAICompatibleProvider pipeline works"
+
+  - id: HXC-GEN-006
+    name: "GREEN — Generate response contains provider and usage metadata"
+    category: functional
+    priority: high
+    platforms: [api]
+    steps:
+      - name: "POST /api/v1/llm/generate verify metadata fields"
+        action: "http: POST /api/v1/llm/generate"
+        auth: "admin"
+        body:
+          provider: "helixllm"
+          model: "llama3.2"
+          prompt: "Reply with exactly one word: hello"
+        expect_status: 200
+        expect_json_path: "$.provider"
+        expect_json_path: "$.model"
+        expect_json_path: "$.usage"
+        expect_body_contains: "helixllm"
+    tags: [generate, green, metadata, coder]
+    estimated_duration: "120s"
+    expected_result: "Generate response carries provider name, model name, and usage object — proves resolveDefaultModel + usage tracking work"
