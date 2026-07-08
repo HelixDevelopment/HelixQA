@@ -1,0 +1,304 @@
+# SPDX-FileCopyrightText: 2026 Milos Vasic
+# SPDX-License-Identifier: Apache-2.0
+#
+# HelixQA Test Bank: HelixLLM Coder Chaos Resilience
+# =====================================================
+#
+# Authored per §11.4.169 Mandatory comprehensive test-type coverage —
+# the chaos-resilience dimension of the coder concurrency + stress
+# coverage gap. The resident coder (llama.cpp OpenAI-compatible sidecar
+# on :18434) is proven functional (banks/helixllm_coder*), but its
+# resilience under adversarial conditions — port-flood, oversized input,
+# concurrent health under load — was not covered.
+#
+# THREE CHAOS MODES, each exercising a distinct resilience axis:
+#
+#   PORT-FLOOD (CODER-CHAOS-001)
+#     — Rapid TCP connect/disconnect storm on the coder port, then
+#       assert a normal completion request succeeds (recovery).
+#     — Sink-side evidence: the post-flood HTTP 200 response body IS
+#       the sink (§11.4.69). No coder restart or code change is
+#       involved — pure connection-storm resilience.
+#     — Coder is read-only exercised (§11.4.122 — the analyzer opens
+#       TCP connections to the coder port but never writes to or
+#       restarts the coder process itself).
+#
+#   OVERSIZED-PROMPT (CODER-CHAOS-002)
+#     — Send a 200 KiB prompt (>> the coder's context window); verify
+#       graceful degrade (non-200 HTTP with meaningful body) AND
+#       post-oversized health (coder still accepts normal requests).
+#     — Exercises input-validation resilience without harming the coder.
+#     — Coder is read-only exercised (§11.4.122 — the oversized
+#       request is data, not a mutation).
+#
+#   CONCURRENT-HEALTH (CODER-CHAOS-003)
+#     — Fire N concurrent /v1/chat/completions while simultaneously
+#       probing /v1/models for health. Assert ALL complete (both
+#       generation AND health).
+#     — Exercises endpoint isolation under load — health must not be
+#       starved by generation traffic.
+#     — Coder is read-only exercised (§11.4.122).
+#
+# TARGET. The live resident coder at :18434 — llama.cpp running the
+# default model (HELIX_CODER_MODEL or "llama3.2"), serving
+# /v1/chat/completions (OpenAI-compatible). This bank NEVER boots/
+# teardowns any service itself (§11.4.119 single-resource-owner —
+# the boot/teardown owner is the conductor).
+#
+# ANTI-BLUFF (§11.4.6/§11.4.69/§11.4.107(10)/§11.4.123). Every mode
+# carries a MULTI-DIMENSIONAL runtime signature proving genuine
+# adversarial exercise, not metadata-only:
+#
+#   PORT-FLOOD: (FLOW-COMPLETE) N TCP connections actually dialled;
+#               (RECOVERED) post-flood HTTP 200 with non-empty body.
+#
+#   OVERSIZED:  (HANDLED) oversized request produced non-zero HTTP status;
+#               (POST-HEALTH) coder accepts normal requests after.
+#
+#   CONCURRENT-HEALTH: (ALL-OK) N concurrent POSTs all 200 + N health
+#               probes all 200; separated-assertion composition
+#               (§11.4.107 metamorphic — either dimension alone cannot
+#               prove both endpoints work under shared load).
+#
+# Analyzer: cmd/helixqa-verify-coder-chaos (this repo) — a thin,
+# project-agnostic dispatches_to analyzer (§11.4.28/CONST-051(B)).
+#
+# SELF-VALIDATION (§11.4.107(10)). CODER-CHAOS-SELF-VALIDATE-001 uses
+# the SAME analyzer binary in two fixture configurations:
+#   -GOOD: moderate port-flood (n=10, burst=5) against a healthy coder
+#          — must PASS
+#   -BAD:  unreachable port (19999) so every connection fails — analyzer
+#          correctly reports raw pass=false, inverted by --expect-fail to
+#          case_result=true
+#
+# DECOUPLING (CONST-051(B)/§11.4.28). This bank is DATA. dispatches_to
+# names a consumer-built binary; the coder endpoint URL, port, n, burst
+# size, mode, and assertion flags are ALL bank data. The binary is
+# project-agnostic. qa-results/helixllm_coder_chaos/** is the per-run
+# RAW evidence dir (git-ignored, §11.4.128); curated into
+# docs/qa/<run-id>/ at release-prep (§11.4.83).
+#
+# §11.4.154 — window-scoped recording mandated (the coder is a CLI/
+# server, so the relevant "window" is the terminal pane where the chaos
+# test commands run). §11.4.155 — project-prefix pattern
+# <project_name>---<scope>---<run> on all recording filenames.
+#
+# §11.4.185 — manual QA-team confirmation is the FINAL validation gate
+# after all automated cases pass.
+
+version: "1.0"
+name: "HelixLLM Coder Chaos Resilience"
+description: >-
+  Drives real adversarial scenarios against the live resident HelixLLM
+  coder (llama.cpp, :18434) and asserts resilience runtime signatures
+  across three chaos modes: port-flood (rapid TCP connect storm, then
+  recovery check), oversized-prompt (200 KiB >> context window, then
+  graceful-degrade + post-health check), and concurrent-health (N
+  concurrent POSTs while probing /v1/models — all must succeed).
+  CODER-CHAOS-SELF-VALIDATE-001 proves the analyzer itself cannot bluff
+  (golden-good PASS + golden-bad FAIL via the SAME analyzer binary;
+  paired §1.1 mutation confirmed during authoring).
+metadata:
+  author: vasic-digital
+  app: HelixLLM
+  category: "helixllm-coder-chaos"
+  priority: high
+  covenant: "§11.4.107(10) self-validated analyzer + §11.4.69 sink-side positive evidence (the coder's HTTP response IS the sink)"
+  route_source: "helix_code/internal/server/llm_generate.go:431 (:18434) — llama.cpp coder sidecar"
+  evidence_dir: "qa-results/helixllm_coder_chaos"
+  analyzer: "cmd/helixqa-verify-coder-chaos"
+  boot_precondition: >-
+    Coder (llama.cpp on :18434) MUST already be running before this bank
+    runs; this bank does not boot/pause/teardown any service itself
+    (§11.4.119 single-resource-owner — the boot/teardown owner is the
+    conductor). The coder is typically already running in the background
+    (resident service); verify via
+    `curl -sS -o /dev/null -w '%{http_code}'
+    http://localhost:18434/v1/chat/completions
+    -d'{"model":"llama3.2","messages":[{"role":"user","content":"hi"}],"stream":false}'
+    expecting 200.
+
+test_cases:
+
+  # ============================================================================
+  # CODER-CHAOS-001: Port-flood recovery.
+  # Rapidly open 50 TCP connections to the coder port in bursts of 10, then
+  # immediately send a normal completion request. Assert the coder still
+  # accepts and responds (recovered==true). This exercises connection-storm
+  # tolerance — the coder must not exhaust its accept queue or enter a
+  # degraded state from a burst of half-open connections.
+  # ============================================================================
+  - id: CODER-CHAOS-001
+    challenge_id: helixllm.coder.chaos.port-flood-recovery
+    name: "50-connection TCP port-flood on coder port — coder recovers and accepts normal request"
+    category: chaos
+    priority: high
+    platforms: [api]
+    domains: [coder, chaos, resilience, network]
+    dispatches_to: >-
+      bin/helixqa-verify-coder-chaos
+      --mode port-flood
+      --n 50
+      --burst-size 10
+      --endpoint http://localhost:18434
+      --out qa-results/helixllm_coder_chaos/port_flood_001_verdict.json
+      --conduit-dir qa-results/helixllm_coder_chaos/conduit
+      --challenge-id CODER-CHAOS-001
+    required_evidence:
+      - "qa-results/helixllm_coder_chaos/port_flood_001_verdict.json | json:case_result==true | json:recovered==true | json:post_flood_ok==true | json:flood_sent==50"
+    steps:
+      - name: "Flood coder port with 50 rapid TCP connections (burst 10) then assert recovery"
+        action: "tcp: rapid connect/disconnect storm on :18434 (50x, burst 10)"
+        expected: >-
+          After the flood burst a normal POST /v1/chat/completions returns
+          HTTP 200 with non-empty body (recovered==true). This proves the
+          coder's accept queue resiliently handles connection storms without
+          entering a degraded state.
+
+  # ============================================================================
+  # CODER-CHAOS-002: Oversized-prompt graceful degrade.
+  # Send a 200 KiB prompt (dwarfs the coder's context window) and assert
+  # either: the coder rejects it with a meaningful error (HTTP 4xx/5xx
+  # with descriptive body), OR accepts it and produces a response. After
+  # the oversized request, send a small normal prompt and assert it
+  # succeeds. This exercises input-validation resilience — the coder must
+  # not crash or hang from a >>-context-window input.
+  # ============================================================================
+  - id: CODER-CHAOS-002
+    challenge_id: helixllm.coder.chaos.oversized-prompt-graceful-degrade
+    name: "200 KiB oversized prompt — graceful degrade (non-200 or accepted) + post-oversized health"
+    category: chaos
+    priority: high
+    platforms: [api]
+    domains: [coder, chaos, resilience, input-validation]
+    dispatches_to: >-
+      bin/helixqa-verify-coder-chaos
+      --mode oversized-prompt
+      --oversized-k 200
+      --endpoint http://localhost:18434
+      --out qa-results/helixllm_coder_chaos/oversized_001_verdict.json
+      --conduit-dir qa-results/helixllm_coder_chaos/conduit
+      --challenge-id CODER-CHAOS-002
+    required_evidence:
+      - "qa-results/helixllm_coder_chaos/oversized_001_verdict.json | json:case_result==true | json:oversized_handled==true | json:post_oversized_ok==true"
+    steps:
+      - name: "Send 200 KiB prompt to coder; then verify normal completion still works"
+        action: "http: POST /v1/chat/completions (200 KiB payload)"
+        expected: >-
+          The oversized request is handled (oversized_handled==true) — either
+          rejected with a meaningful HTTP error or accepted — AND the coder
+          still returns HTTP 200 for a normal follow-up request
+          (post_oversized_ok==true). This proves the coder does not crash or
+          hang when given input dwarfing its context window.
+
+  # ============================================================================
+  # CODER-CHAOS-003: Concurrent health probes under generation load.
+  # Fire 5 concurrent POST /v1/chat/completions while simultaneously sending
+  # 3 GET /v1/models health probes (with 200ms spacing). Assert ALL complete
+  # successfully — both the generation requests AND the health probes. This
+  # exercises endpoint isolation: health must not be starved by generation
+  # load, and generation must not be disrupted by health probing.
+  # ============================================================================
+  - id: CODER-CHAOS-003
+    challenge_id: helixllm.coder.chaos.concurrent-health-under-load
+    name: "5 concurrent POSTs + 3 health probes — all succeed (endpoint isolation under load)"
+    category: chaos
+    priority: high
+    platforms: [api]
+    domains: [coder, chaos, resilience, concurrent, health]
+    dispatches_to: >-
+      bin/helixqa-verify-coder-chaos
+      --mode concurrent-health
+      --n 5
+      --n-health 3
+      --endpoint http://localhost:18434
+      --out qa-results/helixllm_coder_chaos/concurrent_health_001_verdict.json
+      --conduit-dir qa-results/helixllm_coder_chaos/conduit
+      --challenge-id CODER-CHAOS-003
+    required_evidence:
+      - "qa-results/helixllm_coder_chaos/concurrent_health_001_verdict.json | json:case_result==true | json:all_ok==true | json:models_ok==true | json:n_models_ok==3"
+    steps:
+      - name: "Fire 5 concurrent POST /v1/chat/completions while probing /v1/models; assert all succeed"
+        action: "http: POST /v1/chat/completions (5x concurrent) + GET /v1/models (3x interleaved)"
+        expected: >-
+          All 5 concurrent POSTs return HTTP 200 AND all 3 health probes
+          return HTTP 200 (all_ok==true, models_ok==true). Proves the coder
+          handles concurrent generation traffic without starving endpoint
+          health queries.
+
+  # ============================================================================
+  # CODER-CHAOS-SELF-VALIDATE-001 (mandatory §11.4.107(10)) — TWO cases, ONE
+  # analyzer. -GOOD uses moderate port-flood (n=10, burst=5) against a healthy
+  # coder — must PASS. -BAD uses an unreachable port (19999, nothing listens)
+  # so every TCP connection fails, making recovered==FALSE. The analyzer
+  # correctly detects this, and --expect-fail inverts to case_result=true.
+  # A paired §1.1 mutation replacing the recovery assertion with an
+  # unconditional pass must flip -BAD's case_result from true to false.
+  # ============================================================================
+  - id: CODER-CHAOS-SELF-VALIDATE-001-GOOD
+    challenge_id: helixllm.coder.chaos.self-validate-golden-good
+    name: "Self-validation golden-good: moderate port-flood (10 burst 5) against healthy coder PASS"
+    category: chaos
+    priority: critical
+    platforms: [api]
+    domains: [coder, chaos, resilience, anti-bluff, self-validate]
+    dispatches_to: >-
+      bin/helixqa-verify-coder-chaos
+      --mode port-flood
+      --n 10
+      --burst-size 5
+      --endpoint http://localhost:18434
+      --out qa-results/helixllm_coder_chaos/self_validate_001_golden_good_verdict.json
+      --conduit-dir qa-results/helixllm_coder_chaos/conduit
+      --challenge-id CODER-CHAOS-SELF-VALIDATE-001-GOOD
+    required_evidence:
+      - "qa-results/helixllm_coder_chaos/self_validate_001_golden_good_verdict.json | json:case_result==true | json:pass==true | json:recovered==true | json:post_flood_ok==true"
+    steps:
+      - name: "Golden-good: analyzer must PASS when coder recovers from a moderate port-flood"
+        action: "tcp: rapid connect/disconnect on :18434 (10x, burst 5) + post-recovery completion check"
+        expected: >-
+          pass==true (coder recovers from a 10-connection port-flood burst;
+          recovered==true, post_flood_ok==true).
+
+  - id: CODER-CHAOS-SELF-VALIDATE-001-BAD
+    challenge_id: helixllm.coder.chaos.self-validate-golden-bad-must-fail
+    name: "Self-validation golden-bad: unreachable port (19999) — recovered always FALSE, case_result OK via --expect-fail"
+    category: chaos
+    priority: critical
+    platforms: [api]
+    domains: [coder, chaos, resilience, anti-bluff, self-validate]
+    dispatches_to: >-
+      bin/helixqa-verify-coder-chaos
+      --mode port-flood
+      --n 10
+      --burst-size 5
+      --port 19999
+      --endpoint http://localhost:19999
+      --expect-fail
+      --out qa-results/helixllm_coder_chaos/self_validate_001_golden_bad_verdict.json
+      --conduit-dir qa-results/helixllm_coder_chaos/conduit
+      --challenge-id CODER-CHAOS-SELF-VALIDATE-001-BAD
+    metadata:
+      expect_fail: true
+      mutation_proof: >-
+        Authored 2026-07-08: with the analyzer's recovery assertion intact,
+        this case's raw pass=false (port 19999 has no listener, so
+        recovered==false is impossible) and case_result=true (via --expect-fail
+        inversion) — exit 0. A paired §1.1 mutation replacing the recovery
+        assertion with an unconditional "v.Pass = true" was applied to
+        cmd/helixqa-verify-coder-chaos/main.go, rebuilt, and re-run against
+        this exact fixture: raw pass flipped to true, case_result flipped to
+        false — exit 1 (case FAIL). The mutation was then reverted and the
+        restored binary re-confirmed to discriminate correctly before this bank
+        was committed. No mutation code is committed anywhere in this tree
+        (§11.4.84 quiescence).
+    required_evidence:
+      - "qa-results/helixllm_coder_chaos/self_validate_001_golden_bad_verdict.json | json:case_result==true | json:pass==false | json:recovered==false | json:post_flood_ok==false"
+    steps:
+      - name: "Golden-bad: unreachable port ensures all TCP connects fail — analyzer correctly reports recovered=false"
+        action: "tcp: rapid connect/disconnect on unreachable port 19999"
+        expected: >-
+          pass==false (all connects fail on port 19999, recovered==false);
+          case_result==true because this case declares --expect-fail. Proves
+          the analyzer rejects "no listener on port" (detected via TCP connect
+          failure), not only a coder that accepts but fails to recover.
