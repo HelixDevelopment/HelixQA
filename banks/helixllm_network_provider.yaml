@@ -1,0 +1,366 @@
+# SPDX-FileCopyrightText: 2026 Milos Vasic
+# SPDX-License-Identifier: Apache-2.0
+#
+# HelixQA Test Bank: HelixAgent NETWORK-PROVIDER Capability
+# ============================================================
+#
+# Authored per §11.4.169 (mandatory comprehensive test-type coverage) to
+# prove HelixAgent can use HelixLLM as a provider over LAN/VPN — NOT just
+# localhost/loopback — via the env-var-parameterized network-provider
+# implementation (helix_agent commits afbeb1bb / cfa94f2f, reading
+# `HELIX_LLM_HOST` / `HELIX_LLM_LOCAL_OPENAI_ENDPOINT`).
+#
+# TARGET. The live HelixLLM coder endpoint (Qwen3-Coder-30B-A3B-Instruct-
+# Q4_K_M GGUF, llama.cpp server) listening on 0.0.0.0:18434 — i.e.
+# LAN-reachable on every host NIC, not merely 127.0.0.1. This bank NEVER
+# boots/tears-down the coder service itself (§11.4.119
+# single-resource-owner) — it only DRIVES the already-running, read-only
+# inference endpoint (§11.4.122 — coder untouched).
+#
+# ENDPOINT GOTCHA (documented for anyone wiring this bank into a live
+# HelixAgent config, distinct from what this bank's own `--endpoint` flag
+# takes). HelixAgent's network-provider config (`HELIX_LLM_LOCAL_OPENAI_
+# ENDPOINT`) is a BASE URL of the form `http://HOST:18434` with NO `/v1`
+# suffix — the provider appends `/v1/chat/completions` itself internally.
+# Adding a literal `/v1` to that env var produces a double `/v1/v1/...`
+# path and a 404 (reproduced during authoring below). This bank's
+# `cmd/helixqa-verify-netprov --endpoint` flag is different: it is a
+# direct stdlib HTTP client (CONST-051(B) decoupling — no HelixAgent
+# provider-abstraction dependency), so it takes the FULL
+# `.../v1/chat/completions` URL, matching the wire calls captured during
+# authoring (`curl -X POST http://10.6.100.221:18434/v1/chat/completions`).
+#
+# ANTI-BLUFF (§11.4.6 / §11.4.69 / §11.4.107(10) / §11.4.123). Every
+# ground-truth fixture below was AUTHORED AGAINST THE LIVE 30B MODEL'S
+# ACTUAL BEHAVIOUR over the LAN — each prompt was run against the live
+# LAN endpoint(s) during authoring (2026-07-08, temperature=0) and its
+# real answer confirmed to contain the asserted fact tokens (deterministic,
+# re-confirmed by re-running the arithmetic fixture twice) BEFORE being
+# committed here as a "must-match" assertion. No expected answer below is
+# guessed — every one is a captured, reproduced fact.
+#
+# LAN-NOT-LOOPBACK DISCRIMINATOR (the property unique to this bank vs
+# banks/helixllm_vision.yaml / *_whisper.yaml / *_tesseract.yaml etc,
+# which only prove "the endpoint answers correctly"). The analyzer
+# (cmd/helixqa-verify-netprov) records whether the resolved --endpoint
+# host is loopback (127.0.0.1/::1/"localhost") and, with --require-lan
+# (this bank's default), FAILS the case if it is — even when the model's
+# answer is genuinely correct. NETPROV-NOT-LOOPBACK-GOLDEN-BAD-001 proves
+# this discriminator is real: pointed at the SAME live model over
+# localhost:18434 (the model answers "OK" correctly), the analyzer's raw
+# pass is FALSE (lan_check_pass=false) purely because of the loopback
+# host — this is the RED-first proof (§11.4.115) that a naive "the coder
+# answers" test would wrongly PASS on loopback alone; this bank's LAN
+# check is what makes it a genuine network-provider test.
+#
+# VIS-SELF-VALIDATE-style pair (mandatory §11.4.107(10)) proves the
+# analyzer's FACT-MATCHING discriminator itself cannot bluff, separately
+# from the LAN-check discriminator above: NETPROV-SELF-VALIDATE-001-GOOD
+# reuses the arithmetic fixture over the real LAN endpoint (must PASS);
+# NETPROV-SELF-VALIDATE-001-BAD reuses the identical LAN endpoint + prompt
+# but asserts a DELIBERATELY wrong expected fact ("99" against a model
+# that answers "42") via --expect-fail, mirroring the
+# banks/helixllm_vision.yaml VIS-SELF-VALIDATE-001 convention: the
+# analyzer's raw "pass" MUST be false (proving the discriminator correctly
+# rejects the mismatch); "case_result" is the (inverted) success signal
+# this bank gates on. A paired §1.1 mutation (main.go: force v.Pass=true
+# unconditionally after the fact-match block) was run during authoring and
+# confirmed to flip -BAD's case_result from true to false — i.e. WITHOUT
+# the real discriminator, the golden-bad fixture bluff-PASSes at the raw
+# level and the --expect-fail inversion catches it as a case FAIL. The
+# mutation was reverted and the restored binary re-confirmed to
+# discriminate correctly before this bank was committed (§11.4.84
+# quiescence — no mutation code is committed anywhere in this tree).
+#
+# DECOUPLING (CONST-051(B) / §11.4.28). This bank is DATA. dispatches_to
+# names a consumer-built binary (bin/helixqa-verify-netprov); the endpoint
+# URLs, model id, prompts, and expected/forbidden fact tokens are ALL bank
+# data — HelixQA's core packages (pkg/testbank, pkg/conduit) never learn a
+# HelixLLM/HelixAgent-specific fact. `qa-results/helixllm_network_provider/**`
+# is the per-run RAW evidence dir (git-ignored, §11.4.128) the conductor
+# curates into `docs/qa/<run-id>/` at release-prep (§11.4.83).
+#
+# TOPOLOGY EVIDENCE (host LAN NICs exercised, captured 2026-07-08):
+#   eno1      = 10.6.100.221  (primary wired NIC)
+#   enp75s0u3 = 10.111.28.100 (secondary wired NIC)
+#   wlp70s0   = 10.6.100.58   (wifi NIC)
+# All three answered live, LAN-routed /v1/chat/completions requests during
+# authoring — this bank exercises all three to prove the network-provider
+# path is not tied to one hardcoded interface.
+version: "1.0"
+name: "HelixAgent Network-Provider Capability (HelixLLM over LAN)"
+description: >-
+  Drives real text chat/completions against the live HelixLLM coder
+  endpoint (Qwen3-Coder-30B-A3B-Instruct-Q4_K_M, :18434) reached over LAN
+  IPs (not localhost) across all three host NICs, and strictly fact-matches
+  the responses against ground-truth prompts authored against the live
+  model's actual behaviour. NETPROV-NOT-LOOPBACK-GOLDEN-BAD-001 proves the
+  LAN-not-loopback discriminator is load-bearing (a correct answer served
+  over localhost is NOT a pass). NETPROV-SELF-VALIDATE-001-{GOOD,BAD}
+  proves the fact-matching discriminator itself cannot bluff (golden-good
+  PASS + golden-bad FAIL via the SAME analyzer, paired §1.1 mutation
+  confirmed during authoring). A green case requires the model's response
+  to genuinely contain every asserted fact AND the endpoint to genuinely
+  be reached over a non-loopback host — never a metadata-only /
+  endpoint-reachable-only / localhost-only PASS.
+metadata:
+  author: vasic-digital
+  app: HelixAgent
+  category: "helixagent-network-provider"
+  priority: critical
+  covenant: "§11.4.169 mandatory test-type coverage + §11.4.107(10) self-validated analyzer + §11.4.69 sink-side positive evidence (the model's own LAN-routed response text IS the sink)"
+  route_source: "HelixLLM coder (llama.cpp server, submodules/helix_llm) listening on 0.0.0.0:18434 — HelixAgent network-provider env vars HELIX_LLM_HOST / HELIX_LLM_LOCAL_OPENAI_ENDPOINT (helix_agent afbeb1bb / cfa94f2f)"
+  evidence_dir: "qa-results/helixllm_network_provider"
+  analyzer: "cmd/helixqa-verify-netprov"
+  boot_precondition: >-
+    HelixLLM coder MUST already be running and bound to 0.0.0.0:18434
+    (read-only inference, §11.4.122 — this bank never starts/stops it,
+    §11.4.119 single-resource-owner — the boot/teardown owner is the
+    conductor).
+
+test_cases:
+
+  - id: NETPROV-LAN-EXPLICIT-001
+    challenge_id: helixagent.network_provider.lan-primary-nic-arithmetic
+    name: "Coder answers a real arithmetic fact over the primary LAN NIC (eno1, 10.6.100.221), not localhost"
+    category: functional
+    priority: critical
+    platforms: [api]
+    domains: [network-provider, llm, lan]
+    dispatches_to: >-
+      bin/helixqa-verify-netprov
+      --endpoint http://10.6.100.221:18434/v1/chat/completions
+      --model /models/Qwen3-Coder-30B-A3B-Instruct-Q4_K_M.gguf
+      --prompt "What is 17 + 25? Reply with only the number."
+      --expect "42"
+      --require-lan
+      --out qa-results/helixllm_network_provider/lan_explicit_001_verdict.json
+      --conduit-dir qa-results/helixllm_network_provider/conduit
+      --challenge-id NETPROV-LAN-EXPLICIT-001
+    required_evidence:
+      - "qa-results/helixllm_network_provider/lan_explicit_001_verdict.json | json:case_result==true | json:is_loopback==false | json:lan_check_pass==true | json:matched_facts==1"
+    steps:
+      - name: "POST an arithmetic prompt to the live coder over its primary LAN IP; assert the correct answer AND a non-loopback resolved host"
+        action: "http: POST /v1/chat/completions"
+        expected: >-
+          Response contains "42" and resolved_host=10.6.100.221 (not
+          loopback). Authored 2026-07-08 against the live 30B model over
+          LAN, which answered "42" (re-confirmed deterministic across two
+          runs at temperature=0, cache_n growing 6->23 confirming genuine
+          re-inference not a cached/stubbed reply).
+
+  - id: NETPROV-LAN-SECOND-NIC-001
+    challenge_id: helixagent.network_provider.lan-secondary-nic-fact
+    name: "Coder answers a real geography fact over the secondary LAN NIC (enp75s0u3, 10.111.28.100)"
+    category: functional
+    priority: high
+    platforms: [api]
+    domains: [network-provider, llm, lan]
+    dispatches_to: >-
+      bin/helixqa-verify-netprov
+      --endpoint http://10.111.28.100:18434/v1/chat/completions
+      --model /models/Qwen3-Coder-30B-A3B-Instruct-Q4_K_M.gguf
+      --prompt "What is the capital of France? Reply with only the city name."
+      --expect "paris"
+      --require-lan
+      --out qa-results/helixllm_network_provider/lan_second_nic_001_verdict.json
+      --conduit-dir qa-results/helixllm_network_provider/conduit
+      --challenge-id NETPROV-LAN-SECOND-NIC-001
+    required_evidence:
+      - "qa-results/helixllm_network_provider/lan_second_nic_001_verdict.json | json:case_result==true | json:is_loopback==false | json:lan_check_pass==true | json:matched_facts==1"
+    steps:
+      - name: "POST a geography prompt to the live coder over the second LAN NIC; assert the correct answer AND a non-loopback resolved host"
+        action: "http: POST /v1/chat/completions"
+        expected: >-
+          Response contains "Paris" (case-insensitive) and
+          resolved_host=10.111.28.100. Authored 2026-07-08 against the live
+          30B model over this NIC, which answered "Paris".
+
+  - id: NETPROV-LAN-THIRD-NIC-001
+    challenge_id: helixagent.network_provider.lan-tertiary-wifi-nic-fact
+    name: "Coder answers a real color-mixing fact over the wifi LAN NIC (wlp70s0, 10.6.100.58)"
+    category: functional
+    priority: medium
+    platforms: [api]
+    domains: [network-provider, llm, lan]
+    dispatches_to: >-
+      bin/helixqa-verify-netprov
+      --endpoint http://10.6.100.58:18434/v1/chat/completions
+      --model /models/Qwen3-Coder-30B-A3B-Instruct-Q4_K_M.gguf
+      --prompt "What color do you get by mixing blue and yellow paint? Reply with only the color name."
+      --expect "green"
+      --require-lan
+      --out qa-results/helixllm_network_provider/lan_third_nic_001_verdict.json
+      --conduit-dir qa-results/helixllm_network_provider/conduit
+      --challenge-id NETPROV-LAN-THIRD-NIC-001
+    required_evidence:
+      - "qa-results/helixllm_network_provider/lan_third_nic_001_verdict.json | json:case_result==true | json:is_loopback==false | json:lan_check_pass==true | json:matched_facts==1"
+    steps:
+      - name: "POST a color-mixing prompt to the live coder over the wifi LAN NIC; assert the correct answer AND a non-loopback resolved host"
+        action: "http: POST /v1/chat/completions"
+        expected: >-
+          Response contains "Green" (case-insensitive) and
+          resolved_host=10.6.100.58. Authored 2026-07-08 against the live
+          30B model over this NIC, which answered "Green".
+
+  # ==========================================================================
+  # NETPROV-NOT-LOOPBACK-GOLDEN-BAD-001 — RED-first proof (§11.4.115) that
+  # the LAN-not-loopback discriminator is load-bearing, not decorative.
+  # Same live coder, same correct prompt/answer, but the endpoint is
+  # localhost:18434 — a naive "the coder answers correctly" test would
+  # PASS here; this bank's LAN check correctly FAILs it at the raw level.
+  # ==========================================================================
+  - id: NETPROV-NOT-LOOPBACK-GOLDEN-BAD-001
+    challenge_id: helixagent.network_provider.loopback-endpoint-must-fail-lan-check
+    name: "Golden-bad: correct answer over LOOPBACK must FAIL the LAN check (raw), case succeeds via --expect-fail"
+    category: functional
+    priority: critical
+    platforms: [api]
+    domains: [network-provider, llm, lan, anti-bluff]
+    dispatches_to: >-
+      bin/helixqa-verify-netprov
+      --endpoint http://localhost:18434/v1/chat/completions
+      --model /models/Qwen3-Coder-30B-A3B-Instruct-Q4_K_M.gguf
+      --prompt "reply with only the word OK"
+      --expect "ok"
+      --require-lan
+      --expect-fail
+      --out qa-results/helixllm_network_provider/not_loopback_golden_bad_001_verdict.json
+      --conduit-dir qa-results/helixllm_network_provider/conduit
+      --challenge-id NETPROV-NOT-LOOPBACK-GOLDEN-BAD-001
+    metadata:
+      expect_fail: true
+      red_first_proof: >-
+        Authored 2026-07-08: the live coder DOES answer "OK" correctly
+        over localhost:18434 (matched_facts=1/1) — but is_loopback=true and
+        require_lan=true force lan_check_pass=false, so raw pass=false and
+        case_result=true (via --expect-fail inversion). This is the
+        RED-first evidence (§11.4.115) that a naive fact-only test would
+        wrongly PASS on loopback alone; this bank's discriminator does not.
+    required_evidence:
+      - "qa-results/helixllm_network_provider/not_loopback_golden_bad_001_verdict.json | json:case_result==true | json:pass==false | json:is_loopback==true | json:lan_check_pass==false | json:matched_facts==1"
+    steps:
+      - name: "Golden-bad: analyzer must reject a loopback endpoint (raw FAIL) even with a factually-correct response; case succeeds via --expect-fail inversion"
+        action: "http: POST /v1/chat/completions"
+        expected: >-
+          pass==false because is_loopback==true (despite matched_facts==1);
+          case_result==true because this case declares --expect-fail. A
+          case_result==false here would mean the analyzer bluff-PASSed a
+          loopback-served answer as if it proved the LAN path.
+
+  # ==========================================================================
+  # NETPROV-UNREACHABLE-GOLDEN-BAD-001 — honest infra-error path
+  # (§11.4.3 / §11.4.6): a deliberately wrong port proves this analyzer
+  # never fakes a PASS on a connection failure.
+  # ==========================================================================
+  - id: NETPROV-UNREACHABLE-GOLDEN-BAD-001
+    challenge_id: helixagent.network_provider.unreachable-endpoint-honest-infra-fail
+    name: "Golden-bad: unreachable LAN port honestly infra-fails (raw), case succeeds via --expect-fail"
+    category: functional
+    priority: high
+    platforms: [api]
+    domains: [network-provider, llm, lan, anti-bluff]
+    dispatches_to: >-
+      bin/helixqa-verify-netprov
+      --endpoint http://10.6.100.221:19999/v1/chat/completions
+      --model /models/Qwen3-Coder-30B-A3B-Instruct-Q4_K_M.gguf
+      --prompt "reply with only the word OK"
+      --expect "ok"
+      --require-lan
+      --expect-fail
+      --timeout 5s
+      --out qa-results/helixllm_network_provider/unreachable_golden_bad_001_verdict.json
+      --conduit-dir qa-results/helixllm_network_provider/conduit
+      --challenge-id NETPROV-UNREACHABLE-GOLDEN-BAD-001
+    metadata:
+      expect_fail: true
+      red_first_proof: >-
+        Authored 2026-07-08: port 19999 on 10.6.100.221 has no listener
+        ("connection refused"), captured honestly as a non-empty "error"
+        field and pass=false; case_result=true via --expect-fail inversion.
+        Proves the analyzer never fakes a PASS when the LAN endpoint is
+        genuinely unreachable (§11.4.6).
+    required_evidence:
+      - "qa-results/helixllm_network_provider/unreachable_golden_bad_001_verdict.json | json:case_result==true | json:pass==false | json:http_status==0"
+    steps:
+      - name: "Golden-bad: analyzer must honestly infra-fail (raw FAIL, non-empty error) on an unreachable LAN endpoint; case succeeds via --expect-fail inversion"
+        action: "http: POST /v1/chat/completions"
+        expected: >-
+          pass==false, error is non-empty ("connection refused" class),
+          http_status==0 (no response ever received); case_result==true
+          because this case declares --expect-fail.
+
+  # ==========================================================================
+  # NETPROV-SELF-VALIDATE-001 (mandatory §11.4.107(10)) — TWO cases, ONE
+  # analyzer, proving the FACT-MATCHING discriminator (distinct from the
+  # LAN-check discriminator proven above) itself cannot bluff.
+  # ==========================================================================
+  - id: NETPROV-SELF-VALIDATE-001-GOOD
+    challenge_id: helixagent.network_provider.self-validate-golden-good
+    name: "Self-validation golden-good: correct facts over the real LAN endpoint PASS"
+    category: functional
+    priority: critical
+    platforms: [api]
+    domains: [network-provider, llm, anti-bluff]
+    dispatches_to: >-
+      bin/helixqa-verify-netprov
+      --endpoint http://10.6.100.221:18434/v1/chat/completions
+      --model /models/Qwen3-Coder-30B-A3B-Instruct-Q4_K_M.gguf
+      --prompt "What is 17 + 25? Reply with only the number."
+      --expect "42"
+      --require-lan
+      --out qa-results/helixllm_network_provider/self_validate_001_golden_good_verdict.json
+      --conduit-dir qa-results/helixllm_network_provider/conduit
+      --challenge-id NETPROV-SELF-VALIDATE-001-GOOD
+    required_evidence:
+      - "qa-results/helixllm_network_provider/self_validate_001_golden_good_verdict.json | json:case_result==true | json:pass==true | json:matched_facts==1"
+    steps:
+      - name: "Golden-good: analyzer must PASS when facts genuinely match over the real LAN endpoint"
+        action: "http: POST /v1/chat/completions"
+        expected: "pass==true (facts genuinely present in the model's LAN-routed response)."
+
+  - id: NETPROV-SELF-VALIDATE-001-BAD
+    challenge_id: helixagent.network_provider.self-validate-golden-bad-must-fail
+    name: "Self-validation golden-bad: mismatched facts over the SAME LAN endpoint MUST FAIL raw, case succeeds via --expect-fail"
+    category: functional
+    priority: critical
+    platforms: [api]
+    domains: [network-provider, llm, anti-bluff]
+    dispatches_to: >-
+      bin/helixqa-verify-netprov
+      --endpoint http://10.6.100.221:18434/v1/chat/completions
+      --model /models/Qwen3-Coder-30B-A3B-Instruct-Q4_K_M.gguf
+      --prompt "What is 17 + 25? Reply with only the number."
+      --expect "99"
+      --require-lan
+      --expect-fail
+      --out qa-results/helixllm_network_provider/self_validate_001_golden_bad_verdict.json
+      --conduit-dir qa-results/helixllm_network_provider/conduit
+      --challenge-id NETPROV-SELF-VALIDATE-001-BAD
+    metadata:
+      expect_fail: true
+      mutation_proof: >-
+        Authored 2026-07-08: with the analyzer's fact-matching assertion
+        intact, this case's raw pass=false (matched_facts=0/1, the model
+        genuinely answers "42" not "99") and case_result=true (via
+        --expect-fail inversion) — exit 0. A paired §1.1 mutation replacing
+        the Pass computation with an unconditional "v.Pass = true &&
+        v.LANCheckPass" (i.e. dropping the fact-match/hallucination
+        conjuncts) was applied to
+        cmd/helixqa-verify-netprov/main.go, rebuilt, and re-run against
+        this exact fixture: raw pass flipped to true, case_result flipped
+        to false — exit 1 (case FAIL). The mutation was then reverted and
+        the restored binary re-confirmed to discriminate correctly (raw
+        pass=false, case_result=true) before this bank was committed. No
+        mutation code is committed anywhere in this tree (§11.4.84
+        quiescence).
+    required_evidence:
+      - "qa-results/helixllm_network_provider/self_validate_001_golden_bad_verdict.json | json:case_result==true | json:pass==false | json:matched_facts==0"
+    steps:
+      - name: "Golden-bad: analyzer must reject mismatched facts (raw FAIL) over the real LAN endpoint; case succeeds via --expect-fail inversion"
+        action: "http: POST /v1/chat/completions"
+        expected: >-
+          pass==false (the response genuinely does NOT contain "99" — it
+          correctly answers "42"); case_result==true because this case
+          declares --expect-fail. A case_result==false here would mean the
+          analyzer bluff-PASSed a deliberately wrong fixture.
