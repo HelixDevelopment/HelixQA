@@ -1,0 +1,315 @@
+# SPDX-FileCopyrightText: 2026 Milos Vasic
+# SPDX-License-Identifier: Apache-2.0
+#
+# HelixQA Test Bank: HelixLLM Core Coder Capability
+# ==============================================================================
+#
+# Mirroring the structure + self-validation discipline of
+# banks/helixllm_mcp_gateway.yaml (multi-case dispatches_to convention,
+# §11.4.107(10) golden-good/golden-bad self-validation pair).
+#
+# TARGET. The live core coder (OpenAI-compatible HTTP endpoint at :18434,
+# submodules/helix_llm/server, serving Qwen3-Coder-30B-A3B-Instruct-Q4_K_M.gguf
+# via llama.cpp). This is the downstream that the MCP gateway fronts — it
+# exposes /v1/chat/completions + /v1/models as a plain REST API with NO auth
+# (auth is N/A — local-loopback-only, bearer-auth lives at the gateway layer).
+#
+# This bank exercises the coder DIRECTLY (not through the gateway). Port :18433
+# is the known-unused port for the unreachable-port RED case (nothing listens
+# there).
+#
+# ANTI-BLUFF (§11.4.6/§11.4.69/§11.4.107(10)/§11.4.123). Every ground-truth
+# fixture below was AUTHORED AGAINST THE LIVE CODER'S ACTUAL BEHAVIOUR — the
+# candidate requests (/v1/models, /v1/chat/completions with nonce prompt, a
+# request to the unreachable port :18433) were run against the live coder at
+# :18434 during authoring (2026-07-08, this session) and each real outcome
+# confirmed BEFORE being committed here as a "must-match" assertion:
+# unreachable port -> connection refused (or timeout); no-auth request ->
+# 200 with real model (the coder requires no bearer); nonce prompt ->
+# response contains the exact nonce string; /v1/models -> model list includes
+# the real deployed model id.
+#
+# Analyzer: cmd/helixqa-verify-coder (this repo) — a thin, project-agnostic
+# dispatches_to analyzer.
+#
+# COD-GEN-SELF-VALIDATE-001 (mandatory §11.4.107(10)) proves the generate-case
+# analyzer path itself cannot bluff: the SAME analyzer binary runs against the
+# SAME live tools/call request as the golden-good case (must PASS) and a
+# golden-bad case — IDENTICAL live request, but DELIBERATELY WRONG expected
+# facts ("XYZZY-NONCE-DEADBEEF" — genuinely absent from the real answer) —
+# via the SAME --expect-fail inversion convention: the RAW fact-match verdict
+# ("pass" in the verdict JSON) is recorded honestly and NEVER flipped; only
+# which raw outcome counts as case success is inverted. A paired §1.1 mutation
+# (stripping the fact-matching+not-identity assertion in the analyzer source,
+# forcing pass=true unconditionally) must be confirmed to flip the golden-bad
+# case_result from true to false — proving the discriminator is load-bearing.
+#
+# DECOUPLING (CONST-051(B)/§11.4.28). This bank is DATA. dispatches_to names
+# a consumer-built binary (bin/helixqa-verify-coder); the endpoint URL, case
+# selector, prompt text, and expected fact tokens are ALL bank data.
+# qa-results/helixllm_coder/** is the per-run RAW evidence dir
+# (git-ignored, §11.4.128) the conductor curates into docs/qa/<run-id>/ at
+# release-prep (§11.4.83).
+#
+# §11.4.154 — window-scoped recording mandated (the coder is a CLI/server, so
+# the relevant "window" is the terminal pane where the coder's test commands
+# run). §11.4.155 — project-prefix pattern <project_name>---<scope>---<run>
+# on all recording filenames.
+#
+# §11.4.185 — manual QA-team confirmation is the FINAL validation gate after
+# all automated cases pass.
+
+version: "1.0"
+name: "HelixLLM Core Coder Capability"
+description: >-
+  Drives real requests against the live HelixLLM core coder at :18434
+  (OpenAI-compatible HTTP, llama.cpp backend): an unreachable port RED case
+  MUST fail with connection refused / timeout; a request with NO auth (auth
+  is N/A — local-loopback-only) MUST succeed and return real content (200 OK
+  with valid completion); a generation with a unique nonce prompt MUST return
+  that exact nonce in the response body (proving the response is real and not
+  stale/cached); /v1/models MUST list the real deployed model from the live
+  service. COD-GEN-SELF-VALIDATE-001 proves the generate-case analyzer path
+  itself cannot bluff (golden-good PASS + golden-bad FAIL via the SAME
+  analyzer; the paired §1.1 mutation must be confirmed during authoring).
+  A green case requires the real wire response to genuinely satisfy its
+  assertion — never a metadata-only / endpoint-reachable-only PASS.
+metadata:
+  author: vasic-digital
+  app: HelixLLM
+  category: "helixllm-coder"
+  priority: critical
+  covenant: "§11.4.107(10) self-validated analyzer + §11.4.69 sink-side positive evidence (the coder's own response body IS the sink)"
+  route_source: "submodules/helix_llm/server — OpenAI-compatible HTTP at :18434 (llama.cpp backend)"
+  evidence_dir: "qa-results/helixllm_coder"
+  analyzer: "cmd/helixqa-verify-coder"
+  boot_precondition: >-
+    The core coder at :18434 MUST already be booted (e.g.
+    ./server --listen :18434 --model /models/Qwen3-Coder-...gguf) before this
+    bank runs; this bank does not boot/pause/teardown the coder itself
+    (§11.4.119 single-resource-owner — the boot/teardown owner is the
+    conductor). The coder is a read-only service that this bank exercises but
+    never writes to or restarts (§11.4.122).
+  environment_note: >-
+    The --expect value for COD-LIST-MODELS-001 and the model id in
+    required_evidence asserts a substring of the model currently deployed on
+    this host's live coder (Qwen3-Coder-30B-A3B-Instruct-Q4_K_M.gguf,
+    confirmed live 2026-07-08). Deployments serving a different model MUST
+    override --expect to match their own /v1/models — this assertion is
+    topology-specific by design (CONST-036: models are NEVER hardcoded, they
+    are asserted against whatever the live coder genuinely reports).
+
+test_cases:
+
+  # ============================================================================
+  # COD-RED-UNREACHABLE-001 — RED case: the unreachable port test MUST fail
+  # (connection refused / timeout) because nothing listens at :18433. This
+  # proves the coder-detection logic can distinguish a live coder from a
+  # dead/misconfigured one — an anti-bluff precondition gate.
+  # ============================================================================
+  - id: COD-RED-UNREACHABLE-001
+    challenge_id: helixllm.coder.unreachable-port-rejected
+    name: "A request to the coder's port :18433 (nothing listening) MUST fail with connection refused or timeout"
+    category: security
+    priority: critical
+    platforms: [api]
+    domains: [network, connectivity, anti-bluff]
+    dispatches_to: >-
+      bin/helixqa-verify-coder
+      --case unreachable_port
+      --port 18433
+      --out qa-results/helixllm_coder/unreachable_001_verdict.json
+      --conduit-dir qa-results/helixllm_coder/conduit
+      --challenge-id COD-RED-UNREACHABLE-001
+    required_evidence:
+      - "qa-results/helixllm_coder/unreachable_001_verdict.json | json:case_result==true | json:error_class==connection_refused_or_timeout"
+    steps:
+      - name: "Attempt to connect to :18433 (no service listening) — MUST fail"
+        action: "http: POST http://localhost:18433/v1/chat/completions (expected: connection refused)"
+        expected: >-
+          Connection refused or timeout. Authored 2026-07-08 (this session)
+          against the confirmed-unused port :18433 on this host. Any other
+          error (non-timeout, non-refused) is a finding — the port should
+          either be closed (ECONNREFUSED) or filtered (timeout).
+
+  # ============================================================================
+  # COD-RED-NOAUTH-SKIP-001 — RED case: the coder requires NO auth (it is a
+  # local-loopback llama.cpp OpenAI-compatible server; bearer auth lives at the
+  # MCP gateway layer). This case proves the coder is reachable and responsive
+  # WITHOUT any auth token — not a security test but a connectivity-and-liveness
+  # test. If the coder suddenly required auth, this case would FAIL (proving
+  # the bank catches auth-gate regressions).
+  # ============================================================================
+  - id: COD-RED-NOAUTH-SKIP-001
+    challenge_id: helixllm.coder.no-auth-not-applicable-skip
+    name: "A request with NO auth to the coder (auth is N/A — local loopback) succeeds and returns real content"
+    category: functional
+    priority: critical
+    platforms: [api]
+    domains: [network, connectivity]
+    dispatches_to: >-
+      bin/helixqa-verify-coder
+      --case no_auth_probe
+      --port 18434
+      --prompt "Reply with only the word ALIVE-J7XK, nothing else."
+      --expect "ALIVE-J7XK"
+      --out qa-results/helixllm_coder/noauth_001_verdict.json
+      --conduit-dir qa-results/helixllm_coder/conduit
+      --challenge-id COD-RED-NOAUTH-SKIP-001
+    required_evidence:
+      - "qa-results/helixllm_coder/noauth_001_verdict.json | json:case_result==true | json:http_status==200 | json:matched_facts==1"
+    steps:
+      - name: "POST /v1/chat/completions with NO Authorization header — MUST return 200 with the nonce in content"
+        action: "http: POST http://localhost:18434/v1/chat/completions (no Authorization header, valid model + messages)"
+        expected: >-
+          HTTP 200, content contains the nonce "ALIVE-J7XK", proving the
+          coder responds without auth. Authored 2026-07-08 against the live
+          coder. This is the anti-bluff connectivity gate — if this fails,
+          the coder is either down or its network config changed, and every
+          generation test would also fail.
+
+  # ============================================================================
+  # COD-GEN-NONCE-001 — GREEN case: real generation with nonce verification.
+  # Proves the coder returns a genuine, non-cached, non-simulated completion
+  # that CONTAINS the expected nonce token.
+  # ============================================================================
+  - id: COD-GEN-NONCE-001
+    challenge_id: helixllm.coder.generate-nonce-verify
+    name: "Coder /v1/chat/completions returns a genuine completion containing the expected nonce"
+    category: functional
+    priority: critical
+    platforms: [api]
+    domains: [llm, generation, anti-bluff]
+    dispatches_to: >-
+      bin/helixqa-verify-coder
+      --case generate
+      --port 18434
+      --prompt "Reply with only the word nonce-ZQ9FK2, nothing else."
+      --expect "nonce-ZQ9FK2"
+      --out qa-results/helixllm_coder/generate_nonce_001_verdict.json
+      --conduit-dir qa-results/helixllm_coder/conduit
+      --challenge-id COD-GEN-NONCE-001
+    required_evidence:
+      - "qa-results/helixllm_coder/generate_nonce_001_verdict.json | json:case_result==true | json:http_status==200 | json:matched_facts==1 | json:not_identity==true"
+    steps:
+      - name: "POST /v1/chat/completions with a nonce prompt — the response MUST contain the exact nonce string and differ from the prompt"
+        action: "http: POST http://localhost:18434/v1/chat/completions"
+        expected: >-
+          HTTP 200, response body's content contains "nonce-ZQ9FK2"
+          (case-insensitive) and differs from the prompt string
+          (not_identity==true). Authored 2026-07-08 against the live coder,
+          which answered "nonce-ZQ9FK2" for this prompt — corroborating
+          docs/qa/phase1_coder_*_20260708T*/ results.
+
+  # ============================================================================
+  # COD-LIST-MODELS-001 — GREEN case: /v1/models endpoint. Proves the coder
+  # exposes its model catalogue with the real deployed model id present.
+  # ============================================================================
+  - id: COD-LIST-MODELS-001
+    challenge_id: helixllm.coder.list-models-real
+    name: "Coder /v1/models returns the real deployed model list"
+    category: functional
+    priority: high
+    platforms: [api]
+    domains: [llm, discovery]
+    dispatches_to: >-
+      bin/helixqa-verify-coder
+      --case listmodels
+      --port 18434
+      --expect "Qwen3-Coder"
+      --out qa-results/helixllm_coder/listmodels_001_verdict.json
+      --conduit-dir qa-results/helixllm_coder/conduit
+      --challenge-id COD-LIST-MODELS-001
+    metadata:
+      environment_note: >-
+        --expect asserts a substring of the model currently deployed on
+        this host's live coder (Qwen3-Coder-30B-A3B-Instruct-Q4_K_M.gguf,
+        confirmed live 2026-07-08). Deployments serving a different model
+        MUST override --expect to match their own live /v1/models — this
+        assertion is topology-specific by design (CONST-036: models are
+        NEVER hardcoded, they are asserted against whatever the live coder
+        genuinely reports).
+    required_evidence:
+      - "qa-results/helixllm_coder/listmodels_001_verdict.json | json:case_result==true | json:http_status==200 | json:models_contain_expect==true"
+    steps:
+      - name: "GET /v1/models — the response MUST list the real deployed model id as a substring match to --expect"
+        action: "http: GET http://localhost:18434/v1/models"
+        expected: >-
+          HTTP 200, the models array contains an entry matching the
+          expected substring (Qwen3-Coder). Authored 2026-07-08 against the
+          live coder — corroborating the same fixture already independent-
+          proven in docs/qa/phase1_coder_*_20260708T*/ results.
+
+  # ============================================================================
+  # COD-GEN-SELF-VALIDATE-001 (mandatory §11.4.107(10)) — TWO cases, ONE
+  # analyzer. -GOOD reuses the COD-GEN-NONCE-001 fixture (must PASS at the raw
+  # level). -BAD sends the SAME live tools/call request but asserts
+  # DELIBERATELY WRONG tokens ("XYZZY-NONCE-DEADBEEF" — genuinely absent from
+  # the real content) via --expect-fail, mirroring the MCP gateway bank's
+  # SELF-VALIDATE-001-BAD negative-case convention.
+  # ============================================================================
+  - id: COD-GEN-SELF-VALIDATE-001-GOOD
+    challenge_id: helixllm.coder.generate-self-validate-golden-good
+    name: "Self-validation golden-good: correct nonce against a genuine live coder answer PASS"
+    category: functional
+    priority: critical
+    platforms: [api]
+    domains: [llm, anti-bluff]
+    dispatches_to: >-
+      bin/helixqa-verify-coder
+      --case generate
+      --port 18434
+      --prompt "Reply with only the word nonce-ZQ9FK2, nothing else."
+      --expect "nonce-ZQ9FK2"
+      --out qa-results/helixllm_coder/self_validate_001_golden_good_verdict.json
+      --conduit-dir qa-results/helixllm_coder/conduit
+      --challenge-id COD-GEN-SELF-VALIDATE-001-GOOD
+    required_evidence:
+      - "qa-results/helixllm_coder/self_validate_001_golden_good_verdict.json | json:case_result==true | json:pass==true | json:matched_facts==1"
+    steps:
+      - name: "Golden-good: analyzer must PASS when the nonce genuinely matches the real coder response"
+        action: "http: POST http://localhost:18434/v1/chat/completions"
+        expected: "pass==true (nonce 'nonce-ZQ9FK2' genuinely present in the real coder completion)."
+
+  - id: COD-GEN-SELF-VALIDATE-001-BAD
+    challenge_id: helixllm.coder.generate-self-validate-golden-bad-must-fail
+    name: "Self-validation golden-bad: mismatched nonce against the SAME live coder answer MUST FAIL raw, case succeeds via --expect-fail"
+    category: functional
+    priority: critical
+    platforms: [api]
+    domains: [llm, anti-bluff]
+    dispatches_to: >-
+      bin/helixqa-verify-coder
+      --case generate
+      --port 18434
+      --prompt "Reply with only the word nonce-ZQ9FK2, nothing else."
+      --expect "XYZZY-NONCE-DEADBEEF"
+      --expect-fail
+      --out qa-results/helixllm_coder/self_validate_001_golden_bad_verdict.json
+      --conduit-dir qa-results/helixllm_coder/conduit
+      --challenge-id COD-GEN-SELF-VALIDATE-001-BAD
+    metadata:
+      expect_fail: true
+      mutation_proof: >-
+        Authored 2026-07-08: with the analyzer's fact-matching +
+        not-identity assertion intact, this case's raw pass=false
+        (matched_facts=0/1, "XYZZY-NONCE-DEADBEEF" genuinely absent from the
+        real content "nonce-ZQ9FK2") and case_result=true (via --expect-fail
+        inversion) — exit 0. A paired §1.1 mutation replacing the Pass
+        computation in runGenerate with an unconditional "v.Pass = true"
+        was applied to cmd/helixqa-verify-coder/main.go, rebuilt, and re-run
+        against this exact fixture: raw pass flips to true, case_result flips
+        to false — exit 1 (case FAIL). The mutation is then reverted and the
+        restored binary re-confirmed to discriminate correctly before this
+        bank is considered committed. No mutation code is committed anywhere
+        in this tree (§11.4.84 quiescence).
+    required_evidence:
+      - "qa-results/helixllm_coder/self_validate_001_golden_bad_verdict.json | json:case_result==true | json:pass==false | json:matched_facts==0"
+    steps:
+      - name: "Golden-bad: analyzer MUST reject mismatched nonce (raw FAIL), case succeeds via --expect-fail inversion"
+        action: "http: POST http://localhost:18434/v1/chat/completions"
+        expected: >-
+          pass==false (the real coder answer "nonce-ZQ9FK2" genuinely does
+          NOT contain "XYZZY-NONCE-DEADBEEF"); case_result==true because
+          this case declares --expect-fail. A case_result==false here would
+          mean the analyzer bluff-PASSed a deliberately wrong fixture.
