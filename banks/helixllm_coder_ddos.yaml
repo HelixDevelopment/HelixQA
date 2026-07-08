@@ -1,0 +1,123 @@
+# SPDX-FileCopyrightText: 2026 Milos Vasic
+# SPDX-License-Identifier: Apache-2.0
+#
+# HelixQA Test Bank: HelixLLM Coder DDoS / Load-Flood (§11.4.169)
+# ==============================================================================
+#
+# Three test cases covering the DDoS/load-flood category from the §11.4.169
+# mandatory test-type set:
+#
+#   DDOS-CODER-001 — 200 rapid-fire requests burst-no-loss
+#   DDOS-CODER-002 — Sustained 500-request soak over 30s
+#   DDOS-CODER-003 — Connection-flood graceful-degrade
+#
+# TARGET. The live core coder (OpenAI-compatible HTTP endpoint at :18434,
+# submodules/helix_llm/server). The verify command at
+# cmd/helixqa-verify-coder-ddos/ drives real concurrent POST
+# /v1/chat/completions against this address and asserts §11.4.169
+# anti-bluff runtime signatures.
+#
+# ANTI-BLUFF (§11.4.6/§11.4.69/§11.4.107(10)/§11.4.123/§11.4.169).
+# Every PASS requires real captured evidence from concurrent HTTP round-trips
+# against the live coder. The verify command self-validates via --expect-fail
+# (golden-bad fixture: a deliberately wrong assertion MUST FAIL). The bank
+# YAML alone is NOT sufficient — the verify command IS the RUNNABLE analyzer.
+#
+# Bounded-load caveat (§11.4.6). The coder endpoint is a single llama.cpp
+# process with OS receive-buffer depth. At very high concurrency (>~50
+# parallel) TCP SYN drops and connection-refused are EXPECTED kernel behaviour
+# (the socket accept backlog saturates first), NOT an application bug. The
+# tests assert the server does not crash + degrades gracefully + returns to
+# health post-test — NOT that zero TCP drops occur at 200+ parallel
+# connections.
+
+version: "1.0"
+name: "HelixLLM Coder DDoS / Load-Flood Test Bank"
+description: "DDoS/load-flood test bank for the HelixLLM coder endpoint (§11.4.169). Tests burst handling, sustained-load soak, connection-flood graceful degrade, and post-flood recovery."
+metadata:
+  author: "vasic-digital"
+  app: "HelixLLM"
+  component: "coder"
+  version: "1.0.0"
+
+test_cases:
+  # ==================== Burst no-loss (DDOS-CODER-001) ====================
+
+  - id: DDOS-CODER-001
+    name: "200 rapid-fire requests burst-no-loss"
+    category: ddos
+    priority: high
+    platforms: [api]
+    steps:
+      - name: "Verify coder is responsive before the burst"
+        action: "Send 3 warm-up GET /v1/models requests"
+        expected: "All 3 return 200 OK with valid model list"
+      - name: "Fire 200 POST /v1/chat/completions as fast as possible"
+        action: "Send 200 concurrent POST /v1/chat/completions with prompt 'Count to 5. NONCE:<idx>' without throttling"
+        expected: "Every response is HTTP 200 OR 429; zero connection-refused or 5xx errors"
+      - name: "Verify no loss: exactly 200 responses received"
+        action: "Count all responses from the burst"
+        expected: "Response count = 200 (zero dropped)"
+      - name: "Verify each response contains its unique nonce"
+        action: "Parse each response body; check the NONCE:<idx> token is present verbatim"
+        expected: "Every non-empty response contains its NONCE:<idx> string"
+      - name: "Verify post-burst coder health"
+        action: "Send 3 GET /v1/models requests immediately after the burst"
+        expected: "All 3 return 200 OK (coder recovers after burst)"
+    tags: [ddos, coder, burst, no-loss, nonce]
+    estimated_duration: "30s"
+    expected_result: "200 concurrent coder requests complete with zero loss and post-burst recovery"
+
+  # ==================== Sustained soak (DDOS-CODER-002) ====================
+
+  - id: DDOS-CODER-002
+    name: "Sustained 500-request soak over 30s"
+    category: ddos
+    priority: high
+    platforms: [api]
+    steps:
+      - name: "Establish baseline latency"
+        action: "Send 5 sequential POST /v1/chat/completions with prompt 'Hi.', record p50/p95 latency"
+        expected: "p95 < 5s (normal single-request latency)"
+      - name: "Execute sustained 500-request soak over 30s"
+        action: "Send 500 POST /v1/chat/completions with prompt 'Say ONE word.' spread across 30 seconds (~17 req/s)"
+        expected: "All 500 responses received; no connection-refused; no 5xx"
+      - name: "Classify response codes"
+        action: "Tally 200 vs 429 vs 0 (connection-refused) vs 5xx"
+        expected: "Zero 5xx errors; total 200+429 = 500 (no loss)"
+      - name: "Log throughput and degradation"
+        action: "Compute served throughput across the window"
+        expected: "Average throughput recorded for analysis"
+      - name: "Verify post-soak health"
+        action: "Send 5 GET /v1/models immediately after the soak"
+        expected: "All 5 return 200 OK within 5s"
+    tags: [ddos, coder, soak, sustained, throughput, latency]
+    estimated_duration: "45s"
+    expected_result: "500 coder requests over 30s complete with predictable degradation and post-soak recovery"
+
+  # ==================== Connection flood graceful degrade (DDOS-CODER-003) ====================
+
+  - id: DDOS-CODER-003
+    name: "Connection-flood graceful-degrade"
+    category: ddos
+    priority: high
+    platforms: [api]
+    steps:
+      - name: "Establish baseline"
+        action: "Send 3 GET /v1/models, record success"
+        expected: "All 3 return 200 OK"
+      - name: "Flood with 100 parallel connections all at once"
+        action: "Open 100 concurrent sockets to :18434, each immediately sending POST /v1/chat/completions with prompt 'Hi.'"
+        expected: "Server accepts connections without crashing"
+      - name: "Classify responses: count success, rate-limit, reset, timeout, connection-refused"
+        action: "Tally: HTTP 200 = serving, HTTP 429 or 503 = rate-limited, connection-reset / EOF = accept-backlog full, timeout = overload"
+        expected: "Zero 5xx; accept-backlog-full (EOF/reset) is expected kernel behaviour at 100 concurrency"
+      - name: "Verify the coder process is still alive after the flood"
+        action: "Run 'pgrep -fn llama' or check process health via OS"
+        expected: "Coder process is running (no crash)"
+      - name: "Verify post-flood recovery within 15s"
+        action: "Wait 15s, then send 3 sequential POST /v1/chat/completions"
+        expected: "All 3 return 200 OK with valid response content (coder recovered)"
+    tags: [ddos, coder, connection-flood, degrade, graceful, recovery]
+    estimated_duration: "30s"
+    expected_result: "Coder survives connection flood without crashing and recovers within 15s"
