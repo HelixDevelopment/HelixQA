@@ -1,0 +1,293 @@
+# SPDX-FileCopyrightText: 2026 Milos Vasic
+# SPDX-License-Identifier: Apache-2.0
+#
+# HelixQA Test Bank: HelixLLM Coder Concurrency
+# ===============================================
+#
+# Authored per the master implementation plan codified by
+# docs/research/07.2026/00_master/MASTER_IMPLEMENTATION_PLAN.md — this bank
+# closes the "coder load-test / concurrency" coverage gap: the resident coder
+# (llama.cpp OpenAI-compatible sidecar on :18434) is already proven
+# functional (docs/qa/phase1_helixqa_coder_*), but concurrent throughput,
+# non-de-duplication, and drop-free dispatch under load were not covered.
+#
+# TARGET. The live resident coder at :18434 — llama.cpp running the
+# default model (HELIX_CODER_MODEL or "llama3.2"), serving
+# /v1/chat/completions (OpenAI-compatible). This bank NEVER boots/tears-down
+# the coder itself; the conductor ensures it is up before the bank runs
+# (§11.4.119 single-resource-owner — the boot/teardown owner is the
+# conductor). The coder is GPU-resident with a VRAM reservation; this bank
+# adds concurrency load alongside the GPU load, well within the on-demand
+# reserve (§11.4.76/§11.4.161/§11.4.119 — same GPU, concurrent requests).
+#
+# ANTI-BLUFF (§11.4.6/§11.4.69/§11.4.107(10)/§11.4.123). The runtime
+# signature is MULTI-DIMENSIONAL: (ALL-OK) every concurrent request returns
+# HTTP 200 — presence-only of the endpoint does NOT prove concurrent
+# handling; (NO-LOSS) exactly N concurrent sends yield exactly N responses —
+# a serialiser that drops requests under load would show N_sent > N_received;
+# (NONCES) each request carries a unique nonce and all N responses are
+# PAIRWISE DISTINCT — a server that batch-de-duplicates or returns a single
+# canned reply would produce all-identical output, failing this metamorphic
+# check (§11.4.107); (CONSISTENT) the same prompt N times yields byte-
+# identical (trimmed) responses — proves determinism under load (no state
+# corruption / cross-request leakage). Together these four dimensions form
+# a composite unfakeable concurrency signature.
+#
+# Analyzer: cmd/helixqa-verify-coder-concurrency (this repo) — a thin,
+# project-agnostic dispatches_to analyzer (§11.4.28/CONST-051(B)) that
+# POSTs N concurrent requests to /v1/chat/completions, computes the four
+# assertion dimensions, and writes a structured verdict.
+#
+# CODER-SELF-VALIDATE-001 (mandatory §11.4.107(10)) proves the analyzer
+# itself cannot bluff. -GOOD uses moderate concurrency (n=5) with ALL-OK +
+# NO-LOSS assertions that a healthy coder trivially satisfies (must PASS).
+# -BAD uses a deliberately impossible timeout (1ms) so every request fails
+# and ALL-OK is FALSE — the analyzer correctly reports raw pass=false, and
+# --expect-fail inverts to case_result=true. A paired §1.1 mutation
+# (forcing pass=true unconditionally) must flip -BAD's case_result from true
+# to false — confirming the assertion logic is live.
+#
+# DECOUPLING (CONST-051(B)/§11.4.28). This bank is DATA. dispatches_to names
+# a consumer-built binary; the coder endpoint URL, model, prompt, concurrency
+# count, and assertion dimensions are ALL bank data. qa-results/
+# helixllm_coder_concurrency/** is the per-run RAW evidence dir (git-ignored,
+# §11.4.128); curated into docs/qa/<run-id>/ at release-prep (§11.4.83).
+version: "1.0"
+name: "HelixLLM Coder Concurrency"
+description: >-
+  Drives real concurrent POST /v1/chat/completions against the live
+  resident HelixLLM coder (llama.cpp, :18434) and asserts multi-dimensional
+  concurrency runtime signatures: all-ok (every concurrent request returns
+  200), no-loss (exactly N responses for N sends), nonces (N unique prompts
+  produce N distinct responses — no batch deduplication), and consistency
+  (deterministic output under load). CODER-SELF-VALIDATE-001 proves the
+  analyzer itself cannot bluff (golden-good PASS + golden-bad FAIL via the
+  SAME analyzer, paired §1.1 mutation confirmed during authoring).
+metadata:
+  author: vasic-digital
+  app: HelixLLM
+  category: "helixllm-coder-concurrency"
+  priority: high
+  covenant: "§11.4.107(10) self-validated analyzer + §11.4.69 sink-side positive evidence (the concurrent HTTP responses ARE the sink)"
+  route_source: "helix_code/internal/server/llm_generate.go:431 (:18434) — llama.cpp coder sidecar"
+  evidence_dir: "qa-results/helixllm_coder_concurrency"
+  analyzer: "cmd/helixqa-verify-coder-concurrency"
+  boot_precondition: >-
+    Coder (llama.cpp on :18434) MUST already be running before this bank
+    runs; this bank does not boot/pause/teardown any service itself
+    (§11.4.119 single-resource-owner — the boot/teardown owner is the
+    conductor). The coder is typically already running in the background
+    (resident service); verify via `curl -sS -o /dev/null -w '%{http_code}'
+    http://localhost:18434/v1/chat/completions -d'{"model":"llama3.2",
+    "messages":[{"role":"user","content":"hi"}],"stream":false}'
+    expecting 200.
+
+test_cases:
+
+  # ============================================================================
+  # CODER-CONC-001: 10 parallel requests with unique nonces.
+  # Each request carries a unique 8-char nonce in the prompt. The analyzer
+  # verifies all 10 return HTTP 200 (all-ok) AND all 10 responses are pairwise
+  # distinct (nonces check — metamorphic proof of non-deduplicated handling).
+  # ============================================================================
+  - id: CODER-CONC-001
+    challenge_id: helixllm.coder.10-parallel-unique-nonces
+    name: "10 concurrent requests with unique nonces — all return 200, all responses distinct"
+    category: functional
+    priority: high
+    platforms: [api]
+    domains: [coder, concurrency, llm]
+    dispatches_to: >-
+      bin/helixqa-verify-coder-concurrency
+      --n 10
+      --prompt "Count from 1 to 5."
+      --nonce
+      --all-ok
+      --out qa-results/helixllm_coder_concurrency/conc_001_verdict.json
+      --conduit-dir qa-results/helixllm_coder_concurrency/conduit
+      --challenge-id CODER-CONC-001
+    required_evidence:
+      - "qa-results/helixllm_coder_concurrency/conc_001_verdict.json | json:case_result==true | json:all_ok==true | json:nonces_ok==true | json:n_ok==10"
+    steps:
+      - name: "Send 10 concurrent POST /v1/chat/completions with unique nonces; assert all-200 + distinct responses"
+        action: "http: POST /v1/chat/completions (10× concurrent)"
+        expected: >-
+          All 10 return HTTP 200, all 10 responses are pairwise distinct
+          (nonces_ok==true). This proves the coder handles N unique requests
+          concurrently without drop, deduplication, or serialization.
+
+  # ============================================================================
+  # CODER-CONC-002: 50 parallel requests, all must succeed.
+  # Higher load: 50 concurrent POSTs to the coder. All must return 200 and
+  # no request may be dropped (no-loss). This stresses the coder's ability
+  # to queue and serialize concurrent requests without connection reset or
+  # timeout on moderate concurrency.
+  # ============================================================================
+  - id: CODER-CONC-002
+    challenge_id: helixllm.coder.50-parallel-all-ok
+    name: "50 concurrent requests — all 200 OK, no loss"
+    category: functional
+    priority: high
+    platforms: [api]
+    domains: [coder, concurrency, llm]
+    dispatches_to: >-
+      bin/helixqa-verify-coder-concurrency
+      --n 50
+      --prompt "Name three colors."
+      --all-ok
+      --no-loss
+      --out qa-results/helixllm_coder_concurrency/conc_002_verdict.json
+      --conduit-dir qa-results/helixllm_coder_concurrency/conduit
+      --challenge-id CODER-CONC-002
+    required_evidence:
+      - "qa-results/helixllm_coder_concurrency/conc_002_verdict.json | json:case_result==true | json:all_ok==true | json:no_loss==true | json:n_ok==50"
+    steps:
+      - name: "Send 50 concurrent POST /v1/chat/completions; assert all 200 and no drops"
+        action: "http: POST /v1/chat/completions (50× concurrent)"
+        expected: >-
+          All 50 return HTTP 200, no-loss==true (all 50 accounted for).
+          Higher concurrency stresses the coder's serialization queue without
+          dropping requests.
+
+  # ============================================================================
+  # CODER-CONC-003: Same-prompt deterministic consistency.
+  # The SAME prompt is sent N times concurrently. Under deterministic load
+  # (temperature=0, which is llama.cpp's default for the chat-completions
+  # endpoint), all N responses MUST be byte-identical (trimmed). This proves
+  # no cross-request state corruption and no non-determinism under concurrent
+  # load — a regression on prompt handling (e.g. a previous response leaking
+  # into the next request's context) would produce divergent output.
+  # ============================================================================
+  - id: CODER-CONC-003
+    challenge_id: helixllm.coder.same-prompt-deterministic-consistency
+    name: "Same prompt 5× concurrent — all responses byte-identical (deterministic consistency)"
+    category: functional
+    priority: high
+    platforms: [api]
+    domains: [coder, concurrency, llm, determinism]
+    dispatches_to: >-
+      bin/helixqa-verify-coder-concurrency
+      --n 5
+      --prompt "Return the number 42 and nothing else."
+      --consistent
+      --all-ok
+      --out qa-results/helixllm_coder_concurrency/conc_003_verdict.json
+      --conduit-dir qa-results/helixllm_coder_concurrency/conduit
+      --challenge-id CODER-CONC-003
+    required_evidence:
+      - "qa-results/helixllm_coder_concurrency/conc_003_verdict.json | json:case_result==true | json:consistent==true | json:all_ok==true | json:n_ok==5"
+    steps:
+      - name: "Send identical prompt 5× concurrent; verify byte-identical trimmed responses"
+        action: "http: POST /v1/chat/completions (5× concurrent, same prompt)"
+        expected: >-
+          All 5 return HTTP 200, all trimmed response bodies are byte-identical
+          (consistent==true). Proves deterministic generation under concurrent
+          load — no cross-request state contamination or non-determinism.
+
+  # ============================================================================
+  # CODER-CONC-004: Rapid-fire no-drops.
+  # 30 concurrent requests with zero inter-request delay and a shortish prompt.
+  # All 30 must return HTTP 200 and all 30 must be accounted for (no-loss).
+  # This tests the worst-case spike: a burst of 30 simultaneous connections
+  # against a single-threaded server. Dropping even one is a finding.
+  # ============================================================================
+  - id: CODER-CONC-004
+    challenge_id: helixllm.coder.rapid-fire-no-drops
+    name: "30 rapid-fire concurrent requests — all 200, no drops (burst spike)"
+    category: functional
+    priority: medium
+    platforms: [api]
+    domains: [coder, concurrency, llm]
+    dispatches_to: >-
+      bin/helixqa-verify-coder-concurrency
+      --n 30
+      --prompt "Say hello."
+      --all-ok
+      --no-loss
+      --out qa-results/helixllm_coder_concurrency/conc_004_verdict.json
+      --conduit-dir qa-results/helixllm_coder_concurrency/conduit
+      --challenge-id CODER-CONC-004
+    required_evidence:
+      - "qa-results/helixllm_coder_concurrency/conc_004_verdict.json | json:case_result==true | json:all_ok==true | json:no_loss==true | json:n_ok==30"
+    steps:
+      - name: "Send 30 concurrent POST /v1/chat/completions; assert all 200 and zero drops"
+        action: "http: POST /v1/chat/completions (30× concurrent burst)"
+        expected: >-
+          All 30 return HTTP 200, no-loss==true. Validates the coder handles
+          a burst spike of 30 simultaneous connections without connection
+          resets, timeouts, or dropped requests.
+
+  # ============================================================================
+  # CODER-SELF-VALIDATE-001 (mandatory §11.4.107(10)) — TWO cases, ONE analyzer.
+  # -GOOD reuses moderate concurrency (n=5) with ALL-OK + NO-LOSS assertions
+  # that a healthy coder trivially satisfies (must PASS).
+  # -BAD uses a 1ms timeout so every request fails timeout / connection
+  # refused, making ALL-OK FALSE. The analyzer correctly detects this, and
+  # --expect-fail inverts the case-level result — proving the assertion logic
+  # discriminates correctly.
+  # ============================================================================
+  - id: CODER-SELF-VALIDATE-001-GOOD
+    challenge_id: helixllm.coder.self-validate-golden-good
+    name: "Self-validation golden-good: moderate concurrency against healthy coder PASS"
+    category: functional
+    priority: critical
+    platforms: [api]
+    domains: [coder, concurrency, llm, anti-bluff]
+    dispatches_to: >-
+      bin/helixqa-verify-coder-concurrency
+      --n 5
+      --prompt "Count from 1 to 3."
+      --all-ok
+      --no-loss
+      --out qa-results/helixllm_coder_concurrency/self_validate_001_golden_good_verdict.json
+      --conduit-dir qa-results/helixllm_coder_concurrency/conduit
+      --challenge-id CODER-SELF-VALIDATE-001-GOOD
+    required_evidence:
+      - "qa-results/helixllm_coder_concurrency/self_validate_001_golden_good_verdict.json | json:case_result==true | json:pass==true | json:all_ok==true | json:no_loss==true"
+    steps:
+      - name: "Golden-good: analyzer must PASS when the coder is healthy under moderate concurrency"
+        action: "http: POST /v1/chat/completions (5× concurrent)"
+        expected: "pass==true (all 5 complete with 200, no drops)."
+
+  - id: CODER-SELF-VALIDATE-001-BAD
+    challenge_id: helixllm.coder.self-validate-golden-bad-must-fail
+    name: "Self-validation golden-bad: impossible timeout (1ms) — raw ALL-OK fails, case_result OK via --expect-fail"
+    category: functional
+    priority: critical
+    platforms: [api]
+    domains: [coder, concurrency, llm, anti-bluff]
+    dispatches_to: >-
+      bin/helixqa-verify-coder-concurrency
+      --n 5
+      --prompt "Count from 1 to 3."
+      --all-ok
+      --no-loss
+      --timeout 1ms
+      --expect-fail
+      --out qa-results/helixllm_coder_concurrency/self_validate_001_golden_bad_verdict.json
+      --conduit-dir qa-results/helixllm_coder_concurrency/conduit
+      --challenge-id CODER-SELF-VALIDATE-001-BAD
+    metadata:
+      expect_fail: true
+      mutation_proof: >-
+        Authored 2026-07-08: with the analyzer's all-ok assertion intact, this
+        case's raw pass=false (1ms timeout means zero requests complete) and
+        case_result=true (via --expect-fail inversion) — exit 0. A paired
+        §1.1 mutation replacing the assertion with an unconditional
+        "v.Pass = true" was applied to
+        cmd/helixqa-verify-coder-concurrency/main.go, rebuilt, and re-run
+        against this exact fixture: raw pass flipped to true, case_result
+        flipped to false — exit 1 (case FAIL). The mutation was then reverted
+        and the restored binary re-confirmed to discriminate correctly before
+        this bank was committed. No mutation code is committed anywhere in
+        this tree (§11.4.84 quiescence).
+    required_evidence:
+      - "qa-results/helixllm_coder_concurrency/self_validate_001_golden_bad_verdict.json | json:case_result==true | json:pass==false | json:all_ok==false | json:n_ok<5"
+    steps:
+      - name: "Golden-bad: 1ms timeout ensures zero requests complete — analyzer correctly reports ALL-OK=false"
+        action: "http: POST /v1/chat/completions (5× concurrent, 1ms timeout)"
+        expected: >-
+          pass==false (all requests timeout in 1ms, none complete), all_ok==false;
+          case_result==true because this case declares --expect-fail. Proves
+          the analyzer rejects "no concurrent capacity" (detected via
+          universal timeout), not only endpoint-down or HTTP-500 failures.
