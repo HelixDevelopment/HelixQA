@@ -1,0 +1,348 @@
+# SPDX-FileCopyrightText: 2026 Milos Vasic
+# SPDX-License-Identifier: Apache-2.0
+#
+# HelixQA Test Bank: HelixLLM Coder Benchmarking (§11.4.169)
+# ==============================================================================
+#
+# Authored per §11.4.169 Mandatory comprehensive test-type coverage —
+# benchmarking / performance dimension. The resident coder (llama.cpp
+# OpenAI-compatible sidecar on :18434) is proven functional
+# (banks/helixllm_coder*, helixllm_coder_concurrency*, helixllm_coder_chaos*,
+# helixllm_coder_memory*, helixllm_coder_race*), but formal latency
+# percentiles (p50/p95/p99), throughput in tokens/sec, and time-to-first-token
+# (TTFT) at graduated concurrency — the full §11.4.169 benchmarking set —
+# were not previously covered as a dedicated bank.
+#
+# SIX TEST CASES covering the §11.4.169 benchmarking category:
+#
+#   four concurrency levels as standalone cases (BENCH-CODER-001 through -004)
+#     — Concurrency 1:  p50/p95/p99 latency, req/s, tok/s (baseline single)
+#     — Concurrency 10: p50/p95/p99 latency, req/s, tok/s (moderate load)
+#     — Concurrency 50: p50/p95/p99 latency, req/s, tok/s (medium load)
+#     — Concurrency 100: p50/p95/p99 latency, req/s, tok/s (high load)
+#
+#   BENCH-CODER-005: TTFT measurement via streaming at concurrency 1
+#     — p50/p95/p99 time-to-first-token (streaming, stream:true)
+#     — Throughput in tok/s
+#
+#   BENCH-CODER-SELF-VALIDATE-001 (mandatory §11.4.107(10)):
+#     golden-good + golden-bad via the SAME analyzer binary
+#
+# TARGET. The live resident coder at :18434 — llama.cpp running the default
+# model (HELIX_CODER_MODEL or "llama3.2"), serving /v1/chat/completions
+# (OpenAI-compatible). This bank NEVER boots/teardowns any service itself
+# (§11.4.119 single-resource-owner — the boot/teardown owner is the
+# conductor). The coder is typically already running in the background
+# (resident service).
+#
+# ANTI-BLUFF (§11.4.6/§11.4.69/§11.4.107(10)/§11.4.123/§11.4.169).
+# Every PASS requires REAL measured latency, throughput, and TTFT values from
+# genuine concurrent HTTP round-trips against the live coder. The analyzer at
+# cmd/helixqa-verify-coder-bench/ performs the actual measurement and writes
+# a structured verdict JSON with per-level metrics. Each case specifies
+# BASELINE THRESHOLDS via dispatches_to flags that reflect the project's
+# current iteration's acceptable performance budget. Regression against
+# these baselines is a finding (§11.4.132 risk-ordered validation priority).
+#
+# SELF-VALIDATION: BENCH-CODER-SELF-VALIDATE-001 uses the SAME analyzer
+# binary in two configurations:
+#   -GOOD: concurrency 1, 3 requests, throughput_min=0.01 (trivially
+#          satisfied by any live coder) — MUST PASS
+#   -BAD:  concurrency 1, 3 requests, latency_p99_max=1ms (impossible
+#          on any real coder at :18434) — analyzer correctly reports
+#          raw pass=false, inverted by --expect-fail to case_result=true
+#
+# DECOUPLING (CONST-051(B)/§11.4.28). This bank is DATA. dispatches_to names
+# a consumer-built binary (bin/helixqa-verify-coder-bench). The endpoint URL,
+# model, prompt, concurrency level, n-per-level, and all baseline threshold
+# flags are ALL bank data. qa-results/helixllm_coder_bench/** is the per-run
+# RAW evidence dir (git-ignored, §11.4.128); curated into
+# docs/qa/<run-id>/ at release-prep (§11.4.83).
+#
+# §11.4.154 — window-scoped recording mandated (the coder is a CLI/server,
+# so the relevant "window" is the terminal pane where the benchmark commands
+# run). §11.4.155 — project-prefix pattern
+# <project_name>---<scope>---<run> on all recording filenames.
+#
+# §11.4.185 — manual QA-team confirmation is the FINAL validation gate after
+# all automated cases pass.
+
+version: "1.0"
+name: "HelixLLM Coder Benchmarking"
+description: >-
+  Formal benchmarking of the live resident HelixLLM coder (llama.cpp, :18434)
+  at graduated concurrency levels — 1, 10, 50, 100 — measuring p50/p95/p99
+  latency, throughput (req/s, tok/s), and time-to-first-token (TTFT) via
+  streaming. Four concurrency cases plus one TTFT case plus a mandatory
+  §11.4.107(10) self-validation pair. Every PASS carries real measured
+  latency/throughput/TTFT values from genuine concurrent HTTP round-trips
+  against the live coder — no metadata-only or regression-unprotected pass.
+metadata:
+  author: vasic-digital
+  app: HelixLLM
+  category: "helixllm-coder-bench"
+  priority: high
+  covenant: "§11.4.107(10) self-validated analyzer + §11.4.169 benchmarking dimension + §11.4.69 sink-side evidence (measurements from live coder responses)"
+  route_source: "helix_code/internal/server/llm_generate.go:431 (:18434) — llama.cpp coder sidecar"
+  evidence_dir: "qa-results/helixllm_coder_bench"
+  analyzer: "cmd/helixqa-verify-coder-bench"
+  boot_precondition: >-
+    Coder (llama.cpp on :18434) MUST already be running before this bank
+    runs; this bank does not boot/pause/teardown any service itself
+    (§11.4.119 single-resource-owner — the boot/teardown owner is the
+    conductor). The coder is typically already running in the background
+    (resident service); verify via
+    `curl -sS -o /dev/null -w '%{http_code}'
+    http://localhost:18434/v1/chat/completions
+    -d'{"model":"llama3.2","messages":[{"role":"user","content":"hi"}],"stream":false}'
+    expecting 200.
+
+test_cases:
+
+  # ==========================================================================
+  # BENCH-CODER-001: Concurrency level 1 — baseline single-request
+  # performance. Measures p50/p95/p99 over 20 sequential-ish requests
+  # (concurrency=1 means effectively sequential), throughput in req/s
+  # and tok/s. Baseline thresholds: p99 < 30000ms, throughput > 0.3 req/s.
+  # ==========================================================================
+  - id: BENCH-CODER-001
+    challenge_id: helixllm.coder.bench.concurrency-1
+    name: "Concurrency 1 — p50/p95/p99 latency, req/s, tok/s (baseline single-request)"
+    category: benchmarking
+    priority: high
+    platforms: [api]
+    domains: [coder, benchmark, latency, throughput]
+    dispatches_to: >-
+      bin/helixqa-verify-coder-bench
+      --level 1
+      --n-per-level 20
+      --prompt "Write a short poem about a robot learning to paint. Maximum 5 lines."
+      --latency-p99-max 30000
+      --throughput-min 0.3
+      --out qa-results/helixllm_coder_bench/bench_001_verdict.json
+      --conduit-dir qa-results/helixllm_coder_bench/conduit
+      --challenge-id BENCH-CODER-001
+    required_evidence:
+      - "qa-results/helixllm_coder_bench/bench_001_verdict.json | json:case_result==true | json:levels[0].p99_latency_ms <= 30000 | json:levels[0].throughput_req_per_sec >= 0.3 | json:levels[0].all_ok==true"
+    steps:
+      - name: "Run 20 requests at concurrency 1 (sequential), measure p50/p95/p99 latency"
+        action: "http: POST /v1/chat/completions (20 requests, concurrency 1)"
+        expected: >-
+          All 20 return HTTP 200; p50 latency < 5000ms; p95 < 15000ms;
+          p99 < 30000ms; throughput >= 0.3 req/s; throughput in tok/s
+          recorded for analysis. Authored 2026-07-08 against the live coder.
+
+  # ==========================================================================
+  # BENCH-CODER-002: Concurrency level 10 — moderate parallel load.
+  # 30 requests at 10-wide concurrency. Baseline thresholds: p99 < 30000ms,
+  # throughput > 1.0 req/s.
+  # ==========================================================================
+  - id: BENCH-CODER-002
+    challenge_id: helixllm.coder.bench.concurrency-10
+    name: "Concurrency 10 — p50/p95/p99 latency, req/s, tok/s (moderate load)"
+    category: benchmarking
+    priority: high
+    platforms: [api]
+    domains: [coder, benchmark, latency, throughput]
+    dispatches_to: >-
+      bin/helixqa-verify-coder-bench
+      --level 10
+      --n-per-level 30
+      --prompt "Write a short poem about a robot learning to paint. Maximum 5 lines."
+      --latency-p99-max 30000
+      --throughput-min 1.0
+      --out qa-results/helixllm_coder_bench/bench_002_verdict.json
+      --conduit-dir qa-results/helixllm_coder_bench/conduit
+      --challenge-id BENCH-CODER-002
+    required_evidence:
+      - "qa-results/helixllm_coder_bench/bench_002_verdict.json | json:case_result==true | json:levels[0].p99_latency_ms <= 30000 | json:levels[0].throughput_req_per_sec >= 1.0 | json:levels[0].all_ok==true"
+    steps:
+      - name: "Run 30 requests at concurrency 10, measure p50/p95/p99 latency"
+        action: "http: POST /v1/chat/completions (30 requests, concurrency 10)"
+        expected: >-
+          All 30 return HTTP 200; p99 < 30000ms; throughput >= 1.0 req/s;
+          throughput in tok/s recorded. Exercises moderate concurrent load
+          on the coder's serialization queue.
+
+  # ==========================================================================
+  # BENCH-CODER-003: Concurrency level 50 — medium parallel load.
+  # 30 requests at 50-wide concurrency. Baseline thresholds: p99 < 60000ms,
+  # throughput > 2.0 req/s. Higher concurrency increases tail latency due to
+  # the single-threaded llama.cpp batch loop.
+  # ==========================================================================
+  - id: BENCH-CODER-003
+    challenge_id: helixllm.coder.bench.concurrency-50
+    name: "Concurrency 50 — p50/p95/p99 latency, req/s, tok/s (medium load)"
+    category: benchmarking
+    priority: medium
+    platforms: [api]
+    domains: [coder, benchmark, latency, throughput]
+    dispatches_to: >-
+      bin/helixqa-verify-coder-bench
+      --level 50
+      --n-per-level 30
+      --prompt "Write a short poem about a robot learning to paint. Maximum 5 lines."
+      --latency-p99-max 60000
+      --throughput-min 2.0
+      --out qa-results/helixllm_coder_bench/bench_003_verdict.json
+      --conduit-dir qa-results/helixllm_coder_bench/conduit
+      --challenge-id BENCH-CODER-003
+    required_evidence:
+      - "qa-results/helixllm_coder_bench/bench_003_verdict.json | json:case_result==true | json:levels[0].p99_latency_ms <= 60000 | json:levels[0].throughput_req_per_sec >= 2.0 | json:levels[0].all_ok==true"
+    steps:
+      - name: "Run 30 requests at concurrency 50, measure p50/p95/p99 latency"
+        action: "http: POST /v1/chat/completions (30 requests, concurrency 50)"
+        expected: >-
+          All 30 return HTTP 200; p99 < 60000ms; throughput >= 2.0 req/s.
+          At concurrency 50 the single-threaded llama.cpp batch queue
+          increases tail latency; this test establishes the medium-load
+          baseline.
+
+  # ==========================================================================
+  # BENCH-CODER-004: Concurrency level 100 — high parallel load.
+  # 30 requests at 100-wide concurrency. Baseline thresholds: p99 < 120000ms,
+  # throughput > 3.0 req/s. At this concurrency the kernel socket accept
+  # backlog may saturate, producing TCP connection-refused events which are
+  # expected kernel behaviour — not a coder bug (§11.4.6 bounded-load
+  # caveat). The per-level verdict honestly records n_refused alongside
+  # latency and throughput.
+  # ==========================================================================
+  - id: BENCH-CODER-004
+    challenge_id: helixllm.coder.bench.concurrency-100
+    name: "Concurrency 100 — p50/p95/p99 latency, req/s, tok/s (high load)"
+    category: benchmarking
+    priority: medium
+    platforms: [api]
+    domains: [coder, benchmark, latency, throughput]
+    dispatches_to: >-
+      bin/helixqa-verify-coder-bench
+      --level 100
+      --n-per-level 30
+      --prompt "Write a short poem about a robot learning to paint. Maximum 5 lines."
+      --latency-p99-max 120000
+      --throughput-min 3.0
+      --out qa-results/helixllm_coder_bench/bench_004_verdict.json
+      --conduit-dir qa-results/helixllm_coder_bench/conduit
+      --challenge-id BENCH-CODER-004
+    required_evidence:
+      - "qa-results/helixllm_coder_bench/bench_004_verdict.json | json:case_result==true | json:levels[0].p99_latency_ms <= 120000 | json:levels[0].throughput_req_per_sec >= 3.0 | json:levels[0].all_ok==true"
+    steps:
+      - name: "Run 30 requests at concurrency 100, measure p50/p95/p99 latency"
+        action: "http: POST /v1/chat/completions (30 requests, concurrency 100)"
+        expected: >-
+          All 30 return HTTP 200 or acceptable degradation; p99 < 120000ms;
+          throughput >= 3.0 req/s. TCP connection-refused events at burst
+          of 100 are expected kernel behaviour (socket accept backlog
+          saturation), not a coder defect.
+
+  # ==========================================================================
+  # BENCH-CODER-005: TTFT (time-to-first-token) via streaming at
+  # concurrency 1. 10 streaming requests, measuring p50/p95/p99 of the
+  # time from request start to the first non-empty content delta.
+  # Baseline thresholds: p95 TTFT < 5000ms.
+  # ==========================================================================
+  - id: BENCH-CODER-005
+    challenge_id: helixllm.coder.bench.ttft-streaming
+    name: "TTFT (time-to-first-token) via streaming — concurrency 1, p50/p95/p99"
+    category: benchmarking
+    priority: high
+    platforms: [api]
+    domains: [coder, benchmark, ttft, streaming, latency]
+    dispatches_to: >-
+      bin/helixqa-verify-coder-bench
+      --level 1
+      --n-per-level 10
+      --prompt "Write a short poem about a robot learning to paint. Maximum 5 lines."
+      --ttft
+      --ttft-p95-max 5000
+      --out qa-results/helixllm_coder_bench/bench_005_verdict.json
+      --conduit-dir qa-results/helixllm_coder_bench/conduit
+      --challenge-id BENCH-CODER-005
+    required_evidence:
+      - "qa-results/helixllm_coder_bench/bench_005_verdict.json | json:case_result==true | json:levels[0].p50_ttft_ms > 0 | json:levels[0].p95_ttft_ms <= 5000"
+    steps:
+      - name: "Send 10 streaming POST /v1/chat/completions (stream:true), measure time-to-first-token"
+        action: "http: POST /v1/chat/completions (10 streaming requests, concurrency 1)"
+        expected: >-
+          All 10 return HTTP 200 streaming responses; TTFT p95 < 5000ms;
+          TTFT p50 and p99 recorded. This is the first formal TTFT
+          baseline for the HelixLLM coder with the resident model.
+
+  # ==========================================================================
+  # BENCH-CODER-SELF-VALIDATE-001 (mandatory §11.4.107(10)) — TWO cases,
+  # ONE analyzer. -GOOD uses concurrency 1, 3 requests, throughput_min=0.01
+  # (trivially satisfied by any live coder) — MUST PASS. -BAD uses the SAME
+  # live coder endpoint but asserts latency_p99_max=1ms (IMPOSSIBLE on any
+  # real LLM serving stack — even a single token takes >1ms on local GPU).
+  # The analyzer correctly reports raw pass=false, inverted by --expect-fail
+  # to case_result=true. A paired §1.1 mutation forcing all assertions
+  # pass=true unconditionally MUST flip -BAD's case_result from true to
+  # false — proving the threshold comparisons are load-bearing.
+  # ==========================================================================
+  - id: BENCH-CODER-SELF-VALIDATE-001-GOOD
+    challenge_id: helixllm.coder.bench.self-validate-golden-good
+    name: "Self-validation golden-good: concurrency 1, 3 requests, throughput_min=0.01 — trivially passes"
+    category: benchmarking
+    priority: critical
+    platforms: [api]
+    domains: [coder, benchmark, anti-bluff, self-validate]
+    dispatches_to: >-
+      bin/helixqa-verify-coder-bench
+      --level 1
+      --n-per-level 3
+      --prompt "Say hello."
+      --throughput-min 0.01
+      --out qa-results/helixllm_coder_bench/self_validate_001_golden_good_verdict.json
+      --conduit-dir qa-results/helixllm_coder_bench/conduit
+      --challenge-id BENCH-CODER-SELF-VALIDATE-001-GOOD
+    required_evidence:
+      - "qa-results/helixllm_coder_bench/self_validate_001_golden_good_verdict.json | json:case_result==true | json:pass==true | json:levels[0].all_ok==true | json:levels[0].n_ok==3"
+    steps:
+      - name: "Golden-good: analyzer must PASS when baseline thresholds are trivially satisfied"
+        action: "http: POST /v1/chat/completions (3 requests at concurrency 1)"
+        expected: >-
+          pass==true (all 3 complete with 200; throughput >= 0.01 req/s is
+          trivially satisfied by any live coder). Proves the analyzer
+          accepts a healthy coder under minimal load.
+
+  - id: BENCH-CODER-SELF-VALIDATE-001-BAD
+    challenge_id: helixllm.coder.bench.self-validate-golden-bad-must-fail
+    name: "Self-validation golden-bad: impossible latency threshold (p99_max=1ms) — raw FAIL, case_result OK via --expect-fail"
+    category: benchmarking
+    priority: critical
+    platforms: [api]
+    domains: [coder, benchmark, anti-bluff, self-validate]
+    dispatches_to: >-
+      bin/helixqa-verify-coder-bench
+      --level 1
+      --n-per-level 3
+      --prompt "Say hello."
+      --latency-p99-max 1
+      --expect-fail
+      --out qa-results/helixllm_coder_bench/self_validate_001_golden_bad_verdict.json
+      --conduit-dir qa-results/helixllm_coder_bench/conduit
+      --challenge-id BENCH-CODER-SELF-VALIDATE-001-BAD
+    metadata:
+      expect_fail: true
+      mutation_proof: >-
+        Authored 2026-07-08: with the analyzer's latency-p99 assertion
+        intact, this case's raw pass=false (no real LLM serving stack can
+        sustain p99 < 1ms at :18434) and case_result=true (via --expect-fail
+        inversion) — exit 0. A paired §1.1 mutation replacing the latency
+        assertion with an unconditional "v.Pass = true" was applied to
+        cmd/helixqa-verify-coder-bench/main.go, rebuilt, and re-run against
+        this exact fixture: raw pass flipped to true, case_result flipped to
+        false — exit 1 (case FAIL). The mutation was then reverted and the
+        restored binary re-confirmed to discriminate correctly before this
+        bank was committed. No mutation code is committed anywhere in this
+        tree (§11.4.84 quiescence).
+    required_evidence:
+      - "qa-results/helixllm_coder_bench/self_validate_001_golden_bad_verdict.json | json:case_result==true | json:pass==false | json:levels[0].p99_latency_ms > 1"
+    steps:
+      - name: "Golden-bad: impossible latency threshold (p99_max=1ms) — analyzer correctly reports pass=false"
+        action: "http: POST /v1/chat/completions (3 requests at concurrency 1)"
+        expected: >-
+          pass==false (p99 latency > 1ms on any real coder); case_result==true
+          because this case declares --expect-fail. Proves the analyzer
+          rejects an impossible latency budget, not only endpoint-down or
+          HTTP-500 failures.
