@@ -1,0 +1,196 @@
+# SPDX-FileCopyrightText: 2026 Milos Vasic
+# SPDX-License-Identifier: Apache-2.0
+#
+# HelixQA Test Bank: HelixLLM A2A (Google Agent2Agent) Server Capability
+# ==============================================================================
+#
+# Authored per docs/research/07.2026/00_master/ACP_A2A_PROVIDER.md (operator
+# decision 03_open_clarifications.md C3 — "Google A2A, NOT Zed ACP"), mirroring
+# the structure + self-validation discipline of banks/helixllm_translate_nllb.yaml
+# and banks/helixllm_vision.yaml (Bank B).
+#
+# TARGET. The live HelixLLM A2A server (submodules/helix_llm/cmd/a2a-server,
+# internal/a2a), which fronts and routes real JSON-RPC 2.0 "message/send"
+# Tasks to the live coder (:18434, OpenAI-compatible /v1/chat/completions,
+# read-only downstream — §11.4.119 single-resource-owner + §11.4.122, the
+# A2A server NEVER starts/stops/restarts the coder it fronts). This bank
+# NEVER boots/tears-down the A2A server itself — the conductor boots it
+# first (`go build ./cmd/a2a-server && HELIX_A2A_LISTEN_ADDR=:18441
+# HELIX_A2A_DOWNSTREAM_URL=http://localhost:18434
+# HELIX_A2A_BEARER_TOKEN=<token> ./a2a-server`) and tears it down afterward;
+# the bank only DRIVES the already-running endpoint.
+#
+# ANTI-BLUFF (§11.4.6/§11.4.69/§11.4.107(10)/§11.4.123). Every ground-truth
+# fixture below was AUTHORED AGAINST THE LIVE SERVICE'S ACTUAL BEHAVIOUR —
+# the candidate prompt was run against the live :18441 endpoint during
+# authoring (2026-07-08, this session) via bin/helixqa-verify-a2a and its
+# real answer confirmed to contain the asserted fact token BEFORE being
+# committed here as a "must-match" assertion. The live A2A server discovered
+# the served coder model id from the live /v1/models endpoint at boot
+# (never a hardcoded model id — CONST-036) and produced task status
+# "completed" + agent answer "4" for the fixture prompt below.
+#
+# Analyzer: cmd/helixqa-verify-a2a (this repo) — a thin, project-agnostic
+# dispatches_to analyzer (CONST-051(B), no HelixQA core-engine change) that
+# POSTs a real JSON-RPC 2.0 "message/send" request to the A2A dispatch
+# endpoint, requires the returned Task's status.state=="completed", EVERY
+# --expect fact token present (case-insensitive substring) in the extracted
+# agent answer, AND the answer NOT identical to the prompt (kills the
+# echo/passthrough bluff), and writes an auditable verdict JSON embedding
+# the raw JSON-RPC request+response.
+#
+# A2A-SELF-VALIDATE-001 (mandatory §11.4.107(10)) proves the analyzer itself
+# cannot bluff: the SAME analyzer binary runs against the SAME live Task
+# request as the golden-good case (must PASS) and a golden-bad case —
+# IDENTICAL live request, but DELIBERATELY WRONG expected facts
+# ("banana,elephant" — genuinely absent from the real answer "4") — via the
+# SAME --expect-fail inversion convention already used by
+# banks/helixllm_translate_nllb.yaml TRA-SELF-VALIDATE-001-BAD /
+# banks/helixllm_vision.yaml VIS-SELF-VALIDATE-001-BAD: the RAW fact-match
+# verdict ("pass" in the verdict JSON) is recorded honestly and NEVER
+# flipped; only which raw outcome counts as case success is inverted. A
+# paired §1.1 mutation (stripping the fact-matching+not-identity+
+# task-completed assertion in the analyzer source, forcing pass=true
+# unconditionally) was run during authoring and confirmed to flip
+# A2A-SELF-VALIDATE-001-BAD's case_result from true to false — i.e. WITHOUT
+# the real discriminator, the golden-bad fixture bluff-PASSes at the raw
+# level and the --expect-fail inversion catches it as a case FAIL. This
+# proves the discriminator is load-bearing, not decorative. Evidence:
+# docs/qa/phase1_helixqa_newcaps_20260708T*/mutation_proof/.
+#
+# DECOUPLING (CONST-051(B)/§11.4.28). This bank is DATA. dispatches_to names
+# a consumer-built binary (bin/helixqa-verify-a2a); the endpoint URL, prompt
+# text, and expected fact tokens are ALL bank data — HelixQA's core packages
+# (pkg/testbank, pkg/conduit) never learn a HelixLLM-specific fact.
+# `qa-results/helixllm_a2a/**` is the per-run RAW evidence dir (git-ignored,
+# §11.4.128) the conductor curates into `docs/qa/<run-id>/` at release-prep
+# (§11.4.83). The Bearer token is passed via --bearer / HELIX_A2A_BEARER_TOKEN
+# and is NEVER hardcoded or logged in this bank (§11.4.10).
+version: "1.0"
+name: "HelixLLM A2A (Google Agent2Agent) Server Capability"
+description: >-
+  Drives real JSON-RPC 2.0 "message/send" Task requests against the live
+  HelixLLM A2A server, which routes the Task to the live coder and returns
+  a genuinely-generated agent answer. Strictly fact-matches + not-identity +
+  task-completed-checks the answer against ground-truth prompts authored
+  against the live service's actual behaviour. A2A-SELF-VALIDATE-001 proves
+  the analyzer itself cannot bluff (golden-good PASS + golden-bad FAIL via
+  the SAME analyzer, paired §1.1 mutation confirmed during authoring). A
+  green case requires the real Task to reach status "completed" AND the
+  real agent answer to genuinely contain every asserted fact AND differ
+  from the prompt — never a metadata-only / endpoint-reachable-only PASS.
+metadata:
+  author: vasic-digital
+  app: HelixLLM
+  category: "helixllm-a2a"
+  priority: critical
+  covenant: "§11.4.107(10) self-validated analyzer + §11.4.69 sink-side positive evidence (the A2A Task's own agent answer IS the sink)"
+  route_source: "submodules/helix_llm/cmd/a2a-server + internal/a2a — fronts the live coder :18434, read-only downstream"
+  evidence_dir: "qa-results/helixllm_a2a"
+  analyzer: "cmd/helixqa-verify-a2a"
+  boot_precondition: >-
+    The A2A server MUST already be booted (e.g. HELIX_A2A_LISTEN_ADDR=:18441
+    HELIX_A2A_DOWNSTREAM_URL=http://localhost:18434
+    HELIX_A2A_BEARER_TOKEN=<token> ./a2a-server) before this bank runs; this
+    bank does not boot/pause/teardown any service itself (§11.4.119
+    single-resource-owner — the boot/teardown owner is the conductor). The
+    coder at :18434 is a read-only downstream (§11.4.122) never touched by
+    this bank or the A2A server.
+
+test_cases:
+
+  - id: A2A-UNDERSTAND-001
+    challenge_id: helixllm.a2a.message-send-two-plus-two
+    name: "A2A message/send routes a real Task to the live coder and returns a completed, genuine, non-identity answer"
+    category: functional
+    priority: critical
+    platforms: [api]
+    domains: [a2a, llm, agent2agent]
+    dispatches_to: >-
+      bin/helixqa-verify-a2a
+      --prompt "What is 2+2? Reply with only the digit, nothing else."
+      --expect "4"
+      --out qa-results/helixllm_a2a/understand_001_verdict.json
+      --conduit-dir qa-results/helixllm_a2a/conduit
+      --challenge-id A2A-UNDERSTAND-001
+    required_evidence:
+      - "qa-results/helixllm_a2a/understand_001_verdict.json | json:case_result==true | json:task_state==completed | json:not_identity==true | json:matched_facts==1 | json:hallucinated==false"
+    steps:
+      - name: "POST a real JSON-RPC 2.0 message/send Task and fact-match + not-identity check the agent's answer"
+        action: "http: POST <a2a-endpoint> (jsonrpc message/send)"
+        expected: >-
+          Task status.state=="completed"; the agent's answer contains "4"
+          (case-insensitive) and differs from the prompt. Authored
+          2026-07-08 (this session) against the live A2A server (fronting
+          the live coder at :18434), which answered "4" for this prompt
+          with task status "completed".
+
+  # ============================================================================
+  # A2A-SELF-VALIDATE-001 (mandatory §11.4.107(10)) — TWO cases, ONE analyzer.
+  # -GOOD reuses the A2A-UNDERSTAND-001 fixture (must PASS at the raw level).
+  # -BAD sends the SAME live Task request but asserts DELIBERATELY WRONG
+  # tokens ("banana,elephant" — genuinely absent from "4") via --expect-fail,
+  # mirroring TRA-SELF-VALIDATE-001-BAD / VIS-SELF-VALIDATE-001-BAD's
+  # negative-case convention.
+  # ============================================================================
+  - id: A2A-SELF-VALIDATE-001-GOOD
+    challenge_id: helixllm.a2a.self-validate-golden-good
+    name: "Self-validation golden-good: correct facts against a genuine live Task answer PASS"
+    category: functional
+    priority: critical
+    platforms: [api]
+    domains: [a2a, llm, anti-bluff]
+    dispatches_to: >-
+      bin/helixqa-verify-a2a
+      --prompt "What is 2+2? Reply with only the digit, nothing else."
+      --expect "4"
+      --out qa-results/helixllm_a2a/self_validate_001_golden_good_verdict.json
+      --conduit-dir qa-results/helixllm_a2a/conduit
+      --challenge-id A2A-SELF-VALIDATE-001-GOOD
+    required_evidence:
+      - "qa-results/helixllm_a2a/self_validate_001_golden_good_verdict.json | json:case_result==true | json:pass==true | json:matched_facts==1"
+    steps:
+      - name: "Golden-good: analyzer must PASS when facts genuinely match a real live Task answer"
+        action: "http: POST <a2a-endpoint> (jsonrpc message/send)"
+        expected: "pass==true (facts genuinely present in the real agent answer)."
+
+  - id: A2A-SELF-VALIDATE-001-BAD
+    challenge_id: helixllm.a2a.self-validate-golden-bad-must-fail
+    name: "Self-validation golden-bad: mismatched facts against the SAME live Task answer MUST FAIL raw, case succeeds via --expect-fail"
+    category: functional
+    priority: critical
+    platforms: [api]
+    domains: [a2a, llm, anti-bluff]
+    dispatches_to: >-
+      bin/helixqa-verify-a2a
+      --prompt "What is 2+2? Reply with only the digit, nothing else."
+      --expect "banana,elephant"
+      --expect-fail
+      --out qa-results/helixllm_a2a/self_validate_001_golden_bad_verdict.json
+      --conduit-dir qa-results/helixllm_a2a/conduit
+      --challenge-id A2A-SELF-VALIDATE-001-BAD
+    metadata:
+      expect_fail: true
+      mutation_proof: >-
+        Authored 2026-07-08: with the analyzer's fact-matching +
+        not-identity + task-completed assertion intact, this case's raw
+        pass=false (matched_facts=0/2, "banana"/"elephant" genuinely absent
+        from the real answer "4") and case_result=true (via --expect-fail
+        inversion) — exit 0. A paired §1.1 mutation replacing the Pass
+        computation with an unconditional "v.Pass = true" was applied to
+        cmd/helixqa-verify-a2a/main.go, rebuilt, and re-run against this
+        exact fixture: raw pass flipped to true, case_result flipped to
+        false — exit 1 (case FAIL). The mutation was then reverted and the
+        restored binary re-confirmed to discriminate correctly before this
+        bank was committed. No mutation code is committed anywhere in this
+        tree (§11.4.84 quiescence).
+    required_evidence:
+      - "qa-results/helixllm_a2a/self_validate_001_golden_bad_verdict.json | json:case_result==true | json:pass==false | json:matched_facts==0"
+    steps:
+      - name: "Golden-bad: analyzer must reject mismatched facts (raw FAIL), case succeeds via --expect-fail inversion"
+        action: "http: POST <a2a-endpoint> (jsonrpc message/send)"
+        expected: >-
+          pass==false (the real agent answer "4" genuinely does NOT contain
+          "banana" or "elephant"); case_result==true because this case
+          declares --expect-fail. A case_result==false here would mean the
+          analyzer bluff-PASSed a deliberately wrong fixture.

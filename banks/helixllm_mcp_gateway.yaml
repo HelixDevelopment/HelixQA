@@ -1,0 +1,293 @@
+# SPDX-FileCopyrightText: 2026 Milos Vasic
+# SPDX-License-Identifier: Apache-2.0
+#
+# HelixQA Test Bank: HelixLLM MCP Gateway Capability
+# ==============================================================================
+#
+# Authored per docs/research/07.2026/05_mcp_acp_protocols/MCP_OKF_GATEWAY_MEMO.md
+# (verdict GO — go-sdk v1.6.1 stable ships StreamableHTTPHandler + Stateless +
+# RequireBearerToken), mirroring the structure + self-validation discipline of
+# banks/helixllm_translate_nllb.yaml and banks/helixllm_rag.yaml (multi-case
+# --case/--no-context mode-select convention).
+#
+# TARGET. The live HelixLLM MCP gateway (submodules/helix_llm/cmd/mcp-gateway,
+# internal/mcpgateway), which exposes helixllm_generate + helixllm_list_models
+# as real MCP tools over Streamable-HTTP and proxies real HTTP calls to the
+# live coder (:18434, OpenAI-compatible, read-only downstream — §11.4.119
+# single-resource-owner + §11.4.122, the gateway NEVER starts/stops/restarts
+# the coder it fronts). This bank NEVER boots/tears-down the gateway itself —
+# the conductor boots it first (`go build ./cmd/mcp-gateway &&
+# HELIX_MCP_GATEWAY_LISTEN_ADDR=:18444
+# HELIX_LLM_LOCAL_OPENAI_ENDPOINT=http://localhost:18434
+# HELIX_MCP_GATEWAY_TOKEN=<token> ./mcp-gateway`) and tears it down
+# afterward; the bank only DRIVES the already-running endpoint.
+#
+# ANTI-BLUFF (§11.4.6/§11.4.69/§11.4.107(10)/§11.4.123). Every ground-truth
+# fixture below was AUTHORED AGAINST THE LIVE SERVICE'S ACTUAL BEHAVIOUR — the
+# candidate case (no-Bearer request, tools/list, tools/call generate,
+# tools/call list_models) was run against the live :18444 endpoint during
+# authoring (2026-07-08, this session) via bin/helixqa-verify-mcp-gateway and
+# each real outcome confirmed BEFORE being committed here as a "must-match"
+# assertion: no-Bearer -> HTTP 401 (auth.RequireBearerToken); tools/list ->
+# [helixllm_generate helixllm_list_models] (sourced live, never hardcoded —
+# CONST-036); tools/call helixllm_generate("What is 2+2?...") -> "4" (real,
+# non-simulated coder completion); tools/call helixllm_list_models() -> the
+# live coder's actual served model id. This bank corroborates the same
+# fixtures already independently proven end-to-end in
+# docs/qa/phase1_mcp_gateway_20260708T074850Z/00_SUMMARY.md (2026-07-08,
+# same-session parallel-track proof harness, §11.4.74 reuse).
+#
+# Analyzer: cmd/helixqa-verify-mcp-gateway (this repo) — a thin,
+# project-agnostic dispatches_to analyzer (CONST-051(B), no HelixQA
+# core-engine change). --case unauth401 sends a raw JSON-RPC POST with no
+# Authorization header and asserts HTTP 401 (auth runs before any MCP
+# session logic, so a raw POST genuinely exercises the real rejection
+# path). --case toolslist/generate/listmodels open a REAL go-sdk mcp.Client
+# Streamable-HTTP session with a valid Bearer token and drive the real
+# tools/list + tools/call RPCs, writing an auditable verdict JSON embedding
+# the raw wire response (tool result / raw HTTP body).
+#
+# MCP-GENERATE-SELF-VALIDATE-001 (mandatory §11.4.107(10)) proves the
+# generate-case analyzer path itself cannot bluff: the SAME analyzer binary
+# runs against the SAME live tools/call request as the golden-good case
+# (must PASS) and a golden-bad case — IDENTICAL live request, but
+# DELIBERATELY WRONG expected facts ("banana,elephant" — genuinely absent
+# from the real answer "4") — via the SAME --expect-fail inversion
+# convention already used by banks/helixllm_translate_nllb.yaml
+# TRA-SELF-VALIDATE-001-BAD: the RAW fact-match verdict ("pass" in the
+# verdict JSON) is recorded honestly and NEVER flipped; only which raw
+# outcome counts as case success is inverted. A paired §1.1 mutation
+# (stripping the fact-matching+not-identity assertion in the analyzer
+# source, forcing pass=true unconditionally) was run during authoring and
+# confirmed to flip MCP-GENERATE-SELF-VALIDATE-001-BAD's case_result from
+# true to false — i.e. WITHOUT the real discriminator, the golden-bad
+# fixture bluff-PASSes at the raw level and the --expect-fail inversion
+# catches it as a case FAIL. This proves the discriminator is load-bearing,
+# not decorative. Evidence: docs/qa/phase1_helixqa_newcaps_20260708T*/
+# mutation_proof/.
+#
+# DECOUPLING (CONST-051(B)/§11.4.28). This bank is DATA. dispatches_to names
+# a consumer-built binary (bin/helixqa-verify-mcp-gateway); the endpoint URL,
+# case selector, prompt text, and expected fact tokens are ALL bank data —
+# HelixQA's core packages (pkg/testbank, pkg/conduit) never learn a
+# HelixLLM-specific fact. `qa-results/helixllm_mcp_gateway/**` is the
+# per-run RAW evidence dir (git-ignored, §11.4.128) the conductor curates
+# into `docs/qa/<run-id>/` at release-prep (§11.4.83). The Bearer token is
+# passed via --bearer / HELIX_MCP_GATEWAY_TOKEN and is NEVER hardcoded or
+# logged in this bank (§11.4.10).
+version: "1.0"
+name: "HelixLLM MCP Gateway Capability"
+description: >-
+  Drives real requests against the live HelixLLM MCP gateway
+  (Streamable-HTTP, go-sdk v1.6.1): a no-Bearer request MUST be rejected
+  with HTTP 401; tools/list MUST list both helixllm_generate and
+  helixllm_list_models (sourced live, never hardcoded); tools/call
+  helixllm_generate MUST proxy to the live coder and return a genuinely
+  generated, non-identity, fact-matching completion; tools/call
+  helixllm_list_models MUST return the live coder's real served model list.
+  MCP-GENERATE-SELF-VALIDATE-001 proves the generate-case analyzer path
+  itself cannot bluff (golden-good PASS + golden-bad FAIL via the SAME
+  analyzer, paired §1.1 mutation confirmed during authoring). A green case
+  requires the real wire response to genuinely satisfy its assertion —
+  never a metadata-only / endpoint-reachable-only PASS.
+metadata:
+  author: vasic-digital
+  app: HelixLLM
+  category: "helixllm-mcp-gateway"
+  priority: critical
+  covenant: "§11.4.107(10) self-validated analyzer + §11.4.69 sink-side positive evidence (the gateway's own tool-call result IS the sink)"
+  route_source: "submodules/helix_llm/cmd/mcp-gateway + internal/mcpgateway — fronts the live coder :18434, read-only downstream"
+  evidence_dir: "qa-results/helixllm_mcp_gateway"
+  analyzer: "cmd/helixqa-verify-mcp-gateway"
+  boot_precondition: >-
+    The MCP gateway MUST already be booted (e.g.
+    HELIX_MCP_GATEWAY_LISTEN_ADDR=:18444
+    HELIX_LLM_LOCAL_OPENAI_ENDPOINT=http://localhost:18434
+    HELIX_MCP_GATEWAY_TOKEN=<token> ./mcp-gateway) before this bank runs;
+    this bank does not boot/pause/teardown any service itself (§11.4.119
+    single-resource-owner — the boot/teardown owner is the conductor). The
+    coder at :18434 is a read-only downstream (§11.4.122) never touched by
+    this bank or the gateway.
+
+test_cases:
+
+  - id: MCP-GW-UNAUTH-401
+    challenge_id: helixllm.mcp_gateway.no-bearer-rejected-401
+    name: "MCP gateway rejects a request with no Bearer token with HTTP 401"
+    category: security
+    priority: critical
+    platforms: [api]
+    domains: [mcp, security, auth]
+    dispatches_to: >-
+      bin/helixqa-verify-mcp-gateway
+      --case unauth401
+      --out qa-results/helixllm_mcp_gateway/unauth_401_verdict.json
+      --conduit-dir qa-results/helixllm_mcp_gateway/conduit
+      --challenge-id MCP-GW-UNAUTH-401
+    required_evidence:
+      - "qa-results/helixllm_mcp_gateway/unauth_401_verdict.json | json:case_result==true | json:http_status==401"
+    steps:
+      - name: "Raw JSON-RPC POST with no Authorization header MUST be rejected with HTTP 401"
+        action: "http: POST <mcp-gateway-endpoint> (no Authorization header)"
+        expected: >-
+          HTTP status 401. Authored 2026-07-08 (this session) against the
+          live gateway, corroborating
+          docs/qa/phase1_mcp_gateway_20260708T074850Z/01_no_bearer_401_response.txt
+          (same-session parallel proof harness, §11.4.74 reuse).
+
+  - id: MCP-GW-TOOLSLIST-001
+    challenge_id: helixllm.mcp_gateway.tools-list-registered
+    name: "MCP gateway tools/list (with valid Bearer) registers both real tools"
+    category: functional
+    priority: critical
+    platforms: [api]
+    domains: [mcp, discovery]
+    dispatches_to: >-
+      bin/helixqa-verify-mcp-gateway
+      --case toolslist
+      --out qa-results/helixllm_mcp_gateway/toolslist_001_verdict.json
+      --conduit-dir qa-results/helixllm_mcp_gateway/conduit
+      --challenge-id MCP-GW-TOOLSLIST-001
+    required_evidence:
+      - "qa-results/helixllm_mcp_gateway/toolslist_001_verdict.json | json:case_result==true"
+    steps:
+      - name: "A real MCP client session (Bearer-authenticated) lists tools; both helixllm_generate and helixllm_list_models MUST be present, sourced live"
+        action: "mcp: tools/list (Streamable-HTTP)"
+        expected: >-
+          tool_names contains both "helixllm_generate" and
+          "helixllm_list_models" (CONST-036 — sourced live from the
+          server's real registration, never hardcoded here). Authored
+          2026-07-08 against the live gateway.
+
+  - id: MCP-GW-GENERATE-001
+    challenge_id: helixllm.mcp_gateway.generate-two-plus-two
+    name: "MCP gateway tools/call helixllm_generate proxies to the live coder and returns a genuine, non-identity completion"
+    category: functional
+    priority: critical
+    platforms: [api]
+    domains: [mcp, llm]
+    dispatches_to: >-
+      bin/helixqa-verify-mcp-gateway
+      --case generate
+      --prompt "What is 2+2? Reply with only the digit, nothing else."
+      --expect "4"
+      --out qa-results/helixllm_mcp_gateway/generate_001_verdict.json
+      --conduit-dir qa-results/helixllm_mcp_gateway/conduit
+      --challenge-id MCP-GW-GENERATE-001
+    required_evidence:
+      - "qa-results/helixllm_mcp_gateway/generate_001_verdict.json | json:case_result==true | json:not_identity==true | json:matched_facts==1 | json:is_tool_error==false"
+    steps:
+      - name: "A real tools/call of helixllm_generate proxies to the live coder's /v1/chat/completions and fact-matches + not-identity checks the content"
+        action: "mcp: tools/call helixllm_generate (Streamable-HTTP)"
+        expected: >-
+          content contains "4" (case-insensitive) and differs from the
+          prompt; is_tool_error==false. Authored 2026-07-08 against the
+          live gateway (fronting the live coder at :18434), which answered
+          "4" for this prompt — corroborating
+          docs/qa/phase1_mcp_gateway_20260708T074850Z/03_generate_call_response.json.
+
+  - id: MCP-GW-LISTMODELS-001
+    challenge_id: helixllm.mcp_gateway.list-models-real
+    name: "MCP gateway tools/call helixllm_list_models proxies to the live coder and returns the real served model list"
+    category: functional
+    priority: high
+    platforms: [api]
+    domains: [mcp, llm]
+    dispatches_to: >-
+      bin/helixqa-verify-mcp-gateway
+      --case listmodels
+      --expect "Qwen3-Coder"
+      --out qa-results/helixllm_mcp_gateway/listmodels_001_verdict.json
+      --conduit-dir qa-results/helixllm_mcp_gateway/conduit
+      --challenge-id MCP-GW-LISTMODELS-001
+    metadata:
+      environment_note: >-
+        --expect asserts a substring of the model currently deployed on
+        this host's live coder (Qwen3-Coder-30B-A3B-Instruct-Q4_K_M.gguf,
+        confirmed live 2026-07-08). Deployments serving a different model
+        MUST override --expect to match their own live /v1/models — this
+        assertion is topology-specific by design (CONST-036: models are
+        NEVER hardcoded, they are asserted against whatever the live coder
+        genuinely reports).
+    required_evidence:
+      - "qa-results/helixllm_mcp_gateway/listmodels_001_verdict.json | json:case_result==true | json:is_tool_error==false"
+    steps:
+      - name: "A real tools/call of helixllm_list_models proxies to the live coder's /v1/models and asserts the real model id substring is present"
+        action: "mcp: tools/call helixllm_list_models (Streamable-HTTP)"
+        expected: >-
+          models contains an entry matching the expected substring;
+          is_tool_error==false. Authored 2026-07-08 against the live
+          gateway — corroborating
+          docs/qa/phase1_mcp_gateway_20260708T074850Z/04_list_models_call_response.json.
+
+  # ============================================================================
+  # MCP-GENERATE-SELF-VALIDATE-001 (mandatory §11.4.107(10)) — TWO cases, ONE
+  # analyzer. -GOOD reuses the MCP-GW-GENERATE-001 fixture (must PASS at the
+  # raw level). -BAD sends the SAME live tools/call request but asserts
+  # DELIBERATELY WRONG tokens ("banana,elephant" — genuinely absent from "4")
+  # via --expect-fail, mirroring TRA-SELF-VALIDATE-001-BAD's negative-case
+  # convention.
+  # ============================================================================
+  - id: MCP-GENERATE-SELF-VALIDATE-001-GOOD
+    challenge_id: helixllm.mcp_gateway.generate-self-validate-golden-good
+    name: "Self-validation golden-good: correct facts against a genuine live tools/call answer PASS"
+    category: functional
+    priority: critical
+    platforms: [api]
+    domains: [mcp, llm, anti-bluff]
+    dispatches_to: >-
+      bin/helixqa-verify-mcp-gateway
+      --case generate
+      --prompt "What is 2+2? Reply with only the digit, nothing else."
+      --expect "4"
+      --out qa-results/helixllm_mcp_gateway/self_validate_001_golden_good_verdict.json
+      --conduit-dir qa-results/helixllm_mcp_gateway/conduit
+      --challenge-id MCP-GENERATE-SELF-VALIDATE-001-GOOD
+    required_evidence:
+      - "qa-results/helixllm_mcp_gateway/self_validate_001_golden_good_verdict.json | json:case_result==true | json:pass==true | json:matched_facts==1"
+    steps:
+      - name: "Golden-good: analyzer must PASS when facts genuinely match a real live tools/call answer"
+        action: "mcp: tools/call helixllm_generate (Streamable-HTTP)"
+        expected: "pass==true (facts genuinely present in the real tool-call content)."
+
+  - id: MCP-GENERATE-SELF-VALIDATE-001-BAD
+    challenge_id: helixllm.mcp_gateway.generate-self-validate-golden-bad-must-fail
+    name: "Self-validation golden-bad: mismatched facts against the SAME live tools/call answer MUST FAIL raw, case succeeds via --expect-fail"
+    category: functional
+    priority: critical
+    platforms: [api]
+    domains: [mcp, llm, anti-bluff]
+    dispatches_to: >-
+      bin/helixqa-verify-mcp-gateway
+      --case generate
+      --prompt "What is 2+2? Reply with only the digit, nothing else."
+      --expect "banana,elephant"
+      --expect-fail
+      --out qa-results/helixllm_mcp_gateway/self_validate_001_golden_bad_verdict.json
+      --conduit-dir qa-results/helixllm_mcp_gateway/conduit
+      --challenge-id MCP-GENERATE-SELF-VALIDATE-001-BAD
+    metadata:
+      expect_fail: true
+      mutation_proof: >-
+        Authored 2026-07-08: with the analyzer's fact-matching +
+        not-identity assertion intact, this case's raw pass=false
+        (matched_facts=0/2, "banana"/"elephant" genuinely absent from the
+        real content "4") and case_result=true (via --expect-fail
+        inversion) — exit 0. A paired §1.1 mutation replacing the Pass
+        computation in runGenerate with an unconditional "v.Pass = true"
+        was applied to cmd/helixqa-verify-mcp-gateway/main.go, rebuilt, and
+        re-run against this exact fixture: raw pass flipped to true,
+        case_result flipped to false — exit 1 (case FAIL). The mutation was
+        then reverted and the restored binary re-confirmed to discriminate
+        correctly before this bank was committed. No mutation code is
+        committed anywhere in this tree (§11.4.84 quiescence).
+    required_evidence:
+      - "qa-results/helixllm_mcp_gateway/self_validate_001_golden_bad_verdict.json | json:case_result==true | json:pass==false | json:matched_facts==0"
+    steps:
+      - name: "Golden-bad: analyzer must reject mismatched facts (raw FAIL), case succeeds via --expect-fail inversion"
+        action: "mcp: tools/call helixllm_generate (Streamable-HTTP)"
+        expected: >-
+          pass==false (the real tool-call content "4" genuinely does NOT
+          contain "banana" or "elephant"); case_result==true because this
+          case declares --expect-fail. A case_result==false here would mean
+          the analyzer bluff-PASSed a deliberately wrong fixture.
