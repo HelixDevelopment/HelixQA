@@ -140,6 +140,7 @@ test_cases:
       --mode port-flood
       --n 50
       --burst-size 10
+      --timeout 600s
       --endpoint http://localhost:18434
       --out qa-results/helixllm_coder_chaos/port_flood_001_verdict.json
       --conduit-dir qa-results/helixllm_coder_chaos/conduit
@@ -175,6 +176,7 @@ test_cases:
       bin/helixqa-verify-coder-chaos
       --mode oversized-prompt
       --oversized-k 200
+      --timeout 600s
       --endpoint http://localhost:18434
       --out qa-results/helixllm_coder_chaos/oversized_001_verdict.json
       --conduit-dir qa-results/helixllm_coder_chaos/conduit
@@ -211,6 +213,7 @@ test_cases:
       --mode concurrent-health
       --n 5
       --n-health 3
+      --timeout 600s
       --endpoint http://localhost:18434
       --out qa-results/helixllm_coder_chaos/concurrent_health_001_verdict.json
       --conduit-dir qa-results/helixllm_coder_chaos/conduit
@@ -247,6 +250,7 @@ test_cases:
       --mode port-flood
       --n 10
       --burst-size 5
+      --timeout 600s
       --endpoint http://localhost:18434
       --out qa-results/helixllm_coder_chaos/self_validate_001_golden_good_verdict.json
       --conduit-dir qa-results/helixllm_coder_chaos/conduit

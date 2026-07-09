@@ -151,8 +151,8 @@ func getHealth(endpoint string, timeout time.Duration) (int, string, error) {
 
 // ---------- mode runners ----------
 
-func runPortFlood(endpoint string, port int, n, burstSize int, timeout time.Duration) verdict {
-	v := verdict{Mode: "port-flood", Endpoint: endpoint, Port: port, FloodSent: n, FloodBurstSize: burstSize}
+func runPortFlood(endpoint string, port int, n, burstSize int, timeout time.Duration, expectFail bool) verdict {
+	v := verdict{Mode: "port-flood", Endpoint: endpoint, Port: port, FloodSent: n, FloodBurstSize: burstSize, ExpectFail: expectFail}
 
 	// Phase 1: flood with rapid TCP connections
 	burstDelay := 5 * time.Millisecond
@@ -202,8 +202,8 @@ func runPortFlood(endpoint string, port int, n, burstSize int, timeout time.Dura
 	return v
 }
 
-func runOversizedPrompt(endpoint string, oversizedChars int, timeout time.Duration) verdict {
-	v := verdict{Mode: "oversized-prompt", Endpoint: endpoint}
+func runOversizedPrompt(endpoint string, oversizedChars int, timeout time.Duration, expectFail bool) verdict {
+	v := verdict{Mode: "oversized-prompt", Endpoint: endpoint, ExpectFail: expectFail}
 
 	// Build a prompt that dwarfs the coder's context window
 	chunk := "The quick brown fox jumps over the lazy dog. "
@@ -211,9 +211,11 @@ func runOversizedPrompt(endpoint string, oversizedChars int, timeout time.Durati
 	repeats := (oversizedChars + chunkLen - 1) / chunkLen
 	hugePrompt := strings.Repeat(chunk, repeats)
 
-	// Send the oversized prompt
-	status, body, err := postCompletion(endpoint, hugePrompt, 30*time.Second)
-	if err != nil {
+		// Send the oversized prompt (use the caller-provided timeout — CPU inference
+		// processes this sequentially with other queued concurrent requests, so the
+		// timeout must accommodate worst-case queue depth x per-request duration)
+		status, body, err := postCompletion(endpoint, hugePrompt, timeout)
+		if err != nil {
 		v.OversizedStatus = 0
 		v.OversizedBody = ""
 		v.OversizedHandled = false
@@ -261,8 +263,8 @@ func runOversizedPrompt(endpoint string, oversizedChars int, timeout time.Durati
 	return v
 }
 
-func runConcurrentHealth(endpoint string, nConcurrentPost, nHealth int, timeout time.Duration) verdict {
-	v := verdict{Mode: "concurrent-health", Endpoint: endpoint, NConcurrent: nConcurrentPost, NModels: nHealth}
+func runConcurrentHealth(endpoint string, nConcurrentPost, nHealth int, timeout time.Duration, expectFail bool) verdict {
+	v := verdict{Mode: "concurrent-health", Endpoint: endpoint, NConcurrent: nConcurrentPost, NModels: nHealth, ExpectFail: expectFail}
 
 	// Fire concurrent POST requests
 	var mu sync.Mutex
@@ -377,14 +379,15 @@ func run() int {
 	conduit.ChallengeStart(sink, cid, "coder_chaos")
 
 	var v verdict
+	v.ExpectFail = *expectFail
 
 	switch *mode {
 	case "port-flood":
-		v = runPortFlood(*endpoint, *port, *n, *burstSize, *timeout)
+		v = runPortFlood(*endpoint, *port, *n, *burstSize, *timeout, *expectFail)
 	case "oversized-prompt":
-		v = runOversizedPrompt(*endpoint, *oversizedK*1024, *timeout)
+		v = runOversizedPrompt(*endpoint, *oversizedK*1024, *timeout, *expectFail)
 	case "concurrent-health":
-		v = runConcurrentHealth(*endpoint, *n, *nHealth, *timeout)
+		v = runConcurrentHealth(*endpoint, *n, *nHealth, *timeout, *expectFail)
 	default:
 		v = verdict{
 			Mode:       *mode,
