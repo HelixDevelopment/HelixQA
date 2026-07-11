@@ -4706,6 +4706,43 @@ test_cases:
     estimated_duration: "~1s (device-free grep census); on-device step ~30-60s when a target AND the Arvus AVR are both reachable"
     expected_result: "The RK3588 HDMI audio kernel path uses the standard Linux ASoC hdmi-codec.c glue exactly as designed and unconditionally reaches dw_hdmi_qp_set_audio_infoframe() on every hw_params() call, confirmed via a complete device-free file:line source trace (5/5 grep census GREEN). PASS on that structural evidence alone requires the on-device step to also confirm a genuine multichannel (not stereo-downmixed) Arvus sink reading against the CURRENT build — the item's own DB record already frames this correctly as its sole remaining gate. The on-device step honestly SKIPs topology_unsupported/hardware_not_present when the device or the Arvus AVR is unreachable — never a faked PASS."
 
+  - id: ATM-281-HDMI-EDID-SPEAKER-ALLOCATION-DECODE
+    challenge_id: audio.hdmi.cea861-speaker-allocation-decode
+    name: "HDMI EDID CEA-861 Speaker Allocation Data Block + Audio Data Block decode — the corrected §11.4.111 ELD-equivalent SoC-side sink-truth (ATM-281 sub-item 3, root-cause-corrected 2026-07-11)"
+    category: functional
+    priority: high
+    platforms: [android]
+    dispatches_to: "device/rockchip/rk3588/tests/test_audio_edid_capability.sh"
+    feature_class: audio_output
+    domains: [audio, hdmi, edid, eld, cea861, multichannel]
+    required_evidence: [device-free-unit-test, on-device-runtime-signature]
+    steps:
+      - name: "Device-free reference-decoder proof (§11.4.108 SOURCE layer) — CEA-861 Audio Data Block + Speaker Allocation Data Block decoded correctly against golden fixtures, with a false-positive guard"
+        action: "python3 scripts/testing/test_cea861_speaker_allocation_unit.py (device-free, ~1s; 7 test functions: golden-good exact-value assertions, §11.4.50 3x-deterministic identical-output check, 3 golden-bad malformed-input fixtures asserting graceful empty results (never a crash, never a fabricated positive), and 1 negative-control fixture — a well-formed CEA extension containing ONLY a Video Data Block — proving the decoder does not mistake unrelated data-block bytes for audio content)"
+        expected: "exit code 0, zero FAIL lines. The golden-good fixture (a synthetic 2-SAD Audio Data Block [LPCM 8ch + LPCM 2ch, 32/44.1/48kHz, 16/20/24-bit] + a Speaker Allocation Data Block declaring FL/FR+LFE+FC+RL/RR) decodes to EXACTLY max_lpcm_channels()==8 and speaker_allocation.labels==['FL/FR','LFE','FC','RL/RR'] (raw byte 0x0F) — asserted, not eyeballed. Confirmed GREEN 3x consecutive runs with byte-identical SHA-256 output hashes on this checkout (feature/dolby-remap, T3, 2026-07-11)."
+      - name: "Root-cause correction of the ticket's original premise (§11.4.6/§11.4.99, documented not just coded)"
+        action: "grep -c 'eld_proc_new' kernel-5.10/sound/pci/hda/patch_hdmi.c; grep -rc 'eld_proc_new' kernel-5.10/sound/soc/ (should be 0 — confirms the proc-file-creating routine is Intel-HDA-only, never instantiated for RK3588's ASoC hdmi-codec.c path); grep -n 'ELD ABSENT' device/rockchip/rk3588/tests/test_audio_edid_capability.sh (the pre-existing, independent D3 2026-05-31 forensic confirmation that ELD itself does not exist on this platform)"
+        expected: "kernel-5.10/sound/pci/hda/patch_hdmi.c greps >=1 (the only eld_proc_new() call site in the whole kernel-5.10/sound/ tree); kernel-5.10/sound/soc/ greps 0 (RK3588's driver path never creates the proc node); test_audio_edid_capability.sh's pre-existing Layer B ELD-absence finding is present and unmodified — corroborating, not contradicting, this Challenge's premise correction. If any of these facts do not hold, ATM-281's original '/proc/asound/cardN/eld#0.0 reader' framing would need to be re-evaluated rather than assumed superseded."
+      - name: "On-device runtime signature (§11.4.108 RUNTIME-ON-CLEAN-TARGET + USER-VISIBLE layers) — the new Layer D decodes a real connected sink's Speaker Allocation Data Block"
+        action: "adb push device/rockchip/rk3588/tests/test_audio_edid_capability.sh + lib/anti_bluff.sh to /data/local/tmp/tests/, then adb shell sh /data/local/tmp/tests/test_audio_edid_capability.sh"
+        expected: "For each connected HDMI-A-N port with a parseable EDID: Layer D (§RA/ATM-281) PASSes with captured evidence citing the decoded speaker_allocation raw value + label list (e.g. 'raw=15 labels=FL/FR,LFE,FC,RL/RR,'), consistent with (not necessarily identical to — real sinks vary) the device-free reference decoder's algorithm proven in step 1. A sink that genuinely omits the Speaker Allocation Data Block (some do, while still advertising Audio Data Block SADs) correctly SKIPs feature_disabled_by_config, never a fabricated PASS. No connected HDMI sink, or an EDID short of 256 bytes, correctly SKIPs topology_unsupported — never PASS-by-default (§11.4.3). PENDING-BUILD/PENDING device claim as of this Challenge's authoring session (T3, no device claimed this dispatch, §11.4.119 single-resource-owner) — honestly deferred, not run."
+    tags: [audio, hdmi, edid, eld, cea861, "ATM-281", "ATM-283", "ATM-315", "ATM-371", "§11.4.6", "§11.4.50", "§11.4.99", "§11.4.107", "§11.4.108", "§11.4.111", audio_output]
+    documentation_refs:
+      - type: source
+        section: "scripts/testing/lib/cea861_audio_parser.py — canonical, unit-tested CEA-861 Audio Data Block + Speaker Allocation Data Block decoder, with full root-cause citation trail in its module docstring"
+        path: "scripts/testing/lib/cea861_audio_parser.py"
+      - type: test
+        section: "scripts/testing/test_cea861_speaker_allocation_unit.py — device-free unit test (golden-good/3x golden-bad/negative-control/§11.4.50 determinism)"
+        path: "scripts/testing/test_cea861_speaker_allocation_unit.py"
+      - type: test
+        section: "test_audio_edid_capability.sh Layer D — on-device awk decoder using the same algorithm, appended after the pre-existing Layer A/B/C (EDID presence / ELD-absence proof / Audio Data Block LPCM-channel decode)"
+        path: "device/rockchip/rk3588/tests/test_audio_edid_capability.sh"
+      - type: issue
+        section: "docs/Issues.md §RA [ATM-281] — Policy-layer HDMI resolve-by-name + dynamic channelMasks + ELD sampling; sub-items (1) DONE via ATM-283/ATM-315, (2) PARTIALLY done via ATM-371 (direct_pcm_hifi mixPort still open), (3) root-cause-corrected + device-free-proven this round, Status: In progress"
+        path: "docs/Issues.md"
+    estimated_duration: "~1s (device-free unit test + grep census); on-device step ~5-10s per connected HDMI port when a target is reachable"
+    expected_result: "The corrected §11.4.111 SoC-side sink-truth for HDMI speaker/channel capability (CEA-861 Speaker Allocation Data Block + Audio Data Block decoded from the EDID sysfs node, since ELD itself is proven absent on this platform's ASoC hdmi-codec.c path) is decoded correctly and deterministically, proven device-free against golden-good/golden-bad/negative-control fixtures, and cross-validated between the canonical Python reference implementation and the on-device awk implementation using the identical algorithm. The on-device runtime-signature step is honestly PENDING (no device claimed this dispatch) — never a faked PASS on unexercised on-device code."
+
   - id: ATM-512-DOLBY-5-1-TO-4CH-REMAP
     challenge_id: audio.dolby.5-1-to-4ch-es8388-remap
     name: "Dolby 5.1/7.1 -> 4-channel ES8388 DSP remap — numeric fold correctness device-free proof + on-device ES8388 sink runtime signature (ATM-512/SPK-512 [SPK-07])"
