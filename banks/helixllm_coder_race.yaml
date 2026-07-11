@@ -1,0 +1,385 @@
+# SPDX-FileCopyrightText: 2026 Milos Vasic
+# SPDX-License-Identifier: Apache-2.0
+#
+# HelixQA Test Bank: HelixLLM Coder Race/Concurrency-Correctness
+# =================================================================
+#
+# Authored 2026-07-11 to close the §11.4.169 "race conditions or
+# deadlocks" test-type NOT-FOUND gap for the LLM coder itself. This bank
+# is DISTINCT from banks/helixcode_coder_race.yaml (which exercises the
+# HelixCode HTTP server's ModelManager RWMutex on :8080 — a different
+# target and a different bug class: Go map/mutex correctness, not LLM
+# request/response correlation under concurrency).
+#
+# TARGET. The live resident coder at :18434 — llama.cpp serving
+# Qwen3-Coder-30B-A3B-Instruct-Q4_K_M.gguf (HELIX_CODER_MODEL /
+# HELIX_CODER_ENDPOINT override). This bank NEVER boots/tears-down the
+# coder itself (§11.4.119 single-resource-owner — the boot/teardown owner
+# is the conductor). The coder is read-only exercised — this bank sends
+# HTTP requests but never writes to, restarts, or otherwise mutates the
+# coder process (§11.4.122).
+#
+# THREE INDEPENDENT RACE-CORRECTNESS SIGNATURES:
+#
+#   DISTINCT mode (CODER-RACE-001, CODER-RACE-002)
+#     N concurrent requests, each with a UNIQUE arithmetic question
+#     (guaranteed pairwise-distinct expected answer) AND a unique
+#     per-request nonce (RACEID_<random>) the model is asked to echo.
+#     Asserts ALL-OK, NO-LOSS, NO-DUPLICATE (no two response bodies
+#     byte-identical), OWN-NONCE (every response contains its own
+#     nonce), and — the core signature — NO-CROSS-CONTAM: no response
+#     contains any OTHER request's nonce. A worker pool that misaligns
+#     request/response correlation under concurrent dispatch would
+#     surface a foreign nonce in the wrong response; this is the
+#     sink-side signature that catches it.
+#
+#   IDENTICAL mode (CODER-RACE-003)
+#     N concurrent requests with the SAME deterministic prompt
+#     (temperature=0). Asserts ALL-OK, NO-LOSS, and DETERMINISTIC (the
+#     extracted numeric answer is identical across all N concurrent
+#     completions) — "deterministic-where-expected". Honest boundary
+#     (§11.4.6): floating-point non-associativity under concurrent
+#     batched inference can in principle perturb even greedy decoding;
+#     a mismatch here is real signal, not a test bug.
+#
+#   SELFTEST-CROSSCONTAM mode (CODER-RACE-SELF-VALIDATE-002-*)
+#     An OFFLINE, no-network self-validation of the
+#     detectCrossContamination() function itself — the novel logic this
+#     bank introduces. Builds an in-memory synthetic fixture
+#     (clean|contaminated) and asserts the detector reports the correct
+#     verdict.
+#
+# Analyzer: cmd/helixqa-verify-coder-race-llm (this repo) — a thin,
+# project-agnostic dispatches_to analyzer (§11.4.28/CONST-051(B)).
+#
+# SELF-VALIDATION (§11.4.107(10)). TWO independent self-validation pairs:
+#   CODER-RACE-SELF-VALIDATE-001 (-GOOD/-BAD) mirrors the established
+#   repo convention (cmd/helixqa-verify-coder-{ddos,chaos,memory,
+#   concurrency}): -GOOD is a healthy live HTTP distinct-mode run
+#   (n=6) against the coder — must PASS. -BAD uses an impossible 1ms
+#   timeout so every request fails — analyzer correctly reports raw
+#   pass=false, inverted by --expect-fail to case_result=true. Proves
+#   the generic ALL-OK/NO-LOSS assertion wiring is load-bearing.
+#
+#   CODER-RACE-SELF-VALIDATE-002 (-GOOD/-BAD) is the mandatory
+#   self-validation of the NOVEL cross-contamination detector itself:
+#   -GOOD uses a clean synthetic fixture (no cross-nonce leakage) — the
+#   detector must report no_cross_contam=true (PASS). -BAD uses a
+#   synthetic fixture where result[0]'s content deliberately contains
+#   request[1]'s nonce — the detector must report
+#   no_cross_contam=false, inverted by --expect-fail to
+#   case_result=true. A REAL, EXECUTED (never committed) paired §1.1
+#   mutation of detectCrossContamination() — forcing it to
+#   unconditionally "return true, nil" (no contamination ever
+#   detected) — was applied, rebuilt, and re-run against this exact
+#   -BAD fixture: no_cross_contam flipped to true, pass flipped to
+#   true, case_result flipped from true to FALSE (exit 1). The
+#   mutation was then reverted (sha256 byte-identical to pre-mutation)
+#   and the restored binary re-confirmed to discriminate correctly.
+#   Captured transcript: docs/qa/helixqa_gapfill_live30b_20260711T140607Z/RESULTS.md.
+#   No mutation code is committed anywhere in this tree (§11.4.84
+#   quiescence).
+#
+# DECOUPLING (CONST-051(B)/§11.4.28). This bank is DATA. dispatches_to
+# names a consumer-built binary; the coder endpoint URL, model, N, mode,
+# fixture, and assertion flags are ALL bank data. The binary is
+# project-agnostic (takes its target from --endpoint/--model, and its
+# synthetic-fixture behaviour needs no network at all).
+# qa-results/helixllm_coder_race/** is the per-run RAW evidence dir
+# (git-ignored, §11.4.128); curated into docs/qa/<run-id>/ at
+# release-prep (§11.4.83).
+#
+# §11.4.154 — window-scoped recording mandated (the coder is a CLI/
+# server, so the relevant "window" is the terminal pane where the race
+# test commands run). §11.4.155 — project-prefix pattern
+# <project_name>---<scope>---<run> on all recording filenames.
+#
+# §11.4.185 — manual QA-team confirmation is the FINAL validation gate
+# after all automated cases pass.
+
+version: "1.0"
+name: "HelixLLM Coder Race/Concurrency-Correctness"
+description: >-
+  Drives real concurrent POST /v1/chat/completions against the live
+  resident HelixLLM coder (llama.cpp, :18434, Qwen3-Coder-30B) and
+  asserts race-correctness runtime signatures: distinct-prompt
+  cross-contamination freedom (each of N concurrently-dispatched
+  distinct requests gets exactly its own response — no foreign-nonce
+  leakage, no dropped or duplicated completions), and identical-prompt
+  determinism under concurrency. CODER-RACE-SELF-VALIDATE-001 proves the
+  generic all-ok/no-loss wiring cannot bluff; CODER-RACE-SELF-VALIDATE-002
+  proves the core cross-contamination detector itself cannot bluff
+  (offline synthetic golden-good PASS + golden-bad FAIL, paired §1.1
+  mutation confirmed during authoring).
+metadata:
+  author: vasic-digital
+  app: HelixLLM
+  category: "helixllm-coder-race"
+  priority: high
+  covenant: "§11.4.169 race-conditions test-type + §11.4.107(10) self-validated analyzer + §11.4.69 sink-side positive evidence (the concurrent HTTP responses ARE the sink)"
+  route_source: "helix_code/internal/server/llm_generate.go:431 (:18434) — llama.cpp coder sidecar"
+  evidence_dir: "qa-results/helixllm_coder_race"
+  analyzer: "cmd/helixqa-verify-coder-race-llm"
+  boot_precondition: >-
+    Coder (llama.cpp on :18434) MUST already be running before this bank
+    runs; this bank does not boot/pause/teardown any service itself
+    (§11.4.119 single-resource-owner — the boot/teardown owner is the
+    conductor). Verify via
+    `curl -sS -o /dev/null -w '%{http_code}' http://localhost:18434/v1/models`
+    expecting 200.
+
+test_cases:
+
+  # ============================================================================
+  # CODER-RACE-001: 8 concurrent DISTINCT prompts — no cross-contamination.
+  # Each of 8 concurrent requests carries a unique arithmetic question and a
+  # unique nonce the model is asked to echo. Asserts every response contains
+  # ONLY its own nonce (no foreign nonce leakage), no two responses are
+  # byte-identical, and none are lost.
+  # ============================================================================
+  - id: CODER-RACE-001
+    challenge_id: helixllm.coder.race.8-distinct-no-cross-contam
+    name: "8 concurrent distinct prompts — no cross-contamination, no loss, no duplicates"
+    category: functional
+    priority: high
+    platforms: [api]
+    domains: [coder, race, concurrency, llm]
+    dispatches_to: >-
+      bin/helixqa-verify-coder-race-llm
+      --mode distinct
+      --n 8
+      --assert-all-ok
+      --assert-no-loss
+      --assert-no-duplicate
+      --assert-own-nonce
+      --assert-no-cross-contam
+      --timeout 90s
+      --out qa-results/helixllm_coder_race/distinct_001_verdict.json
+      --conduit-dir qa-results/helixllm_coder_race/conduit
+      --challenge-id CODER-RACE-001
+    required_evidence:
+      - "qa-results/helixllm_coder_race/distinct_001_verdict.json | json:case_result==true | json:all_ok==true | json:no_loss==true | json:no_duplicate==true | json:own_nonce_ok==true | json:no_cross_contam==true"
+    steps:
+      - name: "Fire 8 concurrent POST /v1/chat/completions with distinct prompts+nonces; assert per-request isolation"
+        action: "http: POST /v1/chat/completions (8x concurrent, distinct prompts)"
+        expected: >-
+          All 8 return HTTP 200, all 8 accounted for (no-loss), all 8
+          responses pairwise distinct (no-duplicate), every response
+          contains its OWN nonce (own-nonce), and NO response contains any
+          OTHER request's nonce (no-cross-contam). Proves per-request
+          isolation holds under concurrent dispatch.
+
+  # ============================================================================
+  # CODER-RACE-002: 16 concurrent DISTINCT prompts — higher-concurrency
+  # cross-contamination stress. Same signature at 2x concurrency to widen the
+  # window in which a request/response correlation race could surface.
+  # ============================================================================
+  - id: CODER-RACE-002
+    challenge_id: helixllm.coder.race.16-distinct-no-cross-contam
+    name: "16 concurrent distinct prompts — no cross-contamination at higher concurrency"
+    category: functional
+    priority: high
+    platforms: [api]
+    domains: [coder, race, concurrency, llm]
+    dispatches_to: >-
+      bin/helixqa-verify-coder-race-llm
+      --mode distinct
+      --n 16
+      --assert-all-ok
+      --assert-no-loss
+      --assert-no-duplicate
+      --assert-own-nonce
+      --assert-no-cross-contam
+      --timeout 90s
+      --out qa-results/helixllm_coder_race/distinct_002_verdict.json
+      --conduit-dir qa-results/helixllm_coder_race/conduit
+      --challenge-id CODER-RACE-002
+    required_evidence:
+      - "qa-results/helixllm_coder_race/distinct_002_verdict.json | json:case_result==true | json:all_ok==true | json:no_loss==true | json:no_duplicate==true | json:own_nonce_ok==true | json:no_cross_contam==true"
+    steps:
+      - name: "Fire 16 concurrent POST /v1/chat/completions with distinct prompts+nonces; assert per-request isolation"
+        action: "http: POST /v1/chat/completions (16x concurrent, distinct prompts)"
+        expected: >-
+          All 16 return HTTP 200, no-loss, no-duplicate, own-nonce, and
+          no-cross-contam all true at 2x the concurrency of CODER-RACE-001 —
+          widens the window in which a correlation race could surface.
+
+  # ============================================================================
+  # CODER-RACE-003: 8 concurrent IDENTICAL prompts — deterministic-where-
+  # expected. Same deterministic (temperature=0) prompt fired 8x concurrently;
+  # asserts the extracted numeric answer is identical across all 8 completions.
+  # ============================================================================
+  - id: CODER-RACE-003
+    challenge_id: helixllm.coder.race.8-identical-deterministic
+    name: "8 concurrent identical prompts (temperature=0) — deterministic answer"
+    category: functional
+    priority: high
+    platforms: [api]
+    domains: [coder, race, concurrency, llm, determinism]
+    dispatches_to: >-
+      bin/helixqa-verify-coder-race-llm
+      --mode identical
+      --n 8
+      --prompt "Compute 17 * 23. Respond with ONLY the numeric result."
+      --assert-all-ok
+      --assert-no-loss
+      --assert-deterministic
+      --timeout 90s
+      --out qa-results/helixllm_coder_race/identical_001_verdict.json
+      --conduit-dir qa-results/helixllm_coder_race/conduit
+      --challenge-id CODER-RACE-003
+    required_evidence:
+      - "qa-results/helixllm_coder_race/identical_001_verdict.json | json:case_result==true | json:all_ok==true | json:no_loss==true | json:deterministic_ok==true"
+    steps:
+      - name: "Fire 8 concurrent identical POST /v1/chat/completions (temperature=0); assert deterministic answer"
+        action: "http: POST /v1/chat/completions (8x concurrent, identical prompt, temperature=0)"
+        expected: >-
+          All 8 return HTTP 200, no-loss, and the extracted numeric answer
+          is IDENTICAL across all 8 concurrent completions
+          (deterministic_ok==true, distinct_answers has exactly 1 element).
+          Proves the coder does not corrupt or cross-mix state under
+          concurrent identical dispatch.
+
+  # ============================================================================
+  # CODER-RACE-SELF-VALIDATE-001 (mandatory §11.4.107(10)) — TWO cases, ONE
+  # analyzer. -GOOD uses a healthy live distinct-mode run (n=6) — must PASS.
+  # -BAD uses a 1ms timeout so every request fails — analyzer correctly
+  # reports raw pass=false, inverted by --expect-fail to case_result=true.
+  # Proves the generic ALL-OK/NO-LOSS wiring is load-bearing (mirrors the
+  # established self-validation pattern of the sibling coder analyzers).
+  # ============================================================================
+  - id: CODER-RACE-SELF-VALIDATE-001-GOOD
+    challenge_id: helixllm.coder.race.self-validate-001-golden-good
+    name: "Self-validation golden-good: healthy 6-way distinct concurrency PASS"
+    category: functional
+    priority: critical
+    platforms: [api]
+    domains: [coder, race, concurrency, llm, anti-bluff]
+    dispatches_to: >-
+      bin/helixqa-verify-coder-race-llm
+      --mode distinct
+      --n 6
+      --assert-all-ok
+      --assert-no-loss
+      --assert-no-duplicate
+      --assert-own-nonce
+      --assert-no-cross-contam
+      --timeout 90s
+      --out qa-results/helixllm_coder_race/self_validate_001_golden_good_verdict.json
+      --conduit-dir qa-results/helixllm_coder_race/conduit
+      --challenge-id CODER-RACE-SELF-VALIDATE-001-GOOD
+    required_evidence:
+      - "qa-results/helixllm_coder_race/self_validate_001_golden_good_verdict.json | json:case_result==true | json:pass==true | json:all_ok==true | json:no_loss==true"
+    steps:
+      - name: "Golden-good: analyzer must PASS when the coder is healthy under moderate distinct concurrency"
+        action: "http: POST /v1/chat/completions (6x concurrent, distinct prompts)"
+        expected: "pass==true (all 6 complete with 200, no drops, no contamination)."
+
+  - id: CODER-RACE-SELF-VALIDATE-001-BAD
+    challenge_id: helixllm.coder.race.self-validate-001-golden-bad-must-fail
+    name: "Self-validation golden-bad: impossible timeout (1ms) — raw ALL-OK fails, case_result OK via --expect-fail"
+    category: functional
+    priority: critical
+    platforms: [api]
+    domains: [coder, race, concurrency, llm, anti-bluff]
+    dispatches_to: >-
+      bin/helixqa-verify-coder-race-llm
+      --mode distinct
+      --n 6
+      --assert-all-ok
+      --assert-no-loss
+      --timeout 1ms
+      --expect-fail
+      --out qa-results/helixllm_coder_race/self_validate_001_golden_bad_verdict.json
+      --conduit-dir qa-results/helixllm_coder_race/conduit
+      --challenge-id CODER-RACE-SELF-VALIDATE-001-BAD
+    metadata:
+      expect_fail: true
+    required_evidence:
+      - "qa-results/helixllm_coder_race/self_validate_001_golden_bad_verdict.json | json:case_result==true | json:pass==false | json:all_ok==false"
+    steps:
+      - name: "Golden-bad: 1ms timeout ensures zero requests complete — analyzer correctly reports ALL-OK=false"
+        action: "http: POST /v1/chat/completions (6x concurrent, 1ms timeout)"
+        expected: >-
+          pass==false (all requests timeout in 1ms, none complete),
+          all_ok==false; case_result==true because this case declares
+          --expect-fail.
+
+  # ============================================================================
+  # CODER-RACE-SELF-VALIDATE-002 (mandatory §11.4.107(10)) — TWO cases, ONE
+  # analyzer, ZERO network calls (offline synthetic fixtures). This is the
+  # self-validation of the CORE novel logic this bank introduces:
+  # detectCrossContamination(). -GOOD uses a clean fixture (no cross-nonce
+  # leakage) — detector must report no_cross_contam=true. -BAD uses a
+  # fixture where result[0] deliberately contains request[1]'s nonce —
+  # detector must report no_cross_contam=false, inverted by --expect-fail.
+  # ============================================================================
+  - id: CODER-RACE-SELF-VALIDATE-002-GOOD
+    challenge_id: helixllm.coder.race.self-validate-002-golden-good
+    name: "Self-validation golden-good: offline clean fixture — detector reports no contamination"
+    category: functional
+    priority: critical
+    platforms: [api]
+    domains: [coder, race, concurrency, llm, anti-bluff]
+    dispatches_to: >-
+      bin/helixqa-verify-coder-race-llm
+      --mode selftest-crosscontam
+      --fixture clean
+      --assert-no-cross-contam
+      --assert-own-nonce
+      --assert-no-duplicate
+      --out qa-results/helixllm_coder_race/self_validate_002_golden_good_verdict.json
+      --conduit-dir qa-results/helixllm_coder_race/conduit
+      --challenge-id CODER-RACE-SELF-VALIDATE-002-GOOD
+    required_evidence:
+      - "qa-results/helixllm_coder_race/self_validate_002_golden_good_verdict.json | json:case_result==true | json:pass==true | json:no_cross_contam==true"
+    steps:
+      - name: "Golden-good: offline synthetic fixture with no cross-nonce leakage — detector must PASS"
+        action: "offline: synthetic 3-result fixture, zero network calls"
+        expected: "no_cross_contam==true (detector correctly finds no contamination in a clean fixture)."
+
+  - id: CODER-RACE-SELF-VALIDATE-002-BAD
+    challenge_id: helixllm.coder.race.self-validate-002-golden-bad-must-fail
+    name: "Self-validation golden-bad: offline contaminated fixture — detector MUST catch it"
+    category: functional
+    priority: critical
+    platforms: [api]
+    domains: [coder, race, concurrency, llm, anti-bluff]
+    dispatches_to: >-
+      bin/helixqa-verify-coder-race-llm
+      --mode selftest-crosscontam
+      --fixture contaminated
+      --assert-no-cross-contam
+      --expect-fail
+      --out qa-results/helixllm_coder_race/self_validate_002_golden_bad_verdict.json
+      --conduit-dir qa-results/helixllm_coder_race/conduit
+      --challenge-id CODER-RACE-SELF-VALIDATE-002-BAD
+    metadata:
+      expect_fail: true
+      mutation_proof: >-
+        Authored 2026-07-11: with detectCrossContamination() intact, this
+        case's raw pass=false (the synthetic fixture deliberately embeds
+        request[1]'s nonce inside result[0]'s content, so no_cross_contam
+        correctly evaluates to false) and case_result=true (via
+        --expect-fail inversion) — exit 0. A paired §1.1 mutation replacing
+        detectCrossContamination()'s body with an unconditional
+        "return true, nil" was applied to
+        cmd/helixqa-verify-coder-race-llm/main.go, rebuilt, and re-run
+        against this exact fixture: no_cross_contam flipped to true, pass
+        flipped to true, case_result flipped from true to FALSE — exit 1
+        (case FAIL). The mutation was then reverted (sha256 confirmed
+        byte-identical to the pre-mutation source) and the restored binary
+        re-confirmed to discriminate correctly before this bank was
+        committed. No mutation code is committed anywhere in this tree
+        (§11.4.84 quiescence). Full transcript:
+        docs/qa/helixqa_gapfill_live30b_20260711T140607Z/RESULTS.md.
+    required_evidence:
+      - "qa-results/helixllm_coder_race/self_validate_002_golden_bad_verdict.json | json:case_result==true | json:pass==false | json:no_cross_contam==false | json:cross_contam_pairs|length>=1"
+    steps:
+      - name: "Golden-bad: offline synthetic fixture with an injected foreign nonce — detector must correctly report contamination"
+        action: "offline: synthetic 3-result fixture with result[0] containing request[1]'s nonce, zero network calls"
+        expected: >-
+          no_cross_contam==false, cross_contam_pairs cites the exact
+          result[0]<-request[1] pair; case_result==true via --expect-fail
+          inversion. Proves the analyzer's core race-detection logic is
+          load-bearing, not a bluffed always-pass check.

@@ -110,6 +110,7 @@ type verdict struct {
 	ModelsOK          bool   `json:"models_ok,omitempty"`
 	AllOK             bool   `json:"all_ok,omitempty"`
 	Endpoint          string `json:"endpoint"`
+	Model             string `json:"model"`
 	Port              int    `json:"port"`
 	Pass              bool   `json:"pass"`
 	ExpectFail        bool   `json:"expect_fail"`
@@ -119,10 +120,22 @@ type verdict struct {
 
 // ---------- helpers ----------
 
+// coderModel is the model name embedded in every chat-completion request
+// this analyzer sends. §11.4.6/§11.4.169 honest-metrics: llama.cpp's
+// OpenAI-compat server does not switch models based on this field (it
+// always serves whatever single model is loaded), but the field is still
+// captured evidence of INTENT — leaving a stale placeholder here after the
+// resident coder changes to a different model is a documentation-honesty
+// defect even though it is functionally inert. Sourced from
+// HELIX_CODER_MODEL (matches cmd/helixqa-verify-coder-{ddos,memory,
+// concurrency}); defaults to "llama3.2" for backward compatibility with
+// existing invocations that do not set the env var.
+var coderModel = envOr("HELIX_CODER_MODEL", "llama3.2")
+
 func postCompletion(endpoint, prompt string, timeout time.Duration) (int, string, error) {
 	client := &http.Client{Timeout: timeout}
 	body, _ := json.Marshal(chatRequest{
-		Model: "llama3.2",
+		Model: coderModel,
 		Messages: []chatMessage{
 			{Role: "user", Content: prompt},
 		},
@@ -152,7 +165,7 @@ func getHealth(endpoint string, timeout time.Duration) (int, string, error) {
 // ---------- mode runners ----------
 
 func runPortFlood(endpoint string, port int, n, burstSize int, timeout time.Duration, expectFail bool) verdict {
-	v := verdict{Mode: "port-flood", Endpoint: endpoint, Port: port, FloodSent: n, FloodBurstSize: burstSize, ExpectFail: expectFail}
+	v := verdict{Mode: "port-flood", Endpoint: endpoint, Model: coderModel, Port: port, FloodSent: n, FloodBurstSize: burstSize, ExpectFail: expectFail}
 
 	// Phase 1: flood with rapid TCP connections
 	burstDelay := 5 * time.Millisecond
@@ -203,7 +216,7 @@ func runPortFlood(endpoint string, port int, n, burstSize int, timeout time.Dura
 }
 
 func runOversizedPrompt(endpoint string, oversizedChars int, timeout time.Duration, expectFail bool) verdict {
-	v := verdict{Mode: "oversized-prompt", Endpoint: endpoint, ExpectFail: expectFail}
+	v := verdict{Mode: "oversized-prompt", Endpoint: endpoint, Model: coderModel, ExpectFail: expectFail}
 
 	// Build a prompt that dwarfs the coder's context window
 	chunk := "The quick brown fox jumps over the lazy dog. "
@@ -211,11 +224,11 @@ func runOversizedPrompt(endpoint string, oversizedChars int, timeout time.Durati
 	repeats := (oversizedChars + chunkLen - 1) / chunkLen
 	hugePrompt := strings.Repeat(chunk, repeats)
 
-		// Send the oversized prompt (use the caller-provided timeout — CPU inference
-		// processes this sequentially with other queued concurrent requests, so the
-		// timeout must accommodate worst-case queue depth x per-request duration)
-		status, body, err := postCompletion(endpoint, hugePrompt, timeout)
-		if err != nil {
+	// Send the oversized prompt (use the caller-provided timeout — CPU inference
+	// processes this sequentially with other queued concurrent requests, so the
+	// timeout must accommodate worst-case queue depth x per-request duration)
+	status, body, err := postCompletion(endpoint, hugePrompt, timeout)
+	if err != nil {
 		v.OversizedStatus = 0
 		v.OversizedBody = ""
 		v.OversizedHandled = false
@@ -264,7 +277,7 @@ func runOversizedPrompt(endpoint string, oversizedChars int, timeout time.Durati
 }
 
 func runConcurrentHealth(endpoint string, nConcurrentPost, nHealth int, timeout time.Duration, expectFail bool) verdict {
-	v := verdict{Mode: "concurrent-health", Endpoint: endpoint, NConcurrent: nConcurrentPost, NModels: nHealth, ExpectFail: expectFail}
+	v := verdict{Mode: "concurrent-health", Endpoint: endpoint, Model: coderModel, NConcurrent: nConcurrentPost, NModels: nHealth, ExpectFail: expectFail}
 
 	// Fire concurrent POST requests
 	var mu sync.Mutex
@@ -343,18 +356,18 @@ func envOr(key, fallback string) string {
 
 func run() int {
 	var (
-		mode         = flag.String("mode", "port-flood", "chaos mode: port-flood | oversized-prompt | concurrent-health")
-		n            = flag.Int("n", 50, "port-flood: total connections; concurrent-health: concurrent POSTs")
-		burstSize    = flag.Int("burst-size", 10, "port-flood: concurrent burst connections")
-		oversizedK   = flag.Int("oversized-k", 200, "oversized-prompt: prompt size in KiB")
-		nHealth      = flag.Int("n-health", 3, "concurrent-health: health probes during load")
-		port         = flag.Int("port", 18434, "coder port (for port-flood direct TCP)")
-		endpoint     = flag.String("endpoint", envOr("HELIX_CODER_ENDPOINT", "http://localhost:18434"), "coder base URL")
-		out          = flag.String("out", "", "path to write the verdict JSON (required)")
-		conduitDir   = flag.String("conduit-dir", "", "optional conduit JSONL event dir (§11.4.116)")
-		challID      = flag.String("challenge-id", "", "challenge id for conduit events (defaults to --out basename)")
-		timeout      = flag.Duration("timeout", 120*time.Second, "per-request timeout")
-		expectFail   = flag.Bool("expect-fail", false, "invert case-level exit code — for golden-bad self-validation fixtures")
+		mode       = flag.String("mode", "port-flood", "chaos mode: port-flood | oversized-prompt | concurrent-health")
+		n          = flag.Int("n", 50, "port-flood: total connections; concurrent-health: concurrent POSTs")
+		burstSize  = flag.Int("burst-size", 10, "port-flood: concurrent burst connections")
+		oversizedK = flag.Int("oversized-k", 200, "oversized-prompt: prompt size in KiB")
+		nHealth    = flag.Int("n-health", 3, "concurrent-health: health probes during load")
+		port       = flag.Int("port", 18434, "coder port (for port-flood direct TCP)")
+		endpoint   = flag.String("endpoint", envOr("HELIX_CODER_ENDPOINT", "http://localhost:18434"), "coder base URL")
+		out        = flag.String("out", "", "path to write the verdict JSON (required)")
+		conduitDir = flag.String("conduit-dir", "", "optional conduit JSONL event dir (§11.4.116)")
+		challID    = flag.String("challenge-id", "", "challenge id for conduit events (defaults to --out basename)")
+		timeout    = flag.Duration("timeout", 120*time.Second, "per-request timeout")
+		expectFail = flag.Bool("expect-fail", false, "invert case-level exit code — for golden-bad self-validation fixtures")
 	)
 	flag.Parse()
 
