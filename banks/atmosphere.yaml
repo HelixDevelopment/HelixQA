@@ -4535,3 +4535,293 @@ test_cases:
         path: "device/rockchip/rk3588/tests/test_presenter_secondary_video_only.sh"
     estimated_duration: "~5-10 min (churn + mirror repro/recovery + chaos)"
     expected_result: "The secondary display only ever shows Tier-1 video via the Presenter Presentation; no app task moves there; the §HE mirror-guard prevents the TV from ever mirroring the primary. PASS cites the per-iteration mirror_count=0 + no-stray-app evidence. No secondary → SKIP topology_unsupported."
+
+  - id: ATM-371-HDMI-EDID-MASK
+    challenge_id: audio.hdmi.per-port-edid-channel-mask
+    name: "HDMI per-port EDID-driven channel-mask advertisement — advertised mask is NOT a fixed-port superset (ATM-371/§11.4.111, defense-in-depth for ATM-470)"
+    category: functional
+    priority: critical
+    platforms: [android]
+    dispatches_to: "device/rockchip/rk3588/tests/test_atm371_hdmi_per_port_channel_mask.sh"
+    feature_class: audio_output
+    domains: [audio, hdmi, multichannel, edid, policy]
+    required_evidence: [policy-xml-hdmi-dynamic-mask-census, audio-flinger-hdmi-mask-dump, sink-side-avr-mask-match]
+    steps:
+      - name: "GREEN regression guard — advertised mask is EDID-port-derived, not a fixed-port superset"
+        action: "adb_shell: ATM371_MASK_RED_MODE=0 sh /data/local/tmp/tests/test_atm371_hdmi_per_port_channel_mask.sh"
+        expected: "Shipped audio_policy_configuration.xml HDMI mixPorts (hdmi_multichannel, hdmi_multichannel_direct) use channelMasks=\"dynamic\" (>0) and dumpsys media.audio_flinger reflects the EDID-port-derived mask — the §11.4.111 by-fixed-node binding is gone (§11.4.108 runtime signature). If the fix has NOT landed on the artifact under test (0 dynamic masks), this step correctly FAILs — RED_MODE=0 is the post-fix guard, never a bluff-tolerant default."
+      - name: "Sink-side proof on a differing-EDID multichannel AVR rig (when present)"
+        action: "With persist.atmosphere.test.hdmi_avr_rig=1 and a 5.1-only AVR on the selected HDMI port, confirm the advertised mask/Arvus Codec-In-Use does NOT show the 7.1 superset"
+        expected: "5.1-only sink is never advertised 7.1; full sink-side §11.4.108 signature met. No such rig on D1/D2 today → this half SKIPs topology_unsupported (honest, never a faked PASS) while the structural policy-XML + dumpsys evidence above still proves the fix shipped."
+    tags: [audio, hdmi, multichannel, edid, "ATM-371", "ATM-470", "ATM-256", "ATM-282", "§11.4.108", "§11.4.111", "§11.4.115", "§11.4.69", audio_output]
+    documentation_refs:
+      - type: test
+        section: "test_atm371_hdmi_per_port_channel_mask.sh (§11.4.115 RED/GREEN polarity via ATM371_MASK_RED_MODE)"
+        path: "device/rockchip/rk3588/tests/test_atm371_hdmi_per_port_channel_mask.sh"
+      - type: fix
+        section: "ATM-371 fix commit — HDMI per-port EDID-driven audio channel-mask advertisement"
+        path: "device/rockchip/common/audio/audio_policy_configuration_hifi.xml"
+      - type: gate
+        section: "pre_build_verification.sh SECTION A371 — CM-ATM371-HDMI-PER-PORT-EDID-MASK"
+        path: "device/rockchip/rk3588/tests/pre_build_verification.sh"
+    estimated_duration: "~30s (structural); sink-side half requires the AVR rig marker"
+    expected_result: "On a clean flashed target the HDMI LPCM mixPorts advertise EDID-port-derived channel masks (channelMasks=\"dynamic\"), never a fixed port0 7.1 superset, confirmed via the shipped policy-XML census + dumpsys media.audio_flinger. PASS only on the post-fix GREEN structural evidence (or the full sink-side AVR proof when the rig is present); a still-fixed-mask artifact correctly FAILs this guard. AVR-rig sink-side half SKIPs topology_unsupported on D1/D2 (TV + jack speaker, no differing-EDID multichannel AVR) — never a faked PASS."
+
+  - id: ATM-282-HW-AV-SYNC-POLICY-CONSISTENCY
+    challenge_id: audio.hifi.hw-av-sync-multichannel-policy-consistency
+    name: "HW_AV_SYNC-vs-multichannel-PCM mixPort flag layout stays consistent — non-tunneled 5.1/7.1 never strands to the tunneled hi-res port (ATM-282, guards ATM-256/ATM-470)"
+    category: functional
+    priority: critical
+    platforms: [android]
+    dispatches_to: "device/rockchip/rk3588/tests/test_atm282_hw_av_sync_policy_consistency_red.sh"
+    feature_class: audio_output
+    domains: [audio, hdmi, multichannel, hw_av_sync, policy]
+    required_evidence: [policy-xml-flag-layout-census, selftest-discrimination-proof, on-device-runtime-signature]
+    steps:
+      - name: "GREEN regression guard — HW_AV_SYNC confined to the tunneled hi-res port, escape ports stay HW_AV_SYNC-free"
+        action: "bash device/rockchip/rk3588/tests/test_atm282_hw_av_sync_policy_consistency_red.sh (device-free, default GREEN-guard invocation against the shipped hifi audio policy XML)"
+        expected: "I1 direct_pcm_hifi keeps AUDIO_OUTPUT_FLAG_HW_AV_SYNC (tunneled hi-res port identity); I2a hdmi_multichannel_direct stays HW_AV_SYNC-free; I2b hdmi_multichannel stays HW_AV_SYNC-free; I3 both non-tunneled siblings exist with a multichannel escape mask — exit 0 (GREEN). AOSP IOProfile mustMatch flag-parity (IOProfile.cpp:217-223) then guarantees a non-HW_AV_SYNC 5.1/7.1 track never matches direct_pcm_hifi and always lands on its HW_AV_SYNC-free escape port. If any invariant breaks (HW_AV_SYNC leaks onto an escape port, or an escape port/mask is lost), this step correctly FAILs — no bluff-tolerant default."
+      - name: "Selftest discrimination proof — the checker is not an always-pass/always-fail bluff"
+        action: "bash device/rockchip/rk3588/tests/test_atm282_hw_av_sync_policy_consistency_red.sh --selftest"
+        expected: "Three embedded fixtures resolve exactly as designed: BAD (hdmi_multichannel_direct gains HW_AV_SYNC) => RED via I2a; GOOD (correct HW_AV_SYNC-free escape ports) => GREEN; REG (hdmi_multichannel_direct escape port removed) => RED via I3. Overall selftest exit 0 only when all three verdicts match — proves the checker discriminates (§11.4.107(10))."
+      - name: "On-device runtime signature (when a target is reachable) — §11.4.51 LIVE_ADB_TESTABLE"
+        action: "adb_shell: sh /data/local/tmp/tests/test_atm282_hw_av_sync_verified.sh"
+        expected: "Source-literal guards (IOProfile.cpp mustMatch parity, AudioPolicyManager.cpp HW_AV_SYNC fallback gate + selectOutput kExcludedFlags) are present AND reachable at runtime via dumpsys audio state + /proc/cmdline (snd_usb_audio.index=8 pin) on a live target, N=3/N=10 deterministic per §11.4.50. No device reachable => honest SKIP hardware_not_present (§11.4.3/§11.4.69) — never a faked PASS; the device-free steps above already prove the ATM-282 source-consistency finding independent of this step."
+    tags: [audio, hdmi, multichannel, hw_av_sync, "ATM-282", "ATM-256", "ATM-470", "ATM-371", "§11.4.108", "§11.4.111", "§11.4.115", "§11.4.135", "§11.4.69", audio_output]
+    documentation_refs:
+      - type: test
+        section: "test_atm282_hw_av_sync_policy_consistency_red.sh (device-free §11.4.115 RED/GREEN guard + --selftest discrimination proof)"
+        path: "device/rockchip/rk3588/tests/test_atm282_hw_av_sync_policy_consistency_red.sh"
+      - type: test
+        section: "test_atm282_hw_av_sync_verified.sh (on-device runtime signature, §11.4.51 LIVE_ADB_TESTABLE)"
+        path: "device/rockchip/rk3588/tests/test_atm282_hw_av_sync_verified.sh"
+      - type: research
+        section: "docs/research/atm282_hw_av_sync/ANALYSIS.md — FACT proof via AOSP IOProfile mustMatch flag-parity that HW_AV_SYNC + multichannel PCM co-existence on direct_pcm_hifi is consistent"
+        path: "docs/research/atm282_hw_av_sync/ANALYSIS.md"
+      - type: gate
+        section: "pre_build_verification.sh — CM-ATM282-HW-AV-SYNC-POLICY-CONSISTENCY"
+        path: "device/rockchip/rk3588/tests/pre_build_verification.sh"
+    estimated_duration: "~5s (device-free structural + selftest); on-device step ~30s when a target is reachable"
+    expected_result: "The shipped hifi audio policy XML confines AUDIO_OUTPUT_FLAG_HW_AV_SYNC to the tunneled direct_pcm_hifi mixPort; both non-tunneled multichannel escape ports (hdmi_multichannel, hdmi_multichannel_direct) stay HW_AV_SYNC-free with a multichannel escape mask, confirmed via the device-free checker + its --selftest discrimination proof (BAD=RED/GOOD=GREEN/REG=RED). PASS only on this GREEN structural evidence; a regressed layout (HW_AV_SYNC leaking onto an escape port, reinstating the ATM-256/ATM-470 5.1-collapses-to-stereo defect) correctly FAILs this guard. On-device runtime-signature step SKIPs hardware_not_present when no target is reachable — never a faked PASS."
+
+  - id: ATM-256-HDMI-MULTICHANNEL-POLICY-CONSISTENCY
+    challenge_id: audio.hdmi.multichannel-policy-consistency
+    name: "HDMI Out multichannel-policy annotation stays consistent with its own shipped 5.1/7.1 channelMasks — a stale STEREO-only comment never silently re-enables the ATM-256/ATM-470 5.1-collapses-to-stereo regression"
+    category: functional
+    priority: critical
+    platforms: [android]
+    dispatches_to: "device/rockchip/rk3588/tests/test_atm256_hdmi_multichannel_policy_consistency_red.sh"
+    feature_class: audio_output
+    domains: [audio, hdmi, multichannel, policy]
+    required_evidence: [policy-xml-hdmi-out-annotation-census, selftest-discrimination-proof, on-device-runtime-signature]
+    steps:
+      - name: "GREEN regression guard — HDMI Out annotation agrees with its shipped STEREO+5.1+7.1 channelMasks"
+        action: "bash device/rockchip/rk3588/tests/test_atm256_hdmi_multichannel_policy_consistency_red.sh (device-free, default GREEN-guard invocation against the shipped hifi audio policy XML)"
+        expected: "A: HDMI Out (card=0,device=0, NOT the Touch port) declares AUDIO_CHANNEL_OUT_5POINT1 (multichannel LPCM capability present); B: its annotating comment does NOT claim the masks are 'kept at AUDIO_CHANNEL_OUT_STEREO' / a 'legacy hardware limit'; C: AUDIO_CHANNEL_OUT_STEREO base-compat mask is still present — exit 0 (GREEN), proving the ATM-470 sink-mask fix is intact and no stale annotation could mislead a future maintainer into reverting it. If either the 5.1 mask is dropped OR the stale comment is reintroduced, this step correctly FAILs — no bluff-tolerant default."
+      - name: "Selftest discrimination proof — the checker is not an always-pass/always-fail bluff"
+        action: "bash device/rockchip/rk3588/tests/test_atm256_hdmi_multichannel_policy_consistency_red.sh --selftest"
+        expected: "Three embedded fixtures resolve exactly as designed: BAD (stale 'kept at AUDIO_CHANNEL_OUT_STEREO / legacy hardware limit' comment + 5.1/7.1 masks present, the reverted state) => RED via invariant B; GOOD (comment agrees with the 5.1/7.1 reality) => GREEN; REGRESSION (comment fine but masks reverted to STEREO-only) => RED via invariant A. Overall selftest exit 0 only when all three verdicts match — proves the checker discriminates (§11.4.107(10))."
+      - name: "On-device runtime signature (when a target is reachable) — real 5.1 LPCM reaches the HDMI sink, not stereo-downmixed"
+        action: "adb_shell: sh /data/local/tmp/tests/test_5_1_multichannel_hdmi_end_to_end.sh"
+        expected: "T1 (tinyplay HAL-bypass 6-ch WAV -> ALSA card 0 HDMI) shows hw_params channels:6 during write; T2 (MPV end-user 5.1 EAC3 -> MediaCodec -> AudioTrack -> AudioFlinger) shows a DirectOutputThread with channel count >= 6, output device 0x400 (AUDIO_DEVICE_OUT_HDMI), and frames-written advancing — confirming the HDMI Out capability this ATM-256 checker guards is REALLY exercised end-to-end (§11.4.108 runtime signature), not merely declared in policy XML. No device reachable => honest SKIP hardware_not_present (§11.4.3/§11.4.69) — never a faked PASS; the two device-free steps above already prove the ATM-256/ATM-470 source-consistency finding independent of this step."
+    tags: [audio, hdmi, multichannel, policy, "ATM-256", "ATM-470", "ATM-282", "ATM-371", "§11.4.108", "§11.4.111", "§11.4.115", "§11.4.135", "§11.4.69", audio_output]
+    documentation_refs:
+      - type: test
+        section: "test_atm256_hdmi_multichannel_policy_consistency_red.sh (device-free §11.4.115 RED/GREEN guard + --selftest discrimination proof)"
+        path: "device/rockchip/rk3588/tests/test_atm256_hdmi_multichannel_policy_consistency_red.sh"
+      - type: test
+        section: "test_5_1_multichannel_hdmi_end_to_end.sh (on-device runtime signature, §11.4.51 LIVE_ADB_TESTABLE, T1 tinyplay + T2 MPV captured-evidence)"
+        path: "device/rockchip/rk3588/tests/test_5_1_multichannel_hdmi_end_to_end.sh"
+      - type: fix
+        section: "ATM-470 sink-mask expansion — HDMI Out devicePort channelMasks STEREO+5POINT1+7POINT1 (Phase 39.GW §GN, commit 951e6f628d16), sink-confirmed on D3 via dumpsys media.audio_policy port masks 0x0003/0x003f/0x063f"
+        path: "device/rockchip/common/audio/audio_policy_configuration_hifi.xml"
+      - type: gate
+        section: "pre_build_verification.sh — CM-ATM256-HDMI-MULTICHANNEL-POLICY-CONSISTENCY"
+        path: "device/rockchip/rk3588/tests/pre_build_verification.sh"
+    estimated_duration: "~5s (device-free structural + selftest); on-device step ~30-60s when a target is reachable"
+    expected_result: "The shipped hifi audio policy XML's HDMI Out devicePort declares AUDIO_CHANNEL_OUT_STEREO+5POINT1+7POINT1 AND its annotating comment agrees (no stale 'kept at STEREO / legacy hardware limit' text), confirmed via the device-free checker + its --selftest discrimination proof (BAD=RED/GOOD=GREEN/REG=RED). PASS only on this GREEN structural evidence; a regressed annotation or dropped 5.1 mask correctly FAILs this guard — the exact ATM-256/ATM-470 5.1-collapses-to-stereo regression hazard. On-device runtime-signature step SKIPs hardware_not_present when no target is reachable — never a faked PASS."
+
+  - id: ATM-473-VLC-AVQ-SOURCE-INVARIANTS
+    challenge_id: video.vlc.local-avq-source-invariants
+    name: "VLC-fork local A/V-quality fix invariants stay in place — HW-decode-with-SW-fallback enabled + 5.1 PCM auto-layout active, no forced global digital-output passthrough (ATM-473/§GS)"
+    category: functional
+    priority: critical
+    platforms: [android]
+    dispatches_to: "device/rockchip/rk3588/tests/test_atm473_vlc_avq_source_invariants.sh"
+    feature_class: mediacodec_decode
+    domains: [video, audio, local-playback, vlc, hw-decode, multichannel]
+    required_evidence: [vlcoptions-source-invariant-census, on-device-runtime-signature]
+    steps:
+      - name: "GREEN regression guard — --avcodec-hw=any HW-decode-with-SW-fallback active, --stereo-mode=0 5.1 auto-layout active, no forced global digital-output passthrough, pre-fix --avcodec-hw=none absent"
+        action: "bash device/rockchip/rk3588/tests/test_atm473_vlc_avq_source_invariants.sh (device-free, default RED_MODE=0 GREEN-guard invocation against the vlc-player fork's VLCOptions.kt)"
+        expected: "Four invariants all hold and the checker exits 0 (GREEN): (1) the pre-fix defect marker active options.add(\"--avcodec-hw=none\") — the hardcoded SW-only 4K decode that was the §GS-1 root cause — is ABSENT; (2) active options.add(\"--avcodec-hw=any\") is PRESENT (HW decode enabled with automatic SW fallback, the §GS-1b fix); (3) active options.add(\"--stereo-mode=0\") is PRESENT (5.1/7.1 PCM auto-layout reaching the HDMI/Arvus multichannel sink instead of a stereo downmix, the §GS-2 fix); (4) SAFETY invariant — no active forced digital-output/spdif passthrough option was added (which would silence the ES8388/USB/BT analog sinks, the exact fix-A-break-B hazard §11.4.1 forbids). If any invariant regresses, the checker correctly FAILs — no bluff-tolerant default. This checker has NO --selftest fixture (confirmed by source read — unlike the ATM-282/ATM-256 sibling checkers), so no discrimination-proof step is claimed here (§11.4.6 — omitted rather than fabricated)."
+      - name: "On-device runtime signature (§11.4.108 ARTIFACT+RUNTIME layer) — when a target is reachable AND the vlc-player APK carrying this fix has been built and flashed"
+        action: "adb_shell: pm path atmosphere.videolan.vlc && play a local 5.1 4K clip from /sdcard/Movies via the VLC-fork UI, then assert /proc/asound/card*/pcm*p/sub0/hw_params channels>=6 during playback (§GS-2 5.1-not-stereo runtime signature) AND sample decoder CPU/frame-advance liveness per §11.4.107 over the 4K clip (§GS-1b HW-decode-with-fallback runtime signature)"
+        expected: "This ATM-473/§GS batch is REQUIRES_REBUILD and, per docs/Issues.md §GS + the RED test's own PENDING-BUILD note, its on-device 5.1/4K E2E validation is explicitly PENDING — no dedicated on-device dispatch script exists yet for this runtime signature (unlike ATM-282/ATM-256, whose sibling on-device scripts already exist). No device reachable, OR a device is reachable but is not yet running a vlc-player build carrying this fix, => honest SKIP hardware_not_present (§11.4.3/§11.4.69) — never a faked PASS. The device-free GREEN-guard step above already proves the ATM-473 source-consistency finding independent of this step; the PENDING-BUILD state is tracked at docs/Issues.md §GS-1 (HW-decode, DEFERRED pending operator architectural decision) / §GS-3 / §GS-4 (on-device validation pending)."
+    tags: [video, audio, local_playback, vlc, hw_decode, multichannel, "ATM-473", "§GS", "§11.4.1", "§11.4.6", "§11.4.108", "§11.4.115", "§11.4.135", "§11.4.69", mediacodec_decode, audio_output]
+    documentation_refs:
+      - type: test
+        section: "test_atm473_vlc_avq_source_invariants.sh (device-free §11.4.115 RED/GREEN guard, RED_MODE=1 reproduces the pre-fix defect / RED_MODE=0 default GREEN regression guard; NO --selftest fixture)"
+        path: "device/rockchip/rk3588/tests/test_atm473_vlc_avq_source_invariants.sh"
+      - type: fix
+        section: "§GS-1b HW-decode-with-SW-fallback (--avcodec-hw=any) + §GS-2 5.1 PCM auto-layout (--stereo-mode=0) — vlc-player fork VLCOptions.kt"
+        path: "device/rockchip/atmosphere/vlc-player/application/resources/src/main/java/org/videolan/resources/VLCOptions.kt"
+      - type: gate
+        section: "pre_build_verification.sh — CM-ATM473-VLC-AVQ-SOURCE-INVARIANTS"
+        path: "device/rockchip/rk3588/tests/pre_build_verification.sh"
+      - type: issue
+        section: "docs/Issues.md §GS [ATM-473] — local-playback A/V quality (VLC fork 4K-glitch / perpetual-loading / 5.1→stereo / seek-freeze + MPV 4K glitch); §GS-1 HW-decode DEFERRED pending operator architectural decision, §GS-2/§GS-3/§GS-4 landed source-side REQUIRES_REBUILD"
+        path: "docs/Issues.md"
+    estimated_duration: "~5s (device-free structural); on-device step PENDING-BUILD (SKIPs hardware_not_present until a vlc-player APK carrying this fix is flashed)"
+    expected_result: "The shipped vlc-player fork's VLCOptions.kt keeps HW-decode-with-SW-fallback (--avcodec-hw=any) active, keeps 5.1 PCM auto-layout (--stereo-mode=0) active, keeps the pre-fix hardcoded-SW-only marker (--avcodec-hw=none) absent, and never gains a forced global digital-output passthrough option, confirmed via the device-free source-invariant checker. PASS only on this GREEN structural evidence; a regression on any of the four invariants correctly FAILs this guard. The on-device runtime-signature step honestly SKIPs hardware_not_present/PENDING-BUILD until the vlc-player APK carrying this fix is built and flashed — never a faked PASS."
+
+  - id: ATM-462-HDMI-INFOFRAME-CHAIN-NOT-BYPASSED
+    challenge_id: audio.hdmi.kernel-infoframe-chain-not-bypassed
+    name: "RK3588 HDMI audio kernel chain does NOT bypass hdmi-codec.c or dw_hdmi_qp_set_audio_infoframe — device-free source-chain proof + on-device multichannel Arvus sink-probe (ATM-462, keystone-corrected 2026-05-30/31, source-chain-proven 2026-07-11)"
+    category: functional
+    priority: critical
+    platforms: [android]
+    dispatches_to: "device/rockchip/rk3588/tests/test_5_1_arvus_e2e_autonomous.sh"
+    feature_class: audio_output
+    domains: [audio, hdmi, multichannel, kernel, infoframe]
+    required_evidence: [kernel-source-call-chain-census, on-device-runtime-signature]
+    steps:
+      - name: "Device-free static-source call-chain proof (§11.4.108 SOURCE layer) — the machine driver's minimal MCLK-only hw_params does NOT mean hdmi-codec.c or dw_hdmi_qp_set_audio_infoframe are skipped"
+        action: "grep -c 'dw_hdmi_qp_set_audio_infoframe' kernel-5.10/drivers/gpu/drm/bridge/synopsys/dw-hdmi-qp-i2s-audio.c; grep -c 'HDMI_CODEC_DRV_NAME' kernel-5.10/drivers/gpu/drm/bridge/synopsys/dw-hdmi-qp-i2s-audio.c; grep -c '\"hdmi-audio-codec\"' kernel-5.10/include/sound/hdmi-codec.h; grep -c 'hcp->hcd.ops->hw_params' kernel-5.10/sound/soc/codecs/hdmi-codec.c; grep -c 'snd_usb_audio.index=8' kernel-5.10/arch/arm64/boot/dts/rockchip/rk3588-android.dtsi (device-free, ~1s; full traced call chain + rationale in docs/research/atm462_kernel_bypass_disproof_20260711/KERNEL_HDMI_AUDIO_CHAIN_PROOF.md)"
+        expected: "ALL FIVE greps return >=1: dw_hdmi_qp_i2s_hw_params() unconditionally calls dw_hdmi_qp_set_audio_infoframe() on every hw_params() (dw-hdmi-qp-i2s-audio.c:75); it is registered via HDMI_CODEC_DRV_NAME (dw-hdmi-qp-i2s-audio.c:162) which #defines to the literal upstream Linux ASoC codec-driver name 'hdmi-audio-codec' (include/sound/hdmi-codec.h:135) — proving the RK3588 DesignWare-HDMI-QP bridge is a REGISTERED CLIENT of mainline sound/soc/codecs/hdmi-codec.c, not a bypass of it; hdmi-codec.c's own hw_params dispatcher (hdmi-codec.c:593) forwards to that vendor ops struct; and the snd_usb_audio.index=8 kernel-cmdline pin (§11.4.111, keeps the permanently-connected USB audio device off ALSA card 0) is present in this checkout's DTSI. If any grep returns 0, this step correctly FAILs — the ATM-462 heading's original 'bypasses hdmi-codec.c AND dw_hdmi_qp_set_audio_infoframe' hypothesis would be back in play and this Challenge must FAIL, not silently pass. Confirmed 5/5 GREEN on this checkout (feature/dolby-remap, HEAD 0dc4709f376, 2026-07-11) — no bluff-tolerant default."
+      - name: "On-device runtime signature (§11.4.108 RUNTIME-ON-CLEAN-TARGET + USER-VISIBLE layers) — real 5.1 EAC3 content reaches the Arvus AVR as genuine multichannel LPCM, not a stereo downmix"
+        action: "adb_shell + host Arvus sink-probe: dispatch device/rockchip/rk3588/tests/test_5_1_arvus_e2e_autonomous.sh directly on-device, AND/OR bash device/rockchip/rk3588/tests/run_multichannel_hdmi_arvus.sh (host-side §EU orchestrator — pushes a 6-ch ffmpeg-generated 5.1 marker WAV, plays it via the policy-default route, samples the Arvus codec-in-use field across the playback window, cross-checks against a direct HAL-bypass control play to the real rockchiphdmi0 card, and confirms the Arvus codec-state returns to idle/N.E. post-stop per §11.4.14 anti-stickiness)"
+        expected: "GREEN: the Arvus AVR's codec-in-use field shows a genuine multichannel value (Multi-CH PCM / PCM[6-8]/X / DD-EAC3-5.1-class) during 5.1 playback via the framework's policy-DEFAULT route (not merely the HAL-bypass control), confirming both the kernel InfoFrame chain (step 1) AND the snd_usb_audio.index=8 card-ordering fix are ACTIVE together on a real flashed target — the exact §11.4.108 runtime-on-clean-target + user-visible closure ATM-462's own DB record still marks as its sole remaining gate. Honest SKIP topology_unsupported/hardware_not_present (§11.4.3/§11.4.69) when no device is reachable, OR when the Arvus AVR is unreachable from the host (the two 2026-07-08 runs at qa-results/multichannel_hdmi_arvus_20260708T143322Z and ..._143337Z both SKIPped for exactly this reason, NOT for a source/kernel defect) — never a faked PASS. The last GREEN capture on file (qa-results/audio_loop_20260523T171736Z/GT_5_1_VERDICT.txt) predates the snd_usb_audio.index=8 cmdline pin and this checkout's HEAD, so it does NOT satisfy this step on its own — a fresh run against the current build is required for this step to score GREEN."
+    tags: [audio, hdmi, multichannel, kernel, infoframe, "ATM-462", "ATM-281", "ATM-256", "ATM-371", "§11.4.6", "§11.4.69", "§11.4.107", "§11.4.108", "§11.4.111", "§11.4.115", "§11.4.13", audio_output]
+    documentation_refs:
+      - type: research
+        section: "docs/research/atm462_kernel_bypass_disproof_20260711/KERNEL_HDMI_AUDIO_CHAIN_PROOF.md — device-free complete file:line ASoC call-chain trace (soc-pcm.c -> rockchip_hdmi.c -> hdmi-codec.c -> dw-hdmi-qp-i2s-audio.c) proving hdmi-codec.c and dw_hdmi_qp_set_audio_infoframe() are NOT bypassed"
+        path: "docs/research/atm462_kernel_bypass_disproof_20260711/KERNEL_HDMI_AUDIO_CHAIN_PROOF.md"
+      - type: test
+        section: "test_5_1_arvus_e2e_autonomous.sh (on-device, real EAC3 5.1 reference asset, NOT a stereo fixture) + run_multichannel_hdmi_arvus.sh (host-side §EU orchestrator, §11.4.13 sink-side Arvus probe, §11.4.14 anti-stickiness post-stop check)"
+        path: "device/rockchip/rk3588/tests/test_5_1_arvus_e2e_autonomous.sh"
+      - type: issue
+        section: "docs/Issues.md §GT [ATM-462] — kernel-bypass heading hypothesis DISPROVEN by dmesg (2026-05-31) and by static source-chain trace (2026-07-11); the SEPARATE static-policy-address residual-fragility follow-up is tracked as its own item ATM-281 (Status: In progress) — NOT duplicated here"
+        path: "docs/Issues.md"
+    estimated_duration: "~1s (device-free grep census); on-device step ~30-60s when a target AND the Arvus AVR are both reachable"
+    expected_result: "The RK3588 HDMI audio kernel path uses the standard Linux ASoC hdmi-codec.c glue exactly as designed and unconditionally reaches dw_hdmi_qp_set_audio_infoframe() on every hw_params() call, confirmed via a complete device-free file:line source trace (5/5 grep census GREEN). PASS on that structural evidence alone requires the on-device step to also confirm a genuine multichannel (not stereo-downmixed) Arvus sink reading against the CURRENT build — the item's own DB record already frames this correctly as its sole remaining gate. The on-device step honestly SKIPs topology_unsupported/hardware_not_present when the device or the Arvus AVR is unreachable — never a faked PASS."
+
+  - id: ATM-281-HDMI-EDID-SPEAKER-ALLOCATION-DECODE
+    challenge_id: audio.hdmi.cea861-speaker-allocation-decode
+    name: "HDMI EDID CEA-861 Speaker Allocation Data Block + Audio Data Block decode — the corrected §11.4.111 ELD-equivalent SoC-side sink-truth (ATM-281 sub-item 3, root-cause-corrected 2026-07-11)"
+    category: functional
+    priority: high
+    platforms: [android]
+    dispatches_to: "device/rockchip/rk3588/tests/test_audio_edid_capability.sh"
+    feature_class: audio_output
+    domains: [audio, hdmi, edid, eld, cea861, multichannel]
+    required_evidence: [device-free-unit-test, on-device-runtime-signature]
+    steps:
+      - name: "Device-free reference-decoder proof (§11.4.108 SOURCE layer) — CEA-861 Audio Data Block + Speaker Allocation Data Block decoded correctly against golden fixtures, with a false-positive guard"
+        action: "python3 scripts/testing/test_cea861_speaker_allocation_unit.py (device-free, ~1s; 7 test functions: golden-good exact-value assertions, §11.4.50 3x-deterministic identical-output check, 3 golden-bad malformed-input fixtures asserting graceful empty results (never a crash, never a fabricated positive), and 1 negative-control fixture — a well-formed CEA extension containing ONLY a Video Data Block — proving the decoder does not mistake unrelated data-block bytes for audio content)"
+        expected: "exit code 0, zero FAIL lines. The golden-good fixture (a synthetic 2-SAD Audio Data Block [LPCM 8ch + LPCM 2ch, 32/44.1/48kHz, 16/20/24-bit] + a Speaker Allocation Data Block declaring FL/FR+LFE+FC+RL/RR) decodes to EXACTLY max_lpcm_channels()==8 and speaker_allocation.labels==['FL/FR','LFE','FC','RL/RR'] (raw byte 0x0F) — asserted, not eyeballed. Confirmed GREEN 3x consecutive runs with byte-identical SHA-256 output hashes on this checkout (feature/dolby-remap, T3, 2026-07-11)."
+      - name: "Root-cause correction of the ticket's original premise (§11.4.6/§11.4.99, documented not just coded)"
+        action: "grep -c 'eld_proc_new' kernel-5.10/sound/pci/hda/patch_hdmi.c; grep -rc 'eld_proc_new' kernel-5.10/sound/soc/ (should be 0 — confirms the proc-file-creating routine is Intel-HDA-only, never instantiated for RK3588's ASoC hdmi-codec.c path); grep -n 'ELD ABSENT' device/rockchip/rk3588/tests/test_audio_edid_capability.sh (the pre-existing, independent D3 2026-05-31 forensic confirmation that ELD itself does not exist on this platform)"
+        expected: "kernel-5.10/sound/pci/hda/patch_hdmi.c greps >=1 (the only eld_proc_new() call site in the whole kernel-5.10/sound/ tree); kernel-5.10/sound/soc/ greps 0 (RK3588's driver path never creates the proc node); test_audio_edid_capability.sh's pre-existing Layer B ELD-absence finding is present and unmodified — corroborating, not contradicting, this Challenge's premise correction. If any of these facts do not hold, ATM-281's original '/proc/asound/cardN/eld#0.0 reader' framing would need to be re-evaluated rather than assumed superseded."
+      - name: "On-device runtime signature (§11.4.108 RUNTIME-ON-CLEAN-TARGET + USER-VISIBLE layers) — the new Layer D decodes a real connected sink's Speaker Allocation Data Block"
+        action: "adb push device/rockchip/rk3588/tests/test_audio_edid_capability.sh + lib/anti_bluff.sh to /data/local/tmp/tests/, then adb shell sh /data/local/tmp/tests/test_audio_edid_capability.sh"
+        expected: "For each connected HDMI-A-N port with a parseable EDID: Layer D (§RA/ATM-281) PASSes with captured evidence citing the decoded speaker_allocation raw value + label list (e.g. 'raw=15 labels=FL/FR,LFE,FC,RL/RR,'), consistent with (not necessarily identical to — real sinks vary) the device-free reference decoder's algorithm proven in step 1. A sink that genuinely omits the Speaker Allocation Data Block (some do, while still advertising Audio Data Block SADs) correctly SKIPs feature_disabled_by_config, never a fabricated PASS. No connected HDMI sink, or an EDID short of 256 bytes, correctly SKIPs topology_unsupported — never PASS-by-default (§11.4.3). PENDING-BUILD/PENDING device claim as of this Challenge's authoring session (T3, no device claimed this dispatch, §11.4.119 single-resource-owner) — honestly deferred, not run."
+    tags: [audio, hdmi, edid, eld, cea861, "ATM-281", "ATM-283", "ATM-315", "ATM-371", "§11.4.6", "§11.4.50", "§11.4.99", "§11.4.107", "§11.4.108", "§11.4.111", audio_output]
+    documentation_refs:
+      - type: source
+        section: "scripts/testing/lib/cea861_audio_parser.py — canonical, unit-tested CEA-861 Audio Data Block + Speaker Allocation Data Block decoder, with full root-cause citation trail in its module docstring"
+        path: "scripts/testing/lib/cea861_audio_parser.py"
+      - type: test
+        section: "scripts/testing/test_cea861_speaker_allocation_unit.py — device-free unit test (golden-good/3x golden-bad/negative-control/§11.4.50 determinism)"
+        path: "scripts/testing/test_cea861_speaker_allocation_unit.py"
+      - type: test
+        section: "test_audio_edid_capability.sh Layer D — on-device awk decoder using the same algorithm, appended after the pre-existing Layer A/B/C (EDID presence / ELD-absence proof / Audio Data Block LPCM-channel decode)"
+        path: "device/rockchip/rk3588/tests/test_audio_edid_capability.sh"
+      - type: issue
+        section: "docs/Issues.md §RA [ATM-281] — Policy-layer HDMI resolve-by-name + dynamic channelMasks + ELD sampling; sub-items (1) DONE via ATM-283/ATM-315, (2) PARTIALLY done via ATM-371 (direct_pcm_hifi mixPort still open), (3) root-cause-corrected + device-free-proven this round, Status: In progress"
+        path: "docs/Issues.md"
+    estimated_duration: "~1s (device-free unit test + grep census); on-device step ~5-10s per connected HDMI port when a target is reachable"
+    expected_result: "The corrected §11.4.111 SoC-side sink-truth for HDMI speaker/channel capability (CEA-861 Speaker Allocation Data Block + Audio Data Block decoded from the EDID sysfs node, since ELD itself is proven absent on this platform's ASoC hdmi-codec.c path) is decoded correctly and deterministically, proven device-free against golden-good/golden-bad/negative-control fixtures, and cross-validated between the canonical Python reference implementation and the on-device awk implementation using the identical algorithm. The on-device runtime-signature step is honestly PENDING (no device claimed this dispatch) — never a faked PASS on unexercised on-device code."
+
+  - id: ATM-512-DOLBY-5-1-TO-4CH-REMAP
+    challenge_id: audio.dolby.5-1-to-4ch-es8388-remap
+    name: "Dolby 5.1/7.1 -> 4-channel ES8388 DSP remap — numeric fold correctness device-free proof + on-device ES8388 sink runtime signature (ATM-512/SPK-512 [SPK-07])"
+    category: functional
+    priority: critical
+    platforms: [android]
+    dispatches_to: "device/rockchip/rk3588/tests/test_atm512_dolby_remap_4ch.sh"
+    feature_class: audio_output
+    domains: [audio, dolby, multichannel, es8388, downmix]
+    required_evidence: [numeric-fold-execution-golden-vectors, on-device-runtime-signature]
+    steps:
+      - name: "Device-free numeric fold-EXECUTION proof (§11.4.108 SOURCE layer) — extracts + compiles + RUNS the actual out_multi_pcm_remap_5_1_to_4ch() against 6 golden vectors, self-validated"
+        action: "bash device/rockchip/rk3588/tests/test_spk512_numeric_fold_exec.sh --selftest (device-free; the ATM-512 dedicated on-device test itself is #!/system/bin/sh + getprop/setprop/tinyplay/§11.4.111-by-name-ALSA-card and cannot run device-free on a bash host — this sibling harness is the genuine device-free proof of the SAME HAL consumer, out_multi_pcm_remap_5_1_to_4ch(), that the on-device step below observes at the sink; CM-ATM512-4CH-REMAP pre-build gate additionally asserts test_atm512_dolby_remap_4ch.sh exists + is executable + carries its self-detection marker + sources anti_bluff.sh + wires the §11.4.115 ATM512_RED_MODE polarity)"
+        expected: "LAYER-A source gate PASSes (out_multi_pcm_remap_5_1_to_4ch() defined, canonical sink channel-order writes present) AND LAYER-B executes the ACTUAL fold against 6 golden vectors (5.1 phantom-center+LFE fold, 7.1 back-surround fold, PENTA 5ch fold, S16 clamp saturation, 5ch non-PENTA dst-overflow-safe pass-through, stereo pass-through) — ALL-GREEN (0 failing vectors) on the GOOD build. The --selftest self-validation additionally injects a golden-BAD sink-order-swap mutation (V1/V2 deliberately mis-ordered) and asserts it is CAUGHT (HAS-FAIL, 2 failing vectors) — proving this harness cannot be an always-pass bluff (§11.4.107(10)). Both polarities confirmed GREEN in this run (device-free, ~1s, PASS=3/FAIL=0/SKIP=0 plain; PASS=4/FAIL=0/SKIP=0 --selftest)."
+      - name: "On-device runtime signature (§11.4.108 ARTIFACT+RUNTIME layer) — when a target is reachable AND the vendor build carrying out_multi_pcm_remap_5_1_to_4ch() has been flashed"
+        action: "adb_shell: dispatch test_atm512_dolby_remap_4ch.sh (test_all_fixes.sh phase 'ATM-512 Dolby 5.1->4ch HDMI LPCM remap') — resolves the ES8388 4ch-DSP card BY NAME (rockchipes8388/rockchipes8388c, §11.4.111), enables persist.atmosphere.audio.spk512_remap via /vendor/bin/atmosphere-dolby-remap.sh on, plays a real >4ch LPCM reference asset (reference_pcm_5_1_48k.wav) through tinyplay, and captures the ES8388 sink's /proc/asound hw_params channel count + hw_ptr-delta liveness, PLUS an HDMI no-leak cross-check (the fold must stay confined to the ES8388 speaker path per SPK512-SPEAKER-SCOPE, never leak into the HDMI/Arvus AVR multichannel path)"
+        expected: "GREEN (ATM512_RED_MODE=0, default): the ES8388 sink clocks out EXACTLY 4 channels with a positive hw_ptr delta (frames genuinely clocked, not a stuck/silent stream) while the HDMI sink (if present) is UNAFFECTED (still reports the raw source channel count) — the runtime signature per the test's own §11.4.108 definition-of-done (a) property applied (b) ES8388 card resolved by name (c) hw_ptr advances + hw_params channels==4 (d) HDMI unchanged. The HAL consumer out_multi_pcm_remap_5_1_to_4ch() is REQUIRES_REBUILD, so this on-device step is honestly PENDING-BUILD until a vendor build carrying it is flashed — SKIPs hardware_not_present when no ES8388 4ch-DSP card or no reference asset is present, SKIPs topology_unsupported when the sink hw_ptr is flat (no sink clocking frames, cannot prove the channel count), and correctly FAILs if the remap toggle does not apply OR the remapped channel count is wrong OR the fold leaks into HDMI — never a faked PASS (§11.4.3/§11.4.69)."
+    tags: [audio, dolby, multichannel, es8388, downmix, "ATM-512", "SPK-512", "SPK-07", "§11.4.6", "§11.4.69", "§11.4.107", "§11.4.108", "§11.4.111", "§11.4.115", "§11.4.135", audio_output]
+    documentation_refs:
+      - type: test
+        section: "test_atm512_dolby_remap_4ch.sh (§11.4.51 LIVE_ADB_TESTABLE on-device sink-observation guard, §11.4.115 ATM512_RED_MODE polarity, §11.4.111 ES8388/HDMI card resolved by name; NO --selftest fixture — the toggle+sink-observation shape has no golden-vector fixture to discriminate against)"
+        path: "device/rockchip/rk3588/tests/test_atm512_dolby_remap_4ch.sh"
+      - type: test
+        section: "test_spk512_numeric_fold_exec.sh (device-free numeric fold-EXECUTION proof of the SAME out_multi_pcm_remap_5_1_to_4ch() consumer, 6 golden vectors, --selftest golden-good/golden-bad self-validation per §11.4.107(10))"
+        path: "device/rockchip/rk3588/tests/test_spk512_numeric_fold_exec.sh"
+      - type: fix
+        section: "out_multi_pcm_remap_5_1_to_4ch() — Dolby 5.1/7.1->4ch ES8388 DSP fold (front L/R + surround unchanged, LFE/center folded into fronts per KC=0.707f/KLFE=0.5f/KBACK=0.707f), gated on persist.atmosphere.audio.spk512_remap, confined to the ES8388 speaker write (HDMI/SPDIF keep raw multichannel — Arvus AVR unaffected)"
+        path: "hardware/rockchip/audio/tinyalsa_hal/audio_hw.c"
+      - type: gate
+        section: "pre_build_verification.sh — CM-ATM512-4CH-REMAP (dedicated on-device test presence+wiring) + the 20-gate CM-SPK512-* family (CM-SPK512-REMAP / CM-SPK512-ROUND-NEAREST / CM-SPK512-SURROUND-ROUND-NEAREST / CM-SPK512-NCH5-DST-OVERFLOW / CM-SPK512-NCH5-COPY-CLAMP / CM-SPK512-PENTA-FOLD / CM-SPK512-MAIN-FRAMES-DIVISOR / CM-SPK512-XRUN-RETRY-BUF / CM-SPK512-7P1-BACKFOLD / CM-SPK512-BACKFOLD-NCH8-GUARD / CM-SPK512-FCLFE-SWAP-AWARE / CM-SPK512-S16-CLAMP / CM-SPK512-FOLD-COEFF-CONTRACT / CM-SPK512-S16-FORMAT-GUARD / CM-SPK512-COEFF-VALUES / CM-SPK512-NUMERIC-FOLD-EXEC / CM-SPK512-FCLFE-MASK-GATED / CM-SPK512-SINK-CHANNEL-ORDER / CM-SPK512-SCRATCH-CAPACITY / CM-SPK512-WRITE-LEN-COUPLING / CM-SPK512-SPEAKER-SCOPE / CM-SPK512-SOURCE-READ-INDEX / CM-SPK512-DISPATCH-OPT-IN / CM-SPK512-TOGGLE-SINK-CONSISTENCY) binding every correctness dimension of the fold (rounding, clamping, coefficient contract, scratch-buffer sizing, mask-gating, sink-scope, dispatch opt-in) at pre-build time"
+        path: "device/rockchip/rk3588/tests/pre_build_verification.sh"
+      - type: issue
+        section: "docs/workable_items.db SPK-512 [SPK-07] — 'Implement Dolby 5.1 -> 4 channel remapping at the Orange Pi level for the current 4-channel DSP. Front L/R and surround unchanged. LFE/sub mixed into front L/R. Center reconstructed as L+R mix.' Status: Ready for testing (2026-07-10 T3/feature-dolby-remap update: commit 1b80b2fb452 landed CM-SPK512-NUMERIC-FOLD-EXEC closing the prior grep-only bluff gap; device-layer captured-audio validation PENDING build)"
+        path: "docs/workable_items.db"
+    estimated_duration: "~1s (device-free numeric fold-EXECUTION + --selftest); on-device step PENDING-BUILD (SKIPs hardware_not_present/topology_unsupported until a vendor build carrying out_multi_pcm_remap_5_1_to_4ch() is flashed and an ES8388 4ch-DSP card + reference asset are present)"
+    expected_result: "The shipped HAL fold out_multi_pcm_remap_5_1_to_4ch() folds all 6 golden vectors correctly (5.1/7.1/PENTA/clamp/nch5-safe/stereo) confirmed by device-free EXECUTION (not a grep-only replica that can drift from the shipping code) with a self-validated golden-good/golden-bad discrimination proof. PASS only on this GREEN structural+numeric evidence, backed by the 20-gate CM-SPK512-* pre-build family covering rounding/clamping/coefficient-contract/scratch-sizing/mask-gating/sink-scope. The on-device runtime-signature step honestly SKIPs hardware_not_present/topology_unsupported/PENDING-BUILD until a vendor build carrying this HAL consumer is flashed on a topology with an ES8388 4ch-DSP card — never a faked PASS."
+
+  - id: ATM-361-HDMI-PICKER-LABEL-SEPOLICY-GRANT
+    challenge_id: audio.hdmi.output-picker-label-sepolicy-grant
+    name: "Audio output picker per-port HDMI/Arvus resolve-by-name label — the missing sepolicy grant that silently dead-ends the already-landed by-name resolver (ATM-361/AUD-LBL/ATM-315, root-caused device-free 2026-07-11)"
+    category: functional
+    priority: critical
+    platforms: [android]
+    dispatches_to: "device/rockchip/rk3588/tests/test_audio_per_port_picker.sh"
+    feature_class: audio_output
+    domains: [audio, hdmi, sepolicy, output-switcher, picker]
+    required_evidence: [device-free-static-sepolicy-audit, on-device-runtime-signature]
+    steps:
+      - name: "Device-free RED-proof (§11.4.115) — the pre-fix commit genuinely lacks every required sepolicy grant"
+        action: "bash scripts/testing/test_atm361_hdmi_label_sepolicy_grant.sh --red-proof 8e230daa64f --iters 3"
+        expected: "All 10 invariants FAIL at the pre-fix ref (rc=1) across 3/3 deterministic iterations (identical SHA-256 result-hash) — proving this is a genuinely reproduced defect, not a synthetic RED. Confirmed on this checkout (T3/feature/dolby-remap, 2026-07-11): result-hash 69df6c7c7e5c844fb17d65d9e8a690fe0076c16baa7dd548d34dc38958b88527."
+      - name: "Device-free GREEN-verify (§11.4.108 SOURCE+ARTIFACT layers) — the fix source is present and self-validated against a golden-bad mutation"
+        action: "bash scripts/testing/test_atm361_hdmi_label_sepolicy_grant.sh --verify --iters 3"
+        expected: "All 10 invariants PASS across 3/3 deterministic iterations (identical SHA-256 result-hash f19ddc84141ad259fb2e3bebd4708d87efb8a7005ecb45535e6d3ba3ce947ab1) plus the BOARD_SEPOLICY_DIRS-wired rk3588/sepolicy_vendor genfs_contexts stays byte-identical to its unwired atmosphere/sepolicy_vendor mirror. §11.4.107(10) self-check performed during authoring: commenting out ONE grant line (allow platform_app sysfs_hdmi_drm:file ...) correctly flips the checker's exit code from 0 to 1 (proving the checker is not a substring-match bluff-gate — an earlier unanchored-pattern draft of this exact checker DID silently keep PASSing against the same commented-out mutation, caught and fixed before this Challenge was authored) — restore verified byte-identical via git diff --stat."
+      - name: "Root-cause citation (§11.4.6/§11.4.102, FACT not guess) — why the by-name resolver was dead on a real device despite the source fix already landing"
+        action: "Cross-reference the exact reads: AudioDeviceInventory.java:1480-1481/1611/1712/1782 (system_server) and PhoneMediaDevice.java:236-299/305-306/342/394 (SystemUI/platform_app) read /sys/class/sound/cardN/device (canonicalized) + /sys/class/drm/*/edid. Prior sepolicy state (git show 8e230daa64f, confirmed by this Challenge's RED-proof step): NO genfscon rule for either path in any sepolicy_vendor/genfs_contexts (falls through to the base `genfscon sysfs / u:object_r:sysfs:s0` rule); system_server.te's own device-local override carries a *commented-out* `#allow system_server sysfs:file { read open getattr };`; platform_app.te had ZERO sysfs grants of any kind; AOSP core priv_app.te even declares `dontaudit priv_app sysfs:file read;` (denial-by-design, log-suppressed). Every read therefore hit EACCES; the resolver's own defensive try/catch silently returned null; the Output Switcher fell back to the stock generic 'External device' label — a §11.4.110 change-impact-clash-detection-class defect (a new sysfs read introduced with no matching sepolicy grant), the SOURCE-layer-green-but-RUNTIME-layer-dead pattern §11.4.108 exists to catch."
+        expected: "Every cited file:line reference resolves to the described content on this checkout; the RED-proof step (above) independently confirms the pre-fix grant-absence as FACT, not narrative."
+      - name: "On-device runtime signature (§11.4.108 RUNTIME-ON-CLEAN-TARGET + USER-VISIBLE layers) — the Output Switcher actually shows two distinct HDMI entries after rebuild+reflash"
+        action: "REQUIRES_REBUILD (framework Java + vendor sepolicy — not live-ADB-pushable). After a §12.9 containerised rebuild + reflash to a clean (/data-wiped) target: adb push device/rockchip/rk3588/tests/test_audio_per_port_picker.sh + lib/anti_bluff.sh to /data/local/tmp/tests/, then adb shell sh /data/local/tmp/tests/test_audio_per_port_picker.sh; separately, dmesg/logcat -b events grep for 'avc: *denied*' scoped to sysfs_hdmi_drm/sysfs_hdmi_sound MUST be empty (confirms the grant is actually exercised, not merely present-but-unreached); launch an audio app and open the Output Switcher, OCR-assert two distinct HDMI-derived labels (not both 'External device')."
+        expected: "Sections C+D of test_audio_per_port_picker.sh flip RED->GREEN (>=2 addressed CONNECTED HDMI sinks); zero avc-denied logcat lines scoped to the two new types; Output Switcher screenshot OCR shows two distinct per-port labels. Honestly PENDING-BUILD as of this Challenge's authoring session (T3, no build claimed this dispatch, §11.4.119 single-resource-owner) — SKIPs hardware_not_present when D3's second HDMI port is absent, SKIPs topology_unsupported when only one HDMI sink is connected — never a faked PASS (§11.4.3/§11.4.69)."
+    tags: [audio, hdmi, sepolicy, output-switcher, picker, "ATM-361", "ATM-315", "ATM-283", "ATM-306", "ATM-270", "§11.4.6", "§11.4.50", "§11.4.102", "§11.4.107", "§11.4.108", "§11.4.110", "§11.4.111", "§11.4.114", "§11.4.115", "§11.4.135", audio_output]
+    documentation_refs:
+      - type: test
+        section: "scripts/testing/test_atm361_hdmi_label_sepolicy_grant.sh — device-free, host-side, static-sepolicy-source regression guard; --red-proof <ref> one-time forensic mode + --verify [ref] ongoing GREEN-guard mode share one check_grants() implementation (single source, two roles); §11.4.50 3x-deterministic identical-result-hash; mirror-drift guard for the two BOARD_SEPOLICY_DIRS-adjacent genfs_contexts copies"
+        path: "scripts/testing/test_atm361_hdmi_label_sepolicy_grant.sh"
+      - type: fix
+        section: "Two new narrowly-scoped sepolicy types (sysfs_hdmi_drm, sysfs_hdmi_sound — deliberately NOT widening the generic sysfs type, mirroring the existing sysfs_hdmi/sysfs_hdmirx pattern) declared in file.te, genfscon-labeled onto the real device paths (cited from ALREADY-ON-DEVICE-VALIDATED boot scripts atmosphere-hdmi-hotplug.sh/atmosphere-hdmi-display-detector.sh/atmosphere-cec-wake.sh — never invented, §11.4.6), granted file-read to system_server + dir/file-read to BOTH platform_app AND priv_app (defense-in-depth: SystemUI's exact seapp_contexts domain match — isPrivApp=true AND seinfo=platform both apply, no systemui-specific override exists — could not be conclusively resolved without a live/build check)"
+        path: "device/rockchip/common/sepolicy/vendor/file.te"
+      - type: fix
+        section: "genfscon labels for /devices/platform/display-subsystem/drm (+ fde80000.hdmi/fdea0000.hdmi DT-node fallbacks) and /devices/platform/hdmi0-sound + hdmi1-sound"
+        path: "device/rockchip/rk3588/sepolicy_vendor/genfs_contexts"
+      - type: source
+        section: "AudioDeviceInventory.hdmiPortDisplayName() (system_server consumer of sysfs_hdmi_drm/sysfs_hdmi_sound)"
+        path: "frameworks/base/services/core/java/com/android/server/audio/AudioDeviceInventory.java"
+      - type: source
+        section: "PhoneMediaDevice.getAtmosphereHdmiPortName() (SystemUI/platform_app consumer of sysfs_hdmi_drm/sysfs_hdmi_sound — the Output Switcher label itself)"
+        path: "frameworks/base/packages/SettingsLib/src/com/android/settingslib/media/PhoneMediaDevice.java"
+      - type: issue
+        section: "docs/Issues.md §Y [ATM-361] — 'Audio output device picker missing per-port HDMI / Arvus selection'; cross-references ATM-315 (hardcoded-vs-EDID/ELD-dynamic naming, In testing), ATM-283 (by-name defense-in-depth, Completed), ATM-306 (AUD-SW port1 switch-silence, Fixed), ATM-270 (AUD-LBL >=2 distinctly-named ports confirmed on-device via GO_NOGO_1.1.8, Fixed) — this Challenge closes the previously-missing HelixQA layer-4 coverage gap for ATM-361 specifically (zero prior bank entries referenced it) and the sepolicy grant gap underneath the already-landed AUD-LBL by-name label source"
+        path: "docs/Issues.md"
+    estimated_duration: "~1s (device-free static-sepolicy audit, RED-proof + GREEN-verify + self-check mutation); on-device step REQUIRES_REBUILD, honestly PENDING-BUILD"
+    expected_result: "The by-name HDMI/Arvus Output-Switcher label resolver (already source-landed under Fix #Y.Y1/C1-§Y/ATM-283/the 1.2.0-dev AUD-LBL batch) is now backed by the SELinux grant it needs to actually execute on a real device — proven device-free via a RED-on-the-genuinely-broken-pre-fix-commit -> GREEN-on-the-fixed-working-tree flip, 3x deterministic, self-validated against a golden-bad mutation that an earlier draft of the same checker failed to catch (caught and fixed before landing). The on-device confirmation that the Output Switcher visibly shows two distinct labels honestly remains PENDING-BUILD — never a faked PASS on unexercised runtime code (§11.4.108 RUNTIME-ON-CLEAN-TARGET + USER-VISIBLE layers)."
