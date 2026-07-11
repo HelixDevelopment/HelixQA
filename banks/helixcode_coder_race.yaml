@@ -191,13 +191,27 @@ test_cases:
   # CODER-RACE-SELF-VALIDATE-001 (mandatory §11.4.107(10)) — TWO cases, ONE
   # analyzer. -GOOD uses moderate concurrency (n=5) with ALL-OK + VALID-JSON
   # assertions that a healthy server trivially satisfies (must PASS). -BAD
-  # uses a 1ms timeout so every request fails timeout/connection-refused,
-  # making ALL-OK FALSE — the analyzer correctly detects this, and
+  # uses an impossible timeout so every request fails timeout/connection-
+  # refused, making ALL-OK FALSE — the analyzer correctly detects this, and
   # --expect-fail inverts the case-level result — proving the assertion
   # logic discriminates correctly. A paired §1.1 mutation replacing
   # "v.Pass = true" with an unconditional pass must flip -BAD's
   # case_result from true to false — confirming the assertion logic is
   # live.
+  #
+  # TIMEOUT CALIBRATION (§11.4.107(13), live-run 2026-07-11 against a real
+  # HelixCode server on :8082 backed by real Postgres+Redis): the
+  # originally-authored 1ms "impossible" timeout does NOT reliably
+  # discriminate against a warm, idle, loopback-local HelixCode server —
+  # /api/v1/llm/providers and /api/v1/llm/models are served from in-memory
+  # provider/model registries with no external I/O in the hot path, and
+  # measured round-trip latency on this host is sub-millisecond
+  # (latency_ms: 0 for all 5 concurrent requests, 3x repeated for
+  # determinism per §11.4.50). Recalibrated to 100us, confirmed to
+  # deterministically time out all N requests (n_timeout==N, all_ok=false)
+  # across 3 consecutive runs on the live server. 1ms is left as a
+  # documented historical value in this comment for traceability; the
+  # dispatched command below uses the recalibrated 100us threshold.
   # ============================================================================
   - id: CODER-RACE-SELF-VALIDATE-001-GOOD
     challenge_id: helixcode.coder-race.self-validate-golden-good
@@ -222,7 +236,7 @@ test_cases:
 
   - id: CODER-RACE-SELF-VALIDATE-001-BAD
     challenge_id: helixcode.coder-race.self-validate-golden-bad-must-fail
-    name: "Self-validation golden-bad: impossible timeout (1ms) — raw ALL-OK fails, case_result OK via --expect-fail"
+    name: "Self-validation golden-bad: impossible timeout (100us) — raw ALL-OK fails, case_result OK via --expect-fail"
     category: functional
     priority: critical
     platforms: [api]
@@ -231,7 +245,7 @@ test_cases:
       bin/helixqa-verify-coder-race
       --mode concurrent-reads
       --n 5
-      --timeout 1ms
+      --timeout 100us
       --expect-fail
       --out qa-results/helixcode_coder_race/self_validate_001_golden_bad_verdict.json
       --conduit-dir qa-results/helixcode_coder_race/conduit
@@ -250,13 +264,33 @@ test_cases:
         restored binary re-confirmed to discriminate correctly before this
         bank was committed. No mutation code is committed anywhere in this
         tree ($11.4.84 quiescence).
+      recalibration_2026_07_11: >-
+        First live run against a real HelixCode server (:8082, real
+        Postgres+Redis, §11.4.169 tracked-deferred item) found the original
+        1ms timeout did NOT reliably fail on this host: all 5 concurrent
+        requests completed with latency_ms==0 (sub-millisecond, in-memory
+        provider/model registry, no external I/O), so all_ok stayed true and
+        case_result flipped to false (exit 1) — an honest, captured, non-
+        bluffed finding, NOT a race-correctness defect (CODER-RACE-001/002/
+        003 all passed for real on the same server). Root-caused via
+        --timeout sweep (1ms -> still passes; 100us -> 5/5 n_timeout,
+        all_ok=false, repeated 3x for determinism per $11.4.50). Recalibrated
+        this case's --timeout from 1ms to 100us per $11.4.107(13)
+        ("thresholds calibrated on the project's own fixtures, not
+        hardcoded"). Evidence: qa-results/helixcode_coder_race/ (this
+        submodule's per-run raw evidence dir, $11.4.128) plus a live
+        mutation re-confirmation on 2026-07-11 (v.Pass forced
+        unconditionally-true, rebuilt, re-run against this exact fixture:
+        case_result flipped true->false / exit 0->1 as expected, then
+        reverted + rebuilt + re-confirmed restored behaviour before commit
+        — no mutated source committed, $11.4.84 quiescence).
     required_evidence:
       - "qa-results/helixcode_coder_race/self_validate_001_golden_bad_verdict.json | json:case_result==true | json:pass==false | json:all_ok==false | json:n_ok<5"
     steps:
-      - name: "Golden-bad: 1ms timeout ensures zero requests complete — analyzer correctly reports ALL-OK=false"
-        action: "http: GET /api/v1/llm/providers (5x concurrent, 1ms timeout)"
+      - name: "Golden-bad: 100us timeout ensures zero requests complete — analyzer correctly reports ALL-OK=false"
+        action: "http: GET /api/v1/llm/providers (5x concurrent, 100us timeout)"
         expected: >-
-          pass==false (all requests timeout in 1ms, none complete),
+          pass==false (all requests timeout in 100us, none complete),
           all_ok==false; case_result==true because this case declares
           --expect-fail. Proves the analyzer rejects "no concurrent capacity"
           (detected via universal timeout), not only endpoint-down or
