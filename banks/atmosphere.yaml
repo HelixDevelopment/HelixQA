@@ -4566,3 +4566,40 @@ test_cases:
         path: "device/rockchip/rk3588/tests/pre_build_verification.sh"
     estimated_duration: "~30s (structural); sink-side half requires the AVR rig marker"
     expected_result: "On a clean flashed target the HDMI LPCM mixPorts advertise EDID-port-derived channel masks (channelMasks=\"dynamic\"), never a fixed port0 7.1 superset, confirmed via the shipped policy-XML census + dumpsys media.audio_flinger. PASS only on the post-fix GREEN structural evidence (or the full sink-side AVR proof when the rig is present); a still-fixed-mask artifact correctly FAILs this guard. AVR-rig sink-side half SKIPs topology_unsupported on D1/D2 (TV + jack speaker, no differing-EDID multichannel AVR) — never a faked PASS."
+
+  - id: ATM-282-HW-AV-SYNC-POLICY-CONSISTENCY
+    challenge_id: audio.hifi.hw-av-sync-multichannel-policy-consistency
+    name: "HW_AV_SYNC-vs-multichannel-PCM mixPort flag layout stays consistent — non-tunneled 5.1/7.1 never strands to the tunneled hi-res port (ATM-282, guards ATM-256/ATM-470)"
+    category: functional
+    priority: critical
+    platforms: [android]
+    dispatches_to: "device/rockchip/rk3588/tests/test_atm282_hw_av_sync_policy_consistency_red.sh"
+    feature_class: audio_output
+    domains: [audio, hdmi, multichannel, hw_av_sync, policy]
+    required_evidence: [policy-xml-flag-layout-census, selftest-discrimination-proof, on-device-runtime-signature]
+    steps:
+      - name: "GREEN regression guard — HW_AV_SYNC confined to the tunneled hi-res port, escape ports stay HW_AV_SYNC-free"
+        action: "bash device/rockchip/rk3588/tests/test_atm282_hw_av_sync_policy_consistency_red.sh (device-free, default GREEN-guard invocation against the shipped hifi audio policy XML)"
+        expected: "I1 direct_pcm_hifi keeps AUDIO_OUTPUT_FLAG_HW_AV_SYNC (tunneled hi-res port identity); I2a hdmi_multichannel_direct stays HW_AV_SYNC-free; I2b hdmi_multichannel stays HW_AV_SYNC-free; I3 both non-tunneled siblings exist with a multichannel escape mask — exit 0 (GREEN). AOSP IOProfile mustMatch flag-parity (IOProfile.cpp:217-223) then guarantees a non-HW_AV_SYNC 5.1/7.1 track never matches direct_pcm_hifi and always lands on its HW_AV_SYNC-free escape port. If any invariant breaks (HW_AV_SYNC leaks onto an escape port, or an escape port/mask is lost), this step correctly FAILs — no bluff-tolerant default."
+      - name: "Selftest discrimination proof — the checker is not an always-pass/always-fail bluff"
+        action: "bash device/rockchip/rk3588/tests/test_atm282_hw_av_sync_policy_consistency_red.sh --selftest"
+        expected: "Three embedded fixtures resolve exactly as designed: BAD (hdmi_multichannel_direct gains HW_AV_SYNC) => RED via I2a; GOOD (correct HW_AV_SYNC-free escape ports) => GREEN; REG (hdmi_multichannel_direct escape port removed) => RED via I3. Overall selftest exit 0 only when all three verdicts match — proves the checker discriminates (§11.4.107(10))."
+      - name: "On-device runtime signature (when a target is reachable) — §11.4.51 LIVE_ADB_TESTABLE"
+        action: "adb_shell: sh /data/local/tmp/tests/test_atm282_hw_av_sync_verified.sh"
+        expected: "Source-literal guards (IOProfile.cpp mustMatch parity, AudioPolicyManager.cpp HW_AV_SYNC fallback gate + selectOutput kExcludedFlags) are present AND reachable at runtime via dumpsys audio state + /proc/cmdline (snd_usb_audio.index=8 pin) on a live target, N=3/N=10 deterministic per §11.4.50. No device reachable => honest SKIP hardware_not_present (§11.4.3/§11.4.69) — never a faked PASS; the device-free steps above already prove the ATM-282 source-consistency finding independent of this step."
+    tags: [audio, hdmi, multichannel, hw_av_sync, "ATM-282", "ATM-256", "ATM-470", "ATM-371", "§11.4.108", "§11.4.111", "§11.4.115", "§11.4.135", "§11.4.69", audio_output]
+    documentation_refs:
+      - type: test
+        section: "test_atm282_hw_av_sync_policy_consistency_red.sh (device-free §11.4.115 RED/GREEN guard + --selftest discrimination proof)"
+        path: "device/rockchip/rk3588/tests/test_atm282_hw_av_sync_policy_consistency_red.sh"
+      - type: test
+        section: "test_atm282_hw_av_sync_verified.sh (on-device runtime signature, §11.4.51 LIVE_ADB_TESTABLE)"
+        path: "device/rockchip/rk3588/tests/test_atm282_hw_av_sync_verified.sh"
+      - type: research
+        section: "docs/research/atm282_hw_av_sync/ANALYSIS.md — FACT proof via AOSP IOProfile mustMatch flag-parity that HW_AV_SYNC + multichannel PCM co-existence on direct_pcm_hifi is consistent"
+        path: "docs/research/atm282_hw_av_sync/ANALYSIS.md"
+      - type: gate
+        section: "pre_build_verification.sh — CM-ATM282-HW-AV-SYNC-POLICY-CONSISTENCY"
+        path: "device/rockchip/rk3588/tests/pre_build_verification.sh"
+    estimated_duration: "~5s (device-free structural + selftest); on-device step ~30s when a target is reachable"
+    expected_result: "The shipped hifi audio policy XML confines AUDIO_OUTPUT_FLAG_HW_AV_SYNC to the tunneled direct_pcm_hifi mixPort; both non-tunneled multichannel escape ports (hdmi_multichannel, hdmi_multichannel_direct) stay HW_AV_SYNC-free with a multichannel escape mask, confirmed via the device-free checker + its --selftest discrimination proof (BAD=RED/GOOD=GREEN/REG=RED). PASS only on this GREEN structural evidence; a regressed layout (HW_AV_SYNC leaking onto an escape port, reinstating the ATM-256/ATM-470 5.1-collapses-to-stereo defect) correctly FAILs this guard. On-device runtime-signature step SKIPs hardware_not_present when no target is reachable — never a faked PASS."
