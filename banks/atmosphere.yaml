@@ -4640,3 +4640,37 @@ test_cases:
         path: "device/rockchip/rk3588/tests/pre_build_verification.sh"
     estimated_duration: "~5s (device-free structural + selftest); on-device step ~30-60s when a target is reachable"
     expected_result: "The shipped hifi audio policy XML's HDMI Out devicePort declares AUDIO_CHANNEL_OUT_STEREO+5POINT1+7POINT1 AND its annotating comment agrees (no stale 'kept at STEREO / legacy hardware limit' text), confirmed via the device-free checker + its --selftest discrimination proof (BAD=RED/GOOD=GREEN/REG=RED). PASS only on this GREEN structural evidence; a regressed annotation or dropped 5.1 mask correctly FAILs this guard — the exact ATM-256/ATM-470 5.1-collapses-to-stereo regression hazard. On-device runtime-signature step SKIPs hardware_not_present when no target is reachable — never a faked PASS."
+
+  - id: ATM-473-VLC-AVQ-SOURCE-INVARIANTS
+    challenge_id: video.vlc.local-avq-source-invariants
+    name: "VLC-fork local A/V-quality fix invariants stay in place — HW-decode-with-SW-fallback enabled + 5.1 PCM auto-layout active, no forced global digital-output passthrough (ATM-473/§GS)"
+    category: functional
+    priority: critical
+    platforms: [android]
+    dispatches_to: "device/rockchip/rk3588/tests/test_atm473_vlc_avq_source_invariants.sh"
+    feature_class: mediacodec_decode
+    domains: [video, audio, local-playback, vlc, hw-decode, multichannel]
+    required_evidence: [vlcoptions-source-invariant-census, on-device-runtime-signature]
+    steps:
+      - name: "GREEN regression guard — --avcodec-hw=any HW-decode-with-SW-fallback active, --stereo-mode=0 5.1 auto-layout active, no forced global digital-output passthrough, pre-fix --avcodec-hw=none absent"
+        action: "bash device/rockchip/rk3588/tests/test_atm473_vlc_avq_source_invariants.sh (device-free, default RED_MODE=0 GREEN-guard invocation against the vlc-player fork's VLCOptions.kt)"
+        expected: "Four invariants all hold and the checker exits 0 (GREEN): (1) the pre-fix defect marker active options.add(\"--avcodec-hw=none\") — the hardcoded SW-only 4K decode that was the §GS-1 root cause — is ABSENT; (2) active options.add(\"--avcodec-hw=any\") is PRESENT (HW decode enabled with automatic SW fallback, the §GS-1b fix); (3) active options.add(\"--stereo-mode=0\") is PRESENT (5.1/7.1 PCM auto-layout reaching the HDMI/Arvus multichannel sink instead of a stereo downmix, the §GS-2 fix); (4) SAFETY invariant — no active forced digital-output/spdif passthrough option was added (which would silence the ES8388/USB/BT analog sinks, the exact fix-A-break-B hazard §11.4.1 forbids). If any invariant regresses, the checker correctly FAILs — no bluff-tolerant default. This checker has NO --selftest fixture (confirmed by source read — unlike the ATM-282/ATM-256 sibling checkers), so no discrimination-proof step is claimed here (§11.4.6 — omitted rather than fabricated)."
+      - name: "On-device runtime signature (§11.4.108 ARTIFACT+RUNTIME layer) — when a target is reachable AND the vlc-player APK carrying this fix has been built and flashed"
+        action: "adb_shell: pm path atmosphere.videolan.vlc && play a local 5.1 4K clip from /sdcard/Movies via the VLC-fork UI, then assert /proc/asound/card*/pcm*p/sub0/hw_params channels>=6 during playback (§GS-2 5.1-not-stereo runtime signature) AND sample decoder CPU/frame-advance liveness per §11.4.107 over the 4K clip (§GS-1b HW-decode-with-fallback runtime signature)"
+        expected: "This ATM-473/§GS batch is REQUIRES_REBUILD and, per docs/Issues.md §GS + the RED test's own PENDING-BUILD note, its on-device 5.1/4K E2E validation is explicitly PENDING — no dedicated on-device dispatch script exists yet for this runtime signature (unlike ATM-282/ATM-256, whose sibling on-device scripts already exist). No device reachable, OR a device is reachable but is not yet running a vlc-player build carrying this fix, => honest SKIP hardware_not_present (§11.4.3/§11.4.69) — never a faked PASS. The device-free GREEN-guard step above already proves the ATM-473 source-consistency finding independent of this step; the PENDING-BUILD state is tracked at docs/Issues.md §GS-1 (HW-decode, DEFERRED pending operator architectural decision) / §GS-3 / §GS-4 (on-device validation pending)."
+    tags: [video, audio, local_playback, vlc, hw_decode, multichannel, "ATM-473", "§GS", "§11.4.1", "§11.4.6", "§11.4.108", "§11.4.115", "§11.4.135", "§11.4.69", mediacodec_decode, audio_output]
+    documentation_refs:
+      - type: test
+        section: "test_atm473_vlc_avq_source_invariants.sh (device-free §11.4.115 RED/GREEN guard, RED_MODE=1 reproduces the pre-fix defect / RED_MODE=0 default GREEN regression guard; NO --selftest fixture)"
+        path: "device/rockchip/rk3588/tests/test_atm473_vlc_avq_source_invariants.sh"
+      - type: fix
+        section: "§GS-1b HW-decode-with-SW-fallback (--avcodec-hw=any) + §GS-2 5.1 PCM auto-layout (--stereo-mode=0) — vlc-player fork VLCOptions.kt"
+        path: "device/rockchip/atmosphere/vlc-player/application/resources/src/main/java/org/videolan/resources/VLCOptions.kt"
+      - type: gate
+        section: "pre_build_verification.sh — CM-ATM473-VLC-AVQ-SOURCE-INVARIANTS"
+        path: "device/rockchip/rk3588/tests/pre_build_verification.sh"
+      - type: issue
+        section: "docs/Issues.md §GS [ATM-473] — local-playback A/V quality (VLC fork 4K-glitch / perpetual-loading / 5.1→stereo / seek-freeze + MPV 4K glitch); §GS-1 HW-decode DEFERRED pending operator architectural decision, §GS-2/§GS-3/§GS-4 landed source-side REQUIRES_REBUILD"
+        path: "docs/Issues.md"
+    estimated_duration: "~5s (device-free structural); on-device step PENDING-BUILD (SKIPs hardware_not_present until a vlc-player APK carrying this fix is flashed)"
+    expected_result: "The shipped vlc-player fork's VLCOptions.kt keeps HW-decode-with-SW-fallback (--avcodec-hw=any) active, keeps 5.1 PCM auto-layout (--stereo-mode=0) active, keeps the pre-fix hardcoded-SW-only marker (--avcodec-hw=none) absent, and never gains a forced global digital-output passthrough option, confirmed via the device-free source-invariant checker. PASS only on this GREEN structural evidence; a regression on any of the four invariants correctly FAILs this guard. The on-device runtime-signature step honestly SKIPs hardware_not_present/PENDING-BUILD until the vlc-player APK carrying this fix is built and flashed — never a faked PASS."
