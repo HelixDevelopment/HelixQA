@@ -4603,3 +4603,40 @@ test_cases:
         path: "device/rockchip/rk3588/tests/pre_build_verification.sh"
     estimated_duration: "~5s (device-free structural + selftest); on-device step ~30s when a target is reachable"
     expected_result: "The shipped hifi audio policy XML confines AUDIO_OUTPUT_FLAG_HW_AV_SYNC to the tunneled direct_pcm_hifi mixPort; both non-tunneled multichannel escape ports (hdmi_multichannel, hdmi_multichannel_direct) stay HW_AV_SYNC-free with a multichannel escape mask, confirmed via the device-free checker + its --selftest discrimination proof (BAD=RED/GOOD=GREEN/REG=RED). PASS only on this GREEN structural evidence; a regressed layout (HW_AV_SYNC leaking onto an escape port, reinstating the ATM-256/ATM-470 5.1-collapses-to-stereo defect) correctly FAILs this guard. On-device runtime-signature step SKIPs hardware_not_present when no target is reachable — never a faked PASS."
+
+  - id: ATM-256-HDMI-MULTICHANNEL-POLICY-CONSISTENCY
+    challenge_id: audio.hdmi.multichannel-policy-consistency
+    name: "HDMI Out multichannel-policy annotation stays consistent with its own shipped 5.1/7.1 channelMasks — a stale STEREO-only comment never silently re-enables the ATM-256/ATM-470 5.1-collapses-to-stereo regression"
+    category: functional
+    priority: critical
+    platforms: [android]
+    dispatches_to: "device/rockchip/rk3588/tests/test_atm256_hdmi_multichannel_policy_consistency_red.sh"
+    feature_class: audio_output
+    domains: [audio, hdmi, multichannel, policy]
+    required_evidence: [policy-xml-hdmi-out-annotation-census, selftest-discrimination-proof, on-device-runtime-signature]
+    steps:
+      - name: "GREEN regression guard — HDMI Out annotation agrees with its shipped STEREO+5.1+7.1 channelMasks"
+        action: "bash device/rockchip/rk3588/tests/test_atm256_hdmi_multichannel_policy_consistency_red.sh (device-free, default GREEN-guard invocation against the shipped hifi audio policy XML)"
+        expected: "A: HDMI Out (card=0,device=0, NOT the Touch port) declares AUDIO_CHANNEL_OUT_5POINT1 (multichannel LPCM capability present); B: its annotating comment does NOT claim the masks are 'kept at AUDIO_CHANNEL_OUT_STEREO' / a 'legacy hardware limit'; C: AUDIO_CHANNEL_OUT_STEREO base-compat mask is still present — exit 0 (GREEN), proving the ATM-470 sink-mask fix is intact and no stale annotation could mislead a future maintainer into reverting it. If either the 5.1 mask is dropped OR the stale comment is reintroduced, this step correctly FAILs — no bluff-tolerant default."
+      - name: "Selftest discrimination proof — the checker is not an always-pass/always-fail bluff"
+        action: "bash device/rockchip/rk3588/tests/test_atm256_hdmi_multichannel_policy_consistency_red.sh --selftest"
+        expected: "Three embedded fixtures resolve exactly as designed: BAD (stale 'kept at AUDIO_CHANNEL_OUT_STEREO / legacy hardware limit' comment + 5.1/7.1 masks present, the reverted state) => RED via invariant B; GOOD (comment agrees with the 5.1/7.1 reality) => GREEN; REGRESSION (comment fine but masks reverted to STEREO-only) => RED via invariant A. Overall selftest exit 0 only when all three verdicts match — proves the checker discriminates (§11.4.107(10))."
+      - name: "On-device runtime signature (when a target is reachable) — real 5.1 LPCM reaches the HDMI sink, not stereo-downmixed"
+        action: "adb_shell: sh /data/local/tmp/tests/test_5_1_multichannel_hdmi_end_to_end.sh"
+        expected: "T1 (tinyplay HAL-bypass 6-ch WAV -> ALSA card 0 HDMI) shows hw_params channels:6 during write; T2 (MPV end-user 5.1 EAC3 -> MediaCodec -> AudioTrack -> AudioFlinger) shows a DirectOutputThread with channel count >= 6, output device 0x400 (AUDIO_DEVICE_OUT_HDMI), and frames-written advancing — confirming the HDMI Out capability this ATM-256 checker guards is REALLY exercised end-to-end (§11.4.108 runtime signature), not merely declared in policy XML. No device reachable => honest SKIP hardware_not_present (§11.4.3/§11.4.69) — never a faked PASS; the two device-free steps above already prove the ATM-256/ATM-470 source-consistency finding independent of this step."
+    tags: [audio, hdmi, multichannel, policy, "ATM-256", "ATM-470", "ATM-282", "ATM-371", "§11.4.108", "§11.4.111", "§11.4.115", "§11.4.135", "§11.4.69", audio_output]
+    documentation_refs:
+      - type: test
+        section: "test_atm256_hdmi_multichannel_policy_consistency_red.sh (device-free §11.4.115 RED/GREEN guard + --selftest discrimination proof)"
+        path: "device/rockchip/rk3588/tests/test_atm256_hdmi_multichannel_policy_consistency_red.sh"
+      - type: test
+        section: "test_5_1_multichannel_hdmi_end_to_end.sh (on-device runtime signature, §11.4.51 LIVE_ADB_TESTABLE, T1 tinyplay + T2 MPV captured-evidence)"
+        path: "device/rockchip/rk3588/tests/test_5_1_multichannel_hdmi_end_to_end.sh"
+      - type: fix
+        section: "ATM-470 sink-mask expansion — HDMI Out devicePort channelMasks STEREO+5POINT1+7POINT1 (Phase 39.GW §GN, commit 951e6f628d16), sink-confirmed on D3 via dumpsys media.audio_policy port masks 0x0003/0x003f/0x063f"
+        path: "device/rockchip/common/audio/audio_policy_configuration_hifi.xml"
+      - type: gate
+        section: "pre_build_verification.sh — CM-ATM256-HDMI-MULTICHANNEL-POLICY-CONSISTENCY"
+        path: "device/rockchip/rk3588/tests/pre_build_verification.sh"
+    estimated_duration: "~5s (device-free structural + selftest); on-device step ~30-60s when a target is reachable"
+    expected_result: "The shipped hifi audio policy XML's HDMI Out devicePort declares AUDIO_CHANNEL_OUT_STEREO+5POINT1+7POINT1 AND its annotating comment agrees (no stale 'kept at STEREO / legacy hardware limit' text), confirmed via the device-free checker + its --selftest discrimination proof (BAD=RED/GOOD=GREEN/REG=RED). PASS only on this GREEN structural evidence; a regressed annotation or dropped 5.1 mask correctly FAILs this guard — the exact ATM-256/ATM-470 5.1-collapses-to-stereo regression hazard. On-device runtime-signature step SKIPs hardware_not_present when no target is reachable — never a faked PASS."
