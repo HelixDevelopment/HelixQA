@@ -4535,3 +4535,34 @@ test_cases:
         path: "device/rockchip/rk3588/tests/test_presenter_secondary_video_only.sh"
     estimated_duration: "~5-10 min (churn + mirror repro/recovery + chaos)"
     expected_result: "The secondary display only ever shows Tier-1 video via the Presenter Presentation; no app task moves there; the §HE mirror-guard prevents the TV from ever mirroring the primary. PASS cites the per-iteration mirror_count=0 + no-stray-app evidence. No secondary → SKIP topology_unsupported."
+
+  - id: ATM-371-HDMI-EDID-MASK
+    challenge_id: audio.hdmi.per-port-edid-channel-mask
+    name: "HDMI per-port EDID-driven channel-mask advertisement — advertised mask is NOT a fixed-port superset (ATM-371/§11.4.111, defense-in-depth for ATM-470)"
+    category: functional
+    priority: critical
+    platforms: [android]
+    dispatches_to: "device/rockchip/rk3588/tests/test_atm371_hdmi_per_port_channel_mask.sh"
+    feature_class: audio_output
+    domains: [audio, hdmi, multichannel, edid, policy]
+    required_evidence: [policy-xml-hdmi-dynamic-mask-census, audio-flinger-hdmi-mask-dump, sink-side-avr-mask-match]
+    steps:
+      - name: "GREEN regression guard — advertised mask is EDID-port-derived, not a fixed-port superset"
+        action: "adb_shell: ATM371_MASK_RED_MODE=0 sh /data/local/tmp/tests/test_atm371_hdmi_per_port_channel_mask.sh"
+        expected: "Shipped audio_policy_configuration.xml HDMI mixPorts (hdmi_multichannel, hdmi_multichannel_direct) use channelMasks=\"dynamic\" (>0) and dumpsys media.audio_flinger reflects the EDID-port-derived mask — the §11.4.111 by-fixed-node binding is gone (§11.4.108 runtime signature). If the fix has NOT landed on the artifact under test (0 dynamic masks), this step correctly FAILs — RED_MODE=0 is the post-fix guard, never a bluff-tolerant default."
+      - name: "Sink-side proof on a differing-EDID multichannel AVR rig (when present)"
+        action: "With persist.atmosphere.test.hdmi_avr_rig=1 and a 5.1-only AVR on the selected HDMI port, confirm the advertised mask/Arvus Codec-In-Use does NOT show the 7.1 superset"
+        expected: "5.1-only sink is never advertised 7.1; full sink-side §11.4.108 signature met. No such rig on D1/D2 today → this half SKIPs topology_unsupported (honest, never a faked PASS) while the structural policy-XML + dumpsys evidence above still proves the fix shipped."
+    tags: [audio, hdmi, multichannel, edid, "ATM-371", "ATM-470", "ATM-256", "ATM-282", "§11.4.108", "§11.4.111", "§11.4.115", "§11.4.69", audio_output]
+    documentation_refs:
+      - type: test
+        section: "test_atm371_hdmi_per_port_channel_mask.sh (§11.4.115 RED/GREEN polarity via ATM371_MASK_RED_MODE)"
+        path: "device/rockchip/rk3588/tests/test_atm371_hdmi_per_port_channel_mask.sh"
+      - type: fix
+        section: "ATM-371 fix commit — HDMI per-port EDID-driven audio channel-mask advertisement"
+        path: "device/rockchip/common/audio/audio_policy_configuration_hifi.xml"
+      - type: gate
+        section: "pre_build_verification.sh SECTION A371 — CM-ATM371-HDMI-PER-PORT-EDID-MASK"
+        path: "device/rockchip/rk3588/tests/pre_build_verification.sh"
+    estimated_duration: "~30s (structural); sink-side half requires the AVR rig marker"
+    expected_result: "On a clean flashed target the HDMI LPCM mixPorts advertise EDID-port-derived channel masks (channelMasks=\"dynamic\"), never a fixed port0 7.1 superset, confirmed via the shipped policy-XML census + dumpsys media.audio_flinger. PASS only on the post-fix GREEN structural evidence (or the full sink-side AVR proof when the rig is present); a still-fixed-mask artifact correctly FAILs this guard. AVR-rig sink-side half SKIPs topology_unsupported on D1/D2 (TV + jack speaker, no differing-EDID multichannel AVR) — never a faked PASS."
