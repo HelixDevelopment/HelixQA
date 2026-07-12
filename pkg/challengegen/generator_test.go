@@ -10,9 +10,13 @@ import (
 	"digital.vasic.challenges/pkg/challenge"
 )
 
-// res is a small constructor for a realistic outcome record.
-func res(id, name, status string) challenge.Result {
-	return challenge.Result{
+// res is a small constructor for a realistic outcome record. It
+// returns a *challenge.Result (not a value) because Result embeds an
+// unexported sync.Mutex (pkg/challenge/result.go) — GenerateFromOutcomes
+// takes outcomes by pointer for exactly this reason (HXC-140: `go vet`
+// flags any value copy of a lock-bearing struct).
+func res(id, name, status string) *challenge.Result {
+	return &challenge.Result{
 		ChallengeID:   challenge.ID(id),
 		ChallengeName: name,
 		Status:        status,
@@ -37,7 +41,7 @@ func TestGenerateFromOutcomes_FailureBecomesRegression(t *testing.T) {
 	failing := res("video-playback", "Video Playback", challenge.StatusFailed)
 	failing.Error = "no frames decoded"
 
-	got := GenerateFromOutcomes([]challenge.Result{
+	got := GenerateFromOutcomes([]*challenge.Result{
 		res("audio-output", "Audio Output", challenge.StatusPassed),
 		failing,
 	})
@@ -66,7 +70,7 @@ func TestGenerateFromOutcomes_FailureBecomesRegression(t *testing.T) {
 }
 
 func TestGenerateFromOutcomes_FlakyBecomesStability(t *testing.T) {
-	got := GenerateFromOutcomes([]challenge.Result{
+	got := GenerateFromOutcomes([]*challenge.Result{
 		res("login-flow", "Login Flow", challenge.StatusPassed),
 		res("login-flow", "Login Flow", challenge.StatusFailed),
 		res("login-flow", "Login Flow", challenge.StatusPassed),
@@ -85,7 +89,7 @@ func TestGenerateFromOutcomes_FlakyBecomesStability(t *testing.T) {
 }
 
 func TestGenerateFromOutcomes_SkippedBecomesCoverage(t *testing.T) {
-	got := GenerateFromOutcomes([]challenge.Result{
+	got := GenerateFromOutcomes([]*challenge.Result{
 		res("hdr-passthrough", "HDR Passthrough", challenge.StatusSkipped),
 	})
 
@@ -102,7 +106,7 @@ func TestGenerateFromOutcomes_SkippedBecomesCoverage(t *testing.T) {
 }
 
 func TestGenerateFromOutcomes_AllPassNoSpuriousChallenges(t *testing.T) {
-	got := GenerateFromOutcomes([]challenge.Result{
+	got := GenerateFromOutcomes([]*challenge.Result{
 		res("a", "A", challenge.StatusPassed),
 		res("b", "B", challenge.StatusPassed),
 		res("a", "A", challenge.StatusPassed), // repeat pass
@@ -113,7 +117,7 @@ func TestGenerateFromOutcomes_AllPassNoSpuriousChallenges(t *testing.T) {
 }
 
 func TestGenerateFromOutcomes_DedupRepeatedFailures(t *testing.T) {
-	got := GenerateFromOutcomes([]challenge.Result{
+	got := GenerateFromOutcomes([]*challenge.Result{
 		res("flash", "Flash", challenge.StatusFailed),
 		res("flash", "Flash", challenge.StatusFailed),
 		res("flash", "Flash", challenge.StatusFailed),
@@ -130,7 +134,7 @@ func TestGenerateFromOutcomes_DedupRepeatedFailures(t *testing.T) {
 // --- ordering / determinism ----------------------------------------
 
 func TestGenerateFromOutcomes_StableSortedOrder(t *testing.T) {
-	in := []challenge.Result{
+	in := []*challenge.Result{
 		res("zeta", "Zeta", challenge.StatusFailed),
 		res("alpha", "Alpha", challenge.StatusFailed),
 		res("mike", "Mike", challenge.StatusSkipped),
@@ -160,7 +164,7 @@ func TestGenerateFromOutcomes_StableSortedOrder(t *testing.T) {
 
 func TestGenerateFromOutcomes_LatestFailureWins(t *testing.T) {
 	// A pass followed by a later skip is NOT failing -> no challenge.
-	got := GenerateFromOutcomes([]challenge.Result{
+	got := GenerateFromOutcomes([]*challenge.Result{
 		res("x", "X", challenge.StatusPassed),
 		res("x", "X", challenge.StatusSkipped),
 	})
@@ -170,7 +174,7 @@ func TestGenerateFromOutcomes_LatestFailureWins(t *testing.T) {
 }
 
 func TestGenerateFromOutcomes_EmptyIDIgnored(t *testing.T) {
-	got := GenerateFromOutcomes([]challenge.Result{
+	got := GenerateFromOutcomes([]*challenge.Result{
 		{ChallengeID: "", ChallengeName: "no id", Status: challenge.StatusFailed},
 	})
 	if len(got) != 0 {
@@ -182,7 +186,7 @@ func TestGenerateFromOutcomes_TimedOutAndErrorCountAsRegression(t *testing.T) {
 	for _, st := range []string{
 		challenge.StatusTimedOut, challenge.StatusStuck, challenge.StatusError,
 	} {
-		got := GenerateFromOutcomes([]challenge.Result{res("feat-"+st, "F", st)})
+		got := GenerateFromOutcomes([]*challenge.Result{res("feat-"+st, "F", st)})
 		if len(got) != 1 || got[0].Category != string(KindRegression) {
 			t.Fatalf("status %q must yield a regression challenge, got %+v", st, got)
 		}
@@ -198,7 +202,7 @@ func TestGenerateFromOutcomes_EmptyInput(t *testing.T) {
 // --- validity of generated challenges (real validator) -------------
 
 func TestGenerateFromOutcomes_GeneratedAreValid(t *testing.T) {
-	got := GenerateFromOutcomes([]challenge.Result{
+	got := GenerateFromOutcomes([]*challenge.Result{
 		res("feat-fail", "Fail Feature", challenge.StatusFailed),
 		res("feat-flaky", "Flaky Feature", challenge.StatusPassed),
 		res("feat-flaky", "Flaky Feature", challenge.StatusFailed),

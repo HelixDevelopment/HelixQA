@@ -125,8 +125,17 @@ test_cases:
     category: functional
     priority: high
     platforms: [api]
+    # HXC-140: the TestStep grammar (pkg/testbank/schema.go) exposes a
+    # SINGLE expect_json_path per step — it is not a list. The original
+    # step here declared expect_json_path three times ($.provider,
+    # $.model, $.usage) under one YAML mapping key, which is invalid
+    # YAML (duplicate mapping keys) and made LoadDir/LoadFile fail to
+    # parse this bank file. Reconciled per §11.4.120: each of the three
+    # original assertions is preserved, one per step, via an
+    # independent (idempotent, stateless) call to the same endpoint —
+    # no assertion is dropped or weakened.
     steps:
-      - name: "POST /api/v1/llm/generate verify metadata fields"
+      - name: "POST /api/v1/llm/generate verify provider field"
         action: "http: POST /api/v1/llm/generate"
         auth: "admin"
         body:
@@ -135,7 +144,25 @@ test_cases:
           prompt: "Reply with exactly one word: hello"
         expect_status: 200
         expect_json_path: "$.provider"
+        expect_body_contains: "helixllm"
+      - name: "POST /api/v1/llm/generate verify model field"
+        action: "http: POST /api/v1/llm/generate"
+        auth: "admin"
+        body:
+          provider: "helixllm"
+          model: "llama3.2"
+          prompt: "Reply with exactly one word: hello"
+        expect_status: 200
         expect_json_path: "$.model"
+        expect_body_contains: "helixllm"
+      - name: "POST /api/v1/llm/generate verify usage field"
+        action: "http: POST /api/v1/llm/generate"
+        auth: "admin"
+        body:
+          provider: "helixllm"
+          model: "llama3.2"
+          prompt: "Reply with exactly one word: hello"
+        expect_status: 200
         expect_json_path: "$.usage"
         expect_body_contains: "helixllm"
     tags: [generate, green, metadata, coder]

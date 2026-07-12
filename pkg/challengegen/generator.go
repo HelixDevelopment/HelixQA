@@ -115,14 +115,24 @@ const (
 // original observation order; "latest" therefore means last in the
 // slice.
 type aggregate struct {
-	id          challenge.ID
-	name        string
-	sawPass     bool
-	sawFail     bool
-	sawSkip     bool
-	sawOther    bool // pending / running / other non-terminal
-	latestFail  bool
-	failExample challenge.Result // a representative failing outcome (evidence)
+	id         challenge.ID
+	name       string
+	sawPass    bool
+	sawFail    bool
+	sawSkip    bool
+	sawOther   bool // pending / running / other non-terminal
+	latestFail bool
+
+	// failExample is a representative failing outcome (evidence),
+	// held BY POINTER — challenge.Result carries an unexported
+	// sync.Mutex (guarding concurrent RecordAction appends;
+	// pkg/challenge/result.go) and copying a Result by value copies
+	// that lock, which `go vet` correctly flags (HXC-140). Storing a
+	// pointer shares the original outcome instead of copying it, so
+	// aggregate itself never embeds a lock and can be freely copied
+	// (see classify/buildDefinition/regressionAssertionMessage,
+	// which all take aggregate by value).
+	failExample *challenge.Result
 }
 
 // classify reduces an aggregate to a single verdict. The order of
@@ -173,7 +183,16 @@ func (a aggregate) classify() featureClass {
 //
 // Outcomes with an empty ChallengeID are ignored (they cannot be
 // targeted) rather than producing a malformed challenge.
-func GenerateFromOutcomes(outcomes []challenge.Result) []challenge.Definition {
+//
+// Outcomes are taken by pointer ([]*challenge.Result), matching the
+// convention the challenge package itself uses everywhere Result is
+// handled (Execute, RecordAction, AllPassed, IsFinal all operate on
+// *Result — see digital.vasic.challenges/pkg/challenge). Result embeds
+// an unexported sync.Mutex (RecordAction's action-trace lock), so a
+// []challenge.Result value slice forces every element into it to be
+// copied by value at the call site, which `go vet` flags as an unsafe
+// lock copy (HXC-140). Pointers avoid the copy entirely.
+func GenerateFromOutcomes(outcomes []*challenge.Result) []challenge.Definition {
 	// Fold outcomes by ChallengeID, preserving first-seen order so a
 	// missing/duplicate observation never changes the verdict.
 	order := make([]challenge.ID, 0, len(outcomes))
@@ -181,7 +200,7 @@ func GenerateFromOutcomes(outcomes []challenge.Result) []challenge.Definition {
 
 	for i := range outcomes {
 		o := outcomes[i]
-		if o.ChallengeID == "" {
+		if o == nil || o.ChallengeID == "" {
 			continue
 		}
 		a, ok := aggs[o.ChallengeID]
@@ -310,7 +329,7 @@ func buildDefinition(kind Kind, a aggregate) challenge.Definition {
 // generated challenge is auditable back to the defect that motivated
 // it (Constitution §11.4 — evidence travels with the artefact).
 func regressionAssertionMessage(a aggregate) string {
-	if a.failExample.Error != "" {
+	if a.failExample != nil && a.failExample.Error != "" {
 		return fmt.Sprintf(
 			"feature must no longer fail (was: %s)", a.failExample.Error,
 		)
