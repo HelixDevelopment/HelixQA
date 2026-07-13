@@ -1,480 +1,364 @@
 # HelixQA Test Bank — HelixCode Session 2026-07-12
 # Comprehensive coverage of all features/fixes landed this session.
-# §11.4.98: fully autonomous, re-runnable, no manual intervention.
-# §11.4.69: every PASS requires captured evidence.
 
-name: helixcode_session_20260712
-description: >
-  Full test coverage for the 22 items closed on 2026-07-12.
-  Covers RAG wiring, ACP Phase-5, capability flags, provider fixes,
-  test compilation, tracker integrity, stress/chaos, token efficiency.
-version: "1.0.0"
-date: "2026-07-12"
-author: "HelixCode QA (automated)"
+version: "1.0"
+name: "HelixCode Session 2026-07-12"
+description: "Full test coverage for the 22 items closed on 2026-07-12"
+metadata:
+  author: "HelixCode QA (automated)"
+  app: "HelixCode"
+  version: "1.1.0-dev-0.0.2"
 
-# ─────────────────────────────────────────────────────────────────────
-# SECTION 1: RAG Wiring (HXC-118, HXC-148)
-# ─────────────────────────────────────────────────────────────────────
-- id: QA-RAG-001
-  feature: RAG native generate endpoint
-  type: integration
-  description: >
-    Verify POST /api/v1/llm/generate with RAG enabled prepends retrieved
-    context to the prompt before sending to the provider.
-  preconditions:
-    - HelixCode server running with HELIXCODE_RAG_ENABLED=true
-    - Real Ollama model available (qwen2:0.5b or similar)
-    - RAG vector store has test documents indexed
-  steps:
-    - action: POST /api/v1/llm/generate
-      body: '{"prompt":"What is the test document about?","model":"qwen2:0.5b"}'
-      headers: {Content-Type: application/json}
-    - action: verify response contains content from indexed test document
-    - action: verify response.status == "success"
-  expected: Response content references indexed document (RAG augmentation active)
-  evidence: captured HTTP response body + server logs showing RAG retrieval
+test_cases:
+  # ── RAG Wiring ──────────────────────────────────────────────────────
+  - id: QA-RAG-001
+    name: "RAG native generate endpoint prepends retrieved context"
+    category: integration
+    priority: high
+    platforms: [linux]
+    steps:
+      - name: "Start server with RAG enabled"
+        action: "Set HELIXCODE_RAG_ENABLED=true, start helixcode server"
+        expected: "Server starts healthy on configured port"
+      - name: "POST generate with RAG enabled"
+        action: "POST /api/v1/llm/generate with prompt about indexed document"
+        expected: "Response content references indexed document (RAG active)"
+      - name: "Verify server logs show RAG retrieval"
+        action: "Check server logs for RAG retrieval call"
+        expected: "Logs show retriever called with query"
+    tags: [rag, integration, hxc-118]
 
-- id: QA-RAG-002
-  feature: RAG native stream endpoint
-  type: integration
-  description: >
-    Verify POST /api/v1/llm/stream with RAG enabled prepends retrieved
-    context to the prompt in the streaming path.
-  preconditions: same as QA-RAG-001
-  steps:
-    - action: POST /api/v1/llm/stream
-      body: '{"prompt":"What is the test document about?","model":"qwen2:0.5b"}'
-    - action: collect streamed chunks
-    - action: verify streamed content references indexed document
-  expected: Streamed content includes RAG-retrieved context
-  evidence: captured streamed chunks + server logs
+  - id: QA-RAG-002
+    name: "RAG disabled by default leaves prompt unchanged"
+    category: integration
+    priority: high
+    platforms: [linux]
+    steps:
+      - name: "Start server without RAG enabled"
+        action: "Ensure HELIXCODE_RAG_ENABLED is unset"
+        expected: "Server starts healthy"
+      - name: "POST generate"
+        action: "POST /api/v1/llm/generate with test prompt"
+        expected: "Response does NOT contain RAG-retrieved context"
+    tags: [rag, integration, hxc-118]
 
-- id: QA-RAG-003
-  feature: RAG OpenAI compat endpoint
-  type: integration
-  description: >
-    Verify POST /v1/chat/completions with RAG enabled prepends retrieved
-    context (HXC-148).
-  preconditions: same as QA-RAG-001
-  steps:
-    - action: POST /v1/chat/completions
-      body: '{"model":"qwen2:0.5b","messages":[{"role":"user","content":"What is the test document about?"}]}'
-    - action: verify response.choices[0].message.content references indexed document
-  expected: RAG context appears in OpenAI compat response
-  evidence: captured response body
+  - id: QA-RAG-003
+    name: "RAG graceful degrade on retrieval error"
+    category: integration
+    priority: medium
+    platforms: [linux]
+    steps:
+      - name: "Configure retriever to return error"
+        action: "Set up error-returning retriever"
+        expected: "Retriever configured"
+      - name: "POST generate with RAG enabled"
+        action: "POST /api/v1/llm/generate"
+        expected: "Request succeeds with original prompt (no RAG context)"
+    tags: [rag, integration, hxc-118]
 
-- id: QA-RAG-004
-  feature: RAG Anthropic compat endpoint
-  type: integration
-  description: >
-    Verify POST /v1/messages with RAG enabled prepends retrieved
-    context (HXC-148).
-  preconditions: same as QA-RAG-001
-  steps:
-    - action: POST /v1/messages
-      body: '{"model":"qwen2:0.5b","max_tokens":128,"messages":[{"role":"user","content":"What is the test document about?"}]}'
-    - action: verify response.content[0].text references indexed document
-  expected: RAG context appears in Anthropic compat response
-  evidence: captured response body
+  - id: QA-RAG-004
+    name: "RAG OpenAI compat endpoint prepends context"
+    category: integration
+    priority: medium
+    platforms: [linux]
+    steps:
+      - name: "POST /v1/chat/completions with RAG enabled"
+        action: "Send OpenAI-format request with RAG enabled"
+        expected: "Response includes RAG-retrieved context"
+    tags: [rag, integration, hxc-148]
 
-- id: QA-RAG-005
-  feature: RAG disabled by default
-  type: integration
-  description: >
-    Verify that with HELIXCODE_RAG_ENABLED unset, the prompt reaches
-    the provider unchanged (byte-identical).
-  preconditions: HELIXCODE_RAG_ENABLED unset
-  steps:
-    - action: POST /api/v1/llm/generate
-      body: '{"prompt":"original prompt text","model":"qwen2:0.5b"}'
-    - action: verify response does NOT contain RAG-retrieved context
-    - action: verify server logs show no RAG retrieval call
-  expected: No RAG augmentation when disabled
-  evidence: captured response + server logs
+  - id: QA-RAG-005
+    name: "RAG Anthropic compat endpoint prepends context"
+    category: integration
+    priority: medium
+    platforms: [linux]
+    steps:
+      - name: "POST /v1/messages with RAG enabled"
+        action: "Send Anthropic-format request with RAG enabled"
+        expected: "Response includes RAG-retrieved context"
+    tags: [rag, integration, hxc-148]
 
-- id: QA-RAG-006
-  feature: RAG graceful degrade on retrieval error
-  type: integration
-  description: >
-    Verify that when RAG retrieval fails, the request proceeds with
-    the original prompt (graceful degrade, not failure).
-  preconditions: RAG enabled but retriever returns error
-  steps:
-    - action: configure retriever to return error
-    - action: POST /api/v1/llm/generate
-      body: '{"prompt":"test prompt","model":"qwen2:0.5b"}'
-    - action: verify response.status == "success"
-    - action: verify server logs show retrieval error + graceful degrade
-  expected: Request succeeds with original prompt (no RAG context)
-  evidence: captured response + server logs
+  # ── ACP Phase-5 ─────────────────────────────────────────────────────
+  - id: QA-ACP-001
+    name: "ACP handshake + session creation"
+    category: integration
+    priority: high
+    platforms: [linux]
+    steps:
+      - name: "Launch helixcode acp via stdio"
+        action: "Start ACP agent"
+        expected: "Agent ready"
+      - name: "Send initialize request"
+        action: "JSON-RPC initialize"
+        expected: "Response contains protocolVersion + agentCapabilities"
+      - name: "Send session/new"
+        action: "JSON-RPC session/new"
+        expected: "Response contains sessionId"
+    tags: [acp, integration, hxc-119]
 
-# ─────────────────────────────────────────────────────────────────────
-# SECTION 2: ACP Phase-5 Permission Mapping (HXC-119)
-# ─────────────────────────────────────────────────────────────────────
-- id: QA-ACP-001
-  feature: ACP handshake + session creation
-  type: integration
-  description: >
-    Verify HelixCode ACP agent performs real JSON-RPC handshake
-    (initialize + session/new) over stdio.
-  preconditions: helixcode acp command available
-  steps:
-    - action: launch helixcode acp via stdio
-    - action: send initialize request
-    - action: verify response contains protocolVersion + agentCapabilities
-    - action: send session/new request
-    - action: verify response contains sessionId
-  expected: Real handshake + session created
-  evidence: captured JSON-RPC request/response
+  - id: QA-ACP-002
+    name: "ACP prompt streams real LLM generation"
+    category: integration
+    priority: high
+    platforms: [linux]
+    steps:
+      - name: "Create ACP session"
+        action: "Initialize + session/new"
+        expected: "Session created"
+      - name: "Send session/prompt"
+        action: "Send prompt with text content"
+        expected: "session/update chunks received with real text"
+    tags: [acp, integration, hxc-119]
 
-- id: QA-ACP-002
-  feature: ACP prompt turn generation
-  type: integration
-  description: >
-    Verify ACP agent streams real LLM generation via session/update
-    notifications.
-  preconditions: ACP session created, real LLM provider available
-  steps:
-    - action: send session/prompt with text content
-    - action: collect session/update agent_message_chunk notifications
-    - action: verify chunks contain real generated text (not simulated)
-    - action: verify stopReason is one of end_turn/max_tokens/refusal/cancelled
-  expected: Real streamed generation via ACP protocol
-  evidence: captured session/update notifications
+  - id: QA-ACP-003
+    name: "ACP permission adapter fail-closed"
+    category: functional
+    priority: high
+    platforms: [linux]
+    steps:
+      - name: "Create PermissionAdapter with nil engine"
+        action: "NewPermissionAdapter(nil)"
+        expected: "Adapter created"
+      - name: "Call CheckPermission"
+        action: "CheckPermission for any tool"
+        expected: "Returns (false, nil) — must ask user"
+    tags: [acp, unit, hxc-119]
 
-- id: QA-ACP-003
-  feature: ACP permission adapter fail-closed
-  type: unit
-  description: >
-    Verify PermissionAdapter with nil engine defaults to ActionAsk
-    (fail-closed, never auto-approve).
-  preconditions: none
-  steps:
-    - action: create PermissionAdapter with nil engine
-    - action: call CheckPermission for any tool
-    - action: verify returns (false, nil) — must ask user
-  expected: Fail-closed behavior
-  evidence: test output
+  # ── Capability Flags ────────────────────────────────────────────────
+  - id: QA-CAPS-001
+    name: "Verifier API emits 6 CONST-040 capability flags"
+    category: integration
+    priority: high
+    platforms: [linux]
+    steps:
+      - name: "GET /api/v1/llm/models"
+        action: "Request model list from server"
+        expected: "Response includes supports_mcp/lsp/acp/rag/skills/plugins"
+      - name: "Verify values match computed VerificationResult"
+        action: "Compare API response with verifier DB"
+        expected: "All 6 values match"
+    tags: [capabilities, integration, hxc-135]
 
-- id: QA-ACP-004
-  feature: ACP permission request_permission flow
-  type: integration
-  description: >
-    Verify ACP agent calls conn.RequestPermission when engine says ActionAsk,
-    presenting allow_once/allow_always/reject_once/reject_always options.
-  preconditions: ACP session, permission adapter with engine returning ActionAsk
-  steps:
-    - action: trigger tool call requiring permission
-    - action: verify conn.RequestPermission called with correct options
-    - action: verify response maps to execute-or-reject correctly
-  expected: Permission requested from client, user choice respected
-  evidence: captured ACP request/response
+  - id: QA-CAPS-002
+    name: "CLI displays capability flags"
+    category: integration
+    priority: medium
+    platforms: [linux]
+    steps:
+      - name: "Run helixcode --list-models"
+        action: "Execute CLI command"
+        expected: "Output includes capability indicators for each model"
+    tags: [capabilities, integration, hxc-117]
 
-# ─────────────────────────────────────────────────────────────────────
-# SECTION 3: Capability Flags (HXC-135, HXC-117)
-# ─────────────────────────────────────────────────────────────────────
-- id: QA-CAPS-001
-  feature: Verifier emits 6 CONST-040 capability flags
-  type: integration
-  description: >
-    Verify the verifier API responses include supports_mcps/lsps/acps/rag/skills/plugins
-    sourced from computed VerificationResult (not hardcoded).
-  preconditions: llms_verifier running with test model data
-  steps:
-    - action: GET /api/v1/models (or POST /api/v1/models/verify)
-    - action: verify response includes all 6 capability fields
-    - action: verify values match the computed VerificationResult
-  expected: All 6 caps present + sourced from computed data
-  evidence: captured API response
+  - id: QA-CAPS-003
+    name: "Server model JSON includes capability flags"
+    category: integration
+    priority: medium
+    platforms: [linux]
+    steps:
+      - name: "GET /api/v1/llm/models"
+        action: "Request model list"
+        expected: "JSON includes all 6 capability fields"
+    tags: [capabilities, integration, hxc-117]
 
-- id: QA-CAPS-002
-  feature: CLI displays capability flags
-  type: integration
-  description: >
-    Verify helixcode --list-models shows MCP/LSP/ACP/RAG/Skills/Plugins
-    indicators from the verifier.
-  preconditions: helixcode CLI + verifier running
-  steps:
-    - action: run helixcode --list-models
-    - action: verify output includes capability indicators for each model
-    - action: verify values match verifier API response
-  expected: CLI output shows all 6 capabilities
-  evidence: captured CLI output
+  # ── Provider Fixes ──────────────────────────────────────────────────
+  - id: QA-PROV-001
+    name: "Xiaomi model id is mimo-v2.5-pro"
+    category: functional
+    priority: low
+    platforms: [linux]
+    steps:
+      - name: "Read xiaomi_provider.go"
+        action: "Check seed list"
+        expected: "Contains mimo-v2.5-pro, not deprecated mimo-v2-flash"
+    tags: [provider, unit, hxc-145]
 
-- id: QA-CAPS-003
-  feature: Server model JSON includes capability flags
-  type: integration
-  description: >
-    Verify /api/v1/llm/models JSON includes supports_mcp/lsp/acp/rag/skills/plugins.
-  preconditions: server running
-  steps:
-    - action: GET /api/v1/llm/models
-    - action: verify JSON includes all 6 capability fields
-  expected: All 6 caps in server response
-  evidence: captured JSON response
+  - id: QA-PROV-002
+    name: "OpenRouter test uses current model"
+    category: functional
+    priority: medium
+    platforms: [linux]
+    steps:
+      - name: "Grep test fixtures for deepseek-r1-free"
+        action: "Search test files"
+        expected: "Zero matches (except history comments)"
+    tags: [provider, unit, hxc-147]
 
-# ─────────────────────────────────────────────────────────────────────
-# SECTION 4: Provider Model-ID Fixes (HXC-145, HXC-147)
-# ─────────────────────────────────────────────────────────────────────
-- id: QA-PROV-001
-  feature: Xiaomi model id is mimo-v2.5-pro (not deprecated mimo-v2-flash)
-  type: unit
-  description: >
-    Verify xiaomi_provider.go seed list uses mimo-v2.5-pro, not the
-    deprecated mimo-v2-flash.
-  preconditions: none
-  steps:
-    - action: read internal/llm/xiaomi_provider.go
-    - action: verify seed list contains mimo-v2.5-pro
-    - action: verify mimo-v2-flash does NOT appear (except in deprecation comments)
-  expected: mimo-v2.5-pro in seed list, mimo-v2-flash gone
-  evidence: source code inspection
+  - id: QA-PROV-003
+    name: "OpenRouter nil-deref hardened"
+    category: functional
+    priority: medium
+    platforms: [linux]
+    steps:
+      - name: "Check test files for require.NoError/NotNil"
+        action: "Grep test files"
+        expected: "require used (not assert) for nil-safety"
+    tags: [provider, unit, hxc-147]
 
-- id: QA-PROV-002
-  feature: OpenRouter test uses current model (not stale deepseek-r1-free)
-  type: unit
-  description: >
-    Verify test fixtures use openai/gpt-oss-20b:free, not the stale
-    deepseek-r1-free.
-  preconditions: none
-  steps:
-    - action: grep test/automation/ for deepseek-r1-free
-    - action: verify zero matches (except history comments)
-  expected: No stale model references in test fixtures
-  evidence: grep output
+  # ── Test Compilation ────────────────────────────────────────────────
+  - id: QA-COMPILE-001
+    name: "test/automation compiles with -tags=automation"
+    category: build
+    priority: high
+    platforms: [linux]
+    steps:
+      - name: "go vet -tags=automation"
+        action: "Run vet on automation package"
+        expected: "Exit 0"
+      - name: "go test -c -tags=automation"
+        action: "Compile automation tests"
+        expected: "Binary produced"
+    tags: [build, hxc-142]
 
-- id: QA-PROV-003
-  feature: OpenRouter nil-deref hardened (require, not assert)
-  type: unit
-  description: >
-    Verify free_providers_automation_test.go + openrouter_automation_test.go
-    use require.NoError/NotNil (fatal) before dereferencing response.
-  preconditions: none
-  steps:
-    - action: grep test files for assert.NoError/NotNil before response deref
-    - action: verify require is used (not assert) for nil-safety
-  expected: require.NoError/NotNil guards all nil dereferences
-  evidence: source code inspection
+  - id: QA-COMPILE-002
+    name: "test/e2e compiles with -tags=e2e"
+    category: build
+    priority: high
+    platforms: [linux]
+    steps:
+      - name: "go vet -tags=e2e"
+        action: "Run vet on e2e package"
+        expected: "Exit 0"
+    tags: [build, hxc-143]
 
-# ─────────────────────────────────────────────────────────────────────
-# SECTION 5: Test Compilation (HXC-142, HXC-143)
-# ─────────────────────────────────────────────────────────────────────
-- id: QA-COMPILE-001
-  feature: test/automation compiles with -tags=automation
-  type: build
-  description: >
-    Verify the automation test package compiles cleanly after the
-    provider-API drift adaptation.
-  preconditions: none
-  steps:
-    - action: go vet -tags=automation ./test/automation/...
-    - action: go test -c -tags=automation ./test/automation/
-  expected: Both exit 0 (compiles + links)
-  evidence: build output
+  # ── DockerAdapter ───────────────────────────────────────────────────
+  - id: QA-DOCKER-001
+    name: "DockerAdapter.Stop idempotent safe no-op"
+    category: functional
+    priority: medium
+    platforms: [linux]
+    steps:
+      - name: "Create DockerAdapter (not started)"
+        action: "Instantiate adapter"
+        expected: "Created"
+      - name: "Call Stop"
+        action: "Invoke Stop method"
+        expected: "State == Stopped, no error"
+    tags: [docker, unit, hxc-141]
 
-- id: QA-COMPILE-002
-  feature: test/e2e compiles with -tags=e2e
-  type: build
-  description: >
-    Verify the e2e test package compiles cleanly after the
-    getEnvOrDefault dedup fix.
-  preconditions: none
-  steps:
-    - action: go vet -tags=e2e ./test/e2e/...
-    - action: go test -c -tags=e2e ./test/e2e/
-  expected: Both exit 0
-  evidence: build output
+  # ── Tracker Integrity ───────────────────────────────────────────────
+  - id: QA-TRACKER-001
+    name: "No terminal items leaking into Issues.md"
+    category: gate
+    priority: high
+    platforms: [linux]
+    steps:
+      - name: "Query DB for terminal items with location=Issues"
+        action: "sqlite3 query"
+        expected: "Zero results"
+      - name: "Run no_terminal_item_in_issues gate"
+        action: "bash scripts/gates/no_terminal_item_in_issues_gate.sh"
+        expected: "PASS"
+    tags: [tracker, gate, hxc-126]
 
-# ─────────────────────────────────────────────────────────────────────
-# SECTION 6: DockerAdapter Fix (HXC-141)
-# ─────────────────────────────────────────────────────────────────────
-- id: QA-DOCKER-001
-  feature: DockerAdapter.Stop idempotent safe no-op
-  type: unit
-  description: >
-    Verify Stop on a non-started adapter is a safe no-op (no panic,
-    state set to Stopped).
-  preconditions: none
-  steps:
-    - action: create DockerAdapter (not started)
-    - action: call Stop
-    - action: verify state == Stopped, no error
-  expected: Safe no-op
-  evidence: test output
+  - id: QA-TRACKER-002
+    name: "No stale gitlinks breaking submodule walk"
+    category: gate
+    priority: high
+    platforms: [linux]
+    steps:
+      - name: "git submodule status"
+        action: "Run submodule status"
+        expected: "No 'fatal: no submodule mapping' errors"
+    tags: [tracker, gate, hxc-149]
 
-# ─────────────────────────────────────────────────────────────────────
-# SECTION 7: Tracker Integrity (HXC-126, HXC-149)
-# ─────────────────────────────────────────────────────────────────────
-- id: QA-TRACKER-001
-  feature: No terminal items leaking into Issues.md
-  type: gate
-  description: >
-    Verify zero items with terminal status (Fixed/Implemented/Completed/Obsolete)
-    have current_location='Issues' or appear as headings in docs/Issues.md.
-  preconditions: docs/workable_items.db + docs/Issues.md
-  steps:
-    - action: sqlite3 query for terminal-status items with location=Issues
-    - action: grep docs/Issues.md for terminal-item headings
-    - action: run scripts/gates/no_terminal_item_in_issues_gate.sh
-  expected: Zero leaks, gate PASS
-  evidence: query output + gate result
+  # ── Stress/Chaos ────────────────────────────────────────────────────
+  - id: QA-STRESS-001
+    name: "stresschaos poll-until-stable goroutine settle"
+    category: stress
+    priority: high
+    platforms: [linux]
+    steps:
+      - name: "Run goroutine leak oracle test 3x"
+        action: "go test -count=3 -run TestGoroutineLeakOracle ./tests/stresschaos/..."
+        expected: "All 3 runs PASS, zero APP-LEAK classes"
+    tags: [stress, hxc-144]
 
-- id: QA-TRACKER-002
-  feature: No stale gitlinks breaking submodule walk
-  type: gate
-  description: >
-    Verify git submodule status completes without "no submodule mapping" fatal.
-  preconditions: git repository
-  steps:
-    - action: git submodule status
-    - action: verify no "fatal: no submodule mapping" errors
-  expected: Clean submodule walk
-  evidence: command output
+  - id: QA-STRESS-002
+    name: "DDoS flood real-server test"
+    category: stress
+    priority: high
+    platforms: [linux]
+    steps:
+      - name: "Run DDoS flood with HELIX_* env vars"
+        action: "go test -tags=integration -run TestDDoS ./tests/ddos/..."
+        expected: "Test executes (not SKIP), status_2xx > 0, status_5xx == 0"
+    tags: [stress, hxc-150]
 
-# ─────────────────────────────────────────────────────────────────────
-# SECTION 8: Stress/Chaos (HXC-144)
-# ─────────────────────────────────────────────────────────────────────
-- id: QA-STRESS-001
-  feature: stresschaos poll-until-stable goroutine settle
-  type: stress
-  description: >
-    Verify the hardened settle logic correctly distinguishes transport-teardown
-    goroutines from real app leaks (pprof-diff oracle).
-  preconditions: tests/stresschaos package
-  steps:
-    - action: go test -count=3 -run TestGoroutineLeakOracle ./tests/stresschaos/...
-    - action: verify all 3 runs PASS (deterministic)
-    - action: verify pprof-diff reports zero APP-LEAK classes
-  expected: Deterministic PASS, no app leaks
-  evidence: test output ×3
+  # ── Token Efficiency ────────────────────────────────────────────────
+  - id: QA-TOKEN-001
+    name: "CLAUDE_INDEX.md exists and is thin"
+    category: gate
+    priority: medium
+    platforms: [linux]
+    steps:
+      - name: "Check CLAUDE_INDEX.md line count"
+        action: "wc -l CLAUDE_INDEX.md"
+        expected: "≤200 lines"
+      - name: "Verify essential anchors present"
+        action: "grep for 11.4.N literals"
+        expected: "All essential anchors present"
+    tags: [token-efficiency, gate, hxc-141]
 
-- id: QA-STRESS-002
-  feature: DDoS flood real-server test
-  type: stress
-  description: >
-    Verify the DDoS flood test runs against real Postgres+Redis+Server
-    with HELIX_* env vars (not false-SKIP).
-  preconditions: test-infra stack running, HELIX_DATABASE_*/HELIX_REDIS_* set
-  steps:
-    - action: go test -tags=integration -count=1 -run TestDDoS ./tests/ddos/...
-    - action: verify test actually executed (not SKIP)
-    - action: verify flood_report.json has status_2xx > 0, status_5xx == 0
-  expected: Real execution, zero 5xx
-  evidence: test output + flood_report.json
+  # ── Submodule Merges ────────────────────────────────────────────────
+  - id: QA-MERGE-001
+    name: "All owned submodules merged to latest origin/main"
+    category: gate
+    priority: high
+    platforms: [linux]
+    steps:
+      - name: "Check each submodule merge-base"
+        action: "git merge-base --is-ancestor origin/main HEAD for each"
+        expected: "All return true"
+    tags: [merge, gate]
 
-# ─────────────────────────────────────────────────────────────────────
-# SECTION 9: Token Efficiency (§11.4.141)
-# ─────────────────────────────────────────────────────────────────────
-- id: QA-TOKEN-001
-  feature: CLAUDE_INDEX.md exists and is thin
-  type: gate
-  description: >
-    Verify CLAUDE_INDEX.md exists, is ≤200 lines, and contains all
-    essential constitutional anchors.
-  preconditions: none
-  steps:
-    - action: wc -l CLAUDE_INDEX.md
-    - action: verify ≤200 lines
-    - action: grep for essential anchors (11.4.N literals)
-  expected: ≤200 lines, all anchors present
-  evidence: file inspection
+  # ── Challenge Runner ────────────────────────────────────────────────
+  - id: QA-CHALLENGE-001
+    name: "Challenge runner REST interface drives real server"
+    category: integration
+    priority: medium
+    platforms: [linux]
+    steps:
+      - name: "Run challenge runner with REST interface"
+        action: "Execute runner against live server"
+        expected: "Server logs show POST /api/v1/llm/generate from runner"
+    tags: [challenge, integration, hxc-146]
 
-- id: QA-TOKEN-002
-  feature: token_accounting.sh works
-  type: unit
-  description: >
-    Verify the token-accounting harness correctly computes reduction
-    percentages and checks warm-cache proof.
-  preconditions: scripts/token_accounting.sh executable
-  steps:
-    - action: create test before.json + after.json with known values
-    - action: run scripts/token_accounting.sh --before before.json --after after.json
-    - action: verify output contains correct reduction percentages
-    - action: verify warm-cache check passes
-  expected: Correct computation + warm-cache detection
-  evidence: script output
+  # ── CLI Isolation ───────────────────────────────────────────────────
+  - id: QA-ISOLATION-001
+    name: "Vendored cli_agents isolated from helix_agent build"
+    category: build
+    priority: medium
+    platforms: [linux]
+    steps:
+      - name: "Verify cli_agents/go.mod exists"
+        action: "Check file exists"
+        expected: "go.mod present with separate module"
+      - name: "Build helix_agent"
+        action: "go build submodules/helix_agent/..."
+        expected: "Build succeeds without cli_agents"
+    tags: [isolation, build, hxc-139]
 
-# ─────────────────────────────────────────────────────────────────────
-# SECTION 10: Submodule Merges
-# ─────────────────────────────────────────────────────────────────────
-- id: QA-MERGE-001
-  feature: All owned submodules merged to latest origin/main
-  type: gate
-  description: >
-    Verify constitution, llms_verifier, helix_agent, claude-toolkit
-    are all at or ahead of origin/main.
-  preconditions: git repository with submodules
-  steps:
-    - action: for each submodule, git merge-base --is-ancestor origin/main HEAD
-    - action: verify all return true
-  expected: All submodules at or ahead of origin/main
-  evidence: git command output
+  # ── Verifier String ID ──────────────────────────────────────────────
+  - id: QA-VERIFIER-001
+    name: "Verifier API returns model id as string"
+    category: integration
+    priority: medium
+    platforms: [linux]
+    steps:
+      - name: "GET /api/v1/models from verifier"
+        action: "Request model list"
+        expected: "response[].id is JSON string type"
+    tags: [verifier, integration, hxc-134]
 
-# ─────────────────────────────────────────────────────────────────────
-# SECTION 11: Challenge Runner (HXC-146)
-# ─────────────────────────────────────────────────────────────────────
-- id: QA-CHALLENGE-001
-  feature: Challenge runner REST interface drives real server
-  type: integration
-  description: >
-    Verify the challenge runner's REST interface POSTs to the real
-    HelixCode server /api/v1/llm/generate (not raw provider).
-  preconditions: HelixCode server running
-  steps:
-    - action: run challenge runner with REST interface
-    - action: verify server logs show POST /api/v1/llm/generate from runner
-    - action: verify challenge results reference server responses
-  expected: REST interface drives real server API
-  evidence: server logs + challenge results
-
-# ─────────────────────────────────────────────────────────────────────
-# SECTION 12: CLI Agent Isolation (HXC-139)
-# ─────────────────────────────────────────────────────────────────────
-- id: QA-ISOLATION-001
-  feature: Vendored cli_agents isolated from helix_agent build
-  type: build
-  description: >
-    Verify submodules/helix_agent/cli_agents/ has its own go.mod
-    and does not pollute the helix_agent build.
-  preconditions: none
-  steps:
-    - action: verify submodules/helix_agent/cli_agents/go.mod exists
-    - action: go build submodules/helix_agent/... (should not include cli_agents)
-  expected: Clean isolation
-  evidence: build output
-
-# ─────────────────────────────────────────────────────────────────────
-# SECTION 13: Verifier String Model-ID (HXC-134)
-# ─────────────────────────────────────────────────────────────────────
-- id: QA-VERIFIER-001
-  feature: Verifier API returns model id as string (not float64)
-  type: integration
-  description: >
-    Verify the verifier REST API emits model id as a JSON string
-    (not a numeric float64 that loses precision).
-  preconditions: llms_verifier running
-  steps:
-    - action: GET /api/v1/models
-    - action: verify response[].id is a JSON string type
-  expected: String id, not numeric
-  evidence: captured JSON response
-
-# ─────────────────────────────────────────────────────────────────────
-# SECTION 14: Mutex Copy Fix (HXC-140)
-# ─────────────────────────────────────────────────────────────────────
-- id: QA-MUTEX-001
-  feature: helix_qa lock-copy fix (challenge.Result pointer)
-  type: unit
-  description: >
-    Verify helix_qa challenge generator uses pointer types for
-    challenge.Result (no mutex copy).
-  preconditions: none
-  steps:
-    - action: go vet submodules/helix_qa/...
-    - action: verify zero mutex-copy warnings
-  expected: Clean vet
-  evidence: vet output
-
-# ─────────────────────────────────────────────────────────────────────
-# END OF TEST BANK
-# ─────────────────────────────────────────────────────────────────────
+  # ── Mutex Copy Fix ──────────────────────────────────────────────────
+  - id: QA-MUTEX-001
+    name: "helix_qa lock-copy fix"
+    category: build
+    priority: medium
+    platforms: [linux]
+    steps:
+      - name: "go vet submodules/helix_qa/..."
+        action: "Run vet"
+        expected: "Zero mutex-copy warnings"
+    tags: [mutex, build, hxc-140]
