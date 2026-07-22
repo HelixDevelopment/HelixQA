@@ -1,2 +1,3 @@
-# helix_seller
-Helix Seller
+# Helix Seller
+
+The Seller platform.
