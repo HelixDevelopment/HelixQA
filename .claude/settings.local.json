@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "defaultMode": "bypassPermissions",
+    "allow": [
+      "Bash(echo 'export SSL_CERT_FILE=__TRACKED_VAR__/.helixagent/ca-bundle.pem')",
+      "Bash(echo \"export NODE_EXTRA_CA_CERTS=/tmp/helixllm-live-cert.pem\")"
+    ]
+  }
+}
