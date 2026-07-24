@@ -38,7 +38,8 @@ web/dist/
 web/node_modules/
 
 # HXS challenge artifacts
-docs/recordings/
+docs/recordings/*.mp4
+docs/recordings/*.mkv
 *.mp4
 *.mkv
 /tmp/hxs_*.results
