@@ -115,14 +115,26 @@ func (h *AuthHandler) Refresh(c *gin.Context) {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid refresh token"})
 		return
 	}
-	userID, _ := uuid.Parse(claims["sub"].(string))
+	userID, err := uuid.Parse(claims["sub"].(string))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid user id"})
+		return
+	}
 	user, err := h.userRepo.GetByID(c.Request.Context(), userID)
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "user not found"})
 		return
 	}
-	accessToken, _ := h.jwtSvc.GenerateAccessToken(user.ID, user.Email, string(user.Role), user.MerchantID)
-	refreshToken, _ := h.jwtSvc.GenerateRefreshToken(user.ID)
+	accessToken, err := h.jwtSvc.GenerateAccessToken(user.ID, user.Email, string(user.Role), user.MerchantID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to generate access token"})
+		return
+	}
+	refreshToken, err := h.jwtSvc.GenerateRefreshToken(user.ID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to generate refresh token"})
+		return
+	}
 	c.JSON(http.StatusOK, gin.H{
 		"access_token":  accessToken,
 		"refresh_token": refreshToken,
@@ -137,7 +149,11 @@ func (h *AuthHandler) Logout(c *gin.Context) {
 // POST /auth/mfa/setup
 func (h *AuthHandler) SetupMFA(c *gin.Context) {
 	userID := c.GetString("user_id")
-	uid, _ := uuid.Parse(userID)
+	uid, err := uuid.Parse(userID)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid user id"})
+		return
+	}
 	user, err := h.userRepo.GetByID(c.Request.Context(), uid)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "user not found"})
@@ -168,7 +184,11 @@ func (h *AuthHandler) VerifyMFA(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	uid, _ := uuid.Parse(req.UserID)
+	uid, err := uuid.Parse(req.UserID)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid user id"})
+		return
+	}
 	user, err := h.userRepo.GetByID(c.Request.Context(), uid)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "user not found"})
@@ -180,8 +200,16 @@ func (h *AuthHandler) VerifyMFA(c *gin.Context) {
 	}
 	user.MfaEnabled = true
 	h.userRepo.Update(c.Request.Context(), user)
-	accessToken, _ := h.jwtSvc.GenerateAccessToken(user.ID, user.Email, string(user.Role), user.MerchantID)
-	refreshToken, _ := h.jwtSvc.GenerateRefreshToken(user.ID)
+	accessToken, err := h.jwtSvc.GenerateAccessToken(user.ID, user.Email, string(user.Role), user.MerchantID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to generate access token"})
+		return
+	}
+	refreshToken, err := h.jwtSvc.GenerateRefreshToken(user.ID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to generate refresh token"})
+		return
+	}
 	c.JSON(http.StatusOK, gin.H{
 		"access_token":  accessToken,
 		"refresh_token": refreshToken,

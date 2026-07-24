@@ -85,14 +85,16 @@ func newTestServices(userRepo *repository.UserRepo, webhookConfigRepo *repositor
 	return authSvc, jwtSvc, mfaSvc, webhookSvc, apiKeySvc
 }
 
-func seedUser(t *testing.T, userRepo *repository.UserRepo, email string) *model.User {
+func seedUser(t *testing.T, userRepo *repository.UserRepo, merchantRepo *repository.MerchantRepo, email string) *model.User {
 	t.Helper()
+	merchant := seedMerchant(t, merchantRepo)
 	user := &model.User{
 		ID:           uuid.New(),
 		Email:        email,
 		PasswordHash: "testhash",
 		Name:         "Test User",
 		Role:         model.RoleUser,
+		MerchantID:   merchant.ID,
 		IsActive:     true,
 	}
 	if err := userRepo.Create(context.Background(), user); err != nil {
@@ -101,8 +103,9 @@ func seedUser(t *testing.T, userRepo *repository.UserRepo, email string) *model.
 	return user
 }
 
-func seedUserWithPassword(t *testing.T, authSvc *service.AuthService, userRepo *repository.UserRepo, email, password string) *model.User {
+func seedUserWithPassword(t *testing.T, authSvc *service.AuthService, userRepo *repository.UserRepo, merchantRepo *repository.MerchantRepo, email, password string) *model.User {
 	t.Helper()
+	merchant := seedMerchant(t, merchantRepo)
 	hash, err := authSvc.HashPassword(password)
 	if err != nil {
 		t.Fatalf("hash password: %v", err)
@@ -113,6 +116,7 @@ func seedUserWithPassword(t *testing.T, authSvc *service.AuthService, userRepo *
 		PasswordHash: hash,
 		Name:         "Test User",
 		Role:         model.RoleUser,
+		MerchantID:   merchant.ID,
 		IsActive:     true,
 	}
 	if err := userRepo.Create(context.Background(), user); err != nil {
@@ -123,16 +127,20 @@ func seedUserWithPassword(t *testing.T, authSvc *service.AuthService, userRepo *
 
 func seedMerchant(t *testing.T, merchantRepo *repository.MerchantRepo) *model.Merchant {
 	t.Helper()
+	uid := uuid.New()
 	m := &model.Merchant{
-		ID:        uuid.New(),
+		ID:        uid,
+		Name:      "Test Corp",
 		LegalName: "Test Corp",
 		TradeName: "Test",
-		Email:     "merchant@test.com",
+		Email:     "merchant-" + uid.String()[:8] + "@test.com",
 		Phone:     "+1234567890",
 		Country:   "US",
 		Currency:  "USD",
+		Slug:      "test-corp-" + uid.String()[:8],
 		Status:    model.MerchantStatusPending,
 		KycStatus: model.KycStatusPending,
+		Settings:  json.RawMessage(`{}`),
 	}
 	if err := merchantRepo.Create(context.Background(), m); err != nil {
 		t.Fatalf("seed merchant: %v", err)
@@ -142,12 +150,14 @@ func seedMerchant(t *testing.T, merchantRepo *repository.MerchantRepo) *model.Me
 
 func seedCustomer(t *testing.T, customerRepo *repository.CustomerRepo, merchantID uuid.UUID) *model.Customer {
 	t.Helper()
+	uid := uuid.New()
 	c := &model.Customer{
-		ID:         uuid.New(),
+		ID:         uid,
 		MerchantID: merchantID,
 		Name:       "Test Customer",
-		Email:      "customer@test.com",
+		Email:      "customer-" + uid.String()[:8] + "@test.com",
 		Phone:      "+0987654321",
+		Metadata:   json.RawMessage(`{}`),
 	}
 	if err := customerRepo.Create(context.Background(), c); err != nil {
 		t.Fatalf("seed customer: %v", err)
@@ -165,6 +175,7 @@ func seedProviderConfig(t *testing.T, providerRepo *repository.ProviderConfigRep
 		Config:        json.RawMessage(`{"api_key":"sk_test"}`),
 		FallbackOrder: 1,
 		HealthStatus:  model.HealthStatusHealthy,
+		Metadata:      json.RawMessage(`{}`),
 	}
 	if err := providerRepo.Create(context.Background(), pc); err != nil {
 		t.Fatalf("seed provider config: %v", err)
@@ -175,11 +186,13 @@ func seedProviderConfig(t *testing.T, providerRepo *repository.ProviderConfigRep
 func seedWebhookConfig(t *testing.T, webhookRepo *repository.WebhookConfigRepo, merchantID uuid.UUID) *model.WebhookConfig {
 	t.Helper()
 	w := &model.WebhookConfig{
+		ID:         uuid.New(),
 		MerchantID: merchantID,
 		URL:        "https://example.com/webhook",
 		Secret:     "whsec_test",
 		Events:     []string{"payment.succeeded"},
 		IsActive:   true,
+		Metadata:   json.RawMessage(`{}`),
 	}
 	if err := webhookRepo.Create(context.Background(), w); err != nil {
 		t.Fatalf("seed webhook config: %v", err)
@@ -282,12 +295,12 @@ func TestRegister_ShortPassword(t *testing.T) {
 }
 
 func TestLogin_Success_NoMFA(t *testing.T) {
-	userRepo, _, _, _, _, _ := newTestDBRepos()
+	userRepo, _, merchantRepo, _, _, _ := newTestDBRepos()
 	authSvc, jwtSvc, _, _, _ := newTestServices(userRepo, nil)
 	h := NewAuthHandler(authSvc, jwtSvc, nil, userRepo)
 
 	email := fmt.Sprintf("login_%d@example.com", time.Now().UnixNano())
-	seedUserWithPassword(t, authSvc, userRepo, email, "securepassword123")
+	seedUserWithPassword(t, authSvc, userRepo, merchantRepo, email, "securepassword123")
 
 	body := map[string]string{"email": email, "password": "securepassword123"}
 	c, w := ginContextWith("POST", "/auth/login", body, nil)
@@ -306,12 +319,12 @@ func TestLogin_Success_NoMFA(t *testing.T) {
 }
 
 func TestLogin_Success_WithMFA(t *testing.T) {
-	userRepo, _, _, _, _, _ := newTestDBRepos()
+	userRepo, _, merchantRepo, _, _, _ := newTestDBRepos()
 	authSvc, jwtSvc, mfaSvc, _, _ := newTestServices(userRepo, nil)
 	h := NewAuthHandler(authSvc, jwtSvc, mfaSvc, userRepo)
 
 	email := fmt.Sprintf("login_mfa_%d@example.com", time.Now().UnixNano())
-	user := seedUserWithPassword(t, authSvc, userRepo, email, "securepassword123")
+	user := seedUserWithPassword(t, authSvc, userRepo, merchantRepo, email, "securepassword123")
 
 	secret, _ := mfaSvc.GenerateSecret()
 	user.MfaEnabled = true
@@ -358,12 +371,12 @@ func TestLogin_BindError(t *testing.T) {
 }
 
 func TestRefresh_Success(t *testing.T) {
-	userRepo, _, _, _, _, _ := newTestDBRepos()
+	userRepo, _, merchantRepo, _, _, _ := newTestDBRepos()
 	authSvc, jwtSvc, _, _, _ := newTestServices(userRepo, nil)
 	h := NewAuthHandler(authSvc, jwtSvc, nil, userRepo)
 
 	email := fmt.Sprintf("refresh_%d@example.com", time.Now().UnixNano())
-	user := seedUser(t, userRepo, email)
+	user := seedUser(t, userRepo, merchantRepo, email)
 
 	refreshToken, err := jwtSvc.GenerateRefreshToken(user.ID)
 	if err != nil {
@@ -424,12 +437,12 @@ func TestRefresh_BindError(t *testing.T) {
 }
 
 func TestSetupMFA_Success(t *testing.T) {
-	userRepo, _, _, _, _, _ := newTestDBRepos()
+	userRepo, _, merchantRepo, _, _, _ := newTestDBRepos()
 	authSvc, _, mfaSvc, _, _ := newTestServices(userRepo, nil)
 	h := NewAuthHandler(authSvc, nil, mfaSvc, userRepo)
 
 	email := fmt.Sprintf("mfa_setup_%d@example.com", time.Now().UnixNano())
-	user := seedUser(t, userRepo, email)
+	user := seedUser(t, userRepo, merchantRepo, email)
 
 	c, w := ginContextWith("POST", "/auth/mfa/setup", nil, nil)
 	c.Set("user_id", user.ID.String())
@@ -471,18 +484,18 @@ func TestSetupMFA_InvalidUserID(t *testing.T) {
 	c, w := ginContextWith("POST", "/auth/mfa/setup", nil, nil)
 	c.Set("user_id", "not-a-uuid")
 	h.SetupMFA(c)
-	if w.Code != http.StatusNotFound {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusNotFound)
+	if w.Code != http.StatusBadRequest {
+		t.Errorf("status = %d, want %d", w.Code, http.StatusBadRequest)
 	}
 }
 
 func TestVerifyMFA_Success(t *testing.T) {
-	userRepo, _, _, _, _, _ := newTestDBRepos()
+	userRepo, _, merchantRepo, _, _, _ := newTestDBRepos()
 	authSvc, jwtSvc, mfaSvc, _, _ := newTestServices(userRepo, nil)
 	h := NewAuthHandler(authSvc, jwtSvc, mfaSvc, userRepo)
 
 	email := fmt.Sprintf("mfa_verify_%d@example.com", time.Now().UnixNano())
-	user := seedUser(t, userRepo, email)
+	user := seedUser(t, userRepo, merchantRepo, email)
 
 	secret, _ := mfaSvc.GenerateSecret()
 	user.MfaSecret = &secret
@@ -510,12 +523,12 @@ func TestVerifyMFA_UserNotFound(t *testing.T) {
 }
 
 func TestVerifyMFA_NoSecret(t *testing.T) {
-	userRepo, _, _, _, _, _ := newTestDBRepos()
+	userRepo, _, merchantRepo, _, _, _ := newTestDBRepos()
 	authSvc, jwtSvc, mfaSvc, _, _ := newTestServices(userRepo, nil)
 	h := NewAuthHandler(authSvc, jwtSvc, mfaSvc, userRepo)
 
 	email := fmt.Sprintf("mfa_nosecret_%d@example.com", time.Now().UnixNano())
-	user := seedUser(t, userRepo, email)
+	user := seedUser(t, userRepo, merchantRepo, email)
 
 	body := map[string]string{"user_id": user.ID.String(), "code": "123456"}
 	c, w := ginContextWith("POST", "/auth/mfa/verify", body, nil)
@@ -546,8 +559,8 @@ func TestVerifyMFA_InvalidUUID(t *testing.T) {
 	body := map[string]string{"user_id": "not-a-uuid", "code": "123456"}
 	c, w := ginContextWith("POST", "/auth/mfa/verify", body, nil)
 	h.VerifyMFA(c)
-	if w.Code != http.StatusNotFound {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusNotFound)
+	if w.Code != http.StatusBadRequest {
+		t.Errorf("status = %d, want %d", w.Code, http.StatusBadRequest)
 	}
 }
 
@@ -556,11 +569,11 @@ func TestVerifyMFA_InvalidUUID(t *testing.T) {
 // ============================================================
 
 func TestUpdateUser_Success(t *testing.T) {
-	userRepo, _, _, _, _, _ := newTestDBRepos()
+	userRepo, _, merchantRepo, _, _, _ := newTestDBRepos()
 	h := NewUserHandler(userRepo)
 
 	email := fmt.Sprintf("upduser_%d@example.com", time.Now().UnixNano())
-	user := seedUser(t, userRepo, email)
+	user := seedUser(t, userRepo, merchantRepo, email)
 
 	body := map[string]string{"name": "Updated Name", "email": "updated_" + email}
 	c, w := ginContextWith("PUT", "/users/me", body, nil)
@@ -603,11 +616,11 @@ func TestUpdateUser_InvalidUUID(t *testing.T) {
 }
 
 func TestUpdateUser_PartialUpdate_NameOnly(t *testing.T) {
-	userRepo, _, _, _, _, _ := newTestDBRepos()
+	userRepo, _, merchantRepo, _, _, _ := newTestDBRepos()
 	h := NewUserHandler(userRepo)
 
 	email := fmt.Sprintf("updname_%d@example.com", time.Now().UnixNano())
-	user := seedUser(t, userRepo, email)
+	user := seedUser(t, userRepo, merchantRepo, email)
 
 	body := map[string]string{"name": "Only Name Changed"}
 	c, w := ginContextWith("PUT", "/users/me", body, nil)
@@ -619,11 +632,11 @@ func TestUpdateUser_PartialUpdate_NameOnly(t *testing.T) {
 }
 
 func TestUpdateUser_PartialUpdate_EmailOnly(t *testing.T) {
-	userRepo, _, _, _, _, _ := newTestDBRepos()
+	userRepo, _, merchantRepo, _, _, _ := newTestDBRepos()
 	h := NewUserHandler(userRepo)
 
 	email := fmt.Sprintf("updemail_%d@example.com", time.Now().UnixNano())
-	user := seedUser(t, userRepo, email)
+	user := seedUser(t, userRepo, merchantRepo, email)
 
 	newEmail := "new_" + email
 	body := map[string]string{"email": newEmail}
@@ -636,11 +649,11 @@ func TestUpdateUser_PartialUpdate_EmailOnly(t *testing.T) {
 }
 
 func TestUpdateUser_EmptyBody(t *testing.T) {
-	userRepo, _, _, _, _, _ := newTestDBRepos()
+	userRepo, _, merchantRepo, _, _, _ := newTestDBRepos()
 	h := NewUserHandler(userRepo)
 
 	email := fmt.Sprintf("updempty_%d@example.com", time.Now().UnixNano())
-	user := seedUser(t, userRepo, email)
+	user := seedUser(t, userRepo, merchantRepo, email)
 
 	body := map[string]string{}
 	c, w := ginContextWith("PUT", "/users/me", body, nil)
@@ -694,7 +707,7 @@ func TestUpdateCustomer_NotFound(t *testing.T) {
 
 	fakeID := uuid.New()
 	body := map[string]string{"name": "Updated"}
-	c, w := ginContextWith("PUT", "/customers/"+fakeID.String(), body, nil,
+	c, w := ginContextWith("PUT", "/customers/"+fakeID.String(), body,
 		gin.Params{{Key: "customerId", Value: fakeID.String()}})
 	h.UpdateCustomer(c)
 	if w.Code != http.StatusNotFound {
@@ -707,7 +720,7 @@ func TestUpdateCustomer_InvalidUUID(t *testing.T) {
 	h := NewCustomerHandler(customerRepo, nil)
 
 	body := map[string]string{"name": "Updated"}
-	c, w := ginContextWith("PUT", "/customers/bad", body, nil,
+	c, w := ginContextWith("PUT", "/customers/bad", body,
 		gin.Params{{Key: "customerId", Value: "not-a-uuid"}})
 	h.UpdateCustomer(c)
 	if w.Code != http.StatusBadRequest {
@@ -720,7 +733,7 @@ func TestUpdateCustomer_BindError(t *testing.T) {
 	h := NewCustomerHandler(customerRepo, nil)
 
 	cID := uuid.New()
-	c, w := ginContextWith("PUT", "/customers/"+cID.String(), "not json", nil,
+	c, w := ginContextWith("PUT", "/customers/"+cID.String(), "not json",
 		gin.Params{{Key: "customerId", Value: cID.String()}})
 	h.UpdateCustomer(c)
 	if w.Code != http.StatusBadRequest {
@@ -736,7 +749,7 @@ func TestUpdateCustomer_PartialUpdate_NameOnly(t *testing.T) {
 	customer := seedCustomer(t, customerRepo, merchant.ID)
 
 	body := map[string]string{"name": "Name Only"}
-	c, w := ginContextWith("PUT", "/customers/"+customer.ID.String(), body, nil,
+	c, w := ginContextWith("PUT", "/customers/"+customer.ID.String(), body,
 		gin.Params{{Key: "customerId", Value: customer.ID.String()}})
 	h.UpdateCustomer(c)
 	if w.Code != http.StatusOK {
@@ -752,7 +765,7 @@ func TestUpdateCustomer_PartialUpdate_PhoneOnly(t *testing.T) {
 	customer := seedCustomer(t, customerRepo, merchant.ID)
 
 	body := map[string]string{"phone": "+9999999999"}
-	c, w := ginContextWith("PUT", "/customers/"+customer.ID.String(), body, nil,
+	c, w := ginContextWith("PUT", "/customers/"+customer.ID.String(), body,
 		gin.Params{{Key: "customerId", Value: customer.ID.String()}})
 	h.UpdateCustomer(c)
 	if w.Code != http.StatusOK {
@@ -768,7 +781,7 @@ func TestUpdateCustomer_EmptyBody(t *testing.T) {
 	customer := seedCustomer(t, customerRepo, merchant.ID)
 
 	body := map[string]string{}
-	c, w := ginContextWith("PUT", "/customers/"+customer.ID.String(), body, nil,
+	c, w := ginContextWith("PUT", "/customers/"+customer.ID.String(), body,
 		gin.Params{{Key: "customerId", Value: customer.ID.String()}})
 	h.UpdateCustomer(c)
 	if w.Code != http.StatusOK {
@@ -786,13 +799,14 @@ func TestUpdateMerchant_Success(t *testing.T) {
 
 	merchant := seedMerchant(t, merchantRepo)
 
+	uid := uuid.New()
 	body := map[string]string{
 		"legal_name": "Updated Corp",
 		"trade_name": "Updated Trade",
-		"email":      "updated@test.com",
+		"email":      "updated-" + uid.String()[:8] + "@test.com",
 		"phone":      "+1111111111",
 	}
-	c, w := ginContextWith("PUT", "/merchants/"+merchant.ID.String(), body, nil,
+	c, w := ginContextWith("PUT", "/merchants/"+merchant.ID.String(), body,
 		gin.Params{{Key: "merchantId", Value: merchant.ID.String()}})
 	h.UpdateMerchant(c)
 	if w.Code != http.StatusOK {
@@ -811,7 +825,7 @@ func TestUpdateMerchant_NotFound(t *testing.T) {
 
 	fakeID := uuid.New()
 	body := map[string]string{"legal_name": "Updated"}
-	c, w := ginContextWith("PUT", "/merchants/"+fakeID.String(), body, nil,
+	c, w := ginContextWith("PUT", "/merchants/"+fakeID.String(), body,
 		gin.Params{{Key: "merchantId", Value: fakeID.String()}})
 	h.UpdateMerchant(c)
 	if w.Code != http.StatusNotFound {
@@ -824,7 +838,7 @@ func TestUpdateMerchant_InvalidUUID(t *testing.T) {
 	h := NewMerchantHandler(merchantRepo)
 
 	body := map[string]string{"legal_name": "Updated"}
-	c, w := ginContextWith("PUT", "/merchants/bad", body, nil,
+	c, w := ginContextWith("PUT", "/merchants/bad", body,
 		gin.Params{{Key: "merchantId", Value: "not-a-uuid"}})
 	h.UpdateMerchant(c)
 	if w.Code != http.StatusBadRequest {
@@ -837,7 +851,7 @@ func TestUpdateMerchant_BindError(t *testing.T) {
 	h := NewMerchantHandler(merchantRepo)
 
 	mID := uuid.New()
-	c, w := ginContextWith("PUT", "/merchants/"+mID.String(), "not json", nil,
+	c, w := ginContextWith("PUT", "/merchants/"+mID.String(), "not json",
 		gin.Params{{Key: "merchantId", Value: mID.String()}})
 	h.UpdateMerchant(c)
 	if w.Code != http.StatusBadRequest {
@@ -852,7 +866,7 @@ func TestUpdateMerchant_PartialUpdate_LegalNameOnly(t *testing.T) {
 	merchant := seedMerchant(t, merchantRepo)
 
 	body := map[string]string{"legal_name": "Legal Only"}
-	c, w := ginContextWith("PUT", "/merchants/"+merchant.ID.String(), body, nil,
+	c, w := ginContextWith("PUT", "/merchants/"+merchant.ID.String(), body,
 		gin.Params{{Key: "merchantId", Value: merchant.ID.String()}})
 	h.UpdateMerchant(c)
 	if w.Code != http.StatusOK {
@@ -867,7 +881,7 @@ func TestUpdateMerchant_PartialUpdate_TradeNameOnly(t *testing.T) {
 	merchant := seedMerchant(t, merchantRepo)
 
 	body := map[string]string{"trade_name": "Trade Only"}
-	c, w := ginContextWith("PUT", "/merchants/"+merchant.ID.String(), body, nil,
+	c, w := ginContextWith("PUT", "/merchants/"+merchant.ID.String(), body,
 		gin.Params{{Key: "merchantId", Value: merchant.ID.String()}})
 	h.UpdateMerchant(c)
 	if w.Code != http.StatusOK {
@@ -881,8 +895,9 @@ func TestUpdateMerchant_PartialUpdate_EmailOnly(t *testing.T) {
 
 	merchant := seedMerchant(t, merchantRepo)
 
-	body := map[string]string{"email": "email_only@test.com"}
-	c, w := ginContextWith("PUT", "/merchants/"+merchant.ID.String(), body, nil,
+	uid := uuid.New()
+	body := map[string]string{"email": "email_only-" + uid.String()[:8] + "@test.com"}
+	c, w := ginContextWith("PUT", "/merchants/"+merchant.ID.String(), body,
 		gin.Params{{Key: "merchantId", Value: merchant.ID.String()}})
 	h.UpdateMerchant(c)
 	if w.Code != http.StatusOK {
@@ -897,7 +912,7 @@ func TestUpdateMerchant_PartialUpdate_PhoneOnly(t *testing.T) {
 	merchant := seedMerchant(t, merchantRepo)
 
 	body := map[string]string{"phone": "+2222222222"}
-	c, w := ginContextWith("PUT", "/merchants/"+merchant.ID.String(), body, nil,
+	c, w := ginContextWith("PUT", "/merchants/"+merchant.ID.String(), body,
 		gin.Params{{Key: "merchantId", Value: merchant.ID.String()}})
 	h.UpdateMerchant(c)
 	if w.Code != http.StatusOK {
@@ -912,7 +927,7 @@ func TestUpdateMerchant_EmptyBody(t *testing.T) {
 	merchant := seedMerchant(t, merchantRepo)
 
 	body := map[string]string{}
-	c, w := ginContextWith("PUT", "/merchants/"+merchant.ID.String(), body, nil,
+	c, w := ginContextWith("PUT", "/merchants/"+merchant.ID.String(), body,
 		gin.Params{{Key: "merchantId", Value: merchant.ID.String()}})
 	h.UpdateMerchant(c)
 	if w.Code != http.StatusOK {
@@ -942,7 +957,7 @@ func TestUpdateProvider_Success(t *testing.T) {
 		"fallback_order": &fo,
 		"health_status":  &hs,
 	}
-	c, w := ginContextWith("PUT", "/providers/"+provider.ID.String(), body, nil,
+	c, w := ginContextWith("PUT", "/providers/"+provider.ID.String(), body,
 		gin.Params{{Key: "providerId", Value: provider.ID.String()}})
 	h.UpdateProvider(c)
 	if w.Code != http.StatusOK {
@@ -956,7 +971,7 @@ func TestUpdateProvider_NotFound(t *testing.T) {
 
 	fakeID := uuid.New()
 	body := map[string]string{"config": "{}"}
-	c, w := ginContextWith("PUT", "/providers/"+fakeID.String(), body, nil,
+	c, w := ginContextWith("PUT", "/providers/"+fakeID.String(), body,
 		gin.Params{{Key: "providerId", Value: fakeID.String()}})
 	h.UpdateProvider(c)
 	if w.Code != http.StatusNotFound {
@@ -969,7 +984,7 @@ func TestUpdateProvider_InvalidUUID(t *testing.T) {
 	h := NewProviderHandler(providerRepo)
 
 	body := map[string]string{"config": "{}"}
-	c, w := ginContextWith("PUT", "/providers/bad", body, nil,
+	c, w := ginContextWith("PUT", "/providers/bad", body,
 		gin.Params{{Key: "providerId", Value: "not-a-uuid"}})
 	h.UpdateProvider(c)
 	if w.Code != http.StatusBadRequest {
@@ -982,7 +997,7 @@ func TestUpdateProvider_BindError(t *testing.T) {
 	h := NewProviderHandler(providerRepo)
 
 	pID := uuid.New()
-	c, w := ginContextWith("PUT", "/providers/"+pID.String(), "not json", nil,
+	c, w := ginContextWith("PUT", "/providers/"+pID.String(), "not json",
 		gin.Params{{Key: "providerId", Value: pID.String()}})
 	h.UpdateProvider(c)
 	if w.Code != http.StatusBadRequest {
@@ -1001,7 +1016,7 @@ func TestUpdateProvider_PartialUpdate_IsActiveOnly(t *testing.T) {
 	body := map[string]interface{}{
 		"is_active": &isActive,
 	}
-	c, w := ginContextWith("PUT", "/providers/"+provider.ID.String(), body, nil,
+	c, w := ginContextWith("PUT", "/providers/"+provider.ID.String(), body,
 		gin.Params{{Key: "providerId", Value: provider.ID.String()}})
 	h.UpdateProvider(c)
 	if w.Code != http.StatusOK {
@@ -1020,7 +1035,7 @@ func TestUpdateProvider_PartialUpdate_FallbackOrderOnly(t *testing.T) {
 	body := map[string]interface{}{
 		"fallback_order": &fo,
 	}
-	c, w := ginContextWith("PUT", "/providers/"+provider.ID.String(), body, nil,
+	c, w := ginContextWith("PUT", "/providers/"+provider.ID.String(), body,
 		gin.Params{{Key: "providerId", Value: provider.ID.String()}})
 	h.UpdateProvider(c)
 	if w.Code != http.StatusOK {
@@ -1039,7 +1054,7 @@ func TestUpdateProvider_PartialUpdate_HealthStatusOnly(t *testing.T) {
 	body := map[string]interface{}{
 		"health_status": &hs,
 	}
-	c, w := ginContextWith("PUT", "/providers/"+provider.ID.String(), body, nil,
+	c, w := ginContextWith("PUT", "/providers/"+provider.ID.String(), body,
 		gin.Params{{Key: "providerId", Value: provider.ID.String()}})
 	h.UpdateProvider(c)
 	if w.Code != http.StatusOK {
@@ -1055,7 +1070,7 @@ func TestUpdateProvider_EmptyBody(t *testing.T) {
 	provider := seedProviderConfig(t, providerRepo, merchant.ID)
 
 	body := map[string]interface{}{}
-	c, w := ginContextWith("PUT", "/providers/"+provider.ID.String(), body, nil,
+	c, w := ginContextWith("PUT", "/providers/"+provider.ID.String(), body,
 		gin.Params{{Key: "providerId", Value: provider.ID.String()}})
 	h.UpdateProvider(c)
 	if w.Code != http.StatusOK {
@@ -1083,7 +1098,7 @@ func TestUpdateWebhook_Success(t *testing.T) {
 		"events":   []string{"payment.failed"},
 		"is_active": false,
 	}
-	c, w := ginContextWith("PUT", "/webhooks/"+webhook.ID.String(), body, nil,
+	c, w := ginContextWith("PUT", "/webhooks/"+webhook.ID.String(), body,
 		gin.Params{{Key: "merchantId", Value: merchant.ID.String()}, {Key: "webhookId", Value: webhook.ID.String()}})
 	h.UpdateWebhook(c)
 	if w.Code != http.StatusOK {
@@ -1102,7 +1117,7 @@ func TestUpdateWebhook_NotFound(t *testing.T) {
 
 	fakeID := uuid.New()
 	body := map[string]interface{}{"url": "https://new.com"}
-	c, w := ginContextWith("PUT", "/webhooks/"+fakeID.String(), body, nil,
+	c, w := ginContextWith("PUT", "/webhooks/"+fakeID.String(), body,
 		gin.Params{{Key: "merchantId", Value: merchant.ID.String()}, {Key: "webhookId", Value: fakeID.String()}})
 	h.UpdateWebhook(c)
 	if w.Code != http.StatusNotFound {
@@ -1123,7 +1138,7 @@ func TestUpdateWebhook_MerchantMismatch(t *testing.T) {
 	webhook := seedWebhookConfig(t, webhookRepo, merchant1.ID)
 
 	body := map[string]interface{}{"url": "https://new.com"}
-	c, w := ginContextWith("PUT", "/webhooks/"+webhook.ID.String(), body, nil,
+	c, w := ginContextWith("PUT", "/webhooks/"+webhook.ID.String(), body,
 		gin.Params{{Key: "merchantId", Value: merchant2.ID.String()}, {Key: "webhookId", Value: webhook.ID.String()}})
 	h.UpdateWebhook(c)
 	if w.Code != http.StatusNotFound {
@@ -1132,10 +1147,10 @@ func TestUpdateWebhook_MerchantMismatch(t *testing.T) {
 }
 
 func TestUpdateWebhook_InvalidMerchantID(t *testing.T) {
-	_, _, _, _, _, _ := newTestDBRepos()
+	_, _, _, _, _, _ = newTestDBRepos()
 	h := &WebhookHandler{}
 
-	c, w := ginContextWith("PUT", "/webhooks/bad", []byte(`{}`), nil,
+	c, w := ginContextWith("PUT", "/webhooks/bad", []byte(`{}`),
 		gin.Params{{Key: "merchantId", Value: "bad"}, {Key: "webhookId", Value: "bad"}})
 	h.UpdateWebhook(c)
 	if w.Code != http.StatusBadRequest {
@@ -1144,10 +1159,10 @@ func TestUpdateWebhook_InvalidMerchantID(t *testing.T) {
 }
 
 func TestUpdateWebhook_InvalidWebhookID(t *testing.T) {
-	_, _, _, _, _, _ := newTestDBRepos()
+	_, _, _, _, _, _ = newTestDBRepos()
 	h := &WebhookHandler{}
 
-	c, w := ginContextWith("PUT", "/webhooks/bad", []byte(`{}`), nil,
+	c, w := ginContextWith("PUT", "/webhooks/bad", []byte(`{}`),
 		gin.Params{{Key: "merchantId", Value: uuid.New().String()}, {Key: "webhookId", Value: "bad"}})
 	h.UpdateWebhook(c)
 	if w.Code != http.StatusBadRequest {
@@ -1165,7 +1180,7 @@ func TestUpdateWebhook_BindError(t *testing.T) {
 	_ = userRepo
 	webhook := seedWebhookConfig(t, webhookRepo, merchant.ID)
 
-	c, w := ginContextWith("PUT", "/webhooks/"+webhook.ID.String(), "not json", nil,
+	c, w := ginContextWith("PUT", "/webhooks/"+webhook.ID.String(), "not json",
 		gin.Params{{Key: "merchantId", Value: merchant.ID.String()}, {Key: "webhookId", Value: webhook.ID.String()}})
 	h.UpdateWebhook(c)
 	if w.Code != http.StatusBadRequest {
@@ -1184,7 +1199,7 @@ func TestUpdateWebhook_PartialUpdate_URLOnly(t *testing.T) {
 	webhook := seedWebhookConfig(t, webhookRepo, merchant.ID)
 
 	body := map[string]interface{}{"url": "https://url-only.example.com"}
-	c, w := ginContextWith("PUT", "/webhooks/"+webhook.ID.String(), body, nil,
+	c, w := ginContextWith("PUT", "/webhooks/"+webhook.ID.String(), body,
 		gin.Params{{Key: "merchantId", Value: merchant.ID.String()}, {Key: "webhookId", Value: webhook.ID.String()}})
 	h.UpdateWebhook(c)
 	if w.Code != http.StatusOK {
@@ -1203,7 +1218,7 @@ func TestUpdateWebhook_PartialUpdate_SecretOnly(t *testing.T) {
 	webhook := seedWebhookConfig(t, webhookRepo, merchant.ID)
 
 	body := map[string]interface{}{"secret": "new_secret"}
-	c, w := ginContextWith("PUT", "/webhooks/"+webhook.ID.String(), body, nil,
+	c, w := ginContextWith("PUT", "/webhooks/"+webhook.ID.String(), body,
 		gin.Params{{Key: "merchantId", Value: merchant.ID.String()}, {Key: "webhookId", Value: webhook.ID.String()}})
 	h.UpdateWebhook(c)
 	if w.Code != http.StatusOK {
@@ -1222,7 +1237,7 @@ func TestUpdateWebhook_PartialUpdate_EventsOnly(t *testing.T) {
 	webhook := seedWebhookConfig(t, webhookRepo, merchant.ID)
 
 	body := map[string]interface{}{"events": []string{"payment.failed", "refund.created"}}
-	c, w := ginContextWith("PUT", "/webhooks/"+webhook.ID.String(), body, nil,
+	c, w := ginContextWith("PUT", "/webhooks/"+webhook.ID.String(), body,
 		gin.Params{{Key: "merchantId", Value: merchant.ID.String()}, {Key: "webhookId", Value: webhook.ID.String()}})
 	h.UpdateWebhook(c)
 	if w.Code != http.StatusOK {
@@ -1241,7 +1256,7 @@ func TestUpdateWebhook_EmptyBody(t *testing.T) {
 	webhook := seedWebhookConfig(t, webhookRepo, merchant.ID)
 
 	body := map[string]interface{}{}
-	c, w := ginContextWith("PUT", "/webhooks/"+webhook.ID.String(), body, nil,
+	c, w := ginContextWith("PUT", "/webhooks/"+webhook.ID.String(), body,
 		gin.Params{{Key: "merchantId", Value: merchant.ID.String()}, {Key: "webhookId", Value: webhook.ID.String()}})
 	h.UpdateWebhook(c)
 	if w.Code != http.StatusOK {
@@ -1263,7 +1278,7 @@ func TestDeleteWebhook_Success(t *testing.T) {
 	_ = userRepo
 	webhook := seedWebhookConfig(t, webhookRepo, merchant.ID)
 
-	c, w := ginContextWith("DELETE", "/webhooks/"+webhook.ID.String(), nil, nil,
+	c, w := ginContextWith("DELETE", "/webhooks/"+webhook.ID.String(), nil,
 		gin.Params{{Key: "merchantId", Value: merchant.ID.String()}, {Key: "webhookId", Value: webhook.ID.String()}})
 	h.DeleteWebhook(c)
 	if w.Code != http.StatusOK {
@@ -1281,7 +1296,7 @@ func TestDeleteWebhook_NotFound(t *testing.T) {
 	_ = userRepo
 
 	fakeID := uuid.New()
-	c, w := ginContextWith("DELETE", "/webhooks/"+fakeID.String(), nil, nil,
+	c, w := ginContextWith("DELETE", "/webhooks/"+fakeID.String(), nil,
 		gin.Params{{Key: "merchantId", Value: merchant.ID.String()}, {Key: "webhookId", Value: fakeID.String()}})
 	h.DeleteWebhook(c)
 	if w.Code != http.StatusNotFound {
@@ -1301,7 +1316,7 @@ func TestDeleteWebhook_MerchantMismatch(t *testing.T) {
 
 	webhook := seedWebhookConfig(t, webhookRepo, merchant1.ID)
 
-	c, w := ginContextWith("DELETE", "/webhooks/"+webhook.ID.String(), nil, nil,
+	c, w := ginContextWith("DELETE", "/webhooks/"+webhook.ID.String(), nil,
 		gin.Params{{Key: "merchantId", Value: merchant2.ID.String()}, {Key: "webhookId", Value: webhook.ID.String()}})
 	h.DeleteWebhook(c)
 	if w.Code != http.StatusNotFound {
@@ -1310,10 +1325,10 @@ func TestDeleteWebhook_MerchantMismatch(t *testing.T) {
 }
 
 func TestDeleteWebhook_InvalidMerchantID(t *testing.T) {
-	_, _, _, _, _, _ := newTestDBRepos()
+	_, _, _, _, _, _ = newTestDBRepos()
 	h := &WebhookHandler{}
 
-	c, w := ginContextWith("DELETE", "/webhooks/bad", nil, nil,
+	c, w := ginContextWith("DELETE", "/webhooks/bad", nil,
 		gin.Params{{Key: "merchantId", Value: "bad"}, {Key: "webhookId", Value: "bad"}})
 	h.DeleteWebhook(c)
 	if w.Code != http.StatusBadRequest {
@@ -1322,10 +1337,10 @@ func TestDeleteWebhook_InvalidMerchantID(t *testing.T) {
 }
 
 func TestDeleteWebhook_InvalidWebhookID(t *testing.T) {
-	_, _, _, _, _, _ := newTestDBRepos()
+	_, _, _, _, _, _ = newTestDBRepos()
 	h := &WebhookHandler{}
 
-	c, w := ginContextWith("DELETE", "/webhooks/bad", nil, nil,
+	c, w := ginContextWith("DELETE", "/webhooks/bad", nil,
 		gin.Params{{Key: "merchantId", Value: uuid.New().String()}, {Key: "webhookId", Value: "bad"}})
 	h.DeleteWebhook(c)
 	if w.Code != http.StatusBadRequest {
@@ -1373,16 +1388,19 @@ func TestListApiKeys_Empty(t *testing.T) {
 }
 
 func TestRevokeApiKey_Success(t *testing.T) {
-	userRepo, _, _, _, _ := newTestDBRepos()
+	userRepo, _, merchantRepo, _, _, _ := newTestDBRepos()
 	_, _, _, _, apiKeySvc := newTestServices(userRepo, nil)
 	h := NewApiKeyHandler(apiKeySvc)
 
-	_, apiKey, err := apiKeySvc.Create(context.Background(), uuid.New(), uuid.New(), "Test Key", []string{"read"}, 1000, nil)
+	merchant := seedMerchant(t, merchantRepo)
+	user := seedUser(t, userRepo, merchantRepo, fmt.Sprintf("apikey_user_%d@example.com", time.Now().UnixNano()))
+
+	_, apiKey, err := apiKeySvc.Create(context.Background(), merchant.ID, user.ID, "Test Key", []string{"read"}, 1000, nil)
 	if err != nil {
 		t.Fatalf("create api key: %v", err)
 	}
 
-	c, w := ginContextWith("DELETE", "/api-keys/"+apiKey.ID.String(), nil, nil,
+	c, w := ginContextWith("DELETE", "/api-keys/"+apiKey.ID.String(), nil,
 		gin.Params{{Key: "keyId", Value: apiKey.ID.String()}})
 	h.RevokeApiKey(c)
 	if w.Code != http.StatusOK {
@@ -1391,12 +1409,12 @@ func TestRevokeApiKey_Success(t *testing.T) {
 }
 
 func TestRevokeApiKey_NotFound(t *testing.T) {
-	userRepo, _, _, _, _ := newTestDBRepos()
+	userRepo, _, _, _, _, _ := newTestDBRepos()
 	_, _, _, _, apiKeySvc := newTestServices(userRepo, nil)
 	h := NewApiKeyHandler(apiKeySvc)
 
 	fakeID := uuid.New()
-	c, w := ginContextWith("DELETE", "/api-keys/"+fakeID.String(), nil, nil,
+	c, w := ginContextWith("DELETE", "/api-keys/"+fakeID.String(), nil,
 		gin.Params{{Key: "keyId", Value: fakeID.String()}})
 	h.RevokeApiKey(c)
 	if w.Code != http.StatusInternalServerError {
@@ -1405,11 +1423,10 @@ func TestRevokeApiKey_NotFound(t *testing.T) {
 }
 
 func TestRevokeApiKey_InvalidUUID(t *testing.T) {
-	userRepo, _, _, _, _ := newTestDBRepos()
-	_, _, _, _, apiKeySvc := newTestServices(userRepo, nil)
-	h := NewApiKeyHandler(apiKeySvc)
+	_, _, _, _, _, _ = newTestDBRepos()
+	h := &ApiKeyHandler{}
 
-	c, w := ginContextWith("DELETE", "/api-keys/bad", nil, nil,
+	c, w := ginContextWith("DELETE", "/api-keys/bad", nil,
 		gin.Params{{Key: "keyId", Value: "not-a-uuid"}})
 	h.RevokeApiKey(c)
 	if w.Code != http.StatusBadRequest {
@@ -1442,17 +1459,17 @@ func TestSetupMFA_EmptyUserID(t *testing.T) {
 	c, w := ginContextWith("POST", "/auth/mfa/setup", nil, nil)
 	c.Set("user_id", "")
 	h.SetupMFA(c)
-	if w.Code != http.StatusNotFound {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusNotFound)
+	if w.Code != http.StatusBadRequest {
+		t.Errorf("status = %d, want %d", w.Code, http.StatusBadRequest)
 	}
 }
 
 func TestGetUser_Success(t *testing.T) {
-	userRepo, _, _, _, _, _ := newTestDBRepos()
+	userRepo, _, merchantRepo, _, _, _ := newTestDBRepos()
 	h := NewUserHandler(userRepo)
 
 	email := fmt.Sprintf("getuser_%d@example.com", time.Now().UnixNano())
-	user := seedUser(t, userRepo, email)
+	user := seedUser(t, userRepo, merchantRepo, email)
 
 	c, w := ginContextWith("GET", "/users/me", nil, nil)
 	c.Set("user_id", user.ID.String())

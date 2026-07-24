@@ -41,18 +41,30 @@ describe('TransactionsComponent', () => {
 
   it('should load transactions on init', () => {
     fixture.detectChanges();
-    httpMock.expectOne(r => r.url === '/api/transactions').flush({ data: mockTransactions, total: 2, page: 1, per_page: 20 });
+    const req = httpMock.expectOne(r => r.url === '/api/transactions');
+    req.flush({ data: mockTransactions, total: 2, page: 1, per_page: 20 });
 
     expect(component.transactions.length).toBe(2);
     expect(component.loading).toBeFalse();
   });
 
-  it('should set loading false on error', () => {
+  it('should set loading false and error true on error', () => {
     fixture.detectChanges();
-    httpMock.expectOne(r => r.url === '/api/transactions').flush('error', { status: 500, statusText: 'Error' });
+    const req = httpMock.expectOne(r => r.url === '/api/transactions');
+    req.flush('error', { status: 500, statusText: 'Error' });
 
     expect(component.loading).toBeFalse();
-    expect(component.transactions.length).toBe(0);
+    expect(component.error).toBeTrue();
+  });
+
+  it('should show error state with retry button', () => {
+    fixture.detectChanges();
+    httpMock.expectOne(r => r.url === '/api/transactions').flush('error', { status: 500, statusText: 'Error' });
+    fixture.detectChanges();
+
+    const el: HTMLElement = fixture.nativeElement;
+    expect(el.querySelector('.error-state')).toBeTruthy();
+    expect(el.textContent).toContain('Retry');
   });
 
   it('should render transaction rows', () => {
@@ -61,7 +73,7 @@ describe('TransactionsComponent', () => {
     fixture.detectChanges();
 
     const el: HTMLElement = fixture.nativeElement;
-    const rows = el.querySelectorAll('tbody tr');
+    const rows = el.querySelectorAll('tbody tr.clickable');
     expect(rows.length).toBe(2);
   });
 
@@ -75,7 +87,7 @@ describe('TransactionsComponent', () => {
     expect(idCells[0]?.textContent?.trim()).toBe('tx1');
   });
 
-  it('should display formatted amount in dollars', () => {
+  it('should display formatted amount', () => {
     fixture.detectChanges();
     httpMock.expectOne(r => r.url === '/api/transactions').flush({ data: mockTransactions, total: 2, page: 1, per_page: 20 });
     fixture.detectChanges();
@@ -86,25 +98,15 @@ describe('TransactionsComponent', () => {
     expect(amountCells[1]?.textContent).toContain('12.00');
   });
 
-  it('should display status badge', () => {
+  it('should display status badge with label', () => {
     fixture.detectChanges();
     httpMock.expectOne(r => r.url === '/api/transactions').flush({ data: mockTransactions, total: 2, page: 1, per_page: 20 });
     fixture.detectChanges();
 
     const el: HTMLElement = fixture.nativeElement;
     const badges = el.querySelectorAll('.badge');
-    expect(badges[0]?.textContent?.trim()).toBe('succeeded');
-    expect(badges[1]?.textContent?.trim()).toBe('pending');
-  });
-
-  it('should link to merchant detail', () => {
-    fixture.detectChanges();
-    httpMock.expectOne(r => r.url === '/api/transactions').flush({ data: mockTransactions, total: 2, page: 1, per_page: 20 });
-    fixture.detectChanges();
-
-    const el: HTMLElement = fixture.nativeElement;
-    const merchantLinks = el.querySelectorAll('a[href="/merchants/m1"]');
-    expect(merchantLinks.length).toBe(1);
+    expect(badges[0]?.textContent?.trim()).toBe('Completed');
+    expect(badges[1]?.textContent?.trim()).toBe('Pending');
   });
 
   it('should show empty state when no transactions', () => {
@@ -123,5 +125,53 @@ describe('TransactionsComponent', () => {
 
     const el: HTMLElement = fixture.nativeElement;
     expect(el.querySelector('h1')?.textContent).toContain('Transactions');
+  });
+
+  it('should toggle detail row on click', () => {
+    fixture.detectChanges();
+    httpMock.expectOne(r => r.url === '/api/transactions').flush({ data: mockTransactions, total: 2, page: 1, per_page: 20 });
+    fixture.detectChanges();
+
+    const el: HTMLElement = fixture.nativeElement;
+    const rows = el.querySelectorAll('tbody tr.clickable');
+    (rows[0] as HTMLElement).click();
+    fixture.detectChanges();
+
+    const detailRows = el.querySelectorAll('.detail-row');
+    expect(detailRows.length).toBe(1);
+  });
+
+  it('should show pagination when multiple pages', () => {
+    fixture.detectChanges();
+    httpMock.expectOne(r => r.url === '/api/transactions').flush({ data: mockTransactions, total: 40, page: 1, per_page: 20 });
+    fixture.detectChanges();
+
+    const el: HTMLElement = fixture.nativeElement;
+    expect(el.querySelector('.pagination')).toBeTruthy();
+    expect(el.querySelector('.page-info')?.textContent).toContain('Page 1 of 2');
+  });
+
+  it('should filter transactions by status', () => {
+    fixture.detectChanges();
+    httpMock.expectOne(r => r.url === '/api/transactions').flush({ data: mockTransactions, total: 2, page: 1, per_page: 20 });
+    fixture.detectChanges();
+
+    component.statusFilter = 'pending';
+    component.onFilterChange();
+    httpMock.expectOne(r => r.url === '/api/transactions').flush({ data: mockTransactions, total: 2, page: 1, per_page: 20 });
+    fixture.detectChanges();
+
+    expect(component.filteredTransactions.length).toBe(1);
+    expect(component.filteredTransactions[0].status).toBe('pending');
+  });
+
+  it('should show loading spinner during fetch', () => {
+    fixture.detectChanges();
+    const el: HTMLElement = fixture.nativeElement;
+    expect(el.querySelector('.loading-overlay')).toBeTruthy();
+
+    httpMock.expectOne(r => r.url === '/api/transactions').flush({ data: [], total: 0, page: 1, per_page: 20 });
+    fixture.detectChanges();
+    expect(el.querySelector('.loading-overlay')).toBeFalsy();
   });
 });

@@ -1,0 +1,21 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: var(--od-font-sans);
+  background: var(--od-bg-primary);
+  color: var(--od-text-primary);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+a { color: var(--od-accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+.card {
+  background: var(--od-card-bg);
+  border-radius: var(--od-radius);
+  box-shadow: var(--od-card-shadow);
+  padding: var(--od-spacing-lg);
+}

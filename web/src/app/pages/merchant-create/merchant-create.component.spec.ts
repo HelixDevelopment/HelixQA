@@ -34,9 +34,10 @@ describe('MerchantCreateComponent', () => {
   });
 
   it('should have empty form data initially', () => {
-    expect(component.formData.name).toBe('');
+    expect(component.formData.legal_name).toBe('');
     expect(component.formData.email).toBe('');
     expect(component.formData.trade_name).toBe('');
+    expect(component.formData.phone).toBe('');
     expect(component.formData.country).toBe('');
     expect(component.formData.currency).toBe('');
     expect(component.submitting).toBeFalse();
@@ -44,9 +45,10 @@ describe('MerchantCreateComponent', () => {
 
   it('should render form fields', () => {
     const el: HTMLElement = fixture.nativeElement;
-    expect(el.querySelector('#name')).toBeTruthy();
+    expect(el.querySelector('#legal_name')).toBeTruthy();
     expect(el.querySelector('#email')).toBeTruthy();
     expect(el.querySelector('#trade_name')).toBeTruthy();
+    expect(el.querySelector('#phone')).toBeTruthy();
     expect(el.querySelector('#country')).toBeTruthy();
     expect(el.querySelector('#currency')).toBeTruthy();
   });
@@ -69,10 +71,10 @@ describe('MerchantCreateComponent', () => {
     expect(button?.textContent?.trim()).toBe('Create Merchant');
   });
 
-  it('should call API on submit and navigate', fakeAsync(() => {
+  it('should call API on submit and navigate to detail', fakeAsync(() => {
     const routerSpy = spyOn(TestBed.inject(Router), 'navigate');
 
-    component.formData = { name: 'New Shop', email: 'shop@test.com', trade_name: 'New', country: 'US', currency: 'USD' };
+    component.formData = { legal_name: 'New Shop', email: 'shop@test.com', trade_name: 'New', phone: '', country: 'US', currency: 'USD' };
     component.onSubmit();
 
     expect(component.submitting).toBeTrue();
@@ -82,11 +84,11 @@ describe('MerchantCreateComponent', () => {
     req.flush({ id: 'm3', ...component.formData, status: 'active', created_at: '' });
     tick();
 
-    expect(routerSpy).toHaveBeenCalledWith(['/merchants']);
+    expect(routerSpy).toHaveBeenCalledWith(['/merchants', 'm3']);
   }));
 
   it('should reset submitting on error', fakeAsync(() => {
-    component.formData = { name: 'Fail', email: 'f@t.com', trade_name: '', country: 'US', currency: 'USD' };
+    component.formData = { legal_name: 'Fail', email: 'f@t.com', trade_name: '', phone: '', country: 'US', currency: 'USD' };
     component.onSubmit();
 
     const req = httpMock.expectOne('/api/merchants');

@@ -1,0 +1,1 @@
+export const OPEN_DESIGN_VERSION = '1.0.0';

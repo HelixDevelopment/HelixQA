@@ -12,8 +12,10 @@ describe('MerchantEditComponent', () => {
   const mockMerchant = {
     id: 'm1',
     name: 'Acme Corp',
+    legal_name: 'Acme Corp',
     trade_name: 'Acme Store',
     email: 'acme@test.com',
+    phone: '+1234567890',
     country: 'US',
     currency: 'USD',
     status: 'active',
@@ -68,9 +70,10 @@ describe('MerchantEditComponent', () => {
     httpMock.expectOne('/api/merchants/m1').flush(mockMerchant);
 
     expect(component.loaded).toBeTrue();
-    expect(component.formData.name).toBe('Acme Corp');
+    expect(component.formData.legal_name).toBe('Acme Corp');
     expect(component.formData.email).toBe('acme@test.com');
     expect(component.formData.trade_name).toBe('Acme Store');
+    expect(component.formData.phone).toBe('+1234567890');
     expect(component.formData.country).toBe('US');
     expect(component.formData.currency).toBe('USD');
   });
@@ -81,9 +84,10 @@ describe('MerchantEditComponent', () => {
     fixture.detectChanges();
 
     const el: HTMLElement = fixture.nativeElement;
-    expect(el.querySelector('#name')).toBeTruthy();
+    expect(el.querySelector('#legal_name')).toBeTruthy();
     expect(el.querySelector('#email')).toBeTruthy();
     expect(el.querySelector('#trade_name')).toBeTruthy();
+    expect(el.querySelector('#phone')).toBeTruthy();
     expect(el.querySelector('#country')).toBeTruthy();
     expect(el.querySelector('#currency')).toBeTruthy();
   });
@@ -95,7 +99,7 @@ describe('MerchantEditComponent', () => {
     const router = TestBed.inject(Router);
     spyOn(router, 'navigate').and.resolveTo(true);
 
-    component.formData.name = 'Updated Name';
+    component.formData.legal_name = 'Updated Name';
     component.onSubmit();
 
     expect(component.submitting).toBeTrue();

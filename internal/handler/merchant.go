@@ -82,11 +82,6 @@ func (h *MerchantHandler) UpdateMerchant(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid merchant id"})
 		return
 	}
-	merchant, err := h.merchantRepo.GetByID(c.Request.Context(), id)
-	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "merchant not found"})
-		return
-	}
 	var req struct {
 		LegalName string `json:"legal_name"`
 		TradeName string `json:"trade_name"`
@@ -95,6 +90,11 @@ func (h *MerchantHandler) UpdateMerchant(c *gin.Context) {
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	merchant, err := h.merchantRepo.GetByID(c.Request.Context(), id)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "merchant not found"})
 		return
 	}
 	if req.LegalName != "" {

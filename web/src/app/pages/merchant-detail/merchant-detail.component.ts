@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ActivatedRoute, RouterLink } from '@angular/router';
+import { ActivatedRoute, RouterLink, Router } from '@angular/router';
 import { ApiService } from '../../core/api.service';
 
 @Component({
@@ -8,12 +8,29 @@ import { ApiService } from '../../core/api.service';
   standalone: true,
   imports: [CommonModule, RouterLink],
   template: `
-    <div class="merchant-detail" *ngIf="merchant">
+    <div class="merchant-detail">
       <div class="page-header">
         <a routerLink="/merchants" class="back-link">&larr; Back to Merchants</a>
-        <h1>{{ merchant.trade_name || merchant.name }}</h1>
+        <div class="header-actions" *ngIf="merchant">
+          <h1>{{ merchant.trade_name || merchant.name }}</h1>
+          <div class="action-buttons">
+            <a [routerLink]="['/merchants', merchant.id, 'edit']" class="btn btn-secondary">Edit</a>
+            <button class="btn btn-danger" (click)="deleteMerchant()">Delete</button>
+          </div>
+        </div>
       </div>
-      <div class="detail-grid">
+
+      <div class="spinner" *ngIf="loading">
+        <div class="spinner-icon"></div>
+        <span>Loading merchant...</span>
+      </div>
+
+      <div class="error-state" *ngIf="error && !loading">
+        <p>{{ error }}</p>
+        <a routerLink="/merchants" class="btn btn-secondary">Back to Merchants</a>
+      </div>
+
+      <div class="detail-grid" *ngIf="merchant && !loading">
         <div class="detail-card">
           <h3>General Information</h3>
           <dl>
@@ -58,7 +75,9 @@ import { ApiService } from '../../core/api.service';
     .page-header { margin-bottom: 24px; }
     .back-link { color: #4f46e5; text-decoration: none; font-size: 14px; display: inline-block; margin-bottom: 8px; }
     .back-link:hover { text-decoration: underline; }
+    .header-actions { display: flex; justify-content: space-between; align-items: flex-start; }
     h1 { margin: 0; font-size: 24px; color: #1a1a1a; }
+    .action-buttons { display: flex; gap: 8px; }
     .detail-grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
@@ -88,18 +107,89 @@ import { ApiService } from '../../core/api.service';
     .badge.verified { background: #dcfce7; color: #166534; }
     .badge.rejected { background: #fee2e2; color: #991b1b; }
     .badge.in_progress { background: #dbeafe; color: #1e40af; }
+    .spinner {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      padding: 48px;
+      color: #666;
+    }
+    .spinner-icon {
+      width: 20px;
+      height: 20px;
+      border: 2px solid #e5e7eb;
+      border-top-color: #4f46e5;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .error-state {
+      background: #fef2f2;
+      border: 1px solid #fecaca;
+      border-radius: 8px;
+      padding: 24px;
+      text-align: center;
+      color: #991b1b;
+    }
+    .error-state a { margin-top: 12px; display: inline-block; }
+    .btn {
+      padding: 8px 20px;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      text-decoration: none;
+      border: none;
+      transition: background-color 0.2s;
+    }
+    .btn-secondary { background: #f3f4f6; color: #374151; }
+    .btn-secondary:hover { background: #e5e7eb; }
+    .btn-danger { background: #ef4444; color: white; }
+    .btn-danger:hover { background: #dc2626; }
   `]
 })
 export class MerchantDetailComponent implements OnInit {
   merchant: any = null;
+  loading = true;
+  error = '';
 
-  constructor(private route: ActivatedRoute, private api: ApiService) {}
+  constructor(
+    private route: ActivatedRoute,
+    private api: ApiService,
+    private router: Router
+  ) {}
 
   ngOnInit(): void {
-    const id = this.route.snapshot.paramMap.get('merchantId')!;
+    const id = this.route.snapshot.paramMap.get('id')!;
+    if (!id) {
+      this.error = 'Merchant ID not found.';
+      this.loading = false;
+      return;
+    }
     this.api.getMerchant(id).subscribe({
-      next: (data) => this.merchant = data,
-      error: () => {}
+      next: (data) => {
+        this.merchant = data;
+        this.loading = false;
+      },
+      error: () => {
+        this.error = 'Failed to load merchant.';
+        this.loading = false;
+      }
+    });
+  }
+
+  deleteMerchant(): void {
+    if (!this.merchant) return;
+    const confirmed = window.confirm(
+      `Are you sure you want to delete "${this.merchant.trade_name || this.merchant.name}"? This action cannot be undone.`
+    );
+    if (!confirmed) return;
+    this.api.deleteMerchant(this.merchant.id).subscribe({
+      next: () => this.router.navigate(['/merchants']),
+      error: () => {
+        this.error = 'Failed to delete merchant. Please try again.';
+      }
     });
   }
 }

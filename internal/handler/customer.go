@@ -87,11 +87,6 @@ func (h *CustomerHandler) UpdateCustomer(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid customer id"})
 		return
 	}
-	customer, err := h.customerRepo.GetByID(c.Request.Context(), id)
-	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "customer not found"})
-		return
-	}
 	var req struct {
 		Name  string `json:"name"`
 		Email string `json:"email"`
@@ -99,6 +94,11 @@ func (h *CustomerHandler) UpdateCustomer(c *gin.Context) {
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	customer, err := h.customerRepo.GetByID(c.Request.Context(), id)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "customer not found"})
 		return
 	}
 	if req.Name != "" {

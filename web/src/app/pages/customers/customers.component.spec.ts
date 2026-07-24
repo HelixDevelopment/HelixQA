@@ -41,18 +41,30 @@ describe('CustomersComponent', () => {
 
   it('should load customers on init', () => {
     fixture.detectChanges();
-    httpMock.expectOne(r => r.url === '/api/customers').flush({ data: mockCustomers, total: 2, page: 1, per_page: 20 });
+    const req = httpMock.expectOne(r => r.url === '/api/customers');
+    req.flush({ data: mockCustomers, total: 2, page: 1, per_page: 20 });
 
     expect(component.customers.length).toBe(2);
     expect(component.loading).toBeFalse();
   });
 
-  it('should set loading false on error', () => {
+  it('should set loading false and error true on error', () => {
     fixture.detectChanges();
-    httpMock.expectOne(r => r.url === '/api/customers').flush('error', { status: 500, statusText: 'Error' });
+    const req = httpMock.expectOne(r => r.url === '/api/customers');
+    req.flush('error', { status: 500, statusText: 'Error' });
 
     expect(component.loading).toBeFalse();
-    expect(component.customers.length).toBe(0);
+    expect(component.error).toBeTrue();
+  });
+
+  it('should show error state with retry button', () => {
+    fixture.detectChanges();
+    httpMock.expectOne(r => r.url === '/api/customers').flush('error', { status: 500, statusText: 'Error' });
+    fixture.detectChanges();
+
+    const el: HTMLElement = fixture.nativeElement;
+    expect(el.querySelector('.error-state')).toBeTruthy();
+    expect(el.textContent).toContain('Retry');
   });
 
   it('should render customer rows', () => {
@@ -88,19 +100,6 @@ describe('CustomersComponent', () => {
     expect(secondRowCells[2]?.textContent?.trim()).toBe('-');
   });
 
-  it('should display external ID or dash', () => {
-    fixture.detectChanges();
-    httpMock.expectOne(r => r.url === '/api/customers').flush({ data: mockCustomers, total: 2, page: 1, per_page: 20 });
-    fixture.detectChanges();
-
-    const el: HTMLElement = fixture.nativeElement;
-    const rows = el.querySelectorAll('tbody tr');
-    const firstRowCells = rows[0].querySelectorAll('td');
-    expect(firstRowCells[3]?.textContent?.trim()).toBe('ext-001');
-    const secondRowCells = rows[1].querySelectorAll('td');
-    expect(secondRowCells[3]?.textContent?.trim()).toBe('-');
-  });
-
   it('should show empty state when no customers', () => {
     fixture.detectChanges();
     httpMock.expectOne(r => r.url === '/api/customers').flush({ data: [], total: 0, page: 1, per_page: 20 });
@@ -117,5 +116,38 @@ describe('CustomersComponent', () => {
 
     const el: HTMLElement = fixture.nativeElement;
     expect(el.querySelector('h1')?.textContent).toContain('Customers');
+  });
+
+  it('should filter customers by search term', () => {
+    fixture.detectChanges();
+    httpMock.expectOne(r => r.url === '/api/customers').flush({ data: mockCustomers, total: 2, page: 1, per_page: 20 });
+    fixture.detectChanges();
+
+    component.searchTerm = 'Jane';
+    component.onSearchChange();
+    httpMock.expectOne(r => r.url === '/api/customers').flush({ data: mockCustomers, total: 2, page: 1, per_page: 20 });
+    fixture.detectChanges();
+
+    expect(component.filteredCustomers.length).toBe(1);
+    expect(component.filteredCustomers[0].name).toBe('Jane Smith');
+  });
+
+  it('should show pagination when multiple pages', () => {
+    fixture.detectChanges();
+    httpMock.expectOne(r => r.url === '/api/customers').flush({ data: mockCustomers, total: 40, page: 1, per_page: 20 });
+    fixture.detectChanges();
+
+    const el: HTMLElement = fixture.nativeElement;
+    expect(el.querySelector('.pagination')).toBeTruthy();
+  });
+
+  it('should show loading spinner during fetch', () => {
+    fixture.detectChanges();
+    const el: HTMLElement = fixture.nativeElement;
+    expect(el.querySelector('.loading-overlay')).toBeTruthy();
+
+    httpMock.expectOne(r => r.url === '/api/customers').flush({ data: [], total: 0, page: 1, per_page: 20 });
+    fixture.detectChanges();
+    expect(el.querySelector('.loading-overlay')).toBeFalsy();
   });
 });

@@ -37,7 +37,7 @@ describe('MerchantDetailComponent', () => {
           useValue: {
             snapshot: {
               paramMap: {
-                get: (key: string) => key === 'merchantId' ? 'm1' : null,
+                get: (key: string) => key === 'id' ? 'm1' : null,
               }
             }
           }
@@ -108,6 +108,8 @@ describe('MerchantDetailComponent', () => {
     httpMock.expectOne('/api/merchants/m1').flush('error', { status: 404, statusText: 'Not Found' });
 
     expect(component.merchant).toBeNull();
+    expect(component.error).toBeTruthy();
+    expect(component.loading).toBeFalse();
   });
 
   it('should render back link to merchants list', () => {
@@ -118,5 +120,15 @@ describe('MerchantDetailComponent', () => {
     const el: HTMLElement = fixture.nativeElement;
     const link = el.querySelector('a.back-link');
     expect(link?.getAttribute('href')).toBe('/merchants');
+  });
+
+  it('should render edit button linking to edit page', () => {
+    fixture.detectChanges();
+    httpMock.expectOne('/api/merchants/m1').flush(mockMerchant);
+    fixture.detectChanges();
+
+    const el: HTMLElement = fixture.nativeElement;
+    const editLink = el.querySelector('a[routerLink]');
+    expect(editLink).toBeTruthy();
   });
 });

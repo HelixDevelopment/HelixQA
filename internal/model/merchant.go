@@ -37,7 +37,6 @@ type Merchant struct {
 	Slug            string          `json:"slug"`
 	Status          MerchantStatus  `json:"status"`
 	KycStatus       KycStatus       `json:"kyc_status"`
-	DefaultCurrency string          `json:"default_currency"`
 	Timezone        string          `json:"timezone"`
 	Branding        json.RawMessage `json:"branding"`
 	Settings        json.RawMessage `json:"settings"`

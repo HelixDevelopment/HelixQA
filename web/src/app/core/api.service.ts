@@ -12,8 +12,10 @@ export interface PaginatedResponse<T> {
 export interface Merchant {
   id: string;
   name: string;
+  legal_name?: string;
   trade_name?: string;
   email: string;
+  phone?: string;
   country?: string;
   currency?: string;
   status: string;
@@ -60,7 +62,29 @@ export interface LoginRequest {
 }
 
 export interface LoginResponse {
+  token?: string;
+  mfa_required?: boolean;
+  mfa_token?: string;
+}
+
+export interface MfaVerifyRequest {
+  code: string;
   token: string;
+}
+
+export interface AnalyticsSummary {
+  total_revenue: number;
+  total_transactions: number;
+  successful_transactions: number;
+  failed_transactions: number;
+  success_rate: number;
+  active_merchants: number;
+  period: string;
+}
+
+export interface ProviderHealth {
+  provider: string;
+  status: 'healthy' | 'degraded' | 'down';
 }
 
 export interface ProviderConfig {
@@ -68,7 +92,28 @@ export interface ProviderConfig {
   merchant_id: string;
   provider: string;
   status: string;
+  health?: string;
   config: Record<string, unknown>;
+  created_at: string;
+}
+
+export interface WebhookDelivery {
+  id: string;
+  webhook_id: string;
+  event: string;
+  status: string;
+  response_code?: number;
+  response_body?: string;
+  delivered_at: string;
+  error?: string;
+}
+
+export interface ApiKey {
+  id: string;
+  name: string;
+  key?: string;
+  prefix: string;
+  status: string;
   created_at: string;
 }
 
@@ -86,6 +131,15 @@ export interface WebhookConfig {
 export class ApiService {
   private http = inject(HttpClient);
   private baseUrl = '/api';
+
+  get<T>(path: string, params?: Record<string, string | number | boolean>): Observable<T> {
+    const httpParams = params ? new HttpParams({ fromObject: params }) : undefined;
+    return this.http.get<T>(`${this.baseUrl}${path}`, { params: httpParams });
+  }
+
+  post<T>(path: string, body: unknown): Observable<T> {
+    return this.http.post<T>(`${this.baseUrl}${path}`, body);
+  }
 
   login(credentials: LoginRequest): Observable<LoginResponse> {
     return this.http.post<LoginResponse>(`${this.baseUrl}/auth/login`, credentials);
@@ -168,6 +222,34 @@ export class ApiService {
 
   getAnalyticsSummary(): Observable<Record<string, unknown>> {
     return this.http.get<Record<string, unknown>>(`${this.baseUrl}/analytics/summary`);
+  }
+
+  cancelSubscription(id: string): Observable<Subscription> {
+    return this.http.post<Subscription>(`${this.baseUrl}/subscriptions/${id}/cancel`, {});
+  }
+
+  testWebhook(merchantId: string, id: string): Observable<Record<string, unknown>> {
+    return this.http.post<Record<string, unknown>>(
+      `${this.baseUrl}/merchants/${merchantId}/webhooks/${id}/test`, {}
+    );
+  }
+
+  getWebhookDeliveries(merchantId: string, id: string): Observable<WebhookDelivery[]> {
+    return this.http.get<WebhookDelivery[]>(
+      `${this.baseUrl}/merchants/${merchantId}/webhooks/${id}/deliveries`
+    );
+  }
+
+  getApiKeys(): Observable<ApiKey[]> {
+    return this.http.get<ApiKey[]>(`${this.baseUrl}/api-keys`);
+  }
+
+  createApiKey(key: Partial<ApiKey>): Observable<ApiKey> {
+    return this.http.post<ApiKey>(`${this.baseUrl}/api-keys`, key);
+  }
+
+  revokeApiKey(id: string): Observable<void> {
+    return this.http.delete<void>(`${this.baseUrl}/api-keys/${id}`);
   }
 
   getProviders(merchantId: string, page = 1, perPage = 20): Observable<PaginatedResponse<ProviderConfig>> {

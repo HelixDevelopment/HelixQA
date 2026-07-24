@@ -6,7 +6,7 @@ import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
   standalone: true,
   imports: [RouterOutlet, RouterLink, RouterLinkActive],
   template: `
-    <div class="app-layout">
+    <div class="app-layout" [attr.data-theme]="theme">
       <aside class="sidebar">
         <div class="sidebar-brand">
           <h1>Helix Seller</h1>
@@ -19,6 +19,12 @@ import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
           <a routerLink="/subscriptions" routerLinkActive="active">Subscriptions</a>
           <a routerLink="/settings" routerLinkActive="active">Settings</a>
         </nav>
+        <div class="sidebar-footer">
+          <button class="theme-toggle" (click)="toggleTheme()">
+            {{ theme === 'light' ? '🌙' : '☀️' }}
+            {{ theme === 'light' ? 'Dark' : 'Light' }}
+          </button>
+        </div>
       </aside>
       <main class="content">
         <router-outlet />
@@ -33,14 +39,14 @@ import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 
     .sidebar {
       width: 240px;
-      background: #1a1a2e;
-      color: #e0e0e0;
+      background: var(--od-sidebar-bg);
+      color: var(--od-sidebar-text);
       display: flex;
       flex-direction: column;
     }
 
     .sidebar-brand {
-      padding: 1.5rem;
+      padding: var(--od-spacing-lg);
       border-bottom: 1px solid rgba(255, 255, 255, 0.1);
     }
 
@@ -53,32 +59,64 @@ import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
     .sidebar-nav {
       display: flex;
       flex-direction: column;
-      padding: 1rem 0;
+      padding: var(--od-spacing-md) 0;
+      flex: 1;
     }
 
     .sidebar-nav a {
-      padding: 0.75rem 1.5rem;
-      color: #a0a0b0;
+      padding: 0.75rem var(--od-spacing-lg);
+      color: var(--od-sidebar-text);
+      opacity: 0.7;
       text-decoration: none;
       transition: background 0.2s, color 0.2s;
     }
 
     .sidebar-nav a:hover {
-      background: rgba(255, 255, 255, 0.05);
+      background: var(--od-sidebar-hover);
       color: #ffffff;
+      opacity: 1;
     }
 
     .sidebar-nav a.active {
-      background: rgba(255, 255, 255, 0.1);
+      background: var(--od-sidebar-active);
       color: #ffffff;
-      border-left: 3px solid #4a90d9;
+      opacity: 1;
+      border-left: 3px solid var(--od-accent);
+    }
+
+    .sidebar-footer {
+      padding: var(--od-spacing-md) var(--od-spacing-lg);
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .theme-toggle {
+      width: 100%;
+      padding: 0.5rem;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: var(--od-radius-sm);
+      background: transparent;
+      color: var(--od-sidebar-text);
+      cursor: pointer;
+      font-family: inherit;
+      font-size: 0.875rem;
+      transition: background 0.2s;
+    }
+
+    .theme-toggle:hover {
+      background: var(--od-sidebar-hover);
     }
 
     .content {
       flex: 1;
-      background: #f5f5f5;
-      padding: 2rem;
+      background: var(--od-bg-secondary);
+      padding: var(--od-spacing-xl);
     }
   `,
 })
-export class AppComponent {}
+export class AppComponent {
+  theme: 'light' | 'dark' = 'light';
+
+  toggleTheme(): void {
+    this.theme = this.theme === 'light' ? 'dark' : 'light';
+  }
+}

@@ -1,0 +1,12 @@
+[data-theme="dark"] {
+  --od-bg-primary: #1a1a2e;
+  --od-bg-secondary: #16213e;
+  --od-bg-tertiary: #0f3460;
+  --od-text-primary: #e0e0e0;
+  --od-text-secondary: #a0a0b0;
+  --od-text-muted: #6c757d;
+  --od-border: #2a2a4a;
+  --od-card-bg: #16213e;
+  --od-card-shadow: 0 1px 3px rgba(0,0,0,0.3);
+  --od-sidebar-bg: #0f0f23;
+}

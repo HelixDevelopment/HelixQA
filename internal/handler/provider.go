@@ -89,11 +89,6 @@ func (h *ProviderHandler) UpdateProvider(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid provider id"})
 		return
 	}
-	provider, err := h.providerRepo.GetByID(c.Request.Context(), id)
-	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "provider not found"})
-		return
-	}
 	var req struct {
 		Config        json.RawMessage `json:"config"`
 		IsActive      *bool           `json:"is_active"`
@@ -102,6 +97,11 @@ func (h *ProviderHandler) UpdateProvider(c *gin.Context) {
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	provider, err := h.providerRepo.GetByID(c.Request.Context(), id)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "provider not found"})
 		return
 	}
 	if req.Config != nil {

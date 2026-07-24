@@ -14,24 +14,35 @@ import { ApiService } from '../../core/api.service';
         <a routerLink="/merchants" class="back-link">&larr; Back to Merchants</a>
         <h1>Edit Merchant</h1>
       </div>
+
+      <div class="error-banner" *ngIf="error">
+        {{ error }}
+      </div>
+
       <div class="form-card">
-        <form (ngSubmit)="onSubmit()">
+        <form (ngSubmit)="onSubmit()" #editForm="ngForm">
           <div class="form-grid">
             <div class="form-group">
-              <label for="name">Legal Name</label>
-              <input id="name" type="text" [(ngModel)]="formData.name" name="name" required>
+              <label for="legal_name">Legal Name *</label>
+              <input id="legal_name" type="text" [(ngModel)]="formData.legal_name" name="legal_name" #legalName="ngModel" required>
+              <span class="field-error" *ngIf="legalName.invalid && legalName.touched">Legal name is required</span>
             </div>
             <div class="form-group">
-              <label for="email">Email</label>
-              <input id="email" type="email" [(ngModel)]="formData.email" name="email" required>
+              <label for="email">Email *</label>
+              <input id="email" type="email" [(ngModel)]="formData.email" name="email" #email="ngModel" required email>
+              <span class="field-error" *ngIf="email.invalid && email.touched">Valid email is required</span>
             </div>
             <div class="form-group">
               <label for="trade_name">Trade Name</label>
               <input id="trade_name" type="text" [(ngModel)]="formData.trade_name" name="trade_name">
             </div>
             <div class="form-group">
+              <label for="phone">Phone</label>
+              <input id="phone" type="tel" [(ngModel)]="formData.phone" name="phone">
+            </div>
+            <div class="form-group">
               <label for="country">Country</label>
-              <select id="country" [(ngModel)]="formData.country" name="country" required>
+              <select id="country" [(ngModel)]="formData.country" name="country">
                 <option value="" disabled>Select country</option>
                 <option value="US">United States</option>
                 <option value="GB">United Kingdom</option>
@@ -41,7 +52,7 @@ import { ApiService } from '../../core/api.service';
             </div>
             <div class="form-group">
               <label for="currency">Currency</label>
-              <select id="currency" [(ngModel)]="formData.currency" name="currency" required>
+              <select id="currency" [(ngModel)]="formData.currency" name="currency">
                 <option value="" disabled>Select currency</option>
                 <option value="USD">USD</option>
                 <option value="EUR">EUR</option>
@@ -51,7 +62,7 @@ import { ApiService } from '../../core/api.service';
           </div>
           <div class="form-actions">
             <a routerLink="/merchants" class="btn btn-secondary">Cancel</a>
-            <button type="submit" class="btn btn-primary" [disabled]="submitting">
+            <button type="submit" class="btn btn-primary" [disabled]="submitting || editForm.invalid">
               {{ submitting ? 'Saving...' : 'Save Changes' }}
             </button>
           </div>
@@ -65,6 +76,15 @@ import { ApiService } from '../../core/api.service';
     .back-link { color: #4f46e5; text-decoration: none; font-size: 14px; display: inline-block; margin-bottom: 8px; }
     .back-link:hover { text-decoration: underline; }
     h1 { margin: 0; font-size: 24px; color: #1a1a1a; }
+    .error-banner {
+      background: #fef2f2;
+      border: 1px solid #fecaca;
+      border-radius: 8px;
+      padding: 12px 16px;
+      color: #991b1b;
+      font-size: 14px;
+      margin-bottom: 16px;
+    }
     .form-card {
       background: white;
       border-radius: 8px;
@@ -90,6 +110,8 @@ import { ApiService } from '../../core/api.service';
       transition: border-color 0.2s;
     }
     input:focus, select:focus { border-color: #4f46e5; }
+    input.ng-invalid.ng-touched, select.ng-invalid.ng-touched { border-color: #ef4444; }
+    .field-error { color: #ef4444; font-size: 12px; margin-top: 4px; }
     .form-actions {
       display: flex;
       justify-content: flex-end;
@@ -117,26 +139,33 @@ import { ApiService } from '../../core/api.service';
 })
 export class MerchantEditComponent implements OnInit {
   formData = {
-    name: '',
+    legal_name: '',
     email: '',
     trade_name: '',
+    phone: '',
     country: '',
     currency: ''
   };
   submitting = false;
   loaded = false;
+  error = '';
   private merchantId = '';
 
   constructor(private api: ApiService, private router: Router, private route: ActivatedRoute) {}
 
   ngOnInit(): void {
     this.merchantId = this.route.snapshot.paramMap.get('id')!;
+    if (!this.merchantId) {
+      this.router.navigate(['/merchants']);
+      return;
+    }
     this.api.getMerchant(this.merchantId).subscribe({
       next: (merchant) => {
         this.formData = {
-          name: merchant.name || '',
+          legal_name: (merchant as any).legal_name || merchant.name || '',
           email: merchant.email || '',
           trade_name: (merchant as any).trade_name || '',
+          phone: (merchant as any).phone || '',
           country: (merchant as any).country || '',
           currency: (merchant as any).currency || ''
         };
@@ -147,10 +176,15 @@ export class MerchantEditComponent implements OnInit {
   }
 
   onSubmit(): void {
+    if (!this.formData.legal_name || !this.formData.email) return;
     this.submitting = true;
+    this.error = '';
     this.api.updateMerchant(this.merchantId, this.formData).subscribe({
-      next: () => this.router.navigate(['/merchants']),
-      error: () => this.submitting = false
+      next: () => this.router.navigate(['/merchants', this.merchantId]),
+      error: () => {
+        this.error = 'Failed to update merchant. Please check your input and try again.';
+        this.submitting = false;
+      }
     });
   }
 }

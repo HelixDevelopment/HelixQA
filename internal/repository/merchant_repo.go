@@ -21,9 +21,9 @@ func NewMerchantRepo(db *pgxpool.Pool) *MerchantRepo {
 
 func (r *MerchantRepo) Create(ctx context.Context, m *model.Merchant) error {
 	_, err := r.db.Exec(ctx,
-		`INSERT INTO merchants (id, legal_name, trade_name, email, phone, country, currency, status, kyc_status, settings, created_at, updated_at)
-		 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW(), NOW())`,
-		m.ID, m.LegalName, m.TradeName, m.Email, m.Phone, m.Country, m.Currency, m.Status, m.KycStatus, m.Settings,
+		`INSERT INTO merchants (id, name, legal_name, trade_name, email, phone, country, currency, slug, status, kyc_status, settings, created_at, updated_at)
+		 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, NOW(), NOW())`,
+		m.ID, m.Name, m.LegalName, m.TradeName, m.Email, m.Phone, m.Country, m.Currency, m.Slug, m.Status, m.KycStatus, m.Settings,
 	)
 	if err != nil {
 		return fmt.Errorf("create merchant: %w", err)
@@ -34,11 +34,11 @@ func (r *MerchantRepo) Create(ctx context.Context, m *model.Merchant) error {
 func (r *MerchantRepo) GetByID(ctx context.Context, id uuid.UUID) (*model.Merchant, error) {
 	m := &model.Merchant{}
 	err := r.db.QueryRow(ctx,
-		`SELECT id, legal_name, trade_name, email, phone, country, currency, status, kyc_status, settings, created_at, updated_at
+		`SELECT id, name, legal_name, trade_name, email, phone, country, currency, slug, status, kyc_status, settings, created_at, updated_at
 		 FROM merchants WHERE id = $1`, id,
 	).Scan(
-		&m.ID, &m.LegalName, &m.TradeName, &m.Email, &m.Phone, &m.Country,
-		&m.Currency, &m.Status, &m.KycStatus, &m.Settings, &m.CreatedAt, &m.UpdatedAt,
+		&m.ID, &m.Name, &m.LegalName, &m.TradeName, &m.Email, &m.Phone, &m.Country,
+		&m.Currency, &m.Slug, &m.Status, &m.KycStatus, &m.Settings, &m.CreatedAt, &m.UpdatedAt,
 	)
 	if err == pgx.ErrNoRows {
 		return nil, model.ErrNotFound
@@ -62,7 +62,7 @@ func (r *MerchantRepo) List(ctx context.Context, page, pageSize int) ([]*model.M
 	}
 
 	rows, err := r.db.Query(ctx,
-		`SELECT id, legal_name, trade_name, email, phone, country, currency, status, kyc_status, settings, created_at, updated_at
+		`SELECT id, name, legal_name, trade_name, email, phone, country, currency, slug, status, kyc_status, settings, created_at, updated_at
 		 FROM merchants ORDER BY created_at DESC LIMIT $1 OFFSET $2`, pageSize, offset,
 	)
 	if err != nil {
@@ -74,8 +74,8 @@ func (r *MerchantRepo) List(ctx context.Context, page, pageSize int) ([]*model.M
 	for rows.Next() {
 		m := &model.Merchant{}
 		if err := rows.Scan(
-			&m.ID, &m.LegalName, &m.TradeName, &m.Email, &m.Phone, &m.Country,
-			&m.Currency, &m.Status, &m.KycStatus, &m.Settings, &m.CreatedAt, &m.UpdatedAt,
+			&m.ID, &m.Name, &m.LegalName, &m.TradeName, &m.Email, &m.Phone, &m.Country,
+			&m.Currency, &m.Slug, &m.Status, &m.KycStatus, &m.Settings, &m.CreatedAt, &m.UpdatedAt,
 		); err != nil {
 			return nil, 0, fmt.Errorf("scan merchant: %w", err)
 		}
@@ -86,9 +86,9 @@ func (r *MerchantRepo) List(ctx context.Context, page, pageSize int) ([]*model.M
 
 func (r *MerchantRepo) Update(ctx context.Context, m *model.Merchant) error {
 	tag, err := r.db.Exec(ctx,
-		`UPDATE merchants SET legal_name=$2, trade_name=$3, email=$4, phone=$5, country=$6, currency=$7, status=$8, kyc_status=$9, settings=$10, updated_at=NOW()
+		`UPDATE merchants SET name=$2, legal_name=$3, trade_name=$4, email=$5, phone=$6, country=$7, currency=$8, slug=$9, status=$10, kyc_status=$11, settings=$12, updated_at=NOW()
 		 WHERE id=$1`,
-		m.ID, m.LegalName, m.TradeName, m.Email, m.Phone, m.Country, m.Currency, m.Status, m.KycStatus, m.Settings,
+		m.ID, m.Name, m.LegalName, m.TradeName, m.Email, m.Phone, m.Country, m.Currency, m.Slug, m.Status, m.KycStatus, m.Settings,
 	)
 	if err != nil {
 		return fmt.Errorf("update merchant: %w", err)

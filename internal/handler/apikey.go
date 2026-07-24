@@ -27,8 +27,16 @@ func (h *ApiKeyHandler) CreateApiKey(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	merchantID, _ := uuid.Parse(c.GetString("merchant_id"))
-	userID, _ := uuid.Parse(c.GetString("user_id"))
+	merchantID, err := uuid.Parse(c.GetString("merchant_id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid merchant id"})
+		return
+	}
+	userID, err := uuid.Parse(c.GetString("user_id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid user id"})
+		return
+	}
 	if req.RateLimit == 0 {
 		req.RateLimit = 1000
 	}
@@ -46,7 +54,11 @@ func (h *ApiKeyHandler) CreateApiKey(c *gin.Context) {
 
 // GET /api-keys
 func (h *ApiKeyHandler) ListApiKeys(c *gin.Context) {
-	merchantID, _ := uuid.Parse(c.GetString("merchant_id"))
+	merchantID, err := uuid.Parse(c.GetString("merchant_id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid merchant id"})
+		return
+	}
 	keys, err := h.apiKeySvc.ListByMerchant(c.Request.Context(), merchantID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to list API keys"})

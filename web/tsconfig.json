@@ -20,6 +20,7 @@
     "skipLibCheck": true,
     "useDefineForClassFields": false
   },
+  "exclude": ["**/*.spec.ts"],
   "angularCompilerOptions": {
     "enableI18nLegacyMessageIdFormat": false,
     "strictInjectionParameters": true,

@@ -24,7 +24,7 @@
             "polyfills": ["zone.js"],
             "tsConfig": "tsconfig.app.json",
             "inlineStyleLanguage": "scss",
-            "styles": ["src/styles.scss"],
+            "styles": ["src/styles.scss", "src/assets/themes/light.css", "src/assets/themes/dark.css"],
             "scripts": []
           },
           "configurations": {
@@ -72,7 +72,7 @@
             "polyfills": ["zone.js", "zone.js/testing"],
             "tsConfig": "tsconfig.spec.json",
             "inlineStyleLanguage": "scss",
-            "styles": ["src/styles.scss"],
+            "styles": ["src/styles.scss", "src/assets/themes/light.css", "src/assets/themes/dark.css"],
             "scripts": []
           }
         }

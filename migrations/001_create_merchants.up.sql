@@ -1,8 +1,13 @@
-CREATE TYPE merchant_status AS ENUM ('active', 'suspended', 'pending_verification');
+CREATE TYPE merchant_status AS ENUM ('active', 'suspended', 'pending_verification', 'pending');
 
 CREATE TABLE merchants (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name VARCHAR(255) NOT NULL,
+    legal_name VARCHAR(255) NOT NULL DEFAULT '',
+    trade_name VARCHAR(255) NOT NULL DEFAULT '',
+    phone VARCHAR(50) NOT NULL DEFAULT '',
+    country VARCHAR(2) NOT NULL DEFAULT 'US',
+    kyc_status VARCHAR(50) NOT NULL DEFAULT 'pending',
     email VARCHAR(255) NOT NULL,
     slug VARCHAR(100) NOT NULL,
     status merchant_status NOT NULL DEFAULT 'pending_verification',

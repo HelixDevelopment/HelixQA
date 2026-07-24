@@ -110,7 +110,7 @@ func (s *ApiKeyService) ListByMerchant(ctx context.Context, merchantID uuid.UUID
 	}
 	defer rows.Close()
 
-	var keys []*model.ApiKey
+	keys := make([]*model.ApiKey, 0)
 	for rows.Next() {
 		k := &model.ApiKey{}
 		if err := rows.Scan(
