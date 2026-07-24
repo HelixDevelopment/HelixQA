@@ -29,6 +29,18 @@ go.work.sum
 # env file
 .env
 
+# Build artifacts
+bin/
+dist/
+
+# Angular
+web/dist/
+web/node_modules/
+web/.angular/
+
+# Certs
+certs/*.pem
+
 # Editor/IDE
 # .idea/
 # .vscode/

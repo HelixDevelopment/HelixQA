@@ -1,0 +1,7 @@
+{"timestamp":"2026-07-23T15:18:43Z","action":"guard","status":"allow","feature_directory":"","decision":"allow","reason":"","actor":"unknown","checked_action":"speckit.clarify"}
+{"timestamp":"2026-07-23T15:25:46Z","action":"guard","status":"allow","feature_directory":"","decision":"allow","reason":"","actor":"unknown","checked_action":"speckit.plan"}
+{"timestamp":"2026-07-23T15:31:41Z","action":"guard","status":"allow","feature_directory":"","decision":"allow","reason":"","actor":"unknown","checked_action":"speckit.tasks"}
+{"timestamp":"2026-07-23T15:43:27Z","action":"guard","status":"allow","feature_directory":"","decision":"allow","reason":"","actor":"unknown","checked_action":"speckit.tasks"}
+{"timestamp":"2026-07-23T15:46:46Z","action":"handoff","status":"ready","feature_directory":"specs/001-helix-seller-platform","decision":"updated","reason":"","actor":"unknown","prior_actor":null,"snapshot_id":"20260723T154646688Z-ready"}
+{"timestamp":"2026-07-23T18:28:35Z","action":"guard","status":"allow","feature_directory":"specs/001-helix-seller-platform","decision":"allow","reason":"","actor":"claude","checked_action":"superpowers:executing-plans"}
+{"timestamp":"2026-07-23T18:28:41Z","action":"handoff","status":"executing","feature_directory":"specs/001-helix-seller-platform","decision":"updated","reason":"actor change unknown → claude","actor":"claude","prior_actor":"unknown","snapshot_id":"20260723T182841464Z-executing"}

@@ -1,0 +1,34 @@
+{
+  "schema_version": 1,
+  "updated_at": "2026-07-23T18:28:41Z",
+  "feature_directory": "specs/001-helix-seller-platform",
+  "source_of_truth": {
+    "constitution": ".specify/memory/constitution.md",
+    "spec": "specs/001-helix-seller-platform/spec.md",
+    "plan": "specs/001-helix-seller-platform/plan.md",
+    "tasks": "specs/001-helix-seller-platform/tasks.md"
+  },
+  "supersedes": [
+    "speckit.implement"
+  ],
+  "executor": "superpowers",
+  "capabilities": [
+    "executing-plans",
+    "test-driven-development",
+    "verification-before-completion",
+    "requesting-code-review",
+    "finishing-a-development-branch"
+  ],
+  "status": "executing",
+  "blocked_reason": null,
+  "artifact_owner": "unknown",
+  "review_only_agents": [],
+  "notes": null,
+  "last_snapshot_id": "20260723T182841464Z-executing",
+  "instructions": "Use /speckit-superpowers-bridge (Claude Code) or $speckit-superpowers-bridge (Codex). The bridge orchestrates native Superpowers skills against tasks.md; do not run speckit.implement and do not invoke superpowers:writing-plans / :brainstorming for an active Spec Kit feature.",
+  "artifacts_sha256": {
+    "spec.md": "28707144084dfacbd55ef73a2a435cfb21ab783b94159a03ea7a3160ec4a474f",
+    "plan.md": "a4fd65b169b3af32dd3602d605a7a30d9ab022c967a4cb40c9cd80d659063cd9",
+    "tasks.md": "a4a2da256fa356b1081077866d4c4ae8da1c77c7e430a51d4cfcc3999e4195bb"
+  }
+}

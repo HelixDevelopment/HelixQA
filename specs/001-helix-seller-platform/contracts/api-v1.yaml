@@ -1,0 +1,2662 @@
+openapi: 3.1.0
+info:
+  title: Helix Seller API
+  version: 1.0.0
+  description: |
+    Unified payment facade API. Provides a single interface for payment operations
+    across multiple providers (Stripe, PayPal, Square).
+  contact:
+    name: Helix Seller Support
+  license:
+    name: Proprietary
+
+servers:
+  - url: https://seller.hxd3v.com/api/v1
+    description: Production
+  - url: https://sta.seller.hxd3v.com/api/v1
+    description: Staging
+  - url: https://dev.seller.hxd3v.com/api/v1
+    description: Development
+
+security:
+  - BearerAuth: []
+  - ApiKeyAuth: []
+
+paths:
+  /merchants:
+    get:
+      operationId: listMerchants
+      summary: List merchants
+      tags: [Merchants]
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/PageSizeParam'
+      responses:
+        '200':
+          description: Paginated list of merchants
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedResponse_Merchant'
+    post:
+      operationId: createMerchant
+      summary: Create a merchant
+      tags: [Merchants]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateMerchantRequest'
+      responses:
+        '201':
+          description: Merchant created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Merchant'
+
+  /merchants/{merchantId}:
+    get:
+      operationId: getMerchant
+      summary: Get merchant by ID
+      tags: [Merchants]
+      parameters:
+        - $ref: '#/components/parameters/MerchantIdParam'
+      responses:
+        '200':
+          description: Merchant details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Merchant'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      operationId: updateMerchant
+      summary: Update merchant
+      tags: [Merchants]
+      parameters:
+        - $ref: '#/components/parameters/MerchantIdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateMerchantRequest'
+      responses:
+        '200':
+          description: Merchant updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Merchant'
+
+  /merchants/{merchantId}/customers:
+    get:
+      operationId: listCustomers
+      summary: List customers for a merchant
+      tags: [Customers]
+      parameters:
+        - $ref: '#/components/parameters/MerchantIdParam'
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/PageSizeParam'
+      responses:
+        '200':
+          description: Paginated list of customers
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedResponse_Customer'
+    post:
+      operationId: createCustomer
+      summary: Create a customer
+      tags: [Customers]
+      parameters:
+        - $ref: '#/components/parameters/MerchantIdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateCustomerRequest'
+      responses:
+        '201':
+          description: Customer created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Customer'
+
+  /merchants/{merchantId}/customers/{customerId}:
+    get:
+      operationId: getCustomer
+      summary: Get customer by ID
+      tags: [Customers]
+      parameters:
+        - $ref: '#/components/parameters/MerchantIdParam'
+        - $ref: '#/components/parameters/CustomerIdParam'
+      responses:
+        '200':
+          description: Customer details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Customer'
+    put:
+      operationId: updateCustomer
+      summary: Update customer details
+      tags: [Customers]
+      parameters:
+        - $ref: '#/components/parameters/MerchantIdParam'
+        - $ref: '#/components/parameters/CustomerIdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateCustomerRequest'
+      responses:
+        '200':
+          description: Customer updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Customer'
+
+  /merchants/{merchantId}/transactions:
+    get:
+      operationId: listTransactions
+      summary: List transactions
+      tags: [Transactions]
+      parameters:
+        - $ref: '#/components/parameters/MerchantIdParam'
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/PageSizeParam'
+        - name: type
+          in: query
+          schema:
+            $ref: '#/components/schemas/TransactionType'
+        - name: status
+          in: query
+          schema:
+            $ref: '#/components/schemas/TransactionStatus'
+        - name: provider
+          in: query
+          schema:
+            type: string
+            enum: [stripe, paypal, square]
+        - name: customer_id
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: from
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - name: to
+          in: query
+          schema:
+            type: string
+            format: date-time
+      responses:
+        '200':
+          description: Paginated list of transactions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedResponse_Transaction'
+    post:
+      operationId: createTransaction
+      summary: Create a charge transaction
+      tags: [Transactions]
+      parameters:
+        - $ref: '#/components/parameters/MerchantIdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateChargeRequest'
+      responses:
+        '201':
+          description: Transaction created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Transaction'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /merchants/{merchantId}/transactions/{transactionId}:
+    get:
+      operationId: getTransaction
+      summary: Get transaction by ID
+      tags: [Transactions]
+      parameters:
+        - $ref: '#/components/parameters/MerchantIdParam'
+        - $ref: '#/components/parameters/TransactionIdParam'
+      responses:
+        '200':
+          description: Transaction details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Transaction'
+
+  /merchants/{merchantId}/transactions/{transactionId}/refund:
+    post:
+      operationId: createRefund
+      summary: Refund a transaction
+      tags: [Transactions]
+      parameters:
+        - $ref: '#/components/parameters/MerchantIdParam'
+        - $ref: '#/components/parameters/TransactionIdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateRefundRequest'
+      responses:
+        '201':
+          description: Refund created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Transaction'
+
+  /merchants/{merchantId}/subscriptions:
+    get:
+      operationId: listSubscriptions
+      summary: List subscriptions
+      tags: [Subscriptions]
+      parameters:
+        - $ref: '#/components/parameters/MerchantIdParam'
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/PageSizeParam'
+        - name: status
+          in: query
+          schema:
+            $ref: '#/components/schemas/SubscriptionStatus'
+        - name: customer_id
+          in: query
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Paginated list of subscriptions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedResponse_Subscription'
+    post:
+      operationId: createSubscription
+      summary: Create a subscription
+      tags: [Subscriptions]
+      parameters:
+        - $ref: '#/components/parameters/MerchantIdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateSubscriptionRequest'
+      responses:
+        '201':
+          description: Subscription created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Subscription'
+
+  /merchants/{merchantId}/subscriptions/{subscriptionId}:
+    get:
+      operationId: getSubscription
+      summary: Get subscription by ID
+      tags: [Subscriptions]
+      parameters:
+        - $ref: '#/components/parameters/MerchantIdParam'
+        - $ref: '#/components/parameters/SubscriptionIdParam'
+      responses:
+        '200':
+          description: Subscription details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Subscription'
+    delete:
+      operationId: cancelSubscription
+      summary: Cancel a subscription
+      tags: [Subscriptions]
+      parameters:
+        - $ref: '#/components/parameters/MerchantIdParam'
+        - $ref: '#/components/parameters/SubscriptionIdParam'
+      responses:
+        '200':
+          description: Subscription cancelled
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Subscription'
+    patch:
+      operationId: updateSubscription
+      summary: Update subscription (e.g., change plan, schedule cancellation)
+      tags: [Subscriptions]
+      parameters:
+        - $ref: '#/components/parameters/MerchantIdParam'
+        - $ref: '#/components/parameters/SubscriptionIdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateSubscriptionRequest'
+      responses:
+        '200':
+          description: Subscription updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Subscription'
+
+  /merchants/{merchantId}/invoices:
+    get:
+      operationId: listInvoices
+      summary: List invoices
+      tags: [Invoices]
+      parameters:
+        - $ref: '#/components/parameters/MerchantIdParam'
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/PageSizeParam'
+        - name: status
+          in: query
+          schema:
+            $ref: '#/components/schemas/InvoiceStatus'
+        - name: customer_id
+          in: query
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Paginated list of invoices
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedResponse_Invoice'
+    post:
+      operationId: createInvoice
+      summary: Create an invoice
+      tags: [Invoices]
+      parameters:
+        - $ref: '#/components/parameters/MerchantIdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateInvoiceRequest'
+      responses:
+        '201':
+          description: Invoice created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Invoice'
+
+  /merchants/{merchantId}/payouts:
+    get:
+      operationId: listPayouts
+      summary: List payouts
+      tags: [Payouts]
+      parameters:
+        - $ref: '#/components/parameters/MerchantIdParam'
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/PageSizeParam'
+        - name: status
+          in: query
+          schema:
+            $ref: '#/components/schemas/PayoutStatus'
+      responses:
+        '200':
+          description: Paginated list of payouts
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedResponse_Payout'
+
+  /merchants/{merchantId}/disputes:
+    get:
+      operationId: listDisputes
+      summary: List disputes
+      tags: [Disputes]
+      parameters:
+        - $ref: '#/components/parameters/MerchantIdParam'
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/PageSizeParam'
+        - name: status
+          in: query
+          schema:
+            $ref: '#/components/schemas/DisputeStatus'
+      responses:
+        '200':
+          description: Paginated list of disputes
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedResponse_Dispute'
+
+  /merchants/{merchantId}/webhooks:
+    get:
+      operationId: listWebhooks
+      summary: List webhook configurations
+      tags: [Webhooks]
+      parameters:
+        - $ref: '#/components/parameters/MerchantIdParam'
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/PageSizeParam'
+      responses:
+        '200':
+          description: Paginated webhook configs
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedResponse_WebhookConfig'
+    post:
+      operationId: createWebhook
+      summary: Create webhook configuration
+      tags: [Webhooks]
+      parameters:
+        - $ref: '#/components/parameters/MerchantIdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateWebhookRequest'
+      responses:
+        '201':
+          description: Webhook created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WebhookConfig'
+
+  /merchants/{merchantId}/payment-methods:
+    get:
+      operationId: listPaymentMethods
+      summary: List payment methods for a merchant
+      tags: [PaymentMethods]
+      parameters:
+        - $ref: '#/components/parameters/MerchantIdParam'
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/PageSizeParam'
+        - name: customer_id
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: type
+          in: query
+          schema:
+            type: string
+            enum: [card, bank_account, wallet]
+      responses:
+        '200':
+          description: Paginated list of payment methods
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedResponse_PaymentMethod'
+    post:
+      operationId: createPaymentMethod
+      summary: Create a payment method (tokenize via provider)
+      tags: [PaymentMethods]
+      parameters:
+        - $ref: '#/components/parameters/MerchantIdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreatePaymentMethodRequest'
+      responses:
+        '201':
+          description: Payment method created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentMethod'
+
+  /merchants/{merchantId}/payment-methods/{paymentMethodId}:
+    get:
+      operationId: getPaymentMethod
+      summary: Get payment method by ID
+      tags: [PaymentMethods]
+      parameters:
+        - $ref: '#/components/parameters/MerchantIdParam'
+        - name: paymentMethodId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Payment method details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentMethod'
+    delete:
+      operationId: deletePaymentMethod
+      summary: Delete a payment method
+      tags: [PaymentMethods]
+      parameters:
+        - $ref: '#/components/parameters/MerchantIdParam'
+        - name: paymentMethodId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Payment method deleted
+
+  /merchants/{merchantId}/providers:
+    get:
+      operationId: listProviders
+      summary: List provider configurations
+      tags: [Providers]
+      parameters:
+        - $ref: '#/components/parameters/MerchantIdParam'
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/PageSizeParam'
+      responses:
+        '200':
+          description: Paginated provider configs
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedResponse_ProviderConfig'
+    post:
+      operationId: configureProvider
+      summary: Configure a payment provider
+      tags: [Providers]
+      parameters:
+        - $ref: '#/components/parameters/MerchantIdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConfigureProviderRequest'
+      responses:
+        '201':
+          description: Provider configured
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProviderConfig'
+
+  /webhooks/stripe:
+    post:
+      operationId: stripeWebhook
+      summary: Receive Stripe webhook
+      tags: [Webhook Ingress]
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Webhook received
+
+  /webhooks/paypal:
+    post:
+      operationId: paypalWebhook
+      summary: Receive PayPal webhook
+      tags: [Webhook Ingress]
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Webhook received
+
+  /webhooks/square:
+    post:
+      operationId: squareWebhook
+      summary: Receive Square webhook
+      tags: [Webhook Ingress]
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Webhook received
+
+  # Auth
+  /auth/register:
+    post:
+      operationId: register
+      summary: Register merchant + admin user
+      tags: [Auth]
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+      responses:
+        '201':
+          description: Registration successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenPair'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /auth/login:
+    post:
+      operationId: login
+      summary: Authenticate user, return JWT tokens
+      tags: [Auth]
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenPair'
+        '401':
+          $ref: '#/components/responses/BadRequest'
+
+  /auth/refresh:
+    post:
+      operationId: refreshToken
+      summary: Refresh access token
+      tags: [Auth]
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefreshRequest'
+      responses:
+        '200':
+          description: Token refreshed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenPair'
+        '401':
+          $ref: '#/components/responses/BadRequest'
+
+  /auth/logout:
+    post:
+      operationId: logout
+      summary: Revoke refresh token
+      tags: [Auth]
+      responses:
+        '204':
+          description: Logged out
+
+  /auth/mfa/setup:
+    post:
+      operationId: setupMFA
+      summary: Generate TOTP secret and QR code
+      tags: [Auth]
+      responses:
+        '200':
+          description: MFA setup data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MFASetupResponse'
+
+  /auth/mfa/verify:
+    post:
+      operationId: verifyMFA
+      summary: Verify TOTP code
+      tags: [Auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MFAVerifyRequest'
+      responses:
+        '200':
+          description: MFA verified
+        '401':
+          $ref: '#/components/responses/BadRequest'
+
+  # Users
+  /users/{userId}:
+    get:
+      operationId: getUser
+      summary: Get user by ID
+      tags: [Users]
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: User details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      operationId: updateUser
+      summary: Update user profile or role
+      tags: [Users]
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                role:
+                  type: string
+                  enum: [root_admin, account_admin, user]
+                is_active:
+                  type: boolean
+      responses:
+        '200':
+          description: User updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # API Keys
+  /api-keys:
+    post:
+      operationId: createApiKey
+      summary: Create API key
+      tags: [API Keys]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateApiKeyRequest'
+      responses:
+        '201':
+          description: API key created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiKeyCreatedResponse'
+    get:
+      operationId: listApiKeys
+      summary: List API keys
+      tags: [API Keys]
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/PageSizeParam'
+      responses:
+        '200':
+          description: Paginated API keys
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedResponse_ApiKey'
+
+  /api-keys/{apiKeyId}:
+    delete:
+      operationId: revokeApiKey
+      summary: Revoke API key
+      tags: [API Keys]
+      parameters:
+        - name: apiKeyId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: API key revoked
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # Invoice GET-by-ID
+  /merchants/{merchantId}/invoices/{invoiceId}:
+    get:
+      operationId: getInvoice
+      summary: Get invoice by ID
+      tags: [Invoices]
+      parameters:
+        - $ref: '#/components/parameters/MerchantIdParam'
+        - name: invoiceId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Invoice details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Invoice'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # Payout create + GET-by-ID
+  /merchants/{merchantId}/payouts/{payoutId}:
+    get:
+      operationId: getPayout
+      summary: Get payout by ID
+      tags: [Payouts]
+      parameters:
+        - $ref: '#/components/parameters/MerchantIdParam'
+        - name: payoutId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Payout details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Payout'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    post:
+      operationId: createPayout
+      summary: Request a payout
+      tags: [Payouts]
+      parameters:
+        - $ref: '#/components/parameters/MerchantIdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreatePayoutRequest'
+      responses:
+        '201':
+          description: Payout created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Payout'
+
+  # Dispute create + GET-by-ID + evidence
+  /merchants/{merchantId}/disputes/{disputeId}:
+    get:
+      operationId: getDispute
+      summary: Get dispute by ID
+      tags: [Disputes]
+      parameters:
+        - $ref: '#/components/parameters/MerchantIdParam'
+        - name: disputeId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Dispute details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Dispute'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    post:
+      operationId: createDispute
+      summary: Initiate dispute for a transaction
+      tags: [Disputes]
+      parameters:
+        - $ref: '#/components/parameters/MerchantIdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateDisputeRequest'
+      responses:
+        '201':
+          description: Dispute created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Dispute'
+
+  /merchants/{merchantId}/disputes/{disputeId}/evidence:
+    post:
+      operationId: submitEvidence
+      summary: Submit evidence for dispute
+      tags: [Disputes]
+      parameters:
+        - $ref: '#/components/parameters/MerchantIdParam'
+        - name: disputeId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                evidence_text:
+                  type: string
+                evidence_files:
+                  type: array
+                  items:
+                    type: string
+                    format: uri
+      responses:
+        '200':
+          description: Evidence submitted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Dispute'
+
+  # WebhookConfig CRUD
+  /merchants/{merchantId}/webhooks/{webhookId}:
+    get:
+      operationId: getWebhookConfig
+      summary: Get webhook config by ID
+      tags: [Webhooks]
+      parameters:
+        - $ref: '#/components/parameters/MerchantIdParam'
+        - name: webhookId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Webhook config
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WebhookConfig'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      operationId: updateWebhookConfig
+      summary: Update webhook config
+      tags: [Webhooks]
+      parameters:
+        - $ref: '#/components/parameters/MerchantIdParam'
+        - name: webhookId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateWebhookRequest'
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WebhookConfig'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      operationId: deleteWebhookConfig
+      summary: Delete webhook config
+      tags: [Webhooks]
+      parameters:
+        - $ref: '#/components/parameters/MerchantIdParam'
+        - name: webhookId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Deleted
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # ProviderConfig CRUD
+  /merchants/{merchantId}/providers/{providerId}:
+    get:
+      operationId: getProviderConfig
+      summary: Get provider config by ID
+      tags: [Providers]
+      parameters:
+        - $ref: '#/components/parameters/MerchantIdParam'
+        - name: providerId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Provider config
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProviderConfig'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      operationId: updateProviderConfig
+      summary: Update provider config
+      tags: [Providers]
+      parameters:
+        - $ref: '#/components/parameters/MerchantIdParam'
+        - name: providerId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConfigureProviderRequest'
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProviderConfig'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      operationId: deleteProviderConfig
+      summary: Delete provider config
+      tags: [Providers]
+      parameters:
+        - $ref: '#/components/parameters/MerchantIdParam'
+        - name: providerId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Deleted
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # Exchange Rates
+  /merchants/{merchantId}/exchange-rates:
+    get:
+      operationId: getExchangeRates
+      summary: Get cached exchange rates
+      tags: [Exchange Rates]
+      parameters:
+        - $ref: '#/components/parameters/MerchantIdParam'
+        - name: base_currency
+          in: query
+          schema:
+            type: string
+            minLength: 3
+            maxLength: 3
+        - name: quote_currency
+          in: query
+          schema:
+            type: string
+            minLength: 3
+            maxLength: 3
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/PageSizeParam'
+      responses:
+        '200':
+          description: Paginated exchange rates
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedResponse_ExchangeRate'
+
+  # Analytics
+  /merchants/{merchantId}/analytics/summary:
+    get:
+      operationId: getAnalyticsSummary
+      summary: Get analytics summary (revenue, transactions, success rate)
+      tags: [Analytics]
+      parameters:
+        - $ref: '#/components/parameters/MerchantIdParam'
+        - name: period
+          in: query
+          schema:
+            type: string
+            enum: [day, week, month, quarter, year]
+            default: month
+        - name: start_date
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: end_date
+          in: query
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: Analytics summary
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  total_revenue:
+                    type: integer
+                    description: Total revenue in minor units
+                  total_transactions:
+                    type: integer
+                  success_rate:
+                    type: number
+                    format: double
+                  avg_transaction_value:
+                    type: integer
+                  period:
+                    type: string
+
+  /merchants/{merchantId}/analytics/transactions:
+    get:
+      operationId: getTransactionAnalytics
+      summary: Get transaction analytics (by type, status, provider)
+      tags: [Analytics]
+      parameters:
+        - $ref: '#/components/parameters/MerchantIdParam'
+        - name: period
+          in: query
+          schema:
+            type: string
+            enum: [day, week, month, quarter, year]
+            default: month
+      responses:
+        '200':
+          description: Transaction analytics
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  by_type:
+                    type: object
+                    description: Transaction counts by type
+                  by_status:
+                    type: object
+                    description: Transaction counts by status
+                  by_provider:
+                    type: object
+                    description: Transaction counts by provider
+                  daily_trend:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        date:
+                          type: string
+                          format: date
+                        count:
+                          type: integer
+                        revenue:
+                          type: integer
+
+  /merchants/{merchantId}/analytics/export:
+    post:
+      operationId: exportAnalytics
+      summary: Export analytics report as CSV/PDF
+      tags: [Analytics]
+      parameters:
+        - $ref: '#/components/parameters/MerchantIdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [format]
+              properties:
+                format:
+                  type: string
+                  enum: [csv, pdf]
+                start_date:
+                  type: string
+                  format: date
+                end_date:
+                  type: string
+                  format: date
+      responses:
+        '200':
+          description: Export download URL
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  download_url:
+                    type: string
+                    format: uri
+                  expires_at:
+                    type: string
+                    format: date-time
+
+  # Billing (Platform Fees)
+  /merchants/{merchantId}/billing/fees:
+    get:
+      operationId: getBillingFees
+      summary: Get fee breakdown for merchant
+      tags: [Billing]
+      parameters:
+        - $ref: '#/components/parameters/MerchantIdParam'
+        - name: period
+          in: query
+          schema:
+            type: string
+            enum: [month, quarter, year]
+            default: month
+        - name: start_date
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: end_date
+          in: query
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: Fee breakdown
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  total_fees:
+                    type: integer
+                    description: Total platform fees in minor units
+                  fee_breakdown:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        transaction_id:
+                          type: string
+                          format: uuid
+                        fee_amount:
+                          type: integer
+                        fee_percentage:
+                          type: number
+                          format: double
+                        provider:
+                          type: string
+                        created_at:
+                          type: string
+                          format: date-time
+                  period:
+                    type: string
+
+  /merchants/{merchantId}/billing/invoices:
+    get:
+      operationId: getBillingInvoices
+      summary: Get platform billing invoices for merchant
+      tags: [Billing]
+      parameters:
+        - $ref: '#/components/parameters/MerchantIdParam'
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/PageSizeParam'
+      responses:
+        '200':
+          description: Paginated billing invoices
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+                        merchant_id:
+                          type: string
+                          format: uuid
+                        period_start:
+                          type: string
+                          format: date
+                        period_end:
+                          type: string
+                          format: date
+                        total_fees:
+                          type: integer
+                        status:
+                          type: string
+                          enum: [draft, open, paid, void]
+                        due_date:
+                          type: string
+                          format: date
+                        created_at:
+                          type: string
+                          format: date-time
+                  page:
+                    type: integer
+                  page_size:
+                    type: integer
+                  total:
+                    type: integer
+                  total_pages:
+                    type: integer
+
+  /health:
+    get:
+      operationId: healthCheck
+      summary: Health check
+      tags: [System]
+      security: []
+      responses:
+        '200':
+          description: Service healthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+
+  parameters:
+    MerchantIdParam:
+      name: merchantId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    CustomerIdParam:
+      name: customerId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    TransactionIdParam:
+      name: transactionId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    SubscriptionIdParam:
+      name: subscriptionId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    PageParam:
+      name: page
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        default: 1
+    PageSizeParam:
+      name: page_size
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 20
+
+  schemas:
+    Merchant:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        email:
+          type: string
+          format: email
+        slug:
+          type: string
+        status:
+          type: string
+          enum: [active, suspended, pending_verification]
+        default_currency:
+          type: string
+          description: ISO 4217 currency code
+        timezone:
+          type: string
+          description: IANA timezone
+        branding:
+          type: object
+          description: White-label config (colors, logo_url, slogan)
+        settings:
+          type: object
+          description: Merchant-specific settings
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    Customer:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        merchant_id:
+          type: string
+          format: uuid
+        external_id:
+          type: string
+          description: Merchant's own customer identifier
+        name:
+          type: string
+        email:
+          type: string
+          format: email
+        phone:
+          type: string
+        metadata:
+          type: object
+          description: Custom key-value pairs
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    Transaction:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        merchant_id:
+          type: string
+          format: uuid
+        customer_id:
+          type: string
+          format: uuid
+        provider:
+          type: string
+          enum: [stripe, paypal, square]
+        provider_transaction_id:
+          type: string
+          description: Provider's transaction ID
+        type:
+          $ref: '#/components/schemas/TransactionType'
+        amount:
+          type: integer
+          description: Amount in smallest currency unit (cents)
+        currency:
+          type: string
+          description: ISO 4217 currency code
+        status:
+          $ref: '#/components/schemas/TransactionStatus'
+        payment_method_id:
+          type: string
+          format: uuid
+        idempotency_key:
+          type: string
+          description: Client-provided idempotency key
+        description:
+          type: string
+        metadata:
+          type: object
+          description: Custom key-value pairs
+        error_code:
+          type: string
+          description: Provider error code if failed
+        error_message:
+          type: string
+          description: Human-readable error message
+        fee_amount:
+          type: integer
+          description: Platform fee in smallest currency unit
+        net_amount:
+          type: integer
+          description: Amount after fees
+        processed_at:
+          type: string
+          format: date-time
+          description: When transaction completed
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    TransactionType:
+      type: string
+      enum: [charge, refund, payout]
+
+    TransactionStatus:
+      type: string
+      enum: [pending, processing, succeeded, failed, cancelled, reversed]
+
+    Subscription:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        merchant_id:
+          type: string
+          format: uuid
+        customer_id:
+          type: string
+          format: uuid
+        provider:
+          type: string
+          enum: [stripe, paypal, square]
+        provider_subscription_id:
+          type: string
+          description: Provider's subscription ID
+        plan_id:
+          type: string
+          description: Provider plan/price ID
+        status:
+          $ref: '#/components/schemas/SubscriptionStatus'
+        amount:
+          type: integer
+          description: Recurring amount in smallest unit
+        currency:
+          type: string
+          description: ISO 4217 currency code
+        interval:
+          type: string
+          enum: [day, week, month, year]
+        interval_count:
+          type: integer
+          description: Units per interval
+          default: 1
+        current_period_start:
+          type: string
+          format: date-time
+        current_period_end:
+          type: string
+          format: date-time
+        cancel_at:
+          type: string
+          format: date-time
+          description: Scheduled cancellation
+        cancelled_at:
+          type: string
+          format: date-time
+          description: Actual cancellation timestamp
+        trial_start:
+          type: string
+          format: date-time
+        trial_end:
+          type: string
+          format: date-time
+        metadata:
+          type: object
+          description: Custom data
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    SubscriptionStatus:
+      type: string
+      enum: [active, past_due, cancelled, unpaid, trialing]
+
+    Invoice:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        merchant_id:
+          type: string
+          format: uuid
+        customer_id:
+          type: string
+          format: uuid
+        subscription_id:
+          type: string
+          format: uuid
+          description: Related subscription (nullable)
+        provider:
+          type: string
+          enum: [stripe, paypal, square]
+        provider_invoice_id:
+          type: string
+          description: Provider's invoice ID
+        amount:
+          type: integer
+          description: Invoice amount in smallest unit
+        currency:
+          type: string
+          description: ISO 4217 currency code
+        status:
+          $ref: '#/components/schemas/InvoiceStatus'
+        due_date:
+          type: string
+          format: date
+          description: Payment due date
+        paid_at:
+          type: string
+          format: date-time
+          description: When invoice was paid
+        period_start:
+          type: string
+          format: date-time
+          description: Billing period start
+        period_end:
+          type: string
+          format: date-time
+          description: Billing period end
+        metadata:
+          type: object
+          description: Custom data
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    InvoiceStatus:
+      type: string
+      enum: [draft, open, paid, void, uncollectible]
+
+    Payout:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        merchant_id:
+          type: string
+          format: uuid
+        provider:
+          type: string
+          enum: [stripe, paypal, square]
+        provider_payout_id:
+          type: string
+          description: Provider's payout ID
+        amount:
+          type: integer
+          description: Payout amount in smallest unit
+        currency:
+          type: string
+          description: ISO 4217 currency code
+        status:
+          $ref: '#/components/schemas/PayoutStatus'
+        method:
+          type: string
+          enum: [standard, instant]
+        arrival_date:
+          type: string
+          format: date
+          description: Expected arrival date
+        fee_amount:
+          type: integer
+          description: Provider payout fee
+        metadata:
+          type: object
+          description: Custom data
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    PayoutStatus:
+      type: string
+      enum: [pending, in_transit, paid, failed, cancelled]
+
+    Dispute:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        transaction_id:
+          type: string
+          format: uuid
+          description: Disputed transaction
+        merchant_id:
+          type: string
+          format: uuid
+        provider:
+          type: string
+          enum: [stripe, paypal, square]
+        provider_dispute_id:
+          type: string
+          description: Provider's dispute ID
+        reason:
+          type: string
+          description: Dispute reason code
+        status:
+          $ref: '#/components/schemas/DisputeStatus'
+        amount:
+          type: integer
+          description: Disputed amount in smallest unit
+        evidence_deadline:
+          type: string
+          format: date-time
+          description: Deadline to submit evidence
+        evidence_submitted_at:
+          type: string
+          format: date-time
+          description: When evidence was submitted
+        resolution:
+          type: string
+          description: Final resolution
+        metadata:
+          type: object
+          description: Custom data
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    DisputeStatus:
+      type: string
+      enum: [warning_needs_response, under_review, lost, won, closed]
+
+    WebhookConfig:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        merchant_id:
+          type: string
+          format: uuid
+        url:
+          type: string
+          format: uri
+          description: Webhook endpoint URL
+        secret:
+          type: string
+          description: Signing secret for payload verification (internal-only, not exposed in API)
+        events:
+          type: array
+          items:
+            type: string
+          description: Array of event types to subscribe to
+        is_active:
+          type: boolean
+          description: Whether webhook is active
+        metadata:
+          type: object
+          description: Custom data
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    ProviderConfig:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        merchant_id:
+          type: string
+          format: uuid
+        provider:
+          type: string
+          enum: [stripe, paypal, square]
+        is_active:
+          type: boolean
+          description: Whether provider is active
+        config:
+          type: object
+          description: Encrypted provider credentials (internal-only, not exposed in API)
+        fallback_order:
+          type: integer
+          description: Priority in fallback chain (0 = primary)
+        health_status:
+          type: string
+          enum: [healthy, degraded, unhealthy]
+        last_health_check:
+          type: string
+          format: date-time
+          description: Last health check timestamp
+        metadata:
+          type: object
+          description: Custom data
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    CreateMerchantRequest:
+      type: object
+      required: [name, email]
+      properties:
+        name:
+          type: string
+        email:
+          type: string
+          format: email
+        default_currency:
+          type: string
+          default: USD
+        timezone:
+          type: string
+          default: UTC
+
+    UpdateMerchantRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        email:
+          type: string
+          format: email
+        default_currency:
+          type: string
+        timezone:
+          type: string
+        branding:
+          type: object
+
+    CreateCustomerRequest:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+        email:
+          type: string
+          format: email
+        phone:
+          type: string
+        external_id:
+          type: string
+        metadata:
+          type: object
+
+    UpdateCustomerRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        email:
+          type: string
+          format: email
+        phone:
+          type: string
+        external_id:
+          type: string
+        metadata:
+          type: object
+
+    CreateChargeRequest:
+      type: object
+      required: [amount, currency, provider]
+      properties:
+        amount:
+          type: integer
+          description: Amount in smallest currency unit
+        currency:
+          type: string
+        provider:
+          type: string
+          enum: [stripe, paypal, square]
+        customer_id:
+          type: string
+          format: uuid
+        payment_method_id:
+          type: string
+          format: uuid
+        idempotency_key:
+          type: string
+        description:
+          type: string
+        metadata:
+          type: object
+
+    CreateRefundRequest:
+      type: object
+      required: [amount]
+      properties:
+        amount:
+          type: integer
+          description: Refund amount in smallest currency unit
+        reason:
+          type: string
+        metadata:
+          type: object
+
+    CreateSubscriptionRequest:
+      type: object
+      required: [customer_id, plan_id, provider]
+      properties:
+        customer_id:
+          type: string
+          format: uuid
+        plan_id:
+          type: string
+        provider:
+          type: string
+          enum: [stripe, paypal, square]
+        trial_period_days:
+          type: integer
+        metadata:
+          type: object
+
+    UpdateSubscriptionRequest:
+      type: object
+      properties:
+        plan_id:
+          type: string
+          description: New provider plan/price ID
+        cancel_at:
+          type: string
+          format: date-time
+          description: Schedule cancellation at this time
+        metadata:
+          type: object
+
+    CreateInvoiceRequest:
+      type: object
+      required: [customer_id, amount, currency]
+      properties:
+        customer_id:
+          type: string
+          format: uuid
+        amount:
+          type: integer
+        currency:
+          type: string
+        due_date:
+          type: string
+          format: date
+        description:
+          type: string
+        metadata:
+          type: object
+
+    CreateWebhookRequest:
+      type: object
+      required: [url, events]
+      properties:
+        url:
+          type: string
+          format: uri
+        events:
+          type: array
+          items:
+            type: string
+
+    CreatePaymentMethodRequest:
+      type: object
+      required: [provider, type]
+      properties:
+        provider:
+          type: string
+          enum: [stripe, paypal, square]
+        type:
+          type: string
+          enum: [card, bank_account, wallet]
+        customer_id:
+          type: string
+          format: uuid
+          description: Associated customer (nullable for merchant defaults)
+        provider_token:
+          type: string
+          description: Token from client-side SDK (e.g., Stripe Elements)
+        is_default:
+          type: boolean
+          default: false
+        metadata:
+          type: object
+
+    ConfigureProviderRequest:
+      type: object
+      required: [provider, config]
+      properties:
+        provider:
+          type: string
+          enum: [stripe, paypal, square]
+        config:
+          type: object
+          description: Provider-specific credentials (API keys, webhook secrets)
+        fallback_order:
+          type: integer
+          default: 0
+
+    CreatePayoutRequest:
+      type: object
+      required: [amount, currency]
+      properties:
+        amount:
+          type: integer
+          description: Amount in minor units
+        currency:
+          type: string
+          minLength: 3
+          maxLength: 3
+
+    CreateDisputeRequest:
+      type: object
+      required: [transaction_id, reason]
+      properties:
+        transaction_id:
+          type: string
+          format: uuid
+        reason:
+          type: string
+
+    PaginatedResponse_ApiKey:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/ApiKey'
+        page:
+          type: integer
+        page_size:
+          type: integer
+        total:
+          type: integer
+        total_pages:
+          type: integer
+
+    PaginatedResponse_WebhookConfig:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/WebhookConfig'
+        page:
+          type: integer
+        page_size:
+          type: integer
+        total:
+          type: integer
+        total_pages:
+          type: integer
+
+    PaginatedResponse_ProviderConfig:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProviderConfig'
+        page:
+          type: integer
+        page_size:
+          type: integer
+        total:
+          type: integer
+        total_pages:
+          type: integer
+
+    PaginatedResponse_ExchangeRate:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/ExchangeRate'
+        page:
+          type: integer
+        page_size:
+          type: integer
+        total:
+          type: integer
+        total_pages:
+          type: integer
+
+    PaymentMethod:
+      type: object
+      description: Tokenized payment instrument. Never stores raw card data.
+      properties:
+        id:
+          type: string
+          format: uuid
+        merchant_id:
+          type: string
+          format: uuid
+        customer_id:
+          type: string
+          format: uuid
+          description: Associated customer (nullable for merchant defaults)
+        type:
+          type: string
+          enum: [card, bank_account, wallet]
+        provider:
+          type: string
+          enum: [stripe, paypal, square]
+        provider_token:
+          type: string
+          description: Provider-specific token (internal-only)
+        fingerprint:
+          type: string
+          description: Card fingerprint for dedup
+        brand:
+          type: string
+          description: Card brand (visa, mastercard)
+        last4:
+          type: string
+          description: Last 4 digits of card
+        exp_month:
+          type: integer
+          description: Expiration month
+        exp_year:
+          type: integer
+          description: Expiration year
+        is_default:
+          type: boolean
+          description: Default payment method
+        metadata:
+          type: object
+          description: Custom data
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    User:
+      type: object
+      description: System user with role-based access
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+          format: email
+        name:
+          type: string
+        role:
+          type: string
+          enum: [root_admin, account_admin, user]
+        merchant_id:
+          type: string
+          format: uuid
+          description: Associated merchant (nullable for root_admin)
+        is_active:
+          type: boolean
+        mfa_enabled:
+          type: boolean
+          description: Whether MFA is enabled
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    AuditLog:
+      type: object
+      description: Immutable audit trail for all actions (internal-only, not exposed in public API)
+      properties:
+        id:
+          type: string
+          format: uuid
+        merchant_id:
+          type: string
+          format: uuid
+        actor_id:
+          type: string
+          format: uuid
+        actor_type:
+          type: string
+          enum: [root_admin, account_admin, user, system, api_key]
+        action:
+          type: string
+          description: Action performed (e.g., transaction.charge, merchant.update)
+        resource_type:
+          type: string
+          description: Resource type affected
+        resource_id:
+          type: string
+          format: uuid
+        changes:
+          type: object
+          description: Before/after diff for updates
+        ip_address:
+          type: string
+          description: Client IP address
+        user_agent:
+          type: string
+          description: Client user agent
+        created_at:
+          type: string
+          format: date-time
+
+    ExchangeRate:
+      type: object
+      description: Cached exchange rate for multi-currency conversion
+      properties:
+        id:
+          type: integer
+        base_currency:
+          type: string
+          description: Base currency code
+        quote_currency:
+          type: string
+          description: Quote currency code
+        rate:
+          type: string
+          description: Exchange rate as decimal string for precision (e.g., "1.23456789")
+        source:
+          type: string
+          description: Rate source (frankfurter, exchangerate-api, open-exchange-rates)
+        fetched_at:
+          type: string
+          format: date-time
+        expires_at:
+          type: string
+          format: date-time
+
+    # Auth Schemas
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          format: password
+
+    RegisterRequest:
+      type: object
+      required: [email, password, name]
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          format: password
+        name:
+          type: string
+        company_name:
+          type: string
+
+    TokenPair:
+      type: object
+      properties:
+        access_token:
+          type: string
+        refresh_token:
+          type: string
+        token_type:
+          type: string
+          enum: [Bearer]
+        expires_in:
+          type: integer
+          description: Access token TTL in seconds
+
+    RefreshRequest:
+      type: object
+      required: [refresh_token]
+      properties:
+        refresh_token:
+          type: string
+
+    MFASetupResponse:
+      type: object
+      properties:
+        secret:
+          type: string
+          description: TOTP secret (base32)
+        qr_code_url:
+          type: string
+          description: otpauth:// URI for QR code
+        recovery_codes:
+          type: array
+          items:
+            type: string
+
+    MFAVerifyRequest:
+      type: object
+      required: [code]
+      properties:
+        code:
+          type: string
+          minLength: 6
+          maxLength: 6
+
+    # API Key Schemas
+    ApiKey:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        key_prefix:
+          type: string
+          description: First 8 chars for identification
+        scopes:
+          type: array
+          items:
+            type: string
+        rate_limit:
+          type: integer
+          description: Requests per second (0 = unlimited)
+        is_active:
+          type: boolean
+        last_used_at:
+          type: string
+          format: date-time
+          nullable: true
+        expires_at:
+          type: string
+          format: date-time
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+
+    CreateApiKeyRequest:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+        scopes:
+          type: array
+          items:
+            type: string
+        rate_limit:
+          type: integer
+          default: 0
+        expires_at:
+          type: string
+          format: date-time
+          nullable: true
+
+    ApiKeyCreatedResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        key:
+          type: string
+          description: Full API key (shown once, never retrievable)
+        key_prefix:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+
+    PaginatedResponse_Merchant:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Merchant'
+        page:
+          type: integer
+        page_size:
+          type: integer
+        total:
+          type: integer
+        total_pages:
+          type: integer
+
+    PaginatedResponse_Customer:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Customer'
+        page:
+          type: integer
+        page_size:
+          type: integer
+        total:
+          type: integer
+        total_pages:
+          type: integer
+
+    PaginatedResponse_Transaction:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Transaction'
+        page:
+          type: integer
+        page_size:
+          type: integer
+        total:
+          type: integer
+        total_pages:
+          type: integer
+
+    PaginatedResponse_Subscription:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Subscription'
+        page:
+          type: integer
+        page_size:
+          type: integer
+        total:
+          type: integer
+        total_pages:
+          type: integer
+
+    PaginatedResponse_Invoice:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Invoice'
+        page:
+          type: integer
+        page_size:
+          type: integer
+        total:
+          type: integer
+        total_pages:
+          type: integer
+
+    PaginatedResponse_Payout:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Payout'
+        page:
+          type: integer
+        page_size:
+          type: integer
+        total:
+          type: integer
+        total_pages:
+          type: integer
+
+    PaginatedResponse_Dispute:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Dispute'
+        page:
+          type: integer
+        page_size:
+          type: integer
+        total:
+          type: integer
+        total_pages:
+          type: integer
+
+    PaginatedResponse_PaymentMethod:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/PaymentMethod'
+        page:
+          type: integer
+        page_size:
+          type: integer
+        total:
+          type: integer
+        total_pages:
+          type: integer
+
+    HealthResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [healthy, unhealthy]
+        time:
+          type: string
+          format: date-time
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: object
+          properties:
+            code:
+              type: string
+            message:
+              type: string
+            details:
+              type: object
+
+  responses:
+    BadRequest:
+      description: Bad request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    Conflict:
+      description: Conflict (e.g., idempotency key reuse)
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'

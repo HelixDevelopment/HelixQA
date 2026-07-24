@@ -1,0 +1,2 @@
+DROP TABLE IF EXISTS audit_logs;
+DROP TYPE IF EXISTS audit_actor_type;

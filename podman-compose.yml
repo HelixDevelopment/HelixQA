@@ -1,0 +1,94 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: helix-postgres
+    labels:
+      io.containers.autoupdate: registry
+    environment:
+      POSTGRES_DB: helix_seller
+      POSTGRES_USER: helix
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-helix_dev}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    ports:
+      - "127.0.0.1:5432:5432"
+    networks:
+      - helix-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U helix -d helix_seller"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: helix-redis
+    labels:
+      io.containers.autoupdate: registry
+    volumes:
+      - redis-data:/data
+    ports:
+      - "127.0.0.1:6379:6379"
+    networks:
+      - helix-net
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  nats:
+    image: nats:2.10-alpine
+    container_name: helix-nats
+    labels:
+      io.containers.autoupdate: registry
+    command: ["--jetstream", "--store_dir", "/data"]
+    volumes:
+      - nats-data:/data
+    ports:
+      - "127.0.0.1:4222:4222"
+      - "127.0.0.1:8222:8222"
+    networks:
+      - helix-net
+    healthcheck:
+      test: ["CMD", "nats-server", "--signal", "ldm="]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  server:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: helix-server
+    environment:
+      DATABASE_URL: postgres://helix:${POSTGRES_PASSWORD:-helix_dev}@postgres:5432/helix_seller?sslmode=disable
+      REDIS_URL: redis://redis:6379
+      NATS_URL: nats://nats:4222
+      JWT_PRIVATE_KEY_PATH: /etc/helix/jwt_private.pem
+      JWT_PUBLIC_KEY_PATH: /etc/helix/jwt_public.pem
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY:-dev-encryption-key-32-chars-long!}
+      SERVER_PORT: "8080"
+    ports:
+      - "127.0.0.1:8080:8080"
+    volumes:
+      - ./certs:/etc/helix:ro
+    networks:
+      - helix-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      nats:
+        condition: service_started
+    restart: "no"
+
+volumes:
+  postgres-data:
+  redis-data:
+  nats-data:
+
+networks:
+  helix-net:
+    driver: bridge

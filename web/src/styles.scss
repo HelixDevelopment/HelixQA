@@ -1,0 +1,67 @@
+:root {
+  --hx-primary: #2563eb;
+  --hx-primary-dark: #1d4ed8;
+  --hx-primary-light: #3b82f6;
+  --hx-secondary: #475569;
+  --hx-secondary-dark: #334155;
+  --hx-accent: #f59e0b;
+  --hx-success: #22c55e;
+  --hx-danger: #ef4444;
+  --hx-warning: #f59e0b;
+  --hx-info: #0ea5e9;
+  --hx-bg: #f8fafc;
+  --hx-bg-card: #ffffff;
+  --hx-text: #1e293b;
+  --hx-text-muted: #64748b;
+  --hx-border: #e2e8f0;
+  --hx-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+  --hx-shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --hx-radius: 0.5rem;
+  --hx-radius-lg: 0.75rem;
+  --hx-font: 'Inter', system-ui, -apple-system, sans-serif;
+  --hx-font-mono: 'JetBrains Mono', ui-monospace, monospace;
+  --hx-sidebar-width: 260px;
+  --hx-header-height: 64px;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  font-size: 16px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  font-family: var(--hx-font);
+  background-color: var(--hx-bg);
+  color: var(--hx-text);
+  line-height: 1.6;
+}
+
+a {
+  color: var(--hx-primary);
+  text-decoration: none;
+}
+
+a:hover {
+  color: var(--hx-primary-dark);
+}
+
+button {
+  cursor: pointer;
+  font-family: inherit;
+}
+
+input,
+select,
+textarea {
+  font-family: inherit;
+  font-size: inherit;
+}

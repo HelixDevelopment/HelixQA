@@ -1,0 +1,9 @@
+web/node_modules
+web/dist
+web/.angular
+bin
+dist
+.git
+.env
+*.pem
+coverage.*
