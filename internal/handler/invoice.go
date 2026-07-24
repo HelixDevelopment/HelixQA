@@ -27,14 +27,14 @@ func (h *InvoiceHandler) CreateInvoice(c *gin.Context) {
 	}
 
 	var req struct {
-		CustomerID     string  `json:"customer_id" binding:"required"`
+		CustomerID     string `json:"customer_id" binding:"required"`
 		SubscriptionID *string `json:"subscription_id"`
-		Amount         int64   `json:"amount" binding:"required,gt=0"`
-		Currency       string  `json:"currency" binding:"required"`
-		Provider       string  `json:"provider"`
-		DueDate        *string `json:"due_date"`
-		PeriodStart    string  `json:"period_start" binding:"required"`
-		PeriodEnd      string  `json:"period_end" binding:"required"`
+		Amount         int64  `json:"amount" binding:"required,gt=0"`
+		Currency       string `json:"currency" binding:"required"`
+		Provider       string `json:"provider"`
+		DueDate        string `json:"due_date" binding:"required"`
+		PeriodStart    string `json:"period_start" binding:"required"`
+		PeriodEnd      string `json:"period_end" binding:"required"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -68,14 +68,10 @@ func (h *InvoiceHandler) CreateInvoice(c *gin.Context) {
 		return
 	}
 
-	var dueDate *time.Time
-	if req.DueDate != nil {
-		dd, err := time.Parse(time.RFC3339, *req.DueDate)
-		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid due_date"})
-			return
-		}
-		dueDate = &dd
+	dueDate, err := time.Parse(time.RFC3339, req.DueDate)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid due_date"})
+		return
 	}
 
 	inv, err := h.invoiceSvc.CreateInvoice(c.Request.Context(), merchantID, customerID, subscriptionID, req.Amount, req.Currency, req.Provider, dueDate, periodStart, periodEnd)

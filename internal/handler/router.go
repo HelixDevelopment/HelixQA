@@ -2,12 +2,15 @@ package handler
 
 import (
 	"github.com/gin-gonic/gin"
+	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/redis/go-redis/v9"
 	"go.uber.org/zap"
 
+	"github.com/helix-seller/helix-seller/internal/middleware"
 	"github.com/helix-seller/helix-seller/internal/websocket"
 )
 
-func NewRouter(logger *zap.Logger, authHandler *AuthHandler, userHandler *UserHandler, apiKeyHandler *ApiKeyHandler, merchantHandler *MerchantHandler, paymentHandler *PaymentHandler, customerHandler *CustomerHandler, subscriptionHandler *SubscriptionHandler, invoiceHandler *InvoiceHandler, payoutHandler *PayoutHandler, disputeHandler *DisputeHandler, webhookHandler *WebhookHandler, analyticsHandler *AnalyticsHandler, providerHandler *ProviderHandler, paymentMethodHandler *PaymentMethodHandler, exchangeRateHandler *ExchangeRateHandler, auditHandler *AuditHandler, webhookIngressHandler *WebhookIngressHandler, billingHandler *BillingHandler, healthHandler *HealthHandler, wsHandler *websocket.WSHandler) *gin.Engine {
+func NewRouter(logger *zap.Logger, authMiddleware gin.HandlerFunc, rdb *redis.Client, db *pgxpool.Pool, rateLimitRPS int, authHandler *AuthHandler, userHandler *UserHandler, apiKeyHandler *ApiKeyHandler, merchantHandler *MerchantHandler, paymentHandler *PaymentHandler, customerHandler *CustomerHandler, subscriptionHandler *SubscriptionHandler, invoiceHandler *InvoiceHandler, payoutHandler *PayoutHandler, disputeHandler *DisputeHandler, webhookHandler *WebhookHandler, analyticsHandler *AnalyticsHandler, providerHandler *ProviderHandler, paymentMethodHandler *PaymentMethodHandler, exchangeRateHandler *ExchangeRateHandler, auditHandler *AuditHandler, webhookIngressHandler *WebhookIngressHandler, billingHandler *BillingHandler, healthHandler *HealthHandler, wsHandler *websocket.WSHandler) *gin.Engine {
 	router := gin.New()
 	router.Use(gin.Recovery())
 
@@ -32,6 +35,10 @@ func NewRouter(logger *zap.Logger, authHandler *AuthHandler, userHandler *UserHa
 
 		// Protected
 		p := v1.Group("")
+		p.Use(authMiddleware)
+		p.Use(middleware.RequireRole(middleware.RoleUser, middleware.RoleAccountAdmin, middleware.RoleRootAdmin))
+		p.Use(middleware.Audit(db, logger))
+		p.Use(middleware.RateLimit(rdb, rateLimitRPS, logger))
 		{
 			// Users
 			p.GET("/users/me", userHandler.GetUser)

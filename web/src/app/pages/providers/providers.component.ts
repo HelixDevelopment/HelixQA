@@ -2,19 +2,19 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ApiService, ProviderConfig } from '../../core/api.service';
+import { PageHeaderComponent, StatusBadgeComponent } from '../../shared/index';
 
 @Component({
   selector: 'app-providers',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, PageHeaderComponent, StatusBadgeComponent],
   template: `
     <div class="page">
-      <div class="page-header">
-        <h1>Payment Providers</h1>
+      <app-page-header title="Payment Providers">
         <button class="btn btn-primary" (click)="toggleForm()">
           {{ showForm ? 'Cancel' : 'Add Provider' }}
         </button>
-      </div>
+      </app-page-header>
 
       <div class="loading" *ngIf="loading">
         <div class="spinner"></div>
@@ -73,12 +73,10 @@ import { ApiService, ProviderConfig } from '../../core/api.service';
                 <span class="provider-badge" [ngClass]="p.provider">{{ p.provider | titlecase }}</span>
               </td>
               <td>
-                <span class="badge" [ngClass]="p.status">{{ p.status }}</span>
+                <app-status-badge [label]="p.status" [variant]="p.status"></app-status-badge>
               </td>
               <td>
-                <span class="badge badge-health" [ngClass]="p.health || 'unknown'">
-                  {{ p.health || 'unknown' }}
-                </span>
+                <app-status-badge [label]="p.health || 'unknown'" [variant]="p.health === 'healthy' ? 'healthy' : 'unhealthy'"></app-status-badge>
               </td>
               <td>{{ p.created_at | date:'mediumDate' }}</td>
               <td class="actions-cell">
@@ -190,8 +188,11 @@ export class ProvidersComponent implements OnInit {
   formProvider = '';
   formApiKey = '';
   formSecret = '';
+  private merchantId = '';
 
-  constructor(private api: ApiService) {}
+  constructor(private api: ApiService) {
+    this.merchantId = localStorage.getItem('helix_merchant_id') || '';
+  }
 
   ngOnInit(): void {
     this.loadProviders();
@@ -200,9 +201,10 @@ export class ProvidersComponent implements OnInit {
   loadProviders(): void {
     this.loading = true;
     this.error = '';
-    this.api.getProviders('default').subscribe({
+    if (!this.merchantId) { this.error = 'No merchant selected.'; this.loading = false; return; }
+    this.api.getProviders(this.merchantId).subscribe({
       next: (res) => { this.providers = res.data; this.loading = false; },
-      error: (err) => { this.error = 'Failed to load providers.'; this.loading = false; },
+      error: () => { this.error = 'Failed to load providers.'; this.loading = false; },
     });
   }
 
@@ -233,8 +235,8 @@ export class ProvidersComponent implements OnInit {
     const payload: Partial<ProviderConfig> = { provider: this.formProvider, config };
 
     const request = this.editingId
-      ? this.api.updateProvider('default', this.editingId, payload)
-      : this.api.createProvider('default', payload);
+      ? this.api.updateProvider(this.merchantId, this.editingId, payload)
+      : this.api.createProvider(this.merchantId, payload);
 
     request.subscribe({
       next: () => {
@@ -249,7 +251,7 @@ export class ProvidersComponent implements OnInit {
 
   toggleStatus(p: ProviderConfig): void {
     const newStatus = p.status === 'active' ? 'inactive' : 'active';
-    this.api.updateProvider('default', p.id, { status: newStatus } as any).subscribe({
+    this.api.updateProvider(this.merchantId, p.id, { status: newStatus } as any).subscribe({
       next: () => this.loadProviders(),
       error: () => this.error = 'Failed to update provider status.',
     });
@@ -257,7 +259,7 @@ export class ProvidersComponent implements OnInit {
 
   onDelete(id: string): void {
     if (!confirm('Delete this provider configuration?')) return;
-    this.api.deleteProvider('default', id).subscribe({
+    this.api.deleteProvider(this.merchantId, id).subscribe({
       next: () => this.loadProviders(),
       error: () => this.error = 'Failed to delete provider.',
     });

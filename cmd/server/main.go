@@ -29,10 +29,10 @@ func main() {
 		log.Println("No .env file found")
 	}
 
-	logger := initLogger()
-	defer logger.Sync()
-
 	cfg := config.Load()
+
+	logger := initLogger(cfg)
+	defer logger.Sync()
 
 	// Database
 	postgres, err := database.NewPostgres(cfg.DatabaseURL)
@@ -48,9 +48,13 @@ func main() {
 	defer redisClient.Close()
 
 	// Event bus
-	eb, err := eventbus.NewNatsEventBus(cfg.NATSURL, logger)
+	var eb eventbus.EventBus
+	natsEB, err := eventbus.NewNatsEventBus(cfg.NATSURL, logger)
 	if err != nil {
-		logger.Warn("NATS not available, event bus disabled", zap.Error(err))
+		logger.Warn("NATS not available, using no-op event bus", zap.Error(err))
+		eb = &eventbus.NoopEventBus{}
+	} else {
+		eb = natsEB
 	}
 
 	// Repositories
@@ -87,7 +91,7 @@ func main() {
 	billingSvc := service.NewBillingService(postgres.Pool, logger)
 
 	// Handlers
-	authHandler := handler.NewAuthHandler(authSvc, jwtSvc, mfaSvc, userRepo)
+	authHandler := handler.NewAuthHandler(authSvc, jwtSvc, mfaSvc, userRepo, redisClient.Client)
 	userHandler := handler.NewUserHandler(userRepo)
 	apiKeyHandler := handler.NewApiKeyHandler(apiKeySvc)
 	merchantHandler := handler.NewMerchantHandler(merchantRepo)
@@ -103,7 +107,7 @@ func main() {
 	paymentMethodHandler := handler.NewPaymentMethodHandler(pmRepo)
 	exchangeRateHandler := handler.NewExchangeRateHandler(exchangeRateSvc)
 	auditHandler := handler.NewAuditHandler(auditRepo)
-	webhookIngressHandler := handler.NewWebhookIngressHandler(webhookSvc, eb, logger)
+	webhookIngressHandler := handler.NewWebhookIngressHandler(webhookSvc, eb, logger, cfg.StripeWebhookSecret, cfg.PayPalWebhookID, cfg.SquareWebhookSigKey)
 	billingHandler := handler.NewBillingHandler(billingSvc)
 	healthHandler := handler.NewHealthHandler(postgres.Pool, redisClient.Client, logger)
 
@@ -112,9 +116,19 @@ func main() {
 	go wsHub.Run()
 	wsHandler := websocket.NewWSHandler(wsHub, logger)
 
+	// Auth middleware
+	authMiddleware, err := middleware.NewAuthMiddleware(cfg.JWTPublicKeyPath, redisClient.Client, logger)
+	if err != nil {
+		logger.Fatal("Failed to initialize auth middleware", zap.Error(err))
+	}
+
 	// Router
 	router := handler.NewRouter(
 		logger,
+		authMiddleware,
+		redisClient.Client,
+		postgres.Pool,
+		cfg.RateLimitRPS,
 		authHandler,
 		userHandler,
 		apiKeyHandler,
@@ -141,6 +155,9 @@ func main() {
 	router.Use(middleware.Recovery(logger))
 	router.Use(middleware.CORS())
 	router.Use(middleware.RequestID())
+	router.Use(middleware.SecurityHeaders())
+	router.Use(middleware.RequestSizeLimit(10 << 20)) // 10 MB max
+	router.Use(middleware.Logger(logger))
 
 	// Start background worker
 	ctx, cancel := context.WithCancel(context.Background())
@@ -179,11 +196,16 @@ func main() {
 	logger.Info("Server exited gracefully")
 }
 
-func initLogger() *zap.Logger {
-	cfg := zap.Config{
-		Level:       zap.NewAtomicLevelAt(zapcore.InfoLevel),
+func initLogger(cfg *config.Config) *zap.Logger {
+	level, err := zapcore.ParseLevel(cfg.LogLevel)
+	if err != nil {
+		log.Fatalf("Invalid LOG_LEVEL: %v", err)
+	}
+
+	zapCfg := zap.Config{
+		Level:       zap.NewAtomicLevelAt(level),
 		Development: false,
-		Encoding:    "json",
+		Encoding:    cfg.LogFormat,
 		EncoderConfig: zapcore.EncoderConfig{
 			TimeKey:        "time",
 			LevelKey:       "level",
@@ -201,7 +223,7 @@ func initLogger() *zap.Logger {
 		ErrorOutputPaths: []string{"stderr"},
 	}
 
-	logger, err := cfg.Build()
+	logger, err := zapCfg.Build()
 	if err != nil {
 		log.Fatal("Failed to initialize logger", err)
 	}

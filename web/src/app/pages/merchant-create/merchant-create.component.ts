@@ -71,25 +71,25 @@ import { ApiService } from '../../core/api.service';
     </div>
   `,
   styles: [`
-    .merchant-create { padding: 24px; }
-    .page-header { margin-bottom: 24px; }
-    .back-link { color: #4f46e5; text-decoration: none; font-size: 14px; display: inline-block; margin-bottom: 8px; }
+    .merchant-create { padding: var(--od-spacing-xl); }
+    .page-header { margin-bottom: var(--od-spacing-lg); }
+    .back-link { color: var(--od-accent); text-decoration: none; font-size: 14px; display: inline-block; margin-bottom: 8px; }
     .back-link:hover { text-decoration: underline; }
-    h1 { margin: 0; font-size: 24px; color: #1a1a1a; }
+    h1 { margin: 0; font-size: 24px; color: var(--od-text-primary); }
     .error-banner {
-      background: #fef2f2;
-      border: 1px solid #fecaca;
-      border-radius: 8px;
+      background: var(--od-bg-danger, #fef2f2);
+      border: 1px solid var(--od-border-danger, #fecaca);
+      border-radius: var(--od-radius);
       padding: 12px 16px;
-      color: #991b1b;
+      color: var(--od-danger, #991b1b);
       font-size: 14px;
       margin-bottom: 16px;
     }
     .form-card {
-      background: white;
-      border-radius: 8px;
+      background: var(--od-card-bg);
+      border-radius: var(--od-radius);
       padding: 24px;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      box-shadow: var(--od-card-shadow);
       max-width: 640px;
     }
     .form-grid {
@@ -98,31 +98,31 @@ import { ApiService } from '../../core/api.service';
       gap: 16px;
     }
     .form-group { display: flex; flex-direction: column; }
-    label { font-size: 13px; font-weight: 500; color: #333; margin-bottom: 6px; }
+    label { font-size: 13px; font-weight: 500; color: var(--od-text-primary); margin-bottom: 6px; }
     input, select {
       padding: 8px 12px;
-      border: 1px solid #d1d5db;
-      border-radius: 6px;
+      border: 1px solid var(--od-border);
+      border-radius: var(--od-radius-sm);
       font-size: 14px;
-      color: #1a1a1a;
-      background: white;
+      color: var(--od-text-primary);
+      background: var(--od-bg-primary);
       outline: none;
       transition: border-color 0.2s;
     }
-    input:focus, select:focus { border-color: #4f46e5; }
-    input.ng-invalid.ng-touched, select.ng-invalid.ng-touched { border-color: #ef4444; }
-    .field-error { color: #ef4444; font-size: 12px; margin-top: 4px; }
+    input:focus, select:focus { border-color: var(--od-accent); }
+    input.ng-invalid.ng-touched, select.ng-invalid.ng-touched { border-color: var(--od-danger, #ef4444); }
+    .field-error { color: var(--od-danger, #ef4444); font-size: 12px; margin-top: 4px; }
     .form-actions {
       display: flex;
       justify-content: flex-end;
       gap: 12px;
       margin-top: 24px;
       padding-top: 16px;
-      border-top: 1px solid #f3f4f6;
+      border-top: 1px solid var(--od-border);
     }
     .btn {
       padding: 8px 20px;
-      border-radius: 6px;
+      border-radius: var(--od-radius-sm);
       font-size: 14px;
       font-weight: 500;
       cursor: pointer;
@@ -130,11 +130,11 @@ import { ApiService } from '../../core/api.service';
       border: none;
       transition: background-color 0.2s;
     }
-    .btn-primary { background: #4f46e5; color: white; }
-    .btn-primary:hover { background: #4338ca; }
-    .btn-primary:disabled { background: #a5b4fc; cursor: not-allowed; }
-    .btn-secondary { background: #f3f4f6; color: #374151; display: inline-flex; align-items: center; }
-    .btn-secondary:hover { background: #e5e7eb; }
+    .btn-primary { background: var(--od-accent); color: white; }
+    .btn-primary:hover { opacity: 0.9; }
+    .btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
+    .btn-secondary { background: var(--od-bg-secondary); color: var(--od-text-primary); display: inline-flex; align-items: center; }
+    .btn-secondary:hover { background: var(--od-bg-tertiary); }
   `]
 })
 export class MerchantCreateComponent {

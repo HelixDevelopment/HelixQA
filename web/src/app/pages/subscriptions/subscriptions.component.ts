@@ -2,16 +2,15 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { ApiService, Subscription } from '../../core/api.service';
+import { PageHeaderComponent, StatusBadgeComponent } from '../../shared/index';
 
 @Component({
   selector: 'app-subscriptions',
   standalone: true,
-  imports: [CommonModule, RouterLink],
+  imports: [CommonModule, RouterLink, PageHeaderComponent, StatusBadgeComponent],
   template: `
     <div class="page">
-      <div class="page-header">
-        <h1>Subscriptions</h1>
-      </div>
+      <app-page-header title="Subscriptions"></app-page-header>
 
       <div class="loading" *ngIf="loading">
         <div class="spinner"></div>
@@ -38,14 +37,14 @@ import { ApiService, Subscription } from '../../core/api.service';
           <tbody>
             <tr *ngFor="let sub of subscriptions">
               <td>
-                <a [routerLink]="['/merchants', sub.merchant_id, 'customers', sub.customer_id]" class="customer-link">
+                <a routerLink="/customers" class="customer-link">
                   {{ sub.customer_id }}
                 </a>
               </td>
               <td>{{ sub.plan_id }}</td>
               <td class="amount-cell">{{ sub.amount / 100 | currency:'USD':'symbol':'1.2-2' }}</td>
               <td>
-                <span class="badge" [ngClass]="sub.status">{{ sub.status }}</span>
+                <app-status-badge [label]="sub.status" [variant]="sub.status"></app-status-badge>
               </td>
               <td>{{ sub.current_period_end | date:'mediumDate' }}</td>
               <td>

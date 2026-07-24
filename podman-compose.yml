@@ -51,7 +51,7 @@ services:
     networks:
       - helix-net
     healthcheck:
-      test: ["CMD", "nats-server", "--signal", "ldm="]
+      test: ["CMD-SHELL", "pgrep -x nats-server || exit 1"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -83,6 +83,11 @@ services:
       nats:
         condition: service_started
     restart: "no"
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 512M
 
 volumes:
   postgres-data:

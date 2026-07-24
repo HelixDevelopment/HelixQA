@@ -1117,8 +1117,8 @@ func TestInvoice_NullableFields(t *testing.T) {
 	if inv.SubscriptionID != nil {
 		t.Error("expected nil subscription_id")
 	}
-	if inv.DueDate != nil {
-		t.Error("expected nil due_date")
+	if !inv.DueDate.IsZero() {
+		t.Error("expected zero due_date")
 	}
 	if inv.PaidAt != nil {
 		t.Error("expected nil paid_at")

@@ -1019,7 +1019,7 @@ func TestInvoice_JSON_Roundtrip_Complete(t *testing.T) {
 		Amount:            10000,
 		Currency:          "EUR",
 		Status:            InvoiceStatusPaid,
-		DueDate:           &due,
+		DueDate:           due,
 		PaidAt:            &paid,
 		PeriodStart:       now,
 		PeriodEnd:         now.AddDate(0, 1, 0),
@@ -1044,8 +1044,8 @@ func TestInvoice_JSON_Roundtrip_Complete(t *testing.T) {
 	if inv2.SubscriptionID == nil {
 		t.Error("SubscriptionID should not be nil")
 	}
-	if inv2.DueDate == nil {
-		t.Error("DueDate should not be nil")
+	if inv2.DueDate.IsZero() {
+		t.Error("DueDate should not be zero")
 	}
 	if inv2.PaidAt == nil {
 		t.Error("PaidAt should not be nil")

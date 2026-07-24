@@ -32,11 +32,16 @@ func (r *TransactionRepo) Create(ctx context.Context, t *model.Transaction) erro
 	return nil
 }
 
+func (r *TransactionRepo) DB() *pgxpool.Pool {
+	return r.db
+}
+
 func (r *TransactionRepo) GetByID(ctx context.Context, id uuid.UUID) (*model.Transaction, error) {
 	t := &model.Transaction{}
 	err := r.db.QueryRow(ctx,
-		`SELECT id, merchant_id, customer_id, provider, provider_transaction_id, type, amount, currency, status, payment_method_id, idempotency_key, description, metadata, error_code, error_message, fee_amount, net_amount, processed_at, created_at, updated_at
-		 FROM transactions WHERE id = $1`, id,
+		 `SELECT id, merchant_id, customer_id, provider, provider_transaction_id, type, amount, currency, status, payment_method_id, idempotency_key, description, metadata, error_code, error_message, fee_amount, net_amount, processed_at, created_at, updated_at
+		 FROM transactions WHERE id = $1
+		 ORDER BY created_at DESC LIMIT 1`, id,
 	).Scan(
 		&t.ID, &t.MerchantID, &t.CustomerID, &t.Provider, &t.ProviderTransactionID, &t.Type, &t.Amount, &t.Currency, &t.Status, &t.PaymentMethodID,
 		&t.IdempotencyKey, &t.Description, &t.Metadata, &t.ErrorCode, &t.ErrorMessage, &t.FeeAmount, &t.NetAmount, &t.ProcessedAt,

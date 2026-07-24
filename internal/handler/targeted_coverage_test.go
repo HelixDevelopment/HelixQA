@@ -225,7 +225,7 @@ func ginContextWith(method, path string, body interface{}, params ...gin.Params)
 func TestRegister_Success(t *testing.T) {
 	userRepo, _, _, _, _, _ := newTestDBRepos()
 	authSvc, jwtSvc, _, _, _ := newTestServices(userRepo, nil)
-	h := NewAuthHandler(authSvc, jwtSvc, nil, userRepo)
+	h := NewAuthHandler(authSvc, jwtSvc, nil, userRepo, nil)
 
 	body := map[string]string{
 		"email":    fmt.Sprintf("register_success_%d@example.com", time.Now().UnixNano()),
@@ -242,7 +242,7 @@ func TestRegister_Success(t *testing.T) {
 func TestRegister_DuplicateUser(t *testing.T) {
 	userRepo, _, _, _, _, _ := newTestDBRepos()
 	authSvc, jwtSvc, _, _, _ := newTestServices(userRepo, nil)
-	h := NewAuthHandler(authSvc, jwtSvc, nil, userRepo)
+	h := NewAuthHandler(authSvc, jwtSvc, nil, userRepo, nil)
 
 	email := fmt.Sprintf("dup_%d@example.com", time.Now().UnixNano())
 	body := map[string]string{
@@ -267,7 +267,7 @@ func TestRegister_DuplicateUser(t *testing.T) {
 func TestRegister_BindError(t *testing.T) {
 	userRepo, _, _, _, _, _ := newTestDBRepos()
 	authSvc, jwtSvc, _, _, _ := newTestServices(userRepo, nil)
-	h := NewAuthHandler(authSvc, jwtSvc, nil, userRepo)
+	h := NewAuthHandler(authSvc, jwtSvc, nil, userRepo, nil)
 
 	body := map[string]string{"email": "bad"}
 	c, w := ginContextWith("POST", "/auth/register", body, nil)
@@ -280,7 +280,7 @@ func TestRegister_BindError(t *testing.T) {
 func TestRegister_ShortPassword(t *testing.T) {
 	userRepo, _, _, _, _, _ := newTestDBRepos()
 	authSvc, jwtSvc, _, _, _ := newTestServices(userRepo, nil)
-	h := NewAuthHandler(authSvc, jwtSvc, nil, userRepo)
+	h := NewAuthHandler(authSvc, jwtSvc, nil, userRepo, nil)
 
 	body := map[string]string{
 		"email":    "test@example.com",
@@ -297,7 +297,7 @@ func TestRegister_ShortPassword(t *testing.T) {
 func TestLogin_Success_NoMFA(t *testing.T) {
 	userRepo, _, merchantRepo, _, _, _ := newTestDBRepos()
 	authSvc, jwtSvc, _, _, _ := newTestServices(userRepo, nil)
-	h := NewAuthHandler(authSvc, jwtSvc, nil, userRepo)
+	h := NewAuthHandler(authSvc, jwtSvc, nil, userRepo, nil)
 
 	email := fmt.Sprintf("login_%d@example.com", time.Now().UnixNano())
 	seedUserWithPassword(t, authSvc, userRepo, merchantRepo, email, "securepassword123")
@@ -321,7 +321,7 @@ func TestLogin_Success_NoMFA(t *testing.T) {
 func TestLogin_Success_WithMFA(t *testing.T) {
 	userRepo, _, merchantRepo, _, _, _ := newTestDBRepos()
 	authSvc, jwtSvc, mfaSvc, _, _ := newTestServices(userRepo, nil)
-	h := NewAuthHandler(authSvc, jwtSvc, mfaSvc, userRepo)
+	h := NewAuthHandler(authSvc, jwtSvc, mfaSvc, userRepo, nil)
 
 	email := fmt.Sprintf("login_mfa_%d@example.com", time.Now().UnixNano())
 	user := seedUserWithPassword(t, authSvc, userRepo, merchantRepo, email, "securepassword123")
@@ -347,7 +347,7 @@ func TestLogin_Success_WithMFA(t *testing.T) {
 func TestLogin_InvalidCredentials(t *testing.T) {
 	userRepo, _, _, _, _, _ := newTestDBRepos()
 	authSvc, jwtSvc, _, _, _ := newTestServices(userRepo, nil)
-	h := NewAuthHandler(authSvc, jwtSvc, nil, userRepo)
+	h := NewAuthHandler(authSvc, jwtSvc, nil, userRepo, nil)
 
 	body := map[string]string{"email": "nonexistent@example.com", "password": "wrongpassword"}
 	c, w := ginContextWith("POST", "/auth/login", body, nil)
@@ -360,7 +360,7 @@ func TestLogin_InvalidCredentials(t *testing.T) {
 func TestLogin_BindError(t *testing.T) {
 	userRepo, _, _, _, _, _ := newTestDBRepos()
 	authSvc, jwtSvc, _, _, _ := newTestServices(userRepo, nil)
-	h := NewAuthHandler(authSvc, jwtSvc, nil, userRepo)
+	h := NewAuthHandler(authSvc, jwtSvc, nil, userRepo, nil)
 
 	body := map[string]string{}
 	c, w := ginContextWith("POST", "/auth/login", body, nil)
@@ -373,7 +373,7 @@ func TestLogin_BindError(t *testing.T) {
 func TestRefresh_Success(t *testing.T) {
 	userRepo, _, merchantRepo, _, _, _ := newTestDBRepos()
 	authSvc, jwtSvc, _, _, _ := newTestServices(userRepo, nil)
-	h := NewAuthHandler(authSvc, jwtSvc, nil, userRepo)
+	h := NewAuthHandler(authSvc, jwtSvc, nil, userRepo, nil)
 
 	email := fmt.Sprintf("refresh_%d@example.com", time.Now().UnixNano())
 	user := seedUser(t, userRepo, merchantRepo, email)
@@ -394,7 +394,7 @@ func TestRefresh_Success(t *testing.T) {
 func TestRefresh_InvalidToken(t *testing.T) {
 	userRepo, _, _, _, _, _ := newTestDBRepos()
 	authSvc, jwtSvc, _, _, _ := newTestServices(userRepo, nil)
-	h := NewAuthHandler(authSvc, jwtSvc, nil, userRepo)
+	h := NewAuthHandler(authSvc, jwtSvc, nil, userRepo, nil)
 
 	body := map[string]string{"refresh_token": "invalid.token.here"}
 	c, w := ginContextWith("POST", "/auth/refresh", body, nil)
@@ -407,7 +407,7 @@ func TestRefresh_InvalidToken(t *testing.T) {
 func TestRefresh_UserNotFound(t *testing.T) {
 	userRepo, _, _, _, _, _ := newTestDBRepos()
 	authSvc, jwtSvc, _, _, _ := newTestServices(userRepo, nil)
-	h := NewAuthHandler(authSvc, jwtSvc, nil, userRepo)
+	h := NewAuthHandler(authSvc, jwtSvc, nil, userRepo, nil)
 
 	fakeID := uuid.New()
 	refreshToken, err := jwtSvc.GenerateRefreshToken(fakeID)
@@ -426,7 +426,7 @@ func TestRefresh_UserNotFound(t *testing.T) {
 func TestRefresh_BindError(t *testing.T) {
 	userRepo, _, _, _, _, _ := newTestDBRepos()
 	authSvc, jwtSvc, _, _, _ := newTestServices(userRepo, nil)
-	h := NewAuthHandler(authSvc, jwtSvc, nil, userRepo)
+	h := NewAuthHandler(authSvc, jwtSvc, nil, userRepo, nil)
 
 	body := map[string]string{}
 	c, w := ginContextWith("POST", "/auth/refresh", body, nil)
@@ -439,7 +439,7 @@ func TestRefresh_BindError(t *testing.T) {
 func TestSetupMFA_Success(t *testing.T) {
 	userRepo, _, merchantRepo, _, _, _ := newTestDBRepos()
 	authSvc, _, mfaSvc, _, _ := newTestServices(userRepo, nil)
-	h := NewAuthHandler(authSvc, nil, mfaSvc, userRepo)
+	h := NewAuthHandler(authSvc, nil, mfaSvc, userRepo, nil)
 
 	email := fmt.Sprintf("mfa_setup_%d@example.com", time.Now().UnixNano())
 	user := seedUser(t, userRepo, merchantRepo, email)
@@ -466,7 +466,7 @@ func TestSetupMFA_Success(t *testing.T) {
 func TestSetupMFA_UserNotFound(t *testing.T) {
 	userRepo, _, _, _, _, _ := newTestDBRepos()
 	authSvc, _, mfaSvc, _, _ := newTestServices(userRepo, nil)
-	h := NewAuthHandler(authSvc, nil, mfaSvc, userRepo)
+	h := NewAuthHandler(authSvc, nil, mfaSvc, userRepo, nil)
 
 	c, w := ginContextWith("POST", "/auth/mfa/setup", nil, nil)
 	c.Set("user_id", uuid.New().String())
@@ -479,7 +479,7 @@ func TestSetupMFA_UserNotFound(t *testing.T) {
 func TestSetupMFA_InvalidUserID(t *testing.T) {
 	userRepo, _, _, _, _, _ := newTestDBRepos()
 	authSvc, _, mfaSvc, _, _ := newTestServices(userRepo, nil)
-	h := NewAuthHandler(authSvc, nil, mfaSvc, userRepo)
+	h := NewAuthHandler(authSvc, nil, mfaSvc, userRepo, nil)
 
 	c, w := ginContextWith("POST", "/auth/mfa/setup", nil, nil)
 	c.Set("user_id", "not-a-uuid")
@@ -492,7 +492,7 @@ func TestSetupMFA_InvalidUserID(t *testing.T) {
 func TestVerifyMFA_Success(t *testing.T) {
 	userRepo, _, merchantRepo, _, _, _ := newTestDBRepos()
 	authSvc, jwtSvc, mfaSvc, _, _ := newTestServices(userRepo, nil)
-	h := NewAuthHandler(authSvc, jwtSvc, mfaSvc, userRepo)
+	h := NewAuthHandler(authSvc, jwtSvc, mfaSvc, userRepo, nil)
 
 	email := fmt.Sprintf("mfa_verify_%d@example.com", time.Now().UnixNano())
 	user := seedUser(t, userRepo, merchantRepo, email)
@@ -512,7 +512,7 @@ func TestVerifyMFA_Success(t *testing.T) {
 func TestVerifyMFA_UserNotFound(t *testing.T) {
 	userRepo, _, _, _, _, _ := newTestDBRepos()
 	authSvc, jwtSvc, mfaSvc, _, _ := newTestServices(userRepo, nil)
-	h := NewAuthHandler(authSvc, jwtSvc, mfaSvc, userRepo)
+	h := NewAuthHandler(authSvc, jwtSvc, mfaSvc, userRepo, nil)
 
 	body := map[string]string{"user_id": uuid.New().String(), "code": "123456"}
 	c, w := ginContextWith("POST", "/auth/mfa/verify", body, nil)
@@ -525,7 +525,7 @@ func TestVerifyMFA_UserNotFound(t *testing.T) {
 func TestVerifyMFA_NoSecret(t *testing.T) {
 	userRepo, _, merchantRepo, _, _, _ := newTestDBRepos()
 	authSvc, jwtSvc, mfaSvc, _, _ := newTestServices(userRepo, nil)
-	h := NewAuthHandler(authSvc, jwtSvc, mfaSvc, userRepo)
+	h := NewAuthHandler(authSvc, jwtSvc, mfaSvc, userRepo, nil)
 
 	email := fmt.Sprintf("mfa_nosecret_%d@example.com", time.Now().UnixNano())
 	user := seedUser(t, userRepo, merchantRepo, email)
@@ -541,7 +541,7 @@ func TestVerifyMFA_NoSecret(t *testing.T) {
 func TestVerifyMFA_BindError(t *testing.T) {
 	userRepo, _, _, _, _, _ := newTestDBRepos()
 	authSvc, jwtSvc, mfaSvc, _, _ := newTestServices(userRepo, nil)
-	h := NewAuthHandler(authSvc, jwtSvc, mfaSvc, userRepo)
+	h := NewAuthHandler(authSvc, jwtSvc, mfaSvc, userRepo, nil)
 
 	body := map[string]string{}
 	c, w := ginContextWith("POST", "/auth/mfa/verify", body, nil)
@@ -554,7 +554,7 @@ func TestVerifyMFA_BindError(t *testing.T) {
 func TestVerifyMFA_InvalidUUID(t *testing.T) {
 	userRepo, _, _, _, _, _ := newTestDBRepos()
 	authSvc, jwtSvc, mfaSvc, _, _ := newTestServices(userRepo, nil)
-	h := NewAuthHandler(authSvc, jwtSvc, mfaSvc, userRepo)
+	h := NewAuthHandler(authSvc, jwtSvc, mfaSvc, userRepo, nil)
 
 	body := map[string]string{"user_id": "not-a-uuid", "code": "123456"}
 	c, w := ginContextWith("POST", "/auth/mfa/verify", body, nil)
@@ -1441,7 +1441,7 @@ func TestRevokeApiKey_InvalidUUID(t *testing.T) {
 func TestLogin_BindError_MissingPassword(t *testing.T) {
 	userRepo, _, _, _, _, _ := newTestDBRepos()
 	authSvc, jwtSvc, _, _, _ := newTestServices(userRepo, nil)
-	h := NewAuthHandler(authSvc, jwtSvc, nil, userRepo)
+	h := NewAuthHandler(authSvc, jwtSvc, nil, userRepo, nil)
 
 	body := map[string]string{"email": "test@example.com"}
 	c, w := ginContextWith("POST", "/auth/login", body, nil)
@@ -1454,7 +1454,7 @@ func TestLogin_BindError_MissingPassword(t *testing.T) {
 func TestSetupMFA_EmptyUserID(t *testing.T) {
 	userRepo, _, _, _, _, _ := newTestDBRepos()
 	authSvc, _, mfaSvc, _, _ := newTestServices(userRepo, nil)
-	h := NewAuthHandler(authSvc, nil, mfaSvc, userRepo)
+	h := NewAuthHandler(authSvc, nil, mfaSvc, userRepo, nil)
 
 	c, w := ginContextWith("POST", "/auth/mfa/setup", nil, nil)
 	c.Set("user_id", "")

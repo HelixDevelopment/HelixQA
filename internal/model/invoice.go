@@ -27,7 +27,7 @@ type Invoice struct {
 	Amount            int64          `json:"amount"`
 	Currency          string         `json:"currency"`
 	Status            InvoiceStatus  `json:"status"`
-	DueDate           *time.Time     `json:"due_date"`
+	DueDate           time.Time      `json:"due_date"`
 	PaidAt            *time.Time     `json:"paid_at"`
 	PeriodStart       time.Time      `json:"period_start"`
 	PeriodEnd         time.Time      `json:"period_end"`

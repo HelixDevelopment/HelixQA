@@ -22,7 +22,7 @@ func NewInvoiceService(invRepo *repository.InvoiceRepo, eventBus eventbus.EventB
 	return &InvoiceService{invRepo: invRepo, eventBus: eventBus, logger: logger}
 }
 
-func (s *InvoiceService) CreateInvoice(ctx context.Context, merchantID, customerID uuid.UUID, subscriptionID *uuid.UUID, amount int64, currency, provider string, dueDate *time.Time, periodStart, periodEnd time.Time) (*model.Invoice, error) {
+func (s *InvoiceService) CreateInvoice(ctx context.Context, merchantID, customerID uuid.UUID, subscriptionID *uuid.UUID, amount int64, currency, provider string, dueDate time.Time, periodStart, periodEnd time.Time) (*model.Invoice, error) {
 	inv := &model.Invoice{
 		ID:             uuid.New(),
 		MerchantID:     merchantID,

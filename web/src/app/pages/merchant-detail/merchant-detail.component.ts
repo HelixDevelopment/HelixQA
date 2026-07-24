@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, RouterLink, Router } from '@angular/router';
-import { ApiService } from '../../core/api.service';
+import { ApiService, Merchant } from '../../core/api.service';
 
 @Component({
   selector: 'app-merchant-detail',
@@ -71,12 +71,12 @@ import { ApiService } from '../../core/api.service';
     </div>
   `,
   styles: [`
-    .merchant-detail { padding: 24px; }
-    .page-header { margin-bottom: 24px; }
-    .back-link { color: #4f46e5; text-decoration: none; font-size: 14px; display: inline-block; margin-bottom: 8px; }
+    .merchant-detail { padding: var(--od-spacing-xl); }
+    .page-header { margin-bottom: var(--od-spacing-lg); }
+    .back-link { color: var(--od-accent); text-decoration: none; font-size: 14px; display: inline-block; margin-bottom: 8px; }
     .back-link:hover { text-decoration: underline; }
     .header-actions { display: flex; justify-content: space-between; align-items: flex-start; }
-    h1 { margin: 0; font-size: 24px; color: #1a1a1a; }
+    h1 { margin: 0; font-size: 24px; color: var(--od-text-primary); }
     .action-buttons { display: flex; gap: 8px; }
     .detail-grid {
       display: grid;
@@ -84,15 +84,15 @@ import { ApiService } from '../../core/api.service';
       gap: 16px;
     }
     .detail-card {
-      background: white;
-      border-radius: 8px;
+      background: var(--od-card-bg);
+      border-radius: var(--od-radius);
       padding: 20px;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      box-shadow: var(--od-card-shadow);
     }
-    .detail-card h3 { margin: 0 0 16px; font-size: 16px; color: #333; }
+    .detail-card h3 { margin: 0 0 16px; font-size: 16px; color: var(--od-text-primary); }
     dl { margin: 0; }
-    dt { font-size: 12px; color: #666; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
-    dd { margin: 0 0 16px; font-size: 14px; color: #1a1a1a; }
+    dt { font-size: 12px; color: var(--od-text-secondary); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
+    dd { margin: 0 0 16px; font-size: 14px; color: var(--od-text-primary); }
     .badge {
       display: inline-block;
       padding: 2px 10px;
@@ -113,29 +113,29 @@ import { ApiService } from '../../core/api.service';
       justify-content: center;
       gap: 12px;
       padding: 48px;
-      color: #666;
+      color: var(--od-text-secondary);
     }
     .spinner-icon {
       width: 20px;
       height: 20px;
-      border: 2px solid #e5e7eb;
-      border-top-color: #4f46e5;
+      border: 2px solid var(--od-border);
+      border-top-color: var(--od-accent);
       border-radius: 50%;
       animation: spin 0.8s linear infinite;
     }
     @keyframes spin { to { transform: rotate(360deg); } }
     .error-state {
-      background: #fef2f2;
-      border: 1px solid #fecaca;
-      border-radius: 8px;
+      background: var(--od-bg-danger, #fef2f2);
+      border: 1px solid var(--od-border-danger, #fecaca);
+      border-radius: var(--od-radius);
       padding: 24px;
       text-align: center;
-      color: #991b1b;
+      color: var(--od-danger, #991b1b);
     }
     .error-state a { margin-top: 12px; display: inline-block; }
     .btn {
       padding: 8px 20px;
-      border-radius: 6px;
+      border-radius: var(--od-radius-sm);
       font-size: 14px;
       font-weight: 500;
       cursor: pointer;
@@ -143,14 +143,14 @@ import { ApiService } from '../../core/api.service';
       border: none;
       transition: background-color 0.2s;
     }
-    .btn-secondary { background: #f3f4f6; color: #374151; }
-    .btn-secondary:hover { background: #e5e7eb; }
-    .btn-danger { background: #ef4444; color: white; }
-    .btn-danger:hover { background: #dc2626; }
+    .btn-secondary { background: var(--od-bg-secondary); color: var(--od-text-primary); }
+    .btn-secondary:hover { background: var(--od-bg-tertiary); }
+    .btn-danger { background: var(--od-danger, #ef4444); color: white; }
+    .btn-danger:hover { opacity: 0.9; }
   `]
 })
 export class MerchantDetailComponent implements OnInit {
-  merchant: any = null;
+  merchant: Merchant | null = null;
   loading = true;
   error = '';
 

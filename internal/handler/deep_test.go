@@ -627,13 +627,10 @@ func TestWebhookIngressHandler_HandleStripe_WithSignature(t *testing.T) {
 	c, _ := gin.CreateTestContext(w)
 	body := `{"type":"payment_intent.succeeded"}`
 	c.Request = httptest.NewRequest("POST", "/test", strings.NewReader(body))
-	c.Request.Header.Set("Stripe-Signature", "sig_test")
+	c.Request.Header.Set("Stripe-Signature", "t=1234567890,v1=test_signature")
 	h.HandleStripe(c)
-	if w.Code != http.StatusOK {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusOK)
-	}
-	if len(bus.published) != 1 {
-		t.Fatalf("expected 1 published event, got %d", len(bus.published))
+	if w.Code != http.StatusUnauthorized {
+		t.Errorf("status = %d, want %d (invalid sig rejected)", w.Code, http.StatusUnauthorized)
 	}
 }
 

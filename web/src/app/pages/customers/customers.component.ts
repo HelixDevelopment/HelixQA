@@ -1,17 +1,16 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ApiService } from '../../core/api.service';
+import { ApiService, Customer } from '../../core/api.service';
+import { PageHeaderComponent } from '../../shared/index';
 
 @Component({
   selector: 'app-customers',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, PageHeaderComponent],
   template: `
     <div class="page">
-      <div class="page-header">
-        <h1>Customers</h1>
-      </div>
+      <app-page-header title="Customers"></app-page-header>
 
       <div class="filters">
         <input
@@ -140,8 +139,8 @@ import { ApiService } from '../../core/api.service';
   `]
 })
 export class CustomersComponent implements OnInit {
-  customers: any[] = [];
-  filteredCustomers: any[] = [];
+  customers: Customer[] = [];
+  filteredCustomers: Customer[] = [];
   loading = true;
   error = false;
   page = 1;

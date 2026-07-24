@@ -17,6 +17,8 @@ import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
           <a routerLink="/transactions" routerLinkActive="active">Transactions</a>
           <a routerLink="/customers" routerLinkActive="active">Customers</a>
           <a routerLink="/subscriptions" routerLinkActive="active">Subscriptions</a>
+          <a routerLink="/providers" routerLinkActive="active">Providers</a>
+          <a routerLink="/webhooks" routerLinkActive="active">Webhooks</a>
           <a routerLink="/settings" routerLinkActive="active">Settings</a>
         </nav>
         <div class="sidebar-footer">
@@ -116,7 +118,13 @@ import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 export class AppComponent {
   theme: 'light' | 'dark' = 'light';
 
+  constructor() {
+    const saved = localStorage.getItem('helix_theme') as 'light' | 'dark' | null;
+    if (saved) this.theme = saved;
+  }
+
   toggleTheme(): void {
     this.theme = this.theme === 'light' ? 'dark' : 'light';
+    localStorage.setItem('helix_theme', this.theme);
   }
 }

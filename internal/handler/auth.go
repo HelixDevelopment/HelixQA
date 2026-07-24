@@ -1,24 +1,30 @@
 package handler
 
 import (
+	"fmt"
 	"net/http"
+	"strings"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	"github.com/redis/go-redis/v9"
+
 	"github.com/helix-seller/helix-seller/internal/model"
 	"github.com/helix-seller/helix-seller/internal/repository"
 	"github.com/helix-seller/helix-seller/internal/service"
 )
 
 type AuthHandler struct {
-	authSvc  *service.AuthService
-	jwtSvc   *service.JWTService
-	mfaSvc   *service.MFAService
-	userRepo *repository.UserRepo
+	authSvc     *service.AuthService
+	jwtSvc      *service.JWTService
+	mfaSvc      *service.MFAService
+	userRepo    *repository.UserRepo
+	redisClient *redis.Client
 }
 
-func NewAuthHandler(authSvc *service.AuthService, jwtSvc *service.JWTService, mfaSvc *service.MFAService, userRepo *repository.UserRepo) *AuthHandler {
-	return &AuthHandler{authSvc: authSvc, jwtSvc: jwtSvc, mfaSvc: mfaSvc, userRepo: userRepo}
+func NewAuthHandler(authSvc *service.AuthService, jwtSvc *service.JWTService, mfaSvc *service.MFAService, userRepo *repository.UserRepo, redisClient *redis.Client) *AuthHandler {
+	return &AuthHandler{authSvc: authSvc, jwtSvc: jwtSvc, mfaSvc: mfaSvc, userRepo: userRepo, redisClient: redisClient}
 }
 
 // POST /auth/register
@@ -143,6 +149,26 @@ func (h *AuthHandler) Refresh(c *gin.Context) {
 
 // POST /auth/logout
 func (h *AuthHandler) Logout(c *gin.Context) {
+	authHeader := c.GetHeader("Authorization")
+	if authHeader != "" && h.redisClient != nil {
+		parts := strings.SplitN(authHeader, " ", 2)
+		if len(parts) == 2 && strings.EqualFold(parts[0], "Bearer") {
+			claims, err := h.jwtSvc.ValidateToken(parts[1])
+			if err == nil {
+				if jti, ok := claims["jti"]; ok {
+					jtiStr := fmt.Sprint(jti)
+					if exp, ok := claims["exp"]; ok {
+						expUnix := int64(exp.(float64))
+						expTime := time.Unix(expUnix, 0)
+						ttl := time.Until(expTime)
+						if ttl > 0 {
+							h.redisClient.Set(c.Request.Context(), "token_blacklist:"+jtiStr, true, ttl)
+						}
+					}
+				}
+			}
+		}
+	}
 	c.JSON(http.StatusOK, gin.H{"message": "logged out"})
 }
 

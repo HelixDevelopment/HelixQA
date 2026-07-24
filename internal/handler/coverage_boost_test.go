@@ -20,6 +20,7 @@ func TestNewRouter(t *testing.T) {
 
 	r := NewRouter(
 		logger,
+		nil, nil, nil, 0,
 		nil, nil, nil, nil, nil, nil, nil, nil, nil,
 		nil, nil, nil, nil, nil, nil, nil,
 		nil, nil, nil,
@@ -50,6 +51,7 @@ func TestRouter_HealthAndEndpoints(t *testing.T) {
 
 	r := NewRouter(
 		logger,
+		func(c *gin.Context) { c.Next() }, nil, nil, 100,
 		&AuthHandler{}, &UserHandler{}, &ApiKeyHandler{}, &MerchantHandler{},
 		&PaymentHandler{}, &CustomerHandler{}, &SubscriptionHandler{},
 		&InvoiceHandler{}, &PayoutHandler{}, &DisputeHandler{}, &WebhookHandler{},

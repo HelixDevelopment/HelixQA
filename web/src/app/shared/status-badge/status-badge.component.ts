@@ -15,5 +15,5 @@ import { NgClass } from '@angular/common';
 })
 export class StatusBadgeComponent {
   @Input() label = '';
-  @Input() variant: 'active' | 'inactive' | 'pending' | 'suspended' | 'success' | 'failed' | 'warning' | 'healthy' | 'unhealthy' | 'completed' | 'declined' = 'active';
+  @Input() variant: string = 'active';
 }

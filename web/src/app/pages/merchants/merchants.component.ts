@@ -1,18 +1,18 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink, Router } from '@angular/router';
-import { ApiService } from '../../core/api.service';
+import { ApiService, Merchant } from '../../core/api.service';
+import { PageHeaderComponent, StatusBadgeComponent } from '../../shared/index';
 
 @Component({
   selector: 'app-merchants',
   standalone: true,
-  imports: [CommonModule, RouterLink],
+  imports: [CommonModule, RouterLink, PageHeaderComponent, StatusBadgeComponent],
   template: `
     <div class="merchants-page">
-      <div class="page-header">
-        <h1>Merchants</h1>
+      <app-page-header title="Merchants">
         <a routerLink="/merchants/new" class="btn btn-primary">Create Merchant</a>
-      </div>
+      </app-page-header>
 
       <div class="spinner" *ngIf="loading">
         <div class="spinner-icon"></div>
@@ -41,9 +41,7 @@ import { ApiService } from '../../core/api.service';
               </td>
               <td>{{ merchant.email }}</td>
               <td>
-                <span class="badge" [ngClass]="merchant.status">
-                  {{ merchant.status }}
-                </span>
+                <app-status-badge [label]="merchant.status" [variant]="merchant.status"></app-status-badge>
               </td>
               <td>{{ merchant.created_at | date:'mediumDate' }}</td>
             </tr>
@@ -54,65 +52,52 @@ import { ApiService } from '../../core/api.service';
     </div>
   `,
   styles: [`
-    .merchants-page { padding: 24px; }
-    .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-    h1 { margin: 0; font-size: 24px; color: #1a1a1a; }
+    .merchants-page { padding: var(--od-spacing-xl); }
     .table-container {
-      background: white;
-      border-radius: 8px;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      background: var(--od-card-bg);
+      border-radius: var(--od-radius);
+      box-shadow: var(--od-card-shadow);
       overflow: hidden;
     }
     table { width: 100%; border-collapse: collapse; }
     th, td { padding: 12px 16px; text-align: left; font-size: 14px; }
-    th { background: #f9fafb; color: #666; font-weight: 500; border-bottom: 1px solid #e5e7eb; }
-    td { border-bottom: 1px solid #f3f4f6; color: #333; }
+    th { background: var(--od-bg-secondary); color: var(--od-text-secondary); font-weight: 500; border-bottom: 1px solid var(--od-border); }
+    td { border-bottom: 1px solid var(--od-bg-tertiary); color: var(--od-text-primary); }
     tr:last-child td { border-bottom: none; }
-    td a { color: #4f46e5; text-decoration: none; font-weight: 500; }
+    td a { color: var(--od-accent); text-decoration: none; font-weight: 500; }
     td a:hover { text-decoration: underline; }
     .clickable-row { cursor: pointer; }
-    .clickable-row:hover td { background: #f9fafb; }
-    .badge {
-      display: inline-block;
-      padding: 2px 10px;
-      border-radius: 12px;
-      font-size: 12px;
-      font-weight: 500;
-      text-transform: capitalize;
-    }
-    .badge.active { background: #dcfce7; color: #166534; }
-    .badge.pending, .badge.pending_verification { background: #fef9c3; color: #854d0e; }
-    .badge.suspended { background: #fee2e2; color: #991b1b; }
-    .empty-state { padding: 40px; text-align: center; color: #999; }
+    .clickable-row:hover td { background: var(--od-bg-secondary); }
+    .empty-state { padding: 40px; text-align: center; color: var(--od-text-muted); }
     .spinner {
       display: flex;
       align-items: center;
       justify-content: center;
       gap: 12px;
       padding: 48px;
-      color: #666;
+      color: var(--od-text-secondary);
     }
     .spinner-icon {
       width: 20px;
       height: 20px;
-      border: 2px solid #e5e7eb;
-      border-top-color: #4f46e5;
+      border: 2px solid var(--od-border);
+      border-top-color: var(--od-accent);
       border-radius: 50%;
       animation: spin 0.8s linear infinite;
     }
     @keyframes spin { to { transform: rotate(360deg); } }
     .error-state {
-      background: #fef2f2;
-      border: 1px solid #fecaca;
-      border-radius: 8px;
+      background: var(--od-bg-danger, #fef2f2);
+      border: 1px solid var(--od-border-danger, #fecaca);
+      border-radius: var(--od-radius);
       padding: 24px;
       text-align: center;
-      color: #991b1b;
+      color: var(--od-danger, #991b1b);
     }
     .error-state button { margin-top: 12px; }
     .btn {
       padding: 8px 20px;
-      border-radius: 6px;
+      border-radius: var(--od-radius-sm);
       font-size: 14px;
       font-weight: 500;
       cursor: pointer;
@@ -120,14 +105,14 @@ import { ApiService } from '../../core/api.service';
       border: none;
       transition: background-color 0.2s;
     }
-    .btn-primary { background: #4f46e5; color: white; }
-    .btn-primary:hover { background: #4338ca; }
-    .btn-secondary { background: #f3f4f6; color: #374151; display: inline-flex; align-items: center; }
-    .btn-secondary:hover { background: #e5e7eb; }
+    .btn-primary { background: var(--od-accent); color: white; }
+    .btn-primary:hover { opacity: 0.9; }
+    .btn-secondary { background: var(--od-bg-secondary); color: var(--od-text-primary); display: inline-flex; align-items: center; }
+    .btn-secondary:hover { background: var(--od-bg-tertiary); }
   `]
 })
 export class MerchantsComponent implements OnInit {
-  merchants: any[] = [];
+  merchants: Merchant[] = [];
   loading = true;
   error = '';
 

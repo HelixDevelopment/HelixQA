@@ -1,17 +1,16 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ApiService } from '../../core/api.service';
+import { ApiService, Transaction } from '../../core/api.service';
+import { PageHeaderComponent, StatusBadgeComponent } from '../../shared/index';
 
 @Component({
   selector: 'app-transactions',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, PageHeaderComponent, StatusBadgeComponent],
   template: `
     <div class="page">
-      <div class="page-header">
-        <h1>Transactions</h1>
-      </div>
+      <app-page-header title="Transactions"></app-page-header>
 
       <div class="filters">
         <select [(ngModel)]="statusFilter" (change)="onFilterChange()">
@@ -54,7 +53,7 @@ import { ApiService } from '../../core/api.service';
                   <td class="amount-cell">{{ tx.amount / 100 | number:'1.2-2' }}</td>
                   <td>{{ tx.currency }}</td>
                   <td>
-                    <span class="badge" [ngClass]="tx.status">{{ statusLabel(tx.status) }}</span>
+                    <app-status-badge [label]="statusLabel(tx.status)" [variant]="tx.status"></app-status-badge>
                   </td>
                   <td>{{ tx.provider }}</td>
                   <td>{{ tx.created_at | date:'medium' }}</td>
@@ -72,7 +71,7 @@ import { ApiService } from '../../core/api.service';
                       </div>
                       <div class="detail-item">
                         <span class="detail-label">Status</span>
-                        <span class="detail-value"><span class="badge" [ngClass]="tx.status">{{ statusLabel(tx.status) }}</span></span>
+                        <span class="detail-value"><app-status-badge [label]="statusLabel(tx.status)" [variant]="tx.status"></app-status-badge></span>
                       </div>
                       <div class="detail-item">
                         <span class="detail-label">Provider</span>
@@ -223,8 +222,8 @@ import { ApiService } from '../../core/api.service';
   `]
 })
 export class TransactionsComponent implements OnInit {
-  transactions: any[] = [];
-  filteredTransactions: any[] = [];
+  transactions: Transaction[] = [];
+  filteredTransactions: Transaction[] = [];
   loading = true;
   error = false;
   page = 1;

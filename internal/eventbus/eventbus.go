@@ -87,3 +87,17 @@ func (b *NatsEventBus) Close() error {
 	}
 	return nil
 }
+
+type NoopEventBus struct{}
+
+func (b *NoopEventBus) Publish(ctx context.Context, subject string, event *Event) error {
+	return nil
+}
+
+func (b *NoopEventBus) Subscribe(ctx context.Context, subject string, handler func(*Event) error) error {
+	return nil
+}
+
+func (b *NoopEventBus) Close() error {
+	return nil
+}

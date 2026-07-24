@@ -19,6 +19,7 @@ type Config struct {
 	JWTRefreshExpiry  time.Duration
 	LogLevel       string
 	LogFormat      string
+	Environment    string
 	EncryptionKey  string
 
 	StripeAPIKey       string
@@ -53,6 +54,7 @@ func Load() *Config {
 		JWTRefreshExpiry:  getEnvAsDuration("JWT_REFRESH_EXPIRY", 168*time.Hour),
 		LogLevel:        getEnv("LOG_LEVEL", "info"),
 		LogFormat:       getEnv("LOG_FORMAT", "json"),
+		Environment:     getEnv("ENVIRONMENT", "production"),
 		EncryptionKey:   getEnv("ENCRYPTION_KEY", ""),
 
 		StripeAPIKey:       getEnv("STRIPE_API_KEY", ""),

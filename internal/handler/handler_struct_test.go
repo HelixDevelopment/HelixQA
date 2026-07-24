@@ -58,7 +58,7 @@ func validUserID() string     { return uuid.New().String() }
 // --- AuthHandler ---
 
 func TestNewAuthHandler(t *testing.T) {
-	h := NewAuthHandler(nil, nil, nil, nil)
+	h := NewAuthHandler(nil, nil, nil, nil, nil)
 	if h == nil {
 		t.Fatal("NewAuthHandler returned nil")
 	}
@@ -1407,103 +1407,66 @@ func TestBillingHandler_GetBillingInvoices_InvalidMerchantID(t *testing.T) {
 // --- WebhookIngressHandler ---
 
 func TestNewWebhookIngressHandler(t *testing.T) {
-	h := NewWebhookIngressHandler(nil, &mockEventBus{}, zap.NewNop())
+	h := NewWebhookIngressHandler(nil, &mockEventBus{}, zap.NewNop(), "", "", "")
 	if h == nil {
 		t.Fatal("NewWebhookIngressHandler returned nil")
 	}
 }
 
 func TestWebhookIngressHandler_HandleStripe_WithBody(t *testing.T) {
-	bus := &mockEventBus{}
-	h := &WebhookIngressHandler{eventBus: bus, logger: zap.NewNop()}
+	h := &WebhookIngressHandler{logger: zap.NewNop()}
 	body, _ := json.Marshal(map[string]string{"type": "payment_intent.succeeded"})
 	c, w := newTestGinContext("POST", "/webhooks/stripe", body, nil)
-	c.Request.Header.Set("Stripe-Signature", "sig_test_123")
 	h.HandleStripe(c)
-	if w.Code != http.StatusOK {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusOK)
-	}
-	if len(bus.published) != 1 {
-		t.Fatalf("expected 1 published event, got %d", len(bus.published))
-	}
-	if bus.published[0].subject != "events.provider.stripe" {
-		t.Errorf("subject = %s, want events.provider.stripe", bus.published[0].subject)
-	}
-	if bus.published[0].event.Source != "stripe" {
-		t.Errorf("source = %s, want stripe", bus.published[0].event.Source)
+	if w.Code != http.StatusUnauthorized {
+		t.Errorf("status = %d, want %d (no valid sig)", w.Code, http.StatusUnauthorized)
 	}
 }
 
 func TestWebhookIngressHandler_HandlePayPal_WithBody(t *testing.T) {
-	bus := &mockEventBus{}
-	h := &WebhookIngressHandler{eventBus: bus, logger: zap.NewNop()}
+	h := &WebhookIngressHandler{logger: zap.NewNop()}
 	body, _ := json.Marshal(map[string]string{"event_type": "PAYMENT.CAPTURE.COMPLETED"})
 	c, w := newTestGinContext("POST", "/webhooks/paypal", body, nil)
 	h.HandlePayPal(c)
-	if w.Code != http.StatusOK {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusOK)
-	}
-	if len(bus.published) != 1 {
-		t.Fatalf("expected 1 published event, got %d", len(bus.published))
-	}
-	if bus.published[0].subject != "events.provider.paypal" {
-		t.Errorf("subject = %s, want events.provider.paypal", bus.published[0].subject)
-	}
-	if bus.published[0].event.Source != "paypal" {
-		t.Errorf("source = %s, want paypal", bus.published[0].event.Source)
+	if w.Code != http.StatusServiceUnavailable {
+		t.Errorf("status = %d, want %d (PayPal not configured)", w.Code, http.StatusServiceUnavailable)
 	}
 }
 
 func TestWebhookIngressHandler_HandleSquare_WithBody(t *testing.T) {
-	bus := &mockEventBus{}
-	h := &WebhookIngressHandler{eventBus: bus, logger: zap.NewNop()}
+	h := &WebhookIngressHandler{logger: zap.NewNop()}
 	body, _ := json.Marshal(map[string]string{"type": "payment.completed"})
 	c, w := newTestGinContext("POST", "/webhooks/square", body, nil)
 	h.HandleSquare(c)
-	if w.Code != http.StatusOK {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusOK)
-	}
-	if len(bus.published) != 1 {
-		t.Fatalf("expected 1 published event, got %d", len(bus.published))
-	}
-	if bus.published[0].subject != "events.provider.square" {
-		t.Errorf("subject = %s, want events.provider.square", bus.published[0].subject)
-	}
-	if bus.published[0].event.Source != "square" {
-		t.Errorf("source = %s, want square", bus.published[0].event.Source)
+	if w.Code != http.StatusUnauthorized {
+		t.Errorf("status = %d, want %d (no valid sig)", w.Code, http.StatusUnauthorized)
 	}
 }
 
 func TestWebhookIngressHandler_HandleStripe_EmptyBody(t *testing.T) {
-	bus := &mockEventBus{}
-	h := &WebhookIngressHandler{eventBus: bus, logger: zap.NewNop()}
+	h := &WebhookIngressHandler{logger: zap.NewNop()}
 	c, w := newTestGinContext("POST", "/webhooks/stripe", []byte(`{}`), nil)
 	h.HandleStripe(c)
-	if w.Code != http.StatusOK {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusOK)
-	}
-	if len(bus.published) != 1 {
-		t.Fatalf("expected 1 published event, got %d", len(bus.published))
+	if w.Code != http.StatusUnauthorized {
+		t.Errorf("status = %d, want %d (no sig)", w.Code, http.StatusUnauthorized)
 	}
 }
 
 func TestWebhookIngressHandler_HandlePayPal_EmptyBody(t *testing.T) {
-	bus := &mockEventBus{}
-	h := &WebhookIngressHandler{eventBus: bus, logger: zap.NewNop()}
+	h := &WebhookIngressHandler{logger: zap.NewNop()}
 	c, w := newTestGinContext("POST", "/webhooks/paypal", []byte(`{}`), nil)
 	h.HandlePayPal(c)
-	if w.Code != http.StatusOK {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusOK)
+	if w.Code != http.StatusServiceUnavailable {
+		t.Errorf("status = %d, want %d (PayPal not configured)", w.Code, http.StatusServiceUnavailable)
 	}
 }
 
 func TestWebhookIngressHandler_HandleSquare_EmptyBody(t *testing.T) {
-	bus := &mockEventBus{}
-	h := &WebhookIngressHandler{eventBus: bus, logger: zap.NewNop()}
+	h := &WebhookIngressHandler{logger: zap.NewNop()}
 	c, w := newTestGinContext("POST", "/webhooks/square", []byte(`{}`), nil)
 	h.HandleSquare(c)
-	if w.Code != http.StatusOK {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusOK)
+	if w.Code != http.StatusUnauthorized {
+		t.Errorf("status = %d, want %d (no sig)", w.Code, http.StatusUnauthorized)
 	}
 }
 

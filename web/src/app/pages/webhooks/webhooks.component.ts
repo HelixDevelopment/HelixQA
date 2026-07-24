@@ -2,19 +2,19 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ApiService, WebhookConfig, WebhookDelivery } from '../../core/api.service';
+import { PageHeaderComponent, StatusBadgeComponent } from '../../shared/index';
 
 @Component({
   selector: 'app-webhooks',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, PageHeaderComponent, StatusBadgeComponent],
   template: `
     <div class="page">
-      <div class="page-header">
-        <h1>Webhook Configurations</h1>
+      <app-page-header title="Webhook Configurations">
         <button class="btn btn-primary" (click)="toggleForm()">
           {{ showForm ? 'Cancel' : 'Add Webhook' }}
         </button>
-      </div>
+      </app-page-header>
 
       <div class="loading" *ngIf="loading">
         <div class="spinner"></div>
@@ -74,13 +74,11 @@ import { ApiService, WebhookConfig, WebhookDelivery } from '../../core/api.servi
                 <span class="event-tag" *ngFor="let e of w.events">{{ e }}</span>
               </td>
               <td>
-                <span class="badge" [ngClass]="w.status">{{ w.status }}</span>
+                <app-status-badge [label]="w.status" [variant]="w.status"></app-status-badge>
               </td>
               <td class="delivery-cell">
                 <span *ngIf="deliveries[w.id] && deliveries[w.id].length > 0" class="delivery-info">
-                  <span class="badge badge-sm" [ngClass]="deliveries[w.id][0].status">
-                    {{ deliveries[w.id][0].status }}
-                  </span>
+                  <app-status-badge [label]="deliveries[w.id][0].status" [variant]="deliveries[w.id][0].status"></app-status-badge>
                   <span class="delivery-time">{{ deliveries[w.id][0].delivered_at | date:'short' }}</span>
                 </span>
                 <span *ngIf="!deliveries[w.id] || deliveries[w.id].length === 0" class="text-muted">—</span>
@@ -102,7 +100,7 @@ import { ApiService, WebhookConfig, WebhookDelivery } from '../../core/api.servi
                   <h4>Delivery Log</h4>
                   <div class="log-entry" *ngFor="let d of deliveries[expandedLog]">
                     <div class="log-header">
-                      <span class="badge badge-sm" [ngClass]="d.status">{{ d.status }}</span>
+                      <app-status-badge [label]="d.status" [variant]="d.status"></app-status-badge>
                       <span class="log-event">{{ d.event }}</span>
                       <span class="log-time">{{ d.delivered_at | date:'medium' }}</span>
                     </div>
@@ -239,6 +237,7 @@ export class WebhooksComponent implements OnInit {
   formUrl = '';
   formSecret = '';
   formEvents: string[] = [];
+  private merchantId = '';
 
   availableEvents = [
     'payment.succeeded', 'payment.failed', 'payment.refunded',
@@ -246,7 +245,9 @@ export class WebhooksComponent implements OnInit {
     'charge.disputed', 'customer.created',
   ];
 
-  constructor(private api: ApiService) {}
+  constructor(private api: ApiService) {
+    this.merchantId = localStorage.getItem('helix_merchant_id') || '';
+  }
 
   ngOnInit(): void {
     this.loadWebhooks();
@@ -255,7 +256,8 @@ export class WebhooksComponent implements OnInit {
   loadWebhooks(): void {
     this.loading = true;
     this.error = '';
-    this.api.getWebhooks('default').subscribe({
+    if (!this.merchantId) { this.error = 'No merchant selected.'; this.loading = false; return; }
+    this.api.getWebhooks(this.merchantId).subscribe({
       next: (res) => {
         this.webhooks = res.data;
         this.loading = false;
@@ -266,7 +268,7 @@ export class WebhooksComponent implements OnInit {
   }
 
   loadDeliveries(id: string): void {
-    this.api.getWebhookDeliveries('default', id).subscribe({
+    this.api.getWebhookDeliveries(this.merchantId, id).subscribe({
       next: (res) => this.deliveries[id] = res,
       error: () => this.deliveries[id] = [],
     });
@@ -299,8 +301,8 @@ export class WebhooksComponent implements OnInit {
     };
 
     const request = this.editingId
-      ? this.api.updateWebhook('default', this.editingId, payload)
-      : this.api.createWebhook('default', payload);
+      ? this.api.updateWebhook(this.merchantId, this.editingId, payload)
+      : this.api.createWebhook(this.merchantId, payload);
 
     request.subscribe({
       next: () => {
@@ -315,7 +317,7 @@ export class WebhooksComponent implements OnInit {
 
   onDelete(id: string): void {
     if (!confirm('Delete this webhook configuration?')) return;
-    this.api.deleteWebhook('default', id).subscribe({
+    this.api.deleteWebhook(this.merchantId, id).subscribe({
       next: () => this.loadWebhooks(),
       error: () => this.error = 'Failed to delete webhook.',
     });
@@ -323,7 +325,7 @@ export class WebhooksComponent implements OnInit {
 
   testWebhook(w: WebhookConfig): void {
     this.testing = w.id;
-    this.api.testWebhook('default', w.id).subscribe({
+    this.api.testWebhook(this.merchantId, w.id).subscribe({
       next: () => {
         this.loadDeliveries(w.id);
         this.testing = '';

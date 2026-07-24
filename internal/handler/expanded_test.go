@@ -1100,75 +1100,59 @@ func TestBillingHandler_GetBillingInvoices_ValidRequest_NilService(t *testing.T)
 // --- WebhookIngressHandler deeper paths ---
 
 func TestWebhookIngressHandler_HandleStripe_EmptyBody_Struct(t *testing.T) {
-	bus := &mockEventBus{}
-	h := &WebhookIngressHandler{eventBus: bus, logger: zap.NewNop()}
+	h := &WebhookIngressHandler{logger: zap.NewNop()}
 	c, w := newTestGinContext("POST", "/webhooks/stripe", nil, nil)
 	h.HandleStripe(c)
-	if w.Code != http.StatusOK {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusOK)
+	if w.Code != http.StatusUnauthorized {
+		t.Errorf("status = %d, want %d (no sig)", w.Code, http.StatusUnauthorized)
 	}
 }
 
 func TestWebhookIngressHandler_HandlePayPal_EmptyBody_Struct(t *testing.T) {
-	bus := &mockEventBus{}
-	h := &WebhookIngressHandler{eventBus: bus, logger: zap.NewNop()}
+	h := &WebhookIngressHandler{logger: zap.NewNop()}
 	c, w := newTestGinContext("POST", "/webhooks/paypal", nil, nil)
 	h.HandlePayPal(c)
-	if w.Code != http.StatusOK {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusOK)
+	if w.Code != http.StatusServiceUnavailable {
+		t.Errorf("status = %d, want %d (PayPal not configured)", w.Code, http.StatusServiceUnavailable)
 	}
 }
 
 func TestWebhookIngressHandler_HandleSquare_EmptyBody_Struct(t *testing.T) {
-	bus := &mockEventBus{}
-	h := &WebhookIngressHandler{eventBus: bus, logger: zap.NewNop()}
+	h := &WebhookIngressHandler{logger: zap.NewNop()}
 	c, w := newTestGinContext("POST", "/webhooks/square", nil, nil)
 	h.HandleSquare(c)
-	if w.Code != http.StatusOK {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusOK)
+	if w.Code != http.StatusUnauthorized {
+		t.Errorf("status = %d, want %d (no sig)", w.Code, http.StatusUnauthorized)
 	}
 }
 
 func TestWebhookIngressHandler_HandleStripe_LargeBody(t *testing.T) {
-	bus := &mockEventBus{}
-	h := &WebhookIngressHandler{eventBus: bus, logger: zap.NewNop()}
+	h := &WebhookIngressHandler{logger: zap.NewNop()}
 	largeBody := `{"type":"payment_intent.succeeded","data":{"object":{"amount":100000,"currency":"usd"}}}`
 	c, w := newTestGinContext("POST", "/webhooks/stripe", []byte(largeBody), nil)
-	c.Request.Header.Set("Stripe-Signature", "sig_test_456")
 	h.HandleStripe(c)
-	if w.Code != http.StatusOK {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusOK)
-	}
-	if len(bus.published) != 1 {
-		t.Fatalf("expected 1 published event, got %d", len(bus.published))
+	if w.Code != http.StatusUnauthorized {
+		t.Errorf("status = %d, want %d (no sig)", w.Code, http.StatusUnauthorized)
 	}
 }
 
 func TestWebhookIngressHandler_HandlePayPal_LargeBody(t *testing.T) {
-	bus := &mockEventBus{}
-	h := &WebhookIngressHandler{eventBus: bus, logger: zap.NewNop()}
+	h := &WebhookIngressHandler{logger: zap.NewNop()}
 	largeBody := `{"event_type":"PAYMENT.CAPTURE.COMPLETED","resource":{"id":"pay_123","amount":{"total":"100.00","currency":"USD"}}}`
 	c, w := newTestGinContext("POST", "/webhooks/paypal", []byte(largeBody), nil)
 	h.HandlePayPal(c)
-	if w.Code != http.StatusOK {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusOK)
-	}
-	if bus.published[0].event.Source != "paypal" {
-		t.Errorf("source = %s, want paypal", bus.published[0].event.Source)
+	if w.Code != http.StatusServiceUnavailable {
+		t.Errorf("status = %d, want %d (PayPal not configured)", w.Code, http.StatusServiceUnavailable)
 	}
 }
 
 func TestWebhookIngressHandler_HandleSquare_LargeBody(t *testing.T) {
-	bus := &mockEventBus{}
-	h := &WebhookIngressHandler{eventBus: bus, logger: zap.NewNop()}
+	h := &WebhookIngressHandler{logger: zap.NewNop()}
 	largeBody := `{"type":"payment.completed","data":{"payment":{"id":"sq_123","amount_money":{"amount":5000,"currency":"USD"}}}}`
 	c, w := newTestGinContext("POST", "/webhooks/square", []byte(largeBody), nil)
 	h.HandleSquare(c)
-	if w.Code != http.StatusOK {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusOK)
-	}
-	if bus.published[0].event.Source != "square" {
-		t.Errorf("source = %s, want square", bus.published[0].event.Source)
+	if w.Code != http.StatusUnauthorized {
+		t.Errorf("status = %d, want %d (no sig)", w.Code, http.StatusUnauthorized)
 	}
 }
 

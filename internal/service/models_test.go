@@ -216,7 +216,7 @@ func TestInvoiceModel_Fields(t *testing.T) {
 		Amount:         10000,
 		Currency:       "USD",
 		Status:         model.InvoiceStatusDraft,
-		DueDate:        &dueDate,
+		DueDate:        dueDate,
 		PaidAt:         &paidAt,
 		PeriodStart:    time.Now().AddDate(0, -1, 0),
 		PeriodEnd:      time.Now(),
@@ -232,8 +232,8 @@ func TestInvoiceModel_Fields(t *testing.T) {
 	if inv.SubscriptionID == nil {
 		t.Error("SubscriptionID should not be nil")
 	}
-	if inv.DueDate == nil {
-		t.Error("DueDate should not be nil")
+	if inv.DueDate.IsZero() {
+		t.Error("DueDate should not be zero")
 	}
 	if inv.PaidAt == nil {
 		t.Error("PaidAt should not be nil")
@@ -287,8 +287,8 @@ func TestInvoiceModel_NilOptionalFields(t *testing.T) {
 	if inv.SubscriptionID != nil {
 		t.Error("SubscriptionID should be nil by default")
 	}
-	if inv.DueDate != nil {
-		t.Error("DueDate should be nil by default")
+	if !inv.DueDate.IsZero() {
+		t.Error("DueDate should be zero by default")
 	}
 	if inv.PaidAt != nil {
 		t.Error("PaidAt should be nil by default")

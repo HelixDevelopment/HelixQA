@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/google/uuid"
 	"go.uber.org/zap"
@@ -12,17 +13,43 @@ import (
 )
 
 type PaymentService struct {
-	txRepo   *repository.TransactionRepo
-	pmRepo   *repository.PaymentMethodRepo
-	eventBus eventbus.EventBus
-	logger   *zap.Logger
+	txRepo       *repository.TransactionRepo
+	pmRepo       *repository.PaymentMethodRepo
+	eventBus     eventbus.EventBus
+	logger       *zap.Logger
+	idempotencyRepo *repository.IdempotencyRepo
 }
 
 func NewPaymentService(txRepo *repository.TransactionRepo, pmRepo *repository.PaymentMethodRepo, eventBus eventbus.EventBus, logger *zap.Logger) *PaymentService {
-	return &PaymentService{txRepo: txRepo, pmRepo: pmRepo, eventBus: eventBus, logger: logger}
+	var idempotencyRepo *repository.IdempotencyRepo
+	if txRepo != nil {
+		idempotencyRepo = repository.NewIdempotencyRepo(txRepo.DB())
+	}
+	return &PaymentService{
+		txRepo:          txRepo,
+		pmRepo:          pmRepo,
+		eventBus:        eventBus,
+		logger:          logger,
+		idempotencyRepo: idempotencyRepo,
+	}
 }
 
 func (s *PaymentService) ProcessPayment(ctx context.Context, merchantID, customerID, paymentMethodID uuid.UUID, amount int64, currency, idempotencyKey string) (*model.Transaction, error) {
+	if idempotencyKey != "" {
+		existing, found, err := s.idempotencyRepo.CheckAndSave(ctx, idempotencyKey, merchantID.String())
+		if err != nil {
+			s.logger.Error("idempotency check failed", zap.Error(err))
+			return nil, fmt.Errorf("idempotency check error: %w", err)
+		}
+		if found {
+			s.logger.Info("duplicate request detected via idempotency key, returning existing transaction",
+				zap.String("idempotency_key", idempotencyKey),
+				zap.String("existing_tx_id", existing.ID.String()),
+			)
+			return existing, nil
+		}
+	}
+
 	if _, err := s.pmRepo.GetByID(ctx, paymentMethodID); err != nil {
 		return nil, err
 	}

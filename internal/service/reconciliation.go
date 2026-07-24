@@ -39,16 +39,15 @@ func (s *ReconciliationService) Reconcile(ctx context.Context, merchantID uuid.U
 		return nil, err
 	}
 
-	result.ProviderTotal = result.PlatformTotal
+	result.ProviderTotal = 0
 	result.Discrepancy = result.PlatformTotal - result.ProviderTotal
 
-	if result.Discrepancy != 0 {
-		s.logger.Warn("reconciliation discrepancy detected",
-			zap.String("merchant_id", merchantID.String()),
-			zap.String("provider", provider),
-			zap.Int64("discrepancy", result.Discrepancy),
-		)
-	}
+	s.logger.Warn("reconciliation requires provider data to compute ProviderTotal accurately",
+		zap.String("merchant_id", merchantID.String()),
+		zap.String("provider", provider),
+		zap.Int64("platform_total", result.PlatformTotal),
+		zap.String("status", "pending"),
+	)
 
 	return result, nil
 }
