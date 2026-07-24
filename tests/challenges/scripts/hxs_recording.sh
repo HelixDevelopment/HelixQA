@@ -37,7 +37,7 @@ case "$COMMAND" in
         echo "=== Starting recording for $RUN_ID ==="
         HEALTH=$(curl -s -m 5 -o /dev/null -w '%{http_code}' "$BRIDGE_URL/v1/health" 2>/dev/null || echo "000")
         if [ "$HEALTH" != "200" ]; then
-            ab_skip "HelixQA bridge not available at $BRIDGE_URL (HTTP $HEALTH)"
+            ab_skip "HelixQA bridge not available at $BRIDGE_URL (HTTP $HEALTH)" "infra"
             TEST_PASSED=1
             ab_summary
             exit 2
@@ -63,22 +63,24 @@ case "$COMMAND" in
             if [ -n "$REC_PATH" ]; then
                 cp "$REC_PATH" "$RECORDINGS_DIR/${RUN_ID}.mp4" 2>/dev/null && \
                     ab_pass "Recording saved to $RECORDINGS_DIR/${RUN_ID}.mp4" || \
-                    ab_skip "Could not copy recording from $REC_PATH"
+                    ab_skip "Could not copy recording from $REC_PATH" "infra"
             else
                 ab_pass "Recording stopped (no path returned)"
             fi
         else
-            ab_skip "Recording stop not fully supported by bridge (may be running as external process)"
+            ab_skip "Recording stop not fully supported by bridge (may be running as external process)" "infra"
         fi
         ;;
     status)
+        ab_send_action "HXS Recording: STATUS"
         echo "Recording dir: $RECORDINGS_DIR"
         find "$RECORDINGS_DIR" -name "*.mp4" -exec ls -lh {} \; 2>/dev/null || echo "No recordings yet"
         ab_pass "Recording status reported"
         ;;
     *)
         echo "Usage: $0 {start|stop|status} [run_id]"
-        exit 1
+        TEST_PASSED=1
+        exit 2
         ;;
 esac
 

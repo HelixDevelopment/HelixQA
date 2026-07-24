@@ -31,7 +31,7 @@ trap on_exit EXIT
 
 HEALTH=$(curl -s -m 5 -o /dev/null -w '%{http_code}' "$BRIDGE_URL/v1/health" 2>/dev/null || echo "000")
 if [ "$HEALTH" != "200" ]; then
-    ab_skip "HelixQA bridge not available at $BRIDGE_URL (HTTP $HEALTH)"
+    ab_skip "HelixQA bridge not available at $BRIDGE_URL (HTTP $HEALTH)" "infra"
     TEST_PASSED=1
     ab_summary
     exit 2
@@ -46,7 +46,7 @@ ANALYZE_RESP=$(curl -s -m 15 -X POST -H 'Content-Type: application/json' \
 if echo "$ANALYZE_RESP" | grep -qiE '"(status|analysis_id)"[[:space:]]*:[[:space:]]*"?[^"}]'; then
     ab_pass "Analysis pipeline triggered"
 else
-    ab_skip "Analysis pipeline not available on bridge"
+    ab_skip "Analysis pipeline not available on bridge" "infra"
     TEST_PASSED=1
     ab_summary
     exit 2
@@ -88,14 +88,14 @@ if [ "$LINE_COUNT" -ge 1 ]; then
         ab_fail "First finding is not valid JSON"
     fi
 else
-    ab_skip "No findings returned (pipeline may still be processing)"
+    ab_skip "No findings returned (pipeline may still be processing)" "infra"
 fi
 
 OPENCV_INFO=$(curl -s -m 3 "$BRIDGE_URL/v1/opencv/version" 2>/dev/null || echo "")
 if [ -n "$OPENCV_INFO" ]; then
     ab_pass "OpenCV version info: $(echo "$OPENCV_INFO" | head -c 80)"
 else
-    ab_skip "OpenCV version endpoint not available"
+    ab_skip "OpenCV version endpoint not available" "infra"
 fi
 
 echo

@@ -38,7 +38,7 @@ ISSUE_COUNT=0
 RESULTS_FILES=$(ls /tmp/hxs_*.results 2>/dev/null || echo "")
 
 if [ -z "$RESULTS_FILES" ]; then
-    ab_skip "No result files found in /tmp/hxs_*.results — no tests ran yet"
+    ab_skip "No result files found in /tmp/hxs_*.results — no tests ran yet" "infra"
     TEST_PASSED=1
     ab_summary
     exit 2

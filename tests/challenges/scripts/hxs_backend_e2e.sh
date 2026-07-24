@@ -37,7 +37,7 @@ REG=$(curl -s -m 5 -X POST "$API_URL/api/v1/auth/register" \
 if echo "$REG" | grep -qiE '"(id|token)"'; then
     ab_pass "Registration succeeds for new user"
 else
-    ab_skip "Registration endpoint not available or returned: $(echo "$REG" | head -c 80)"
+    ab_skip "Registration endpoint not available or returned: $(echo " "infra"$REG" | head -c 80)"
 fi
 
 LOGIN=$(curl -s -m 5 -X POST "$API_URL/api/v1/auth/login" \
@@ -66,18 +66,18 @@ if [ -n "$TOKEN" ]; then
     if echo "$MERCHANTS" | grep -qiE '\[|\{'; then
         ab_pass "Merchants list returns valid JSON"
     else
-        ab_skip "Merchants endpoint returned non-JSON"
+        ab_skip "Merchants endpoint returned non-JSON" "infra"
     fi
     UNAUTH=$(curl -s -m 5 -w '%{http_code}' "$API_URL/api/v1/merchants" -o /dev/null 2>/dev/null)
     [ "$UNAUTH" = "401" ] && ab_pass "Merchants without auth returns 401" || ab_fail "Merchants without auth got HTTP $UNAUTH, want 401"
 else
-    ab_skip "No token — skipping merchant tests"
+    ab_skip "No token — skipping merchant tests" "infra"
 fi
 
 echo "--- Products ---"
 if [ -n "$TOKEN" ]; then
     PRODUCTS=$(curl -s -m 5 -H "Authorization: Bearer $TOKEN" "$API_URL/api/v1/products" 2>/dev/null)
-    echo "$PRODUCTS" | grep -qiE '\[|\{' && ab_pass "Products list returns JSON" || ab_skip "Products endpoint non-JSON"
+    echo "$PRODUCTS" | grep -qiE '\[|\{' && ab_pass "Products list returns JSON" || ab_skip "Products endpoint non-JSON" "infra"
     PROD_CREATE=$(curl -s -m 5 -X POST -H "Authorization: Bearer $TOKEN" \
         -H 'Content-Type: application/json' \
         -d '{"name":"Test Product","price":1999,"currency":"USD"}' \
@@ -89,7 +89,7 @@ if [ -n "$TOKEN" ]; then
         ab_fail "Product creation failed: $(echo "$PROD_CREATE" | head -c 80)"
     fi
 else
-    ab_skip "No token — skipping product tests"
+    ab_skip "No token — skipping product tests" "infra"
 fi
 
 echo "--- Payments ---"
@@ -100,9 +100,9 @@ if [ -n "$TOKEN" ]; then
         "$API_URL/api/v1/payments/charge" 2>/dev/null)
     echo "$PMT" | grep -qiE '"(id|charge|status)"' && \
         ab_pass "Payment charge endpoint responds" || \
-        ab_skip "Payment charge not fully configured"
+        ab_skip "Payment charge not fully configured" "infra"
 else
-    ab_skip "No token — skipping payment tests"
+    ab_skip "No token — skipping payment tests" "infra"
 fi
 
 echo "--- WebSocket ---"
@@ -110,11 +110,11 @@ if command -v websocat >/dev/null 2>&1; then
     WS_RESULT=$(echo "" | timeout 3 websocat "ws://127.0.0.1:8080/ws" 2>&1 || echo "timeout/error")
     echo "$WS_RESULT" | grep -qiE 'connected|message|error' && \
         ab_pass "WebSocket endpoint reachable" || \
-        ab_skip "WebSocket not responding within 3s"
+        ab_skip "WebSocket not responding within 3s" "infra"
 elif command -v curl >/dev/null && curl --version 2>/dev/null | grep -qi websocket; then
-    ab_skip "WebSocket test skipped — use websocat for interactive test"
+    ab_skip "WebSocket test skipped — use websocat for interactive test" "infra"
 else
-    ab_skip "WebSocket test skipped — websocat not installed"
+    ab_skip "WebSocket test skipped — websocat not installed" "infra"
 fi
 
 echo

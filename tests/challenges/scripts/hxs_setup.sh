@@ -46,9 +46,9 @@ if command -v psql >/dev/null 2>&1; then
     echo "Resetting database schema..."
     psql "$POSTGRES_DSN" -c "DROP SCHEMA public CASCADE; CREATE SCHEMA public;" 2>/dev/null && \
         ab_pass "Database schema reset" || \
-        ab_skip "Could not reset DB schema"
+        ab_skip "Could not reset DB schema" "infra"
 else
-    ab_skip "psql not available — assuming DB is managed externally"
+    ab_skip "psql not available — assuming DB is managed externally" "infra"
 fi
 
 echo "Running migrations..."
@@ -57,7 +57,7 @@ if [ -f "$PROJECT_DIR/cmd/migrate/main.go" ]; then
         ab_pass "Migrations applied" || \
         ab_fail "Migration failed"
 else
-    ab_skip "migrate main.go not found"
+    ab_skip "migrate main.go not found" "infra"
 fi
 
 echo "=== Step 2: Backend Server ==="
@@ -69,14 +69,17 @@ if command -v go >/dev/null 2>&1; then
     if [ "$HEALTH_CHECK" = "200" ]; then
         ab_pass "Backend server healthy (HTTP 200)"
     else
-        ab_skip "Backend server not responding (HTTP $HEALTH_CHECK) — start manually"
+        ab_skip "Backend server not responding (HTTP $HEALTH_CHECK) — start manually" "infra"
     fi
 else
-    ab_skip "Go not installed — start server manually"
+    ab_skip "Go not installed — start server manually" "infra"
 fi
 
 echo "=== Step 3: User Accounts ==="
 BASE_URL="http://127.0.0.1:$SERVER_PORT"
+if [ "$HEALTH_CHECK" != "200" ]; then
+    ab_skip "Server not healthy — skipping user account creation" "infra"
+else
 create_user() {
     local email="$1" password="$2" name="$3"
     local resp
@@ -103,13 +106,14 @@ create_user() {
 create_user "$HXS_ADMIN_EMAIL" "$HXS_ADMIN_PASSWORD" "$HXS_ADMIN_NAME"
 create_user "$HXS_MERCHANT_EMAIL" "$HXS_MERCHANT_PASSWORD" "$HXS_MERCHANT_NAME"
 create_user "$HXS_CUSTOMER_EMAIL" "$HXS_CUSTOMER_PASSWORD" "$HXS_CUSTOMER_NAME"
+fi
 
 echo "=== Step 4: Angular Portal ==="
 ANGULAR_CHECK=$(curl -s -m 3 -o /dev/null -w '%{http_code}' "http://127.0.0.1:$ANGULAR_PORT" 2>/dev/null || echo "000")
 if [ "$ANGULAR_CHECK" = "200" ]; then
     ab_pass "Angular dev server healthy (HTTP 200)"
 else
-    ab_skip "Angular dev server not responding (HTTP $ANGULAR_CHECK) — start with 'cd web && npm start'"
+    ab_skip "Angular dev server not responding (HTTP $ANGULAR_CHECK) — start with 'cd web && npm start'" "infra"
 fi
 
 echo
