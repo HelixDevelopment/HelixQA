@@ -1,0 +1,15 @@
+schema_version: 1
+deps:
+  - name: challenges
+    ssh_url: git@github.com:vasic-digital/Challenges.git
+    ref: main
+    why: "Full-system challenge suite framework — anti_bluff.sh library, challenge execution infrastructure"
+    layout: grouped
+  - name: helix_qa
+    ssh_url: git@github.com:HelixDevelopment/HelixQA.git
+    ref: main
+    why: "QA infrastructure — recording pipeline, OpenCV visual analysis, findings stream, bridge API"
+    layout: grouped
+transitive_handling:
+  recursive: true
+  conflict_resolution: operator-required
