@@ -76,10 +76,6 @@ type PresenterStatus struct {
 	// (Presentation hidden, video on secondary).
 	VideoMode bool `json:"video_mode"`
 
-	// AlbumCoverMode indicates album art is shown on
-	// secondary display.
-	AlbumCoverMode bool `json:"album_cover_mode"`
-
 	// SecondaryDisplayID is the display Presenter targets.
 	SecondaryDisplayID int `json:"secondary_display_id"`
 }
@@ -136,9 +132,6 @@ type DualDisplayResult struct {
 
 	// ActiveCodec is the active video codec name.
 	ActiveCodec string `json:"active_codec,omitempty"`
-
-	// AlbumCoverVisible indicates album art is on secondary.
-	AlbumCoverVisible bool `json:"album_cover_visible"`
 
 	// PresenterServiceAlive indicates Presenter is running.
 	PresenterServiceAlive bool `json:"presenter_service_alive"`
@@ -533,8 +526,8 @@ func (d *DualDisplayDetector) CheckFrozenFrame(
 }
 
 // CheckPresenter checks the Presenter service status,
-// including whether it is alive and which mode it is in
-// (video mode vs album cover mode).
+// including whether it is alive, whether it is in video mode,
+// and which display it targets.
 func (d *DualDisplayDetector) CheckPresenter(
 	ctx context.Context,
 ) (*PresenterStatus, error) {
@@ -580,12 +573,6 @@ func (d *DualDisplayDetector) CheckPresenter(
 		svcOut, "videoMode=true",
 	) || strings.Contains(
 		svcOut, "isVideoMode=true",
-	)
-
-	status.AlbumCoverMode = strings.Contains(
-		svcOut, "albumCoverMode=true",
-	) || strings.Contains(
-		svcOut, "isAlbumCoverMode=true",
 	)
 
 	// Parse secondary display ID.
@@ -752,7 +739,6 @@ func (d *DualDisplayDetector) CheckAll(
 	if presErr == nil && presenter != nil {
 		result.PresenterServiceAlive =
 			presenter.ServiceAlive
-		result.AlbumCoverVisible = presenter.AlbumCoverMode
 
 		if presenter.VideoMode {
 			result.VideoOnSecondary = true

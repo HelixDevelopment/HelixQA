@@ -665,3 +665,73 @@ var _ ASRClient = (*audio.WhisperClient)(nil)
 // Compile-time check that the io.Writer return slot exists (silences
 // "declared and not used" if we drop the errOut wiring later).
 var _ io.Writer = (*bytes.Buffer)(nil)
+
+// TestAnalyze_NegativeControl_AllGoodDifferentContent — the §11.4.201(1)
+// false-positive guard (design Phase-1 item 3 negative-control): a
+// genuinely-good clip with DIFFERENT content (Netflix, not the EndToEnd VK
+// clip) whose video content appears ONLY on the expected display MUST produce
+// PASS findings and ZERO FAIL — proving the analyzer keys on wrong-display
+// FIDELITY, not on recognising a specific golden clip. An analyzer that
+// false-FAILs a legitimate new clip is itself a bluff (§11.4.107(10)).
+func TestAnalyze_NegativeControl_AllGoodDifferentContent(t *testing.T) {
+	tmp := t.TempDir()
+	_ = writeSyncJSON(t, tmp, "netflix_play", "DEV1", 1)
+	tlPath := writeTimeline(t, tmp, "netflix_play", []struct {
+		tsOffsetS float64
+		event     string
+		detail    string
+	}{
+		{tsOffsetS: 0.5, event: "video_started", detail: "display=2"},
+		{tsOffsetS: 1.5, event: "video_playing", detail: "display=2"},
+	})
+	meta, err := loadSyncMeta(tmp, "netflix_play")
+	if err != nil {
+		t.Fatalf("loadSyncMeta: %v", err)
+	}
+	events, err := loadTimeline(tlPath, "netflix_play")
+	if err != nil {
+		t.Fatalf("loadTimeline: %v", err)
+	}
+
+	// Content (non-trivial OCR) ONLY on display-2 frames; display-0 frames use
+	// DIFFERENT basenames absent from the OCR map -> empty OCR -> UNKNOWN (never
+	// FAIL). Frame time = list index * interval, so distinct names are fine.
+	ocr := &stubOCR{byBasename: map[string]string{
+		"d2_00002.png": "Netflix\nS01E01 Now Playing",
+		"d2_00003.png": "Netflix\nS01E01",
+		"d2_00004.png": "Netflix\nEpisode Two",
+	}}
+	frames := &stubFrames{byDisplay: map[int][]string{
+		2: {"d2_00001.png", "d2_00002.png", "d2_00003.png", "d2_00004.png"},
+		0: {"d0_00001.png", "d0_00002.png", "d0_00003.png", "d0_00004.png"},
+	}}
+
+	flags := Flags{
+		RecordingDir: tmp,
+		TimelineFile: tlPath,
+		FindingsOut:  filepath.Join(tmp, "findings.jsonl"),
+		IntervalMS:   500,
+		TestName:     "netflix_play",
+		OCRTO:        100 * 1e9,
+	}
+
+	findings, err := analyze(context.Background(), flags, meta, events, frames, &stubAudio{}, ocr)
+	if err != nil {
+		t.Fatalf("analyze: %v", err)
+	}
+	gotPass, gotFail := 0, 0
+	for _, f := range findings {
+		switch f.Decision {
+		case "PASS":
+			gotPass++
+		case "FAIL":
+			gotFail++
+		}
+	}
+	if gotFail != 0 {
+		t.Errorf("negative-control (all-good different content) produced %d FAIL finding(s) — FALSE POSITIVE (§11.4.201(1))", gotFail)
+	}
+	if gotPass == 0 {
+		t.Errorf("negative-control expected >=1 PASS finding (Netflix content on expected display 2)")
+	}
+}

@@ -240,7 +240,6 @@ func TestCheckPresenter_Running(t *testing.T) {
 	)
 	dumpsys := `Service com.atmosphere.presenter:
   videoMode=true
-  albumCoverMode=false
   secondaryDisplayId=3
 `
 	mock.On(
@@ -259,7 +258,6 @@ func TestCheckPresenter_Running(t *testing.T) {
 	require.NoError(t, err)
 	assert.True(t, status.ServiceAlive)
 	assert.True(t, status.VideoMode)
-	assert.False(t, status.AlbumCoverMode)
 	assert.Equal(t, 3, status.SecondaryDisplayID)
 }
 
@@ -435,7 +433,6 @@ func TestCheckAll_FullCheck(t *testing.T) {
 	)
 	presenterDumpsys := `Service com.atmosphere.presenter:
   videoMode=false
-  albumCoverMode=true
   secondaryDisplayId=3
 `
 	mock.On(
@@ -484,7 +481,6 @@ func TestCheckAll_FullCheck(t *testing.T) {
 	require.NoError(t, err)
 	assert.True(t, result.SecondaryDisplayConnected)
 	assert.True(t, result.PresenterServiceAlive)
-	assert.True(t, result.AlbumCoverVisible)
 	assert.False(t, result.FrozenFrame)
 	assert.Equal(t, "PLAYING", result.MediaSessionState)
 }
