@@ -1,8 +1,11 @@
 package vision
 
 import (
+	"encoding/json"
 	"image"
 	"image/color"
+	"net/http"
+	"net/http/httptest"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -233,14 +236,95 @@ func TestCheckGPUAvailable(t *testing.T) {
 }
 
 func TestGetAvailableModels(t *testing.T) {
-	if !CheckOllamaAvailable("") {
-		t.Skip("Ollama not available") // SKIP-OK: #env-ollama-missing
-	}
+	// Contract test — ALWAYS runs, no live daemon required.
+	//
+	// Proves GetAvailableModels performs a real HTTP GET against /api/tags and
+	// maps every model name the server reports, in order, onto the returned
+	// slice. This is a strictly stronger assertion about the FUNCTION than
+	// "the returned list is non-empty", and unlike the latter it does not
+	// depend on which models happen to be pulled on the host running the suite.
+	t.Run("maps_every_model_name_from_api_tags", func(t *testing.T) {
+		var gotPath string
+		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			gotPath = r.URL.Path
+			w.Header().Set("Content-Type", "application/json")
+			_, _ = w.Write([]byte(`{"models":[{"name":"llava:13b"},{"name":"qwen2.5vl:7b"},{"name":"llava"}]}`))
+		}))
+		defer srv.Close()
 
-	models, err := GetAvailableModels("")
+		models, err := GetAvailableModels(srv.URL)
+		require.NoError(t, err)
+		assert.Equal(t, "/api/tags", gotPath,
+			"GetAvailableModels must query the Ollama /api/tags endpoint")
+		assert.Equal(t, []string{"llava:13b", "qwen2.5vl:7b", "llava"}, models,
+			"GetAvailableModels must report every model name the server returns, in order")
+	})
+
+	// Non-2xx responses must surface as an error, never as a silently empty list.
+	t.Run("surfaces_server_error", func(t *testing.T) {
+		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusInternalServerError)
+		}))
+		defer srv.Close()
+
+		models, err := GetAvailableModels(srv.URL)
+		require.Error(t, err, "a failing Ollama server must produce an error, not an empty model list")
+		assert.Nil(t, models)
+	})
+
+	// Live test against a real Ollama daemon on this host.
+	t.Run("live_ollama", func(t *testing.T) {
+		if !CheckOllamaAvailable("") {
+			t.Skip("Ollama not available") // SKIP-OK: #env-ollama-missing
+		}
+
+		models, err := GetAvailableModels("")
+		require.NoError(t, err)
+
+		// Independent oracle: read /api/tags directly, so the live assertion is
+		// not merely the function agreeing with itself.
+		reported := fetchOllamaModelNames(t)
+		require.Equal(t, reported, models,
+			"GetAvailableModels must report exactly the models the live daemon serves")
+
+		if len(reported) == 0 {
+			// The daemon is reachable but has zero models pulled on this host.
+			// That is an ENVIRONMENT gap, not a defect in GetAvailableModels:
+			// an empty list is the correct return value for an empty daemon.
+			// Asserting non-empty here would assert a property of the host
+			// rather than of the code under test.
+			t.Skip("Ollama daemon reachable but reports zero models — pull a vision model " +
+				"(e.g. `ollama pull llava`) to exercise the populated path") // SKIP-OK: #env-ollama-no-model-pulled
+		}
+
+		assert.NotEmpty(t, models)
+		t.Logf("Available models: %v", models)
+	})
+}
+
+// fetchOllamaModelNames reads model names straight off the local Ollama
+// daemon's /api/tags endpoint, independently of GetAvailableModels, giving the
+// live test an oracle derived from the wire rather than from the code under test.
+func fetchOllamaModelNames(t *testing.T) []string {
+	t.Helper()
+
+	resp, err := http.Get(DefaultOllamaConfig().Endpoint + "/api/tags")
 	require.NoError(t, err)
-	assert.NotEmpty(t, models)
-	t.Logf("Available models: %v", models)
+	defer resp.Body.Close()
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+
+	var payload struct {
+		Models []struct {
+			Name string `json:"name"`
+		} `json:"models"`
+	}
+	require.NoError(t, json.NewDecoder(resp.Body).Decode(&payload))
+
+	var names []string
+	for _, m := range payload.Models {
+		names = append(names, m.Name)
+	}
+	return names
 }
 
 func TestCreateTestImageForLLM(t *testing.T) {
