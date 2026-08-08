@@ -117,6 +117,10 @@ test_cases:
     steps:
       - name: "Send 8 concurrent GET /api/v1/llm/providers; assert all 200 + valid JSON"
         action: "http: GET /api/v1/llm/providers (8x concurrent)"
+        # HXC-243: explicit expectation — the providers roster must come back
+        # populated, not merely "some HTTP response arrived".
+        expect_status: 200
+        expect_json_path: "$.providers[0].id"
         expected: >-
           All 8 return HTTP 200, all 8 response bodies are parseable JSON
           (valid_json==true). Proves the ModelManager RWMutex permits 8
@@ -149,6 +153,10 @@ test_cases:
     steps:
       - name: "Send 6 providers + 6 models GET concurrently; assert all 200 + valid JSON"
         action: "http: GET /api/v1/llm/providers + /api/v1/llm/models (6+6 concurrent)"
+        # HXC-243: explicit expectation — the providers roster must come back
+        # populated, not merely "some HTTP response arrived".
+        expect_status: 200
+        expect_json_path: "$.providers[0].id"
         expected: >-
           All 12 return HTTP 200, all response bodies parse as valid JSON
           (valid_json==true). Proves rapid cross-map concurrent reads of
@@ -181,6 +189,10 @@ test_cases:
     steps:
       - name: "Send 5 providers + 5 models GET simultaneously; assert all 200 + valid JSON"
         action: "http: GET /api/v1/llm/providers + /api/v1/llm/models (5+5 simultaneous)"
+        # HXC-243: explicit expectation — the providers roster must come back
+        # populated, not merely "some HTTP response arrived".
+        expect_status: 200
+        expect_json_path: "$.providers[0].id"
         expected: >-
           All 10 return HTTP 200, all response bodies parse as valid JSON
           (valid_json==true). Proves mixed concurrent reads of providers
@@ -232,6 +244,10 @@ test_cases:
     steps:
       - name: "Golden-good: analyzer must PASS when the server is healthy under moderate concurrency"
         action: "http: GET /api/v1/llm/providers (5x concurrent)"
+        # HXC-243: explicit expectation — the providers roster must come back
+        # populated, not merely "some HTTP response arrived".
+        expect_status: 200
+        expect_json_path: "$.providers[0].id"
         expected: "pass==true (all 5 complete with 200, valid JSON)."
 
   - id: CODER-RACE-SELF-VALIDATE-001-BAD
@@ -289,6 +305,10 @@ test_cases:
     steps:
       - name: "Golden-bad: 100us timeout ensures zero requests complete — analyzer correctly reports ALL-OK=false"
         action: "http: GET /api/v1/llm/providers (5x concurrent, 100us timeout)"
+        # HXC-243: explicit expectation — the providers roster must come back
+        # populated, not merely "some HTTP response arrived".
+        expect_status: 200
+        expect_json_path: "$.providers[0].id"
         expected: >-
           pass==false (all requests timeout in 100us, none complete),
           all_ok==false; case_result==true because this case declares

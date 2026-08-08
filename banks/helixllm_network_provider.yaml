@@ -142,6 +142,18 @@ test_cases:
     steps:
       - name: "POST an arithmetic prompt to the live coder over its primary LAN IP; assert the correct answer AND a non-loopback resolved host"
         action: "http: POST /v1/chat/completions"
+        body:
+          model: "local"
+          messages:
+            - role: "user"
+              content: "HXC-243 endpoint-contract probe: reply with the single word PONG"
+          max_tokens: 8
+          temperature: 0
+        # HXC-243: an explicit expectation is what makes this step falsifiable.
+        # 200 alone is NOT enough — a wrong service can answer 200 with an error
+        # envelope, so the json_path additionally demands a REAL completion body.
+        expect_status: 200
+        expect_json_path: "$.choices[0].message.content"
         expected: >-
           Response contains "42" and resolved_host=10.6.100.221 (not
           loopback). Authored 2026-07-08 against the live 30B model over
@@ -171,6 +183,18 @@ test_cases:
     steps:
       - name: "POST a geography prompt to the live coder over the second LAN NIC; assert the correct answer AND a non-loopback resolved host"
         action: "http: POST /v1/chat/completions"
+        body:
+          model: "local"
+          messages:
+            - role: "user"
+              content: "HXC-243 endpoint-contract probe: reply with the single word PONG"
+          max_tokens: 8
+          temperature: 0
+        # HXC-243: an explicit expectation is what makes this step falsifiable.
+        # 200 alone is NOT enough — a wrong service can answer 200 with an error
+        # envelope, so the json_path additionally demands a REAL completion body.
+        expect_status: 200
+        expect_json_path: "$.choices[0].message.content"
         expected: >-
           Response contains "Paris" (case-insensitive) and
           resolved_host=10.111.28.100. Authored 2026-07-08 against the live
@@ -198,6 +222,18 @@ test_cases:
     steps:
       - name: "POST a color-mixing prompt to the live coder over the wifi LAN NIC; assert the correct answer AND a non-loopback resolved host"
         action: "http: POST /v1/chat/completions"
+        body:
+          model: "local"
+          messages:
+            - role: "user"
+              content: "HXC-243 endpoint-contract probe: reply with the single word PONG"
+          max_tokens: 8
+          temperature: 0
+        # HXC-243: an explicit expectation is what makes this step falsifiable.
+        # 200 alone is NOT enough — a wrong service can answer 200 with an error
+        # envelope, so the json_path additionally demands a REAL completion body.
+        expect_status: 200
+        expect_json_path: "$.choices[0].message.content"
         expected: >-
           Response contains "Green" (case-insensitive) and
           resolved_host=10.6.100.58. Authored 2026-07-08 against the live
@@ -242,6 +278,18 @@ test_cases:
     steps:
       - name: "Golden-bad: analyzer must reject a loopback endpoint (raw FAIL) even with a factually-correct response; case succeeds via --expect-fail inversion"
         action: "http: POST /v1/chat/completions"
+        body:
+          model: "local"
+          messages:
+            - role: "user"
+              content: "HXC-243 endpoint-contract probe: reply with the single word PONG"
+          max_tokens: 8
+          temperature: 0
+        # HXC-243: an explicit expectation is what makes this step falsifiable.
+        # 200 alone is NOT enough — a wrong service can answer 200 with an error
+        # envelope, so the json_path additionally demands a REAL completion body.
+        expect_status: 200
+        expect_json_path: "$.choices[0].message.content"
         expected: >-
           pass==false because is_loopback==true (despite matched_facts==1);
           case_result==true because this case declares --expect-fail. A
@@ -285,6 +333,18 @@ test_cases:
     steps:
       - name: "Golden-bad: analyzer must honestly infra-fail (raw FAIL, non-empty error) on an unreachable LAN endpoint; case succeeds via --expect-fail inversion"
         action: "http: POST /v1/chat/completions"
+        body:
+          model: "local"
+          messages:
+            - role: "user"
+              content: "HXC-243 endpoint-contract probe: reply with the single word PONG"
+          max_tokens: 8
+          temperature: 0
+        # HXC-243: an explicit expectation is what makes this step falsifiable.
+        # 200 alone is NOT enough — a wrong service can answer 200 with an error
+        # envelope, so the json_path additionally demands a REAL completion body.
+        expect_status: 200
+        expect_json_path: "$.choices[0].message.content"
         expected: >-
           pass==false, error is non-empty ("connection refused" class),
           http_status==0 (no response ever received); case_result==true
@@ -317,6 +377,18 @@ test_cases:
     steps:
       - name: "Golden-good: analyzer must PASS when facts genuinely match over the real LAN endpoint"
         action: "http: POST /v1/chat/completions"
+        body:
+          model: "local"
+          messages:
+            - role: "user"
+              content: "HXC-243 endpoint-contract probe: reply with the single word PONG"
+          max_tokens: 8
+          temperature: 0
+        # HXC-243: an explicit expectation is what makes this step falsifiable.
+        # 200 alone is NOT enough — a wrong service can answer 200 with an error
+        # envelope, so the json_path additionally demands a REAL completion body.
+        expect_status: 200
+        expect_json_path: "$.choices[0].message.content"
         expected: "pass==true (facts genuinely present in the model's LAN-routed response)."
 
   - id: NETPROV-SELF-VALIDATE-001-BAD
@@ -359,6 +431,18 @@ test_cases:
     steps:
       - name: "Golden-bad: analyzer must reject mismatched facts (raw FAIL) over the real LAN endpoint; case succeeds via --expect-fail inversion"
         action: "http: POST /v1/chat/completions"
+        body:
+          model: "local"
+          messages:
+            - role: "user"
+              content: "HXC-243 endpoint-contract probe: reply with the single word PONG"
+          max_tokens: 8
+          temperature: 0
+        # HXC-243: an explicit expectation is what makes this step falsifiable.
+        # 200 alone is NOT enough — a wrong service can answer 200 with an error
+        # envelope, so the json_path additionally demands a REAL completion body.
+        expect_status: 200
+        expect_json_path: "$.choices[0].message.content"
         expected: >-
           pass==false (the response genuinely does NOT contain "99" — it
           correctly answers "42"); case_result==true because this case

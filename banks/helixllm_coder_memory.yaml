@@ -124,6 +124,18 @@ test_cases:
     steps:
       - name: "Send 200 sequential POST /v1/chat/completions; sample RSS every 10 requests; assert monotonic-no-leak"
         action: "http: POST /v1/chat/completions (200x sequential, RSS via ps)"
+        body:
+          model: "local"
+          messages:
+            - role: "user"
+              content: "HXC-243 endpoint-contract probe: reply with the single word PONG"
+          max_tokens: 8
+          temperature: 0
+        # HXC-243: an explicit expectation is what makes this step falsifiable.
+        # 200 alone is NOT enough — a wrong service can answer 200 with an error
+        # envelope, so the json_path additionally demands a REAL completion body.
+        expect_status: 200
+        expect_json_path: "$.choices[0].message.content"
         expected: >-
           All 200 return HTTP 200. The coder PID's final RSS <= initial RSS
           + 15% (monotonic_no_leak==true). At least 10 RSS samples captured.
@@ -158,6 +170,18 @@ test_cases:
     steps:
       - name: "Send 200 sequential POST /v1/chat/completions; sample RSS every 10 requests; assert GC-stability"
         action: "http: POST /v1/chat/completions (200x sequential, ps RSS midpoint split)"
+        body:
+          model: "local"
+          messages:
+            - role: "user"
+              content: "HXC-243 endpoint-contract probe: reply with the single word PONG"
+          max_tokens: 8
+          temperature: 0
+        # HXC-243: an explicit expectation is what makes this step falsifiable.
+        # 200 alone is NOT enough — a wrong service can answer 200 with an error
+        # envelope, so the json_path additionally demands a REAL completion body.
+        expect_status: 200
+        expect_json_path: "$.choices[0].message.content"
         expected: >-
           All 200 return HTTP 200. RSS in the second half of samples does not
           grow beyond the midpoint RSS + 7.5% (gc_stability==true). This
@@ -191,6 +215,18 @@ test_cases:
     steps:
       - name: "Send 200 sequential POST /v1/chat/completions; sample RSS every 10 requests; assert RSS plateau"
         action: "http: POST /v1/chat/completions (200x sequential, trailing 5 RSS samples)"
+        body:
+          model: "local"
+          messages:
+            - role: "user"
+              content: "HXC-243 endpoint-contract probe: reply with the single word PONG"
+          max_tokens: 8
+          temperature: 0
+        # HXC-243: an explicit expectation is what makes this step falsifiable.
+        # 200 alone is NOT enough — a wrong service can answer 200 with an error
+        # envelope, so the json_path additionally demands a REAL completion body.
+        expect_status: 200
+        expect_json_path: "$.choices[0].message.content"
         expected: >-
           All 200 return HTTP 200. The last 5 RSS samples are within 5% of
           each other (steady_state==true). This proves the coder's working
@@ -226,6 +262,18 @@ test_cases:
     steps:
       - name: "Golden-good: analyzer must PASS when all three assertions pass against a healthy coder"
         action: "http: POST /v1/chat/completions (20x sequential, RSS sampled every 5)"
+        body:
+          model: "local"
+          messages:
+            - role: "user"
+              content: "HXC-243 endpoint-contract probe: reply with the single word PONG"
+          max_tokens: 8
+          temperature: 0
+        # HXC-243: an explicit expectation is what makes this step falsifiable.
+        # 200 alone is NOT enough — a wrong service can answer 200 with an error
+        # envelope, so the json_path additionally demands a REAL completion body.
+        expect_status: 200
+        expect_json_path: "$.choices[0].message.content"
         expected: >-
           pass==true (all three assertions satisfied: monotonic_no_leak,
           gc_stability, steady_state all true).
@@ -266,6 +314,18 @@ test_cases:
     steps:
       - name: "Golden-bad: -1% leak-pct ensures MONOTONIC-NO-LEAK is FALSE — analyzer correctly reports pass=false"
         action: "http: POST /v1/chat/completions (20x sequential, -1% threshold)"
+        body:
+          model: "local"
+          messages:
+            - role: "user"
+              content: "HXC-243 endpoint-contract probe: reply with the single word PONG"
+          max_tokens: 8
+          temperature: 0
+        # HXC-243: an explicit expectation is what makes this step falsifiable.
+        # 200 alone is NOT enough — a wrong service can answer 200 with an error
+        # envelope, so the json_path additionally demands a REAL completion body.
+        expect_status: 200
+        expect_json_path: "$.choices[0].message.content"
         expected: >-
           pass==false (the impossible negative threshold means
           monotonic_no_leak is FALSE on any real coder because memory never

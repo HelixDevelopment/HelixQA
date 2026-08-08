@@ -127,6 +127,18 @@ test_cases:
     steps:
       - name: "Run 20 requests at concurrency 1 (sequential), measure p50/p95/p99 latency"
         action: "http: POST /v1/chat/completions (20 requests, concurrency 1)"
+        body:
+          model: "local"
+          messages:
+            - role: "user"
+              content: "HXC-243 endpoint-contract probe: reply with the single word PONG"
+          max_tokens: 8
+          temperature: 0
+        # HXC-243: an explicit expectation is what makes this step falsifiable.
+        # 200 alone is NOT enough — a wrong service can answer 200 with an error
+        # envelope, so the json_path additionally demands a REAL completion body.
+        expect_status: 200
+        expect_json_path: "$.choices[0].message.content"
         expected: >-
           All 20 return HTTP 200; p50 latency < 5000ms; p95 < 15000ms;
           p99 < 30000ms; throughput >= 0.3 req/s; throughput in tok/s
@@ -159,6 +171,18 @@ test_cases:
     steps:
       - name: "Run 30 requests at concurrency 10, measure p50/p95/p99 latency"
         action: "http: POST /v1/chat/completions (30 requests, concurrency 10)"
+        body:
+          model: "local"
+          messages:
+            - role: "user"
+              content: "HXC-243 endpoint-contract probe: reply with the single word PONG"
+          max_tokens: 8
+          temperature: 0
+        # HXC-243: an explicit expectation is what makes this step falsifiable.
+        # 200 alone is NOT enough — a wrong service can answer 200 with an error
+        # envelope, so the json_path additionally demands a REAL completion body.
+        expect_status: 200
+        expect_json_path: "$.choices[0].message.content"
         expected: >-
           All 30 return HTTP 200; p99 < 30000ms; throughput >= 1.0 req/s;
           throughput in tok/s recorded. Exercises moderate concurrent load
@@ -192,6 +216,18 @@ test_cases:
     steps:
       - name: "Run 30 requests at concurrency 50, measure p50/p95/p99 latency"
         action: "http: POST /v1/chat/completions (30 requests, concurrency 50)"
+        body:
+          model: "local"
+          messages:
+            - role: "user"
+              content: "HXC-243 endpoint-contract probe: reply with the single word PONG"
+          max_tokens: 8
+          temperature: 0
+        # HXC-243: an explicit expectation is what makes this step falsifiable.
+        # 200 alone is NOT enough — a wrong service can answer 200 with an error
+        # envelope, so the json_path additionally demands a REAL completion body.
+        expect_status: 200
+        expect_json_path: "$.choices[0].message.content"
         expected: >-
           All 30 return HTTP 200; p99 < 60000ms; throughput >= 2.0 req/s.
           At concurrency 50 the single-threaded llama.cpp batch queue
@@ -229,6 +265,18 @@ test_cases:
     steps:
       - name: "Run 30 requests at concurrency 100, measure p50/p95/p99 latency"
         action: "http: POST /v1/chat/completions (30 requests, concurrency 100)"
+        body:
+          model: "local"
+          messages:
+            - role: "user"
+              content: "HXC-243 endpoint-contract probe: reply with the single word PONG"
+          max_tokens: 8
+          temperature: 0
+        # HXC-243: an explicit expectation is what makes this step falsifiable.
+        # 200 alone is NOT enough — a wrong service can answer 200 with an error
+        # envelope, so the json_path additionally demands a REAL completion body.
+        expect_status: 200
+        expect_json_path: "$.choices[0].message.content"
         expected: >-
           All 30 return HTTP 200 or acceptable degradation; p99 < 120000ms;
           throughput >= 3.0 req/s. TCP connection-refused events at burst
@@ -263,6 +311,18 @@ test_cases:
     steps:
       - name: "Send 10 streaming POST /v1/chat/completions (stream:true), measure time-to-first-token"
         action: "http: POST /v1/chat/completions (10 streaming requests, concurrency 1)"
+        body:
+          model: "local"
+          messages:
+            - role: "user"
+              content: "HXC-243 endpoint-contract probe: reply with the single word PONG"
+          max_tokens: 8
+          temperature: 0
+        # HXC-243: an explicit expectation is what makes this step falsifiable.
+        # 200 alone is NOT enough — a wrong service can answer 200 with an error
+        # envelope, so the json_path additionally demands a REAL completion body.
+        expect_status: 200
+        expect_json_path: "$.choices[0].message.content"
         expected: >-
           All 10 return HTTP 200 streaming responses; TTFT p95 < 5000ms;
           TTFT p50 and p99 recorded. This is the first formal TTFT
@@ -300,6 +360,18 @@ test_cases:
     steps:
       - name: "Golden-good: analyzer must PASS when baseline thresholds are trivially satisfied"
         action: "http: POST /v1/chat/completions (3 requests at concurrency 1)"
+        body:
+          model: "local"
+          messages:
+            - role: "user"
+              content: "HXC-243 endpoint-contract probe: reply with the single word PONG"
+          max_tokens: 8
+          temperature: 0
+        # HXC-243: an explicit expectation is what makes this step falsifiable.
+        # 200 alone is NOT enough — a wrong service can answer 200 with an error
+        # envelope, so the json_path additionally demands a REAL completion body.
+        expect_status: 200
+        expect_json_path: "$.choices[0].message.content"
         expected: >-
           pass==true (all 3 complete with 200; throughput >= 0.01 req/s is
           trivially satisfied by any live coder). Proves the analyzer
@@ -341,6 +413,18 @@ test_cases:
     steps:
       - name: "Golden-bad: impossible latency threshold (p99_max=1ms) — analyzer correctly reports pass=false"
         action: "http: POST /v1/chat/completions (3 requests at concurrency 1)"
+        body:
+          model: "local"
+          messages:
+            - role: "user"
+              content: "HXC-243 endpoint-contract probe: reply with the single word PONG"
+          max_tokens: 8
+          temperature: 0
+        # HXC-243: an explicit expectation is what makes this step falsifiable.
+        # 200 alone is NOT enough — a wrong service can answer 200 with an error
+        # envelope, so the json_path additionally demands a REAL completion body.
+        expect_status: 200
+        expect_json_path: "$.choices[0].message.content"
         expected: >-
           pass==false (p99 latency > 1ms on any real coder); case_result==true
           because this case declares --expect-fail. Proves the analyzer

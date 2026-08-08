@@ -186,6 +186,18 @@ test_cases:
     steps:
       - name: "Send 200 KiB prompt to coder; then verify normal completion still works"
         action: "http: POST /v1/chat/completions (200 KiB payload)"
+        body:
+          model: "local"
+          messages:
+            - role: "user"
+              content: "HXC-243 endpoint-contract probe: reply with the single word PONG"
+          max_tokens: 8
+          temperature: 0
+        # HXC-243: an explicit expectation is what makes this step falsifiable.
+        # 200 alone is NOT enough — a wrong service can answer 200 with an error
+        # envelope, so the json_path additionally demands a REAL completion body.
+        expect_status: 200
+        expect_json_path: "$.choices[0].message.content"
         expected: >-
           The oversized request is handled (oversized_handled==true) — either
           rejected with a meaningful HTTP error or accepted — AND the coder
@@ -223,6 +235,18 @@ test_cases:
     steps:
       - name: "Fire 5 concurrent POST /v1/chat/completions while probing /v1/models; assert all succeed"
         action: "http: POST /v1/chat/completions (5x concurrent) + GET /v1/models (3x interleaved)"
+        body:
+          model: "local"
+          messages:
+            - role: "user"
+              content: "HXC-243 endpoint-contract probe: reply with the single word PONG"
+          max_tokens: 8
+          temperature: 0
+        # HXC-243: an explicit expectation is what makes this step falsifiable.
+        # 200 alone is NOT enough — a wrong service can answer 200 with an error
+        # envelope, so the json_path additionally demands a REAL completion body.
+        expect_status: 200
+        expect_json_path: "$.choices[0].message.content"
         expected: >-
           All 5 concurrent POSTs return HTTP 200 AND all 3 health probes
           return HTTP 200 (all_ok==true, models_ok==true). Proves the coder

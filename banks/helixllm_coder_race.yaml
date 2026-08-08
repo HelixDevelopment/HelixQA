@@ -162,6 +162,18 @@ test_cases:
     steps:
       - name: "Fire 8 concurrent POST /v1/chat/completions with distinct prompts+nonces; assert per-request isolation"
         action: "http: POST /v1/chat/completions (8x concurrent, distinct prompts)"
+        body:
+          model: "local"
+          messages:
+            - role: "user"
+              content: "HXC-243 endpoint-contract probe: reply with the single word PONG"
+          max_tokens: 8
+          temperature: 0
+        # HXC-243: an explicit expectation is what makes this step falsifiable.
+        # 200 alone is NOT enough — a wrong service can answer 200 with an error
+        # envelope, so the json_path additionally demands a REAL completion body.
+        expect_status: 200
+        expect_json_path: "$.choices[0].message.content"
         expected: >-
           All 8 return HTTP 200, all 8 accounted for (no-loss), all 8
           responses pairwise distinct (no-duplicate), every response
@@ -199,6 +211,18 @@ test_cases:
     steps:
       - name: "Fire 16 concurrent POST /v1/chat/completions with distinct prompts+nonces; assert per-request isolation"
         action: "http: POST /v1/chat/completions (16x concurrent, distinct prompts)"
+        body:
+          model: "local"
+          messages:
+            - role: "user"
+              content: "HXC-243 endpoint-contract probe: reply with the single word PONG"
+          max_tokens: 8
+          temperature: 0
+        # HXC-243: an explicit expectation is what makes this step falsifiable.
+        # 200 alone is NOT enough — a wrong service can answer 200 with an error
+        # envelope, so the json_path additionally demands a REAL completion body.
+        expect_status: 200
+        expect_json_path: "$.choices[0].message.content"
         expected: >-
           All 16 return HTTP 200, no-loss, no-duplicate, own-nonce, and
           no-cross-contam all true at 2x the concurrency of CODER-RACE-LLM-001 —
@@ -233,6 +257,18 @@ test_cases:
     steps:
       - name: "Fire 8 concurrent identical POST /v1/chat/completions (temperature=0); assert deterministic answer"
         action: "http: POST /v1/chat/completions (8x concurrent, identical prompt, temperature=0)"
+        body:
+          model: "local"
+          messages:
+            - role: "user"
+              content: "HXC-243 endpoint-contract probe: reply with the single word PONG"
+          max_tokens: 8
+          temperature: 0
+        # HXC-243: an explicit expectation is what makes this step falsifiable.
+        # 200 alone is NOT enough — a wrong service can answer 200 with an error
+        # envelope, so the json_path additionally demands a REAL completion body.
+        expect_status: 200
+        expect_json_path: "$.choices[0].message.content"
         expected: >-
           All 8 return HTTP 200, no-loss, and the extracted numeric answer
           is IDENTICAL across all 8 concurrent completions
@@ -273,6 +309,18 @@ test_cases:
     steps:
       - name: "Golden-good: analyzer must PASS when the coder is healthy under moderate distinct concurrency"
         action: "http: POST /v1/chat/completions (6x concurrent, distinct prompts)"
+        body:
+          model: "local"
+          messages:
+            - role: "user"
+              content: "HXC-243 endpoint-contract probe: reply with the single word PONG"
+          max_tokens: 8
+          temperature: 0
+        # HXC-243: an explicit expectation is what makes this step falsifiable.
+        # 200 alone is NOT enough — a wrong service can answer 200 with an error
+        # envelope, so the json_path additionally demands a REAL completion body.
+        expect_status: 200
+        expect_json_path: "$.choices[0].message.content"
         expected: "pass==true (all 6 complete with 200, no drops, no contamination)."
 
   - id: CODER-RACE-LLM-SELF-VALIDATE-001-BAD
@@ -300,6 +348,18 @@ test_cases:
     steps:
       - name: "Golden-bad: 1ms timeout ensures zero requests complete — analyzer correctly reports ALL-OK=false"
         action: "http: POST /v1/chat/completions (6x concurrent, 1ms timeout)"
+        body:
+          model: "local"
+          messages:
+            - role: "user"
+              content: "HXC-243 endpoint-contract probe: reply with the single word PONG"
+          max_tokens: 8
+          temperature: 0
+        # HXC-243: an explicit expectation is what makes this step falsifiable.
+        # 200 alone is NOT enough — a wrong service can answer 200 with an error
+        # envelope, so the json_path additionally demands a REAL completion body.
+        expect_status: 200
+        expect_json_path: "$.choices[0].message.content"
         expected: >-
           pass==false (all requests timeout in 1ms, none complete),
           all_ok==false; case_result==true because this case declares

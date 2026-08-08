@@ -125,7 +125,18 @@ test_cases:
       - "qa-results/helixllm_coder/unreachable_001_verdict.json | json:case_result==true | json:error_class==connection_refused_or_timeout"
     steps:
       - name: "Attempt to connect to :18433 (no service listening) — MUST fail"
-        action: "http: POST http://localhost:18433/v1/chat/completions (expected: connection refused)"
+        action: "http: POST /v1/chat/completions (expected: connection refused)"
+        # HXC-243: this case's whole point is a DIFFERENT port (18433) that must
+        # be refused. `helixqa http` drives one operator-supplied --base-url, so
+        # the per-case target cannot be expressed here. An honest SKIP (§11.4.3)
+        # is correct; the connection-refused polarity is owned by the
+        # dispatches_to analyzer, which does control the port.
+        _skip: true
+        _skip_reason: >-
+          HXC-243/§11.4.3: case targets port 18433 (must be connection-refused);
+          the http runner drives a single --base-url and cannot express a
+          per-case port. Polarity is asserted by bin/helixqa-verify-coder
+          (dispatches_to), not by this http step.
         expected: >-
           Connection refused or timeout. Authored 2026-07-08 (this session)
           against the confirmed-unused port :18433 on this host. Any other
@@ -160,7 +171,19 @@ test_cases:
       - "qa-results/helixllm_coder/noauth_001_verdict.json | json:case_result==true | json:http_status==200 | json:matched_facts==1"
     steps:
       - name: "POST /v1/chat/completions with NO Authorization header — MUST return 200 with the nonce in content"
-        action: "http: POST http://localhost:18434/v1/chat/completions (no Authorization header, valid model + messages)"
+        action: "http: POST /v1/chat/completions (no Authorization header, valid model + messages)"
+        body:
+          model: "local"
+          messages:
+            - role: "user"
+              content: "HXC-243 endpoint-contract probe: reply with the single word PONG"
+          max_tokens: 8
+          temperature: 0
+        # HXC-243: an explicit expectation is what makes this step falsifiable.
+        # 200 alone is NOT enough — a wrong service can answer 200 with an error
+        # envelope, so the json_path additionally demands a REAL completion body.
+        expect_status: 200
+        expect_json_path: "$.choices[0].message.content"
         expected: >-
           HTTP 200, content contains the nonce "ALIVE-J7XK", proving the
           coder responds without auth. Authored 2026-07-08 against the live
@@ -193,7 +216,19 @@ test_cases:
       - "qa-results/helixllm_coder/generate_nonce_001_verdict.json | json:case_result==true | json:http_status==200 | json:matched_facts==1 | json:not_identity==true"
     steps:
       - name: "POST /v1/chat/completions with a nonce prompt — the response MUST contain the exact nonce string and differ from the prompt"
-        action: "http: POST http://localhost:18434/v1/chat/completions"
+        action: "http: POST /v1/chat/completions"
+        body:
+          model: "local"
+          messages:
+            - role: "user"
+              content: "HXC-243 endpoint-contract probe: reply with the single word PONG"
+          max_tokens: 8
+          temperature: 0
+        # HXC-243: an explicit expectation is what makes this step falsifiable.
+        # 200 alone is NOT enough — a wrong service can answer 200 with an error
+        # envelope, so the json_path additionally demands a REAL completion body.
+        expect_status: 200
+        expect_json_path: "$.choices[0].message.content"
         expected: >-
           HTTP 200, response body's content contains "nonce-ZQ9FK2"
           (case-insensitive) and differs from the prompt string
@@ -233,7 +268,13 @@ test_cases:
       - "qa-results/helixllm_coder/listmodels_001_verdict.json | json:case_result==true | json:http_status==200 | json:models_contain_expect==true"
     steps:
       - name: "GET /v1/models — the response MUST list the real deployed model id as a substring match to --expect"
-        action: "http: GET http://localhost:18434/v1/models"
+        action: "http: GET /v1/models"
+        # HXC-243: /v1/models must return THIS service's model roster. The
+        # json_path is load-bearing: HelixAgent :7061 also answers 200 here but
+        # with an OpenAI {object,data} shape that has no `models` key, so a
+        # status-only assertion would still pass against the wrong service.
+        expect_status: 200
+        expect_json_path: "$.models[0].name"
         expected: >-
           HTTP 200, the models array contains an entry matching the
           expected substring (Qwen3-Coder). Authored 2026-07-08 against the
@@ -268,7 +309,19 @@ test_cases:
       - "qa-results/helixllm_coder/self_validate_001_golden_good_verdict.json | json:case_result==true | json:pass==true | json:matched_facts==1"
     steps:
       - name: "Golden-good: analyzer must PASS when the nonce genuinely matches the real coder response"
-        action: "http: POST http://localhost:18434/v1/chat/completions"
+        action: "http: POST /v1/chat/completions"
+        body:
+          model: "local"
+          messages:
+            - role: "user"
+              content: "HXC-243 endpoint-contract probe: reply with the single word PONG"
+          max_tokens: 8
+          temperature: 0
+        # HXC-243: an explicit expectation is what makes this step falsifiable.
+        # 200 alone is NOT enough — a wrong service can answer 200 with an error
+        # envelope, so the json_path additionally demands a REAL completion body.
+        expect_status: 200
+        expect_json_path: "$.choices[0].message.content"
         expected: "pass==true (nonce 'nonce-ZQ9FK2' genuinely present in the real coder completion)."
 
   - id: COD-GEN-SELF-VALIDATE-001-BAD
@@ -307,7 +360,19 @@ test_cases:
       - "qa-results/helixllm_coder/self_validate_001_golden_bad_verdict.json | json:case_result==true | json:pass==false | json:matched_facts==0"
     steps:
       - name: "Golden-bad: analyzer MUST reject mismatched nonce (raw FAIL), case succeeds via --expect-fail inversion"
-        action: "http: POST http://localhost:18434/v1/chat/completions"
+        action: "http: POST /v1/chat/completions"
+        body:
+          model: "local"
+          messages:
+            - role: "user"
+              content: "HXC-243 endpoint-contract probe: reply with the single word PONG"
+          max_tokens: 8
+          temperature: 0
+        # HXC-243: an explicit expectation is what makes this step falsifiable.
+        # 200 alone is NOT enough — a wrong service can answer 200 with an error
+        # envelope, so the json_path additionally demands a REAL completion body.
+        expect_status: 200
+        expect_json_path: "$.choices[0].message.content"
         expected: >-
           pass==false (the real coder answer "nonce-ZQ9FK2" genuinely does
           NOT contain "XYZZY-NONCE-DEADBEEF"); case_result==true because
