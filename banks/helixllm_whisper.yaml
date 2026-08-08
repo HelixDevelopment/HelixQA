@@ -110,6 +110,19 @@ test_cases:
     steps:
       - name: "POST fox.wav to the live Whisper STT endpoint and word-match the transcript"
         action: "http: POST /v1/audio/transcriptions"
+        # HXC-243/§11.4.3: NOT assertable in http mode, and saying so is the
+        # honest answer. cmd/helixqa-verify-whisper/main.go:162-181 posts
+        # multipart/form-data (form field `file` = raw WAV bytes); a YAML
+        # `body:` cannot express multipart, and a bodyless POST to a healthy
+        # STT service does not return 200 — so any expect_status here would
+        # be invented. The real assertion stays with the dispatches_to
+        # analyzer, which does send the audio.
+        _skip: true
+        _skip_reason: >-
+          HXC-243/§11.4.3: endpoint requires multipart/form-data (WAV upload);
+          the http-step schema cannot express a multipart body, so no honest
+          expectation exists. Asserted instead by bin/helixqa-verify-whisper
+          (dispatches_to).
         expected: >-
           Normalized transcript contains "quick","brown","fox","lazy","dog".
           Authored 2026-07-08 (this session) against the live service, which
@@ -135,6 +148,19 @@ test_cases:
     steps:
       - name: "POST helloworld.wav to the live Whisper STT endpoint and word-match (digit/number-word canonicalized)"
         action: "http: POST /v1/audio/transcriptions"
+        # HXC-243/§11.4.3: NOT assertable in http mode, and saying so is the
+        # honest answer. cmd/helixqa-verify-whisper/main.go:162-181 posts
+        # multipart/form-data (form field `file` = raw WAV bytes); a YAML
+        # `body:` cannot express multipart, and a bodyless POST to a healthy
+        # STT service does not return 200 — so any expect_status here would
+        # be invented. The real assertion stays with the dispatches_to
+        # analyzer, which does send the audio.
+        _skip: true
+        _skip_reason: >-
+          HXC-243/§11.4.3: endpoint requires multipart/form-data (WAV upload);
+          the http-step schema cannot express a multipart body, so no honest
+          expectation exists. Asserted instead by bin/helixqa-verify-whisper
+          (dispatches_to).
         expected: >-
           Normalized+canonicalized transcript contains
           "hello","world","one","two","three" (Whisper renders spoken
@@ -168,6 +194,19 @@ test_cases:
     steps:
       - name: "Golden-good: analyzer must PASS when words genuinely match a real live transcript"
         action: "http: POST /v1/audio/transcriptions"
+        # HXC-243/§11.4.3: NOT assertable in http mode, and saying so is the
+        # honest answer. cmd/helixqa-verify-whisper/main.go:162-181 posts
+        # multipart/form-data (form field `file` = raw WAV bytes); a YAML
+        # `body:` cannot express multipart, and a bodyless POST to a healthy
+        # STT service does not return 200 — so any expect_status here would
+        # be invented. The real assertion stays with the dispatches_to
+        # analyzer, which does send the audio.
+        _skip: true
+        _skip_reason: >-
+          HXC-243/§11.4.3: endpoint requires multipart/form-data (WAV upload);
+          the http-step schema cannot express a multipart body, so no honest
+          expectation exists. Asserted instead by bin/helixqa-verify-whisper
+          (dispatches_to).
         expected: "pass==true (words genuinely present in the real transcript)."
 
   - id: STT-SELF-VALIDATE-001-BAD
@@ -204,6 +243,19 @@ test_cases:
     steps:
       - name: "Golden-bad: analyzer must reject mismatched words (raw FAIL), case succeeds via --expect-fail inversion"
         action: "http: POST /v1/audio/transcriptions"
+        # HXC-243/§11.4.3: NOT assertable in http mode, and saying so is the
+        # honest answer. cmd/helixqa-verify-whisper/main.go:162-181 posts
+        # multipart/form-data (form field `file` = raw WAV bytes); a YAML
+        # `body:` cannot express multipart, and a bodyless POST to a healthy
+        # STT service does not return 200 — so any expect_status here would
+        # be invented. The real assertion stays with the dispatches_to
+        # analyzer, which does send the audio.
+        _skip: true
+        _skip_reason: >-
+          HXC-243/§11.4.3: endpoint requires multipart/form-data (WAV upload);
+          the http-step schema cannot express a multipart body, so no honest
+          expectation exists. Asserted instead by bin/helixqa-verify-whisper
+          (dispatches_to).
         expected: >-
           pass==false (the real transcript "The quick brown fox dumps over
           the lazy dog." genuinely does NOT contain "hello" or "world");

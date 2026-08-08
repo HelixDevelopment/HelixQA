@@ -118,6 +118,14 @@ test_cases:
     steps:
       - name: "POST source+langs to the live NLLB shim and fact-match + not-identity check the forward translation"
         action: "http: POST /translate"
+        # HXC-243: body + expectations mirror cmd/helixqa-verify-translate-nllb
+        # (main.go:138 request keys q/source/target, main.go:63-65 response).
+        expect_status: 200
+        expect_json_path: "$.translatedText"
+        body:
+          q: "The house is blue."
+          source: "eng_Latn"
+          target: "deu_Latn"
         expected: >-
           Response translatedText contains both "haus" and "blau"
           (case-insensitive) and differs from the source. Authored
@@ -145,6 +153,14 @@ test_cases:
     steps:
       - name: "POST source+langs to the live NLLB shim and fact-match + not-identity check the forward translation"
         action: "http: POST /translate"
+        # HXC-243: body + expectations mirror cmd/helixqa-verify-translate-nllb
+        # (main.go:138 request keys q/source/target, main.go:63-65 response).
+        expect_status: 200
+        expect_json_path: "$.translatedText"
+        body:
+          q: "The house is blue."
+          source: "eng_Latn"
+          target: "deu_Latn"
         expected: >-
           Response translatedText contains both "chat" and "dort"
           (case-insensitive) and differs from the source. Authored
@@ -179,6 +195,14 @@ test_cases:
     steps:
       - name: "Golden-good: analyzer must PASS when facts genuinely match a real live translation"
         action: "http: POST /translate"
+        # HXC-243: body + expectations mirror cmd/helixqa-verify-translate-nllb
+        # (main.go:138 request keys q/source/target, main.go:63-65 response).
+        expect_status: 200
+        expect_json_path: "$.translatedText"
+        body:
+          q: "The house is blue."
+          source: "eng_Latn"
+          target: "deu_Latn"
         expected: "pass==true (facts genuinely present in the real forward translation)."
 
   - id: TRA-SELF-VALIDATE-001-BAD
@@ -216,6 +240,14 @@ test_cases:
     steps:
       - name: "Golden-bad: analyzer must reject mismatched facts (raw FAIL), case succeeds via --expect-fail inversion"
         action: "http: POST /translate"
+        # HXC-243: body + expectations mirror cmd/helixqa-verify-translate-nllb
+        # (main.go:138 request keys q/source/target, main.go:63-65 response).
+        expect_status: 200
+        expect_json_path: "$.translatedText"
+        body:
+          q: "The house is blue."
+          source: "eng_Latn"
+          target: "deu_Latn"
         expected: >-
           pass==false (the real forward translation "Das Haus ist blau."
           genuinely does NOT contain "chat" or "dort"); case_result==true

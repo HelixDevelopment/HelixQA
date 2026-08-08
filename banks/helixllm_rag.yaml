@@ -110,6 +110,16 @@ test_cases:
     steps:
       - name: "Embed corpus+query on TEI -> real-cosine top-1 -> ground coder -> assert invented token present"
         action: "http: POST /v1/embeddings then POST /v1/chat/completions"
+        # HXC-243: body + expectations mirror cmd/helixqa-verify-embeddings
+        # (main.go:163 request, main.go:63-70 response). $.data[0].embedding
+        # exists only in a genuine TEI payload — an error envelope has no
+        # `data` array, so this also kills the 200-with-error-body bluff.
+        body:
+          model: "helix-embed"
+          input:
+            - "HXC-243 endpoint-contract probe"
+        expect_status: 200
+        expect_json_path: "$.data[0].embedding"
         expected: >-
           Retrieval top-1 == doc_codename and the grounded answer contains
           "Borealis-9". Authored 2026-07-08 (this session) against the live
@@ -136,6 +146,16 @@ test_cases:
     steps:
       - name: "Embed corpus+query on TEI -> real-cosine top-1 -> ground coder -> assert invented token present"
         action: "http: POST /v1/embeddings then POST /v1/chat/completions"
+        # HXC-243: body + expectations mirror cmd/helixqa-verify-embeddings
+        # (main.go:163 request, main.go:63-70 response). $.data[0].embedding
+        # exists only in a genuine TEI payload — an error envelope has no
+        # `data` array, so this also kills the 200-with-error-body bluff.
+        body:
+          model: "helix-embed"
+          input:
+            - "HXC-243 endpoint-contract probe"
+        expect_status: 200
+        expect_json_path: "$.data[0].embedding"
         expected: >-
           Retrieval top-1 == doc_sidecar and the grounded answer contains
           "Quillfeather-7". Authored 2026-07-08 against the live endpoints,
@@ -169,6 +189,16 @@ test_cases:
     steps:
       - name: "Golden-good: grounded pipeline must PASS (retrieval correct + invented token present)"
         action: "http: POST /v1/embeddings then POST /v1/chat/completions"
+        # HXC-243: body + expectations mirror cmd/helixqa-verify-embeddings
+        # (main.go:163 request, main.go:63-70 response). $.data[0].embedding
+        # exists only in a genuine TEI payload — an error envelope has no
+        # `data` array, so this also kills the 200-with-error-body bluff.
+        body:
+          model: "helix-embed"
+          input:
+            - "HXC-243 endpoint-contract probe"
+        expect_status: 200
+        expect_json_path: "$.data[0].embedding"
         expected: "pass==true (grounded answer genuinely contains the invented token)."
 
   - id: RAG-SELF-VALIDATE-001-BAD
@@ -208,6 +238,19 @@ test_cases:
     steps:
       - name: "Golden-bad: no-context RED — analyzer must report the invented token ABSENT (raw FAIL), case succeeds via --expect-fail inversion"
         action: "http: POST /v1/chat/completions (bare question, no grounding)"
+        # HXC-243: body + expectations mirror the analyzer's chat call
+        # (cmd/helixqa-verify-rag/main.go:327; cmd/helixqa-verify-vision
+        # /main.go:211-224 use the same OpenAI chat contract). The json_path
+        # demands a real completion, not merely "some HTTP response arrived".
+        body:
+          model: "coder"
+          messages:
+            - role: "user"
+              content: "HXC-243 endpoint-contract probe: reply with the single word PONG"
+          max_tokens: 8
+          temperature: 0
+        expect_status: 200
+        expect_json_path: "$.choices[0].message.content"
         expected: >-
           pass==false (the coder genuinely cannot know the invented fact
           without retrieval context); case_result==true because this case

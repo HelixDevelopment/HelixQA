@@ -119,6 +119,19 @@ test_cases:
     steps:
       - name: "POST image+prompt to the live vision endpoint and fact-match the response"
         action: "http: POST /v1/chat/completions"
+        # HXC-243: body + expectations mirror the analyzer's chat call
+        # (cmd/helixqa-verify-rag/main.go:327; cmd/helixqa-verify-vision
+        # /main.go:211-224 use the same OpenAI chat contract). The json_path
+        # demands a real completion, not merely "some HTTP response arrived".
+        body:
+          model: "coder"
+          messages:
+            - role: "user"
+              content: "HXC-243 endpoint-contract probe: reply with the single word PONG"
+          max_tokens: 8
+          temperature: 0
+        expect_status: 200
+        expect_json_path: "$.choices[0].message.content"
         expected: >-
           Response content contains both "circle" and "red" (case-insensitive).
           Authored 2026-07-08 against the live 3B model, which answered:
@@ -145,6 +158,19 @@ test_cases:
     steps:
       - name: "POST a 3-blue-circle image + counting prompt; assert the digit 3 in the response"
         action: "http: POST /v1/chat/completions"
+        # HXC-243: body + expectations mirror the analyzer's chat call
+        # (cmd/helixqa-verify-rag/main.go:327; cmd/helixqa-verify-vision
+        # /main.go:211-224 use the same OpenAI chat contract). The json_path
+        # demands a real completion, not merely "some HTTP response arrived".
+        body:
+          model: "coder"
+          messages:
+            - role: "user"
+              content: "HXC-243 endpoint-contract probe: reply with the single word PONG"
+          max_tokens: 8
+          temperature: 0
+        expect_status: 200
+        expect_json_path: "$.choices[0].message.content"
         expected: >-
           Response contains "3". Authored 2026-07-08 against the live 3B
           model, which answered "3" (re-confirmed deterministic).
@@ -169,6 +195,19 @@ test_cases:
     steps:
       - name: "POST a rendered-text image + reading prompt; assert the exact word (case-insensitive)"
         action: "http: POST /v1/chat/completions"
+        # HXC-243: body + expectations mirror the analyzer's chat call
+        # (cmd/helixqa-verify-rag/main.go:327; cmd/helixqa-verify-vision
+        # /main.go:211-224 use the same OpenAI chat contract). The json_path
+        # demands a real completion, not merely "some HTTP response arrived".
+        body:
+          model: "coder"
+          messages:
+            - role: "user"
+              content: "HXC-243 endpoint-contract probe: reply with the single word PONG"
+          max_tokens: 8
+          temperature: 0
+        expect_status: 200
+        expect_json_path: "$.choices[0].message.content"
         expected: >-
           Response contains "helix" (case-insensitive). Authored 2026-07-08
           against the live 3B model, which answered "HELIX" (re-confirmed
@@ -195,6 +234,19 @@ test_cases:
     steps:
       - name: "POST the two-square image + spatial-relation prompt; assert 'left' and NOT 'right'"
         action: "http: POST /v1/chat/completions"
+        # HXC-243: body + expectations mirror the analyzer's chat call
+        # (cmd/helixqa-verify-rag/main.go:327; cmd/helixqa-verify-vision
+        # /main.go:211-224 use the same OpenAI chat contract). The json_path
+        # demands a real completion, not merely "some HTTP response arrived".
+        body:
+          model: "coder"
+          messages:
+            - role: "user"
+              content: "HXC-243 endpoint-contract probe: reply with the single word PONG"
+          max_tokens: 8
+          temperature: 0
+        expect_status: 200
+        expect_json_path: "$.choices[0].message.content"
         expected: >-
           Response contains "left" and does not contain "right". Authored
           2026-07-08 against the live 3B model, which answered "left"
@@ -235,6 +287,19 @@ test_cases:
     steps:
       - name: "Golden-good: analyzer must PASS when facts genuinely match"
         action: "http: POST /v1/chat/completions"
+        # HXC-243: body + expectations mirror the analyzer's chat call
+        # (cmd/helixqa-verify-rag/main.go:327; cmd/helixqa-verify-vision
+        # /main.go:211-224 use the same OpenAI chat contract). The json_path
+        # demands a real completion, not merely "some HTTP response arrived".
+        body:
+          model: "coder"
+          messages:
+            - role: "user"
+              content: "HXC-243 endpoint-contract probe: reply with the single word PONG"
+          max_tokens: 8
+          temperature: 0
+        expect_status: 200
+        expect_json_path: "$.choices[0].message.content"
         expected: "pass==true (facts genuinely present in the model's response)."
 
   - id: VIS-SELF-VALIDATE-001-BAD
@@ -272,6 +337,19 @@ test_cases:
     steps:
       - name: "Golden-bad: analyzer must reject mismatched facts (raw FAIL), case succeeds via --expect-fail inversion"
         action: "http: POST /v1/chat/completions"
+        # HXC-243: body + expectations mirror the analyzer's chat call
+        # (cmd/helixqa-verify-rag/main.go:327; cmd/helixqa-verify-vision
+        # /main.go:211-224 use the same OpenAI chat contract). The json_path
+        # demands a real completion, not merely "some HTTP response arrived".
+        body:
+          model: "coder"
+          messages:
+            - role: "user"
+              content: "HXC-243 endpoint-contract probe: reply with the single word PONG"
+          max_tokens: 8
+          temperature: 0
+        expect_status: 200
+        expect_json_path: "$.choices[0].message.content"
         expected: >-
           pass==false (the response genuinely does NOT contain "square" or
           "blue" — it correctly describes a red circle); case_result==true

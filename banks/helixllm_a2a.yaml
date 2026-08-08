@@ -117,7 +117,23 @@ test_cases:
       - "qa-results/helixllm_a2a/understand_001_verdict.json | json:case_result==true | json:task_state==completed | json:not_identity==true | json:matched_facts==1 | json:hallucinated==false"
     steps:
       - name: "POST a real JSON-RPC 2.0 message/send Task and fact-match + not-identity check the agent's answer"
-        action: "http: POST <a2a-endpoint> (jsonrpc message/send)"
+        action: "http: POST /a2a (jsonrpc message/send)"
+        # HXC-243: mirrors cmd/helixqa-verify-a2a/main.go:184-191. A JSON-RPC
+        # error reply carries $.error instead of $.result, so asserting
+        # $.result.status.state discriminates a real task from an error
+        # envelope returned with HTTP 200.
+        body:
+          jsonrpc: "2.0"
+          id: 1
+          method: "message/send"
+          params:
+            message:
+              role: "user"
+              parts:
+                - kind: "text"
+                  text: "HXC-243 endpoint-contract probe"
+        expect_status: 200
+        expect_json_path: "$.result.status.state"
         expected: >-
           Task status.state=="completed"; the agent's answer contains "4"
           (case-insensitive) and differs from the prompt. Authored
@@ -151,7 +167,23 @@ test_cases:
       - "qa-results/helixllm_a2a/self_validate_001_golden_good_verdict.json | json:case_result==true | json:pass==true | json:matched_facts==1"
     steps:
       - name: "Golden-good: analyzer must PASS when facts genuinely match a real live Task answer"
-        action: "http: POST <a2a-endpoint> (jsonrpc message/send)"
+        action: "http: POST /a2a (jsonrpc message/send)"
+        # HXC-243: mirrors cmd/helixqa-verify-a2a/main.go:184-191. A JSON-RPC
+        # error reply carries $.error instead of $.result, so asserting
+        # $.result.status.state discriminates a real task from an error
+        # envelope returned with HTTP 200.
+        body:
+          jsonrpc: "2.0"
+          id: 1
+          method: "message/send"
+          params:
+            message:
+              role: "user"
+              parts:
+                - kind: "text"
+                  text: "HXC-243 endpoint-contract probe"
+        expect_status: 200
+        expect_json_path: "$.result.status.state"
         expected: "pass==true (facts genuinely present in the real agent answer)."
 
   - id: A2A-SELF-VALIDATE-001-BAD
@@ -188,7 +220,23 @@ test_cases:
       - "qa-results/helixllm_a2a/self_validate_001_golden_bad_verdict.json | json:case_result==true | json:pass==false | json:matched_facts==0"
     steps:
       - name: "Golden-bad: analyzer must reject mismatched facts (raw FAIL), case succeeds via --expect-fail inversion"
-        action: "http: POST <a2a-endpoint> (jsonrpc message/send)"
+        action: "http: POST /a2a (jsonrpc message/send)"
+        # HXC-243: mirrors cmd/helixqa-verify-a2a/main.go:184-191. A JSON-RPC
+        # error reply carries $.error instead of $.result, so asserting
+        # $.result.status.state discriminates a real task from an error
+        # envelope returned with HTTP 200.
+        body:
+          jsonrpc: "2.0"
+          id: 1
+          method: "message/send"
+          params:
+            message:
+              role: "user"
+              parts:
+                - kind: "text"
+                  text: "HXC-243 endpoint-contract probe"
+        expect_status: 200
+        expect_json_path: "$.result.status.state"
         expected: >-
           pass==false (the real agent answer "4" genuinely does NOT contain
           "banana" or "elephant"); case_result==true because this case

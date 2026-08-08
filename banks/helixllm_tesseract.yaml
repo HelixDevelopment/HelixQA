@@ -108,6 +108,16 @@ test_cases:
     steps:
       - name: "Render known text -> OCR the rendered PNG -> token-match + confidence-floor the recognized text"
         action: "http: POST /v1/render then POST /v1/ocr"
+        # HXC-243: mirrors cmd/helixqa-verify-tesseract/main.go:151-152. The
+        # render response is raw PNG bytes (main.go:156-161), never JSON, so
+        # no json_path exists — the PNG magic-byte assertion is the real
+        # content evidence in its place, not a bare status check.
+        body:
+          text: "HXC-243"
+          mode: "label"
+          pointsize: 48
+        expect_status: 200
+        expect_body_contains: "PNG"
         expected: >-
           Recognized full_text contains all 6 tokens and mean_conf >= 60.
           Authored 2026-07-08 (this session) against the live shim, which
@@ -134,6 +144,16 @@ test_cases:
     steps:
       - name: "Render known text -> OCR the rendered PNG -> token-match + confidence-floor the recognized text"
         action: "http: POST /v1/render then POST /v1/ocr"
+        # HXC-243: mirrors cmd/helixqa-verify-tesseract/main.go:151-152. The
+        # render response is raw PNG bytes (main.go:156-161), never JSON, so
+        # no json_path exists — the PNG magic-byte assertion is the real
+        # content evidence in its place, not a bare status check.
+        body:
+          text: "HXC-243"
+          mode: "label"
+          pointsize: 48
+        expect_status: 200
+        expect_body_contains: "PNG"
         expected: >-
           Recognized full_text contains all 5 tokens and mean_conf >= 60.
           Authored 2026-07-08 against the live shim, which answered
@@ -165,6 +185,16 @@ test_cases:
     steps:
       - name: "Golden-good: analyzer must PASS when tokens genuinely match a real OCR result"
         action: "http: POST /v1/render then POST /v1/ocr"
+        # HXC-243: mirrors cmd/helixqa-verify-tesseract/main.go:151-152. The
+        # render response is raw PNG bytes (main.go:156-161), never JSON, so
+        # no json_path exists — the PNG magic-byte assertion is the real
+        # content evidence in its place, not a bare status check.
+        body:
+          text: "HXC-243"
+          mode: "label"
+          pointsize: 48
+        expect_status: 200
+        expect_body_contains: "PNG"
         expected: "pass==true (tokens genuinely present, mean_conf clears the floor)."
 
   - id: OCR-SELF-VALIDATE-001-BAD
@@ -203,6 +233,16 @@ test_cases:
     steps:
       - name: "Golden-bad: analyzer must reject mismatched tokens (raw FAIL), case succeeds via --expect-fail inversion"
         action: "http: POST /v1/render then POST /v1/ocr"
+        # HXC-243: mirrors cmd/helixqa-verify-tesseract/main.go:151-152. The
+        # render response is raw PNG bytes (main.go:156-161), never JSON, so
+        # no json_path exists — the PNG magic-byte assertion is the real
+        # content evidence in its place, not a bare status check.
+        body:
+          text: "HXC-243"
+          mode: "label"
+          pointsize: 48
+        expect_status: 200
+        expect_body_contains: "PNG"
         expected: >-
           pass==false (the real recognized text "HELIX OCR 2026 quick brown
           fox" genuinely does NOT contain "phase"/"three"/"tesseract"/

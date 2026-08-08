@@ -128,7 +128,18 @@ test_cases:
       - "qa-results/helixllm_mcp_gateway/unauth_401_verdict.json | json:case_result==true | json:http_status==401"
     steps:
       - name: "Raw JSON-RPC POST with no Authorization header MUST be rejected with HTTP 401"
-        action: "http: POST <mcp-gateway-endpoint> (no Authorization header)"
+        action: "http: POST / (no Authorization header)"
+        # HXC-243: mirrors cmd/helixqa-verify-mcp-gateway/main.go:216 (body)
+        # and main.go:230 (the analyzer's own assertion:
+        # Pass = StatusCode == http.StatusUnauthorized). Asserting 401 makes
+        # the case genuinely falsifiable in the direction that matters: a
+        # gateway that ever lets an UNAUTHENTICATED tools/list through with
+        # 200 now FAILS this step instead of passing it.
+        body:
+          jsonrpc: "2.0"
+          id: 1
+          method: "tools/list"
+        expect_status: 401
         expected: >-
           HTTP status 401. Authored 2026-07-08 (this session) against the
           live gateway, corroborating

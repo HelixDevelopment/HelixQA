@@ -104,6 +104,16 @@ test_cases:
     steps:
       - name: "POST the sentence triple to the live TEI endpoint; assert semantic-order cosine margin"
         action: "http: POST /v1/embeddings"
+        # HXC-243: body + expectations mirror cmd/helixqa-verify-embeddings
+        # (main.go:163 request, main.go:63-70 response). $.data[0].embedding
+        # exists only in a genuine TEI payload — an error envelope has no
+        # `data` array, so this also kills the 200-with-error-body bluff.
+        body:
+          model: "helix-embed"
+          input:
+            - "HXC-243 endpoint-contract probe"
+        expect_status: 200
+        expect_json_path: "$.data[0].embedding"
         expected: >-
           dim=384, all norms non-zero, cos(A,A') - cos(A,U) >= 0.15.
           Authored 2026-07-08 (this session) against the live TEI service,
@@ -137,6 +147,16 @@ test_cases:
     steps:
       - name: "Golden-good: analyzer must PASS when the semantic ordering is correct"
         action: "http: POST /v1/embeddings"
+        # HXC-243: body + expectations mirror cmd/helixqa-verify-embeddings
+        # (main.go:163 request, main.go:63-70 response). $.data[0].embedding
+        # exists only in a genuine TEI payload — an error envelope has no
+        # `data` array, so this also kills the 200-with-error-body bluff.
+        body:
+          model: "helix-embed"
+          input:
+            - "HXC-243 endpoint-contract probe"
+        expect_status: 200
+        expect_json_path: "$.data[0].embedding"
         expected: "pass==true (related pair genuinely out-scores the unrelated pair)."
 
   - id: EMB-SELF-VALIDATE-001-BAD
@@ -175,6 +195,16 @@ test_cases:
     steps:
       - name: "Golden-bad: analyzer must reject the inverted ordering (raw FAIL), case succeeds via --expect-fail inversion"
         action: "http: POST /v1/embeddings"
+        # HXC-243: body + expectations mirror cmd/helixqa-verify-embeddings
+        # (main.go:163 request, main.go:63-70 response). $.data[0].embedding
+        # exists only in a genuine TEI payload — an error envelope has no
+        # `data` array, so this also kills the 200-with-error-body bluff.
+        body:
+          model: "helix-embed"
+          input:
+            - "HXC-243 endpoint-contract probe"
+        expect_status: 200
+        expect_json_path: "$.data[0].embedding"
         expected: >-
           pass==false (real, fluent vectors, but the semantic ordering is
           inverted so the margin goes negative); case_result==true because
