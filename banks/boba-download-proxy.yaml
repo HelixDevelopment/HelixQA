@@ -184,3 +184,55 @@ test_cases:
       bug_id: "BOBA-PRX-MAGNET-001"
       description: "Magnet generation must extract btih hashes from input URLs and construct valid magnet URIs"
       fix_file: "download-proxy/src/api/routes.py"
+
+  - id: BOBA-PRX-009
+    name: "PATCH /api/v1/schedules/{id} honors the BOBA_API_TOKEN auth gate (RD2-22)"
+    category: security
+    priority: critical
+    platforms: [api]
+    steps:
+      - name: "Default deployment (BOBA_API_TOKEN unset): PATCH with no auth header stays OPEN — never 401, never 500"
+        action: "curl -s -o /dev/null -w '%{http_code}' -X PATCH http://localhost:7187/api/v1/schedules/helixqa-nonexistent-id -H 'Content-Type: application/json' -d '{\"enabled\":false}'"
+        expected: "HTTP 404 (schedule not found — Depends(require_api_token) is a no-op when the operator has not set BOBA_API_TOKEN, preserving the §11.4.122 default no-auth contract). NEVER 401 (would mean the default-open contract regressed) and NEVER 500/000 (would mean the RD2-22 root-cause bug — require_api_token referenced in a Depends(...) default-argument BEFORE its own definition, raising NameError at module-import time and crashing every route in scheduler.py + routes.py — has resurfaced)."
+      - name: "Hardened deployment (operator sets BOBA_API_TOKEN in .env, docker-compose.yml wires it through, ./start.sh --recreate): PATCH with no auth header is rejected"
+        action: "curl -s -o /dev/null -w '%{http_code}' -X PATCH http://localhost:7187/api/v1/schedules/helixqa-nonexistent-id -H 'Content-Type: application/json' -d '{\"enabled\":false}'"
+        expected: "HTTP 401 once BOBA_API_TOKEN is configured on the deployment — the mutating route is no longer reachable by an unauthenticated LAN caller. This step's precondition (a token-configured deployment) is operator-set, not the default; live curl evidence for both the default-open and token-configured states is captured in docs/GOVERNANCE_AUDIT_2026-08-08_ROUND2.md under RD2-22 (no self-certification — real pasted terminal output)."
+      - name: "Hardened deployment: PATCH with a WRONG token is still rejected (401), never accepted"
+        action: "curl -s -o /dev/null -w '%{http_code}' -X PATCH http://localhost:7187/api/v1/schedules/helixqa-nonexistent-id -H 'Content-Type: application/json' -H 'Authorization: Bearer definitely-wrong-token' -d '{\"enabled\":false}'"
+        expected: "HTTP 401 — hmac.compare_digest rejects a non-matching token; the presence of ANY Authorization header must never itself grant access."
+      - name: "Hardened deployment: PATCH with the CORRECT token (env: ${BOBA_API_TOKEN}) is accepted — never 401"
+        action: "curl -s -o /dev/null -w '%{http_code}' -X PATCH http://localhost:7187/api/v1/schedules/helixqa-nonexistent-id -H 'Content-Type: application/json' -H \"Authorization: Bearer ${BOBA_API_TOKEN}\" -d '{\"enabled\":false}'"
+        expected: "HTTP 404 (schedule not found — auth passed, the Depends gate let the request reach the handler). NEVER 401 with the correct token. (Requires BOBA_API_TOKEN exported into the runner's shell matching the deployment's configured value; a runner with no token configured legitimately skips this step's assertion — documented, not bluffed, matching the http-runner limitation noted in BOBA-LINK-004.)"
+    tags: [boba, download-proxy, scheduler, security, auth, rd2-22]
+    estimated_duration: "10s"
+    expected_result: "PATCH /api/v1/schedules/{id} preserves the documented default-open contract when BOBA_API_TOKEN is unset (404/200, never 401/500), and once the operator configures BOBA_API_TOKEN it rejects every unauthenticated or wrongly-authenticated caller with 401 while accepting the correct token — closing the RD2-22 unauthenticated-mutation gap without breaking the documented no-auth default (§11.4.122)."
+    fix_reference:
+      bug_id: "RD2-22"
+      description: "PATCH /api/v1/schedules/{id} (scheduler.py update_schedule) lacked Depends(require_api_token), letting any LAN caller mutate/disable a scheduled search unauthenticated even when the operator had configured BOBA_API_TOKEN. Fixed alongside a root-cause NameError-at-import-time bug: require_api_token was referenced in a Depends(...) default-argument before its own definition in routes.py, which would have crashed the whole app at import time — fixed by moving require_api_token's definition earlier in routes.py (before ThemeUpdate/put_theme)."
+      fix_file: "download-proxy/src/api/scheduler.py"
+
+  - id: BOBA-PRX-010
+    name: "PUT /api/v1/theme honors the BOBA_API_TOKEN auth gate (RD2-22)"
+    category: security
+    priority: critical
+    platforms: [api]
+    steps:
+      - name: "Default deployment (BOBA_API_TOKEN unset): PUT with no auth header stays OPEN — never 401, never 500"
+        action: "curl -s -o /dev/null -w '%{http_code}' -X PUT http://localhost:7187/api/v1/theme -H 'Content-Type: application/json' -d '{\"paletteId\":\"darcula\",\"mode\":\"dark\"}'"
+        expected: "HTTP 200 (theme persisted and echoed back — Depends(require_api_token) is a no-op when BOBA_API_TOKEN is unset, preserving the §11.4.122 default no-auth contract). NEVER 401 and NEVER 500/000 (the RD2-22 import-time NameError regression class)."
+      - name: "Hardened deployment (operator sets BOBA_API_TOKEN, ./start.sh --recreate): PUT with no auth header is rejected"
+        action: "curl -s -o /dev/null -w '%{http_code}' -X PUT http://localhost:7187/api/v1/theme -H 'Content-Type: application/json' -d '{\"paletteId\":\"darcula\",\"mode\":\"dark\"}'"
+        expected: "HTTP 401 once BOBA_API_TOKEN is configured — an unauthenticated LAN caller can no longer overwrite the shared theme state that every connected dashboard client renders. Live curl evidence for both states captured in docs/GOVERNANCE_AUDIT_2026-08-08_ROUND2.md under RD2-22."
+      - name: "Hardened deployment: PUT with a WRONG token is still rejected (401)"
+        action: "curl -s -o /dev/null -w '%{http_code}' -X PUT http://localhost:7187/api/v1/theme -H 'Content-Type: application/json' -H 'Authorization: Bearer definitely-wrong-token' -d '{\"paletteId\":\"darcula\",\"mode\":\"dark\"}'"
+        expected: "HTTP 401 — a non-matching Authorization header must never grant access."
+      - name: "Hardened deployment: PUT with the CORRECT token via X-Boba-Token (env: ${BOBA_API_TOKEN}) is accepted — never 401"
+        action: "curl -s -o /dev/null -w '%{http_code}' -X PUT http://localhost:7187/api/v1/theme -H 'Content-Type: application/json' -H \"X-Boba-Token: ${BOBA_API_TOKEN}\" -d '{\"paletteId\":\"nord\",\"mode\":\"light\"}'"
+        expected: "HTTP 200 — both accepted header forms (Authorization: Bearer and X-Boba-Token) work with the correct token. NEVER 401 with the correct token. (Requires BOBA_API_TOKEN exported into the runner's shell matching the deployment's configured value; documented limitation as in BOBA-PRX-009.)"
+    tags: [boba, download-proxy, theme, security, auth, rd2-22]
+    estimated_duration: "10s"
+    expected_result: "PUT /api/v1/theme preserves the documented default-open contract when BOBA_API_TOKEN is unset (200, never 401/500), and once the operator configures BOBA_API_TOKEN it rejects every unauthenticated or wrongly-authenticated caller with 401 while accepting the correct token via either Authorization: Bearer or X-Boba-Token — closing the RD2-22 unauthenticated-mutation gap without breaking the documented no-auth default (§11.4.122)."
+    fix_reference:
+      bug_id: "RD2-22"
+      description: "PUT /api/v1/theme (routes.py put_theme) lacked Depends(require_api_token), letting any LAN caller overwrite the shared dashboard theme state unauthenticated even when the operator had configured BOBA_API_TOKEN. Fixed alongside the same root-cause NameError-at-import-time bug documented on BOBA-PRX-009."
+      fix_file: "download-proxy/src/api/routes.py"

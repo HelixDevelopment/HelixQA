@@ -25,7 +25,7 @@ test_cases:
     steps:
       - name: "Build boba-ctl binary"
         action: >
-          cd /Volumes/T7/Projects/Boba/cmd/boba-ctl && go build -o /tmp/boba-ctl-test . 2>&1
+          cd ${BOBA_PROJECT_ROOT}/cmd/boba-ctl && go build -o /tmp/boba-ctl-test . 2>&1
         expected: "Go build exits 0 with no errors; binary is created at /tmp/boba-ctl-test"
       - name: "Verify binary is executable"
         action: >
@@ -38,6 +38,7 @@ test_cases:
       - name: "Cleanup test binary"
         action: "rm -f /tmp/boba-ctl-test"
         expected: "Binary removed without error"
+    requires_env: [BOBA_PROJECT_ROOT]
     tags: [boba, boba-ctl, compile, build, cli]
     estimated_duration: "30s"
     expected_result: "boba-ctl binary compiles from Go source with no errors; binary is executable and shows usage with all subcommands"
@@ -54,7 +55,7 @@ test_cases:
     steps:
       - name: "Build binary for testing"
         action: >
-          cd /Volumes/T7/Projects/Boba/cmd/boba-ctl && go build -o /tmp/boba-ctl-help . 2>&1
+          cd ${BOBA_PROJECT_ROOT}/cmd/boba-ctl && go build -o /tmp/boba-ctl-help . 2>&1
         expected: "Build succeeds"
       - name: "Run with no arguments to show usage"
         action: >
@@ -67,6 +68,7 @@ test_cases:
       - name: "Cleanup"
         action: "rm -f /tmp/boba-ctl-help"
         expected: "Clean"
+    requires_env: [BOBA_PROJECT_ROOT]
     tags: [boba, boba-ctl, help, cli, subcommands]
     estimated_duration: "30s"
     expected_result: "boba-ctl --help or no-arg invocation prints usage with all five subcommands (up, down, status, health, list)"
@@ -83,7 +85,7 @@ test_cases:
     steps:
       - name: "Build binary"
         action: >
-          cd /Volumes/T7/Projects/Boba/cmd/boba-ctl && go build -o /tmp/boba-ctl-status . 2>&1
+          cd ${BOBA_PROJECT_ROOT}/cmd/boba-ctl && go build -o /tmp/boba-ctl-status . 2>&1
         expected: "Build succeeds"
       - name: "Run status (containers may or may not be running)"
         action: >
@@ -96,6 +98,7 @@ test_cases:
       - name: "Cleanup"
         action: "rm -f /tmp/boba-ctl-status"
         expected: "Clean"
+    requires_env: [BOBA_PROJECT_ROOT]
     tags: [boba, boba-ctl, status, cli]
     estimated_duration: "30s"
     expected_result: "boba-ctl status returns a formatted table with NAME/STATE/HEALTH/PORTS columns (or 'No services found') and exits 0"
@@ -112,7 +115,7 @@ test_cases:
     steps:
       - name: "Build binary"
         action: >
-          cd /Volumes/T7/Projects/Boba/cmd/boba-ctl && go build -o /tmp/boba-ctl-list . 2>&1
+          cd ${BOBA_PROJECT_ROOT}/cmd/boba-ctl && go build -o /tmp/boba-ctl-list . 2>&1
         expected: "Build succeeds"
       - name: "Run list to enumerate services"
         action: >
@@ -129,6 +132,7 @@ test_cases:
       - name: "Cleanup"
         action: "rm -f /tmp/boba-ctl-list"
         expected: "Clean"
+    requires_env: [BOBA_PROJECT_ROOT]
     tags: [boba, boba-ctl, list, compose, cli]
     estimated_duration: "30s"
     expected_result: "boba-ctl list reads docker-compose.yml, displays default services and profiles, and reports detected container runtime"
@@ -145,7 +149,7 @@ test_cases:
     steps:
       - name: "Build binary"
         action: >
-          cd /Volumes/T7/Projects/Boba/cmd/boba-ctl && go build -o /tmp/boba-ctl-health . 2>&1
+          cd ${BOBA_PROJECT_ROOT}/cmd/boba-ctl && go build -o /tmp/boba-ctl-health . 2>&1
         expected: "Build succeeds"
       - name: "Run health check"
         action: >
@@ -162,6 +166,7 @@ test_cases:
       - name: "Cleanup"
         action: "rm -f /tmp/boba-ctl-health"
         expected: "Clean"
+    requires_env: [BOBA_PROJECT_ROOT]
     tags: [boba, boba-ctl, health, cli, monitoring]
     estimated_duration: "30s"
     expected_result: "boba-ctl health checks each service's port reachability and reports OK/FAIL per service with detail strings"
@@ -178,7 +183,7 @@ test_cases:
     steps:
       - name: "Build binary"
         action: >
-          cd /Volumes/T7/Projects/Boba/cmd/boba-ctl && go build -o /tmp/boba-ctl-ver . 2>&1
+          cd ${BOBA_PROJECT_ROOT}/cmd/boba-ctl && go build -o /tmp/boba-ctl-ver . 2>&1
         expected: "Build succeeds"
       - name: "Check if version subcommand exists"
         action: >
@@ -191,6 +196,7 @@ test_cases:
       - name: "Cleanup"
         action: "rm -f /tmp/boba-ctl-ver"
         expected: "Clean"
+    requires_env: [BOBA_PROJECT_ROOT]
     tags: [boba, boba-ctl, version, cli]
     estimated_duration: "30s"
     expected_result: "Version subcommand either returns version info (exit 0) or reports unknown command (exit 1) -- both are valid states"
@@ -207,20 +213,21 @@ test_cases:
     steps:
       - name: "Verify wrapper script exists"
         action: >
-          test -f /Volumes/T7/Projects/Boba/scripts/boba-ctl.sh && file /Volumes/T7/Projects/Boba/scripts/boba-ctl.sh
+          test -f ${BOBA_PROJECT_ROOT}/scripts/boba-ctl.sh && file ${BOBA_PROJECT_ROOT}/scripts/boba-ctl.sh
         expected: "Wrapper script exists and is a regular file or script"
       - name: "Check wrapper script syntax"
         action: >
-          bash -n /Volumes/T7/Projects/Boba/scripts/boba-ctl.sh 2>&1
+          bash -n ${BOBA_PROJECT_ROOT}/scripts/boba-ctl.sh 2>&1
         expected: "No syntax errors -- bash -n exits 0"
       - name: "Run wrapper with help-like invocation"
         action: >
-          bash /Volumes/T7/Projects/Boba/scripts/boba-ctl.sh --help 2>&1; EC=$?; echo '---'; echo EXIT_CODE=$EC
+          bash ${BOBA_PROJECT_ROOT}/scripts/boba-ctl.sh --help 2>&1; EC=$?; echo '---'; echo EXIT_CODE=$EC
         expected: "Wrapper forwards to boba-ctl binary; output shows Usage: and subcommands"
       - name: "Verify wrapper can list config"
         action: >
-          bash /Volumes/T7/Projects/Boba/scripts/boba-ctl.sh config 2>&1; EC=$?; echo '---'; echo EXIT_CODE=$EC
+          bash ${BOBA_PROJECT_ROOT}/scripts/boba-ctl.sh config 2>&1; EC=$?; echo '---'; echo EXIT_CODE=$EC
         expected: "config subcommand exits 0 (docker-compose.yml exists)"
+    requires_env: [BOBA_PROJECT_ROOT]
     tags: [boba, boba-ctl, wrapper, script, cli]
     estimated_duration: "15s"
     expected_result: "Wrapper script has valid syntax, forwards commands to boba-ctl binary, and supports config subcommand"
