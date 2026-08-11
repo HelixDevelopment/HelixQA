@@ -434,10 +434,10 @@ func TestHXC267_LoginBodyKindClassifiesWithoutEchoingContent(t *testing.T) {
 	for _, tc := range cases {
 		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
-			got := loginBodyKind(tc.body)
+			got := undecodableBodyKind(tc.body)
 			assert.Equal(t, tc.want, got)
 			require.True(t, vocabulary[got],
-				"loginBodyKind must return a value from the closed "+
+				"undecodableBodyKind must return a value from the closed "+
 					"vocabulary, got %q — an open-ended label is how "+
 					"body bytes leak into a report", got)
 			assert.NotContains(t, got, marker,
@@ -535,7 +535,7 @@ func deepNestedObject() []byte {
 
 // hxc267WantDescription renders the description the production code
 // must produce, from CLOSED inputs: a shape label from
-// loginBodyKind's fixed vocabulary, the already-normalised
+// undecodableBodyKind's fixed vocabulary, the already-normalised
 // Content-Type, and a length. The candidate token paths are read from
 // the production vars on purpose — the pin is over the WORDING, while
 // the candidate list has its own assertion in the pipeline guard.
@@ -569,7 +569,7 @@ func hxc267WantDescription(
 //
 // This gives the description seam the property the classifier already
 // has. TestHXC267_LoginBodyKindClassifiesWithoutEchoingContent pins
-// loginBodyKind with assert.Equal plus closed-vocabulary membership,
+// undecodableBodyKind with assert.Equal plus closed-vocabulary membership,
 // which is exactly why additive and substitutive deviations both die
 // there. The cost — a reworded description breaks this guard — is
 // this file's declared philosophy, already stated on
@@ -587,7 +587,7 @@ func TestHXC267_UndecodableDescriptionIsExactlyPinned(t *testing.T) {
 		// wantContentType is what the description must render after
 		// the empty→<none> substitution and the length bound.
 		wantContentType string
-		// wantKind is the literal label from loginBodyKind's closed
+		// wantKind is the literal label from undecodableBodyKind's closed
 		// vocabulary, written out rather than computed so this pin
 		// does not inherit a classifier mutation.
 		wantKind string

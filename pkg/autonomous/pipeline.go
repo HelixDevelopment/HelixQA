@@ -3393,8 +3393,26 @@ func (sp *SessionPipeline) validateAPIData(
 								"status %d",
 							resp.StatusCode,
 						),
-						Description: string(body),
-						Platform:    "api",
+						// HXC-270 site 1 of 7, and the
+						// highest-risk one by a wide margin:
+						// this is a SIGN-IN reply, so whatever
+						// the server put in the body was
+						// recorded verbatim into a durable
+						// finding. `string(body)` here echoed an
+						// echoed-back password, a session cookie
+						// rendered into the page, or an
+						// Authorization header quoted back in a
+						// stack trace, straight into a committed
+						// report. Fifteen lines above, the
+						// HXC-267 success path was already
+						// careful — the discipline inverted
+						// inside one function.
+						Description: failedReplyDescription(
+							"POST "+loginURL,
+							resp.StatusCode, body,
+							resp.Header.Get("Content-Type"),
+						),
+						Platform: "api",
 					},
 				)
 			}
@@ -3456,8 +3474,19 @@ func (sp *SessionPipeline) validateAPIData(
 								"returned %d",
 							resp.StatusCode,
 						),
-						Description: string(body),
-						Platform:    "api",
+						// HXC-270 site 2 of 7. Lower risk than
+						// the sign-in reply but mechanically
+						// identical: the tested service's own
+						// error body went verbatim into a
+						// durable finding, and an error body is
+						// exactly where a service tends to dump
+						// request context.
+						Description: failedReplyDescription(
+							"GET "+statsURL,
+							resp.StatusCode, body,
+							resp.Header.Get("Content-Type"),
+						),
+						Platform: "api",
 					},
 				)
 			} else {
@@ -3503,10 +3532,36 @@ func (sp *SessionPipeline) validateAPIData(
 						)
 					}
 				} else {
+					// HXC-270 site 4 of 7 — MEASURED, not filed.
+					// The item enumerated the three
+					// `string(body)` descriptions in this
+					// routine plus two in the shared HTTP
+					// helper; it did not count the two decode
+					// complaints sitting ten lines below two of
+					// them. `%v` on a json error is the same
+					// leak in cheaper clothing, measured on this
+					// toolchain against THIS decode target:
+					//
+					//	<html>…</html>            → `invalid
+					//	  character '<' looking for beginning
+					//	  of value`
+					//	0xff…                     → `'ÿ'`
+					//	{"total_entities":1e999}  → `cannot
+					//	  unmarshal number 1e999 into Go struct
+					//	  field .total_entities of type
+					//	  int` — a full literal, not one byte
+					//	  (the decode target is an anonymous
+					//	  struct, so the struct-name segment
+					//	  before the dot renders empty)
+					//
+					// A log line is a durable sink: this is
+					// stdout of an automated QA session, which
+					// is captured, archived and attached to
+					// reports.
 					fmt.Printf(
 						"[data-validation] entities/stats "+
-							"JSON parse failed: %v\n",
-						jErr,
+							"JSON parse failed: %s\n",
+						decodeFailureDetail(jErr, body),
 					)
 				}
 			}
@@ -3564,8 +3619,14 @@ func (sp *SessionPipeline) validateAPIData(
 								"returned %d",
 							resp.StatusCode,
 						),
-						Description: string(body),
-						Platform:    "api",
+						// HXC-270 site 3 of 7 — same class as
+						// the entity-statistics site above.
+						Description: failedReplyDescription(
+							"GET "+searchURL,
+							resp.StatusCode, body,
+							resp.Header.Get("Content-Type"),
+						),
+						Platform: "api",
 					},
 				)
 			} else {
@@ -3601,10 +3662,15 @@ func (sp *SessionPipeline) validateAPIData(
 						)
 					}
 				} else {
+					// HXC-270 site 5 of 7 — MEASURED, not
+					// filed. Same leak as the entity-statistics
+					// complaint above; `{"total":1e999}` against
+					// THIS decode target renders the literal
+					// `1e999` into the session log.
 					fmt.Printf(
 						"[data-validation] media/search "+
-							"JSON parse failed: %v\n",
-						jErr,
+							"JSON parse failed: %s\n",
+						decodeFailureDetail(jErr, body),
 					)
 				}
 			}
@@ -3625,9 +3691,152 @@ func (sp *SessionPipeline) validateAPIData(
 // Content-Type header cannot bloat a committed report.
 const undecodableBodyContentTypeMax = 80
 
-// loginBodyKind classifies a login response body that failed to
-// decode into a JSON object, returning a value from a CLOSED
-// vocabulary derived from the first non-whitespace byte.
+// replyBodyShapeObject is the one label replyBodyShape and
+// undecodableBodyKind disagree on, named so the disagreement is a
+// single comparison rather than a duplicated switch.
+const replyBodyShapeObject = "JSON object"
+
+// replyBodyShape names the SHAPE of any HTTP reply body from a CLOSED
+// vocabulary derived from its first non-whitespace byte, without
+// reproducing a single byte of it (§11.4.10).
+//
+// This is the neutral classifier, for bodies the caller never tried
+// to decode — a non-2xx reply, say, whose body may be perfectly
+// well-formed. undecodableBodyKind is the sibling for bodies that
+// were decoded and FAILED, and differs in exactly one arm: it calls a
+// '{' body "truncated or malformed" because reaching it proves the
+// decode failed, which is not something this function may assume.
+//
+// HXC-270: the vocabulary is closed and content-free on purpose. Both
+// callers below feed reports and error strings that travel into
+// shared logs, so the classifier's whole contract is that its output
+// is a function of one byte's CATEGORY and never of its value.
+func replyBodyShape(body []byte) string {
+	trimmed := bytes.TrimSpace(body)
+	if len(trimmed) == 0 {
+		return "empty"
+	}
+	switch c := trimmed[0]; {
+	case c == '{':
+		return replyBodyShapeObject
+	case c == '[':
+		return "JSON array"
+	case c == '"':
+		return "JSON string"
+	case c == '-' || (c >= '0' && c <= '9'):
+		return "JSON number"
+	case c == 't' || c == 'f':
+		return "JSON boolean"
+	default:
+		return "not JSON"
+	}
+}
+
+// boundedContentType renders a response Content-Type for inclusion in
+// a report or an error string, clipped to undecodableBodyContentTypeMax.
+//
+// Content-Type is reported where the body is not because it is a
+// HEADER the server chose to advertise rather than content, and it is
+// the single field that identifies a proxy error page. It is still
+// server-controlled, hence the bound: a pathological header cannot
+// bloat a committed report.
+//
+// The clip is by BYTES and can split a multi-byte rune. That is
+// deliberate and harmless here: every caller renders the result with
+// %q, which escapes an invalid trailing fragment rather than emitting
+// it raw. Preserved exactly as HXC-267 shipped it so that fix's
+// exact-pinned descriptions stay byte-identical.
+func boundedContentType(contentType string) string {
+	contentType = strings.TrimSpace(contentType)
+	if contentType == "" {
+		return "<none>"
+	}
+	if len(contentType) > undecodableBodyContentTypeMax {
+		return contentType[:undecodableBodyContentTypeMax] + "…"
+	}
+	return contentType
+}
+
+// decodeFailureDetail says why a body failed to decode using only its
+// shape and, when available, the byte offset at which the decoder
+// gave up — never the decoder's error text (§11.4.10).
+//
+// The error text is never read at all, and that rule is stronger than
+// "avoid the field that leaks": see undecodableBodyKind for the two
+// measured paths by which encoding/json embeds input bytes in its
+// error values. Only json.SyntaxError.Offset is consulted, an int64
+// that cannot carry a body byte.
+//
+// HXC-270: this is the replacement for every `%v`/`%w` on a decode
+// error in this package. A wrapped decode complaint reads as harmless
+// plumbing and is precisely the leak — `fmt.Errorf("...: %w", jErr)`
+// renders the quoted input byte the moment anything prints it.
+func decodeFailureDetail(jErr error, body []byte) string {
+	detail := undecodableBodyKind(body)
+	var syn *json.SyntaxError
+	if errors.As(jErr, &syn) {
+		detail = fmt.Sprintf(
+			"%s, decoding gave up at byte offset %d",
+			detail, syn.Offset,
+		)
+	}
+	return detail
+}
+
+// failedReplyDescriptionFormat is the description raised for a reply
+// whose status says the request failed. Held as a package constant so
+// the guard can pin it against a test-local copy rather than by
+// calling the code under test, which would agree with any mutation of
+// it (§1.1).
+const failedReplyDescriptionFormat = "%s returned HTTP %d. Reply body " +
+	"shape %q, length %d bytes, Content-Type %q. The body itself is " +
+	"withheld on purpose: a failed reply may still carry a credential " +
+	"— a sign-in route that echoes the submitted token, a session " +
+	"cookie rendered into the body, or an authorization header quoted " +
+	"back in diagnostic output. Status, shape, length and Content-Type " +
+	"identify a wrong-system reply such as a proxy error page without " +
+	"repeating what the server sent."
+
+// failedReplyDescription renders the diagnosis for a reply whose
+// status says the request failed.
+//
+// HXC-270: these sites used to record `string(body)` verbatim as the
+// finding description. An unsuccessful reply is still a reply, and a
+// sign-in route that echoes a submitted token, renders a session
+// cookie into its body, or quotes an Authorization header back in its
+// diagnostic output puts that value straight into a durable record
+// that travels into shared logs and automation.
+//
+// The replacement carries the same CLASS of bounded, non-echoing
+// detail the HXC-267 success path already reports, so the discipline
+// no longer inverts between a function's success and failure arms:
+// the endpoint, the status, the body's shape and length, and the
+// Content-Type — enough to tell a proxy error page from a genuine API
+// error without reproducing either.
+//
+// Reporting NOTHING would fail in the other direction, so the format
+// is pinned by TestHXC270_FailedReplyDescriptionIsExactlyPinned.
+func failedReplyDescription(
+	label string,
+	statusCode int,
+	body []byte,
+	contentType string,
+) string {
+	return fmt.Sprintf(
+		failedReplyDescriptionFormat,
+		label, statusCode, replyBodyShape(body), len(body),
+		boundedContentType(contentType),
+	)
+}
+
+// undecodableBodyKind classifies a response body that failed to
+// decode as JSON, returning a value from a CLOSED vocabulary derived
+// from the first non-whitespace byte.
+//
+// Named loginBodyKind when HXC-267 introduced it for the sign-in
+// path; renamed by HXC-270, which widened its callers to every decode
+// failure in this package (entity-statistics and media-search replies
+// reach it too). The returned vocabulary is unchanged, byte for byte.
 //
 // The classification is deliberately hand-rolled rather than read off
 // the encoding/json error (§11.4.10). Go's decoder embeds input bytes
@@ -3657,48 +3866,38 @@ const undecodableBodyContentTypeMax = 80
 // it means the probe picked a path that does not embed. The digits
 // form is live, not historical, and an earlier revision of this
 // comment got that backwards.
-func loginBodyKind(body []byte) string {
-	trimmed := bytes.TrimSpace(body)
-	if len(trimmed) == 0 {
-		return "empty"
+func undecodableBodyKind(body []byte) string {
+	if shape := replyBodyShape(body); shape != replyBodyShapeObject {
+		return shape
 	}
-	switch c := trimmed[0]; {
-	case c == '{':
-		// Reaching here means the object FAILED TO DECODE — NOT
-		// that it "never closed". The label names the common case
-		// (truncated, cut off mid-token) and is an approximation
-		// worth stating as one, because closed, brace-balanced
-		// objects reach this arm too. Both measured on the
-		// toolchain this package builds with:
-		//
-		//	{"token":1e999} — the very body the comment above
-		//	  cites — is brace-balanced and json.Valid, and
-		//	  still fails, as `cannot unmarshal number 1e999
-		//	  into Go value of type float64`: a literal the
-		//	  decode target cannot represent.
-		//	a 12000-deep object closed by 12000 matching braces
-		//	  fails as `invalid character '{' exceeded max
-		//	  depth`: structurally complete, but past the
-		//	  decoder's nesting limit.
-		//
-		// The approximation is structural rather than lazy: this
-		// classifier reads exactly ONE byte, and the bytes that
-		// would separate "truncated" from "closed but
-		// unrepresentable" are the body bytes §11.4.10 forbids it
-		// from reporting. Pinned by the closed-object overflow
-		// cell in TestHXC267_UndecodableDescriptionIsExactlyPinned.
-		return "truncated or malformed JSON object"
-	case c == '[':
-		return "JSON array"
-	case c == '"':
-		return "JSON string"
-	case c == '-' || (c >= '0' && c <= '9'):
-		return "JSON number"
-	case c == 't' || c == 'f':
-		return "JSON boolean"
-	default:
-		return "not JSON"
-	}
+	// Reaching here means the object FAILED TO DECODE — NOT
+	// that it "never closed". The label names the common case
+	// (truncated, cut off mid-token) and is an approximation
+	// worth stating as one, because closed, brace-balanced
+	// objects reach this arm too. Both measured on the
+	// toolchain this package builds with:
+	//
+	//	{"token":1e999} — the very body the comment above
+	//	  cites — is brace-balanced and json.Valid, and
+	//	  still fails, as `cannot unmarshal number 1e999
+	//	  into Go value of type float64`: a literal the
+	//	  decode target cannot represent.
+	//	a 12000-deep object closed by 12000 matching braces
+	//	  fails as `invalid character '{' exceeded max
+	//	  depth`: structurally complete, but past the
+	//	  decoder's nesting limit.
+	//
+	// The approximation is structural rather than lazy: the
+	// classifier reads exactly ONE byte, and the bytes that
+	// would separate "truncated" from "closed but
+	// unrepresentable" are the body bytes §11.4.10 forbids it
+	// from reporting. Pinned by the closed-object overflow
+	// cell in TestHXC267_UndecodableDescriptionIsExactlyPinned.
+	//
+	// This arm is the ONLY point on which this function and
+	// replyBodyShape differ: everything else is delegated, so
+	// the two labellings cannot drift apart.
+	return "truncated or malformed JSON object"
 }
 
 // undecodableLoginBodyDescription renders the diagnosis for a login
@@ -3711,7 +3910,8 @@ func loginBodyKind(body []byte) string {
 // content may reach a finding that ends up in a committed report.
 // What the description carries instead is strictly non-content:
 //
-//   - the SHAPE of the body, from loginBodyKind's closed vocabulary;
+//   - the SHAPE of the body, from undecodableBodyKind's closed
+//     vocabulary;
 //   - the byte offset at which decoding gave up, read from
 //     json.SyntaxError's numeric Offset field only — never from any
 //     error's message text, which quotes an input byte;
@@ -3727,22 +3927,13 @@ func undecodableLoginBodyDescription(
 	body []byte,
 	contentType string,
 ) string {
-	cause := loginBodyKind(body)
-	var syn *json.SyntaxError
-	if errors.As(jErr, &syn) {
-		cause = fmt.Sprintf(
-			"%s, decoding gave up at byte offset %d",
-			cause, syn.Offset,
-		)
-	}
-
-	contentType = strings.TrimSpace(contentType)
-	if contentType == "" {
-		contentType = "<none>"
-	} else if len(contentType) > undecodableBodyContentTypeMax {
-		contentType = contentType[:undecodableBodyContentTypeMax] +
-			"…"
-	}
+	// HXC-270 factored the two steps below into decodeFailureDetail
+	// and boundedContentType, which the failure-path sites now share.
+	// Both are lifts, not rewrites: the rendered description stays
+	// byte-identical, which is what
+	// TestHXC267_UndecodableDescriptionIsExactlyPinned proves.
+	cause := decodeFailureDetail(jErr, body)
+	contentType = boundedContentType(contentType)
 
 	tried := append(
 		[]string{defaultTokenField},

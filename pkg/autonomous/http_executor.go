@@ -636,12 +636,43 @@ func (h *HTTPExecutor) loginWithRetry(ctx context.Context, creds Credentials, de
 		return h.loginWithRetry(ctx, creds, depth+1)
 	}
 
+	// HXC-270 sites 6 and 7 of 7 — the two in the shared HTTP helper,
+	// and the ones that PROPAGATE: this error travels up through
+	// applyAuth into an ActionResult message, so a body echoed here
+	// is copied outward by every caller on the chain.
+	//
+	// Site 6 used to be `body=%s` with truncateOutput(body2, 200):
+	// 200 bytes of a failed SIGN-IN reply, verbatim, in a returned
+	// error. Site 7 used to be `%w` on the decode error, which reads
+	// as harmless plumbing and is the same leak — measured against
+	// THIS decode target (map[string]any), an HTML body renders
+	// `invalid character '<' …` and `{"token":1e999}` renders the
+	// literal `1e999`.
+	//
+	// The %w wrapping is dropped rather than preserved because the
+	// wrapped error's text IS the leak; there is no way to keep the
+	// chain unwrappable-but-quiet. Verified before removing that
+	// nothing in this module calls errors.Is/errors.As on a login
+	// error — the only errors.As in non-test code is the one
+	// decodeFailureDetail uses internally.
 	if resp.StatusCode != http.StatusOK {
-		return "", fmt.Errorf("login failed status=%d body=%s", resp.StatusCode, truncateOutput(body2, 200))
+		return "", fmt.Errorf(
+			"login failed status=%d (reply body withheld — a failed "+
+				"sign-in reply may carry a credential; shape %q, "+
+				"length %d bytes, Content-Type %q)",
+			resp.StatusCode, replyBodyShape(body2), len(body2),
+			boundedContentType(resp.Header.Get("Content-Type")),
+		)
 	}
 	var decoded map[string]any
 	if err := json.Unmarshal(body2, &decoded); err != nil {
-		return "", fmt.Errorf("login response decode: %w", err)
+		return "", fmt.Errorf(
+			"login response decode failed: %s (reply body withheld "+
+				"— it may carry a credential; length %d bytes, "+
+				"Content-Type %q)",
+			decodeFailureDetail(err, body2), len(body2),
+			boundedContentType(resp.Header.Get("Content-Type")),
+		)
 	}
 	return extractLoginToken(decoded, h.TokenField, h.TokenFieldFallbacks)
 }
