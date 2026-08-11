@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -54,9 +55,32 @@ type HTTPExecutor struct {
 	// LoginPath is the auth-login endpoint, default
 	// "/api/v1/auth/login".
 	LoginPath string
-	// TokenField is the JSON key in the login response that
-	// contains the bearer token, default "session_token".
+	// TokenField is the PRIMARY JSON key in the login response that
+	// contains the bearer token, default "session_token" (the
+	// catalog-api shape). Dotted paths address nested objects, e.g.
+	// "session.session_token".
 	TokenField string
+	// TokenFieldFallbacks are additional candidate keys/paths tried
+	// in order when TokenField is absent or empty. Default
+	// {"token", "access_token"}.
+	//
+	// HXC-239: a single hardcoded field cannot serve every target.
+	// catalog-api returns the bearer at top-level `session_token`;
+	// HelixCode returns the bearer JWT at top-level `token` and puts
+	// an opaque, non-JWT session bookkeeping reference at NESTED
+	// `session.session_token` (measured against a live server —
+	// the JWT authenticates, the session reference is rejected with
+	// "token contains an invalid number of segments"). Because
+	// `session_token` is not a top-level key of a HelixCode login
+	// response at all, the pre-HXC-239 flat lookup failed every
+	// authenticated bank with `login response missing field
+	// "session_token"`.
+	//
+	// The fallback list is strictly additive: `session_token` is
+	// still tried FIRST, so catalog-api behaviour is unchanged, and
+	// targets that name the bearer differently now work out of the
+	// box instead of requiring --token-field.
+	TokenFieldFallbacks []string
 
 	// CSRFPreflightPath, when non-empty, is a safe GET endpoint that
 	// the executor calls before any mutating request (POST/PUT/PATCH/
@@ -109,7 +133,8 @@ func NewHTTPExecutor(baseURL string) *HTTPExecutor {
 		BaseURL:                 strings.TrimRight(baseURL, "/"),
 		HTTPClient:              &http.Client{Timeout: 30 * time.Second},
 		LoginPath:               "/api/v1/auth/login",
-		TokenField:              "session_token",
+		TokenField:              defaultTokenField,
+		TokenFieldFallbacks:     append([]string(nil), defaultTokenFieldFallbacks...),
 		tokenCache:              map[string]string{},
 		CSRFPreflightPath:       "/api/v1/admin/system-info",
 		CSRFGuardedPathPrefixes: []string{"/api/v1/admin/"},
@@ -338,8 +363,12 @@ func (h *HTTPExecutor) Execute(
 		if !ok {
 			return ActionResult{Success: false, Message: fmt.Sprintf("http: json_path %q not found in response", step.ExpectJSONPath)}
 		}
-		// Cache token if the path is the configured TokenField — convenience for chained tests.
-		if step.ExpectJSONPath == "$."+h.TokenField {
+		// Cache token if the asserted path names ANY configured token
+		// candidate — convenience for chained tests. HXC-239: this
+		// used to match only the single TokenField, so a bank
+		// asserting $.token against a server whose bearer is named
+		// `token` silently cached nothing.
+		if h.isTokenJSONPath(step.ExpectJSONPath) {
 			if s, ok2 := val.(string); ok2 && s != "" {
 				h.mu.Lock()
 				h.tokenCache["__last_login__"] = s
@@ -438,6 +467,121 @@ func (h *HTTPExecutor) invalidateCachedToken(mode string) {
 	h.mu.Unlock()
 }
 
+// HXC-239 — login-token field resolution.
+//
+// defaultTokenField stays "session_token" so the catalog-api banks
+// (which really do return the bearer at that top-level key) are
+// untouched. defaultTokenFieldFallbacks adds the other names real
+// servers use, tried only when the primary is absent or empty.
+const defaultTokenField = "session_token"
+
+var defaultTokenFieldFallbacks = []string{"token", "access_token"}
+
+// lookupJSONString resolves a dotted path ("a.b.c") against a
+// decoded JSON object and returns the value only when it is a
+// NON-EMPTY STRING. A missing key, a traversal through a non-object,
+// a non-string leaf, and an empty string are all reported as "not
+// found" — never coerced into a token (§11.4.6: a token we cannot
+// positively identify is not a token).
+func lookupJSONString(decoded map[string]any, path string) (string, bool) {
+	path = strings.TrimSpace(path)
+	if path == "" || decoded == nil {
+		return "", false
+	}
+	// A literal top-level key wins over dotted interpretation, so a
+	// server that genuinely names a key "a.b" still resolves.
+	if v, ok := decoded[path]; ok {
+		if s, isStr := v.(string); isStr && s != "" {
+			return s, true
+		}
+		if !strings.Contains(path, ".") {
+			return "", false
+		}
+	}
+	segments := strings.Split(path, ".")
+	var cur any = decoded
+	for _, seg := range segments {
+		obj, ok := cur.(map[string]any)
+		if !ok {
+			return "", false
+		}
+		cur, ok = obj[seg]
+		if !ok {
+			return "", false
+		}
+	}
+	s, ok := cur.(string)
+	if !ok || s == "" {
+		return "", false
+	}
+	return s, true
+}
+
+// extractLoginToken pulls the bearer token out of a decoded login
+// response, trying primary first and then each fallback in order.
+//
+// The error names EVERY path tried, so a mismatch against a new
+// target is diagnosable from the failure message alone rather than
+// requiring a source read.
+func extractLoginToken(
+	decoded map[string]any,
+	primary string,
+	fallbacks []string,
+) (string, error) {
+	tried := make([]string, 0, len(fallbacks)+1)
+	for _, candidate := range append([]string{primary}, fallbacks...) {
+		candidate = strings.TrimSpace(candidate)
+		if candidate == "" {
+			continue
+		}
+		// Preserve order while skipping duplicates so the error
+		// message reads cleanly when primary repeats a fallback.
+		dup := false
+		for _, seen := range tried {
+			if seen == candidate {
+				dup = true
+				break
+			}
+		}
+		if dup {
+			continue
+		}
+		tried = append(tried, candidate)
+		if tok, ok := lookupJSONString(decoded, candidate); ok {
+			return tok, nil
+		}
+	}
+	return "", fmt.Errorf(
+		"login response missing token field — tried %q (top-level keys present: %q)",
+		tried, sortedKeys(decoded))
+}
+
+// sortedKeys lists a decoded object's top-level keys for the
+// diagnostic in extractLoginToken. Keys only — never values, so no
+// credential or token can leak into a log (§11.4.10).
+func sortedKeys(decoded map[string]any) []string {
+	keys := make([]string, 0, len(decoded))
+	for k := range decoded {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	return keys
+}
+
+// isTokenJSONPath reports whether an ExpectJSONPath addresses one of
+// the configured token candidates.
+func (h *HTTPExecutor) isTokenJSONPath(jsonPath string) bool {
+	if jsonPath == "" {
+		return false
+	}
+	for _, candidate := range append([]string{h.TokenField}, h.TokenFieldFallbacks...) {
+		if candidate != "" && jsonPath == "$."+candidate {
+			return true
+		}
+	}
+	return false
+}
+
 func (h *HTTPExecutor) login(ctx context.Context, creds Credentials) (string, error) {
 	return h.loginWithRetry(ctx, creds, 0)
 }
@@ -499,11 +643,7 @@ func (h *HTTPExecutor) loginWithRetry(ctx context.Context, creds Credentials, de
 	if err := json.Unmarshal(body2, &decoded); err != nil {
 		return "", fmt.Errorf("login response decode: %w", err)
 	}
-	tok, _ := decoded[h.TokenField].(string)
-	if tok == "" {
-		return "", fmt.Errorf("login response missing field %q", h.TokenField)
-	}
-	return tok, nil
+	return extractLoginToken(decoded, h.TokenField, h.TokenFieldFallbacks)
 }
 
 // parseRetryAfter extracts the wait duration from a 429

@@ -55,7 +55,7 @@ func cmdHTTP(args []string) {
 	loginPath := fs.String("login-path", "",
 		"Override the login endpoint (default /api/v1/auth/login)")
 	tokenField := fs.String("token-field", "",
-		"Override the login-response token JSON field (default session_token)")
+		"Override the login-response token JSON field. Supports dotted\n    \tnested paths (e.g. session.session_token). Default: try\n    \tsession_token, then token, then access_token.")
 	timeout := fs.Duration("timeout", 30*time.Second,
 		"Per-request HTTP timeout")
 	verbose := fs.Bool("verbose", false,

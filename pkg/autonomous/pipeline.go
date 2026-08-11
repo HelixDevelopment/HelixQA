@@ -3277,17 +3277,60 @@ func (sp *SessionPipeline) validateAPIData(
 			body, _ := io.ReadAll(resp.Body)
 			resp.Body.Close()
 			if resp.StatusCode == http.StatusOK {
-				var loginResp struct {
-					SessionToken string `json:"session_token"`
-				}
+				// HXC-239: this used to decode a hardcoded
+				// top-level `session_token` with no override and
+				// no error path — against any server that names
+				// the bearer differently (HelixCode returns it at
+				// top-level `token`) authToken silently stayed
+				// empty, every following request went out
+				// UNAUTHENTICATED, and the resulting 401s were
+				// reported as API defects with nothing in the
+				// report pointing at auth. It now shares the
+				// executor's candidate-based extractor and, when
+				// no candidate resolves, raises a finding naming
+				// every path tried and the keys actually present.
+				//
+				// Scope of that, precisely (§11.4.6): the
+				// mismatch is now SURFACED and DIAGNOSABLE — it
+				// is not prevented. Extraction failure is
+				// non-fatal here: authToken stays empty, the
+				// subsequent requests still go out
+				// unauthenticated, and their 401s are STILL
+				// filed as API defects alongside this finding.
+				// The reader of a report now has the one entry
+				// that explains them. Guarded by
+				// TestHXC239_PipelineRaisesFindingOnUnusableToken,
+				// which pins both halves.
+				var decoded map[string]any
 				if jErr := json.Unmarshal(
-					body, &loginResp,
-				); jErr == nil && loginResp.SessionToken != "" {
-					authToken = loginResp.SessionToken
-					fmt.Println(
-						"[data-validation] login OK " +
-							"(admin/admin123)",
+					body, &decoded,
+				); jErr == nil {
+					tok, tErr := extractLoginToken(
+						decoded, defaultTokenField,
+						defaultTokenFieldFallbacks,
 					)
+					if tErr == nil {
+						authToken = tok
+						fmt.Println(
+							"[data-validation] login OK",
+						)
+					} else {
+						fmt.Printf(
+							"[data-validation] login "+
+								"succeeded but no bearer "+
+								"token found: %v\n", tErr,
+						)
+						findings = append(findings,
+							analysis.AnalysisFinding{
+								Category: analysis.CategoryFunctional,
+								Severity: analysis.SeverityHigh,
+								Title: "API login returned 200 but " +
+									"no usable bearer token",
+								Description: tErr.Error(),
+								Platform:    "api",
+							},
+						)
+					}
 				}
 			} else {
 				fmt.Printf(
