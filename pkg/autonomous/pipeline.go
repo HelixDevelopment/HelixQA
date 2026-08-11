@@ -7,6 +7,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net"
@@ -3331,6 +3332,51 @@ func (sp *SessionPipeline) validateAPIData(
 							},
 						)
 					}
+				} else {
+					// HXC-267: the HXC-239 raise above lives INSIDE
+					// the parse-OK branch, so the split it actually
+					// covers is PARSE / NO-PARSE — not token-present
+					// / token-absent. A 200 whose body does not
+					// decode into a JSON object fell through here
+					// with no token, no finding and no log line:
+					// the pre-HXC-239 silence, one layer out. The
+					// practical trigger is a proxy or gateway in
+					// front of the real service answering an HTML
+					// error page with status 200 — the 401s that
+					// follow are then filed against the API under
+					// test and the report blames the wrong system.
+					//
+					// Same residual behaviour as the sibling raise,
+					// precisely (§11.4.6): the mismatch is SURFACED,
+					// not prevented. authToken stays empty, the
+					// following requests still go out
+					// unauthenticated, and their 401s are STILL
+					// filed as API defects — the reader of a report
+					// now has the one entry that explains them.
+					// Guarded by
+					// TestHXC267_PipelineRaisesFindingOnUndecodableLoginBody,
+					// which pins both halves.
+					desc := undecodableLoginBodyDescription(
+						jErr, body,
+						resp.Header.Get("Content-Type"),
+					)
+					fmt.Printf(
+						"[data-validation] login "+
+							"succeeded but the response "+
+							"body was unreadable: %s\n",
+						desc,
+					)
+					findings = append(findings,
+						analysis.AnalysisFinding{
+							Category: analysis.CategoryFunctional,
+							Severity: analysis.SeverityHigh,
+							Title: "API login returned 200 but " +
+								"the response body could not " +
+								"be decoded",
+							Description: desc,
+							Platform:    "api",
+						},
+					)
 				}
 			} else {
 				fmt.Printf(
@@ -3572,6 +3618,148 @@ func (sp *SessionPipeline) validateAPIData(
 	}
 
 	return findings
+}
+
+// undecodableBodyContentTypeMax bounds the one server-controlled
+// string the undecodable-body diagnosis carries, so a pathological
+// Content-Type header cannot bloat a committed report.
+const undecodableBodyContentTypeMax = 80
+
+// loginBodyKind classifies a login response body that failed to
+// decode into a JSON object, returning a value from a CLOSED
+// vocabulary derived from the first non-whitespace byte.
+//
+// The classification is deliberately hand-rolled rather than read off
+// the encoding/json error (§11.4.10). Go's decoder embeds input bytes
+// in its error values, and both of these were measured on the
+// toolchain this package builds with:
+//
+//	json.SyntaxError quotes the offending character —
+//	  `invalid character '<' looking for beginning of value` for an
+//	  HTML body, `'ÿ'` for invalid UTF-8.
+//	json.UnmarshalTypeError.Value can carry the offending literal —
+//	  `{"token":1e999}` yields Value == "number 1e999", and that
+//	  lands in this very branch, because the decode target here is a
+//	  map[string]any and the interface path is one of the several
+//	  that build "number " + <literal>.
+//
+// Forwarding either would echo body content into a report. Which
+// error paths embed input bytes varies by body shape and by decoder
+// implementation, so the safe rule is not "avoid the one that leaks"
+// but "never read error text at all": only SyntaxError.Offset is
+// consulted, an int64 that cannot carry a body byte. A label chosen
+// from a fixed set is the other half — it reports the SHAPE of the
+// body, never any byte of it.
+//
+// Note for anyone re-deriving this: a bare Value == "number" (no
+// literal) is also reachable, for a number decoded into a non-numeric
+// target. Observing that shape does NOT mean the digits form is gone;
+// it means the probe picked a path that does not embed. The digits
+// form is live, not historical, and an earlier revision of this
+// comment got that backwards.
+func loginBodyKind(body []byte) string {
+	trimmed := bytes.TrimSpace(body)
+	if len(trimmed) == 0 {
+		return "empty"
+	}
+	switch c := trimmed[0]; {
+	case c == '{':
+		// Reaching here means the object FAILED TO DECODE — NOT
+		// that it "never closed". The label names the common case
+		// (truncated, cut off mid-token) and is an approximation
+		// worth stating as one, because closed, brace-balanced
+		// objects reach this arm too. Both measured on the
+		// toolchain this package builds with:
+		//
+		//	{"token":1e999} — the very body the comment above
+		//	  cites — is brace-balanced and json.Valid, and
+		//	  still fails, as `cannot unmarshal number 1e999
+		//	  into Go value of type float64`: a literal the
+		//	  decode target cannot represent.
+		//	a 12000-deep object closed by 12000 matching braces
+		//	  fails as `invalid character '{' exceeded max
+		//	  depth`: structurally complete, but past the
+		//	  decoder's nesting limit.
+		//
+		// The approximation is structural rather than lazy: this
+		// classifier reads exactly ONE byte, and the bytes that
+		// would separate "truncated" from "closed but
+		// unrepresentable" are the body bytes §11.4.10 forbids it
+		// from reporting. Pinned by the closed-object overflow
+		// cell in TestHXC267_UndecodableDescriptionIsExactlyPinned.
+		return "truncated or malformed JSON object"
+	case c == '[':
+		return "JSON array"
+	case c == '"':
+		return "JSON string"
+	case c == '-' || (c >= '0' && c <= '9'):
+		return "JSON number"
+	case c == 't' || c == 'f':
+		return "JSON boolean"
+	default:
+		return "not JSON"
+	}
+}
+
+// undecodableLoginBodyDescription renders the diagnosis for a login
+// response that returned 200 but whose body could not be decoded
+// into a JSON object.
+//
+// §11.4.10 — the body is never echoed, not even in part. An
+// unreadable body is still a body: an HTML error page or a truncated
+// JSON fragment can carry a bearer, so nothing derived from its
+// content may reach a finding that ends up in a committed report.
+// What the description carries instead is strictly non-content:
+//
+//   - the SHAPE of the body, from loginBodyKind's closed vocabulary;
+//   - the byte offset at which decoding gave up, read from
+//     json.SyntaxError's numeric Offset field only — never from any
+//     error's message text, which quotes an input byte;
+//   - the body's length in bytes;
+//   - the response Content-Type, which is a HEADER the server chose
+//     to advertise rather than content, and is the single field that
+//     identifies a proxy error page served with status 200.
+//
+// It also states outright that the body was withheld, so a reader
+// does not mistake the omission for a truncated report.
+func undecodableLoginBodyDescription(
+	jErr error,
+	body []byte,
+	contentType string,
+) string {
+	cause := loginBodyKind(body)
+	var syn *json.SyntaxError
+	if errors.As(jErr, &syn) {
+		cause = fmt.Sprintf(
+			"%s, decoding gave up at byte offset %d",
+			cause, syn.Offset,
+		)
+	}
+
+	contentType = strings.TrimSpace(contentType)
+	if contentType == "" {
+		contentType = "<none>"
+	} else if len(contentType) > undecodableBodyContentTypeMax {
+		contentType = contentType[:undecodableBodyContentTypeMax] +
+			"…"
+	}
+
+	tried := append(
+		[]string{defaultTokenField},
+		defaultTokenFieldFallbacks...,
+	)
+
+	return fmt.Sprintf(
+		"Login returned HTTP 200 but the response body could not "+
+			"be decoded as a JSON object (%s), so no bearer token "+
+			"could be looked up — tried %q. Response Content-Type "+
+			"%q, body length %d bytes. The body itself is withheld "+
+			"on purpose: a body this pipeline cannot read may still "+
+			"carry a credential. Every request after this one goes "+
+			"out UNAUTHENTICATED, so any 401 below originates here, "+
+			"not in the API under test.",
+		cause, tried, contentType, len(body),
+	)
 }
 
 // selectEvenly returns up to max elements from the slice,
