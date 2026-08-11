@@ -264,6 +264,32 @@ documents describing platform-targeted test cases. Conventions:
   CONST-046 — `name` / `expected` strings drive LLM-generated
   question prompts at runtime; banks describe **structure**, not
   prose.
+- **No hardcoded absolute host paths in bank `action` strings**
+  (§11.4.28 / §11.4.111). A path literal like `/Volumes/T7/...`
+  (macOS) or `/mnt/DATA/...` (Linux) couples the bank to one
+  operator's host layout and makes the bank unusable elsewhere.
+  Parametrize via a per-project shell env var referenced through
+  standard `${VAR}` expansion in the action string, and declare
+  it under the test case's `requires_env:` list. Missing env vars
+  then SKIP-OK the test case honestly per §11.4.3 rather than
+  bluffing a PASS or crashing with a misleading path error.
+  Convention: `<PROJECT>_PROJECT_ROOT` (uppercase snake_case
+  matching the consumer project's identifier), e.g.
+  `BOBA_PROJECT_ROOT`, `HELIX_OTA_PROJECT_ROOT`. The consumer
+  project documents the default in its own `.env.example`; the
+  bank never ships a default (would re-couple to one host).
+  Example:
+
+  ```yaml
+  - id: EXAMPLE-001
+    steps:
+      - name: "Run project script"
+        action: >
+          bash ${MYPROJECT_PROJECT_ROOT}/scripts/foo.sh 2>&1
+        expected: "..."
+    requires_env: [MYPROJECT_PROJECT_ROOT]
+    tags: [example]
+  ```
 
 ## Governance pointers
 
