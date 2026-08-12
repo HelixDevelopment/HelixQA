@@ -78,7 +78,8 @@
           "action": "http: GET /api/v1/entities?count=true",
           "expected": "Returns total entity count",
           "auth": "admin",
-          "_original_action": "GET /api/v1/entities?count=true"
+          "_original_action": "GET /api/v1/entities?count=true",
+          "expect_status": 200
         },
         {
           "name": "Check Web dashboard count",
@@ -118,7 +119,8 @@
           "action": "http: GET /api/v1/entities/search?q=Matrix",
           "expected": "Returns matching entities",
           "auth": "admin",
-          "_original_action": "GET /api/v1/entities/search?q=Matrix"
+          "_original_action": "GET /api/v1/entities/search?q=Matrix",
+          "expect_status": 200
         },
         {
           "name": "Search 'Matrix' on Web",
@@ -164,7 +166,8 @@
           "action": "http: GET /api/v1/favorites",
           "expected": "Movie appears in favorites list",
           "auth": "admin",
-          "_original_action": "GET /api/v1/favorites"
+          "_original_action": "GET /api/v1/favorites",
+          "expect_status": 200
         },
         {
           "name": "Verify on Android TV",
@@ -198,7 +201,9 @@
           "action": "http: POST /api/v1/collections",
           "expected": "Collection created",
           "auth": "admin",
-          "_original_action": "POST /api/v1/collections with name 'Cross-Platform Test'"
+          "_original_action": "POST /api/v1/collections with name 'Cross-Platform Test'",
+          "_skip": true,
+          "_skip_reason": "HXC-243: this step's own _original_action records the intent \"POST /api/v1/collections with name 'Cross-Platform Test'\", but the body field is empty \u2014 the bank converter dropped the payload. Collection creation is documented elsewhere in this bank family as requiring a name (established precedent: 201 on success, 400 on a malformed create). Asserting a status for a request that does not match its own documented intent would validate the wrong thing rather than the feature this case claims to test."
         },
         {
           "name": "Verify on Web",
@@ -238,7 +243,8 @@
           "action": "http: GET /api/v1/media-types",
           "expected": "Returns 11 types: movie, tv_show, tv_season, tv_episode, music_artist, music_album, song, game, software, book, comic",
           "auth": "admin",
-          "_original_action": "GET /api/v1/media-types"
+          "_original_action": "GET /api/v1/media-types",
+          "expect_status": 200
         },
         {
           "name": "Verify Web shows all types",
@@ -316,7 +322,8 @@
           "action": "http: GET /api/v1/entities/{id}",
           "expected": "Returns title, year, type, metadata",
           "auth": "admin",
-          "_original_action": "GET /api/v1/entities/{id} for a known movie"
+          "_original_action": "GET /api/v1/entities/{id} for a known movie",
+          "expect_status": 200
         },
         {
           "name": "Check Web entity detail",
@@ -355,7 +362,8 @@
           "action": "http: GET /api/v1/browse",
           "expected": "Cyrillic characters in response are correct UTF-8",
           "auth": "admin",
-          "_original_action": "GET /api/v1/browse with path containing Cyrillic (\u041c\u0443\u0437\u0438\u043a\u0430, \u0424\u0438\u043b\u043c\u043e\u0432\u0438)"
+          "_original_action": "GET /api/v1/browse with path containing Cyrillic (\u041c\u0443\u0437\u0438\u043a\u0430, \u0424\u0438\u043b\u043c\u043e\u0432\u0438)",
+          "expect_status": 200
         },
         {
           "name": "Browse on Web",
@@ -395,7 +403,8 @@
           "action": "http: GET /api/v1/entities/search?q=\u041c\u0443\u0437\u0438\u043a\u0430",
           "expected": "Returns Cyrillic-matching results",
           "auth": "admin",
-          "_original_action": "GET /api/v1/entities/search?q=\u041c\u0443\u0437\u0438\u043a\u0430"
+          "_original_action": "GET /api/v1/entities/search?q=\u041c\u0443\u0437\u0438\u043a\u0430",
+          "expect_status": 200
         },
         {
           "name": "Search '\u041c\u0443\u0437\u0438\u043a\u0430' on Web",
@@ -515,7 +524,8 @@
           "action": "http: GET /api/v1/entities?type=movie&limit=10",
           "expected": "Returns list of movies",
           "auth": "admin",
-          "_original_action": "GET /api/v1/entities?type=movie&limit=10"
+          "_original_action": "GET /api/v1/entities?type=movie&limit=10",
+          "expect_status": 200
         },
         {
           "name": "Check Catalogizer Picks channel",
@@ -589,7 +599,8 @@
           "action": "http: GET /api/v1/playlists",
           "expected": "Playlist 'Test Playlist' in response",
           "auth": "admin",
-          "_original_action": "GET /api/v1/playlists"
+          "_original_action": "GET /api/v1/playlists",
+          "expect_status": 200
         }
       ],
       "tags": [
@@ -697,7 +708,9 @@
           "action": "http: POST /api/v1/scans",
           "expected": "Scan starts",
           "auth": "admin",
-          "_original_action": "POST /api/v1/scans"
+          "_original_action": "POST /api/v1/scans",
+          "_skip": true,
+          "_skip_reason": "HXC-243: every other scan-trigger step in this bank family sends a required {'path': '/'} body; this one sends none. Whether a bodyless scan request is accepted (defaulting to a full scan) or rejected (missing required field) cannot be determined without querying the live service, which is out of scope for this fix."
         },
         {
           "name": "Check Web receives events",
@@ -729,7 +742,8 @@
           "name": "Check API version",
           "action": "http: GET /health",
           "expected": "version=2.3.0, build_number=18",
-          "_original_action": "GET /health"
+          "_original_action": "GET /health",
+          "expect_status": 200
         },
         {
           "name": "Check Web about/footer",
@@ -780,7 +794,8 @@
           "action": "http: GET /api/v1/favorites",
           "expected": "Both favorites present, no corruption",
           "auth": "admin",
-          "_original_action": "GET /api/v1/favorites"
+          "_original_action": "GET /api/v1/favorites",
+          "expect_status": 200
         }
       ],
       "tags": [

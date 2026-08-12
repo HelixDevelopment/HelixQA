@@ -4410,7 +4410,8 @@
           "action": "http: POST /api/v1/smb/sources/{id}/reconnect",
           "expected": "Reconnection initiated, status updated",
           "_original_action": "POST /api/v1/smb/sources/{id}/reconnect",
-          "auth": "admin"
+          "auth": "admin",
+          "expect_status": 200
         }
       ],
       "tags": [
@@ -4836,7 +4837,8 @@
           "action": "http: PUT /api/v1/auth/profile",
           "expected": "Profile updated, response contains updated user object",
           "_original_action": "PUT /api/v1/auth/profile with updated profile data",
-          "auth": "admin"
+          "auth": "admin",
+          "expect_status": 200
         }
       ],
       "tags": [
