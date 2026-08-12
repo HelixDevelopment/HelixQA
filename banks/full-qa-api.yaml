@@ -3276,7 +3276,7 @@ test_cases:
   tags:
   - collection
   - create
-  - null
+  - "null"
   - negative
   estimated_duration: 5s
   expected_result: Null collection name rejected
@@ -4652,7 +4652,7 @@ test_cases:
     expected: 404 Not Found with generic error message (no stack trace)
   tags:
   - edge-case
-  - 404
+  - "404"
   - not-found
   estimated_duration: 5s
   expected_result: Non-existent endpoint returns 404 without leaking internals

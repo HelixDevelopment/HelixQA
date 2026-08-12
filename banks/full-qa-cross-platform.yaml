@@ -238,7 +238,7 @@ test_cases:
       - name: "Navigate to entity/999999 on Web"
         action: "Open URL /entity/999999"
         expected: "Not found message displayed"
-    tags: [cross-platform, error-handling, 404]
+    tags: [cross-platform, error-handling, "404"]
     estimated_duration: "15s"
     expected_result: "All platforms handle missing entities gracefully"
 

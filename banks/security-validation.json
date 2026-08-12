@@ -347,7 +347,8 @@
           "action": "http: GET /api/v1/entities",
           "expected": "Entity list works normally, table not dropped",
           "auth": "admin",
-          "_original_action": "GET /api/v1/entities"
+          "_original_action": "GET /api/v1/entities",
+          "expect_status": 200
         }
       ],
       "tags": [
@@ -443,7 +444,8 @@
           "action": "http: GET /api/v1/entities/{id}",
           "expected": "Title returned with HTML entities escaped or stripped",
           "auth": "admin",
-          "_original_action": "GET /api/v1/entities/{id}"
+          "_original_action": "GET /api/v1/entities/{id}",
+          "expect_status": 200
         },
         {
           "name": "Render in web UI",
@@ -476,7 +478,8 @@
           "action": "http: GET /api/v1/entities?search=",
           "expected": "Search returns results normally, payload not reflected as HTML",
           "auth": "admin",
-          "_original_action": "GET /api/v1/entities?search=<img src=x onerror=alert('xss')>"
+          "_original_action": "GET /api/v1/entities?search=<img src=x onerror=alert('xss')>",
+          "expect_status": 200
         }
       ],
       "tags": [
@@ -812,7 +815,9 @@
           "action": "http: OPTIONS /api/v1/entities",
           "expected": "No Access-Control-Allow-Origin header or origin not in allowed list",
           "auth": "admin",
-          "_original_action": "OPTIONS /api/v1/entities with Origin: http://evil.example.com"
+          "_original_action": "OPTIONS /api/v1/entities with Origin: http://evil.example.com",
+          "_skip": true,
+          "_skip_reason": "HXC-243: this check verifies a response HEADER is absent (Access-Control-Allow-Origin for a disallowed origin). The bank step schema's assertion fields (expect_status/expect_body_contains/expect_json_path) cannot inspect response headers, and the OPTIONS status code alone does not indicate whether CORS was granted \u2014 a status assertion here would be decorative, not detecting. Needs header-assertion support (an `assert: header_eq:` follow-up step) that this http: step does not yet drive."
         }
       ],
       "tags": [
@@ -1026,7 +1031,8 @@
           "body": {
             "username": "admin",
             "password": "admin123"
-          }
+          },
+          "expect_status": 200
         },
         {
           "name": "Login from client B",
@@ -1036,7 +1042,8 @@
           "body": {
             "username": "admin",
             "password": "admin123"
-          }
+          },
+          "expect_status": 200
         },
         {
           "name": "Both tokens valid",
@@ -1156,14 +1163,16 @@
           "action": "http: GET /api/v1/admin/users",
           "expected": "User objects do not contain password or password_hash fields",
           "auth": "admin",
-          "_original_action": "GET /api/v1/admin/users"
+          "_original_action": "GET /api/v1/admin/users",
+          "expect_status": 200
         },
         {
           "name": "Get single user",
           "action": "http: GET /api/v1/admin/users/{id}",
           "expected": "No password field in response",
           "auth": "admin",
-          "_original_action": "GET /api/v1/admin/users/{id}"
+          "_original_action": "GET /api/v1/admin/users/{id}",
+          "expect_status": 200
         }
       ],
       "tags": [
@@ -1257,7 +1266,8 @@
           "action": "http: GET /api/v1/entities",
           "expected": "Response has Content-Encoding: br",
           "auth": "admin",
-          "_original_action": "GET /api/v1/entities with Accept-Encoding: br"
+          "_original_action": "GET /api/v1/entities with Accept-Encoding: br",
+          "expect_status": 200
         },
         {
           "name": "Verify compressed size",
@@ -1289,7 +1299,8 @@
           "name": "Check response headers",
           "action": "http: GET /api/v1/health",
           "expected": "X-Content-Type-Options: nosniff present",
-          "_original_action": "GET /api/v1/health and inspect headers"
+          "_original_action": "GET /api/v1/health and inspect headers",
+          "expect_status": 200
         },
         {
           "name": "Check frame options",
@@ -1358,7 +1369,8 @@
           "name": "Check Server header",
           "action": "http: GET /api/v1/health",
           "expected": "No detailed server version info (no 'Go/1.24' or 'gin-gonic' version)",
-          "_original_action": "GET /api/v1/health and inspect Server header"
+          "_original_action": "GET /api/v1/health and inspect Server header",
+          "expect_status": 200
         }
       ],
       "tags": [
@@ -1431,7 +1443,8 @@
           "action": "http: GET /api/v1/entities/{id}",
           "expected": "Unicode characters returned correctly",
           "auth": "admin",
-          "_original_action": "GET /api/v1/entities/{id}"
+          "_original_action": "GET /api/v1/entities/{id}",
+          "expect_status": 200
         }
       ],
       "tags": [
@@ -1660,7 +1673,7 @@
       "tags": [
         "security",
         "error-handling",
-        404,
+        "404",
         "information-leak"
       ],
       "estimated_duration": "5s",
@@ -1683,13 +1696,16 @@
           "body": {
             "username": "admin",
             "password": "admin123"
-          }
+          },
+          "expect_status": 200
         },
         {
           "name": "Time login with invalid username",
           "action": "http: POST /api/v1/auth/login",
           "expected": "Response time similar to valid username case",
-          "_original_action": "POST /api/v1/auth/login with non-existent username, measure response time"
+          "_original_action": "POST /api/v1/auth/login with non-existent username, measure response time",
+          "_skip": true,
+          "_skip_reason": "HXC-243: this step sends NO request body at all (not even an invalid username), so it does not exercise what its own name claims. The resulting status is genuinely ambiguous without querying the live service (missing-fields validation failure vs. some other outcome). This is a separate, pre-existing bank-authoring defect (empty body) that should be fixed before a reliable expectation can be added."
         },
         {
           "name": "Compare timings",
@@ -1894,7 +1910,8 @@
           "body": {
             "username": "admin",
             "password": "admin123"
-          }
+          },
+          "expect_status": 200
         },
         {
           "name": "Check cookie flags",

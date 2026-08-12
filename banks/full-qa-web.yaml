@@ -4340,7 +4340,7 @@ test_cases:
       - name: "Navigate to invalid URL"
         action: "Login and navigate to /this-page-does-not-exist"
         expected: "Redirected to /dashboard (catch-all route)"
-    tags: [edge-case, 404, routing, catch-all]
+    tags: [edge-case, "404", routing, catch-all]
     estimated_duration: "10s"
     expected_result: "Non-existent routes redirect to dashboard"
 

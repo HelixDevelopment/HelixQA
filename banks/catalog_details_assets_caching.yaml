@@ -181,7 +181,7 @@ test_cases:
   - caching
   - conditional
   - if-none-match
-  - 304
+  - "304"
   - served-from-cache
   - anti-bluff
   estimated_duration: 6s

@@ -65,7 +65,8 @@
           "action": "http: GET /api/v1/admin/system-info",
           "expected": "Response includes database type (sqlite/postgres), connection status",
           "auth": "admin",
-          "_original_action": "GET /api/v1/admin/system-info"
+          "_original_action": "GET /api/v1/admin/system-info",
+          "expect_status": 200
         }
       ],
       "tags": [
@@ -91,7 +92,8 @@
           "action": "http: GET /api/v1/admin/system-info",
           "expected": "Response includes server uptime duration",
           "auth": "admin",
-          "_original_action": "GET /api/v1/admin/system-info"
+          "_original_action": "GET /api/v1/admin/system-info",
+          "expect_status": 200
         }
       ],
       "tags": [
@@ -180,7 +182,8 @@
           "action": "http: GET /api/v1/admin/users",
           "expected": "New user appears in list",
           "auth": "admin",
-          "_original_action": "GET /api/v1/admin/users"
+          "_original_action": "GET /api/v1/admin/users",
+          "expect_status": 200
         }
       ],
       "tags": [
@@ -266,7 +269,8 @@
           "action": "http: GET /api/v1/admin/users",
           "expected": "Deleted user no longer in list",
           "auth": "admin",
-          "_original_action": "GET /api/v1/admin/users"
+          "_original_action": "GET /api/v1/admin/users",
+          "expect_status": 200
         }
       ],
       "tags": [
@@ -340,7 +344,8 @@
           "action": "http: GET /api/v1/admin/users/{id}",
           "expected": "User role is 'admin'",
           "auth": "admin",
-          "_original_action": "GET /api/v1/admin/users/{id}"
+          "_original_action": "GET /api/v1/admin/users/{id}",
+          "expect_status": 200
         }
       ],
       "tags": [
@@ -457,7 +462,8 @@
           "action": "http: GET /api/v1/admin/scan/status",
           "expected": "Scan progress reported (percentage or file count)",
           "auth": "admin",
-          "_original_action": "GET /api/v1/admin/scan/status"
+          "_original_action": "GET /api/v1/admin/scan/status",
+          "expect_status": 200
         },
         {
           "name": "Wait for completion",
@@ -501,7 +507,8 @@
           "action": "http: GET /api/v1/admin/storage",
           "expected": "New root appears in storage root list",
           "auth": "admin",
-          "_original_action": "GET /api/v1/admin/storage"
+          "_original_action": "GET /api/v1/admin/storage",
+          "expect_status": 200
         }
       ],
       "tags": [
@@ -536,7 +543,8 @@
           "action": "http: GET /api/v1/admin/storage",
           "expected": "Root no longer in list",
           "auth": "admin",
-          "_original_action": "GET /api/v1/admin/storage"
+          "_original_action": "GET /api/v1/admin/storage",
+          "expect_status": 200
         }
       ],
       "tags": [
@@ -717,14 +725,16 @@
           "action": "http: GET /api/v1/admin/logs?level=error",
           "expected": "Only error-level log entries returned",
           "auth": "admin",
-          "_original_action": "GET /api/v1/admin/logs?level=error"
+          "_original_action": "GET /api/v1/admin/logs?level=error",
+          "expect_status": 200
         },
         {
           "name": "Request warning logs",
           "action": "http: GET /api/v1/admin/logs?level=warn",
           "expected": "Warning and above log entries returned",
           "auth": "admin",
-          "_original_action": "GET /api/v1/admin/logs?level=warn"
+          "_original_action": "GET /api/v1/admin/logs?level=warn",
+          "expect_status": 200
         }
       ],
       "tags": [
@@ -751,7 +761,8 @@
           "action": "http: GET /api/v1/admin/logs?since=1h",
           "expected": "Only log entries from the last hour returned",
           "auth": "admin",
-          "_original_action": "GET /api/v1/admin/logs?since=1h"
+          "_original_action": "GET /api/v1/admin/logs?since=1h",
+          "expect_status": 200
         }
       ],
       "tags": [
@@ -785,7 +796,8 @@
           "action": "http: GET /api/v1/admin/logs",
           "expected": "Same data, independent response (no race condition)",
           "auth": "admin",
-          "_original_action": "GET /api/v1/admin/logs"
+          "_original_action": "GET /api/v1/admin/logs",
+          "expect_status": 200
         }
       ],
       "tags": [
@@ -831,7 +843,8 @@
           "action": "http: GET /api/v1/admin/config",
           "expected": "Updated scan_interval reflected",
           "auth": "admin",
-          "_original_action": "GET /api/v1/admin/config"
+          "_original_action": "GET /api/v1/admin/config",
+          "expect_status": 200
         }
       ],
       "tags": [
@@ -947,7 +960,8 @@
           "name": "Request health check",
           "action": "http: GET /api/v1/health",
           "expected": "Response includes database status, cache status, storage status",
-          "_original_action": "GET /api/v1/health"
+          "_original_action": "GET /api/v1/health",
+          "expect_status": 200
         }
       ],
       "tags": [
@@ -1036,7 +1050,8 @@
           "name": "Check metrics",
           "action": "http: GET /metrics",
           "expected": "Request count incremented",
-          "_original_action": "GET /metrics and look for http request counter"
+          "_original_action": "GET /metrics and look for http request counter",
+          "expect_status": 200
         }
       ],
       "tags": [
@@ -1061,7 +1076,8 @@
           "name": "Request metrics",
           "action": "http: GET /metrics",
           "expected": "Database pool metrics present (open connections, idle, in use)",
-          "_original_action": "GET /metrics"
+          "_original_action": "GET /metrics",
+          "expect_status": 200
         }
       ],
       "tags": [
@@ -1541,7 +1557,8 @@
           "name": "Check database pool config",
           "action": "http: GET /metrics",
           "expected": "Pool settings match config: MaxOpen=25, MaxIdle=10",
-          "_original_action": "GET /metrics or /api/v1/admin/system-info"
+          "_original_action": "GET /metrics or /api/v1/admin/system-info",
+          "expect_status": 200
         }
       ],
       "tags": [

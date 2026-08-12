@@ -911,14 +911,16 @@
           "action": "http: GET /api/v1/entities",
           "expected": "Response contains Content-Encoding: br header",
           "_original_action": "GET /api/v1/entities with Accept-Encoding: br and valid auth token",
-          "auth": "admin"
+          "auth": "admin",
+          "expect_status": 200
         },
         {
           "name": "Request with Accept-Encoding: gzip",
           "action": "http: GET /api/v1/entities",
           "expected": "Response contains Content-Encoding: gzip header (fallback)",
           "_original_action": "GET /api/v1/entities with Accept-Encoding: gzip and valid auth token",
-          "auth": "admin"
+          "auth": "admin",
+          "expect_status": 200
         }
       ],
       "tags": [
@@ -943,7 +945,8 @@
           "name": "Inspect response headers from health",
           "action": "http: GET /health",
           "expected": "X-Content-Type-Options: nosniff, X-Frame-Options present",
-          "_original_action": "GET /health and check response headers"
+          "_original_action": "GET /health and check response headers",
+          "expect_status": 200
         }
       ],
       "tags": [
@@ -968,7 +971,8 @@
           "name": "Send any request",
           "action": "http: GET /health",
           "expected": "Response contains X-Request-ID header with a unique identifier",
-          "_original_action": "GET /health"
+          "_original_action": "GET /health",
+          "expect_status": 200
         }
       ],
       "tags": [
@@ -1849,7 +1853,8 @@
           },
           "_patched_by": [
             "bank-patch-default-bodies"
-          ]
+          ],
+          "expect_status": 200
         },
         {
           "name": "Check scan status",
@@ -1946,14 +1951,16 @@
           },
           "_patched_by": [
             "bank-patch-default-bodies"
-          ]
+          ],
+          "expect_status": 200
         },
         {
           "name": "Poll scan status 3 times",
           "action": "http: GET /api/v1/scans/{job_id}",
           "expected": "Each response includes progress percentage or file count",
           "_original_action": "GET /api/v1/scans/{job_id} every 5 seconds",
-          "auth": "admin"
+          "auth": "admin",
+          "expect_status": 200
         }
       ],
       "tags": [
@@ -2026,7 +2033,8 @@
           },
           "_patched_by": [
             "bank-patch-default-bodies"
-          ]
+          ],
+          "expect_status": 200
         }
       ],
       "tags": [
@@ -2392,7 +2400,8 @@
           },
           "_patched_by": [
             "bank-patch-default-bodies"
-          ]
+          ],
+          "expect_status": 200
         },
         {
           "name": "Queue second scan immediately",
@@ -2405,7 +2414,9 @@
           },
           "_patched_by": [
             "bank-patch-default-bodies"
-          ]
+          ],
+          "_skip": true,
+          "_skip_reason": "HXC-243: the case's own documented expectation is explicitly either/or \u2014 \"Second scan queued or rejected (semaphore limits parallel scans)\" \u2014 so a single expect_status would be wrong under one of its two legitimate documented outcomes, and the schema has no way to assert \"one of {200, 409}\"."
         }
       ],
       "tags": [
@@ -5388,7 +5399,8 @@
           "action": "http: GET /api/v1/collections",
           "expected": "Both collections in list",
           "_original_action": "GET /api/v1/collections with auth token",
-          "auth": "admin"
+          "auth": "admin",
+          "expect_status": 200
         }
       ],
       "tags": [
@@ -6502,7 +6514,8 @@
           "action": "http: GET /api/v1/playlists",
           "expected": "Both playlists returned",
           "_original_action": "GET /api/v1/playlists",
-          "auth": "admin"
+          "auth": "admin",
+          "expect_status": 200
         }
       ],
       "tags": [
@@ -6534,7 +6547,8 @@
           },
           "_patched_by": [
             "bank-patch-default-bodies"
-          ]
+          ],
+          "expect_status": 201
         },
         {
           "name": "Delete playlist",
@@ -7265,7 +7279,8 @@
           },
           "_patched_by": [
             "bank-patch-default-bodies"
-          ]
+          ],
+          "expect_status": 200
         },
         {
           "name": "Listen for progress events",
@@ -7364,7 +7379,8 @@
           "name": "Check metrics",
           "action": "http: GET /metrics",
           "expected": "Connection count reflects 2 active connections",
-          "_original_action": "GET /metrics and look for WebSocket connection count"
+          "_original_action": "GET /metrics and look for WebSocket connection count",
+          "expect_status": 200
         }
       ],
       "tags": [

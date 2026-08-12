@@ -396,7 +396,7 @@ test_cases:
       - name: "Conditional request"
         action: "GET /assets/vendor.js with If-None-Match: <etag>"
         expected: "304 Not Modified (no body transferred)"
-    tags: [performance, caching, conditional-request, 304]
+    tags: [performance, caching, conditional-request, "304"]
     estimated_duration: "10s"
     expected_result: "304 Not Modified avoids redundant transfer"
 

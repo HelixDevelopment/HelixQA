@@ -783,7 +783,7 @@ test_cases:
       - name: "Check response"
         action: "Verify no file system paths in response"
         expected: "No absolute paths or directory structure revealed"
-    tags: [security, error-handling, 404, information-leak]
+    tags: [security, error-handling, "404", information-leak]
     estimated_duration: "5s"
     expected_result: "404 responses do not reveal server internals"
 
