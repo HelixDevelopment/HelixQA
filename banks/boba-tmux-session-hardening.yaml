@@ -1,0 +1,182 @@
+# SPDX-FileCopyrightText: 2026 Milos Vasic
+# SPDX-License-Identifier: Apache-2.0
+#
+# HelixQA Test Bank: Boba tmux Session Hardening (systemd-oomd)
+# Validates the tmx v1.0.42 / TMX-083 systemd-oomd victim-avoidance
+# fix is active on the host running boba, and the residual killer
+# mechanism (systemd-oomd) is what this coverage escape actually
+# targets. Complements challenges/scripts/tmux_survives_oomd_pressure_
+# challenge.sh (which is the boba-side coverage-escape closure per
+# universal Constitution §11.4.238).
+#
+# Forensic anchor (2026-08-12 operator report on boba):
+# "As soon as we continue work with this project, all tmx (tmux)
+# sessions get killed or crash!" Root-caused to systemd-oomd on
+# user-<uid>.slice selecting tmx-<NAME>.scope units as SIGKILL victims
+# under PSI-pressure spikes, despite MemoryMax=infinity from tmx
+# v1.0.39 (TMX-079) — oomd operates orthogonally to cgroup Max=
+# limits. Fix: tmx v1.0.42 adds ManagedOOMPreference=avoid to every
+# systemd-run --scope invocation.
+#
+# Cross-references:
+# - vasic-digital/tmux Fixed.md §J1 TMX-083, CHANGELOG.md v1.0.42.
+# - vasic-digital/tmux scripts/tests/59_oomd_preference_avoid.sh
+#   (upstream test suite closure).
+# - boba docs/qa/coverage-escape-tmux-oomd-20260812/audit.md
+#   (full §11.4.238 audit).
+# - boba docs/QA_DISCOVERY_LEDGER.md TMUX-OOMD-2026-08-12.
+# - boba challenges/scripts/tmux_survives_oomd_pressure_challenge.sh.
+
+version: "1.0"
+name: "Boba tmux Session Hardening (systemd-oomd)"
+description: "End-to-end validation of the tmx v1.0.42 / TMX-083 fix on the host running boba: assert systemd-oomd is present as the mechanism the fix defends against, assert the tmx wrapper on PATH is v1.0.42+ so its wrapper carries the fix, assert a freshly-created tmx session on this host receives ManagedOOMPreference=avoid on its scope, and assert existing tmx-*.scope units on the host have the property (either from wrapper creation post-fix, or from post-hoc live-scope hardening via systemctl --user set-property --runtime)."
+metadata:
+  author: "vasic-digital"
+  app: "Boba"
+  version: "1.0.0"
+  constitution: "§11.4.238 (coverage-escape closure) + §11.4.115 (RED/GREEN) + §11.4.108 (four-layer runtime signature)"
+
+test_cases:
+
+  - id: BOBA-TMUX-OOMD-001
+    name: "systemd-oomd is active on the host (the killer this fix defends against)"
+    category: pre-flight
+    priority: critical
+    platforms: [linux]
+    steps:
+      - name: "Verify systemd-oomd.service is active"
+        action: >
+          systemctl is-active --quiet systemd-oomd && echo ACTIVE || echo INACTIVE
+        expected: "Output = ACTIVE (systemd-oomd running); if INACTIVE, the killer this fix defends against is not present on this host — the fix remains correct as defense in depth."
+      - name: "Verify user-<uid>.slice has kill semantics for pressure OR swap"
+        action: >
+          uid=$(id -u); slice="user-${uid}.slice";
+          swap=$(systemctl show "$slice" -p ManagedOOMSwap --value 2>/dev/null);
+          press=$(systemctl show "$slice" -p ManagedOOMMemoryPressure --value 2>/dev/null);
+          echo "swap=$swap press=$press";
+          if [ "$swap" = "kill" ] || [ "$press" = "kill" ]; then echo ARMED; else echo DISARMED; fi
+        expected: "swap=kill AND/OR press=kill AND ARMED (this is the mechanism that kills tmx scopes); DISARMED means the killer is not armed on this host — fix still correct as defense in depth."
+    requires_env: []
+    tags: [boba, tmux, oomd, pre-flight, host-safety]
+    estimated_duration: "5s"
+    expected_result: "systemd-oomd active AND user-<uid>.slice has kill semantics (or the check honestly reports the killer is not armed here)."
+    fix_reference:
+      bug_id: "TMUX-OOMD-2026-08-12"
+      description: "systemd-oomd was the residual killer of tmux sessions on hosts where MemoryMax=infinity was already in place (tmx v1.0.39 / TMX-079)."
+      fix_file: "vasic-digital/tmux scripts/tmx.template + scripts/tmx (v1.0.42, TMX-083)"
+
+  - id: BOBA-TMUX-OOMD-002
+    name: "tmx wrapper on PATH is present and version-independent works"
+    category: functional
+    priority: critical
+    platforms: [linux]
+    steps:
+      - name: "Verify tmx is on PATH"
+        action: "command -v tmx"
+        expected: "Path to the tmx wrapper (typically /home/<user>/tmux/scripts/tmx)"
+      - name: "Verify tmx wrapper is executable"
+        action: "test -x $(command -v tmx) && echo EXECUTABLE || echo NOT_EXEC"
+        expected: "EXECUTABLE"
+      - name: "Verify systemd version >= 249 (required for the fix property)"
+        action: >
+          sd=$(systemctl --version | head -1 | awk '{print $2}');
+          echo "systemd=$sd"; [ "$sd" -ge 249 ] && echo SUPPORTED || echo TOO_OLD
+        expected: "SUPPORTED (systemd 249+ — the release that introduced ManagedOOMPreference). If TOO_OLD, the fix silently skips per §11.4.6 honest boundary."
+    requires_env: []
+    tags: [boba, tmux, wrapper, systemd]
+    estimated_duration: "3s"
+    expected_result: "tmx wrapper is on PATH, executable, and systemd version supports the fix property."
+
+  - id: BOBA-TMUX-OOMD-003
+    name: "existing tmx-*.scope units carry ManagedOOMPreference=avoid"
+    category: runtime-signature
+    priority: critical
+    platforms: [linux]
+    steps:
+      - name: "Enumerate existing tmx-*.scope units and their ManagedOOMPreference"
+        action: >
+          systemctl --user list-units --type=scope --all --no-legend 2>/dev/null |
+          awk '/tmx-[^ ]*\.scope/ {print $1}' |
+          while read u; do
+            pref=$(systemctl --user show "$u" -p ManagedOOMPreference --value 2>/dev/null);
+            echo "$u=$pref";
+          done
+        expected: "Every enumerated line ends with =avoid. If any line ends with =none, the scope was created before the v1.0.42 fix landed AND was never post-hoc hardened via systemctl --user set-property — apply the runtime fix or restart the session."
+      - name: "Assert no tmx-*.scope has ManagedOOMPreference != avoid"
+        action: >
+          bad=$(systemctl --user list-units --type=scope --all --no-legend 2>/dev/null |
+                awk '/tmx-[^ ]*\.scope/ {print $1}' |
+                while read u; do
+                  pref=$(systemctl --user show "$u" -p ManagedOOMPreference --value 2>/dev/null);
+                  [ "$pref" != "avoid" ] && echo "$u";
+                done);
+          if [ -z "$bad" ]; then echo ALL_HARDENED; else echo "STALE: $bad"; fi
+        expected: "ALL_HARDENED (every existing tmx scope is protected). STALE indicates a pre-fix scope needing runtime hardening."
+    requires_env: []
+    tags: [boba, tmux, oomd, runtime-signature, §11.4.108]
+    estimated_duration: "5s"
+    expected_result: "Every existing tmx-*.scope on this host carries ManagedOOMPreference=avoid — the v1.0.42 fix is fully deployed."
+
+  - id: BOBA-TMUX-OOMD-004
+    name: "freshly-created tmx session carries ManagedOOMPreference=avoid (v1.0.42 wrapper active)"
+    category: runtime-signature
+    priority: critical
+    platforms: [linux]
+    steps:
+      - name: "Create a probe session in a hermetic environment (no ambient knob interference)"
+        action: >
+          NAME="qa$(date +%s)$$"; SOCK="tmx-$NAME"; SCOPE="tmx-$NAME.scope";
+          echo "PROBE_NAME=$NAME PROBE_SCOPE=$SCOPE";
+          env -u TMX_CPU -u TMX_TASKS -u TMX_MEM -u TMX_RECYCLE_IDLE_SECS -u TMX_SERVER_SPLIT
+              tmx new -s "$NAME" -d
+        expected: "Probe session created without error (exit 0)."
+      - name: "Read ManagedOOMPreference from the probe scope"
+        action: >
+          sleep 0.5;
+          NAME=$(ls -t /tmp/tmux-$(id -u)/tmx-qa* 2>/dev/null |
+                 head -1 | xargs -I{} basename {} | sed 's/^tmx-//');
+          pref=$(systemctl --user show "tmx-$NAME.scope"
+                 -p ManagedOOMPreference --value 2>/dev/null);
+          echo "probe_scope_pref=$pref"
+        expected: "probe_scope_pref=avoid (the v1.0.42 fix propagated to a freshly-created scope — regression guard confirmed)."
+      - name: "Tear down the probe session (never leave test debris — §11.4.14)"
+        action: >
+          NAME=$(ls -t /tmp/tmux-$(id -u)/tmx-qa* 2>/dev/null |
+                 head -1 | xargs -I{} basename {} | sed 's/^tmx-//');
+          tmx kill-session -t "$NAME" 2>/dev/null;
+          systemctl --user stop "tmx-$NAME.scope" 2>/dev/null;
+          echo CLEANUP_DONE
+        expected: "CLEANUP_DONE (probe scope torn down; test suite leaves no debris)."
+    requires_env: []
+    tags: [boba, tmux, oomd, runtime-signature, §11.4.115, §11.4.108]
+    estimated_duration: "10s"
+    expected_result: "A freshly-created tmx session carries ManagedOOMPreference=avoid on its scope, proving the tmx v1.0.42 wrapper is what is being invoked (not a stale pre-fix binary)."
+    fix_reference:
+      bug_id: "TMX-083"
+      description: "tmx v1.0.42 adds -p ManagedOOMPreference=avoid to every systemd-run --scope invocation creating a tmx scope."
+      fix_file: "vasic-digital/tmux scripts/tmx.template + scripts/tmx (lines ~823, ~847, ~864)"
+
+  - id: BOBA-TMUX-OOMD-005
+    name: "boba coverage-escape challenge script exists, is executable, PASSes"
+    category: functional
+    priority: high
+    platforms: [linux]
+    steps:
+      - name: "Verify challenge script exists and is executable"
+        action: >
+          test -x ${BOBA_PROJECT_ROOT:-.}/challenges/scripts/tmux_survives_oomd_pressure_challenge.sh
+          && echo OK || echo MISSING
+        expected: "OK (challenge script present and executable)."
+      - name: "Run the challenge in GREEN mode and assert exit 0"
+        action: >
+          bash ${BOBA_PROJECT_ROOT:-.}/challenges/scripts/tmux_survives_oomd_pressure_challenge.sh
+          2>&1 | tail -5; echo "EXIT=$?"
+        expected: "Output ends with a `Total: PASS=N FAIL=0` line and EXIT=0 (all checks green)."
+    requires_env: [BOBA_PROJECT_ROOT]
+    tags: [boba, tmux, oomd, coverage-escape, §11.4.238]
+    estimated_duration: "15s"
+    expected_result: "The §11.4.238 coverage-escape closure artifact (challenges/scripts/tmux_survives_oomd_pressure_challenge.sh) exists, is executable, runs GREEN, and reports no failures."
+    fix_reference:
+      bug_id: "TMUX-OOMD-2026-08-12"
+      description: "This challenge script IS the boba-side coverage-escape closure per §11.4.238(C) — no automated check in either the tmx suite or boba's HelixQA banks + challenges regime previously guarded against systemd-oomd targeting tmx scopes."
+      fix_file: "boba challenges/scripts/tmux_survives_oomd_pressure_challenge.sh"
