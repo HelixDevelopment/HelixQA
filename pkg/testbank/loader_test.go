@@ -4,6 +4,8 @@
 package testbank
 
 import (
+	"bytes"
+	"log"
 	"os"
 	"path/filepath"
 	"strings"
@@ -246,6 +248,68 @@ func TestLoadFile_TRVEnsemble_RecvalidateOptionsRoundTrip(t *testing.T) {
 		if !containsAny(replies, want) {
 			t.Errorf("expected_replies missing %q, got %v", want, replies)
 		}
+	}
+}
+
+// TestLoadDir_HXC305_LogsEveryDeclinedFile is the previously-missing
+// hermetic test for twinLogger: LoadDir's whole reason to exist over
+// LoadDirVerbose is that a caller who ignores the declined list still
+// gets a non-silent record via the standard logger. This overrides
+// twinLogger's destination for the duration of the test (restoring it
+// afterward) and asserts the logged line names both the declined
+// path and its reason, for a caller (like
+// pkg/autonomous.StructuredTestExecutor) that only ever calls LoadDir.
+func TestLoadDir_HXC305_LogsEveryDeclinedFile(t *testing.T) {
+	dir := t.TempDir()
+	yamlContent := []byte(`name: logged-twin-bank
+test_cases:
+  - id: LOG-001
+    name: "logged twin case"
+    platforms: [api]
+    steps:
+      - name: "do it"
+        action: "GET /x prose only"
+        expected: "ok"
+`)
+	jsonContent := []byte(`{
+  "name": "logged-twin-bank",
+  "test_cases": [
+    {
+      "id": "LOG-001",
+      "name": "logged twin case",
+      "platforms": ["api"],
+      "steps": [
+        {"name": "do it", "action": "http: GET /x", "expected": "ok", "expect_status": 200}
+      ]
+    }
+  ]
+}`)
+	if err := os.WriteFile(filepath.Join(dir, "logged-twin.yaml"), yamlContent, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "logged-twin.json"), jsonContent, 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	var buf bytes.Buffer
+	prev := twinLogger
+	twinLogger = log.New(&buf, "", 0)
+	defer func() { twinLogger = prev }()
+
+	if _, err := LoadDir(dir); err != nil {
+		t.Fatalf("LoadDir: %v", err)
+	}
+
+	logged := buf.String()
+	if logged == "" {
+		t.Fatal("LoadDir logged nothing — a declined twin must be observable " +
+			"via the logger for callers that only use LoadDir, not LoadDirVerbose")
+	}
+	if !strings.Contains(logged, "logged-twin.yaml") {
+		t.Errorf("logged output does not name the declined path: %q", logged)
+	}
+	if !strings.Contains(logged, "logged-twin.json") {
+		t.Errorf("logged output does not name the superseding file in the reason: %q", logged)
 	}
 }
 

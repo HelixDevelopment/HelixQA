@@ -4,12 +4,57 @@
 # HelixQA English message bundle for CONST-046 Phase 4 round 7 / 88
 # (round-112 kickoff + round-205 extension). Every entry is the
 # English source-of-truth for a previously-hardcoded user-facing
-# literal in helix_qa/cmd/helixqa/main.go. The messageID is
-# namespaced `helixqa_` so it cannot collide with other submodules.
+# literal in the CLI. Round 18 corrected the provenance, which read
+# "in helix_qa/cmd/helixqa/main.go": measured across the 48 entries,
+# 24 are cmd/helixqa/main.go literals, 21 are disjoint
+# pkg/reporter/enhanced.go literals, and the remaining 3 are
+# referenced only from tests (see COVERAGE SCOPE below). The
+# messageID is namespaced `helixqa_` so it cannot collide with other
+# submodules — but note the Prometheus metric names in
+# pkg/streaming/webrtc_handler.go share that prefix
+# (`helixqa_webrtc_*`) while being no part of this catalogue, so a
+# sweep over `"helixqa_*"` literals must key off THIS file's keys.
 #
 # Backends (LLM-driven generator, YAML-bundle loader) consume
 # this file as the en seed and produce the locale-specific
 # variants users actually see at runtime.
+#
+# HONEST STATUS (§11.4.6) — this catalogue is INERT AT RUNTIME today.
+# No production code opens this file, and nothing calls
+# i18n.SetTranslator, so the shipped binary's ActiveTranslator is
+# always NoopTranslator{}. helixqaT treats that translator's
+# key-echo as a MISS and returns the operator-authored English
+# fallback at the call site (see cmd/helixqa/i18n.go). Measured:
+# building the CLI with this file present and with it deleted
+# produces a BYTE-IDENTICAL `--help` (657 bytes, same sha256).
+# Entries here are therefore the seed a future backend will load —
+# adding one is necessary for that migration and changes nothing a
+# user sees until a translator is actually installed. Claiming a
+# new entry "fixes" user-visible output would be a bluff.
+#
+# COVERAGE SCOPE — every `helixqaT` call site in cmd/helixqa has a
+# catalogue entry here (0 missing). The reverse does NOT hold in
+# full: helixqa_run_banks_flag_usage, helixqa_run_platform_flag_usage
+# and helixqa_run_speed_flag_usage are catalogued but referenced only
+# from tests. All three are `helixqa_run_*`, so "both directions
+# empty" holds for every prefix family EXCEPT `helixqa_run_*`:
+# `helixqa_cli_*`, `helixqa_usage_*`, `helixqa_commands_*`,
+# `helixqa_cmd_*` and `helixqa_report_*` all qualify. Round 18
+# corrected this sentence, which read "true of the `helixqa_cmd_*`
+# family only" — understating it by four families on the same
+# module-wide production-reference reading the clause above uses.
+# Do not re-count by hand; derive the exception set (bash, from the
+# repo root):
+#
+#   comm -23 \
+#     <(grep -oE '^helixqa_[a-z0-9_]+' pkg/i18n/bundles/active.en.yaml | sort -u) \
+#     <(find cmd pkg -name '*.go' ! -name '*_test.go' -print0 | xargs -0 sed 's|//.*||' \
+#       | grep -oE '"helixqa_[a-z0-9_]+"' | tr -d '"' | sort -u)
+#
+# That must print those three keys and nothing else. ANY other
+# output — including none, which means a path moved — makes this
+# paragraph stale: re-derive it rather than patch it. Pre-existing
+# since round-112, not introduced by the entries below.
 
 # --- round-112 (kickoff, 5 entries) -----------------------------
 
@@ -92,6 +137,9 @@ helixqa_cmd_run_desc:
 helixqa_cmd_autonomous_desc:
   other: "  autonomous  Run autonomous LLM-driven QA session"
 
+helixqa_cmd_http_desc:
+  other: "  http        Run a bank's http: cases against a live server (no browser/LLM)"
+
 helixqa_cmd_replay_desc:
   other: "  replay      Replay a ticket's OCU action chain (dry-run by default)"
 
@@ -103,6 +151,9 @@ helixqa_cmd_report_desc:
 
 helixqa_cmd_signoff_desc:
   other: "  signoff     Run release gate (Constitution §6.7)"
+
+helixqa_cmd_banks_desc:
+  other: "  banks       Maintain a bank directory (regen-floor)"
 
 helixqa_cmd_version_desc:
   other: "  version     Print version information"
