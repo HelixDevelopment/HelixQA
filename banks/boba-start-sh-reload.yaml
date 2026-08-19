@@ -1,0 +1,223 @@
+# SPDX-FileCopyrightText: 2026 Milos Vasic
+# SPDX-License-Identifier: Apache-2.0
+#
+# HelixQA Test Bank: Boba start.sh restart-level subcommands (BOB-090)
+#
+# Sibling to BOB-089 (commit 2667be6) which authored RED-first pytest
+# integration tests at tests/integration/test_start_sh_reload_paths.py
+# covering the same three subcommands. BOB-090 lifts those contracts
+# into the HelixQA harness so a `bin/helixqa run` invocation exercises
+# them end-to-end with anti-bluff captured evidence — the same runtime
+# properties (marker file gone / StartedAt bumped / container id
+# preserved-or-changed) verified by the Python suite, now verified
+# from the framework whose job is to catch bluffs (§11.4.107(10)).
+#
+# Feature class per §11.4.69: container_orchestration — every PASS
+# cites captured runtime state (podman/docker inspect fields + exec
+# probes), NEVER a source grep or "no error" absence.
+#
+# RED-first discipline (§11.4.115(F)): each test observes a
+# distinct property BOB-089's fix produces. Reverting BOB-089's
+# start.sh implementation of any of the three subcommands would flip
+# the corresponding case to FAIL — the RED capture for
+# --reload-python already lives at docs/qa/BOB-089/RED_reload_python_stub.log.
+#
+# Rootless podman is auto-detected per §11.4.161 the same way
+# start.sh's own detect_container_runtime() does.
+
+version: "1.0"
+name: "Boba start.sh restart-level subcommands"
+description: "End-to-end validation of the three start.sh restart-level subcommands documented in CLAUDE.md 'Pick the right restart level': --reload-python (clears __pycache__ + restarts qbittorrent-proxy, same container id), --reload-plugins (restarts qbittorrent-proxy + does NOT auto-copy plugin files — that's install-plugin.sh's job), --recreate (compose down+up destroys and recreates qbittorrent-proxy — container id CHANGES). Every PASS cites captured runtime state per §11.4.69 feature_class=container_orchestration; a source-grep or absence-of-error PASS is refused (§11.4.226 wrong-layer)."
+metadata:
+  author: "vasic-digital"
+  app: "Boba"
+  version: "1.0.0"
+  workable_item: "BOB-090"
+  paired_pytest: "tests/integration/test_start_sh_reload_paths.py"
+  paired_workable_item: "BOB-089"
+
+test_cases:
+
+  - id: BOBA-START-001
+    name: "start.sh --reload-python clears __pycache__ and restarts qbittorrent-proxy"
+    category: functional
+    priority: critical
+    platforms: [cli]
+    steps:
+      - name: "Detect container runtime (podman rootless preferred per §11.4.161)"
+        action: >
+          RUNTIME=$(command -v podman 2>/dev/null || command -v docker 2>/dev/null);
+          test -n "$RUNTIME" || { echo "SKIP-with-reason hardware_not_present: no podman/docker"; exit 77; };
+          echo "runtime=$RUNTIME"
+        expected: "podman or docker resolved on PATH; SKIP-with-reason hardware_not_present when neither is present"
+      - name: "Require qbittorrent-proxy container running (SKIP-with-reason otherwise)"
+        action: >
+          RUNTIME=$(command -v podman 2>/dev/null || command -v docker 2>/dev/null);
+          $RUNTIME ps --format '{{.Names}}' | grep -qx qbittorrent-proxy ||
+          { echo "SKIP-with-reason topology_unsupported: qbittorrent-proxy not running (run ./start.sh -p first)"; exit 77; }
+        expected: "qbittorrent-proxy is running; else honest §11.4.3 SKIP-with-reason topology_unsupported (never a false PASS)"
+      - name: "Plant marker __pycache__ inside container (control-needle per §11.4.201(7b))"
+        action: >
+          RUNTIME=$(command -v podman 2>/dev/null || command -v docker 2>/dev/null);
+          $RUNTIME exec qbittorrent-proxy mkdir -p /config/download-proxy/__pycache__ &&
+          $RUNTIME exec qbittorrent-proxy sh -c 'echo BOB-090 > /config/download-proxy/__pycache__/BOB_090_marker.pyc' &&
+          $RUNTIME exec qbittorrent-proxy test -f /config/download-proxy/__pycache__/BOB_090_marker.pyc
+        expected: "Marker file exists inside container — proves instrument is not blind before invocation"
+      - name: "Capture pre-invocation StartedAt + container id (evidence anchor)"
+        action: >
+          RUNTIME=$(command -v podman 2>/dev/null || command -v docker 2>/dev/null);
+          BEFORE_STARTED=$($RUNTIME inspect --format '{{.State.StartedAt}}' qbittorrent-proxy) &&
+          BEFORE_ID=$($RUNTIME inspect --format '{{.Id}}' qbittorrent-proxy) &&
+          echo "before_started=$BEFORE_STARTED" && echo "before_id=$BEFORE_ID" &&
+          echo "$BEFORE_STARTED" > /tmp/bob090_before_started && echo "$BEFORE_ID" > /tmp/bob090_before_id
+        expected: "Non-empty StartedAt ISO timestamp and 64-char container id captured to /tmp for post-comparison"
+      - name: "Invoke ./start.sh --reload-python from repo root"
+        action: >
+          cd ${BOBA_PROJECT_ROOT} && bash ./start.sh --reload-python; echo "EXIT_CODE=$?"
+        expected: "start.sh --reload-python exits 0; STDOUT captures cache-clear and restart activity"
+      - name: "Assert marker __pycache__ is gone (rm -rf clause landed)"
+        action: >
+          RUNTIME=$(command -v podman 2>/dev/null || command -v docker 2>/dev/null);
+          for i in 1 2 3 4 5 6 7 8 9 10; do
+            $RUNTIME ps --format '{{.Names}}' | grep -qx qbittorrent-proxy && break;
+            sleep 1;
+          done;
+          if $RUNTIME exec qbittorrent-proxy test -d /config/download-proxy/__pycache__ 2>/dev/null; then
+            echo "FAIL: __pycache__ still exists after --reload-python"; exit 1;
+          fi;
+          echo "PASS: __pycache__ removed"
+        expected: "Container back up; __pycache__ directory REMOVED — captured evidence that rm -rf clause ran"
+      - name: "Assert StartedAt bumped forward AND container id UNCHANGED (restart, not recreate)"
+        action: >
+          RUNTIME=$(command -v podman 2>/dev/null || command -v docker 2>/dev/null);
+          AFTER_STARTED=$($RUNTIME inspect --format '{{.State.StartedAt}}' qbittorrent-proxy);
+          AFTER_ID=$($RUNTIME inspect --format '{{.Id}}' qbittorrent-proxy);
+          BEFORE_STARTED=$(cat /tmp/bob090_before_started);
+          BEFORE_ID=$(cat /tmp/bob090_before_id);
+          test "$AFTER_STARTED" != "$BEFORE_STARTED" || { echo "FAIL: StartedAt unchanged"; exit 1; };
+          test "$AFTER_ID"      =  "$BEFORE_ID"      || { echo "FAIL: id changed — expected restart, got recreate"; exit 1; };
+          rm -f /tmp/bob090_before_started /tmp/bob090_before_id;
+          echo "PASS: restart observed (StartedAt forward, id preserved)"
+        expected: "StartedAt strictly advanced; container Id identical — proves restart contract, refutes accidental recreate"
+    requires_env: [BOBA_PROJECT_ROOT]
+    tags: [boba, start-sh, reload-python, container, restart, container_orchestration, bob-089, bob-090]
+    estimated_duration: "60s"
+    expected_result: "start.sh --reload-python (a) clears __pycache__ inside qbittorrent-proxy (marker file gone), (b) restarts the container (StartedAt strictly forward), (c) preserves the container id (restart, not recreate). All three facts read from the live target per §11.4.115(F)."
+    fix_reference:
+      bug_id: "BOB-089"
+      description: "start.sh --reload-python must clear __pycache__ inside qbittorrent-proxy and restart the container without recreating it"
+      fix_file: "start.sh"
+      fix_commit: "2667be6"
+
+  - id: BOBA-START-002
+    name: "start.sh --reload-plugins restarts container without auto-copying plugin files"
+    category: functional
+    priority: critical
+    platforms: [cli]
+    steps:
+      - name: "Detect container runtime + require qbittorrent-proxy running"
+        action: >
+          RUNTIME=$(command -v podman 2>/dev/null || command -v docker 2>/dev/null);
+          test -n "$RUNTIME" || { echo "SKIP-with-reason hardware_not_present: no podman/docker"; exit 77; };
+          $RUNTIME ps --format '{{.Names}}' | grep -qx qbittorrent-proxy ||
+          { echo "SKIP-with-reason topology_unsupported: qbittorrent-proxy not running"; exit 77; }
+        expected: "Runtime detected and qbittorrent-proxy running; else honest SKIP-with-reason"
+      - name: "Plant a marker plugin under plugins/ + ensure engines/ mirror is CLEAN"
+        action: >
+          cd ${BOBA_PROJECT_ROOT} &&
+          rm -f plugins/bob090_reload_plugins_marker.py config/qBittorrent/nova3/engines/bob090_reload_plugins_marker.py &&
+          printf '# BOB-090 marker — must NOT be auto-copied by --reload-plugins\n' > plugins/bob090_reload_plugins_marker.py
+        expected: "Marker exists under plugins/; the engines/ mirror has NO copy — clean control state"
+      - name: "Capture pre-invocation StartedAt + container id"
+        action: >
+          RUNTIME=$(command -v podman 2>/dev/null || command -v docker 2>/dev/null);
+          $RUNTIME inspect --format '{{.State.StartedAt}}' qbittorrent-proxy > /tmp/bob090b_before_started;
+          $RUNTIME inspect --format '{{.Id}}'            qbittorrent-proxy > /tmp/bob090b_before_id
+        expected: "StartedAt + Id captured to /tmp for post-comparison"
+      - name: "Invoke ./start.sh --reload-plugins"
+        action: >
+          cd ${BOBA_PROJECT_ROOT} && bash ./start.sh --reload-plugins; echo "EXIT_CODE=$?"
+        expected: "start.sh --reload-plugins exits 0"
+      - name: "Assert restart happened (StartedAt forward, id UNCHANGED)"
+        action: >
+          RUNTIME=$(command -v podman 2>/dev/null || command -v docker 2>/dev/null);
+          for i in 1 2 3 4 5 6 7 8 9 10; do
+            $RUNTIME ps --format '{{.Names}}' | grep -qx qbittorrent-proxy && break;
+            sleep 1;
+          done;
+          AFTER_STARTED=$($RUNTIME inspect --format '{{.State.StartedAt}}' qbittorrent-proxy);
+          AFTER_ID=$($RUNTIME inspect --format '{{.Id}}' qbittorrent-proxy);
+          BEFORE_STARTED=$(cat /tmp/bob090b_before_started);
+          BEFORE_ID=$(cat /tmp/bob090b_before_id);
+          test "$AFTER_STARTED" != "$BEFORE_STARTED" || { echo "FAIL: StartedAt unchanged — restart step did not run"; exit 1; };
+          test "$AFTER_ID"      =  "$BEFORE_ID"      || { echo "FAIL: id changed — expected restart, got recreate"; exit 1; };
+          echo "PASS: restart observed"
+        expected: "StartedAt strictly advanced AND container id preserved — restart contract holds"
+      - name: "Assert plugin marker was NOT auto-copied into engines/ (contract: that's install-plugin.sh's job)"
+        action: >
+          cd ${BOBA_PROJECT_ROOT} &&
+          if test -f config/qBittorrent/nova3/engines/bob090_reload_plugins_marker.py; then
+            echo "FAIL: --reload-plugins auto-copied the marker — contract violation";
+            rm -f plugins/bob090_reload_plugins_marker.py config/qBittorrent/nova3/engines/bob090_reload_plugins_marker.py;
+            rm -f /tmp/bob090b_before_started /tmp/bob090b_before_id;
+            exit 1;
+          fi;
+          rm -f plugins/bob090_reload_plugins_marker.py;
+          rm -f /tmp/bob090b_before_started /tmp/bob090b_before_id;
+          echo "PASS: marker not auto-copied — install-plugin.sh's responsibility preserved"
+        expected: "engines/bob090_reload_plugins_marker.py absent — refutes any hidden auto-copy step; cleanup runs unconditionally per §11.4.14"
+    requires_env: [BOBA_PROJECT_ROOT]
+    tags: [boba, start-sh, reload-plugins, container, restart, container_orchestration, bob-089, bob-090]
+    estimated_duration: "60s"
+    expected_result: "start.sh --reload-plugins (a) restarts qbittorrent-proxy (StartedAt forward, id preserved), (b) does NOT copy plugin files from plugins/ into config/qBittorrent/nova3/engines/ — that copy is install-plugin.sh's job."
+    fix_reference:
+      bug_id: "BOB-089"
+      description: "start.sh --reload-plugins must restart qbittorrent-proxy without auto-copying plugin files"
+      fix_file: "start.sh"
+      fix_commit: "2667be6"
+
+  - id: BOBA-START-003
+    name: "start.sh --recreate destroys and recreates qbittorrent-proxy (container id CHANGES)"
+    category: functional
+    priority: critical
+    platforms: [cli]
+    steps:
+      - name: "Detect container runtime + require qbittorrent-proxy running"
+        action: >
+          RUNTIME=$(command -v podman 2>/dev/null || command -v docker 2>/dev/null);
+          test -n "$RUNTIME" || { echo "SKIP-with-reason hardware_not_present: no podman/docker"; exit 77; };
+          $RUNTIME ps --format '{{.Names}}' | grep -qx qbittorrent-proxy ||
+          { echo "SKIP-with-reason topology_unsupported: qbittorrent-proxy not running"; exit 77; }
+        expected: "Runtime detected and qbittorrent-proxy running; else honest SKIP-with-reason"
+      - name: "Capture pre-invocation container id (the discriminator)"
+        action: >
+          RUNTIME=$(command -v podman 2>/dev/null || command -v docker 2>/dev/null);
+          $RUNTIME inspect --format '{{.Id}}' qbittorrent-proxy > /tmp/bob090c_before_id;
+          echo "before_id=$(cat /tmp/bob090c_before_id)"
+        expected: "64-char container id captured — a plain restart would keep this id, a recreate MUST change it"
+      - name: "Invoke ./start.sh --recreate (compose down + up)"
+        action: >
+          cd ${BOBA_PROJECT_ROOT} && bash ./start.sh --recreate; echo "EXIT_CODE=$?"
+        expected: "start.sh --recreate exits 0 within its budget"
+      - name: "Assert container id CHANGED (destroy+recreate, not a plain restart)"
+        action: >
+          RUNTIME=$(command -v podman 2>/dev/null || command -v docker 2>/dev/null);
+          for i in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20; do
+            $RUNTIME ps --format '{{.Names}}' | grep -qx qbittorrent-proxy && break;
+            sleep 2;
+          done;
+          AFTER_ID=$($RUNTIME inspect --format '{{.Id}}' qbittorrent-proxy);
+          BEFORE_ID=$(cat /tmp/bob090c_before_id);
+          rm -f /tmp/bob090c_before_id;
+          test "$AFTER_ID" != "$BEFORE_ID" || { echo "FAIL: container id unchanged after --recreate — got a plain restart"; exit 1; };
+          echo "PASS: container recreated (id changed from $BEFORE_ID to $AFTER_ID)"
+        expected: "Container id STRICTLY CHANGED — proves --recreate destroyed and recreated the container object, distinguishing it from --reload-python/--reload-plugins which preserve id"
+    requires_env: [BOBA_PROJECT_ROOT]
+    tags: [boba, start-sh, recreate, container, compose, container_orchestration, bob-089, bob-090]
+    estimated_duration: "180s"
+    expected_result: "start.sh --recreate performs compose down + up so the qbittorrent-proxy container object is destroyed and recreated — captured evidence is the CHANGED container id, the exact discriminator between --recreate and the two --reload-* subcommands."
+    fix_reference:
+      bug_id: "BOB-089"
+      description: "start.sh --recreate must fully recreate qbittorrent-proxy via compose down+up (container id changes)"
+      fix_file: "start.sh"
+      fix_commit: "2667be6"
