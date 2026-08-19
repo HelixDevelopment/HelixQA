@@ -44,7 +44,11 @@ metadata:
   bank_id: helix_ota_ab_proof
   authority: "Constitution §11.4.58 / §11.4.27 / §11.4.69 / §11.4 anti-bluff covenant"
   system_under_test: "QEMU virt U-Boot A/B emulator ; server/cmd/applyport ; server/internal/device"
-  working_directory: /Volumes/T7/Projects/helix_ota
+  working_directory: ${HELIX_OTA_PROJECT_ROOT}
+  # HELIX_OTA_PROJECT_ROOT = absolute path to a helix_ota checkout on the host
+  # running these emulator + Go tests (formerly a hardcoded host-mounted path;
+  # parametrized per §11.4.28 decoupling / §11.4.35 consumer-owned DATA / GA-23 /
+  # BOB-098). Consumer supplies the value in its .env or shell env.
 
 test_cases:
 
