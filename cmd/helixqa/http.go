@@ -98,7 +98,23 @@ func cmdHTTP(args []string) {
 			os.Exit(1)
 		}
 		if info.IsDir() {
-			if err := mgr.LoadDir(path); err != nil {
+			declined, err := mgr.LoadDirVerbose(path)
+			// HXC-305: a directory scan must never discard a file
+			// without saying so — report every declined bank twin
+			// explicitly, not just via the package logger. Reported
+			// BEFORE the error check, because LoadDirVerbose returns a
+			// populated declined list ALONGSIDE an error on every
+			// abort path that could have declined anything (a
+			// duplicate id, a failing id floor, an unparseable or
+			// emptied bank), and exiting on the error first threw that
+			// list away on exactly the paths where it is most
+			// diagnostic: the operator saw "duplicate test case ID"
+			// with no indication of which twin files had already been
+			// declined, or what content they took with them.
+			for _, d := range declined {
+				fmt.Fprintf(os.Stderr, "declined %s: %s\n", d.Path, d.Reason)
+			}
+			if err != nil {
 				fmt.Fprintf(os.Stderr, "error: %v\n", err)
 				os.Exit(1)
 			}

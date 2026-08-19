@@ -55,21 +55,63 @@ func (m *Manager) LoadFile(path string) error {
 	return nil
 }
 
-// LoadDir loads all YAML test banks from a directory.
+// LoadDir loads all YAML test banks from a directory. Any file
+// LoadDir declines to load (HXC-305: e.g. the legacy-prose twin of a
+// YAML/JSON pair) is logged via twinLogger — see the package-level
+// LoadDir's doc comment — so this call is never silent about what it
+// skipped, even for callers that ignore the declined list. Callers
+// that need the declined list structurally (to report it themselves)
+// should call LoadDirVerbose instead.
 func (m *Manager) LoadDir(dir string) error {
-	bfs, err := LoadDir(dir)
+	declined, err := m.LoadDirVerbose(dir)
+	for _, d := range declined {
+		twinLogger.Printf("testbank: Manager.LoadDir(%s): declined %s: %s",
+			dir, d.Path, d.Reason)
+	}
+	return err
+}
+
+// LoadDirVerbose loads all YAML test banks from a directory (as
+// LoadDir does) and additionally returns every file LoadDir found on
+// disk but declined to load, with a reason (HXC-305), so a caller
+// (e.g. a CLI subcommand doing a directory scan) can report it
+// explicitly instead of relying on the package logger's default
+// destination.
+func (m *Manager) LoadDirVerbose(dir string) ([]DeclinedFile, error) {
+	res, err := LoadDirVerbose(dir)
 	if err != nil {
-		return err
+		// LoadDirVerbose reports declined files ALONGSIDE an error on
+		// EVERY abort path that could have declined anything — the id
+		// floor, a duplicate id, an unparseable or emptied bank (its
+		// `abort` helper is the single exit those all share).
+		// Discarding them here defeats that: callers print the
+		// declined lines they are handed, so a bare nil makes the CLI
+		// silent about which twins were dropped on exactly the runs
+		// where that is the diagnostic (HXC-305 round-6 BLOCKING A,
+		// secondary). The enumeration above earned each of its entries
+		// separately: round 6 carried the list on the id floor alone,
+		// round 14 converted seven further aborts, and round 16 found
+		// the eighth — the unparseable twin — still discarding it, so
+		// "unparseable" only became true of this code in round 16. Each
+		// was a path the enumeration already claimed before the code
+		// delivered it.
+		//
+		// res.Banks is deliberately NOT consulted: on an error return
+		// it holds only what loaded before the abort.
+		if res != nil {
+			return res.Declined, err
+		}
+		return nil, err
 	}
 
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
-	for _, bf := range bfs {
+	for _, bf := range res.Banks {
 		for i := range bf.TestCases {
 			tc := &bf.TestCases[i]
 			if _, exists := m.testCases[tc.ID]; exists {
-				return fmt.Errorf(
+				return res.Declined, fmt.Errorf(
 					"duplicate test case ID: %s",
 					tc.ID,
 				)
@@ -79,7 +121,7 @@ func (m *Manager) LoadDir(dir string) error {
 		m.banks = append(m.banks, bf)
 	}
 	m.sources = append(m.sources, dir)
-	return nil
+	return res.Declined, nil
 }
 
 // Get retrieves a test case by ID.

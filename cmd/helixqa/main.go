@@ -67,6 +67,8 @@ func main() {
 		os.Exit(runReplay(os.Args[2:]))
 	case "signoff":
 		cmdSignoff(os.Args[2:])
+	case "banks":
+		cmdBanks(os.Args[2:])
 	case "version":
 		fmt.Printf("helixqa v%s\n", version)
 	case "help", "-h", "--help":
@@ -103,6 +105,8 @@ func printUsage() {
 		"  report      Generate report from existing results"))
 	fmt.Println(helixqaT(ctx, "helixqa_cmd_signoff_desc",
 		"  signoff     Run release gate (Constitution §6.7)"))
+	fmt.Println(helixqaT(ctx, "helixqa_cmd_banks_desc",
+		"  banks       Maintain a bank directory (regen-floor)"))
 	fmt.Println(helixqaT(ctx, "helixqa_cmd_version_desc",
 		"  version     Print version information"))
 	fmt.Println("  help        Show this help")
@@ -257,6 +261,96 @@ func cmdRun(args []string) {
 	}
 }
 
+// cmdBanks maintains a bank DIRECTORY, as opposed to running the
+// cases inside it.
+//
+// Its only operation today is regen-floor, which rewrites a
+// directory's .bank-id-floor.txt from that directory's own catalog.
+// It exists as a first-class subcommand rather than a documented
+// shell pipeline over `helixqa list` because the pipeline could not
+// work: a floor is regenerated only after a deliberate removal —
+// i.e. only while the floor check is FAILING — and on that exact
+// state `list` exits 1 with nothing on stdout, so the pipeline's
+// `jq | sort` saw empty input, reported success, and the `&& mv`
+// replaced a 3046-id floor with a header-only file at exit 0
+// (HXC-305 round-6 BLOCKING A). regen-floor reads the catalog with
+// the floor check disabled by construction, refuses to write an
+// empty floor, and writes atomically.
+func cmdBanks(args []string) {
+	if len(args) == 0 {
+		fmt.Fprintln(os.Stderr, "error: banks requires a subcommand")
+		fmt.Fprintln(os.Stderr, "  helixqa banks regen-floor --banks <dir>")
+		os.Exit(1)
+	}
+	switch args[0] {
+	case "regen-floor":
+		cmdBanksRegenFloor(args[1:])
+	case "help", "-h", "--help":
+		fmt.Println("Usage:")
+		fmt.Println("  helixqa banks regen-floor --banks <dir>")
+		fmt.Println()
+		fmt.Println("Rewrites <dir>/.bank-id-floor.txt from the directory's own")
+		fmt.Println("catalog, preserving the existing header. Run it in the SAME")
+		fmt.Println("change as a deliberate case removal; removed ids are listed.")
+	default:
+		fmt.Fprintf(os.Stderr, "error: unknown banks subcommand %q\n", args[0])
+		fmt.Fprintln(os.Stderr, "  helixqa banks regen-floor --banks <dir>")
+		os.Exit(1)
+	}
+}
+
+// cmdBanksRegenFloor regenerates one directory's id floor.
+func cmdBanksRegenFloor(args []string) {
+	fs := flag.NewFlagSet("banks regen-floor", flag.ExitOnError)
+	banks := fs.String("banks", "",
+		"Bank DIRECTORY whose .bank-id-floor.txt to regenerate")
+	if err := fs.Parse(args); err != nil {
+		os.Exit(1)
+	}
+	if *banks == "" {
+		fmt.Fprintln(os.Stderr, "error: --banks is required")
+		fs.Usage()
+		os.Exit(1)
+	}
+	info, err := os.Stat(*banks)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "error: %v\n", err)
+		os.Exit(1)
+	}
+	if !info.IsDir() {
+		fmt.Fprintf(os.Stderr,
+			"error: --banks must be a directory for regen-floor, got %s\n", *banks)
+		os.Exit(1)
+	}
+
+	res, err := testbank.RegenerateBankIDFloor(*banks)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "error: %v\n", err)
+		os.Exit(1)
+	}
+
+	// Report the delta on stderr. A regeneration exists to record a
+	// removal, so the removed ids are the fact that must be visible
+	// in the terminal and in review, not merely inferable from the
+	// file diff (§11.4.122).
+	if res.Created {
+		fmt.Fprintf(os.Stderr, "created %s with %d case id(s)\n",
+			res.Path, res.Total)
+	} else {
+		fmt.Fprintf(os.Stderr, "rewrote %s: %d case id(s) (+%d, -%d)\n",
+			res.Path, res.Total, len(res.Added), len(res.Removed))
+	}
+	if len(res.Removed) > 0 {
+		fmt.Fprintf(os.Stderr,
+			"WARNING: %d case id(s) are NO LONGER protected by this floor — "+
+				"they must correspond to a deliberate removal in this same change:\n",
+			len(res.Removed))
+		for _, id := range res.Removed {
+			fmt.Fprintf(os.Stderr, "  removed %s\n", id)
+		}
+	}
+}
+
 // cmdList lists test cases from banks with optional filtering.
 func cmdList(args []string) {
 	fs := flag.NewFlagSet("list", flag.ExitOnError)
@@ -291,7 +385,23 @@ func cmdList(args []string) {
 			os.Exit(1)
 		}
 		if info.IsDir() {
-			if err := mgr.LoadDir(path); err != nil {
+			declined, err := mgr.LoadDirVerbose(path)
+			// HXC-305: a directory scan must never discard a file
+			// without saying so — report every declined bank twin
+			// explicitly, not just via the package logger. Reported
+			// BEFORE the error check, because LoadDirVerbose returns a
+			// populated declined list ALONGSIDE an error on every
+			// abort path that could have declined anything (a
+			// duplicate id, a failing id floor, an unparseable or
+			// emptied bank), and exiting on the error first threw that
+			// list away on exactly the paths where it is most
+			// diagnostic: the operator saw "duplicate test case ID"
+			// with no indication of which twin files had already been
+			// declined, or what content they took with them.
+			for _, d := range declined {
+				fmt.Fprintf(os.Stderr, "declined %s: %s\n", d.Path, d.Reason)
+			}
+			if err != nil {
 				fmt.Fprintf(os.Stderr, "error: %v\n", err)
 				os.Exit(1)
 			}
