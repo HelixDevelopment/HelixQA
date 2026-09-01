@@ -58,6 +58,7 @@
 [submodule "tools/opensource/docling"]
 	path = tools/opensource/docling
 	url = git@github.com:DS4SD/docling.git
+	ignore = dirty
 [submodule "tools/opensource/llama-index"]
 	path = tools/opensource/llama-index
 	url = git@github.com:run-llama/llama_index.git
