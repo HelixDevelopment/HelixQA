@@ -87,3 +87,15 @@ data/memory.db-wal
 
 # QA results — generated test artifacts, not for committing.
 qa-results/
+
+# === Key material (CONST-053 / §11.4.30) ===
+# Added 2026-09-02 after a credential sweep found an RSA JWT-signing keypair
+# (keys/jwt_private.pem) committed by 83bfa02 "Auto-commit" on the disjoint
+# hxs-v1 lineage. That key SIGNED REAL RS256 tokens during HXS challenge runs
+# and is confirmed present on the origin remote via the hxs-v1 tag, so it must
+# be treated as public. History rewriting is forbidden (§11.4.113) — rotation is
+# the remedy, and these patterns exist so a reintroduced auth feature cannot
+# repeat it. Generate key material per checkout and never commit the output.
+*.pem
+*.key
+keys/
